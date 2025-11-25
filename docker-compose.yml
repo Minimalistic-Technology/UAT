@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  gateway:
+    build:
+      context: ./gateway
+    container_name: gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - hrm
+      - user
+
+  hrm:
+    build:
+      context: ./hrm
+    container_name: hrm
+    ports:
+      - "3001:3001"
+
+  user:
+    build:
+      context: ./user
+    container_name: user
+    ports:
+      - "3002:3002"

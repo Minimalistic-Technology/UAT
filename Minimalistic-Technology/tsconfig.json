@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "ES2020",
+
+    /* Modules */
+    "module": "commonjs",
+
+    /* Replaces deprecated baseUrl */
+    "paths": {
+      "@middleware/*": ["./middleware/*"],
+      "@utils/*": ["./utils/*"],
+      "*": ["./*"]
+    },
+
+    /* Emit */
+    "outDir": "./build",
+
+    /* Interop Constraints */
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Type Checking */
+    "strict": true,
+
+    /* Completeness */
+    "skipLibCheck": true
+  },
+
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
