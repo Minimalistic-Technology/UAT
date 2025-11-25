@@ -5,4 +5,4 @@ app.get("/", (req, res) => {
   res.send("Minimalistic Learning Service Running");
 });
 
-app.listen(3002, () => console.log("Minimalistic Learning service on port 3002"));
+app.listen(8002, () => console.log("Minimalistic Learning service on port 8002"));
