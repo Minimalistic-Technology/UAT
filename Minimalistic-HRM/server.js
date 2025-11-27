@@ -5,4 +5,5 @@ app.get("/", (req, res) => {
   res.send("HRM Service Running");
 });
 
-app.listen(5001, () => console.log("HRM service on port 8001"));
+
+app.listen(5001, () => console.log("HRM service on port 5001"));

@@ -1,26 +1,45 @@
-version: "3.8"
-
 services:
-  gateway:
-    build:
-      context: ./gateway
+  api-gateway:
+    build: ./gateway
     container_name: gateway
     ports:
-      - "3000:3000"
+      - "5000:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"     # max 0.5 CPU core
+          memory: 512M     # max 512 MB RAM
+        reservations:
+          cpus: "0.10"     # guaranteed 0.1 CPU
+          memory: 256M     # guaranteed 256 MB
     depends_on:
-      - hrm
-      - user
+      - minimalistic-hrm
+      - minimalistic-learning
 
-  hrm:
-    build:
-      context: ./hrm
-    container_name: hrm
+  minimalistic-hrm:
+    build: ./Minimalistic-HRM
+    container_name: minimalistic-hrm
     ports:
-      - "3001:3001"
+      - "5001:5001"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 1G
+        reservations:
+          cpus: "0.10"
+          memory: 512M
 
-  user:
-    build:
-      context: ./user
-    container_name: user
+  minimalistic-learning:
+    build: ./Minimalistic-learning
+    container_name: minimalistic-learning
     ports:
-      - "3002:3002"
+      - "5002:5002"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 1G
+        reservations:
+          cpus: "0.10"
+          memory: 512M

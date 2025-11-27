@@ -9,26 +9,30 @@ require('dotenv').config({
   path: path.resolve(__dirname, '../.env') 
 });
 
+app.get('/health', (req, res) => {
+  res.json({ service: 'api-gateway', status: 'ok' });
+});
+
 // HRM Service
 app.use(
-  "/hrm",
+  '/hrm',
   createProxyMiddleware({
-    target: `http://${process.env.HRM_INTERNAL}`,
+    target: 'http://minimalistic-hrm:5001',
     changeOrigin: true,
-    pathRewrite: { "^/hrm": "" }
+    pathRewrite: { '^/hrm': '' }, // /hrm/employees -> /employees
   })
 );
 
-// User Service
 app.use(
-  "/learning",
+  '/learning',
   createProxyMiddleware({
-    target: `http://${process.env.LEARNING_INTERNAL}`,
+    target: 'http://minimalistic-learning:5002',
     changeOrigin: true,
-    pathRewrite: { "^/learning": "" }
+    pathRewrite: { '^/learning': '' }, // /learning/courses -> /courses
   })
 );
 
-app.listen(process.env.PORT, () => {
-  console.log("API Gateway running on port " + process.env.PORT);
+
+app.listen(process.env.PORT || 5000, () => {
+  console.log("API Gateway running on port " + process.env.PORT || 5000);
 });
