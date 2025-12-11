@@ -1,45 +1,60 @@
 services:
-  api-gateway:
+  gateway:
     build: ./gateway
     container_name: gateway
     ports:
       - "5000:5000"
-    deploy:
-      resources:
-        limits:
-          cpus: "0.50"     # max 0.5 CPU core
-          memory: 512M     # max 512 MB RAM
-        reservations:
-          cpus: "0.10"     # guaranteed 0.1 CPU
-          memory: 256M     # guaranteed 256 MB
     depends_on:
+      - ddtec
       - minimalistic-hrm
       - minimalistic-learning
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"     # max 1 core
+          memory: 1G
+        reservations:
+          cpus: "0.25"     # scheduler guarantees at least 0.25 core
+          memory: 512M
+
+  ddtec:
+    build: ./services/ddtec
+    container_name: ddtec
+    expose:
+      - "5004"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 256M
 
   minimalistic-hrm:
-    build: ./Minimalistic-HRM
+    build: ./services/minimalistic-hrm
     container_name: minimalistic-hrm
-    ports:
-      - "5001:5001"
+    expose:
+      - "5002"
     deploy:
       resources:
         limits:
           cpus: "0.50"
-          memory: 1G
+          memory: 512M
         reservations:
           cpus: "0.10"
-          memory: 512M
+          memory: 256M
 
   minimalistic-learning:
-    build: ./Minimalistic-learning
+    build: ./services/minimalistic-learning
     container_name: minimalistic-learning
-    ports:
-      - "5002:5002"
+    expose:
+      - "5001"
     deploy:
       resources:
         limits:
           cpus: "0.50"
-          memory: 1G
+          memory: 512M
         reservations:
           cpus: "0.10"
-          memory: 512M
+          memory: 256M

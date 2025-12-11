@@ -1,14 +1,30 @@
 {
-  "devDependencies": {
-    "concurrently": "^9.2.1"
-  },
+  "name": "multi-site-platform",
+  "version": "1.0.0",
+  "private": true,
   "scripts": {
-    "start:gateway": "cd gateway && npm i && node server.js",
-    "start:hrm": "cd Minimalistic-HRM && npm i && node server.js",
-    "start:learning": "cd Minimalistic-learning && npm i && node server.js",
-    "start-all": "concurrently \"npm run start:gateway\" \"npm run start:hrm\" \"npm run start:learning\""
+    "build": "npm run build:gateway && npm run build:ddtec && npm run build:hrm && npm run build:learning",
+
+    "build:gateway": "cd gateway && npm install && npm run build",
+    "build:ddtec": "cd services/ddtec && npm install && npm run build",
+    "build:hrm": "cd services/minimalistic-hrm && npm install && npm run build",
+    "build:learning": "cd services/minimalistic-learning && npm install && npm run build",
+
+    "dev": "concurrently \"npm run dev:gateway\" \"npm run dev:ddtec\" \"npm run dev:hrm\" \"npm run dev:learning\"",
+
+    "dev:gateway": "cd gateway && npm install && npm run dev",
+    "dev:ddtec": "cd services/ddtec && npm install && npm run dev",
+    "dev:hrm": "cd services/minimalistic-hrm && npm install && npm run dev",
+    "dev:learning": "cd services/minimalistic-learning && npm install && npm run dev",
+
+    "start": "concurrently \"npm run start:gateway\" \"npm run start:ddtec\" \"npm run start:hrm\" \"npm run start:learning\"",
+
+    "start:gateway": "cd gateway && npm start",
+    "start:ddtec": "cd services/ddtec && npm start",
+    "start:hrm": "cd services/minimalistic-hrm && npm start",
+    "start:learning": "cd services/minimalistic-learning && npm start"
   },
-  "dependencies": {
-    "dotenv": "^17.2.3"
+  "devDependencies": {
+    "concurrently": "^8.2.0"
   }
 }
