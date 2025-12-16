@@ -2,18 +2,15 @@ FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
-# Install dependencies
 COPY package*.json ./
 RUN npm install --only=production && npm cache clean --force
 
-# Copy source and build
 COPY tsconfig.json ./
 COPY src ./src
 RUN npm install typescript ts-node-dev @types/node @types/express --save-dev && npm run build
 
-# Runtime
 ENV NODE_ENV=production
-ENV PORT=5000
-EXPOSE 5000
+ENV PORT=5001
+EXPOSE 5001
 
 CMD ["node", "dist/server.js"]
