@@ -1,3 +1,7 @@
+networks:
+  uat-network:
+    driver: bridge
+
 services:
   nginx:
     image: nginx:alpine
