@@ -1,79 +1,74 @@
 import { Request, Response } from "express";
 import Team from "../../models/teams/team";
+import asyncHandler from "../../utils/asyncHandler";
+import ErrorHandler from "../../utils/errorHandler";
 
-export const createTeamMember = async (req: Request, res: Response): Promise<void> => {
-  try {
+
+export const createTeamMember = asyncHandler(
+  async (req: Request, res: Response) => {
     const { name, position, imageUrl } = req.body;
-    console.log("Creating team member:", { name, position, imageUrl });
-    if (!imageUrl) res.status(400).json({ error: "Image URL required" });
-    
-    const newMember = new Team({
+
+    if (!imageUrl) {
+      throw new ErrorHandler("Image URL is required", 400);
+    }
+
+    const newMember = await Team.create({
       name,
       position,
       imageUrl,
     });
 
-    await newMember.save();
     res.status(201).json(newMember);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to create team member" });
   }
-};
+);
 
 
-
-export const getAllTeamMembers = async (
-  _req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const getAllTeamMembers = asyncHandler(
+  async (_req: Request, res: Response) => {
     const members = await Team.find();
-    res.json(members);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch team members" });
+    res.status(200).json(members);
   }
-};
+);
 
 
-export const getTeamMemberById = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const getTeamMemberById = asyncHandler(
+  async (req: Request, res: Response) => {
     const member = await Team.findById(req.params.id);
-    if (!member) res.status(404).json({ error: "Team member not found" });
-    res.json(member);
-  } catch (err) {
-    res.status(500).json({ error: "Error fetching team member" });
+
+    if (!member) {
+      throw new ErrorHandler("Team member not found", 404);
+    }
+
+    res.status(200).json(member);
   }
-};
+);
 
 
-export const updateTeamMember = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const updated = await Team.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    if (!updated) res.status(404).json({ error: "Team member not found" });
-    res.json(updated);
-  } catch (err) {
-    res.status(400).json({ error: "Failed to update team member" });
+export const updateTeamMember = asyncHandler(
+  async (req: Request, res: Response) => {
+    const updated = await Team.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      throw new ErrorHandler("Team member not found", 404);
+    }
+
+    res.status(200).json(updated);
   }
-};
+);
 
 
-export const deleteTeamMember = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const deleteTeamMember = asyncHandler(
+  async (req: Request, res: Response) => {
     const deleted = await Team.findByIdAndDelete(req.params.id);
-    if (!deleted) res.status(404).json({ error: "Team member not found" });
-    res.json({ message: "Team member deleted" });
-  } catch (err) {
-    res.status(400).json({ error: "Failed to delete team member" });
+
+    if (!deleted) {
+      throw new ErrorHandler("Team member not found", 404);
+    }
+
+    res.status(200).json({ message: "Team member deleted successfully" });
   }
-};
+);

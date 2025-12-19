@@ -1,20 +1,20 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-
+import errorMiddleware from "./middleware/errorMiddleware";
 import teamRoutes from "./routes/teams/teamRoutes";
-import connectDB from "./utils/db";
+
+
 
 dotenv.config();
 
 const app = express();
 
-const MONGO_URI = process.env.MONGO_URI ||  "";
 
 app.use(cors());
 app.use(express.json());
 
-app.use("/api", teamRoutes);
+app.use("/api/team", teamRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Minimalistic Technology main site");
@@ -24,7 +24,7 @@ app.get("/health", (req: Request, res: Response) => {
   res.json({ status: "ok", service: "minimalistic-Technology" });
 });
 
+app.use(errorMiddleware);
 
-connectDB(MONGO_URI);
 
 export default app;
