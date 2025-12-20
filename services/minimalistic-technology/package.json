@@ -1,7 +1,7 @@
 {
-  "name": "service",
+  "name": "minimalistic-technology",
   "version": "1.0.0",
-  "description": "Microservice for multi-site platform using Node.js + TypeScript",
+  "description": "Minimalistic Technology service (Node.js + TypeScript)",
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
