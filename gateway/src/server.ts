@@ -16,7 +16,7 @@ app.get('/health', (req:any, res:any) => {
 const DDTEC_URL = process.env.DDTEC_URL || "http://ddtec:5004";
 const HRM_URL = process.env.HRM_URL || "http://minimalistic-hrm:5002";
 const LEARNING_URL = process.env.LEARNING_URL || "http://minimalistic-learning:5001";
-// const MT_URL = process.env.MT_URL || "http://minimalistic-technology:5003";
+const MT_URL = process.env.MT_URL || "http://minimalistic-technology:5003";
 
 app.use(
   '/hrm',
@@ -36,14 +36,14 @@ app.use(
   })
 );
 
-// app.use(
-//   '/mt',
-//   createProxyMiddleware({
-//     target: MT_URL,
-//     changeOrigin: true,
-//     pathRewrite: { '^/mt': '' },
-//   })
-// );
+app.use(
+  '/mt',
+  createProxyMiddleware({
+    target: MT_URL,
+    changeOrigin: true,
+    pathRewrite: { '^/mt': '' },
+  })
+);
 
 app.use(
   '/ddtec',
