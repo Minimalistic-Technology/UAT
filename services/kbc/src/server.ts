@@ -1,9 +1,8 @@
 import express, { Request, Response } from "express";
 import { v2 as cloudinary } from "cloudinary";
 
-const app = express();
+import app from "./app";
 
-import { app } from "./app";
 const PORT = process.env.PORT || 5005;
 
 app.get("/", (req: Request, res: Response) => {

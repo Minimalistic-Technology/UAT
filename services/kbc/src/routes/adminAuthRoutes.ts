@@ -1,17 +1,10 @@
 import { Router } from "express";
-import {
-  register,
-  verify,
-  login,
-  forgotPassword,
-  resetPassword,
-  me,
-  logout,
-} from "../controllers/adminAuthController";
+
 
 
 import { requireAdminAuth } from "../middlewares/authMiddleware";
-import { limiter } from "../app";
+import { register, verify, login,forgotPassword, resetPassword, me, logout  } from "../controllers/adminAuthcontroller";
+
 
 const router = Router();
 
