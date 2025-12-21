@@ -17,9 +17,6 @@ export const getBanks = async (req: Request, res: Response): Promise<void> => {
 export const createBank = async (req: Request, res: Response): Promise<void> => {
   const data = req.body;
 
-  const count = await QuestionBank.countDocuments();
-  data.position = count + 1;
-  data.label = data.label || `Q${data.position}`;
 
   const bank = await QuestionBank.create({
     ...data,
