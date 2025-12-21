@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import RegisteredUser from "../models/RegisteredUser";
+import { tr } from "zod/v4/locales";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_secret_key";
 
@@ -29,8 +30,8 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure:true ,
+      sameSite:"none",
     });
 
     res.status(200).json({
