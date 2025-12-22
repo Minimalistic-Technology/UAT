@@ -17,7 +17,8 @@ app.use(helmet());
 app.use(
   cors({
     origin: 'https://minimalistic-learning.onrender.com',
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
   })
 );
 app.use(cookieParser(env.COOKIE_SECRET));
