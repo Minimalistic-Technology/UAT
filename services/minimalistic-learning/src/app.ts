@@ -12,19 +12,13 @@ import commentRoutes from './routes/commentRoutes';
 
 const app = express();
 
-// app.disable('x-powered-by');
-// app.use(helmet());
-const corsOptions: cors.CorsOptions = {
-  origin: 'https://minimalistic-learning.onrender.com',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
-app.use(cookieParser(env.COOKIE_SECRET));
-app.use(express.json());
-app.use(defaultLimiter);
+app.use(express.json({ limit: "50mb" }));
+app.use(cookieParser());
+app.use(cors({
+    origin: 'https://kbc-game-1a9p.onrender.com',  
+    credentials: true,                
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+  }));
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
