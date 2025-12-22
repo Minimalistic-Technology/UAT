@@ -14,14 +14,14 @@ const app = express();
 
 // app.disable('x-powered-by');
 // app.use(helmet());
-app.use(
-  cors({
-    origin: 'https://minimalistic-learning.onrender.com',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  })
-);
-app.options('*', cors());
+const corsOptions: cors.CorsOptions = {
+  origin: 'https://minimalistic-learning.onrender.com',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(cookieParser(env.COOKIE_SECRET));
 app.use(express.json());
 app.use(defaultLimiter);
