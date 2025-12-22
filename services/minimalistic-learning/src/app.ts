@@ -21,6 +21,7 @@ app.use(
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   })
 );
+app.options('*', cors());
 app.use(cookieParser(env.COOKIE_SECRET));
 app.use(express.json());
 app.use(defaultLimiter);
