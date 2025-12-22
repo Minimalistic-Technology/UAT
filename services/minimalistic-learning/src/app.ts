@@ -16,7 +16,7 @@ app.disable('x-powered-by');
 app.use(helmet());
 app.use(
   cors({
-    origin: env.corsOrigins,
+    origin: 'https://minimalistic-learning.onrender.com',
     credentials: true
   })
 );
