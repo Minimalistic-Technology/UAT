@@ -1,5 +1,5 @@
 import express from 'express';
-import helmet from 'helmet';
+// import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import routes from './routes';
@@ -12,8 +12,8 @@ import commentRoutes from './routes/commentRoutes';
 
 const app = express();
 
-app.disable('x-powered-by');
-app.use(helmet());
+// app.disable('x-powered-by');
+// app.use(helmet());
 app.use(
   cors({
     origin: 'https://minimalistic-learning.onrender.com',
