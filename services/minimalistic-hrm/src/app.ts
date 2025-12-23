@@ -1,8 +1,7 @@
 require("dotenv").config();
 import express, { NextFunction, Request, Response } from "express";
 
-export const app = express();
-app.use(express.json({ limit: "50mb" }));
+
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import AccessControlRoutes from './routes/AccessControlRoutes';
@@ -15,6 +14,10 @@ import connectDB from './utils/db';
 require('dotenv').config();
 
 connectDB();
+
+export const app = express();
+app.use(express.json({ limit: "50mb" }));
+
 app.use(cookieParser());
 app.use(
   cors({
@@ -22,11 +25,6 @@ app.use(
     credentials: true,
   })
 );
-
-
-
-const bodyParser = require('body-parser');
-
 
 
 
