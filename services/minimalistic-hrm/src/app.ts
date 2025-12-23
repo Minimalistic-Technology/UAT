@@ -13,25 +13,18 @@ import documentRoutes from './routes/documentRoutes';
 
 
 require('dotenv').config();
-// const apiLogger = require('./controllers/apiLogger');
-// cors => cross origin resource sharing
 app.use(
   cors({
 
-    // make sure you don't have / in last 
-    // Do "http://localhost:3000"
-    // Don't "http://localhost:3000/"
-
-    origin: ["http://localhost:3000"],
+    origin: ["https://minimalistic-hrm.onrender.com/"],
     credentials: true,
   })
 );
 
 
-// body parser
+
 const bodyParser = require('body-parser');
 
-// cookie parser
 app.use(cookieParser());
 
 
