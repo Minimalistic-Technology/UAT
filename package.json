@@ -4,27 +4,26 @@
   "private": true,
   "scripts": {
     "build": "npm run build:gateway && npm run build:ddtec && npm run build:hrm && npm run build:learning",
-
     "build:gateway": "cd gateway && npm install && npm run build",
     "build:ddtec": "cd services/ddtec && npm install && npm run build",
     "build:hrm": "cd services/minimalistic-hrm && npm install && npm run build",
     "build:learning": "cd services/minimalistic-learning && npm install && npm run build",
-
     "dev": "concurrently \"npm run dev:gateway\" \"npm run dev:ddtec\" \"npm run dev:hrm\" \"npm run dev:learning\"",
-
     "dev:gateway": "cd gateway && npm install && npm run dev",
     "dev:ddtec": "cd services/ddtec && npm install && npm run dev",
     "dev:hrm": "cd services/minimalistic-hrm && npm install && npm run dev",
     "dev:learning": "cd services/minimalistic-learning && npm install && npm run dev",
-
     "start": "concurrently \"npm run start:gateway\" \"npm run start:ddtec\" \"npm run start:hrm\" \"npm run start:learning\"",
-
     "start:gateway": "cd gateway && npm start",
     "start:ddtec": "cd services/ddtec && npm start",
     "start:hrm": "cd services/minimalistic-hrm && npm start",
     "start:learning": "cd services/minimalistic-learning && npm start"
   },
   "devDependencies": {
+    "@types/http-status-codes": "^1.2.0",
     "concurrently": "^8.2.0"
+  },
+  "dependencies": {
+    "http-status-codes": "^2.3.0"
   }
 }
