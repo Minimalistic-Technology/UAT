@@ -1,16 +1,18 @@
-import mongoose from 'mongoose';
-require('dotenv').config();
+import mongoose from "mongoose";
+import dotenv from "dotenv";
 
-const dbUrl:string = process.env.MONGO_URI || '';
+dotenv.config();
+
+const dbUrl: string = process.env.MONGO_URI || "";
 
 const connectDB = async () => {
-    try {
-        await mongoose.connect(dbUrl).then((data:any) => {
-            console.log(`Database connected with ${data.connection.host}`)
-        })
-    } catch (error:any) {
-        setTimeout(connectDB, 5000);
-    }
-}
+  try {
+    const conn = await mongoose.connect(dbUrl);
+    console.log(`Database connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error("DB connection failed. Retrying in 5s...");
+    setTimeout(connectDB, 5000);
+  }
+};
 
 export default connectDB;

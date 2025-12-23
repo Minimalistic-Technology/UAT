@@ -10,9 +10,12 @@ import attendanceRoutes from './routes/attendanceRoutes';
 import leaveRoutes from './routes/leaveRoutes';
 import companyRoutes from './routes/companyRoutes';
 import documentRoutes from './routes/documentRoutes';
-
+import connectDB from './utils/db';
 
 require('dotenv').config();
+
+connectDB();
+
 app.use(
   cors({
 
