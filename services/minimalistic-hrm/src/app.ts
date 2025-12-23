@@ -15,10 +15,9 @@ import connectDB from './utils/db';
 require('dotenv').config();
 
 connectDB();
-
+app.use(cookieParser());
 app.use(
   cors({
-
     origin: ["https://minimalistic-hrm.onrender.com"],
     credentials: true,
   })
@@ -28,7 +27,7 @@ app.use(
 
 const bodyParser = require('body-parser');
 
-app.use(cookieParser());
+
 
 
 app.use('/hrm/auth', AccessControlRoutes);
