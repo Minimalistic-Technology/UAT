@@ -16,7 +16,7 @@ require('dotenv').config();
 app.use(
   cors({
 
-    origin: ["https://minimalistic-hrm.onrender.com/"],
+    origin: ["https://minimalistic-hrm.onrender.com"],
     credentials: true,
   })
 );
