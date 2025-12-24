@@ -34,9 +34,7 @@ export const isUser = async (
     const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
 
     console.log("Decoded ID:", decoded.id);
-    const user = await AuthUserModel.findById(decoded.id).select(
-      "_id role companyID email name"
-    );
+    const user = await AuthUserModel.findById(decoded.id);
 
     console.log("Decoded token:", decoded);
     console.log("Authenticated user:", user);
