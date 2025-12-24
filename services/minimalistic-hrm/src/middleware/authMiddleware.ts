@@ -17,9 +17,17 @@ export const isUser = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.cookies?.token;
+    let token: string | undefined;
 
-    if (!token || typeof token !== "string") {
+    if (req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+
+    if (!token) {
       res.status(401).json({ message: "No token, authorization denied" });
       return;
     }
