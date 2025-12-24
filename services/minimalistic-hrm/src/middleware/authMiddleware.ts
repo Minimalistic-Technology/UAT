@@ -8,7 +8,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 interface DecodedToken extends JwtPayload {
   id: string;
   role: "user" | "admin" | "hr" | "super_admin";
-  companyID?: string;
 }
 
 export const isUser = async (
@@ -37,6 +36,9 @@ export const isUser = async (
     const user = await AuthUserModel.findById(decoded.id).select(
       "_id role companyID email name"
     );
+
+    console.log("Decoded token:", decoded);
+    console.log("Authenticated user:", user);
 
     if (!user) {
       res.status(401).json({ message: "Unauthorized: user not found" });
