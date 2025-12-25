@@ -41,18 +41,9 @@ AuthUserSchema.index(
   }
 );
 
-//  Only ONE admin per company
-AuthUserSchema.index(
-  { companyID: 1, role: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { role: "admin" },
-  }
-);
 
-export const AuthUserModel: Model<IAuthUser> =
-  mongoose.models.AuthUser ||
-  mongoose.model<IAuthUser>("AuthUser", AuthUserSchema);
+
+export const AuthUserModel: Model<IAuthUser> =  mongoose.model<IAuthUser>("AuthUser", AuthUserSchema);
 
 export default AuthUserModel;
 

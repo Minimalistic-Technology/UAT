@@ -8,7 +8,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 interface DecodedToken extends JwtPayload {
   id: string;
   role: "user" | "admin" | "hr" | "super_admin";
-  companyID?: string;
 }
 
 export const isUser = async (
@@ -17,18 +16,28 @@ export const isUser = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.cookies?.token;
+    let token: string | undefined;
 
-    if (!token || typeof token !== "string") {
+    if (req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+
+    if (!token) {
       res.status(401).json({ message: "No token, authorization denied" });
       return;
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
 
-    const user = await AuthUserModel.findById(decoded.id).select(
-      "_id role companyID email name"
-    );
+    console.log("Decoded ID:", decoded.id);
+    const user = await AuthUserModel.findById(decoded.id);
+
+    console.log("Decoded token:", decoded);
+    console.log("Authenticated user:", user);
 
     if (!user) {
       res.status(401).json({ message: "Unauthorized: user not found" });
