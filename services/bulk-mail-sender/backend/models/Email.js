@@ -1,0 +1,46 @@
+const mongoose = require('mongoose');
+
+const emailSchema = new mongoose.Schema({
+  to: {
+    type: [String],
+    required: true
+  },
+  subject: {
+    type: String,
+    required: true
+  },
+  body: {
+    type: String,
+    required: true
+  },
+  scheduledFor: {
+    type: Date,
+    default: Date.now
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'sent', 'failed', 'cancelled'],
+    default: 'pending'
+  },
+  attempts: {
+    type: Number,
+    default: 0
+  },
+  maxAttempts: {
+    type: Number,
+    default: 3
+  },
+  lastError: String,
+  sentAt: Date,
+  metadata: {
+    type: Map,
+    of: String
+  }
+}, {
+  timestamps: true
+});
+
+// Index for efficient queries
+emailSchema.index({ status: 1, scheduledFor: 1 });
+
+module.exports = mongoose.model('Email', emailSchema);
