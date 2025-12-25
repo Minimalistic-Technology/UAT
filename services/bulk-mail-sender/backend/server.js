@@ -12,7 +12,7 @@ const app = express();
 
 // CORS Configuration - IMPORTANT for frontend connection
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'], // React default ports
+  origin: 'https://ui-bulk-email.onrender.com',
   credentials: true
 }));
 
@@ -28,7 +28,7 @@ app.use((req, res, next) => {
 // Database connection with retry logic
 const connectDB = async () => {
   try {
-    await mongoose.connect("mongodb+srv://minimalistic:N0LbAOY6FoyCB5w8@ml-test-cluster0.tjquq.mongodb.net/minimalistic?retryWrites=true&w=majority", {
+    await mongoose.connect(process.env.MONGO_URI, {
       maxPoolSize: 10, // Limit connections for stability
       serverSelectionTimeoutMS: 5000
     });
