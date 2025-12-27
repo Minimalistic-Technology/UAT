@@ -33,6 +33,11 @@ const customerSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'unsubscribed'],
     default: 'active'
   },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   metadata: {
     type: Map,
     of: String
@@ -43,5 +48,6 @@ const customerSchema = new mongoose.Schema({
 
 // Index for search
 customerSchema.index({ name: 'text', email: 'text', company: 'text' });
+customerSchema.index({ user: 1 });
 
 module.exports = mongoose.model('Customer', customerSchema);

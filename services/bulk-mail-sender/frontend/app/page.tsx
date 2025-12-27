@@ -1,9 +1,5 @@
-import Image from "next/image";
-import EmailSchedulerApp from "./EmailSchedulerApp";
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return (
-   <EmailSchedulerApp
-    />
-  );
+  redirect('/dashboard');
 }

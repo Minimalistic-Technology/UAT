@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const emailSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   to: {
     type: [String],
     required: true
@@ -32,6 +37,11 @@ const emailSchema = new mongoose.Schema({
   },
   lastError: String,
   sentAt: Date,
+  attachments: [{
+    filename: String,
+    path: String,
+    size: Number
+  }],
   metadata: {
     type: Map,
     of: String
@@ -41,6 +51,6 @@ const emailSchema = new mongoose.Schema({
 });
 
 // Index for efficient queries
-emailSchema.index({ status: 1, scheduledFor: 1 });
+emailSchema.index({ status: 1, scheduledFor: 1, user: 1 });
 
 module.exports = mongoose.model('Email', emailSchema);

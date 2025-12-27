@@ -1,99 +1,87 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
+const path = require('path');
 require('dotenv').config();
 
+const authRoutes = require('./routes/auth');
 const emailRoutes = require('./routes/emails');
 const configRoutes = require('./routes/config');
 const customerRoutes = require('./routes/customers');
+const templateRoutes = require('./routes/templates');
 const schedulerService = require('./services/schedulerService');
 
 const app = express();
 
-// CORS Configuration - IMPORTANT for frontend connection
+// CORS
 app.use(cors({
-  origin: 'https://ui-bulk-email.onrender.com',
+  origin: ['https://ui-bulk-email.onrender.com', 'http://localhost:3000'],
   credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' })); // Increase limit for bulk operations
+// Body parser
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging middleware
+// Cookie parser
+app.use(cookieParser());
+
+// Serve static files (uploads)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Request logging
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
-  next();
+  return next();
 });
 
-// Database connection with retry logic
+// Database connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
       maxPoolSize: 10, // Limit connections for stability
       serverSelectionTimeoutMS: 5000
     });
-    console.log('✅ Connected to MongoDB');
-    
-    // Start scheduler after successful DB connection
+    console.log('✅ MongoDB connected');
     schedulerService.initScheduler();
   } catch (err) {
-    console.error('❌ MongoDB connection error:', err);
-    console.log('Retrying in 5 seconds...');
+    console.error('❌ MongoDB error:', err);
     setTimeout(connectDB, 5000);
   }
 };
 
 connectDB();
 
-// Handle MongoDB connection errors
-mongoose.connection.on('error', err => {
-  console.error('MongoDB error:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB disconnected. Attempting to reconnect...');
-});
-
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/templates', templateRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'Email Scheduler API is running',
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
   });
 });
 
-// Error handling middleware
+// Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  res.status(500).json({ 
-    error: 'Internal server error',
-    message: err.message 
-  });
+  console.error('Stack:', err.stack);
+  res.status(500).json({ error: err.message });
 });
 
-// Handle 404
+// 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📧 Frontend should connect to: http://localhost:${PORT}/api`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  server.close(() => {
-    mongoose.connection.close();
-    schedulerService.stopScheduler();
-    process.exit(0);
-  });
 });

@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Customer = require('../models/Customer');
+const { protect, requireVerified } = require('../middleware/auth');
+
+router.use(protect);
+router.use(requireVerified);
 
 // Get all customers with search and pagination
 router.get('/', async (req, res) => {
@@ -59,8 +63,10 @@ router.get('/:id', async (req, res) => {
 // Create new customer
 router.post('/', async (req, res) => {
   try {
+    console.log("new customer request body:", req);
     const { name, email, company, tags } = req.body;
-
+    const userId = req.user._id;
+    console.log('userId:', userId);
     // Check if email already exists
     const existing = await Customer.findOne({ email });
     if (existing) {
@@ -71,7 +77,8 @@ router.post('/', async (req, res) => {
       name,
       email,
       company,
-      tags: tags || []
+      tags: tags || [],
+      user: userId
     });
 
     res.status(201).json({ success: true, customer });
