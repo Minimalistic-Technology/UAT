@@ -10,7 +10,7 @@ interface JobCardProps {
 
 export default function JobCard({ job }: JobCardProps) {
   return (
-    <Link href={`/jobs/${job.id}`}>
+    <Link href={`/jobs/${job._id}`}>
       <Card className="hover:shadow-lg transition-shadow cursor-pointer">
         <div className="flex items-start justify-between">
           <div className="flex-1">

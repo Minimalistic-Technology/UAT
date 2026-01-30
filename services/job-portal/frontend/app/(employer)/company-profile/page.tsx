@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,29 +17,29 @@ export default function CompanyProfilePage() {
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
 
-  if (status === 'loading') {
-    return <div>Loading...</div>;
-  }
-
-  if (!session || session.user.role !== UserRole.EMPLOYER) {
-    redirect('/login');
-  }
-
-  const { data: company } = useQuery({
+  const { data: company, isLoading: isCompanyLoading } = useQuery({
     queryKey: ['company-profile'],
     queryFn: async () => {
       const response = await apiClient.get<any>('/companies/my-company');
       return response.data;
     },
+    enabled: status === 'authenticated',
   });
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm({
     defaultValues: company,
   });
+
+  useEffect(() => {
+    if (company) {
+      reset(company);
+    }
+  }, [company, reset]);
 
   const updateCompanyMutation = useMutation({
     mutationFn: (data: any) => apiClient.put('/companies/my-company', data),
@@ -55,6 +55,14 @@ export default function CompanyProfilePage() {
   const onSubmit = (data: any) => {
     updateCompanyMutation.mutate(data);
   };
+
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (!session || session.user.role !== UserRole.EMPLOYER) {
+    redirect('/login');
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

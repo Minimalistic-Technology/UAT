@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export enum UserRole {
-  JOB_SEEKER = 'job_seeker',
+  JOB_SEEKER = 'jobseeker',
   EMPLOYER = 'employer',
   ADMIN = 'admin',
 }
@@ -81,6 +81,7 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
+      required:true,
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
@@ -152,13 +153,12 @@ const userSchema = new Schema<IUser>(
 );
 
 // Hash password before saving
-userSchema.pre<IUser>('save', async function (nextFn: any) {
-  if (!this.isModified('password')) return nextFn();
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
   
   if (this.password) {
     this.password = await bcrypt.hash(this.password, 12);
   }
-  nextFn();
 });
 
 // Compare password method

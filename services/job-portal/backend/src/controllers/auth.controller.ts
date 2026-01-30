@@ -4,8 +4,8 @@ import crypto from 'crypto';
 import User, { UserRole } from '../models/User.model.js';
 import { config } from '../config/env.js';
 import type { AuthRequest } from '../middleware/auth.middleware.js';
-import { sendEmail } from '../utils/email.js';
-import { sendOTP } from '../utils/sms.js';
+// import { sendEmail } from '../utils/email.js';
+// import { sendOTP } from '../utils/sms.js';
 
 // Generate JWT Token
 const generateToken = (id: string): string => {
@@ -45,8 +45,7 @@ const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
 // @access  Public
 export const register = async (
   req: AuthRequest,
-  res: Response,
-  next: NextFunction
+  res: Response
 ) => {
   try {
     const { firstName, lastName, email, password, role, phone } = req.body;
@@ -60,25 +59,30 @@ export const register = async (
       });
     }
 
+    const normalizedRole =
+    role === 'employer'
+    ? UserRole.EMPLOYER
+    : UserRole.JOB_SEEKER;
+
     // Create user
     const user = await User.create({
       firstName,
       lastName,
       email,
       password,
-      role: role || UserRole.JOB_SEEKER,
+      role: normalizedRole,
       phone,
     });
 
     // Send verification email
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    // const verificationToken = crypto.randomBytes(32).toString('hex');
     // Store token in DB (you'll need to add this field to User model)
     
-    await sendEmail({
-      email: user.email,
-      subject: 'Verify your email',
-      message: `Click here to verify: ${config.clientUrl}/verify-email/${verificationToken}`,
-    });
+    // await sendEmail({
+    //   email: user.email,
+    //   subject: 'Verify your email',
+    //   message: `Click here to verify: ${config.clientUrl}/verify-email/${verificationToken}`,
+    // });
 
     sendTokenResponse(user, 201, res);
   } catch (error: any) {
@@ -185,33 +189,34 @@ export const logout = async (
 // @desc    Send OTP to phone
 // @route   POST /api/auth/send-otp
 // @access  Public
-export const sendPhoneOTP = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const { phone } = req.body;
 
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+// export const sendPhoneOTP = async (
+//   req: AuthRequest,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     const { phone } = req.body;
 
-    // Store OTP in cache/database with expiration (5 minutes)
-    // For now, we'll send it via SMS
-    await sendOTP(phone, otp);
+//     // Generate 6-digit OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    res.status(200).json({
-      success: true,
-      message: 'OTP sent successfully',
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Error sending OTP',
-      error: error.message,
-    });
-  }
-};
+//     // Store OTP in cache/database with expiration (5 minutes)
+//     // For now, we'll send it via SMS
+//     await sendOTP(phone, otp);
+
+//     res.status(200).json({
+//       success: true,
+//       message: 'OTP sent successfully',
+//     });
+//   } catch (error: any) {
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error sending OTP',
+//       error: error.message,
+//     });
+//   }
+// };
 
 // @desc    Verify OTP
 // @route   POST /api/auth/verify-otp

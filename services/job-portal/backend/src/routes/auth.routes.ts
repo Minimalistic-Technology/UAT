@@ -4,7 +4,7 @@ import {
   login,
   logout,
   getMe,
-  sendPhoneOTP,
+ 
   verifyOTP,
   googleAuth,
 } from "../controllers/auth.controller.js";
@@ -24,7 +24,7 @@ router.post(
     body("password")
       .isLength({ min: 6 })
       .withMessage("Password must be at least 6 characters"),
-    body("role").isIn(["jobSeeker", "employer"]).withMessage("Invalid role"),
+    body("role").isIn(["jobseeker", "employer"]).withMessage("Invalid role"),
   ]),
   register
 );
@@ -46,11 +46,11 @@ router.post("/logout", protect, logout);
 router.get("/me", protect, getMe);
 
 // Send Phone OTP
-router.post(
-  "/send-phone-otp",
-  validate([body("phone").isMobilePhone("any").withMessage("Valid phone number is required")]),
-  sendPhoneOTP
-);
+// router.post(
+//   "/send-phone-otp",
+//   validate([body("phone").isMobilePhone("any").withMessage("Valid phone number is required")]),
+//   sendPhoneOTP
+// );
 
 // Verify OTP
 router.post(

@@ -33,7 +33,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Sanitize data
-app.use(sanitizeInput);
+// app.use(sanitizeInput);
 
 // Rate limiting
 app.use('/api', generalLimiter);

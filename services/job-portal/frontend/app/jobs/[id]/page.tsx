@@ -1,5 +1,5 @@
 'use client';
-
+import { useParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -22,14 +22,18 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
-export default function JobDetailPage({ params }: { params: { id: string } }) {
+export default function JobDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const { data: session } = useSession();
   const router = useRouter();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['job', params.id],
-    queryFn: () => jobService.getJob(params.id),
+    queryKey: ['job', id],
+queryFn: () => jobService.getJob(id),
   });
+
+  
 
   const applyMutation = useMutation({
     mutationFn: (jobId: string) =>
@@ -45,16 +49,17 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
 
   const handleApply = () => {
     if (!session) {
-      router.push(`/login?callbackUrl=/jobs/${params.id}`);
+      router.push(`/login?callbackUrl=/jobs/${id}`);
       return;
     }
 
+    console.log(session.user.role);
     if (session.user.role !== UserRole.JOB_SEEKER) {
       toast.error('Only job seekers can apply for jobs');
       return;
     }
 
-    applyMutation.mutate(params.id);
+    applyMutation.mutate(id);
   };
 
   if (isLoading) {

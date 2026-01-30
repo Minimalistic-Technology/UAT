@@ -2,7 +2,7 @@ import type { Response, NextFunction } from 'express';
 import Application, { ApplicationStatus } from '../models/Application.model.js';
 import Job from '../models/Job.model.js';
 import type { AuthRequest } from '../middleware/auth.middleware.js';
-import { sendEmail } from '../utils/email.js';
+// import { sendEmail } from '../utils/email.js';
 
 // @desc    Apply for a job
 // @route   POST /api/applications
@@ -50,11 +50,11 @@ export const applyForJob = async (
     await job.save();
 
     // Send confirmation email
-    await sendEmail({
-      email: req.user.email,
-      subject: 'Application Submitted Successfully',
-      message: `Your application for ${job.title} has been submitted successfully.`,
-    });
+    // await sendEmail({
+    //   email: req.user.email,
+    //   subject: 'Application Submitted Successfully',
+    //   message: `Your application for ${job.title} has been submitted successfully.`,
+    // });
 
     res.status(201).json({
       success: true,
@@ -189,13 +189,13 @@ export const updateApplicationStatus = async (
 
     // Send notification email to job seeker
     const jobSeeker: any = application.jobSeeker;
-    await sendEmail({
-      email: jobSeeker.email,
-      subject: `Application Status Update - ${job.title}`,
-      message: `Your application status has been updated to: ${status}${
-        note ? `\n\nNote: ${note}` : ''
-      }`,
-    });
+    // await sendEmail({
+    //   email: jobSeeker.email,
+    //   subject: `Application Status Update - ${job.title}`,
+    //   message: `Your application status has been updated to: ${status}${
+    //     note ? `\n\nNote: ${note}` : ''
+    //   }`,
+    // });
 
     res.status(200).json({
       success: true,

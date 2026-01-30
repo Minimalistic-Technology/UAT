@@ -136,7 +136,7 @@ export default function EmployerDashboard() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {jobs?.data.map((job) => (
-                <tr key={job.id} className="hover:bg-gray-50">
+                <tr key={job._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
@@ -162,7 +162,7 @@ export default function EmployerDashboard() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Link
-                      href={`/employer-dashboard/applicants/${job.id}`}
+                      href={`/employer-dashboard/applicants/${job._id}`}
                       className="text-primary-600 hover:text-primary-900 flex items-center"
                     >
                       <Users className="w-4 h-4 mr-1" />
@@ -180,12 +180,12 @@ export default function EmployerDashboard() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                      <Link href={`/jobs/${job.id}`}>
+                      <Link href={`/jobs/${job._id}`}>
                         <Button variant="ghost" size="sm">
                           <Eye className="w-4 h-4" />
                         </Button>
                       </Link>
-                      <Link href={`/employer-dashboard/edit-job/${job.id}`}>
+                      <Link href={`/employer-dashboard/edit-job/${job._id}`}>
                         <Button variant="ghost" size="sm">
                           <Edit className="w-4 h-4" />
                         </Button>

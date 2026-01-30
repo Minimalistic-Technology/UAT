@@ -2,7 +2,7 @@ import type { Response, NextFunction } from 'express';
 import Job, { JobStatus } from '../models/Job.model.js';
 import type { AuthRequest } from '../middleware/auth.middleware.js';
 import { UserRole } from '../models/User.model.js';
-
+import mongoose from 'mongoose';
 // @desc    Get all jobs with filters
 // @route   GET /api/jobs
 // @access  Public
@@ -74,7 +74,6 @@ export const getJobs = async (
 
     // Execute query
     const jobs = await Job.find(query)
-      .populate('company', 'name logo location industry')
       .populate('postedBy', 'firstName lastName')
       .sort(sort as string)
       .skip(skip)
@@ -102,14 +101,24 @@ export const getJobs = async (
 // @desc    Get single job
 // @route   GET /api/jobs/:id
 // @access  Public
-export const getJob = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
+
+
+export const getJob = async (req: AuthRequest, res: Response) => {
   try {
-    const job = await Job.findById(req.params.id)
-      .populate('company')
+    const rawId = req.params.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    const cleanId = id.trim();
+
+
+
+    if (!mongoose.Types.ObjectId.isValid(cleanId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid job id',
+      });
+    }
+
+    const job = await Job.findById(cleanId)
       .populate('postedBy', 'firstName lastName email');
 
     if (!job) {
@@ -119,19 +128,18 @@ export const getJob = async (
       });
     }
 
-    // Increment views count
-    job.viewsCount += 1;
+    job.viewsCount = (job.viewsCount || 0) + 1;
     await job.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: job,
     });
-  } catch (error: any) {
-    res.status(500).json({
+  } catch (error) {
+    console.error('Get Job Error:', error);
+    return res.status(500).json({
       success: false,
       message: 'Error fetching job',
-      error: error.message,
     });
   }
 };
@@ -148,6 +156,8 @@ export const createJob = async (
     // Add user and company to req.body
     req.body.postedBy = req.user.id;
     req.body.company = req.user.company;
+
+    console.log('Creating job:', req.user);
 
     if (!req.user.company) {
       return res.status(400).json({
@@ -265,10 +275,7 @@ export const getMyJobs = async (
   next: NextFunction
 ) => {
   try {
-    const jobs = await Job.find({ postedBy: req.user.id })
-      .populate('company')
-      .sort('-createdAt');
-
+    const jobs = await Job.find({ postedBy: req.user.id });
     res.status(200).json({
       success: true,
       count: jobs.length,

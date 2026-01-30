@@ -1,5 +1,5 @@
 export enum UserRole {
-  JOB_SEEKER = 'job_seeker',
+  JOB_SEEKER = 'jobseeker',
   EMPLOYER = 'employer',
   ADMIN = 'admin',
 }
@@ -95,7 +95,7 @@ export interface Company {
 }
 
 export interface Job {
-  id: string;
+  _id: string;
   title: string;
   description: string;
   company: Company;
