@@ -125,7 +125,7 @@ export default function ApplicationsPage() {
                     )}
                     <div className="flex-1">
                       <Link
-                        href={`/jobs/${application.job.id}`}
+                        href={`/jobs/${application.job._id}`}
                         className="text-xl font-semibold text-gray-900 hover:text-primary-600"
                       >
                         {application.job.title}
@@ -180,7 +180,7 @@ export default function ApplicationsPage() {
                     {application.status.replace('_', ' ')}
                   </span>
                   <div className="flex flex-col space-y-2">
-                    <Link href={`/jobs/${application.job.id}`}>
+                    <Link href={`/jobs/${application.job._id}`}>
                       <Button variant="outline" size="sm" className="w-full">
                         <Eye className="w-4 h-4 mr-2" />
                         View Job

@@ -220,8 +220,8 @@ export default function JobSeekerDashboard() {
             <div className="space-y-3">
               {recommendedJobs?.data.slice(0, 3).map((job) => (
                 <Link
-                  key={job.id}
-                  href={`/jobs/${job.id}`}
+                  key={job._id}
+                  href={`/jobs/${job._id}`}
                   className="block p-3 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors"
                 >
                   <h4 className="font-medium text-gray-900 mb-1">{job.title}</h4>

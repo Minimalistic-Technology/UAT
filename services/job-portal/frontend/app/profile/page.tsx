@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,34 +16,34 @@ import { UserRole } from '@/app/types';
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
+
   const [editingExperience, setEditingExperience] = useState(false);
   const [editingEducation, setEditingEducation] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  if (status === 'loading') {
-    return <div>Loading...</div>;
-  }
-
-  if (!session) {
-    redirect('/login');
-  }
-
-  // Fetch user profile
+  // ✅ ALWAYS call hooks
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
       const response = await apiClient.get<any>('/auth/me');
       return response.data;
     },
+    enabled: !!session, // 🔑 important
   });
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
-  } = useForm({
-    defaultValues: profile,
-  });
+  } = useForm();
+
+  // ✅ sync form when profile arrives
+  useEffect(() => {
+    if (profile) {
+      reset(profile);
+    }
+  }, [profile, reset]);
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
@@ -96,33 +96,41 @@ export default function ProfilePage() {
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('File size should be less than 5MB');
-        return;
-      }
-      uploadAvatarMutation.mutate(file);
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size should be less than 5MB');
+      return;
     }
+
+    uploadAvatarMutation.mutate(file);
   };
 
   const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('File size should be less than 5MB');
-        return;
-      }
-      uploadResumeMutation.mutate(file);
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size should be less than 5MB');
+      return;
     }
+
+    uploadResumeMutation.mutate(file);
   };
 
   const onSubmit = (data: any) => {
     updateProfileMutation.mutate(data);
   };
 
-  if (isLoading) {
+  // 🚦 CONDITIONAL RETURNS AFTER HOOKS
+  if (status === 'loading' || isLoading) {
     return <div>Loading...</div>;
   }
+
+  if (!session) {
+    redirect('/login');
+  }
+
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
