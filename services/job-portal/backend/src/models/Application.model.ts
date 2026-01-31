@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema ,HydratedDocument } from 'mongoose';
 
 export enum ApplicationStatus {
   PENDING = 'pending',
@@ -81,14 +81,16 @@ const applicationSchema = new Schema<IApplication>(
 applicationSchema.index({ job: 1, jobSeeker: 1 }, { unique: true });
 
 // Add initial status to history
-applicationSchema.pre('save', function (this: IApplication, next: (err?: Error) => void) {
-  if (this.isNew) {
-    this.statusHistory.push({
-      status: this.status,
-      changedAt: new Date(),
-    });
+applicationSchema.pre(
+  'save',
+  async function (this: HydratedDocument<IApplication>) {
+    if (this.isNew) {
+      this.statusHistory.push({
+        status: this.status,
+        changedAt: new Date(),
+      });
+    }
   }
-  next();
-});
+);
 
 export default mongoose.model<IApplication>('Application', applicationSchema);
