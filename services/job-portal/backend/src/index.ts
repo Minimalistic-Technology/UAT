@@ -20,6 +20,7 @@ const app: Application = express();
 // Connect to database
 connectDB();
 
+app.set('trust proxy', 1);
 // Middleware
 app.use(helmet()); // Security headers
 app.use(
