@@ -152,7 +152,7 @@ export const getMe = async (
   next: NextFunction
 ) => {
   try {
-    const user = await User.findById(req.user.id).populate('company');
+    const user = await User.findById(req.user.id);
 
     res.status(200).json({
       success: true,

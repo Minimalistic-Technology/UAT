@@ -80,10 +80,7 @@ export const getMyApplications = async (
 ) => {
   try {
     const applications = await Application.find({ jobSeeker: req.user.id })
-      .populate({
-        path: 'job',
-        populate: { path: 'company', select: 'name logo' },
-      })
+      .populate('job')
       .sort('-createdAt');
 
     res.status(200).json({

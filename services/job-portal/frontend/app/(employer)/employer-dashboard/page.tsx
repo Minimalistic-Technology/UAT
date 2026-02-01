@@ -21,22 +21,24 @@ import { UserRole, JobStatus } from '@/app/types';
 export default function EmployerDashboard() {
   const { data: session, status } = useSession();
 
-  if (status === 'loading') {
-    return <div>Loading...</div>;
-  }
-
-  if (!session || session.user.role !== UserRole.EMPLOYER) {
-    redirect('/login');
-  }
 
   const { data: jobs } = useQuery({
     queryKey: ['my-jobs'],
     queryFn: () => jobService.getMyJobs(),
   });
 
+  
   const activeJobs = jobs?.data.filter((job) => job.status === JobStatus.ACTIVE).length || 0;
   const totalApplications = jobs?.data.reduce((sum, job) => sum + job.applicationsCount, 0) || 0;
   const totalViews = jobs?.data.reduce((sum, job) => sum + job.viewsCount, 0) || 0;
+
+    if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (!session || session.user.role !== UserRole.EMPLOYER) {
+    redirect('/login');
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

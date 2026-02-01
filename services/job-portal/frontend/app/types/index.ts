@@ -127,7 +127,7 @@ export interface Job {
 }
 
 export interface Application {
-  id: string;
+  _id: string;
   job: Job;
   jobSeeker: User;
   resume: string;

@@ -112,17 +112,18 @@ export default function ApplicationsPage() {
           </Card>
         ) : filteredApplications && filteredApplications.length > 0 ? (
           filteredApplications.map((application) => (
-            <Card key={application.id} className="hover:shadow-lg transition-shadow">
+            <Card key={application._id} className="hover:shadow-lg transition-shadow">
+
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-start space-x-4 mb-4">
-                    {application.job.company.logo && (
+                    {/* {application.job.company.logo && (
                       <img
                         src={application.job.company.logo}
                         alt={application.job.company.name}
                         className="w-16 h-16 rounded-lg object-cover"
                       />
-                    )}
+                    )} */}
                     <div className="flex-1">
                       <Link
                         href={`/jobs/${application.job._id}`}
@@ -130,7 +131,7 @@ export default function ApplicationsPage() {
                       >
                         {application.job.title}
                       </Link>
-                      <p className="text-gray-600">{application.job.company.name}</p>
+                      {/* <p className="text-gray-600">{application.job.company.name}</p> */}
                       <div className="flex flex-wrap gap-3 text-sm text-gray-500 mt-2">
                         <div className="flex items-center">
                           <MapPin className="w-4 h-4 mr-1" />
