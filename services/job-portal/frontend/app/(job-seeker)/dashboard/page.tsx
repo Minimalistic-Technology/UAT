@@ -22,13 +22,6 @@ import { ApplicationStatus, UserRole } from '@/app/types';
 export default function JobSeekerDashboard() {
   const { data: session, status } = useSession();
 
-  if (status === 'loading') {
-    return <div>Loading...</div>;
-  }
-
-  if (!session || session.user.role !== UserRole.JOB_SEEKER) {
-    redirect('/login');
-  }
 
   const { data: applications } = useQuery({
     queryKey: ['my-applications'],
@@ -40,6 +33,15 @@ export default function JobSeekerDashboard() {
     queryFn: () => jobService.getJobs({ limit: 5 }),
   });
 
+  
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (!session || session.user.role !== UserRole.JOB_SEEKER) {
+    redirect('/login');
+  }
+  
   const totalApplications = applications?.data.length || 0;
   const pendingApplications =
     applications?.data.filter((app) => app.status === ApplicationStatus.PENDING)
@@ -139,7 +141,7 @@ export default function JobSeekerDashboard() {
             <div className="space-y-4">
               {applications?.data.slice(0, 5).map((application) => (
                 <div
-                  key={application.id}
+                  key={application._id}
                   className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -164,7 +166,7 @@ export default function JobSeekerDashboard() {
                       Applied{' '}
                       {new Date(application.createdAt).toLocaleDateString()}
                     </span>
-                    <Link href={`/applications/${application.id}`}>
+                    <Link href={`/applications/${application._id}`}>
                       <Button variant="ghost" size="sm">
                         <Eye className="w-4 h-4 mr-1" />
                         View Details

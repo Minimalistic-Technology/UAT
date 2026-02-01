@@ -83,7 +83,7 @@ export default function ApplicantsPage({ params }: { params: { jobId: string } }
 
       <div className="space-y-6">
         {applicants?.data.map((application) => (
-          <Card key={application.id}>
+          <Card key={application._id}>
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-4 mb-4">
@@ -196,7 +196,7 @@ export default function ApplicantsPage({ params }: { params: { jobId: string } }
                         className="w-full"
                         onClick={() =>
                           handleStatusChange(
-                            application.id,
+                            application._id,
                             ApplicationStatus.SHORTLISTED
                           )
                         }
@@ -209,7 +209,7 @@ export default function ApplicantsPage({ params }: { params: { jobId: string } }
                         className="w-full"
                         onClick={() =>
                           handleStatusChange(
-                            application.id,
+                            application._id,
                             ApplicationStatus.REVIEWED
                           )
                         }
@@ -225,7 +225,7 @@ export default function ApplicantsPage({ params }: { params: { jobId: string } }
                       className="w-full"
                       onClick={() =>
                         handleStatusChange(
-                          application.id,
+                          application._id,
                           ApplicationStatus.INTERVIEW
                         )
                       }
@@ -242,7 +242,7 @@ export default function ApplicantsPage({ params }: { params: { jobId: string } }
                         className="w-full"
                         onClick={() =>
                           handleStatusChange(
-                            application.id,
+                            application._id,
                             ApplicationStatus.REJECTED
                           )
                         }
