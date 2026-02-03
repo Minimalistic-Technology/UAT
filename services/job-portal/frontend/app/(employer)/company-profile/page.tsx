@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Card } from '@/app/components/ui/Card';
@@ -11,19 +11,29 @@ import { Input } from '@/app/components/ui/Input';
 import { apiClient } from '@/app/lib/api';
 import { toast } from 'sonner';
 import { UserRole } from '@/app/types';
-import { Building, Globe, Linkedin, Twitter, Facebook } from 'lucide-react';
+import { Building, PlusCircle } from 'lucide-react';
 
 export default function CompanyProfilePage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const { data: company, isLoading: isCompanyLoading } = useQuery({
     queryKey: ['company-profile'],
     queryFn: async () => {
-      const response = await apiClient.get<any>('/companies/my-company');
-      return response.data;
+      try {
+        const response = await apiClient.get<any>('/companies/me');
+        return response.data;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          return null;
+        }
+        throw err;
+      }
     },
     enabled: status === 'authenticated',
+    retry: false,
   });
 
   const {
@@ -42,7 +52,7 @@ export default function CompanyProfilePage() {
   }, [company, reset]);
 
   const updateCompanyMutation = useMutation({
-    mutationFn: (data: any) => apiClient.put('/companies/my-company', data),
+    mutationFn: (data: any) => apiClient.put('/companies/me', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-profile'] });
       toast.success('Company profile updated');
@@ -56,12 +66,38 @@ export default function CompanyProfilePage() {
     updateCompanyMutation.mutate(data);
   };
 
-  if (status === 'loading') {
-    return <div>Loading...</div>;
+  if (status === 'loading' || isCompanyLoading) {
+    return <div className="flex justify-center p-8">Loading...</div>;
   }
 
   if (!session || session.user.role !== UserRole.EMPLOYER) {
     redirect('/login');
+  }
+
+  // Show "Create Company" state if no company exists
+  if (!company && !isCompanyLoading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 text-gray-400">
+            <Building className="h-12 w-12" />
+          </div>
+          <h3 className="mt-2 text-sm font-semibold text-gray-900">No company profile</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Get started by creating a company profile to post jobs.
+          </p>
+          <div className="mt-6">
+            <Button
+              onClick={() => router.push('/create-company')}
+              className="inline-flex items-center"
+            >
+              <PlusCircle className="-ml-0.5 mr-2 h-4 w-4" />
+              Create Company
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -140,12 +176,6 @@ export default function CompanyProfilePage() {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Location</h2>
             <div className="space-y-4">
-              <Input
-                {...register('location.address')}
-                label="Address"
-                placeholder="123 Main Street"
-                defaultValue={company?.location?.address}
-              />
               <div className="grid md:grid-cols-2 gap-4">
                 <Input
                   {...register('location.city')}
@@ -154,59 +184,10 @@ export default function CompanyProfilePage() {
                   defaultValue={company?.location?.city}
                 />
                 <Input
-                  {...register('location.state')}
-                  label="State"
-                  placeholder="California"
-                  defaultValue={company?.location?.state}
-                />
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <Input
                   {...register('location.country')}
                   label="Country"
                   placeholder="United States"
                   defaultValue={company?.location?.country}
-                />
-                <Input
-                  {...register('location.zipCode')}
-                  label="Zip Code"
-                  placeholder="94102"
-                  defaultValue={company?.location?.zipCode}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Social Links
-            </h2>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Linkedin className="w-5 h-5 text-gray-400" />
-                <Input
-                  {...register('socialLinks.linkedin')}
-                  placeholder="https://linkedin.com/company/..."
-                  defaultValue={company?.socialLinks?.linkedin}
-                  className="flex-1"
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Twitter className="w-5 h-5 text-gray-400" />
-                <Input
-                  {...register('socialLinks.twitter')}
-                  placeholder="https://twitter.com/..."
-                  defaultValue={company?.socialLinks?.twitter}
-                  className="flex-1"
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Facebook className="w-5 h-5 text-gray-400" />
-                <Input
-                  {...register('socialLinks.facebook')}
-                  placeholder="https://facebook.com/..."
-                  defaultValue={company?.socialLinks?.facebook}
-                  className="flex-1"
                 />
               </div>
             </div>

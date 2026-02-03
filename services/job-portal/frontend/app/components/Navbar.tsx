@@ -68,6 +68,12 @@ export default function Navbar() {
                     >
                       Post Job
                     </Link>
+                    <Link
+                      href="/company-profile"
+                      className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Company
+                    </Link>
                   </>
                 )}
 
