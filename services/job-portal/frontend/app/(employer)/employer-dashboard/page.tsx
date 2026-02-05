@@ -1,12 +1,13 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import { jobService } from '@/app/lib/services/job.service';
 import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   Briefcase,
   Users,
@@ -20,19 +21,35 @@ import { UserRole, JobStatus } from '@/app/types';
 
 export default function EmployerDashboard() {
   const { data: session, status } = useSession();
-
+  const queryClient = useQueryClient();
 
   const { data: jobs } = useQuery({
     queryKey: ['my-jobs'],
     queryFn: () => jobService.getMyJobs(),
   });
 
-  
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      jobService.updateJob(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-jobs'] });
+      toast.success('Job status updated successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to update job status');
+      console.error(error);
+    },
+  });
+
+  const handleStatusChange = (jobId: string, newStatus: string) => {
+    updateStatusMutation.mutate({ id: jobId, status: newStatus });
+  };
+
   const activeJobs = jobs?.data.filter((job) => job.status === JobStatus.ACTIVE).length || 0;
   const totalApplications = jobs?.data.reduce((sum, job) => sum + job.applicationsCount, 0) || 0;
   const totalViews = jobs?.data.reduce((sum, job) => sum + job.viewsCount, 0) || 0;
 
-    if (status === 'loading') {
+  if (status === 'loading') {
     return <div>Loading...</div>;
   }
 
@@ -150,17 +167,19 @@ export default function EmployerDashboard() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        job.status === JobStatus.ACTIVE
-                          ? 'bg-green-100 text-green-800'
-                          : job.status === JobStatus.PENDING
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
+                    <select
+                      value={job.status}
+                      onChange={(e) => handleStatusChange(job._id, e.target.value)}
+                      className={`block w-full px-3 py-1 text-sm border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 rounded-md shadow-sm ${job.status === JobStatus.ACTIVE
+                        ? 'bg-green-50 text-green-800 border-green-200'
+                        : job.status === JobStatus.CLOSED
+                          ? 'bg-red-50 text-red-800 border-red-200'
+                          : 'bg-gray-50 text-gray-800 border-gray-200'
+                        }`}
                     >
-                      {job.status}
-                    </span>
+                      <option value={JobStatus.ACTIVE}>Active</option>
+                      <option value={JobStatus.CLOSED}>Closed</option>
+                    </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <Link

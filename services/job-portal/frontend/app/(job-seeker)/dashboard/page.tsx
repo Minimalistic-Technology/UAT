@@ -150,7 +150,7 @@ export default function JobSeekerDashboard() {
                         {application.job.title}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        {application.job.company.name}
+                        {application.job.company.name || 'Unknown Company'}
                       </p>
                     </div>
                     <span
@@ -227,7 +227,7 @@ export default function JobSeekerDashboard() {
                   className="block p-3 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors"
                 >
                   <h4 className="font-medium text-gray-900 mb-1">{job.title}</h4>
-                  <p className="text-sm text-gray-600">{job.company.name}</p>
+                <p className="text-sm text-gray-600">{job.company?.name || 'Unknown Company'}</p>
                   <div className="flex items-center text-xs text-gray-500 mt-2">
                     <span>{job.location.city}</span>
                     <span className="mx-2">•</span>

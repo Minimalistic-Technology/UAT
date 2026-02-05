@@ -84,7 +84,7 @@ const jobSchema = new Schema({
     status: {
         type: String,
         enum: Object.values(JobStatus),
-        default: JobStatus.PENDING,
+        default: JobStatus.ACTIVE,
     },
     isFeatured: {
         type: Boolean,

@@ -15,18 +15,19 @@ export default function JobCard({ job }: JobCardProps) {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
-              {job.company.logo && (
+              {job.company?.logo && (
                 <img
                   src={job.company.logo}
-                  alt={job.company.name}
-                  className="w-12 h-12 rounded-lg object-cover"
+                  alt={job.company?.name || 'Company logo'}
+                  className="w-10 h-10 rounded-lg object-cover"
                 />
               )}
+
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">
-                  {job.title}
-                </h3>
-                <p className="text-gray-600">{job.company.name}</p>
+                <h3 className="font-semibold text-lg">{job.title}</h3>
+                <p className="text-sm text-gray-600">
+                  {job.company?.name || 'Unknown Company'}
+                </p>
               </div>
             </div>
 

@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { applicationService } from '@/app/lib/services/application.service';
 import { jobService } from '@/app/lib/services/job.service';
@@ -7,19 +8,26 @@ import { Card } from '@/app/components/ui/Card';
 import { Button } from '@/app/components/ui/Button';
 import { ApplicationStatus } from '@/app/types';
 import { toast } from 'sonner';
-import { Download, Mail, Phone, MapPin, Calendar, FileText } from 'lucide-react';
+import { Download, Mail, Phone, Calendar, FileText } from 'lucide-react';
 
-export default function ApplicantsPage({ params }: { params: { jobId: string } }) {
+export default function ApplicantsPage({
+  params,
+}: {
+  params: Promise<{ jobId: string }>;
+}) {
+
+  const { jobId } = React.use(params); // ✅ unwrap async params
+
   const queryClient = useQueryClient();
 
   const { data: job } = useQuery({
-    queryKey: ['job', params.jobId],
-    queryFn: () => jobService.getJob(params.jobId),
+    queryKey: ['job', jobId],
+    queryFn: () => jobService.getJob(jobId),
   });
 
   const { data: applicants, isLoading } = useQuery({
-    queryKey: ['applicants', params.jobId],
-    queryFn: () => applicationService.getJobApplicants(params.jobId),
+    queryKey: ['applicants', jobId],
+    queryFn: () => applicationService.getJobApplicants(jobId),
   });
 
   const updateStatusMutation = useMutation({
@@ -33,7 +41,7 @@ export default function ApplicantsPage({ params }: { params: { jobId: string } }
       note?: string;
     }) => applicationService.updateApplicationStatus(applicationId, status, note),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['applicants', params.jobId] });
+      queryClient.invalidateQueries({ queryKey: ['applicants', jobId] });
       toast.success('Application status updated');
     },
     onError: () => {

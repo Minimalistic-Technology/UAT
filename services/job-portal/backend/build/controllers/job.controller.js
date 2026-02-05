@@ -4,6 +4,9 @@ import mongoose from 'mongoose';
 // @desc    Get all jobs with filters
 // @route   GET /api/jobs
 // @access  Public
+// @desc    Get all jobs with filters
+// @route   GET /api/jobs
+// @access  Public
 export const getJobs = async (req, res, next) => {
     try {
         const { search, location, jobType, experienceLevel, minSalary, maxSalary, skills, remote, page = 1, limit = 10, sort = '-createdAt', } = req.query;
@@ -49,6 +52,7 @@ export const getJobs = async (req, res, next) => {
         // Execute query
         const jobs = await Job.find(query)
             .populate('postedBy', 'firstName lastName')
+            .populate('company', 'name logo location industry')
             .sort(sort)
             .skip(skip)
             .limit(limitNum);
@@ -85,7 +89,8 @@ export const getJob = async (req, res) => {
             });
         }
         const job = await Job.findById(cleanId)
-            .populate('postedBy', 'firstName lastName email');
+            .populate('postedBy', 'firstName lastName email')
+            .populate('company', 'name logo description website location industry companySize');
         if (!job) {
             return res.status(404).json({
                 success: false,
@@ -210,7 +215,8 @@ export const deleteJob = async (req, res, next) => {
 // @access  Private (Employer)
 export const getMyJobs = async (req, res, next) => {
     try {
-        const jobs = await Job.find({ postedBy: req.user.id });
+        const jobs = await Job.find({ postedBy: req.user.id })
+            .populate('company', 'name logo');
         res.status(200).json({
             success: true,
             count: jobs.length,

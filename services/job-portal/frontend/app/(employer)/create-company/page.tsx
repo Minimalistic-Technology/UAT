@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -16,27 +16,28 @@ export default function CreateCompanyPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
 
+
     const { data: existingCompany, isLoading: isCheckingCompany } = useQuery({
         queryKey: ['company-profile'],
         queryFn: async () => {
             try {
                 const response = await companyService.getMyCompany();
                 return response.data;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (err: any) {
-                if (err.response?.status === 404) {
-                    return null;
-                }
+                if (err.response?.status === 404) return null;
                 return null;
             }
         },
         retry: false,
     });
 
-    if (existingCompany) {
-        router.push('/company-profile');
-        return null;
-    }
+    useEffect(() => {
+        if (existingCompany) {
+            router.push('/company-profile');
+        }
+    }, [existingCompany, router]);
+
+    if (existingCompany) return null;
 
     if (isCheckingCompany) {
         return <div className="flex justify-center p-8">Loading...</div>;
