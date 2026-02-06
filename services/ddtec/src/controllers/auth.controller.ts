@@ -7,8 +7,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 export const register = async (req: Request, res: Response) => {
     try {
-        const { name, email, password } = req.body;
-        console.log('Register attempt:', { name, email, password: '***' });
+        const { name, email, password, role } = req.body;
+        console.log('Register attempt:', { name, email, role, password: '***' });
 
         // Check if user exists
         let user = await User.findOne({ email });
@@ -22,17 +22,17 @@ export const register = async (req: Request, res: Response) => {
             name,
             email,
             password,
+            role: role || 'user'
         });
 
         await user.save();
         console.log('User saved to database');
 
         const payload = {
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email
-            },
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
         };
 
         jwt.sign(
@@ -44,9 +44,11 @@ export const register = async (req: Request, res: Response) => {
                 res.cookie('token', token, {
                     httpOnly: true,
                     // secure: process.env.NODE_ENV === 'production', // Un-comment in prod
-                    maxAge: 3600000 // 1 hour
+                    maxAge: 3600000, // 1 hour
+                    path: '/',
+                    sameSite: 'lax'
                 });
-                res.json({ user: payload.user });
+                res.json({ user: payload });
             }
         );
     } catch (err) {
@@ -78,11 +80,10 @@ export const login = async (req: Request, res: Response) => {
         }
 
         const payload = {
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email // Including email in payload is useful
-            },
+            id: user.id,
+            name: user.name,
+            email: user.email, // Including email in payload is useful
+            role: user.role
         };
 
         jwt.sign(
@@ -94,9 +95,11 @@ export const login = async (req: Request, res: Response) => {
                 res.cookie('token', token, {
                     httpOnly: true,
                     // secure: process.env.NODE_ENV === 'production', 
-                    maxAge: 3600000
+                    maxAge: 3600000,
+                    path: '/',
+                    sameSite: 'lax'
                 });
-                res.json({ user: payload.user });
+                res.json({ user: payload });
             }
         );
     } catch (err) {

@@ -25,7 +25,8 @@ export default function (req: AuthRequest, res: Response, next: NextFunction) {
     // Verify token
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = (decoded as any).user;
+        // The payload *is* the user object (see auth.controller.ts)
+        req.user = decoded;
         next();
     } catch (err) {
         res.status(401).json({ msg: 'Token is not valid' });
