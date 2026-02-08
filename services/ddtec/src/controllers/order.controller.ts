@@ -24,7 +24,9 @@ export const createOrder = async (req: Request | any, res: Response): Promise<vo
             totalAmount,
             shippingInfo,
             paymentMethod,
-            status: 'processing' // Default status
+            status: 'processing', // Default status
+            coupon: req.body.coupon,
+            discountAmount: req.body.discountAmount || 0
         });
 
         // Decrement Stock

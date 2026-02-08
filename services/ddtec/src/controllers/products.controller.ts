@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Product from '../models/Product';
 
+
 export const getProducts = async (req: Request, res: Response) => {
     try {
         const products = await Product.find().sort({ createdAt: -1 });
@@ -27,10 +28,7 @@ export const getProductById = async (req: Request, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, image, category, stock, brand, modelName, couponCode, discountPercentage } = req.body;
-
-        // Generate a coupon code if not provided
-        const generatedCouponCode = couponCode || `CPN-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        const { name, price, description, image, category, stock, brand, modelName } = req.body;
 
         const newProduct = new Product({
             name,
@@ -42,12 +40,11 @@ export const createProduct = async (req: Request, res: Response) => {
             rating: req.body.rating || 0,
             lastMonthSales: req.body.lastMonthSales || 0,
             brand: brand || '',
-            modelName: modelName || '',
-            couponCode: generatedCouponCode,
-            discountPercentage: discountPercentage || 0
+            modelName: modelName || ''
         });
 
         const product = await newProduct.save();
+
         res.json(product);
     } catch (err) {
         console.error(err);
@@ -57,7 +54,7 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, image, category, stock, brand, modelName, couponCode, discountPercentage } = req.body;
+        const { name, price, description, image, category, stock, brand, modelName } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -72,10 +69,9 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.lastMonthSales = req.body.lastMonthSales !== undefined ? req.body.lastMonthSales : product.lastMonthSales;
         product.brand = brand || product.brand;
         product.modelName = modelName || product.modelName;
-        product.couponCode = couponCode || product.couponCode;
-        product.discountPercentage = discountPercentage !== undefined ? discountPercentage : product.discountPercentage;
 
         await product.save();
+
         res.json(product);
     } catch (err) {
         console.error(err);
@@ -87,6 +83,10 @@ export const deleteProduct = async (req: Request, res: Response) => {
     try {
         const product = await Product.findByIdAndDelete(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
+
+        // Optional: Delete associated coupon?
+        // await Coupon.deleteOne({ code: product.couponCode, type: 'product-specific' });
+
         res.json({ msg: 'Product removed' });
     } catch (err) {
         console.error(err);

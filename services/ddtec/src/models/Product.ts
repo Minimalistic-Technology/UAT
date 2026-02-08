@@ -14,6 +14,8 @@ export interface IProduct extends Document {
     modelName: string;
     couponCode: string;
     discountPercentage: number;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
 }
 
 const ProductSchema: Schema = new Schema({
@@ -29,7 +31,9 @@ const ProductSchema: Schema = new Schema({
     brand: { type: String },
     modelName: { type: String },
     couponCode: { type: String, unique: true, sparse: true },
-    discountPercentage: { type: Number, default: 0 }
+    discountPercentage: { type: Number, default: 0 }, // Deprecated, use discountValue
+    discountType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
+    discountValue: { type: Number, default: 0 }
 }, { timestamps: true });
 
 export default mongoose.model<IProduct>('Product', ProductSchema);

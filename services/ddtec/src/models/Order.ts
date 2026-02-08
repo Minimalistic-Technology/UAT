@@ -17,6 +17,8 @@ export interface IOrder extends Document {
     };
     paymentMethod: string;
     status: string;
+    coupon?: string;
+    discountAmount?: number;
     createdAt: Date;
 }
 
@@ -39,6 +41,8 @@ const OrderSchema: Schema = new Schema({
     },
     paymentMethod: { type: String, required: true },
     status: { type: String, enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], default: 'pending' },
+    coupon: { type: String },
+    discountAmount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 export default mongoose.model<IOrder>('Order', OrderSchema);
