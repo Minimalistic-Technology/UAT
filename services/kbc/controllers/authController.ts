@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import RegisteredUser from "../models/RegisteredUser";
 import { tr } from "zod/v4/locales";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey123";
 
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {

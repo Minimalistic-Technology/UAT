@@ -20,25 +20,26 @@ import importExportRoutes from "./routes/importExportRoutes";
 import activeSessionRoutes from "./routes/activeSessionRoutes";
 import gameresultRoutes from "./routes/gameResultRoutes"
 import tokenVerifyRoutes from "./routes/tokenVerifyRoutes";
+import screenBackgroundRoutes from "./routes/screenBackgroundRoutes";
 
 export const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(cookieParser());
 app.use(cors({
-    origin:'https://kbc-game-1a9p.onrender.com',  
-    credentials: true,                
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], 
-  }));
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));
 
 const limiter = rateLimit({
-  windowMs: 60 * 1000, 
-  max: 1000, 
+  windowMs: 60 * 1000,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
   handler: function (req, res, next) {
     setTimeout(() => {
       next();
-    }, 5000); 
+    }, 5000);
   },
 });
 app.use(limiter);
@@ -58,6 +59,7 @@ app.use("/api/import-export", importExportRoutes);
 app.use("/api/session", activeSessionRoutes);
 app.use("/api/score", gameresultRoutes);
 app.use("/api/verify", tokenVerifyRoutes);
+app.use("/api/screen-background", screenBackgroundRoutes);
 app.get("/test", async (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
