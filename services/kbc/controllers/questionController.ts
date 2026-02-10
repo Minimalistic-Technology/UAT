@@ -98,9 +98,26 @@ const parseIncomingJsonFields = (data: any) => {
   if (typeof data.lang === "string") {
     try { data.lang = JSON.parse(data.lang); } catch { }
   }
-  if (typeof data.correctIndex === "string") {
-    data.correctIndex = parseInt(data.correctIndex, 10);
+  // Remove correctIndex handling, handle correctIndices
+  if (typeof data.correctIndices === "string") {
+    try {
+      data.correctIndices = JSON.parse(data.correctIndices);
+    } catch {
+      // If it's a simple number string like "1", treat as [1]
+      const parsed = parseInt(data.correctIndices, 10);
+      if (!isNaN(parsed)) {
+        data.correctIndices = [parsed];
+      }
+    }
+  } else if (typeof data.correctIndex !== "undefined") {
+    // Fallback for legacy input: map correctIndex -> correctIndices
+    const idx = parseInt(data.correctIndex, 10);
+    if (!isNaN(idx)) {
+      data.correctIndices = [idx];
+    }
+    delete data.correctIndex;
   }
+
   if (typeof data.options === "string") {
     try { data.options = JSON.parse(data.options); } catch { }
   }
@@ -320,7 +337,7 @@ export const deleteQuestion = async (
 
     if (q.mediaRef?.public_id) {
       try {
-        await deleteFromCloudinary(q.mediaRef.public_id , q.mediaRef.type);
+        await deleteFromCloudinary(q.mediaRef.public_id, q.mediaRef.type);
       } catch (cloudErr) {
         console.error("Cloudinary delete failed:", cloudErr);
       }
