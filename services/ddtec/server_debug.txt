@@ -1,0 +1,3 @@
+﻿[dotenv@17.2.3] injecting env (8) from ..\..\.env -- tip: ≡ƒ¢á∩╕Å  run anywhere with `dotenvx run -- yourcommand`
+DDTEC service listening on port http://localhost:5000
+MongoDB Connected: ac-bisdelb-shard-00-02.4klpagy.mongodb.net

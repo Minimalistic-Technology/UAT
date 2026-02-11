@@ -1,16 +1,7 @@
-import express, { Request, Response } from "express";
+import app from "./app";
 
-const app = express();
-const PORT = process.env.PORT || 5004;
-
-app.get("/", (req: Request, res: Response) => {
-  res.send("DDTEC main site");
-});
-
-app.get("/health", (req: Request, res: Response) => {
-  res.json({ status: "ok", service: "ddtec" });
-});
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`DDTEC service listening on port ${PORT}`);
+  console.log(`DDTEC service listening on port http://localhost:${PORT}`);
 });
