@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Contact from '../models/Contact';
-import nodemailer from 'nodemailer';
+import NotificationService from '../services/notification.service';
+import ValidationService from '../services/validation.service';
 
 export const submitContactForm = async (req: Request, res: Response) => {
     try {
@@ -22,40 +23,19 @@ export const submitContactForm = async (req: Request, res: Response) => {
 
         const savedContact = await newContact.save();
 
-        // 3. Send Email
-        // Ensure env vars are set
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.EMAIL_TO) {
-            console.error('Email credentials not set in .env');
-            // We still return success because the DB save worked, but warn logs
-            return res.status(201).json({ msg: 'Message saved (Email service unavailable)', contact: savedContact });
+        // 3. Send Email Notification
+        const emailValidation = ValidationService.isRealEmail(email);
+        if (!emailValidation.isValid) {
+            return res.status(400).json({ msg: emailValidation.msg });
         }
 
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-        });
+        const sent = await NotificationService.sendContactNotification({ firstName, lastName, email, message });
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: process.env.EMAIL_TO,
-            replyTo: email, // <--- Key requirement: Reply to the sender's email
-            subject: `New Contact Form Submission from ${firstName} ${lastName}`,
-            html: `
-                <h3>New Contact Message</h3>
-                <p><strong>Name:</strong> ${firstName} ${lastName}</p>
-                <p><strong>Email:</strong> ${email}</p>
-                <p><strong>Message:</strong></p>
-                <p>${message}</p>
-                <p><em>Saved to Database ID: ${savedContact._id}</em></p>
-            `,
-        };
-
-        await transporter.sendMail(mailOptions);
-
-        res.status(201).json({ msg: 'Message sent and saved successfully', contact: savedContact });
+        if (sent) {
+            res.status(201).json({ msg: 'Message sent and saved successfully', contact: savedContact });
+        } else {
+            res.status(201).json({ msg: 'Message saved, but notification failed.', contact: savedContact });
+        }
 
     } catch (err) {
         console.error(err);

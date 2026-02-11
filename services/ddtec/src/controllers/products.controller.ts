@@ -28,13 +28,14 @@ export const getProductById = async (req: Request, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, image, category, stock, brand, modelName } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName } = req.body;
 
         const newProduct = new Product({
             name,
             price,
             description,
             image,
+            images: images || [],
             category,
             stock: stock || 0,
             rating: req.body.rating || 0,
@@ -54,7 +55,7 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, image, category, stock, brand, modelName } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -63,6 +64,7 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.price = price || product.price;
         product.description = description || product.description;
         product.image = image || product.image;
+        product.images = images || product.images;
         product.category = category || product.category;
         product.stock = stock !== undefined ? stock : product.stock;
         product.rating = req.body.rating !== undefined ? req.body.rating : product.rating;
@@ -88,6 +90,21 @@ export const deleteProduct = async (req: Request, res: Response) => {
         // await Coupon.deleteOne({ code: product.couponCode, type: 'product-specific' });
 
         res.json({ msg: 'Product removed' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+export const toggleProductStatus = async (req: Request, res: Response) => {
+    try {
+        const product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).json({ msg: 'Product not found' });
+
+        product.isActive = !product.isActive;
+        await product.save();
+
+        res.json({ msg: `Product ${product.isActive ? 'activated' : 'deactivated'}`, isActive: product.isActive });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');

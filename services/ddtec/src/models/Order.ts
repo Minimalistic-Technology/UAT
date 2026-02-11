@@ -1,7 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+
 export interface IOrder extends Document {
-    user: string;
+    user?: string; // Optional for Guest
     items: Array<{
         product: string;
         quantity: number;
@@ -23,7 +24,7 @@ export interface IOrder extends Document {
 }
 
 const OrderSchema: Schema = new Schema({
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    user: { type: Schema.Types.ObjectId, ref: 'User' }, // Not required for guest
     items: [
         {
             product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },

@@ -5,6 +5,7 @@ export interface IProduct extends Document {
     price: number;
     description: string;
     image: string;
+    images: string[];
     category: string;
     stock: number;
     rating: number;
@@ -16,6 +17,7 @@ export interface IProduct extends Document {
     discountPercentage: number;
     discountType: 'percentage' | 'fixed';
     discountValue: number;
+    isActive: boolean;
 }
 
 const ProductSchema: Schema = new Schema({
@@ -23,6 +25,7 @@ const ProductSchema: Schema = new Schema({
     price: { type: Number, required: true },
     description: { type: String },
     image: { type: String },
+    images: { type: [String], default: [] },
     category: { type: String },
     stock: { type: Number, required: true, default: 0 },
     rating: { type: Number, required: true, default: 0 },
@@ -33,7 +36,8 @@ const ProductSchema: Schema = new Schema({
     couponCode: { type: String, unique: true, sparse: true },
     discountPercentage: { type: Number, default: 0 }, // Deprecated, use discountValue
     discountType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
-    discountValue: { type: Number, default: 0 }
+    discountValue: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
 export default mongoose.model<IProduct>('Product', ProductSchema);
