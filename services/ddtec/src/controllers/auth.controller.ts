@@ -5,68 +5,163 @@ import User from '../models/User';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
+import OTP from '../models/OTP';
+import NotificationService from '../services/notification.service';
+import ValidationService from '../services/validation.service';
+
+// Generate 6-digit OTP
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+export const sendOtp = async (req: Request, res: Response) => {
+    try {
+        const { identifier } = req.body; // email or phone
+        if (!identifier) {
+            return res.status(400).json({ msg: 'Identifier (email or phone) is required' });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({
+            $or: [{ email: identifier }, { phone: identifier }]
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ msg: 'User already exists with this email or phone' });
+        }
+
+        // Validate Identifier
+        const isEmail = identifier.includes('@');
+        const validation = isEmail ? ValidationService.isRealEmail(identifier) : ValidationService.isRealPhone(identifier);
+
+        if (!validation.isValid) {
+            return res.status(400).json({ msg: validation.msg });
+        }
+
+        const otp = generateOTP();
+
+        // Save OTP to DB (upsert)
+        await OTP.findOneAndUpdate(
+            { identifier },
+            { identifier, otp, expiresAt: new Date(Date.now() + 5 * 60 * 1000) }, // 5 mins
+            { upsert: true, new: true }
+        );
+
+        // REAL SENDING
+        const sent = await NotificationService.sendOTP(identifier, otp);
+
+        if (sent) {
+            res.json({ msg: 'OTP sent successfully', success: true });
+        } else {
+            res.status(500).json({ msg: 'Failed to send OTP. Please try again.', success: false });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
+};
+
+export const verifyOtp = async (req: Request, res: Response) => {
+    try {
+        const { identifier, otp } = req.body;
+
+        const otpRecord = await OTP.findOne({ identifier, otp });
+        if (!otpRecord) {
+            return res.status(400).json({ msg: 'Invalid or expired OTP', isValid: false });
+        }
+
+        res.json({ msg: 'OTP verified successfully', isValid: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
+};
+
 export const register = async (req: Request, res: Response) => {
     try {
-        const { name, email, password, role } = req.body;
-        console.log('Register attempt:', { name, email, role, password: '***' });
+        const { firstName, lastName, email, phone, password, role, otp, accountType, employmentType, companyDetails, designation } = req.body;
 
-        // Check if user exists
-        let user = await User.findOne({ email });
+        // Verify OTP (Check both email and phone as potential identifiers)
+        const identifiers = [email, phone].filter(Boolean);
+        const otpRecord = await OTP.findOne({
+            identifier: { $in: identifiers },
+            otp
+        });
+        if (!otpRecord) {
+            return res.status(400).json({ msg: 'Invalid or expired OTP' });
+        }
+
+        // Validate Real Contact Info
+        if (email) {
+            const emailValidation = ValidationService.isRealEmail(email);
+            if (!emailValidation.isValid) return res.status(400).json({ msg: emailValidation.msg });
+        }
+        if (phone) {
+            const phoneValidation = ValidationService.isRealPhone(phone);
+            if (!phoneValidation.isValid) return res.status(400).json({ msg: phoneValidation.msg });
+        }
+
+        // Check if user exists (Double check)
+        const checkQuery = [];
+        if (email) checkQuery.push({ email });
+        if (phone) checkQuery.push({ phone });
+
+        let user = await User.findOne({ $or: checkQuery });
         if (user) {
-            console.log('User already exists');
             return res.status(400).json({ msg: 'User already exists' });
         }
-        console.log('User does not exist, creating new user');
 
         user = new User({
-            name,
+            firstName,
+            lastName,
+            name: (firstName && lastName) ? `${firstName} ${lastName}` : "", // Handle missing names
             email,
+            phone,
             password,
-            role: role || 'user'
+            role: role || 'user',
+            isEmailVerified: !!email,
+            isPhoneVerified: !!phone,
         });
 
         await user.save();
-        console.log('User saved to database');
+
+        // Delete used OTP
+        await OTP.deleteOne({ _id: otpRecord._id });
 
         const payload = {
             id: user.id,
-            name: user.name,
+            name: user.name, // Keep using name for payload for compatibility
             email: user.email,
             role: user.role
         };
 
-        jwt.sign(
-            payload,
-            JWT_SECRET,
-            { expiresIn: '1h' },
-            (err, token) => {
-                if (err) throw err;
-                res.cookie('token', token, {
-                    httpOnly: true,
-                    // secure: process.env.NODE_ENV === 'production', // Un-comment in prod
-                    maxAge: 3600000, // 1 hour
-                    path: '/',
-                    sameSite: 'lax'
-                });
-                res.json({ user: payload });
+        // Return success message
+        res.json({
+            msg: 'User registered successfully',
+            user: {
+                id: user.id,
+                name: user.name,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.role
             }
-        );
+        });
     } catch (err) {
-        if (err instanceof Error) {
-            console.error(err.message);
-        } else {
-            console.error(err);
-        }
+        console.error(err);
         res.status(500).send('Server error');
     }
 };
 
 export const login = async (req: Request, res: Response) => {
     try {
-        const { email, password } = req.body;
+        const { email, phone, password } = req.body;
+        const identifier = email || phone;
 
         // Check if user exists
-        const user = await User.findOne({ email });
+        const user = await User.findOne({
+            $or: [{ email: identifier }, { phone: identifier }]
+        });
         if (!user) {
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
@@ -79,9 +174,18 @@ export const login = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
+        // Check if user is active (bypass for admins to prevent lockout)
+        if (user.role !== 'admin') {
+            if (!user.isActive) {
+                return res.status(403).json({ msg: 'Account is deactivated. Please contact admin.' });
+            }
+        }
+
         const payload = {
             id: user.id,
             name: user.name,
+            firstName: user.firstName,
+            lastName: user.lastName,
             email: user.email, // Including email in payload is useful
             role: user.role
         };
@@ -128,5 +232,188 @@ export const getMe = async (req: Request, res: Response) => {
             console.error(err);
         }
         res.status(500).send('Server error');
+    }
+};
+
+// Admin: Create User directly
+export const createUser = async (req: Request, res: Response) => {
+    try {
+        const { firstName, lastName, email, phone, password, role } = req.body;
+
+        // Validate Contact Info
+        if (email) {
+            const emailValidation = ValidationService.isRealEmail(email);
+            if (!emailValidation.isValid) return res.status(400).json({ msg: emailValidation.msg });
+        }
+        if (phone) {
+            const phoneValidation = ValidationService.isRealPhone(phone);
+            if (!phoneValidation.isValid) return res.status(400).json({ msg: phoneValidation.msg });
+        }
+
+        let user = await User.findOne({ email });
+        if (user) {
+            return res.status(400).json({ msg: 'User already exists' });
+        }
+
+        user = new User({
+            firstName,
+            lastName,
+            name: `${firstName} ${lastName}`,
+            email,
+            phone,
+            password, // Will be hashed by pre-save
+            role: role || 'user',
+            isEmailVerified: true, // Admin created, assume verified
+            isPhoneVerified: true,
+            isActive: true
+        });
+
+        await user.save();
+        res.status(201).json({ msg: 'User created successfully', user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
+};
+
+// Admin: Toggle User Status
+export const toggleUserStatus = async (req: Request, res: Response) => {
+    console.log(`[DEBUG] toggleUserStatus called for ID: ${req.params.id}`);
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            console.log(`[DEBUG] User not found for ID: ${req.params.id}`);
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        let newStatus: boolean;
+        let updateQuery: any;
+
+        console.log('[DEBUG] Toggling User Status');
+        // Ensure we have a boolean even if undefined
+        newStatus = !user.isActive;
+        updateQuery = { $set: { isActive: newStatus } };
+
+        console.log('[DEBUG] Updating user with query:', JSON.stringify(updateQuery));
+
+        // Use findByIdAndUpdate to bypass strict schema validation for other fields (like firstName required)
+        // that might be missing in legacy data.
+        await User.findByIdAndUpdate(req.params.id, updateQuery, { new: true, runValidators: false });
+
+        console.log('[DEBUG] User updated successfully.');
+
+        res.json({ msg: `User ${newStatus ? 'activated' : 'deactivated'}`, isActive: newStatus });
+    } catch (err: any) {
+        console.error("[ERROR] Toggle Status Failed:", err);
+        return res.status(500).json({ msg: 'Server error', error: err.message, stack: err.stack });
+    }
+};
+
+// Admin: Update User/Company Details
+export const updateUser = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        if (updates.password) {
+            const salt = await bcrypt.genSalt(10);
+            updates.password = await bcrypt.hash(updates.password, salt);
+        }
+
+        // Remove immutable fields if present in updates
+        delete updates._id;
+
+        // Use findByIdAndUpdate to merge updates
+        // We use $set to update fields. 
+        // Note: For nested companyDetails, if we want to update specific fields without overwriting the whole object,
+        // we should flatten the object or use dot notation. 
+        // For simplicity, we assume the frontend sends the structure we want to save, 
+        // or we use $set with the whole object if that's the intent. 
+        // If frontend sends { companyDetails: { ... } }, it will overwrite companyDetails.
+        // If we want partial, we'd need to flatten. 
+        // Let's assume for now the Edit Modal sends the full CompanyDetails object if it edits it.
+
+        const user = await User.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: false });
+
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        res.json({ msg: 'User updated successfully', user });
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ msg: 'Server error', error: err.message });
+    }
+};
+
+export const updateMe = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user.id;
+        const { firstName, lastName, address, phone } = req.body;
+
+        const updateData: any = {};
+        if (firstName) updateData.firstName = firstName;
+        if (lastName) updateData.lastName = lastName;
+        if (firstName && lastName) updateData.name = `${firstName} ${lastName}`;
+        if (address) updateData.address = address;
+        if (phone) updateData.phone = phone;
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        res.json(user);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+export const changePassword = async (req: Request | any, res: Response) => {
+    try {
+        const userId = req.user.id;
+        const { currentPassword, newPassword } = req.body;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password as string);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Incorrect current password' });
+        }
+
+        user.password = newPassword; // Will be hashed by pre-save middleware
+        await user.save();
+
+        res.json({ msg: 'Password changed successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+export const checkUser = async (req: Request, res: Response) => {
+    try {
+        const { identifier } = req.body;
+        if (!identifier) {
+            return res.status(400).json({ msg: 'Identifier is required' });
+        }
+
+        const user = await User.findOne({
+            $or: [{ email: identifier }, { phone: identifier }]
+        });
+
+        res.json({ exists: !!user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
     }
 };

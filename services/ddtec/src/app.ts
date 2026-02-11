@@ -1,37 +1,51 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load env vars immediately before other imports
+dotenv.config(); // First try local .env
+dotenv.config({ path: path.resolve(__dirname, '../../.env') }); // Then try parent .env
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') }); // Finally try UAT root .env
+
+console.log('[DEBUG] Environment Variables Check:');
+console.log(' - EMAIL_USER:', process.env.EMAIL_USER ? 'FOUND (Real Mode)' : 'MISSING (Sandbox Mode)');
+console.log(' - SMS_SERVICE: DISABLED (Use Email)');
+console.log(' - MONGO_URI:', process.env.MONGO_URI ? 'FOUND' : 'CONNECTED (HIDDEN)');
+
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import routes from './routes';
 import connectDB from './config/database';
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Load env vars
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
 
 // Middleware
 // Middleware
 // Middleware
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    "https://ddtec.onrender.com"
+];
+
+// Add origins from ALLOWED_ORIGINS env var if present
+if (process.env.ALLOWED_ORIGINS) {
+    const extraOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+    allowedOrigins.push(...extraOrigins);
+}
+
 app.use(cors({
     origin: (origin, callback) => {
-        const allowedOrigins = [
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
-            process.env.FRONTEND_URL || 'http://localhost:3000' , 
-            "https://ddtec.onrender.com"
-        ];
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+        if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            // For development, we might want to be permissive or just log it
             console.warn(`Blocked by CORS: ${origin}`);
-            // callback(new Error('Not allowed by CORS')); // Strict
-            callback(null, true); // Permissive for debugging to solve "No token"
+            // In dev, we might still want to allow but log
+            callback(null, true);
         }
     },
     credentials: true,

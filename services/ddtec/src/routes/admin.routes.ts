@@ -12,4 +12,6 @@ router.get('/stats', authMiddleware as any, adminMiddleware, getDashboardStats);
 router.get('/users', authMiddleware as any, adminMiddleware, getAllUsers);
 router.delete('/users/:id', authMiddleware as any, adminMiddleware, deleteUser);
 
+
+
 export default router;

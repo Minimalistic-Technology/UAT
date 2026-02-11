@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProducts, getProductById, createProduct, updateProduct, deleteProduct } from '../controllers/products.controller';
+import { getProducts, getProductById, createProduct, updateProduct, deleteProduct, toggleProductStatus } from '../controllers/products.controller';
 import auth from '../middleware/auth.middleware';
 import admin from '../middleware/admin.middleware';
 
@@ -29,5 +29,11 @@ router.put('/:id', auth, admin, updateProduct);
 // @desc    Delete a product
 // @access  Private/Admin
 router.delete('/:id', auth, admin, deleteProduct);
+
+
+// @route   PUT api/products/:id/status
+// @desc    Toggle product status
+// @access  Private/Admin
+router.put('/:id/status', auth, admin, toggleProductStatus);
 
 export default router;

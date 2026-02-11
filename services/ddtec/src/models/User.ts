@@ -1,15 +1,58 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 
+export interface IUser extends Document {
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+    email: string;
+    isEmailVerified: boolean;
+    phone?: string;
+    isPhoneVerified: boolean;
+    password?: string;
+    role: 'user' | 'admin';
+    isActive?: boolean;
+    address?: {
+        street: string;
+        city: string;
+        state: string;
+        zip: string;
+        country: string;
+    };
+    createdAt: Date;
+    updatedAt: Date;
+}
+
 const UserSchema: Schema = new Schema({
+    firstName: {
+        type: String,
+        // required: true, // Made optional for simplified signup
+    },
+    lastName: {
+        type: String,
+        // required: true, // Made optional for simplified signup
+    },
+    // Keeping name for backward compatibility or full name display
     name: {
         type: String,
-        required: true,
     },
     email: {
         type: String,
         required: true,
         unique: true,
+    },
+    isEmailVerified: {
+        type: Boolean,
+        default: false,
+    },
+    phone: {
+        type: String,
+        unique: true,
+        sparse: true, // Allow multiple nulls
+    },
+    isPhoneVerified: {
+        type: Boolean,
+        default: false,
     },
     password: {
         type: String,
@@ -19,17 +62,29 @@ const UserSchema: Schema = new Schema({
         type: String,
         enum: ['user', 'admin'],
         default: 'user'
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+    // Address Fields
+    address: {
+        street: String,
+        city: String,
+        state: String,
+        zip: String,
+        country: String
     }
-});
+}, { timestamps: true });
 
 // Hash password before saving
-UserSchema.pre("save", async function () {
+UserSchema.pre("save", async function (this: IUser) {
     if (!this.isModified("password")) return;
 
-    if (typeof this.password === "string") {
+    if (this.password && typeof this.password === "string") {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
     }
 });
 
-export default mongoose.model("User", UserSchema);
+export default mongoose.model<IUser>("User", UserSchema);

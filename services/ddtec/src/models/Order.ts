@@ -1,7 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+
 export interface IOrder extends Document {
-    user: string;
+    user?: string; // Optional for Guest
     items: Array<{
         product: string;
         quantity: number;
@@ -17,11 +18,13 @@ export interface IOrder extends Document {
     };
     paymentMethod: string;
     status: string;
+    coupon?: string;
+    discountAmount?: number;
     createdAt: Date;
 }
 
 const OrderSchema: Schema = new Schema({
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    user: { type: Schema.Types.ObjectId, ref: 'User' }, // Not required for guest
     items: [
         {
             product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
@@ -39,6 +42,8 @@ const OrderSchema: Schema = new Schema({
     },
     paymentMethod: { type: String, required: true },
     status: { type: String, enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], default: 'pending' },
+    coupon: { type: String },
+    discountAmount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 export default mongoose.model<IOrder>('Order', OrderSchema);
