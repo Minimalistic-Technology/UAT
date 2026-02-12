@@ -21,6 +21,7 @@ const config = {
     emailPort: parseInt(process.env.EMAIL_PORT || '587'),
     emailUser: process.env.EMAIL_USER || '',
     emailPass: process.env.EMAIL_PASS || '',
+    emailFrom: process.env.EMAIL_FROM || process.env.EMAIL_USER || '', // Verified sender for SendGrid
     // Frontend URL
     clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
     // Environment
