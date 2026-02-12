@@ -6,7 +6,7 @@ export interface IProduct extends Document {
     description: string;
     image: string;
     images: string[];
-    category: string;
+    category: mongoose.Types.ObjectId | string; // Allow string for legacy or populated objects
     stock: number;
     rating: number;
     numReviews: number;
@@ -26,7 +26,7 @@ const ProductSchema: Schema = new Schema({
     description: { type: String },
     image: { type: String },
     images: { type: [String], default: [] },
-    category: { type: String },
+    category: { type: Schema.Types.ObjectId, ref: 'Category' },
     stock: { type: Number, required: true, default: 0 },
     rating: { type: Number, required: true, default: 0 },
     numReviews: { type: Number, required: true, default: 0 },
