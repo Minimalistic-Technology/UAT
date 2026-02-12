@@ -47,7 +47,22 @@ export default function LoginClient() {
         toast.error('Invalid email or password');
       } else {
         toast.success('Login successful!');
-        router.push(callbackUrl);
+
+        // Fetch session to get user role
+        const { getSession } = await import('next-auth/react');
+        const session = await getSession();
+
+        // Redirect based on role
+        if (session?.user?.role === 'employer') {
+          router.push('/employer-dashboard');
+        } else if (session?.user?.role === 'JOB_SEEKER') {
+          router.push('/profile');
+        } else if (session?.user?.role === 'ADMIN') {
+          router.push('/admin');
+        } else {
+          router.push(callbackUrl);
+        }
+
         router.refresh();
       }
     } catch (error) {

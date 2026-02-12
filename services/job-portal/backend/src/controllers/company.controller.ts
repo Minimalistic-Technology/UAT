@@ -174,7 +174,7 @@ export const getMyCompany = async (
 };
 
 // @desc    Update company
-// @route   PUT /api/companies/:id
+// @route   PUT /api/companies/me
 // @access  Private (Employer - Owner only)
 export const updateCompany = async (
     req: AuthRequest,
@@ -182,7 +182,7 @@ export const updateCompany = async (
     next: NextFunction
 ) => {
     try {
-       let company = await Company.findOne({ owner: req.user.id });
+        let company = await Company.findOne({ owner: req.user.id });
 
         if (!company) {
             return res.status(404).json({
@@ -202,7 +202,8 @@ export const updateCompany = async (
             });
         }
 
-        company = await Company.findByIdAndUpdate(req.params.id, req.body, {
+        // Use company._id instead of req.params.id since this is the /me route
+        company = await Company.findByIdAndUpdate(company._id, req.body, {
             new: true,
             runValidators: true,
         });

@@ -129,7 +129,7 @@ export const getMyCompany = async (req, res, next) => {
     }
 };
 // @desc    Update company
-// @route   PUT /api/companies/:id
+// @route   PUT /api/companies/me
 // @access  Private (Employer - Owner only)
 export const updateCompany = async (req, res, next) => {
     try {
@@ -148,7 +148,8 @@ export const updateCompany = async (req, res, next) => {
                 message: 'Not authorized to update this company',
             });
         }
-        company = await Company.findByIdAndUpdate(req.params.id, req.body, {
+        // Use company._id instead of req.params.id since this is the /me route
+        company = await Company.findByIdAndUpdate(company._id, req.body, {
             new: true,
             runValidators: true,
         });
