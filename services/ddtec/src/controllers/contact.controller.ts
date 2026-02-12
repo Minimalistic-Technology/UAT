@@ -42,3 +42,13 @@ export const submitContactForm = async (req: Request, res: Response) => {
         res.status(500).send('Server Error');
     }
 };
+
+export const getMessages = async (req: Request, res: Response) => {
+    try {
+        const messages = await Contact.find().sort({ createdAt: -1 });
+        res.json(messages);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};

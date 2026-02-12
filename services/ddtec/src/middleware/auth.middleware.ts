@@ -7,18 +7,18 @@ interface AuthRequest extends Request {
     user?: any;
 }
 
-export default function (req: AuthRequest, res: Response, next: NextFunction) {
+export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
     // Get token from header or cookie
     const token = req.cookies?.token || req.header('x-auth-token') || req.header('Authorization')?.replace('Bearer ', '');
 
-    console.log('Auth Middleware Debug:');
-    console.log('Cookies:', req.cookies);
-    console.log('Headers:', req.headers);
-    console.log('Found Token:', token);
+    // console.log('Auth Middleware Debug:');
+    // console.log('Cookies:', req.cookies);
+    // console.log('Headers:', req.headers);
+    // console.log('Found Token:', token);
 
     // Check if not token
     if (!token) {
-        console.log('No token found -> 401');
+        // console.log('No token found -> 401');
         return res.status(401).json({ msg: 'No token, authorization denied' });
     }
 
@@ -32,3 +32,16 @@ export default function (req: AuthRequest, res: Response, next: NextFunction) {
         res.status(401).json({ msg: 'Token is not valid' });
     }
 };
+
+export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+        return res.status(401).json({ msg: 'Authorization denied' });
+    }
+
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ msg: 'Access denied. Admin only.' });
+    }
+    next();
+};
+
+export default auth;

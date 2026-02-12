@@ -4,7 +4,7 @@ import Product from '../models/Product';
 
 export const getProducts = async (req: Request, res: Response) => {
     try {
-        const products = await Product.find().sort({ createdAt: -1 });
+        const products = await Product.find().sort({ createdAt: -1 }).populate('category', 'name');
         res.json(products);
     } catch (err) {
         console.error(err);
@@ -14,7 +14,7 @@ export const getProducts = async (req: Request, res: Response) => {
 
 export const getProductById = async (req: Request, res: Response) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const product = await Product.findById(req.params.id).populate('category', 'name');
         if (!product) return res.status(404).json({ msg: 'Product not found' });
         res.json(product);
     } catch (err: any) {
@@ -28,7 +28,7 @@ export const getProductById = async (req: Request, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, image, images, category, stock, brand, modelName } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue } = req.body;
 
         const newProduct = new Product({
             name,
@@ -41,7 +41,11 @@ export const createProduct = async (req: Request, res: Response) => {
             rating: req.body.rating || 0,
             lastMonthSales: req.body.lastMonthSales || 0,
             brand: brand || '',
-            modelName: modelName || ''
+            modelName: modelName || '',
+            couponCode: couponCode || undefined,
+            discountPercentage: discountPercentage || 0,
+            discountType: discountType || 'percentage',
+            discountValue: discountValue || 0
         });
 
         const product = await newProduct.save();
@@ -55,7 +59,7 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, image, images, category, stock, brand, modelName } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -71,6 +75,10 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.lastMonthSales = req.body.lastMonthSales !== undefined ? req.body.lastMonthSales : product.lastMonthSales;
         product.brand = brand || product.brand;
         product.modelName = modelName || product.modelName;
+        product.couponCode = couponCode !== undefined ? couponCode : product.couponCode;
+        product.discountPercentage = discountPercentage !== undefined ? discountPercentage : product.discountPercentage;
+        product.discountType = discountType || product.discountType;
+        product.discountValue = discountValue !== undefined ? discountValue : product.discountValue;
 
         await product.save();
 
