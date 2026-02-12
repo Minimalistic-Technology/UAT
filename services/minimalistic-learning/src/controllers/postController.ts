@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Post from '../models/Post';
 import Comment from '../models/Comment';
 
@@ -35,24 +36,23 @@ export const getPostBySlug = async (req: Request, res: Response): Promise<Respon
     .populate('authorId', 'name')
     .select('-__v');
 
-  if (!post) {
-    return res.sendStatus(404);
-  }
+  if (!post) return res.sendStatus(404);
 
   return res.json(post);
 };
 
 export const listComments = async (req: Request, res: Response): Promise<Response> => {
-  const post = await Post.findOne({
-    _id: req.params.id,
-    published: true
-  });
+  const { id } = req.params;
 
-  if (!post) {
-    return res.sendStatus(404);
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid post ID' });
   }
 
-  const comments = await Comment.find({ postId: req.params.id })
+  const post = await Post.findById(id);
+
+  if (!post || !post.published) return res.sendStatus(404);
+
+  const comments = await Comment.find({ postId: id })
     .populate('authorId', 'name')
     .select('content createdAt authorId')
     .sort({ createdAt: 1 });
@@ -61,15 +61,11 @@ export const listComments = async (req: Request, res: Response): Promise<Respons
 };
 
 export const createPost = async (req: Request, res: Response): Promise<Response> => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
 
   const { title, content, tags, published } = req.body;
 
-  if (!title || !content) {
-    return res.status(400).json({ message: 'Title and content required' });
-  }
+  if (!title || !content) return res.status(400).json({ message: 'Title and content required' });
 
   const slug = title
     .toLowerCase()
@@ -89,38 +85,42 @@ export const createPost = async (req: Request, res: Response): Promise<Response>
 };
 
 export const updatePost = async (req: Request, res: Response): Promise<Response> => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Unauthorized' });
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid post ID' });
   }
 
   const { title, content, tags, published } = req.body;
 
   const post = await Post.findOneAndUpdate(
-    { _id: req.params.id, authorId: req.user._id.toString() },
+    { _id: id, authorId: req.user._id.toString() },
     { title, content, tags, published },
     { new: true }
   );
 
-  if (!post) {
-    return res.sendStatus(404);
-  }
+  if (!post) return res.sendStatus(404);
 
   return res.json(post);
 };
 
 export const deletePost = async (req: Request, res: Response): Promise<Response> => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Unauthorized' });
+  if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid post ID' });
   }
 
   const post = await Post.findOneAndDelete({
-    _id: req.params.id,
+    _id: id,
     authorId: req.user._id.toString()
   });
 
-  if (!post) {
-    return res.sendStatus(404);
-  }
+  if (!post) return res.sendStatus(404);
 
   return res.sendStatus(204);
 };
