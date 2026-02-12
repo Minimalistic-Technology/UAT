@@ -76,7 +76,10 @@ export const createOrder = async (req: Request | any, res: Response): Promise<vo
 // Get all orders (Admin only - placeholder for future)
 export const getAllOrders = async (req: Request, res: Response) => {
     try {
-        const orders = await Order.find().populate('user', 'name email').sort({ createdAt: -1 });
+        const orders = await Order.find()
+            .populate('user', 'name email')
+            .populate('items.product', 'name price image')
+            .sort({ createdAt: -1 });
         res.json(orders);
     } catch (error) {
         res.status(500).json({ msg: 'Server error' });
