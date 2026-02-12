@@ -197,6 +197,17 @@ export default function ApplicantsPage({
                 </span>
 
                 <div className="space-y-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() =>
+                      (window.location.href = `/employer-dashboard/applicant/${application.jobSeeker._id}`)
+                    }
+                  >
+                    View Profile
+                  </Button>
+
                   {application.status === ApplicationStatus.PENDING && (
                     <>
                       <Button

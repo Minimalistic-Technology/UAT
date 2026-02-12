@@ -40,6 +40,7 @@ export enum JobStatus {
 
 export interface User {
   id: string;
+  _id?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -48,6 +49,7 @@ export interface User {
   avatar?: string;
   resume?: string;
   skills?: string[];
+  languages?: string[];
   experience?: Experience[];
   education?: Education[];
   location?: Location;

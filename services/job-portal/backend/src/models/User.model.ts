@@ -16,10 +16,11 @@ export interface IUser extends Document {
   phoneVerified: boolean;
   role: UserRole;
   avatar?: string;
-  
+
   // Job Seeker Specific
   resume?: string;
   skills?: string[];
+  languages?: string[];
   experience?: Array<{
     title: string;
     company: string;
@@ -40,23 +41,27 @@ export interface IUser extends Document {
     state: string;
     country: string;
   };
-  
+
   // Employer Specific
   company?: mongoose.Types.ObjectId;
-  
+
   // OAuth
   googleId?: string;
-  
+
   // Status
   isActive: boolean;
   isVerified: boolean;
-  
+
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
-  
+
   // Methods
   comparePassword(candidatePassword: string): Promise<boolean>;
+
+  // Password Reset
+  resetPasswordOtp?: string;
+  resetPasswordExpires?: Date;
 }
 
 const userSchema = new Schema<IUser>(
@@ -81,7 +86,7 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required:true,
+      required: true,
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
@@ -99,10 +104,11 @@ const userSchema = new Schema<IUser>(
       default: UserRole.JOB_SEEKER,
     },
     avatar: String,
-    
+
     // Job Seeker Fields
     resume: String,
     skills: [String],
+    languages: [String],
     experience: [
       {
         title: String,
@@ -127,16 +133,16 @@ const userSchema = new Schema<IUser>(
       state: String,
       country: String,
     },
-    
+
     // Employer Fields
     company: {
       type: Schema.Types.ObjectId,
       ref: 'Company',
     },
-    
+
     // OAuth
     googleId: String,
-    
+
     // Status
     isActive: {
       type: Boolean,
@@ -146,6 +152,10 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+
+    // Password Reset
+    resetPasswordOtp: String,
+    resetPasswordExpires: Date,
   },
   {
     timestamps: true,
@@ -155,7 +165,7 @@ const userSchema = new Schema<IUser>(
 // Hash password before saving
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
-  
+
   if (this.password) {
     this.password = await bcrypt.hash(this.password, 12);
   }

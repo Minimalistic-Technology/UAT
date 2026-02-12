@@ -48,6 +48,7 @@ const userSchema = new Schema({
     // Job Seeker Fields
     resume: String,
     skills: [String],
+    languages: [String],
     experience: [
         {
             title: String,
@@ -88,6 +89,9 @@ const userSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    // Password Reset
+    resetPasswordOtp: String,
+    resetPasswordExpires: Date,
 }, {
     timestamps: true,
 });

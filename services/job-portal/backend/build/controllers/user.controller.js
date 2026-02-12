@@ -10,6 +10,7 @@ export const updateProfile = async (req, res, next) => {
             lastName: req.body.lastName,
             phone: req.body.phone,
             skills: req.body.skills,
+            languages: req.body.languages,
             experience: req.body.experience,
             education: req.body.education,
             location: req.body.location,
@@ -77,7 +78,7 @@ export const uploadResume = async (req, res, next) => {
             });
         }
         // Upload to Cloudinary
-        const result = await uploadToCloudinary(req.file.buffer, 'resumes');
+        const result = await uploadToCloudinary(req.file.buffer, 'resumes', 'image', `resume-${req.user.id}-${Date.now()}`, 'pdf');
         // Delete old resume if exists
         if (req.user.resume) {
             await deleteFromCloudinary(req.user.resume);
@@ -94,6 +95,31 @@ export const uploadResume = async (req, res, next) => {
         res.status(500).json({
             success: false,
             message: 'Error uploading resume',
+            error: error.message,
+        });
+    }
+};
+// @desc    Get user by ID
+// @route   GET /api/users/:id
+// @access  Private
+export const getUserById = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found',
+            });
+        }
+        res.status(200).json({
+            success: true,
+            data: user,
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching user',
             error: error.message,
         });
     }

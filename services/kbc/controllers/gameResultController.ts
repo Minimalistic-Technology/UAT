@@ -5,14 +5,14 @@ import GameConfig from "../models/gameConfig";
 import Question from "../models/Question";
 
 
-export const createGameResult = async (req: Request, res: Response) : Promise<void> => {
+export const createGameResult = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = (req as any).user;
     const userId = user?._id;
     const userName = user?.userName;
 
 
-    if (!userId)  res.status(401).json({ message: "Unauthorized" });
+    if (!userId) res.status(401).json({ message: "Unauthorized" });
 
 
     const {
@@ -26,24 +26,16 @@ export const createGameResult = async (req: Request, res: Response) : Promise<vo
       questions = [],
     } = req.body;
 
-    if (!userId)  res.status(400).json({ message: "Invalid or missing userId" });
-    if (!gameConfigId)  res.status(400).json({ message: "Invalid or missing gameConfigId" });
-    if (typeof isWinner !== "boolean")  res.status(400).json({ message: "Invalid isWinner" });
+    if (!userId) res.status(400).json({ message: "Invalid or missing userId" });
+    if (!gameConfigId) res.status(400).json({ message: "Invalid or missing gameConfigId" });
+    if (typeof isWinner !== "boolean") res.status(400).json({ message: "Invalid isWinner" });
     if (typeof totalTimeSeconds !== "number" || totalTimeSeconds < 0)
-       res.status(400).json({ message: "Invalid totalTimeSeconds" });
+      res.status(400).json({ message: "Invalid totalTimeSeconds" });
     if (typeof correctAnswered !== "number" || correctAnswered < 0)
-       res.status(400).json({ message: "Invalid correctAnswered" });
+      res.status(400).json({ message: "Invalid correctAnswered" });
     if (!Array.isArray(questions) || questions.length === 0)
-       res.status(400).json({ message: "questions array is required" });
+      res.status(400).json({ message: "questions array is required" });
 
-
-    const existing = await GameResult.findOne({ userId, gameConfigId }).lean();
-    if (existing) {
-       res.status(409).json({
-        message: "Game result already exists for this user and gameConfig",
-        result: existing,
-      });
-    }
 
     // Normalize lifelines
     const lifelinesUsedFinal: string[] = Array.isArray(lifelinesUsed)
@@ -101,8 +93,10 @@ export const createGameResult = async (req: Request, res: Response) : Promise<vo
         };
       }
 
-      const correctIndex: number =
-        Number.isInteger(q?.correctIndex) && q.correctIndex >= 0 ? q.correctIndex : 0;
+      const correctIndices: number[] =
+        Array.isArray(q?.correctIndices) && q.correctIndices.length > 0 && q.correctIndices.every((i: any) => Number.isInteger(i) && i >= 0)
+          ? q.correctIndices
+          : (Number.isInteger(q?.correctIndex) && q.correctIndex >= 0 ? [q.correctIndex] : []);
 
       const media =
         q?.media ??
@@ -114,7 +108,7 @@ export const createGameResult = async (req: Request, res: Response) : Promise<vo
         id: String(pickId(q) ?? ""),
         bankId: String(pickBankId(q) ?? ""),
         lang: langObj,        // <-- full multilingual content
-        correctIndex,         // <-- single truth for the correct option
+        correctIndices,       // <-- multiple correct indices
         status: q?.status ?? undefined,
         media: media ?? null, // <-- { url, type, public_id? } or null
       };
@@ -126,7 +120,26 @@ export const createGameResult = async (req: Request, res: Response) : Promise<vo
         ? Math.max(0, Math.min(100, Math.round((correctAnswered / totalQuestions) * 100)))
         : 0;
 
-    const doc = await GameResult.create({
+    let doc = await GameResult.findOne({ userId, gameConfigId });
+    if (doc) {
+      // Update existing result so user can replay or correct score
+      doc.finalScore = finalScore;
+      doc.correctAnswered = correctAnswered;
+      doc.isWinner = isWinner;
+      doc.totalTimeSeconds = totalTimeSeconds;
+      doc.lifelinesUsed = lifelinesUsedFinal;
+      doc.prizeLadder = prizeLadder;
+      doc.questions = safeQuestions;
+      await doc.save();
+
+      res.status(200).json({
+        message: "Game result updated successfully",
+        result: doc,
+      });
+      return;
+    }
+
+    doc = await GameResult.create({
       userId,
       userName,
       gameConfigId,
@@ -139,10 +152,10 @@ export const createGameResult = async (req: Request, res: Response) : Promise<vo
       questions: safeQuestions,
     });
 
-     res.status(201).json({ message: "Game result saved", result: doc });
+    res.status(201).json({ message: "Game result saved", result: doc });
   } catch (err: any) {
     console.error("[createGameResult] Error:", err);
-     res
+    res
       .status(500)
       .json({ message: "Failed to save game result", error: err?.message });
   }
@@ -163,7 +176,7 @@ export const getScoresForGameConfig = async (req: Request, res: Response): Promi
     };
 
     if (!gameConfigId || !mongoose.Types.ObjectId.isValid(gameConfigId)) {
-       res.status(400).json({ message: "Invalid or missing gameConfigId" });
+      res.status(400).json({ message: "Invalid or missing gameConfigId" });
     }
 
     const p = Math.max(parseInt(page, 10) || 1, 1);
@@ -199,7 +212,7 @@ export const getScoresForGameConfig = async (req: Request, res: Response): Promi
       GameResult.countDocuments(filter),
     ]);
 
-     res.status(200).json({
+    res.status(200).json({
       results,
       total,
       page: p,
@@ -209,7 +222,7 @@ export const getScoresForGameConfig = async (req: Request, res: Response): Promi
     });
   } catch (err: any) {
     console.error("[getScoresForGameConfig] Error:", err);
-     res.status(500).json({
+    res.status(500).json({
       message: "Failed to fetch scores",
       error: err?.message,
     });
@@ -219,7 +232,7 @@ export const getScoresForGameConfig = async (req: Request, res: Response): Promi
 export const userGameResult = async (
   req: Request,
   res: Response
-) : Promise<void> => {
+): Promise<void> => {
   try {
     const userId =
       (req as any).user?._id ||
@@ -228,26 +241,26 @@ export const userGameResult = async (
       null;
 
     if (!userId) {
-       res.status(401).json({ message: "Unauthorized: user not found" });
+      res.status(401).json({ message: "Unauthorized: user not found" });
     }
 
     if (!userId) {
-       res.status(401).json({ message: "Unauthorized: user not found" });
+      res.status(401).json({ message: "Unauthorized: user not found" });
     }
 
     const { gameConfigId } = req.body as { gameConfigId?: string };
 
     if (!gameConfigId) {
-       res.status(400).json({ message: "gameConfigId is required" });
-       return
+      res.status(400).json({ message: "gameConfigId is required" });
+      return
     }
 
     if (!mongoose.Types.ObjectId.isValid(gameConfigId)) {
-       res.status(400).json({ message: "Invalid gameConfigId" });
+      res.status(400).json({ message: "Invalid gameConfigId" });
     }
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-       res.status(400).json({ message: "Invalid user id" });
+      res.status(400).json({ message: "Invalid user id" });
     }
 
     // Filter by gameConfigId + current user
@@ -274,17 +287,17 @@ export const userGameResult = async (
       .lean();
 
     if (!result) {
-       res.status(404).json({
+      res.status(404).json({
         message: "No game result found for this user and game configuration",
       });
     }
 
-     res.status(200).json({
+    res.status(200).json({
       result,
     });
   } catch (err: any) {
     console.error("[userGameResult] Error:", err);
-     res.status(500).json({
+    res.status(500).json({
       message: "Failed to fetch score for current user",
       error: err?.message,
     });

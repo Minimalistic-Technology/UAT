@@ -10,8 +10,10 @@ import { Button } from '@/app/components/ui/Button';
 import { Input } from '@/app/components/ui/Input';
 import { apiClient } from '@/app/lib/api';
 import { toast } from 'sonner';
-import { Camera, Plus, Trash2, Briefcase, GraduationCap } from 'lucide-react';
+import { Camera, Plus, Trash2, Briefcase, GraduationCap, X } from 'lucide-react';
 import { UserRole } from '@/app/types';
+import { ExperienceForm } from '@/app/components/ExperienceForm';
+import { EducationForm } from '@/app/components/EducationForm';
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -110,6 +112,11 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('Resume must be a PDF file');
+      return;
+    }
+
     if (file.size > 5 * 1024 * 1024) {
       toast.error('File size should be less than 5MB');
       return;
@@ -119,7 +126,39 @@ export default function ProfilePage() {
   };
 
   const onSubmit = (data: any) => {
-    updateProfileMutation.mutate(data);
+    // Convert skills string to array
+    const payload = {
+      ...data,
+      skills: typeof data.skills === 'string'
+        ? data.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : data.skills,
+      languages: typeof data.languages === 'string'
+        ? data.languages.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : data.languages,
+    };
+    updateProfileMutation.mutate(payload);
+  };
+
+  const handleSaveExperience = (data: any) => {
+    const updatedExperience = [...(profile?.experience || []), data];
+    updateProfileMutation.mutate({ experience: updatedExperience });
+    setEditingExperience(false);
+  };
+
+  const handleSaveEducation = (data: any) => {
+    const updatedEducation = [...(profile?.education || []), data];
+    updateProfileMutation.mutate({ education: updatedEducation });
+    setEditingEducation(false);
+  };
+
+  const handleDeleteExperience = (index: number) => {
+    const updatedExperience = profile?.experience.filter((_: any, i: number) => i !== index);
+    updateProfileMutation.mutate({ experience: updatedExperience });
+  };
+
+  const handleDeleteEducation = (index: number) => {
+    const updatedEducation = profile?.education.filter((_: any, i: number) => i !== index);
+    updateProfileMutation.mutate({ education: updatedEducation });
   };
 
   // 🚦 CONDITIONAL RETURNS AFTER HOOKS
@@ -248,6 +287,18 @@ export default function ProfilePage() {
                   defaultValue={profile?.skills?.join(', ')}
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Languages (comma separated)
+                </label>
+                <input
+                  {...register('languages')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  placeholder="English, Hindi, Spanish"
+                  defaultValue={profile?.languages?.join(', ')}
+                />
+              </div>
             </>
           )}
 
@@ -288,14 +339,16 @@ export default function ProfilePage() {
                     </a>
                   </div>
                 </div>
-                <label htmlFor="resume-upload">
-                  <Button variant="outline" size="sm" type="button">
-                    Update Resume
-                  </Button>
+                <label htmlFor="resume-upload-update">
+                  <div className="inline-block">
+                    <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('resume-upload-update')?.click()}>
+                      Update Resume
+                    </Button>
+                  </div>
                   <input
-                    id="resume-upload"
+                    id="resume-upload-update"
                     type="file"
-                    accept=".pdf,.doc,.docx"
+                    accept=".pdf"
                     className="hidden"
                     onChange={handleResumeChange}
                   />
@@ -303,16 +356,16 @@ export default function ProfilePage() {
               </div>
             ) : (
               <label
-                htmlFor="resume-upload"
+                htmlFor="resume-upload-new"
                 className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-primary-500"
               >
                 <Briefcase className="w-12 h-12 text-gray-400 mb-4" />
                 <p className="text-gray-600 mb-2">Upload your resume</p>
-                <p className="text-sm text-gray-500">PDF, DOC, DOCX (Max 5MB)</p>
+                <p className="text-sm text-gray-500">PDF Only (Max 5MB)</p>
                 <input
-                  id="resume-upload"
+                  id="resume-upload-new"
                   type="file"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf"
                   className="hidden"
                   onChange={handleResumeChange}
                 />
@@ -337,37 +390,51 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-4">
-            {profile?.experience?.map((exp: any, index: number) => (
-              <div
-                key={index}
-                className="p-4 border border-gray-200 rounded-lg hover:border-primary-300"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {exp.title}
-                    </h3>
-                    <p className="text-gray-600">{exp.company}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {exp.location} • {new Date(exp.startDate).toLocaleDateString()} -{' '}
-                      {exp.current
-                        ? 'Present'
-                        : new Date(exp.endDate).toLocaleDateString()}
-                    </p>
-                    <p className="text-gray-700 mt-2">{exp.description}</p>
+            {editingExperience ? (
+              <ExperienceForm
+                onSubmit={handleSaveExperience}
+                onCancel={() => setEditingExperience(false)}
+                isLoading={updateProfileMutation.isPending}
+              />
+            ) : (
+              <>
+                {profile?.experience?.map((exp: any, index: number) => (
+                  <div
+                    key={index}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-primary-300"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {exp.title}
+                        </h3>
+                        <p className="text-gray-600">{exp.company}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {exp.location} • {new Date(exp.startDate).toLocaleDateString()} -{' '}
+                          {exp.current
+                            ? 'Present'
+                            : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : ''}
+                        </p>
+                        <p className="text-gray-700 mt-2">{exp.description}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteExperience(index)}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+                ))}
 
-            {(!profile?.experience || profile.experience.length === 0) && (
-              <div className="text-center py-8 text-gray-500">
-                <Briefcase className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                <p>No experience added yet</p>
-              </div>
+                {(!profile?.experience || profile.experience.length === 0) && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Briefcase className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                    <p>No experience added yet</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </Card>
@@ -388,33 +455,47 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-4">
-            {profile?.education?.map((edu: any, index: number) => (
-              <div
-                key={index}
-                className="p-4 border border-gray-200 rounded-lg hover:border-primary-300"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {edu.degree}
-                    </h3>
-                    <p className="text-gray-600">{edu.institution}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {edu.fieldOfStudy} • Graduated {edu.graduationYear}
-                    </p>
+            {editingEducation ? (
+              <EducationForm
+                onSubmit={handleSaveEducation}
+                onCancel={() => setEditingEducation(false)}
+                isLoading={updateProfileMutation.isPending}
+              />
+            ) : (
+              <>
+                {profile?.education?.map((edu: any, index: number) => (
+                  <div
+                    key={index}
+                    className="p-4 border border-gray-200 rounded-lg hover:border-primary-300"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {edu.degree}
+                        </h3>
+                        <p className="text-gray-600">{edu.institution}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {edu.fieldOfStudy} • Graduated {edu.graduationYear}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteEducation(index)}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+                ))}
 
-            {(!profile?.education || profile.education.length === 0) && (
-              <div className="text-center py-8 text-gray-500">
-                <GraduationCap className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                <p>No education added yet</p>
-              </div>
+                {(!profile?.education || profile.education.length === 0) && (
+                  <div className="text-center py-8 text-gray-500">
+                    <GraduationCap className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                    <p>No education added yet</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </Card>

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login, logout, getMe, verifyOTP, googleAuth, } from "../controllers/auth.controller.js";
+import { register, login, logout, getMe, verifyOTP, googleAuth, forgotPassword, verifyResetOTP, resetPassword, } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
 import { body } from "express-validator";
@@ -36,4 +36,17 @@ router.post("/verify-otp", validate([
 ]), verifyOTP);
 // Google Auth
 router.post("/google-auth", validate([body("token").notEmpty().withMessage("Google token is required")]), googleAuth);
+// Forgot Password
+router.post("/forgot-password", validate([body("email").isEmail().withMessage("Valid email is required")]), forgotPassword);
+// Verify Reset OTP
+router.post("/verify-reset-otp", validate([
+    body("email").isEmail().withMessage("Valid email is required"),
+    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digits"),
+]), verifyResetOTP);
+// Reset Password
+router.post("/reset-password", validate([
+    body("email").isEmail().withMessage("Valid email is required"),
+    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digits"),
+    body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
+]), resetPassword);
 export default router;

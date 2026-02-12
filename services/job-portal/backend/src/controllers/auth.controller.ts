@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import User, { UserRole } from '../models/User.model.js';
 import { config } from '../config/env.js';
 import type { AuthRequest } from '../middleware/auth.middleware.js';
-// import { sendEmail } from '../utils/email.js';
+import { sendEmail } from '../utils/email.js';
 // import { sendOTP } from '../utils/sms.js';
 
 // Generate JWT Token
@@ -60,9 +60,9 @@ export const register = async (
     }
 
     const normalizedRole =
-    role === 'employer'
-    ? UserRole.EMPLOYER
-    : UserRole.JOB_SEEKER;
+      role === 'employer'
+        ? UserRole.EMPLOYER
+        : UserRole.JOB_SEEKER;
 
     // Create user
     const user = await User.create({
@@ -77,7 +77,7 @@ export const register = async (
     // Send verification email
     // const verificationToken = crypto.randomBytes(32).toString('hex');
     // Store token in DB (you'll need to add this field to User model)
-    
+
     // await sendEmail({
     //   email: user.email,
     //   subject: 'Verify your email',
@@ -287,6 +287,182 @@ export const googleAuth = async (
     res.status(500).json({
       success: false,
       message: 'Error with Google authentication',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Forgot Password - Send OTP
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const forgotPassword = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'There is no user with that email',
+      });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Hash OTP. Format: salt:hash
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto
+      .createHmac('sha256', salt)
+      .update(otp)
+      .digest('hex');
+    const otpToSave = `${salt}:${hash}`;
+
+
+    // Save to user
+    user.resetPasswordOtp = otpToSave;
+    user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await user.save({ validateBeforeSave: false });
+
+    // Send email
+    const message = `Your password reset OTP is ${otp}. It is valid for 10 minutes.`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Password Reset Valid for 10 mins',
+        message,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Email sent',
+      });
+    } catch (err) {
+      user.resetPasswordOtp = undefined;
+      user.resetPasswordExpires = undefined;
+
+      await user.save({ validateBeforeSave: false });
+
+      return res.status(500).json({
+        success: false,
+        message: 'Email could not be sent',
+      });
+    }
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Verify Reset OTP
+// @route   POST /api/auth/verify-reset-otp
+// @access  Public
+export const verifyResetOTP = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({
+      email,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user || !user.resetPasswordOtp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP or expired',
+      });
+    }
+
+    const [salt, hash] = user.resetPasswordOtp.split(':');
+    const newHash = crypto
+      .createHmac('sha256', salt)
+      .update(otp)
+      .digest('hex');
+
+    if (hash !== newHash) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP Verified',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Reset Password
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, otp, password } = req.body;
+
+    // Find user by email first, then check expiration manually or in query
+    const user = await User.findOne({
+      email,
+      resetPasswordExpires: { $gt: Date.now() },
+    }).select('+password');
+
+    if (!user || !user.resetPasswordOtp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP or expired',
+      });
+    }
+
+    // Verify OTP
+    const [salt, hash] = user.resetPasswordOtp.split(':');
+    const newHash = crypto
+      .createHmac('sha256', salt)
+      .update(otp)
+      .digest('hex');
+
+    if (hash !== newHash) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP',
+      });
+    }
+
+    // Set new password
+    user.password = password;
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    sendTokenResponse(user, 200, res);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
       error: error.message,
     });
   }

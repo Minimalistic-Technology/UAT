@@ -5,11 +5,14 @@ cloudinary.config({
     api_key: config.cloudinaryApiKey,
     api_secret: config.cloudinaryApiSecret,
 });
-export const uploadToCloudinary = async (fileBuffer, folder) => {
+export const uploadToCloudinary = async (fileBuffer, folder, resourceType = 'auto', id, format) => {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream({
             folder,
-            resource_type: 'auto'
+            resource_type: resourceType,
+            public_id: id,
+            format: format,
+            type: 'upload', // Ensure public access (not authenticated/private)
         }, (error, result) => {
             if (error)
                 reject(error);
