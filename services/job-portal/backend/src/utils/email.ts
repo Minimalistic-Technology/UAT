@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config/env.js';
-
+//
 interface EmailOptions {
     email: string;
     subject: string;
