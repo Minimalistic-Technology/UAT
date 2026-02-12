@@ -344,7 +344,17 @@ export const forgotPassword = async (
         success: true,
         message: 'Email sent',
       });
-    } catch (err) {
+    } catch (err: any) {
+      // Log the actual error for debugging
+      console.error('🚨 Error sending password reset email:', err);
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        command: err.command,
+        response: err.response,
+        responseCode: err.responseCode,
+      });
+
       user.resetPasswordOtp = undefined;
       user.resetPasswordExpires = undefined;
 
@@ -353,6 +363,11 @@ export const forgotPassword = async (
       return res.status(500).json({
         success: false,
         message: 'Email could not be sent',
+        // Include error details in development/staging for debugging
+        ...(config.nodeEnv !== 'production' && {
+          error: err.message,
+          errorCode: err.code
+        }),
       });
     }
   } catch (error: any) {

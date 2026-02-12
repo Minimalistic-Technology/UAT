@@ -6,8 +6,19 @@ const getTransporter = () => {
     if (!transporter) {
         // Validate required email configuration
         if (!config.emailHost || !config.emailUser || !config.emailPass) {
+            console.error('❌ Email configuration missing:', {
+                hasHost: !!config.emailHost,
+                hasUser: !!config.emailUser,
+                hasPass: !!config.emailPass,
+            });
             throw new Error('Email configuration is incomplete. Please check EMAIL_HOST, EMAIL_USER, and EMAIL_PASS environment variables.');
         }
+        console.log('📧 Initializing email transporter...', {
+            host: config.emailHost,
+            port: config.emailPort,
+            user: config.emailUser,
+            secure: config.emailPort === 465,
+        });
         transporter = nodemailer.createTransport({
             host: config.emailHost,
             port: config.emailPort,
@@ -35,6 +46,7 @@ const getTransporter = () => {
             debug: config.nodeEnv === 'development',
             logger: config.nodeEnv === 'development',
         });
+        console.log('✅ Email transporter initialized successfully');
     }
     return transporter;
 };
