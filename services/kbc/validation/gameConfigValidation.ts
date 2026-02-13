@@ -14,7 +14,7 @@ const prizeLevelSchema = z.object({
   level: z.number().int().min(1),
   type: z.enum(['money', 'gift']),
   value: z.union([
-    z.number().min(0), 
+    z.number().min(0),
     z.string().min(1, 'Gift description cannot be empty')
   ]),
   isSafe: z.boolean(),
@@ -30,7 +30,7 @@ const prizeLevelSchema = z.object({
 // Schema for the 'Lifeline' object
 const lifelineSchema = z.object({
   '50:50': z.boolean(),
-  'Audience Poll': z.boolean(),
+  'Double Dip': z.boolean(),
   'Expert Advice': z.boolean(),
   'Flip Question': z.boolean(),
 });

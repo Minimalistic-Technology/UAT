@@ -18,7 +18,7 @@ interface IPrizeLevel {
 
 interface ILifeline {
   '50:50': boolean;
-  'Audience Poll': boolean;
+  'Double Dip': boolean;
   'Expert Advice': boolean;
   'Flip Question': boolean;
 }
@@ -48,7 +48,7 @@ const PrizeLevelSchema = new Schema({
 
 const LifelineSchema = new Schema({
   '50:50': { type: Boolean, required: true },
-  'Audience Poll': { type: Boolean, required: true },
+  'Double Dip': { type: Boolean, required: true },
   'Expert Advice': { type: Boolean, required: true },
   'Flip Question': { type: Boolean, required: true },
 }, { _id: false });
