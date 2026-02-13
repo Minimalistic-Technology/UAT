@@ -11,6 +11,16 @@ console.log(' - EMAIL_USER:', process.env.EMAIL_USER ? 'FOUND (Real Mode)' : 'MI
 console.log(' - SMS_SERVICE: DISABLED (Use Email)');
 console.log(' - MONGO_URI:', process.env.MONGO_URI ? 'FOUND' : 'CONNECTED (HIDDEN)');
 
+// Trigger Email Verification on start
+import NotificationService from './services/notification.service';
+NotificationService.checkStatus().then(status => {
+    if (status.success) {
+        console.log('[NOTIFICATION] ✅ Email Service Status:', status.message);
+    } else {
+        console.error('[NOTIFICATION] ❌ Email Service Status:', status.message);
+    }
+});
+
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
