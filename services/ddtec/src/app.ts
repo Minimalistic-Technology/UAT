@@ -2,9 +2,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load env vars immediately before other imports
-dotenv.config(); // First try local .env
-dotenv.config({ path: path.resolve(__dirname, '../../.env') }); // Then try parent .env
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') }); // Finally try UAT root .env
+dotenv.config(); // Load .env from current service directory
+// Keep backup paths for monorepo support
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 console.log('[DEBUG] Environment Variables Check:');
 console.log(' - EMAIL_USER:', process.env.EMAIL_USER ? 'FOUND (Real Mode)' : 'MISSING (Sandbox Mode)');
