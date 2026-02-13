@@ -10,13 +10,25 @@ class NotificationService {
             if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
                 console.log('[NOTIFICATION] Initializing Real Email Service (Gmail/SMTP)');
                 this._emailTransporter = nodemailer.createTransport({
-                    service: 'gmail',
+                    host: 'smtp.gmail.com',
+                    port: 465,
+                    secure: true, // Use SSL
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS,
                     },
+                    pool: true, // Use connection pooling for Render
                 });
                 this._isTestAccount = false;
+
+                // Verify connection on startup
+                this._emailTransporter.verify((error: any, success: any) => {
+                    if (error) {
+                        console.error('[CRITICAL-ERROR] Nodemailer Transporter verification failed:', error);
+                    } else {
+                        console.log('[NOTIFICATION] Email Server is ready to take our messages');
+                    }
+                });
             }
             // Second Priority: Zero-Config Ethereal sandbox
             else {
@@ -96,8 +108,10 @@ class NotificationService {
             }
 
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('[STRICT-ERROR] Failed to send email OTP:', error);
+            if (error.response) console.error('SMTP Response:', error.response);
+            if (error.code) console.error('Error Code:', error.code);
             return false;
         }
     }
@@ -171,8 +185,10 @@ class NotificationService {
             }
 
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('[STRICT-ERROR] Order confirmation failed:', error);
+            if (error.response) console.error('SMTP Response:', error.response);
+            if (error.code) console.error('Error Code:', error.code);
             return false;
         }
     }
@@ -213,9 +229,36 @@ class NotificationService {
             }
 
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('[STRICT-ERROR] Contact notification failed:', error);
+            if (error.response) console.error('SMTP Response:', error.response);
+            if (error.code) console.error('Error Code:', error.code);
             return false;
+        }
+    }
+    /**
+     * Checks SMTP status and logs results.
+     */
+    static async checkStatus(): Promise<{ success: boolean; message: string }> {
+        try {
+            const transporter = await this.getEmailTransporter();
+            if (!transporter) return { success: false, message: 'Transporter not initialized. Check credentials.' };
+
+            if (this._isTestAccount) {
+                return { success: true, message: 'Running in Sandbox Mode (Ethereal)' };
+            }
+
+            return new Promise((resolve) => {
+                transporter.verify((error: any) => {
+                    if (error) {
+                        resolve({ success: false, message: error.message });
+                    } else {
+                        resolve({ success: true, message: 'SMTP Connection Successful' });
+                    }
+                });
+            });
+        } catch (error: any) {
+            return { success: false, message: error.message };
         }
     }
 }
