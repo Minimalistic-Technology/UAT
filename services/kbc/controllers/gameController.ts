@@ -236,36 +236,40 @@ export const fiftyFiftyLifeline = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const { options, correctIndices } = question;
+    const { options, correctIndex, correctIndices } = question;
 
-    // Filter to get options that are NOT correct
-    let incorrectOptions: string[] = [];
-
-    if (Array.isArray(correctIndices) && correctIndices.length > 0) {
-      // 50:50 logic for multiple correct answers:
-      // We must remove 2 INCORRECT options.
-      // 1. Identify all incorrect indices
-      // 2. Shuffle them
-      // 3. Pick 2 to remove
-
-      incorrectOptions = options.filter((_: any, idx: number) => !correctIndices.includes(idx));
+    // Determine the correct answer index
+    let correctIdx: number;
+    if (typeof correctIndex === 'number') {
+      correctIdx = correctIndex;
+    } else if (Array.isArray(correctIndices) && correctIndices.length > 0) {
+      // Legacy support
+      correctIdx = correctIndices[0];
     } else {
-      // Fallback or error if no correctIndices provided
-      // For safety, providing no removed options is better than breaking the game
-      res.status(200).json({ removedOptions: [] });
+      // Error: no correct answer specified
+      res.status(400).json({ message: "No correct answer index provided" });
       return;
     }
 
-    // Shuffle incorrect options
-    for (let i = incorrectOptions.length - 1; i > 0; i--) {
+    // 50:50 logic: Remove 2 INCORRECT options
+    // Identify all incorrect indices (0-3 except correctIdx)
+    const allIndices = [0, 1, 2, 3];
+    const incorrectIndices = allIndices.filter(idx => idx !== correctIdx);
+
+    // Shuffle incorrect indices
+    for (let i = incorrectIndices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [incorrectOptions[i], incorrectOptions[j]] = [incorrectOptions[j], incorrectOptions[i]];
+      [incorrectIndices[i], incorrectIndices[j]] = [incorrectIndices[j], incorrectIndices[i]];
     }
 
-    // Take up to 2 incorrect options
-    const removedOptions = incorrectOptions.slice(0, 2);
+    // Take 2 random incorrect indices
+    const indicesToRemove = incorrectIndices.slice(0, 2);
+
+    // Map indices to actual option texts
+    const removedOptions = indicesToRemove.map(idx => options[idx]);
 
     res.status(200).json({ removedOptions });
+
 
   } catch (error) {
     console.error("Error in fiftyFiftyLifeline:", error);

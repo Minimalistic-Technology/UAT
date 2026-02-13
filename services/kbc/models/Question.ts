@@ -36,7 +36,7 @@ export interface IQuestion extends Document {
     gu?: LangBlock;
   };
 
-  correctIndices: number[]; // shared indices for all languages
+  correctIndex: number;
   mediaRef?: IMediaRef;
   status: "draft" | "published";
   versions: QuestionVersion[];
@@ -100,10 +100,11 @@ const QuestionSchema = new Schema<IQuestion>(
       gu: { type: LangBlockSchema, required: false },
     },
 
-    correctIndices: {
-      type: [Number],
+    correctIndex: {
+      type: Number,
       required: true,
-      validate: [(v: number[]) => v.length > 0, "At least one correct answer is required."]
+      min: [0, "Correct index must be between 0 and 3."],
+      max: [3, "Correct index must be between 0 and 3."]
     },
     mediaRef: MediaRefSchema,
     status: { type: String, enum: ["draft", "published"], default: "draft" },

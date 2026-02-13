@@ -98,24 +98,18 @@ const parseIncomingJsonFields = (data: any) => {
   if (typeof data.lang === "string") {
     try { data.lang = JSON.parse(data.lang); } catch { }
   }
-  // Remove correctIndex handling, handle correctIndices
-  if (typeof data.correctIndices === "string") {
-    try {
-      data.correctIndices = JSON.parse(data.correctIndices);
-    } catch {
-      // If it's a simple number string like "1", treat as [1]
-      const parsed = parseInt(data.correctIndices, 10);
-      if (!isNaN(parsed)) {
-        data.correctIndices = [parsed];
-      }
+  // Parse correctIndex (single answer)
+  if (typeof data.correctIndex === "string") {
+    const parsed = parseInt(data.correctIndex, 10);
+    if (!isNaN(parsed)) {
+      data.correctIndex = parsed;
     }
-  } else if (typeof data.correctIndex !== "undefined") {
-    // Fallback for legacy input: map correctIndex -> correctIndices
-    const idx = parseInt(data.correctIndex, 10);
-    if (!isNaN(idx)) {
-      data.correctIndices = [idx];
-    }
-    delete data.correctIndex;
+  }
+
+  // Legacy: if correctIndices array comes in, take first element as correctIndex
+  if (Array.isArray(data.correctIndices) && data.correctIndices.length > 0) {
+    data.correctIndex = data.correctIndices[0];
+    delete data.correctIndices;
   }
 
   if (typeof data.options === "string") {
