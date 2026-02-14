@@ -9,15 +9,18 @@ class NotificationService {
             // First Priority: Real Credentials
             if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
                 console.log('[NOTIFICATION] Initializing Real Email Service (Gmail/SMTP)');
+                console.log('[NOTIFICATION] SMTP Config: explicit port 587, host: smtp.gmail.com');
                 this._emailTransporter = nodemailer.createTransport({
-                    service: 'gmail',
+                    host: 'smtp.gmail.com',
+                    port: 587,
+                    secure: false, // STARTTLS
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS,
                     },
                     pool: true,
-                    connectionTimeout: 20000, // 20s
-                    greetingTimeout: 20000,   // 20s
+                    connectionTimeout: 15000,
+                    greetingTimeout: 15000,
                     tls: {
                         rejectUnauthorized: false
                     }
@@ -98,7 +101,9 @@ class NotificationService {
                 `,
             };
 
+            console.log(`[NOTIFICATION] Attempting to send OTP email to ${email}...`);
             const info = await transporter.sendMail(mailOptions);
+            console.log(`[NOTIFICATION] OTP Mail send call finished.`);
 
             if (this._isTestAccount) {
                 console.log('--------------------------------------------------');
@@ -179,7 +184,9 @@ class NotificationService {
                 `,
             };
 
+            console.log(`[NOTIFICATION] Attempting to send Order Confirmation to ${to}...`);
             const info = await transporter.sendMail(mailOptions);
+            console.log(`[NOTIFICATION] Order Confirmation Mail send call finished.`);
 
             if (this._isTestAccount) {
                 console.log('[SANDBOX-ORDER] Receipt Preview:', nodemailer.getTestMessageUrl(info));
@@ -225,7 +232,9 @@ class NotificationService {
                 `,
             };
 
+            console.log(`[NOTIFICATION] Attempting to send Contact Notification to ${to}...`);
             const info = await transporter.sendMail(mailOptions);
+            console.log(`[NOTIFICATION] Contact Notification Mail send call finished.`);
 
             if (this._isTestAccount) {
                 console.log('[SANDBOX-CONTACT] Message Preview:', nodemailer.getTestMessageUrl(info));
