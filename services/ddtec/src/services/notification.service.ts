@@ -13,6 +13,7 @@ class NotificationService {
                 const secure = process.env.EMAIL_SECURE === 'true'; // false for 587, true for 465
 
                 console.log(`[NOTIFICATION] Initializing Real Email Service (${host}:${port})`);
+                console.log(`[NOTIFICATION] Credentials Check: User=${process.env.EMAIL_USER}, Pass=${process.env.EMAIL_PASS ? '********' : 'MISSING'}`);
                 this._emailTransporter = nodemailer.createTransport({
                     host,
                     port,
