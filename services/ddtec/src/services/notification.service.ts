@@ -23,8 +23,10 @@ class NotificationService {
                         pass: process.env.EMAIL_PASS,
                     },
                     pool: true,
-                    connectionTimeout: 30000,
-                    greetingTimeout: 30000,
+                    connectionTimeout: 10000,
+                    greetingTimeout: 10000,
+                    debug: true,
+                    logger: true,
                     tls: {
                         rejectUnauthorized: false
                     }

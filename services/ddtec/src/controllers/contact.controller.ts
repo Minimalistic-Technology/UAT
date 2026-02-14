@@ -23,19 +23,20 @@ export const submitContactForm = async (req: Request, res: Response) => {
 
         const savedContact = await newContact.save();
 
-        // 3. Send Email Notification
+        // 3. Send Email Notification (Background - Don't await to prevent timeout)
         const emailValidation = ValidationService.isRealEmail(email);
-        if (!emailValidation.isValid) {
-            return res.status(400).json({ msg: emailValidation.msg });
+        if (emailValidation.isValid) {
+            setImmediate(() => {
+                NotificationService.sendContactNotification({ firstName, lastName, email, message })
+                    .catch(err => console.error('[BACKGROUND-MAIL-ERROR] Contact Notification failed:', err));
+            });
         }
 
-        const sent = await NotificationService.sendContactNotification({ firstName, lastName, email, message });
-
-        if (sent) {
-            res.status(201).json({ msg: 'Message sent and saved successfully', contact: savedContact });
-        } else {
-            res.status(201).json({ msg: 'Message saved, but notification failed.', contact: savedContact });
-        }
+        // Return response immediately
+        return res.status(201).json({
+            msg: 'Message received successfully!',
+            contact: savedContact
+        });
 
     } catch (err) {
         console.error(err);
