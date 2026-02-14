@@ -8,18 +8,28 @@ class NotificationService {
         if (!this._emailTransporter) {
             // First Priority: Real Credentials
             if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-                console.log(`[NOTIFICATION] Initializing Real Email Service (Gmail Service Mode)`);
+                const host = 'smtp.gmail.com';
+                const port = 465;
+                const secure = true;
+
+                console.log(`[NOTIFICATION] Initializing Real Email Service (Port 465 SSL Mode)`);
                 console.log(`[NOTIFICATION] Credentials Check: User=${process.env.EMAIL_USER}, Pass=${process.env.EMAIL_PASS ? '********' : 'MISSING'}`);
                 this._emailTransporter = nodemailer.createTransport({
-                    service: 'gmail',
+                    host,
+                    port,
+                    secure,
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS,
                     },
-                    connectionTimeout: 30000,
-                    greetingTimeout: 30000,
+                    connectionTimeout: 20000,
+                    greetingTimeout: 20000,
                     debug: true,
-                    logger: true
+                    logger: true,
+                    tls: {
+                        // Do not fail on invalid certs
+                        rejectUnauthorized: false
+                    }
                 });
                 this._isTestAccount = false;
 
@@ -27,9 +37,9 @@ class NotificationService {
                 this._emailTransporter.verify((error: any, success: any) => {
                     if (error) {
                         console.error('[CRITICAL-ERROR] Nodemailer Transporter verification failed:', error);
-                        console.error(`[CRITICAL-ERROR] Check if Gmail Service is allowed and credentials are correct.`);
+                        console.error(`[CRITICAL-ERROR] Render often blocks SMTP ports (587/465). Contact Render support to open them.`);
                     } else {
-                        console.log(`[NOTIFICATION] Email Server is ready (Gmail Service Mode)`);
+                        console.log(`[NOTIFICATION] Email Server is ready (Port 465 SSL Mode)`);
                     }
                 });
             }
