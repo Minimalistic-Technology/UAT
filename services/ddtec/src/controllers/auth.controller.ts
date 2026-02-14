@@ -16,10 +16,11 @@ const generateOTP = () => {
 
 export const sendOtp = async (req: Request, res: Response) => {
     try {
-        const { identifier } = req.body; // email or phone
+        let { identifier } = req.body; // email or phone
         if (!identifier) {
             return res.status(400).json({ msg: 'Identifier (email or phone) is required' });
         }
+        identifier = identifier.trim();
 
         // Check if user already exists
         const existingUser = await User.findOne({
@@ -155,8 +156,8 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
     try {
-        const { email, phone, password } = req.body;
-        const identifier = email || phone;
+        let { email, phone, password } = req.body;
+        const identifier = (email || phone || '').trim();
 
         // Check if user exists
         const user = await User.findOne({
@@ -402,10 +403,11 @@ export const changePassword = async (req: Request | any, res: Response) => {
 
 export const checkUser = async (req: Request, res: Response) => {
     try {
-        const { identifier } = req.body;
+        let { identifier } = req.body;
         if (!identifier) {
             return res.status(400).json({ msg: 'Identifier is required' });
         }
+        identifier = identifier.trim();
 
         const user = await User.findOne({
             $or: [{ email: identifier }, { phone: identifier }]
