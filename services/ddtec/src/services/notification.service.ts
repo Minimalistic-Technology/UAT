@@ -8,28 +8,18 @@ class NotificationService {
         if (!this._emailTransporter) {
             // First Priority: Real Credentials
             if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-                const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
-                const port = parseInt(process.env.EMAIL_PORT || '587');
-                const secure = process.env.EMAIL_SECURE === 'true'; // false for 587, true for 465
-
-                console.log(`[NOTIFICATION] Initializing Real Email Service (${host}:${port})`);
+                console.log(`[NOTIFICATION] Initializing Real Email Service (Gmail Service Mode)`);
                 console.log(`[NOTIFICATION] Credentials Check: User=${process.env.EMAIL_USER}, Pass=${process.env.EMAIL_PASS ? '********' : 'MISSING'}`);
                 this._emailTransporter = nodemailer.createTransport({
-                    host,
-                    port,
-                    secure,
+                    service: 'gmail',
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS,
                     },
-                    pool: true,
-                    connectionTimeout: 10000,
-                    greetingTimeout: 10000,
+                    connectionTimeout: 30000,
+                    greetingTimeout: 30000,
                     debug: true,
-                    logger: true,
-                    tls: {
-                        rejectUnauthorized: false
-                    }
+                    logger: true
                 });
                 this._isTestAccount = false;
 
@@ -37,9 +27,9 @@ class NotificationService {
                 this._emailTransporter.verify((error: any, success: any) => {
                     if (error) {
                         console.error('[CRITICAL-ERROR] Nodemailer Transporter verification failed:', error);
-                        console.error(`[CRITICAL-ERROR] Check if port ${port} is open and credentials are correct.`);
+                        console.error(`[CRITICAL-ERROR] Check if Gmail Service is allowed and credentials are correct.`);
                     } else {
-                        console.log(`[NOTIFICATION] Email Server is ready (${host}:${port})`);
+                        console.log(`[NOTIFICATION] Email Server is ready (Gmail Service Mode)`);
                     }
                 });
             }
