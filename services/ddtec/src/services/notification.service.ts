@@ -8,12 +8,15 @@ class NotificationService {
         if (!this._emailTransporter) {
             // First Priority: Real Credentials
             if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-                console.log('[NOTIFICATION] Initializing Real Email Service (Gmail/SMTP)');
-                console.log('[NOTIFICATION] SMTP Config: explicit port 587, host: smtp.gmail.com');
+                const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
+                const port = parseInt(process.env.EMAIL_PORT || '587');
+                const secure = process.env.EMAIL_SECURE === 'true'; // false for 587, true for 465
+
+                console.log(`[NOTIFICATION] Initializing Real Email Service (${host}:${port})`);
                 this._emailTransporter = nodemailer.createTransport({
-                    host: 'smtp.gmail.com',
-                    port: 587,
-                    secure: false, // STARTTLS
+                    host,
+                    port,
+                    secure,
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS,
@@ -78,7 +81,15 @@ class NotificationService {
     private static async sendEmailOTP(email: string, otp: string): Promise<boolean> {
         try {
             const transporter = await this.getEmailTransporter();
-            if (!transporter) return false;
+            if (!transporter) {
+                console.error('[STRICT-ERROR] Cannot send email OTP: Transporter not initialized.');
+                return false;
+            }
+
+            if (!email) {
+                console.error('[STRICT-ERROR] Cannot send email OTP: Recipient email is missing.');
+                return false;
+            }
 
             const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`;
 
@@ -130,10 +141,18 @@ class NotificationService {
     static async sendOrderConfirmation(order: any): Promise<boolean> {
         try {
             const transporter = await this.getEmailTransporter();
-            if (!transporter) return false;
+            if (!transporter) {
+                console.error('[STRICT-ERROR] Cannot send order confirmation: Transporter not initialized.');
+                return false;
+            }
+
+            const to = order.shippingInfo?.email;
+            if (!to) {
+                console.error('[STRICT-ERROR] Cannot send order confirmation: Recipient email is missing from order.');
+                return false;
+            }
 
             const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`;
-            const to = order.shippingInfo.email;
             const adminEmail = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
 
             const itemsHtml = order.items.map((item: any) => `
@@ -146,7 +165,7 @@ class NotificationService {
             const mailOptions = {
                 from,
                 to,
-                bcc: adminEmail, // Admin gets a copy
+                bcc: adminEmail || undefined, // Only CC admin if EMAIL_TO is defined
                 subject: `Order Confirmed - #${order._id.toString().slice(-6).toUpperCase()}`,
                 html: `
                     <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
@@ -209,11 +228,18 @@ class NotificationService {
     static async sendContactNotification(contactData: { firstName: string, lastName: string, email: string, message: string }): Promise<boolean> {
         try {
             const transporter = await this.getEmailTransporter();
-            if (!transporter) return false;
+            if (!transporter) {
+                console.error('[STRICT-ERROR] Cannot send contact notification: Transporter not initialized.');
+                return false;
+            }
 
-            const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : process.env.EMAIL_USER;
-            const to = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
-            console.log(from, to, contactData.email)
+            const to = this._isTestAccount ? 'admin-test@ddtec.com' : (process.env.EMAIL_TO || process.env.EMAIL_USER || '');
+            if (!to) {
+                console.warn('[NOTIFICATION-WARN] EMAIL_TO not defined. Contact notification might not reach anyone.');
+            }
+
+            const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`;
+            console.log(`[NOTIFICATION] Routing contact message: FROM=${contactData.email} TO=${to}`);
             const mailOptions = {
                 from,
                 to,
