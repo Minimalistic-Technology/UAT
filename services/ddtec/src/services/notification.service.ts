@@ -11,8 +11,8 @@ class NotificationService {
                 console.log('[NOTIFICATION] Initializing Real Email Service (Gmail/SMTP)');
                 this._emailTransporter = nodemailer.createTransport({
                     host: 'smtp.gmail.com',
-                    port: 465,
-                    secure: true, // Use SSL
+                    port: 587,
+                    secure: false, // Use STARTTLS
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS,
@@ -203,7 +203,7 @@ class NotificationService {
 
             const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : process.env.EMAIL_USER;
             const to = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
-            console.log(from , to , contactData.email)
+            console.log(from, to, contactData.email)
             const mailOptions = {
                 from,
                 to,
