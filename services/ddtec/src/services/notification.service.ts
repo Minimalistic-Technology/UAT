@@ -203,7 +203,7 @@ class NotificationService {
 
             const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : process.env.EMAIL_USER;
             const to = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
-
+            console.log(from , to , contactData.email)
             const mailOptions = {
                 from,
                 to,
