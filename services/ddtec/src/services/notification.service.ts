@@ -255,6 +255,11 @@ class NotificationService {
             console.log(`[NOTIFICATION] Attempting to send Contact Notification to ${to}...`);
             const info = await transporter.sendMail(mailOptions);
             console.log(`[NOTIFICATION] Contact Notification Mail send call finished.`);
+            console.log(`[NOTIFICATION] Full SMTP Response:`, JSON.stringify(info, null, 2));
+
+            if (!this._isTestAccount) {
+                console.log(`[STRICT] Real Email notification sent. MessageId: ${info.messageId}`);
+            }
 
             if (this._isTestAccount) {
                 console.log('[SANDBOX-CONTACT] Message Preview:', nodemailer.getTestMessageUrl(info));
