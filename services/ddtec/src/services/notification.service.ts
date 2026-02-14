@@ -10,14 +10,17 @@ class NotificationService {
             if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
                 console.log('[NOTIFICATION] Initializing Real Email Service (Gmail/SMTP)');
                 this._emailTransporter = nodemailer.createTransport({
-                    host: 'smtp.gmail.com',
-                    port: 587,
-                    secure: false, // Use STARTTLS
+                    service: 'gmail',
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS,
                     },
-                    pool: true, // Use connection pooling for Render
+                    pool: true,
+                    connectionTimeout: 20000, // 20s
+                    greetingTimeout: 20000,   // 20s
+                    tls: {
+                        rejectUnauthorized: false
+                    }
                 });
                 this._isTestAccount = false;
 
