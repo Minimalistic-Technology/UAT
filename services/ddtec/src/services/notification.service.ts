@@ -8,15 +8,30 @@ class NotificationService {
         if (!this._emailTransporter) {
             // First Priority: Real Credentials
             if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-                console.log('[NOTIFICATION] Initializing Real Email Service (Gmail/SMTP)');
+                console.log(`[NOTIFICATION] Initializing Real Email Service (Gmail Service Mode)`);
+                console.log(`[NOTIFICATION] Credentials Check: User=${process.env.EMAIL_USER}, Pass=${process.env.EMAIL_PASS ? '********' : 'MISSING'}`);
                 this._emailTransporter = nodemailer.createTransport({
                     service: 'gmail',
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS,
                     },
+                    connectionTimeout: 30000,
+                    greetingTimeout: 30000,
+                    debug: true,
+                    logger: true
                 });
                 this._isTestAccount = false;
+
+                // Verify connection on startup
+                this._emailTransporter.verify((error: any, success: any) => {
+                    if (error) {
+                        console.error('[CRITICAL-ERROR] Nodemailer Transporter verification failed:', error);
+                        console.error(`[CRITICAL-ERROR] Check if Gmail Service is allowed and credentials are correct.`);
+                    } else {
+                        console.log(`[NOTIFICATION] Email Server is ready (Gmail Service Mode)`);
+                    }
+                });
             }
             // Second Priority: Zero-Config Ethereal sandbox
             else {
@@ -60,7 +75,15 @@ class NotificationService {
     private static async sendEmailOTP(email: string, otp: string): Promise<boolean> {
         try {
             const transporter = await this.getEmailTransporter();
-            if (!transporter) return false;
+            if (!transporter) {
+                console.error('[STRICT-ERROR] Cannot send email OTP: Transporter not initialized.');
+                return false;
+            }
+
+            if (!email) {
+                console.error('[STRICT-ERROR] Cannot send email OTP: Recipient email is missing.');
+                return false;
+            }
 
             const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`;
 
@@ -83,7 +106,9 @@ class NotificationService {
                 `,
             };
 
+            console.log(`[NOTIFICATION] Attempting to send OTP email to ${email}...`);
             const info = await transporter.sendMail(mailOptions);
+            console.log(`[NOTIFICATION] OTP Mail send call finished.`);
 
             if (this._isTestAccount) {
                 console.log('--------------------------------------------------');
@@ -96,8 +121,10 @@ class NotificationService {
             }
 
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('[STRICT-ERROR] Failed to send email OTP:', error);
+            if (error.response) console.error('SMTP Response:', error.response);
+            if (error.code) console.error('Error Code:', error.code);
             return false;
         }
     }
@@ -108,10 +135,18 @@ class NotificationService {
     static async sendOrderConfirmation(order: any): Promise<boolean> {
         try {
             const transporter = await this.getEmailTransporter();
-            if (!transporter) return false;
+            if (!transporter) {
+                console.error('[STRICT-ERROR] Cannot send order confirmation: Transporter not initialized.');
+                return false;
+            }
+
+            const to = order.shippingInfo?.email;
+            if (!to) {
+                console.error('[STRICT-ERROR] Cannot send order confirmation: Recipient email is missing from order.');
+                return false;
+            }
 
             const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`;
-            const to = order.shippingInfo.email;
             const adminEmail = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
 
             const itemsHtml = order.items.map((item: any) => `
@@ -124,7 +159,7 @@ class NotificationService {
             const mailOptions = {
                 from,
                 to,
-                bcc: adminEmail, // Admin gets a copy
+                bcc: adminEmail || undefined, // Only CC admin if EMAIL_TO is defined
                 subject: `Order Confirmed - #${order._id.toString().slice(-6).toUpperCase()}`,
                 html: `
                     <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
@@ -162,7 +197,9 @@ class NotificationService {
                 `,
             };
 
+            console.log(`[NOTIFICATION] Attempting to send Order Confirmation to ${to}...`);
             const info = await transporter.sendMail(mailOptions);
+            console.log(`[NOTIFICATION] Order Confirmation Mail send call finished.`);
 
             if (this._isTestAccount) {
                 console.log('[SANDBOX-ORDER] Receipt Preview:', nodemailer.getTestMessageUrl(info));
@@ -171,8 +208,10 @@ class NotificationService {
             }
 
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('[STRICT-ERROR] Order confirmation failed:', error);
+            if (error.response) console.error('SMTP Response:', error.response);
+            if (error.code) console.error('Error Code:', error.code);
             return false;
         }
     }
@@ -183,11 +222,18 @@ class NotificationService {
     static async sendContactNotification(contactData: { firstName: string, lastName: string, email: string, message: string }): Promise<boolean> {
         try {
             const transporter = await this.getEmailTransporter();
-            if (!transporter) return false;
+            if (!transporter) {
+                console.error('[STRICT-ERROR] Cannot send contact notification: Transporter not initialized.');
+                return false;
+            }
 
-            const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : process.env.EMAIL_USER;
-            const to = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
+            const to = this._isTestAccount ? 'admin-test@ddtec.com' : (process.env.EMAIL_TO || process.env.EMAIL_USER || '');
+            if (!to) {
+                console.warn('[NOTIFICATION-WARN] EMAIL_TO not defined. Contact notification might not reach anyone.');
+            }
 
+            const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`;
+            console.log(`[NOTIFICATION] Routing contact message: FROM=${contactData.email} TO=${to}`);
             const mailOptions = {
                 from,
                 to,
@@ -206,16 +252,50 @@ class NotificationService {
                 `,
             };
 
+            console.log(`[NOTIFICATION] Attempting to send Contact Notification to ${to}...`);
             const info = await transporter.sendMail(mailOptions);
+            console.log(`[NOTIFICATION] Contact Notification Mail send call finished.`);
+            console.log(`[NOTIFICATION] Full SMTP Response:`, JSON.stringify(info, null, 2));
+
+            if (!this._isTestAccount) {
+                console.log(`[STRICT] Real Email notification sent. MessageId: ${info.messageId}`);
+            }
 
             if (this._isTestAccount) {
                 console.log('[SANDBOX-CONTACT] Message Preview:', nodemailer.getTestMessageUrl(info));
             }
 
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('[STRICT-ERROR] Contact notification failed:', error);
+            if (error.response) console.error('SMTP Response:', error.response);
+            if (error.code) console.error('Error Code:', error.code);
             return false;
+        }
+    }
+    /**
+     * Checks SMTP status and logs results.
+     */
+    static async checkStatus(): Promise<{ success: boolean; message: string }> {
+        try {
+            const transporter = await this.getEmailTransporter();
+            if (!transporter) return { success: false, message: 'Transporter not initialized. Check credentials.' };
+
+            if (this._isTestAccount) {
+                return { success: true, message: 'Running in Sandbox Mode (Ethereal)' };
+            }
+
+            return new Promise((resolve) => {
+                transporter.verify((error: any) => {
+                    if (error) {
+                        resolve({ success: false, message: error.message });
+                    } else {
+                        resolve({ success: true, message: 'SMTP Connection Successful' });
+                    }
+                });
+            });
+        } catch (error: any) {
+            return { success: false, message: error.message };
         }
     }
 }
