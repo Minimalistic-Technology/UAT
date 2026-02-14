@@ -22,8 +22,8 @@ class NotificationService {
                         pass: process.env.EMAIL_PASS,
                     },
                     pool: true,
-                    connectionTimeout: 15000,
-                    greetingTimeout: 15000,
+                    connectionTimeout: 30000,
+                    greetingTimeout: 30000,
                     tls: {
                         rejectUnauthorized: false
                     }
@@ -34,8 +34,9 @@ class NotificationService {
                 this._emailTransporter.verify((error: any, success: any) => {
                     if (error) {
                         console.error('[CRITICAL-ERROR] Nodemailer Transporter verification failed:', error);
+                        console.error(`[CRITICAL-ERROR] Check if port ${port} is open and credentials are correct.`);
                     } else {
-                        console.log('[NOTIFICATION] Email Server is ready to take our messages');
+                        console.log(`[NOTIFICATION] Email Server is ready (${host}:${port})`);
                     }
                 });
             }
