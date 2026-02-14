@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-/* -------------------- Interfaces -------------------- */
+/* -------------------- Interfaces ---------------------- */
 export interface Option {
   text: string;
   mediaRef?: string;
