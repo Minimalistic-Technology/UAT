@@ -131,46 +131,59 @@ export const flipQuestion = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
+    // Build the exclusion list: questions already asked in this session
+    const exclusionList = askedQuestionIds || [];
+    console.log(`[flipQuestion] Excluding ${exclusionList.length} questions from session`);
+
+    // First attempt: find unasked questions (excluding session questions)
     let availableQuestions = await Question.find({
       bankId: currentQuestionBankId,
-      _id: { $nin: askedQuestionIds || [] },
+      _id: { $nin: exclusionList },
       status: "published",
-      isAsked: false // Fixed: boolean instead of string "false"
+      isAsked: false
     });
 
+    // If no questions available, reset the isAsked flag
     if (availableQuestions.length === 0) {
-      console.log(`[flipQuestion] No questions found initially for bank ${currentQuestionBankId}. Resetting...`);
+      console.log(`[flipQuestion] No unasked questions for bank ${currentQuestionBankId}. Resetting isAsked flags...`);
+
       await Question.updateMany(
         { bankId: currentQuestionBankId, status: "published" },
         { $set: { isAsked: false } }
       );
 
+      // ✅ FIXED: Re-query with exclusion list after reset
       availableQuestions = await Question.find({
         bankId: currentQuestionBankId,
+        _id: { $nin: exclusionList }, // Still exclude questions from current session
         status: "published",
         isAsked: false,
       });
     }
 
-    // 🔹 If still no questions found after reset (empty bank)
+    // If STILL no questions (empty bank or all questions already seen in session)
     if (availableQuestions.length === 0) {
-      console.warn(`[flipQuestion] Bank ${currentQuestionBankId} is purely empty or has no published questions.`);
+      console.warn(`[flipQuestion] Bank ${currentQuestionBankId} has no available questions (total questions or all seen in current session).`);
       res.status(404).json({ message: "No questions available in this bank" });
       return;
     }
 
+    // Pick a random question
     const randomQuestion =
       availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
 
-    res.status(200).json({
-      message: "New question fetched successfully",
-      question: randomQuestion,
-    });
+    console.log(`[flipQuestion] Selected question ${randomQuestion._id} from ${availableQuestions.length} available`);
 
+    // ✅ FIXED: Mark as asked BEFORE sending response to prevent race conditions
     await Question.findByIdAndUpdate(randomQuestion._id, {
       isAsked: true,
     });
 
+    // Send response
+    res.status(200).json({
+      message: "New question fetched successfully",
+      question: randomQuestion,
+    });
 
   } catch (error) {
     console.error("Error in flipQuestion:", error);
