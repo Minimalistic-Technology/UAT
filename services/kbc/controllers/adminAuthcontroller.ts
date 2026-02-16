@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import Admin from "../models/Admin";
 import { generateToken, hashToken } from "../userUtils/token";
 import { sendEmail } from "../userUtils/email";
+import crypto from "crypto";
 
 const BCRYPT_SALT = Number(process.env.BCRYPT_SALT_ROUNDS || 10);
 
@@ -92,18 +93,27 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const token = jwt.sign({ id: admin._id , role: "admin" }, process.env.JWT_SECRET!, { expiresIn: "1d" });
+    // Generate a new session ID
+    const sessionId = crypto.randomBytes(16).toString("hex");
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure:true,
-      sameSite: "none",
-    });
-
+    // Save session ID to admin
+    admin.currentSessionId = sessionId;
     admin.lastLogin = new Date();
     await admin.save();
 
-   res.json({ status: "success", role: "admin", user: { id: admin._id, email: admin.email } });
+    const token = jwt.sign(
+      { id: admin._id, role: "admin", sessionId },
+      process.env.JWT_SECRET!,
+      { expiresIn: "1d" }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
+    res.json({ status: "success", role: "admin", user: { id: admin._id, email: admin.email } });
     return;
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -173,6 +183,11 @@ export const me = async (req: Request, res: Response, next: NextFunction): Promi
 
 export const logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    const admin = (req as any).admin;
+    if (admin) {
+      admin.currentSessionId = undefined;
+      await admin.save();
+    }
     res.clearCookie("token");
     res.json({ message: "Logged out" });
     return;

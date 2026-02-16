@@ -10,6 +10,7 @@ export interface IAdmin extends Document {
   resetTokenExpires?: Date;
   createdAt: Date;
   lastLogin?: Date;
+  currentSessionId?: string;
 }
 
 const adminSchema = new Schema<IAdmin>({
@@ -22,6 +23,7 @@ const adminSchema = new Schema<IAdmin>({
   resetTokenExpires: Date,
   createdAt: { type: Date, default: Date.now },
   lastLogin: Date,
+  currentSessionId: { type: String },
 });
 
 export default model<IAdmin>("Admin", adminSchema);
