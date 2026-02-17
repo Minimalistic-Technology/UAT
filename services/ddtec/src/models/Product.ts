@@ -18,6 +18,7 @@ export interface IProduct extends Document {
     discountType: 'percentage' | 'fixed';
     discountValue: number;
     isActive: boolean;
+    showOnHome: boolean;
 }
 
 const ProductSchema: Schema = new Schema({
@@ -37,7 +38,8 @@ const ProductSchema: Schema = new Schema({
     discountPercentage: { type: Number, default: 0 }, // Deprecated, use discountValue
     discountType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
     discountValue: { type: Number, default: 0 },
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    showOnHome: { type: Boolean, default: false }
 }, { timestamps: true });
 
 export default mongoose.model<IProduct>('Product', ProductSchema);

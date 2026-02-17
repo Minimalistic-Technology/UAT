@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, logout, getMe, sendOtp, verifyOtp, createUser, toggleUserStatus, updateUser, updateMe, checkUser, changePassword } from '../controllers/auth.controller';
+import { register, login, logout, getMe, sendOtp, verifyOtp, createUser, toggleUserStatus, updateUser, updateMe, checkUser, changePassword, updateCreditBalance, getAllUsers } from '../controllers/auth.controller';
 import auth from '../middleware/auth.middleware';
 import admin from '../middleware/admin.middleware';
 
@@ -19,7 +19,9 @@ router.post('/check-user', checkUser);
 // Admin Routes
 router.post('/create-user', auth, admin, createUser);
 
+router.get('/users', auth, admin, getAllUsers);
 router.put('/users/:id/status', auth, admin, toggleUserStatus);
+router.put('/users/:id/credit', auth, admin, updateCreditBalance);
 router.put('/users/:id', auth, admin, updateUser);
 
 export default router;

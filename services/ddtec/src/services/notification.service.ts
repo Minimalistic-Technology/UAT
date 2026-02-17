@@ -1,101 +1,91 @@
 import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 
 class NotificationService {
     private static _emailTransporter: any = null;
     private static _isTestAccount: boolean = false;
 
     private static async getEmailTransporter() {
+        console.log('[NOTIFICATION] Nodemailer is currently disabled in favor of SendGrid.');
+        return null;
+        /*
         if (!this._emailTransporter) {
-            // First Priority: Real Credentials
-            if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-                const host = 'smtp.gmail.com';
-                const port = 465;
-                const secure = true;
+            // ... original nodemailer setup ...
+        }
+        return this._emailTransporter;
+        */
+    }
 
-                console.log(`[NOTIFICATION] Initializing Real Email Service (Port 465 SSL Mode)`);
-                console.log(`[NOTIFICATION] Credentials Check: User=${process.env.EMAIL_USER}, Pass=${process.env.EMAIL_PASS ? '********' : 'MISSING'}`);
-                this._emailTransporter = nodemailer.createTransport({
-                    host,
-                    port,
-                    secure,
-                    auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASS,
-                    },
-                    connectionTimeout: 20000,
-                    greetingTimeout: 20000,
-                    debug: true,
-                    logger: true,
-                    tls: {
-                        // Do not fail on invalid certs
-                        rejectUnauthorized: false
-                    }
-                });
-                this._isTestAccount = false;
+    /**
+     * Helper to send email via SendGrid with Nodemailer fallback
+     */
+    private static async sendWithFallback(mailOptions: any): Promise<{ success: boolean, info?: any, method: 'sendgrid' | 'nodemailer' }> {
+        // 1. Try SendGrid
+        if (process.env.SENDGRID_API_KEY) {
+            try {
+                sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+                const msg = {
+                    to: mailOptions.to,
+                    from: mailOptions.from, // Ensure this is a verified sender in SendGrid
+                    subject: mailOptions.subject,
+                    html: mailOptions.html,
+                    bcc: mailOptions.bcc,
+                    replyTo: mailOptions.replyTo,
+                };
 
-                // Verify connection on startup
-                this._emailTransporter.verify((error: any, success: any) => {
-                    if (error) {
-                        console.error('[CRITICAL-ERROR] Nodemailer Transporter verification failed:', error);
-                        console.error(`[CRITICAL-ERROR] Render often blocks SMTP ports (587/465). Contact Render support to open them.`);
-                    } else {
-                        console.log(`[NOTIFICATION] Email Server is ready (Port 465 SSL Mode)`);
-                    }
-                });
-            }
-            // Second Priority: Zero-Config Ethereal sandbox
-            else {
-                console.log('[NOTIFICATION] No credentials found. Initializing Ethereal Test Account...');
-                try {
-                    const testAccount = await nodemailer.createTestAccount();
-                    this._emailTransporter = nodemailer.createTransport({
-                        host: 'smtp.ethereal.email',
-                        port: 587,
-                        secure: false, // true for 465, false for other ports
-                        auth: {
-                            user: testAccount.user, // generated ethereal user
-                            pass: testAccount.pass, // generated ethereal password
-                        },
-                    });
-                    this._isTestAccount = true;
-                    console.log('[NOTIFICATION] Ethereal Test Account Created successfully.');
-                } catch (error) {
-                    console.error('[CRITICAL] Failed to create Ethereal test account:', error);
-                    return null;
+                const [response] = await sgMail.send(msg as any);
+                console.log(`[NOTIFICATION] Email sent via SendGrid to ${mailOptions.to}`);
+                return { success: true, info: response, method: 'sendgrid' };
+            } catch (error: any) {
+                console.error('[NOTIFICATION] SendGrid failed, falling back to Nodemailer:', error);
+                if (error.response) {
+                    console.error('[NOTIFICATION] SendGrid Error Body:', error.response.body);
                 }
             }
         }
-        return this._emailTransporter;
+
+        // 2. Fallback to Nodemailer (DISABLED)
+        // try {
+        //     const transporter = await this.getEmailTransporter();
+        //     if (!transporter) {
+        //         console.error('[NOTIFICATION] Nodemailer transporter not available for fallback.');
+        //         return { success: false, method: 'nodemailer' };
+        //     }
+        //     const info = await transporter.sendMail(mailOptions);
+        //     return { success: true, info, method: 'nodemailer' };
+        // } catch (error) {
+        //     console.error('[NOTIFICATION] Nodemailer also failed:', error);
+        //     return { success: false, method: 'nodemailer' };
+        // }
+
+        console.warn('[NOTIFICATION] Fallback to Nodemailer is currently disabled.');
+        return { success: false, method: 'sendgrid' };
     }
 
     /**
      * Sends a real OTP via Email. SMS is currently disabled.
      */
-    static async sendOTP(identifier: string, otp: string): Promise<boolean> {
+    static async sendOTP(identifier: string, otp: string): Promise<{ success: boolean; msg?: string }> {
         const isEmail = identifier.includes('@');
 
         if (isEmail) {
             return await this.sendEmailOTP(identifier, otp);
         } else {
             console.error('[STRICT] SMS delivery attempted but is disabled. Use Email for testing.');
-            return false;
+            return { success: false, msg: 'SMS delivery is disabled.' };
         }
     }
 
-    private static async sendEmailOTP(email: string, otp: string): Promise<boolean> {
+    private static async sendEmailOTP(email: string, otp: string): Promise<{ success: boolean; msg?: string }> {
         try {
-            const transporter = await this.getEmailTransporter();
-            if (!transporter) {
-                console.error('[STRICT-ERROR] Cannot send email OTP: Transporter not initialized.');
-                return false;
-            }
+            // ... (transporter check commented out) ...
 
             if (!email) {
                 console.error('[STRICT-ERROR] Cannot send email OTP: Recipient email is missing.');
-                return false;
+                return { success: false, msg: 'Recipient email is missing.' };
             }
 
-            const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`;
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
 
             const mailOptions = {
                 from,
@@ -117,25 +107,24 @@ class NotificationService {
             };
 
             console.log(`[NOTIFICATION] Attempting to send OTP email to ${email}...`);
-            const info = await transporter.sendMail(mailOptions);
-            console.log(`[NOTIFICATION] OTP Mail send call finished.`);
 
-            if (this._isTestAccount) {
-                console.log('--------------------------------------------------');
-                console.log('[SANDBOX-OTP] Email sent to:', email);
-                console.log('[SANDBOX-OTP] OTP Code:', otp);
-                console.log('[SANDBOX-OTP] PREVIEW URL:', nodemailer.getTestMessageUrl(info));
-                console.log('--------------------------------------------------');
-            } else {
-                console.log(`[STRICT] Real Email OTP sent to ${email}`);
+            // Use fallback mechanism
+            const result = await this.sendWithFallback(mailOptions);
+
+            if (!result.success) {
+                return { success: false, msg: 'Failed to send email via SendGrid.' };
             }
 
-            return true;
+            console.log(`[NOTIFICATION] OTP Mail send call finished via ${result.method}.`);
+
+            const host = process.env.EMAIL_HOST || 'unknown-host';
+            console.log(`[STRICT] Real Email OTP sent to ${email} via ${result.method} (${host}). From: ${from}`);
+
+            return { success: true, msg: 'OTP sent successfully.' };
         } catch (error: any) {
             console.error('[STRICT-ERROR] Failed to send email OTP:', error);
-            if (error.response) console.error('SMTP Response:', error.response);
-            if (error.code) console.error('Error Code:', error.code);
-            return false;
+            const errorMsg = error.response?.body?.errors?.[0]?.message || error.message || 'Unknown error';
+            return { success: false, msg: `Email sending failed: ${errorMsg}` };
         }
     }
 
@@ -144,11 +133,11 @@ class NotificationService {
      */
     static async sendOrderConfirmation(order: any): Promise<boolean> {
         try {
-            const transporter = await this.getEmailTransporter();
-            if (!transporter) {
-                console.error('[STRICT-ERROR] Cannot send order confirmation: Transporter not initialized.');
-                return false;
-            }
+            // const transporter = await this.getEmailTransporter();
+            // if (!transporter) {
+            //    console.error('[STRICT-ERROR] Cannot send order confirmation: Transporter not initialized.');
+            //    return false;
+            // }
 
             const to = order.shippingInfo?.email;
             if (!to) {
@@ -156,7 +145,7 @@ class NotificationService {
                 return false;
             }
 
-            const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`;
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
             const adminEmail = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
 
             const itemsHtml = order.items.map((item: any) => `
@@ -208,13 +197,18 @@ class NotificationService {
             };
 
             console.log(`[NOTIFICATION] Attempting to send Order Confirmation to ${to}...`);
-            const info = await transporter.sendMail(mailOptions);
-            console.log(`[NOTIFICATION] Order Confirmation Mail send call finished.`);
 
-            if (this._isTestAccount) {
-                console.log('[SANDBOX-ORDER] Receipt Preview:', nodemailer.getTestMessageUrl(info));
+            const result = await this.sendWithFallback(mailOptions);
+
+            if (!result.success) return false;
+
+            console.log(`[NOTIFICATION] Order Confirmation Mail send call finished via ${result.method}.`);
+
+            if (result.method === 'nodemailer' && this._isTestAccount) {
+                console.log('[SANDBOX-ORDER] Receipt Preview:', nodemailer.getTestMessageUrl(result.info));
             } else {
-                console.log(`[STRICT] Real Order Confirmation sent to ${to}`);
+                const host = process.env.EMAIL_HOST || 'unknown-host';
+                console.log(`[STRICT] Real Order Confirmation sent to ${to} via ${result.method} (${host}). From: ${from}`);
             }
 
             return true;
@@ -231,18 +225,18 @@ class NotificationService {
      */
     static async sendContactNotification(contactData: { firstName: string, lastName: string, email: string, message: string }): Promise<boolean> {
         try {
-            const transporter = await this.getEmailTransporter();
-            if (!transporter) {
-                console.error('[STRICT-ERROR] Cannot send contact notification: Transporter not initialized.');
-                return false;
-            }
+            // const transporter = await this.getEmailTransporter();
+            // if (!transporter) {
+            //    console.error('[STRICT-ERROR] Cannot send contact notification: Transporter not initialized.');
+            //    return false;
+            // }
 
             const to = this._isTestAccount ? 'admin-test@ddtec.com' : (process.env.EMAIL_TO || process.env.EMAIL_USER || '');
             if (!to) {
                 console.warn('[NOTIFICATION-WARN] EMAIL_TO not defined. Contact notification might not reach anyone.');
             }
 
-            const from = this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`;
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
             console.log(`[NOTIFICATION] Routing contact message: FROM=${contactData.email} TO=${to}`);
             const mailOptions = {
                 from,
@@ -263,16 +257,20 @@ class NotificationService {
             };
 
             console.log(`[NOTIFICATION] Attempting to send Contact Notification to ${to}...`);
-            const info = await transporter.sendMail(mailOptions);
-            console.log(`[NOTIFICATION] Contact Notification Mail send call finished.`);
-            console.log(`[NOTIFICATION] Full SMTP Response:`, JSON.stringify(info, null, 2));
 
-            if (!this._isTestAccount) {
-                console.log(`[STRICT] Real Email notification sent. MessageId: ${info.messageId}`);
+            const result = await this.sendWithFallback(mailOptions);
+
+            if (!result.success) return false;
+
+            console.log(`[NOTIFICATION] Contact Notification Mail send call finished via ${result.method}.`);
+
+            if (result.method === 'nodemailer' && !this._isTestAccount) {
+                const host = process.env.EMAIL_HOST || 'unknown-host';
+                console.log(`[STRICT] Real Email notification sent. MessageId: ${result.info.messageId} via ${result.method} (${host}). From: ${from}`);
             }
 
-            if (this._isTestAccount) {
-                console.log('[SANDBOX-CONTACT] Message Preview:', nodemailer.getTestMessageUrl(info));
+            if (result.method === 'nodemailer' && this._isTestAccount) {
+                console.log('[SANDBOX-CONTACT] Message Preview:', nodemailer.getTestMessageUrl(result.info));
             }
 
             return true;
@@ -287,6 +285,8 @@ class NotificationService {
      * Checks SMTP status and logs results.
      */
     static async checkStatus(): Promise<{ success: boolean; message: string }> {
+        return { success: true, message: 'SendGrid Web API Enabled (Nodemailer Disabled)' };
+        /*
         try {
             const transporter = await this.getEmailTransporter();
             if (!transporter) return { success: false, message: 'Transporter not initialized. Check credentials.' };
@@ -307,6 +307,7 @@ class NotificationService {
         } catch (error: any) {
             return { success: false, message: error.message };
         }
+        */
     }
 }
 

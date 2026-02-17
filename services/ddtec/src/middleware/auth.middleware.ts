@@ -11,14 +11,14 @@ export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
     // Get token from header or cookie
     const token = req.cookies?.token || req.header('x-auth-token') || req.header('Authorization')?.replace('Bearer ', '');
 
-    // console.log('Auth Middleware Debug:');
-    // console.log('Cookies:', req.cookies);
-    // console.log('Headers:', req.headers);
-    // console.log('Found Token:', token);
+    // structured logging for debugging if needed
+    // console.log(`[AUTH MIDDLEWARE] Path: ${req.path}, Token found: ${!!token}`);
 
     // Check if not token
     if (!token) {
-        // console.log('No token found -> 401');
+        if (req.path === '/me') {
+            console.log('[AUTH MIDDLEWARE] No token provided for /me (Expected for new sessions)');
+        }
         return res.status(401).json({ msg: 'No token, authorization denied' });
     }
 
