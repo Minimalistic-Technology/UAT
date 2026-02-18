@@ -2,6 +2,7 @@
 import { Request, Response } from "express";
 import cloudinary from "../userUtils/cloudinaryClient";
 import Question from "../models/Question";
+import QuestionBank from "../models/QuestionBank";
 import stream from "stream";
 
 /* ------------------------- Utils ------------------------- */
@@ -172,6 +173,15 @@ const deleteFromCloudinary = (publicId: string, type: string): Promise<any> => {
   });
 };
 
+const checkBankAccess = async (admin: any, bankId: string): Promise<boolean> => {
+  if (!admin || admin.role === "admin") return true;
+
+  const bank = await QuestionBank.findById(bankId);
+  if (!bank) return false;
+
+  return bank.assignedTo.some((id: any) => id.toString() === admin._id.toString());
+};
+
 /* ------------------------- Controllers ------------------------- */
 
 export const createQuestion = async (req: Request, res: Response) => {
@@ -204,6 +214,15 @@ export const createQuestion = async (req: Request, res: Response) => {
     data.lang = normalizedLang;
     ensureOptionsCounts(data.lang);
 
+    // Check Access
+    if (data.bankId) {
+      const hasAccess = await checkBankAccess((req as any).admin, data.bankId);
+      if (!hasAccess) {
+        res.status(403).json({ error: "Access denied to this Question Bank" });
+        return;
+      }
+    }
+
     // 7) persist
     const question = await Question.create({
       ...data,
@@ -220,8 +239,22 @@ export const createQuestion = async (req: Request, res: Response) => {
 export const getQuestions = async (req: Request, res: Response): Promise<void> => {
   try {
     const { bankId, status, q } = req.query;
+    const admin = (req as any).admin;
     const filter: any = { deleted: false };
-    if (bankId) filter.bankId = bankId;
+
+    if (bankId) {
+      const hasAccess = await checkBankAccess(admin, bankId as string);
+      if (!hasAccess) {
+        res.status(403).json({ error: "Access denied" });
+        return;
+      }
+      filter.bankId = bankId;
+    } else if (admin && admin.role === "questioner") {
+      // If no bankId specified, questioner can only see questions from assigned banks
+      const assignedBanks = await QuestionBank.find({ assignedTo: admin._id }).select("_id");
+      filter.bankId = { $in: assignedBanks.map(b => b._id) };
+    }
+
     if (status) filter.status = status;
 
     if (q && typeof q === "string" && q.trim()) {
@@ -243,6 +276,13 @@ export const getQuestionById = async (req: Request, res: Response): Promise<void
       res.status(404).json({ error: "Question not found" });
       return;
     }
+
+    const hasAccess = await checkBankAccess((req as any).admin, question.bankId.toString());
+    if (!hasAccess) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
     res.json(question);
   } catch (err: any) {
     console.error("Error in getQuestionById:", err);
@@ -256,6 +296,13 @@ export const updateQuestion = async (req: Request, res: Response): Promise<void>
     const existing = await Question.findById(req.params.id);
     if (!existing) {
       res.status(404).json({ error: "Question not found" });
+      return;
+    }
+
+    // Access Check
+    const hasAccess = await checkBankAccess((req as any).admin, existing.bankId.toString());
+    if (!hasAccess) {
+      res.status(403).json({ error: "Access denied" });
       return;
     }
 
@@ -326,6 +373,12 @@ export const deleteQuestion = async (
     const q = await Question.findById(req.params.id);
     if (!q) {
       res.status(404).json({ error: "Question not found" });
+      return;
+    }
+
+    const hasAccess = await checkBankAccess((req as any).admin, q.bankId.toString());
+    if (!hasAccess) {
+      res.status(403).json({ error: "Access denied" });
       return;
     }
 

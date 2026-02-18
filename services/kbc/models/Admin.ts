@@ -3,6 +3,8 @@ import { Schema, model, Document } from "mongoose";
 export interface IAdmin extends Document {
   email: string;
   passwordHash: string;
+  role: "admin" | "questioner";
+  name?: string;
   verified: boolean;
   verifyToken?: string;
   verifyTokenExpires?: Date;
@@ -16,6 +18,8 @@ export interface IAdmin extends Document {
 const adminSchema = new Schema<IAdmin>({
   email: { type: String, unique: true, required: true },
   passwordHash: { type: String, required: true },
+  role: { type: String, enum: ["admin", "questioner"], default: "admin" },
+  name: { type: String },
   verified: { type: Boolean, default: false },
   verifyToken: String,
   verifyTokenExpires: Date,

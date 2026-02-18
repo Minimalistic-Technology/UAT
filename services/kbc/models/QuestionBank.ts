@@ -7,11 +7,12 @@ export interface IQuestionBank extends Document {
   categories: string[];
   ageGroup?: string;
   defaultTimer: number;
-  bankImage?: string; 
+  bankImage?: string;
   label: string;
   enabled: boolean;
   published: boolean;
   createdBy: string;
+  assignedTo: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +30,7 @@ const QuestionBankSchema = new Schema<IQuestionBank>(
     enabled: { type: Boolean, default: true },
     published: { type: Boolean, default: false },
     createdBy: { type: String },
+    assignedTo: [{ type: Schema.Types.ObjectId, ref: "Admin" }],
   },
   { timestamps: true }
 );
