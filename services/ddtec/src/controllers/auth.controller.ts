@@ -200,12 +200,13 @@ export const login = async (req: Request, res: Response) => {
                 console.log(`[AUTH] Session created for user ${payload.email}`);
                 res.cookie('token', token, {
                     httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
+                    secure: true, // Required for SameSite=None
                     maxAge: 3600000,
                     path: '/',
-                    sameSite: 'lax'
+                    sameSite: 'none' // Allow cross-site cookie
                 });
-                res.json({ user: payload });
+                // Return token in body for fallback
+                res.json({ user: payload, token });
             }
         );
     } catch (err) {
