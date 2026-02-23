@@ -49,12 +49,12 @@ export const sendOtp = async (req: Request, res: Response) => {
         );
 
         // REAL SENDING
-        const sent = await NotificationService.sendOTP(identifier, otp);
+        const result = await NotificationService.sendOTP(identifier, otp);
 
-        if (sent) {
+        if (result.success) {
             res.json({ msg: 'OTP sent successfully', success: true });
         } else {
-            res.status(500).json({ msg: 'Failed to send OTP. Please try again.', success: false });
+            res.status(500).json({ msg: result.msg || 'Failed to send OTP. Please try again.', success: false });
         }
     } catch (err) {
         console.error(err);
@@ -197,14 +197,16 @@ export const login = async (req: Request, res: Response) => {
             { expiresIn: '1h' },
             (err, token) => {
                 if (err) throw err;
+                console.log(`[AUTH] Session created for user ${payload.email}`);
                 res.cookie('token', token, {
                     httpOnly: true,
-                    // secure: process.env.NODE_ENV === 'production', 
+                    secure: true, // Required for SameSite=None
                     maxAge: 3600000,
                     path: '/',
-                    sameSite: 'lax'
+                    sameSite: 'none' // Allow cross-site cookie
                 });
-                res.json({ user: payload });
+                // Return token in body for fallback
+                res.json({ user: payload, token });
             }
         );
     } catch (err) {
@@ -414,6 +416,52 @@ export const checkUser = async (req: Request, res: Response) => {
         });
 
         res.json({ exists: !!user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Admin: Update User Credit Balance
+export const updateCreditBalance = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        let { amount, type } = req.body; // type: 'add' or 'set'
+
+        // Convert to number if string
+        if (typeof amount === 'string') {
+            amount = Number(amount);
+        }
+
+        if (typeof amount !== 'number' || isNaN(amount)) {
+            return res.status(400).json({ msg: 'Amount must be a valid number' });
+        }
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        if (type === 'set') {
+            user.creditBalance = amount;
+        } else {
+            // Default to adding (can be negative to subtract)
+            user.creditBalance = (user.creditBalance || 0) + amount;
+        }
+
+        await user.save();
+
+        res.json({ msg: 'Credit balance updated', creditBalance: user.creditBalance, user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+// Admin: Get All Users
+export const getAllUsers = async (req: Request, res: Response) => {
+    try {
+        const users = await User.find().select('-password').sort({ createdAt: -1 });
+        res.json(users);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');

@@ -2,10 +2,11 @@ import { Request, Response } from 'express';
 import Order from '../models/Order';
 import Cart from '../models/Cart';
 import Product from '../models/Product';
+import User from '../models/User';
 import NotificationService from '../services/notification.service';
 
 // Create a new order
-export const createOrder = async (req: Request | any, res: Response): Promise<void> => {
+export const createOrder = async (req: Request | any, res: Response) => {
     try {
         const { items, totalAmount, shippingInfo, paymentMethod } = req.body;
         // User is optional
@@ -32,6 +33,21 @@ export const createOrder = async (req: Request | any, res: Response): Promise<vo
 
         if (userId) {
             orderData.user = userId;
+        }
+
+        if (paymentMethod === 'credit') {
+            if (!userId) {
+                return res.status(400).json({ msg: 'User must be logged in to use credit points' });
+            }
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ msg: 'User not found' });
+            }
+            if ((user.creditBalance || 0) < totalAmount) {
+                return res.status(400).json({ msg: 'Insufficient credit balance' });
+            }
+            user.creditBalance = (user.creditBalance || 0) - totalAmount;
+            await user.save();
         }
 
         const order = new Order(orderData);

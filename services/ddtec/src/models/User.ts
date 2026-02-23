@@ -12,6 +12,7 @@ export interface IUser extends Document {
     password?: string;
     role: 'user' | 'admin';
     isActive?: boolean;
+    creditBalance?: number;
     address?: {
         street: string;
         city: string;
@@ -66,6 +67,10 @@ const UserSchema: Schema = new Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    creditBalance: {
+        type: Number,
+        default: 0
     },
     // Address Fields
     address: {
