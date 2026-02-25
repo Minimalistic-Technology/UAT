@@ -55,9 +55,9 @@ export default function LoginClient() {
         // Redirect based on role
         if (session?.user?.role === 'employer') {
           router.push('/employer-dashboard');
-        } else if (session?.user?.role === 'JOB_SEEKER') {
-          router.push('/profile');
-        } else if (session?.user?.role === 'ADMIN') {
+        } else if (session?.user?.role === 'jobseeker') {
+          router.push('/dashboard');
+        } else if (session?.user?.role === 'admin') {
           router.push('/admin');
         } else {
           router.push(callbackUrl);
