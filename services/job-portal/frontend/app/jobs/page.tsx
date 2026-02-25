@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { jobService } from '@/app/lib/services/job.service';
-import JobCard from '@/app/components/JobCard';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { Card } from '@/app/components/ui/Card';
-import { JobType, ExperienceLevel } from '@/app/types';
+import { jobService } from '@/lib/services/job.service';
+import JobCard from '../../components/JobCard';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Card } from '../../components/ui/Card';
+import { JobType, ExperienceLevel } from '@/types';
 import { Search, Filter, Loader2 } from 'lucide-react';
 
 export default function JobsPage() {

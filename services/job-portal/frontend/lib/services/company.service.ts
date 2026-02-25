@@ -1,5 +1,5 @@
 import { apiClient } from '../api';
-import { Company } from '@/app/types';
+import { Company } from '@/types';
 
 export interface CreateCompanyData {
     name: string;

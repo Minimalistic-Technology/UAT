@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { toast } from 'sonner';
-import { Card } from '@/app/components/ui/Card';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { companyService, CreateCompanyData } from '@/app/lib/services/company.service';
+import { Card } from '../../../components/ui/Card';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
+import { companyService, CreateCompanyData } from '@/lib/services/company.service';
 import { Building, MapPin, Globe } from 'lucide-react';
 
 export default function CreateCompanyPage() {

@@ -6,12 +6,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation } from '@tanstack/react-query';
-import { jobService } from '@/app/lib/services/job.service';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { Card } from '@/app/components/ui/Card';
+import { jobService } from '@/lib/services/job.service';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
+import { Card } from '../../../components/ui/Card';
 import { toast } from 'sonner';
-import { JobType, ExperienceLevel } from '@/app/types';
+import { JobType, ExperienceLevel } from '@/types';
 
 const jobSchema = z.object({
   title: z.string().min(3, 'Job title must be at least 3 characters'),

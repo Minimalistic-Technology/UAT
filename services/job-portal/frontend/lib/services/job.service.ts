@@ -1,5 +1,5 @@
 import { apiClient } from '../api';
-import { Job } from '@/app/types';
+import { Job } from '@/types';
 
 export interface JobFilters {
   search?: string;

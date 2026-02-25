@@ -1,5 +1,5 @@
 import { apiClient } from '../api';
-import { Application } from '@/app/types';
+import { Application } from '@/types';
 
 export interface ApplyJobData {
   jobId: string;

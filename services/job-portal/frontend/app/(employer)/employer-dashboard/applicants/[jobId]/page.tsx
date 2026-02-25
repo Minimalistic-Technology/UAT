@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { applicationService } from '@/app/lib/services/application.service';
-import { jobService } from '@/app/lib/services/job.service';
-import { Card } from '@/app/components/ui/Card';
-import { Button } from '@/app/components/ui/Button';
-import { ApplicationStatus } from '@/app/types';
+import { applicationService } from '@/lib/services/application.service';
+import { jobService } from '@/lib/services/job.service';
+import { Card } from '../../../../../components/ui/Card';
+import { Button } from '../../../../../components/ui/Button';
+import { ApplicationStatus } from '@/types';
 import { toast } from 'sonner';
 import { Download, Mail, Phone, Calendar, FileText } from 'lucide-react';
 

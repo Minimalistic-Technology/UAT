@@ -5,12 +5,12 @@ import { useSession } from 'next-auth/react';
 import { redirect, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Card } from '@/app/components/ui/Card';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { apiClient } from '@/app/lib/api';
+import { Card } from '../../../components/ui/Card';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
+import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
-import { UserRole } from '@/app/types';
+import { UserRole } from '@/types';
 import { Building, PlusCircle } from 'lucide-react';
 
 export default function CompanyProfilePage() {

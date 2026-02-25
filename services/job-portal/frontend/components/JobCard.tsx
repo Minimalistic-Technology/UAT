@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Job } from '@/app/types';
+import { Job } from '@/types';
 import { MapPin, Briefcase, DollarSign, Clock } from 'lucide-react';
 import { Card } from './ui/Card';
 import { formatDistanceToNow } from 'date-fns';

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { Button } from './ui/Button';
-import { UserRole } from '@/app/types';
+import { UserRole } from '@/types';
 import { Menu, X, Briefcase } from 'lucide-react';
 import { useState } from 'react';
 

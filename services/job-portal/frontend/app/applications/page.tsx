@@ -3,11 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { applicationService } from "@/app/lib/services/application.service";
-import { Card } from "@/app/components/ui/Card";
-import { Button } from "@/app/components/ui/Button";
+import { applicationService } from "@/lib/services/application.service";
+import { Card } from "../../components/ui/Card";
+import { Button } from "../../components/ui/Button";
 import Link from "next/link";
-import { ApplicationStatus, UserRole } from "@/app/types";
+import { ApplicationStatus, UserRole } from "@/types";
 import { useState } from "react";
 import { Filter, Eye, MapPin, Briefcase, Calendar, X } from "lucide-react";
 

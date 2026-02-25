@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Search, Briefcase, Users, TrendingUp } from 'lucide-react';
-import { Button } from './components/ui/Button';
+import { Button } from '../components/ui/Button';
 
 export default function Home() {
   return (

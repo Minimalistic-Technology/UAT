@@ -3,10 +3,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
-import { Card } from '@/app/components/ui/Card';
-import { Button } from '@/app/components/ui/Button';
-import { UserRole, JobStatus } from '@/app/types';
-import { apiClient } from '@/app/lib/api';
+import { Card } from '../../../components/ui/Card';
+import { Button } from '../../../components/ui/Button';
+import { UserRole, JobStatus } from '@/types';
+import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 import {
   Users,
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid md:grid-cols-4 gap-6 mb-8">
-        <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+        <Card className="bg-linear-to-br from-blue-500 to-blue-600 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm mb-1">Total Users</p>
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+        <Card className="bg-linear-to-br from-green-500 to-green-600 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm mb-1">Total Jobs</p>
@@ -127,7 +127,7 @@ export default function AdminDashboard() {
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+        <Card className="bg-linear-to-br from-purple-500 to-purple-600 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100 text-sm mb-1">Applications</p>
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
+        <Card className="bg-linear-to-br from-yellow-500 to-yellow-600 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-100 text-sm mb-1">Pending Jobs</p>

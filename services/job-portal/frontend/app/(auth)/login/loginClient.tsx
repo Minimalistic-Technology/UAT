@@ -7,9 +7,9 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { Card } from '@/app/components/ui/Card';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
+import { Card } from '../../../components/ui/Card';
 import { toast } from 'sonner';
 import { Mail, Lock, Chrome } from 'lucide-react';
 

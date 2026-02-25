@@ -3,12 +3,12 @@ import { useParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { jobService } from '@/app/lib/services/job.service';
-import { applicationService } from '@/app/lib/services/application.service';
-import { Button } from '@/app/components/ui/Button';
-import { Card } from '@/app/components/ui/Card';
+import { jobService } from '@/lib/services/job.service';
+import { applicationService } from '@/lib/services/application.service';
+import { Button } from '../../../components/ui/Button';
+import { Card } from '../../../components/ui/Card';
 import { toast } from 'sonner';
-import { UserRole } from '@/app/types';
+import { UserRole } from '@/types';
 import {
   MapPin,
   Briefcase,

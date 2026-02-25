@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { Card } from '@/app/components/ui/Card';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
+import { Card } from '../../../components/ui/Card';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/app/lib/api';
+import { apiClient } from '@/lib/api';
 import Link from 'next/link';
 
 const emailSchema = z.object({

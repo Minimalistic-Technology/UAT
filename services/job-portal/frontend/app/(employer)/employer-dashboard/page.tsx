@@ -3,9 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
-import { jobService } from '@/app/lib/services/job.service';
-import { Card } from '@/app/components/ui/Card';
-import { Button } from '@/app/components/ui/Button';
+import { jobService } from '@/lib/services/job.service';
+import { Card } from '../../../components/ui/Card';
+import { Button } from '../../../components/ui/Button';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
@@ -17,7 +17,7 @@ import {
   Edit,
   Trash2,
 } from 'lucide-react';
-import { UserRole, JobStatus } from '@/app/types';
+import { UserRole, JobStatus } from '@/types';
 
 export default function EmployerDashboard() {
   const { data: session, status } = useSession();

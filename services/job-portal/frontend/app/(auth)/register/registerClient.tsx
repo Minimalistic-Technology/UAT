@@ -6,12 +6,12 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { Card } from '@/app/components/ui/Card';
-import { authService } from '@/app/lib/services/auth.service';
+import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
+import { Card } from '../../../components/ui/Card';
+import { authService } from '@/lib/services/auth.service';
 import { toast } from 'sonner';
-import { UserRole } from '@/app/types';
+import { UserRole } from '@/types';
 
 const registerSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
