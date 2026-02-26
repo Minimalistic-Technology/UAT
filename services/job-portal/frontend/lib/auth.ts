@@ -1,12 +1,12 @@
-import { NextAuthOptions, Session } from 'next-auth';
-import { JWT } from 'next-auth/jwt';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
-import axios from 'axios';
+import { NextAuthOptions, Session } from "next-auth";
+import { JWT } from "next-auth/jwt";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-declare module 'next-auth' {
+declare module "next-auth" {
   interface User {
     id: string;
     email: string;
@@ -24,7 +24,7 @@ declare module 'next-auth' {
   }
 }
 
-declare module 'next-auth/jwt' {
+declare module "next-auth/jwt" {
   interface JWT {
     role?: string;
     accessToken?: string;
@@ -34,10 +34,10 @@ declare module 'next-auth/jwt' {
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: 'Credentials',
+      name: "Credentials",
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         try {
@@ -57,8 +57,53 @@ export const authOptions: NextAuthOptions = {
             };
           }
           return null;
-        } catch (error) {
-          return null;
+        } catch (error: unknown) {
+          console.log("error response", error);
+
+          let message: string | undefined;
+
+          if (axios.isAxiosError(error)) {
+            // Server responded with a status code (4xx, 5xx)
+            if (error.response) {
+              const data = error.response.data;
+
+              if (typeof data === "object" && data !== null) {
+                if ("errors" in data && Array.isArray((data as any).errors)) {
+                  message = (data as any).errors
+                    .map((e: any) => e.msg)
+                    .join(", ");
+                } else if (
+                  "message" in data &&
+                  typeof (data as any).message === "string"
+                ) {
+                  message = (data as any).message;
+                }
+              }
+
+              if (!message) {
+                message = `Request failed with status ${error.response.status}`;
+              }
+            }
+            // Request made but no response received (network error, CORS, server down)
+            else if (error.request) {
+              message = "Network error. Please check your internet connection.";
+            }
+            // Something happened before request was sent
+            else {
+              message = error.message || "Unexpected request error occurred.";
+            }
+          }
+          // Native JS error (non-Axios)
+          else if (error instanceof Error) {
+            message = error.message;
+          }
+
+          // Final fallback
+          if (!message) {
+            message = "Something went wrong. Please try again.";
+          }
+
+          throw new Error(message);
         }
       },
     }),
@@ -75,13 +120,13 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Handle Google OAuth
-      if (account?.provider === 'google') {
+      if (account?.provider === "google") {
         try {
           const response = await axios.post(`${API_URL}/auth/google`, {
             googleId: account.providerAccountId,
             email: user?.email,
-            firstName: user?.name?.split(' ')[0],
-            lastName: user?.name?.split(' ')[1] || '',
+            firstName: user?.name?.split(" ")[0],
+            lastName: user?.name?.split(" ")[1] || "",
             avatar: user?.image,
           });
 
@@ -90,7 +135,7 @@ export const authOptions: NextAuthOptions = {
             token.accessToken = response.data.token;
           }
         } catch (error) {
-          console.error('Google auth error:', error);
+          console.error("Google auth error:", error);
         }
       }
 
@@ -105,18 +150,18 @@ export const authOptions: NextAuthOptions = {
     },
     async redirect({ url, baseUrl }: any) {
       // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
       // Allows callback URLs on the same origin
-      else if (new URL(url).origin === baseUrl) return url
-      return baseUrl
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     },
   },
   pages: {
-    signIn: '/login',
-    error: '/login',
+    signIn: "/login",
+    error: "/login",
   },
   session: {
-    strategy: 'jwt',
+    strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
