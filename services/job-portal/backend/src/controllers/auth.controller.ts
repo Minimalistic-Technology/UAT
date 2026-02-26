@@ -172,7 +172,7 @@ export const login = async (
 
       sendTokenResponse(
         {
-          ...user,
+          ...user.toObject(),
           isEmployee,
           companyId: membership?.company ?? null,
           companyRole: membership?.role ?? null,

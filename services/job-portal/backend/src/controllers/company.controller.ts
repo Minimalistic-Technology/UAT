@@ -3,38 +3,103 @@ import Company from "../models/Company.model.js";
 import User, { GlobalRole } from "../models/User.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
+import mongoose from "mongoose";
 
 // @desc    Create new company
 // @route   POST /api/companies
-// @access  Private (Employer)
-export const createCompany = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+// @access  Super_Admin
+export const createCompany = async (req: AuthRequest, res: Response) => {
+  const {
+    email,
+    firstName,
+    lastName,
+    password,
+    phone,
+    companyName,
+    companyDescription,
+    industry,
+  } = req.body;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    // Check if user already has a company
-    const existingCompany = await Company.findOne({ owner: req.user.id });
-    if (existingCompany) {
+    let owner = await User.findOne({ email }).session(session);
+
+    if (!owner) {
+      const ownerRecords = await User.create(
+        [
+          {
+            firstName,
+            lastName,
+            email,
+            password,
+            phone,
+            role: GlobalRole.USER,
+          },
+        ],
+        { session },
+      );
+
+      owner = ownerRecords[0];
+    }
+
+    // Check if owner already has a company
+    const existingOwnership = await Company.findOne({
+      owner: owner._id,
+    }).session(session);
+    if (existingOwnership) {
+      await session.abortTransaction();
       return res.status(400).json({
         success: false,
-        message: "You have already created a company",
+        message: "This user is already an owner of an existing company.",
       });
     }
 
-    req.body.owner = req.user.id;
-    const company = await Company.create(req.body);
+    const newCompany = await Company.create(
+      [
+        {
+          name: companyName,
+          owner: owner._id,
+          description: companyDescription,
+          industry,
+        },
+      ],
+      { session },
+    );
+    const company = newCompany[0];
 
-    // Update user with company id
-    await User.findByIdAndUpdate(req.user.id, {
-      company: company._id,
-    });
+    await CompanyMember.create(
+      [
+        {
+          user: owner._id,
+          company: company._id,
+          role: CompanyRole.OWNER,
+          isActive: true,
+        },
+      ],
+      { session },
+    );
 
-    res.status(201).json({
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(201).json({
       success: true,
-      data: company,
+      message: "Company and Owner account set up successfully",
+      data: {
+        company,
+        owner: {
+          id: owner._id,
+          email: owner.email,
+          fullName: `${owner.firstName} ${owner.lastName}`,
+        },
+      },
     });
   } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+
     res.status(500).json({
       success: false,
       message: "Error creating company",
@@ -91,11 +156,15 @@ export const getCompanies = async (
 
     res.status(200).json({
       success: true,
-      count: companies.length,
-      total,
-      totalPages: Math.ceil(total / limitNum),
-      currentPage: pageNum,
-      data: companies,
+      data: {
+        companies,
+        pagination: {
+          count: companies.length,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+          currentPage: pageNum,
+        },
+      },
     });
   } catch (error: any) {
     res.status(500).json({
@@ -149,8 +218,6 @@ export const getMyCompany = async (
   next: NextFunction,
 ) => {
   try {
-    console.log("Fetching company for user:", req.user.id);
-    console.log("user company id:", req.user.company);
     const company = await Company.findOne({ owner: req.user.id });
 
     if (!company) {

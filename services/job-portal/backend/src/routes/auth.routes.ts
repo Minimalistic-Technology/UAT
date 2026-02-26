@@ -27,7 +27,7 @@ router.post(
     body("password")
       .isLength({ min: 6 })
       .withMessage("Password must be at least 6 characters"),
-    body("role").isIn(["jobseeker", "employer"]).withMessage("Invalid role"),
+    body("role").isIn(["super_admin", "user"]).withMessage("Invalid role"),
   ]),
   register
 );
