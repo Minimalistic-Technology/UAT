@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -26,6 +26,7 @@ export default function LoginClient() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [isLoading, setIsLoading] = useState(false);
+   const { data: session, status } = useSession();
 
   const {
     register,
@@ -51,24 +52,6 @@ export default function LoginClient() {
       }
 
       toast.success("Login successful!");
-
-      const session = await getSession();
-
-      switch (session?.user?.role) {
-        case "employer":
-          router.push("/employer-dashboard");
-          break;
-        case "jobseeker":
-          router.push("/user-dashboard");
-          break;
-        case "admin":
-          router.push("/admin-dashboard");
-          break;
-        default:
-          router.push(callbackUrl);
-      }
-
-      router.refresh();
     } catch (err) {
       console.error(err);
       toast.error("Unexpected error. Please try again.");
@@ -86,6 +69,26 @@ export default function LoginClient() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user) return;
+
+    const { role, isEmployee } = session.user as any;
+
+    if (role === "super_admin") {
+      router.push("/admin-dashboard");
+    } else if (role === "user") {
+      if (isEmployee) {
+        router.push("/employee-dashboard");
+      } else {
+        router.push("/dashboard");
+      }
+    } else {
+      router.push(callbackUrl);
+    }
+
+    router.refresh();
+  }, [session, status, router, callbackUrl]);
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

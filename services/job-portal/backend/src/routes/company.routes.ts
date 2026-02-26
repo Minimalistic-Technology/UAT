@@ -10,7 +10,7 @@ import {
 } from '../controllers/company.controller.js';
 import { protect, authorize } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
-import { UserRole } from '../models/User.model.js';
+import { GlobalRole } from '../models/User.model.js';
 
 const router = express.Router();
 
@@ -25,18 +25,18 @@ const companyValidation = [
 ];
 
 router.get('/', getCompanies);
-router.get('/me', protect, authorize(UserRole.EMPLOYER), getMyCompany);
+router.get('/me', protect, authorize(GlobalRole.USER), getMyCompany); // only for employer
 router.get('/:id', getCompany);
 
 router.post(
     '/',
     protect,
-    authorize(UserRole.EMPLOYER),
+    authorize(GlobalRole.USER), // only for employer
     validate(companyValidation),
     createCompany
 );
 
-router.put('/me', protect, authorize(UserRole.EMPLOYER), updateCompany);
-router.delete('/:id', protect, authorize(UserRole.EMPLOYER), deleteCompany);
+router.put('/me', protect, authorize(GlobalRole.USER), updateCompany); // only for job employer
+router.delete('/:id', protect, authorize(GlobalRole.USER), deleteCompany); // only for job employer
 
 export default router;

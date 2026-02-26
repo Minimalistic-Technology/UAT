@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env.js';
-import User, { UserRole } from '../models/User.model.js';
+import User, { GlobalRole } from '../models/User.model.js';
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -61,7 +61,7 @@ export const protect = async (
   }
 };
 
-export const authorize = (...roles: UserRole[]) => {
+export const authorize = (...roles: GlobalRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({

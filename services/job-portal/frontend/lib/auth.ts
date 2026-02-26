@@ -47,6 +47,8 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (response.data.success) {
+            const { user } = response.data;
+
             return {
               id: response.data.user.id,
               email: response.data.user.email,
@@ -54,6 +56,10 @@ export const authOptions: NextAuthOptions = {
               role: response.data.user.role,
               token: response.data.token,
               image: response.data.user.avatar,
+
+              isEmployee: user.isEmployee ?? false,
+              companyId: user.companyId ?? null,
+              companyRole: user.companyRole ?? null,
             };
           }
           return null;

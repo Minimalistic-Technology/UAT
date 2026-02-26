@@ -1,8 +1,10 @@
-import type { Response, NextFunction } from 'express';
-import Job, { JobStatus } from '../models/Job.model.js';
-import type { AuthRequest } from '../middleware/auth.middleware.js';
-import { UserRole } from '../models/User.model.js';
-import mongoose from 'mongoose';
+import type { Response, NextFunction } from "express";
+import Job, { JobStatus } from "../models/Job.model.js";
+import type { AuthRequest } from "../middleware/auth.middleware.js";
+import { GlobalRole } from "../models/User.model.js";
+import mongoose from "mongoose";
+import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
+
 // @desc    Get all jobs with filters
 // @route   GET /api/jobs
 // @access  Public
@@ -12,7 +14,7 @@ import mongoose from 'mongoose';
 export const getJobs = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const {
@@ -26,7 +28,7 @@ export const getJobs = async (
       remote,
       page = 1,
       limit = 10,
-      sort = '-createdAt',
+      sort = "-createdAt",
     } = req.query;
 
     // Build query
@@ -39,7 +41,7 @@ export const getJobs = async (
 
     // Location filter
     if (location) {
-      query['location.city'] = new RegExp(location as string, 'i');
+      query["location.city"] = new RegExp(location as string, "i");
     }
 
     // Job type filter
@@ -54,20 +56,20 @@ export const getJobs = async (
 
     // Salary range filter
     if (minSalary || maxSalary) {
-      query['salary.min'] = {};
-      if (minSalary) query['salary.min'].$gte = Number(minSalary);
-      if (maxSalary) query['salary.max'].$lte = Number(maxSalary);
+      query["salary.min"] = {};
+      if (minSalary) query["salary.min"].$gte = Number(minSalary);
+      if (maxSalary) query["salary.max"].$lte = Number(maxSalary);
     }
 
     // Skills filter
     if (skills) {
-      const skillsArray = (skills as string).split(',');
+      const skillsArray = (skills as string).split(",");
       query.skills = { $in: skillsArray };
     }
 
     // Remote filter
-    if (remote === 'true') {
-      query['location.remote'] = true;
+    if (remote === "true") {
+      query["location.remote"] = true;
     }
 
     // Pagination
@@ -77,8 +79,8 @@ export const getJobs = async (
 
     // Execute query
     const jobs = await Job.find(query)
-      .populate('postedBy', 'firstName lastName')
-      .populate('company', 'name logo location industry')
+      .populate("postedBy", "firstName lastName")
+      .populate("company", "name logo location industry")
       .sort(sort as string)
       .skip(skip)
       .limit(limitNum);
@@ -96,7 +98,7 @@ export const getJobs = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error fetching jobs',
+      message: "Error fetching jobs",
       error: error.message,
     });
   }
@@ -106,30 +108,30 @@ export const getJobs = async (
 // @route   GET /api/jobs/:id
 // @access  Public
 
-
 export const getJob = async (req: AuthRequest, res: Response) => {
   try {
     const rawId = req.params.id;
     const id = Array.isArray(rawId) ? rawId[0] : rawId;
     const cleanId = id.trim();
 
-
-
     if (!mongoose.Types.ObjectId.isValid(cleanId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid job id',
+        message: "Invalid job id",
       });
     }
 
     const job = await Job.findById(cleanId)
-      .populate('postedBy', 'firstName lastName email')
-      .populate('company', 'name logo description website location industry companySize');
+      .populate("postedBy", "firstName lastName email")
+      .populate(
+        "company",
+        "name logo description website location industry companySize",
+      );
 
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found',
+        message: "Job not found",
       });
     }
 
@@ -141,10 +143,10 @@ export const getJob = async (req: AuthRequest, res: Response) => {
       data: job,
     });
   } catch (error) {
-    console.error('Get Job Error:', error);
+    console.error("Get Job Error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Error fetching job',
+      message: "Error fetching job",
     });
   }
 };
@@ -155,19 +157,19 @@ export const getJob = async (req: AuthRequest, res: Response) => {
 export const createJob = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     // Add user and company to req.body
     req.body.postedBy = req.user.id;
     req.body.company = req.user.company;
 
-    console.log('Creating job:', req.user);
+    console.log("Creating job:", req.user);
 
     if (!req.user.company) {
       return res.status(400).json({
         success: false,
-        message: 'Please create a company profile first',
+        message: "Please create a company profile first",
       });
     }
 
@@ -180,7 +182,7 @@ export const createJob = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error creating job',
+      message: "Error creating job",
       error: error.message,
     });
   }
@@ -192,7 +194,7 @@ export const createJob = async (
 export const updateJob = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     let job = await Job.findById(req.params.id);
@@ -200,15 +202,28 @@ export const updateJob = async (
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found',
+        message: "Job not found",
       });
     }
 
-    // Make sure user is job owner
-    if (job.postedBy.toString() !== req.user.id && req.user.role !== UserRole.ADMIN) {
+    const companyMember = await CompanyMember.findOne({
+      user: req.user.id,
+    }).populate("company", "name");
+
+    if (!companyMember) {
+      return res.status(404).json({
+        success: false,
+        message: `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`,
+      });
+    }
+
+    // Only admin and owner can update job details
+    if (
+      req.user.role !== CompanyRole.ADMIN || req.user.role !== CompanyRole.OWNER
+    ) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to update this job',
+        message: "Not authorized to update this job",
       });
     }
 
@@ -224,7 +239,7 @@ export const updateJob = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error updating job',
+      message: "Error updating job",
       error: error.message,
     });
   }
@@ -236,7 +251,7 @@ export const updateJob = async (
 export const deleteJob = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const job = await Job.findById(req.params.id);
@@ -244,15 +259,28 @@ export const deleteJob = async (
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found',
+        message: "Job not found",
       });
     }
 
-    // Make sure user is job owner
-    if (job.postedBy.toString() !== req.user.id && req.user.role !== UserRole.ADMIN) {
+    const companyMember = await CompanyMember.findOne({
+      user: req.user.id,
+    }).populate("company", "name");
+
+    if (!companyMember) {
+      return res.status(404).json({
+        success: false,
+        message: `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`,
+      });
+    }
+
+    // Only admin and owner can delete the job
+    if (
+      req.user.role !== CompanyRole.ADMIN || req.user.role !== CompanyRole.OWNER
+    ) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to delete this job',
+        message: "Not authorized to update this job",
       });
     }
 
@@ -260,12 +288,12 @@ export const deleteJob = async (
 
     res.status(200).json({
       success: true,
-      message: 'Job deleted successfully',
+      message: "Job deleted successfully",
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error deleting job',
+      message: "Error deleting job",
       error: error.message,
     });
   }
@@ -277,11 +305,13 @@ export const deleteJob = async (
 export const getMyJobs = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    const jobs = await Job.find({ postedBy: req.user.id })
-      .populate('company', 'name logo');
+    const jobs = await Job.find({ postedBy: req.user.id }).populate(
+      "company",
+      "name logo",
+    );
     res.status(200).json({
       success: true,
       count: jobs.length,
@@ -290,7 +320,7 @@ export const getMyJobs = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error fetching jobs',
+      message: "Error fetching jobs",
       error: error.message,
     });
   }

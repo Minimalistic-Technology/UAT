@@ -1,11 +1,12 @@
 import type { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import User, { UserRole } from "../models/User.model.js";
+import User, { GlobalRole } from "../models/User.model.js";
 import { config } from "../config/env.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { sendEmail } from "../utils/email.js";
 // import { sendOTP } from '../utils/sms.js';
+import CompanyMember from "../models/CompanyMember.model.js";
 
 // Generate JWT Token
 const generateToken = (id: string): string => {
@@ -26,21 +27,38 @@ const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
     sameSite: "strict" as const,
   };
 
-  res
-    .status(statusCode)
-    .cookie("token", token, options)
-    .json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-      },
-    });
+  let payload: Record<string, any> = {};
+
+  if (user.role === GlobalRole.SUPER_ADMIN) {
+    payload = {
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+    };
+  }
+
+  if (user.role === GlobalRole.USER) {
+    payload = {
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      isEmployee: user.isEmployee,
+      companyId: user.membership,
+      companyRole: user.membership,
+    };
+  }
+
+  res.status(statusCode).cookie("token", token, options).json({
+    success: true,
+    token,
+    user: payload,
+  });
 };
 
 // @desc    Register user
@@ -60,7 +78,7 @@ export const register = async (req: AuthRequest, res: Response) => {
     }
 
     const normalizedRole =
-      role === "employer" ? UserRole.EMPLOYER : UserRole.JOB_SEEKER;
+      role === "super_admin" ? GlobalRole.SUPER_ADMIN : GlobalRole.USER;
 
     // Create user
     const user = await User.create({
@@ -112,7 +130,7 @@ export const login = async (
     }
 
     // Check for user
-    const user = await User.findOne({ email }).select("+password");
+    let user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return res.status(401).json({
@@ -140,8 +158,29 @@ export const login = async (
           "Access denied. This account has been deactivated. Please contact support.",
       });
     }
-    
-    sendTokenResponse(user, 200, res);
+
+    if (user.role === GlobalRole.SUPER_ADMIN) {
+      sendTokenResponse(user, 200, res);
+    }
+
+    if (user.role === GlobalRole.USER) {
+      const membership = await CompanyMember.findOne({
+        user: user._id,
+      });
+
+      const isEmployee = !!membership;
+
+      sendTokenResponse(
+        {
+          ...user,
+          isEmployee,
+          companyId: membership?.company ?? null,
+          companyRole: membership?.role ?? null,
+        },
+        200,
+        res,
+      );
+    }
   } catch (error: any) {
     res.status(500).json({
       success: false,

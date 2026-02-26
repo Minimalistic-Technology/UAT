@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authorize, protect } from "../middleware/auth.middleware.js";
-import { UserRole } from "../models/User.model.js";
+import { GlobalRole } from "../models/User.model.js";
 import {
   getAllUsers,
   getJobsByStatus,
@@ -12,7 +12,7 @@ import { body } from "express-validator";
 const router = Router();
 
 router.use(protect);
-router.use(authorize(UserRole.ADMIN));
+router.use(authorize(GlobalRole.SUPER_ADMIN));
 
 router.get("/users", getAllUsers);
 router.get("/jobs", getJobsByStatus);
