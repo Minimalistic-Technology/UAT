@@ -23,7 +23,7 @@ export default function RootLayout({
         <Providers>
           <div className="min-h-screen bg-gray-50">
             <Navbar />
-            <main>{children}</main>
+            <main className='pt-16'>{children}</main>
             <Toaster position="top-right" />
           </div>
         </Providers>
