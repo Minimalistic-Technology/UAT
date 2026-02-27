@@ -4,6 +4,11 @@ export enum UserRole {
   ADMIN = 'admin',
 }
 
+export enum GlobalRole {
+  SUPER_ADMIN = "super_admin",
+  USER = "user"
+}
+
 export enum JobType {
   FULL_TIME = 'full_time',
   PART_TIME = 'part_time',

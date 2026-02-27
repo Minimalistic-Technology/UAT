@@ -17,7 +17,7 @@ import {
   XCircle,
   Eye 
 } from 'lucide-react';
-import { ApplicationStatus, UserRole } from '@/types';
+import { ApplicationStatus, GlobalRole } from '@/types';
 
 export default function JobSeekerDashboard() {
   const { data: session, status } = useSession();
@@ -38,8 +38,12 @@ export default function JobSeekerDashboard() {
     return <div>Loading...</div>;
   }
 
-  if (!session || session.user.role !== UserRole.JOB_SEEKER) {
+  if(!session || session.user.role === GlobalRole.SUPER_ADMIN ){
     redirect('/login');
+  }
+
+  if(session.user.isEmployee){
+    redirect("/login")
   }
   
   const totalApplications = applications?.data.length || 0;
@@ -84,7 +88,7 @@ export default function JobSeekerDashboard() {
 
       {/* Stats Grid */}
       <div className="grid md:grid-cols-4 gap-6 mb-8">
-        <Card className="bg-gradient-to-br from-primary-500 to-primary-600 text-white">
+        <Card className="bg-linear-to-br from-primary-500 to-primary-600 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-primary-100 text-sm mb-1">Total Applications</p>
@@ -94,7 +98,7 @@ export default function JobSeekerDashboard() {
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
+        <Card className="bg-linear-to-br from-yellow-500 to-yellow-600 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-100 text-sm mb-1">Pending</p>
@@ -104,7 +108,7 @@ export default function JobSeekerDashboard() {
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+        <Card className="bg-linear-to-br from-green-500 to-green-600 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm mb-1">Shortlisted</p>
@@ -114,7 +118,7 @@ export default function JobSeekerDashboard() {
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white">
+        <Card className="bg-linear-to-br from-red-500 to-red-600 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-red-100 text-sm mb-1">Rejected</p>

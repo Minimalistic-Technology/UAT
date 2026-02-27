@@ -14,6 +14,10 @@ declare module "next-auth" {
     role: string;
     token: string;
     image?: string;
+
+    isEmployee?: boolean;
+    companyId?: string | null;
+    companyRole?: string | null;
   }
 
   interface Session {
@@ -28,6 +32,9 @@ declare module "next-auth/jwt" {
   interface JWT {
     role?: string;
     accessToken?: string;
+    isEmployee?: boolean;
+    companyId?: string | null;
+    companyRole?: string | null;
   }
 }
 
@@ -123,6 +130,9 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = (user as any).role;
         token.accessToken = (user as any).token;
+        token.isEmployee = user.isEmployee;
+        token.companyId = user.companyId;
+        token.companyRole = user.companyRole;
       }
 
       // Handle Google OAuth
@@ -149,8 +159,12 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }: any) {
       if (session.user) {
+        session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.accessToken = token.accessToken as string;
+        session.user.isEmployee = token.isEmployee as boolean;
+        session.user.companyId = token.companyId as string | null;
+        session.user.companyRole = token.companyRole as string | null;
       }
       return session;
     },

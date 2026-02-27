@@ -1,13 +1,8 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { apiClient } from "@/lib/api";
-import { UserRole } from "@/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CheckCircle, XCircle } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
-import React, { useEffect } from "react";
 import { toast } from "sonner";
 
 const PendingJobsTab = () => {

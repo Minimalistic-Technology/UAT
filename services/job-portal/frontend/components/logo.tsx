@@ -11,14 +11,14 @@ export const Logo = () => {
   const redirectUrl = useMemo(() => {
     if (status === "loading") return "/";
     if (!session?.user) return "/";
+    console.log("session render in logo: ", session);
 
     switch (session.user.role) {
-      case "admin":
+      case "super_admin":
         return "/admin-dashboard";
-      case "employer":
-        return "/employer-dashboard";
-      case "jobseeker":
-        return "/user-dashboard";
+      case "user":
+        if(session?.user.isEmployee) return "/employer-dashboard"
+        else return "/user-dashboard"
       default:
         return "/";
     }

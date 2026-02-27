@@ -17,7 +17,7 @@ import {
   Edit,
   Trash2,
 } from 'lucide-react';
-import { UserRole, JobStatus } from '@/types';
+import { JobStatus, GlobalRole } from '@/types';
 
 export default function EmployerDashboard() {
   const { data: session, status } = useSession();
@@ -53,8 +53,12 @@ export default function EmployerDashboard() {
     return <div>Loading...</div>;
   }
 
-  if (!session || session.user.role !== UserRole.EMPLOYER) {
+  if (!session || session.user.role === GlobalRole.SUPER_ADMIN) {
     redirect('/login');
+  }
+
+  if(!session.user.isEmployee){
+    redirect("/login")
   }
 
   return (

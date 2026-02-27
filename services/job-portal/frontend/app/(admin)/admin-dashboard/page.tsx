@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-import { UserRole } from "@/types";
+import { GlobalRole } from "@/types";
 import { useEffect, useState } from "react";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import UserManagementTab from "@/pages/admin/userManagementTab";
@@ -13,7 +13,7 @@ export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const [selectedTab, setSelectedTab] = useState<'users' | 'analytics' | 'jobs'>('users')
 
-  const isAdmin = session?.user?.role === UserRole.ADMIN;
+  const isAdmin = session?.user?.role === GlobalRole.SUPER_ADMIN;
   const admin = useAdminDashboard(status === "authenticated" && isAdmin);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export default function AdminDashboard() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Admin Dashboard
+          Super Admin Dashboard
         </h1>
         <p className="text-gray-600">
           Manage platform users, jobs, and analytics
