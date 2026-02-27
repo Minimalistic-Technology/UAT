@@ -8,6 +8,8 @@ import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import UserManagementTab from "@/pages/admin/userManagementTab";
 import PendingJobsTab from "@/pages/admin/pendingJobsTab";
 import AnalyticsTab from "@/pages/admin/analyticsTab";
+import { Card } from "@/components/ui/Card";
+import { Briefcase, FileText, Users } from "lucide-react";
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
@@ -40,12 +42,12 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid md:grid-cols-4 gap-6 mb-8">
-        {/* <Card className="bg-linear-to-br from-blue-500 to-blue-600 text-white">
+        <Card className="bg-linear-to-br from-blue-500 to-blue-600 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm mb-1">Total Users</p>
               <p className="text-3xl font-bold">
-                {stats?.data?.totalUsers || 0}
+                {stats.data?.data.totalUsers || 0}
               </p>
             </div>
             <Users className="w-12 h-12 text-blue-200" />
@@ -57,7 +59,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-green-100 text-sm mb-1">Total Jobs</p>
               <p className="text-3xl font-bold">
-                {stats?.data?.totalJobs || 0}
+                {stats.data?.data.totalJobs || 0}
               </p>
             </div>
             <Briefcase className="w-12 h-12 text-green-200" />
@@ -67,16 +69,16 @@ export default function AdminDashboard() {
         <Card className="bg-linear-to-br from-purple-500 to-purple-600 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-purple-100 text-sm mb-1">Applications</p>
+              <p className="text-purple-100 text-sm mb-1">Total Companies</p>
               <p className="text-3xl font-bold">
-                {stats?.data?.totalApplications || 0}
+                {stats.data?.data.totalCompanies || 0}
               </p>
             </div>
             <FileText className="w-12 h-12 text-purple-200" />
           </div>
         </Card>
 
-        <Card className="bg-linear-to-br from-yellow-500 to-yellow-600 text-white">
+        {/* <Card className="bg-linear-to-br from-yellow-500 to-yellow-600 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-100 text-sm mb-1">Pending Jobs</p>
@@ -139,7 +141,10 @@ export default function AdminDashboard() {
 
       {/* Analytics Tab */}
       {selectedTab === "analytics" && (
-        <AnalyticsTab />
+        <AnalyticsTab
+          // we only render the tab once stats are available; fall back to an empty object
+          stats={stats.data?.data ?? { totalUsers: 0, totalJobs: 0, totalCompanies: 0 }}
+        />
       )}
     </div>
   );

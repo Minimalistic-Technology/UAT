@@ -4,6 +4,7 @@ import { GlobalRole } from "../models/User.model.js";
 import {
   getAllUsers,
   getJobsByStatus,
+  getStats,
   updateUserStatus,
 } from "../controllers/admin.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
@@ -28,4 +29,7 @@ router.put(
   ]),
   updateUserStatus,
 );
+router.get("/stats", getStats)
+
+
 export default router;

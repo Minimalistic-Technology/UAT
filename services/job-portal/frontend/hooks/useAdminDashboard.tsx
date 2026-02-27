@@ -2,10 +2,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 
+interface StatsResponse {
+  data: {
+    totalUsers: number;
+    totalJobs: number;
+    totalCompanies: number;
+  },
+  success: boolean;
+}
+
 export function useAdminDashboard(enabled: boolean) {
   const queryClient = useQueryClient();
 
-  const stats = useQuery({
+  const stats = useQuery<StatsResponse>({
     queryKey: ['admin-stats'],
     queryFn: () => apiClient.get('/admin/stats'),
     enabled,

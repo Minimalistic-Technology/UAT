@@ -11,7 +11,6 @@ export const Logo = () => {
   const redirectUrl = useMemo(() => {
     if (status === "loading") return "/";
     if (!session?.user) return "/";
-    console.log("session render in logo: ", session);
 
     switch (session.user.role) {
       case "super_admin":

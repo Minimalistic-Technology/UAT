@@ -1,14 +1,20 @@
 import { Card } from "@/components/ui/Card";
-import { apiClient } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
 import { TrendingUp } from "lucide-react";
 
-const AnalyticsTab = () => {
-  const {data: statsResponse} = useQuery({
-    queryKey: ['admin-stats'],
-    queryFn: () => apiClient.get('/admin/stats'),
-    // enabled,
-  });
+interface StatsData {
+  totalUsers: number;
+  totalJobs: number;
+  totalCompanies: number;
+}
+
+interface AnalyticsTabProps {
+  stats?: StatsData;
+}
+
+const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats }) => {
+  const totalUsers = stats?.totalUsers || 0;
+  const totalJobs = stats?.totalJobs || 0;
+  const totalCompanies = stats?.totalCompanies || 0;
 
   return (
     <>
@@ -28,24 +34,39 @@ const AnalyticsTab = () => {
         </h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
+            <span className="text-gray-600">Total Users</span>
+            <span className="text-2xl font-bold text-gray-900">
+              {totalUsers}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Total Companies Registered</span>
+            <span className="text-2xl font-bold text-gray-900">
+              {totalCompanies}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Total Jobs</span>
+            <span className="text-2xl font-bold text-gray-900">
+              {totalJobs}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
             <span className="text-gray-600">Total Applications</span>
             <span className="text-2xl font-bold text-gray-900">
-              {/* {stats?.data?.totalApplications || 0} */}
-              0
+              {/* {stats?.data?.totalApplications || 0} */}0
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-gray-600">This Month</span>
             <span className="text-2xl font-bold text-primary-600">
-              {/* {stats?.data?.monthlyApplications || 0} */}
-              0
+              {/* {stats?.data?.monthlyApplications || 0} */}0
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-gray-600">Success Rate</span>
             <span className="text-2xl font-bold text-green-600">
-              {/* {stats?.data?.successRate || 0}% */}
-              0 %
+              {/* {stats?.data?.successRate || 0}% */}0 %
             </span>
           </div>
         </div>

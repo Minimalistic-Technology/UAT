@@ -3,6 +3,7 @@ import User, { GlobalRole, IUser } from "../models/User.model.js";
 import { JobStatus } from "../models/Job.model.js";
 import Job from "../models/Job.model.js";
 import CompanyMember from "../models/CompanyMember.model.js";
+import Company from "../models/Company.model.js";
 import { Types } from "mongoose";
 
 type IUserWithCompany = IUser & {
@@ -167,3 +168,28 @@ export const updateUserStatus = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getStats = async (req: Request, res: Response) => {
+  try {
+    const [totalUsers, totalJobs, totalCompanies] = await Promise.all([
+      User.countDocuments({}),
+      Job.countDocuments({}),
+      Company.countDocuments({}),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalUsers,
+        totalJobs,
+        totalCompanies,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch platform statistics', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+}
