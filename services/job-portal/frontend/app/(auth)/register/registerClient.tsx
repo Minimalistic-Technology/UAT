@@ -1,38 +1,41 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '../../../components/ui/Button';
-import { Input } from '../../../components/ui/Input';
-import { Card } from '../../../components/ui/Card';
-import { authService } from '@/lib/services/auth.service';
-import { toast } from 'sonner';
-import { UserRole } from '@/types';
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "../../../components/ui/Button";
+import { Input } from "../../../components/ui/Input";
+import { Card } from "../../../components/ui/Card";
+import { authService } from "@/lib/services/auth.service";
+import { toast } from "sonner";
+import { UserRole } from "@/types";
 
-const registerSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-  role: z.enum([UserRole.JOB_SEEKER, UserRole.EMPLOYER]),
-  phone: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
+const registerSchema = z
+  .object({
+    firstName: z.string().min(2, "First name must be at least 2 characters"),
+    lastName: z.string().min(2, "Last name must be at least 2 characters"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string(),
+    role: z.enum([UserRole.JOB_SEEKER, UserRole.EMPLOYER]),
+    phone: z.string().optional(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roleParam = searchParams.get('role');
-  const defaultRole = (roleParam === UserRole.EMPLOYER ? UserRole.EMPLOYER : UserRole.JOB_SEEKER);
+  const roleParam = searchParams?.get("role");
+  const defaultRole =
+    roleParam === UserRole.EMPLOYER ? UserRole.EMPLOYER : UserRole.JOB_SEEKER;
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -47,16 +50,16 @@ export default function RegisterClient() {
     },
   });
 
-  const selectedRole = watch('role');
+  const selectedRole = watch("role");
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     try {
       await authService.register(data);
-      toast.success('Registration successful! Please login.');
-      router.push('/login');
+      toast.success("Registration successful! Please login.");
+      router.push("/login");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      toast.error(error.response?.data?.message || "Registration failed");
     } finally {
       setIsLoading(false);
     }
@@ -78,10 +81,12 @@ export default function RegisterClient() {
                 I am a
               </label>
               <div className="grid grid-cols-2 gap-4">
-                <label className={`cursor-pointer ${selectedRole === UserRole.JOB_SEEKER ? 'ring-2 ring-primary-600' : ''}`}>
+                <label
+                  className={`cursor-pointer ${selectedRole === UserRole.JOB_SEEKER ? "ring-2 ring-primary-600" : ""}`}
+                >
                   <input
                     type="radio"
-                    {...register('role')}
+                    {...register("role")}
                     value={UserRole.JOB_SEEKER}
                     className="sr-only"
                   />
@@ -90,10 +95,12 @@ export default function RegisterClient() {
                     <p className="text-xs text-gray-500">Looking for jobs</p>
                   </div>
                 </label>
-                <label className={`cursor-pointer ${selectedRole === UserRole.EMPLOYER ? 'ring-2 ring-primary-600' : ''}`}>
+                <label
+                  className={`cursor-pointer ${selectedRole === UserRole.EMPLOYER ? "ring-2 ring-primary-600" : ""}`}
+                >
                   <input
                     type="radio"
-                    {...register('role')}
+                    {...register("role")}
                     value={UserRole.EMPLOYER}
                     className="sr-only"
                   />
@@ -107,14 +114,14 @@ export default function RegisterClient() {
 
             <div className="grid grid-cols-2 gap-4">
               <Input
-                {...register('firstName')}
+                {...register("firstName")}
                 label="First Name"
                 placeholder="John"
                 error={errors.firstName?.message}
                 disabled={isLoading}
               />
               <Input
-                {...register('lastName')}
+                {...register("lastName")}
                 label="Last Name"
                 placeholder="Doe"
                 error={errors.lastName?.message}
@@ -123,7 +130,7 @@ export default function RegisterClient() {
             </div>
 
             <Input
-              {...register('email')}
+              {...register("email")}
               type="email"
               label="Email Address"
               placeholder="you@example.com"
@@ -132,7 +139,7 @@ export default function RegisterClient() {
             />
 
             <Input
-              {...register('phone')}
+              {...register("phone")}
               type="tel"
               label="Phone Number (Optional)"
               placeholder="+1234567890"
@@ -141,7 +148,7 @@ export default function RegisterClient() {
             />
 
             <Input
-              {...register('password')}
+              {...register("password")}
               type="password"
               label="Password"
               placeholder="••••••••"
@@ -150,7 +157,7 @@ export default function RegisterClient() {
             />
 
             <Input
-              {...register('confirmPassword')}
+              {...register("confirmPassword")}
               type="password"
               label="Confirm Password"
               placeholder="••••••••"
@@ -165,13 +172,22 @@ export default function RegisterClient() {
                 required
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
-                I agree to the{' '}
-                <Link href="/terms" className="text-primary-600 hover:text-primary-500">
+              <label
+                htmlFor="terms"
+                className="ml-2 block text-sm text-gray-900"
+              >
+                I agree to the{" "}
+                <Link
+                  href="/terms"
+                  className="text-primary-600 hover:text-primary-500"
+                >
                   Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link href="/privacy" className="text-primary-600 hover:text-primary-500">
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/privacy"
+                  className="text-primary-600 hover:text-primary-500"
+                >
                   Privacy Policy
                 </Link>
               </label>
@@ -189,7 +205,7 @@ export default function RegisterClient() {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <Link
                 href="/login"
                 className="font-medium text-primary-600 hover:text-primary-500"

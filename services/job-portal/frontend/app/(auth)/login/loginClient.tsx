@@ -24,9 +24,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams?.get("callbackUrl") ?? "/dashboard";
   const [isLoading, setIsLoading] = useState(false);
-   const { data: session, status } = useSession();
+  const { data: session, status } = useSession();
 
   const {
     register,

@@ -1,16 +1,19 @@
+"use client"
+
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { apiClient } from "@/lib/api";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const PendingJobsTab = () => {
+  const queryClient = useQueryClient();
   const approveJobMutation = useMutation({
     mutationFn: (jobId: string) =>
       apiClient.put(`/admin/jobs/${jobId}/approve`, {}),
     onSuccess: () => {
-      //   queryClient.invalidateQueries({ queryKey: ['admin-pending-jobs'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-pending-jobs'] });
       toast.success("Job approved successfully");
     },
   });
@@ -19,7 +22,7 @@ const PendingJobsTab = () => {
     mutationFn: (jobId: string) =>
       apiClient.put(`/admin/jobs/${jobId}/reject`, {}),
     onSuccess: () => {
-      //   queryClient.invalidateQueries({ queryKey: ['admin-pending-jobs'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-pending-jobs'] });
       toast.success("Job rejected");
     },
   });

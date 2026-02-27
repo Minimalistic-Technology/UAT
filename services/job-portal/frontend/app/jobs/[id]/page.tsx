@@ -1,14 +1,14 @@
-'use client';
-import { useParams } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { jobService } from '@/lib/services/job.service';
-import { applicationService } from '@/lib/services/application.service';
-import { Button } from '../../../components/ui/Button';
-import { Card } from '../../../components/ui/Card';
-import { toast } from 'sonner';
-import { UserRole } from '@/types';
+"use client";
+import { useParams } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { jobService } from "@/lib/services/job.service";
+import { applicationService } from "@/lib/services/application.service";
+import { Button } from "../../../components/ui/Button";
+import { Card } from "../../../components/ui/Card";
+import { toast } from "sonner";
+import { UserRole } from "@/types";
 import {
   MapPin,
   Briefcase,
@@ -19,31 +19,35 @@ import {
   Calendar,
   CheckCircle,
   Loader2,
-} from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+} from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
 
 export default function JobDetailPage() {
-  const params = useParams();
-  const id = params.id as string;
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+
+  if (!id) {
+    return <div>Invalid ID</div>;
+  }
+
   const { data: session } = useSession();
   const router = useRouter();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['job', id],
-queryFn: () => jobService.getJob(id),
+    queryKey: ["job", id],
+    queryFn: () => jobService.getJob(id),
   });
 
-  
-
   const applyMutation = useMutation({
-    mutationFn: (jobId: string) =>
-      applicationService.applyForJob({ jobId }),
+    mutationFn: (jobId: string) => applicationService.applyForJob({ jobId }),
     onSuccess: () => {
-      toast.success('Application submitted successfully!');
-      router.push('/applications');
+      toast.success("Application submitted successfully!");
+      router.push("/applications");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to submit application');
+      toast.error(
+        error.response?.data?.message || "Failed to submit application",
+      );
     },
   });
 
@@ -55,7 +59,7 @@ queryFn: () => jobService.getJob(id),
 
     console.log(session.user.role);
     if (session.user.role !== UserRole.JOB_SEEKER) {
-      toast.error('Only job seekers can apply for jobs');
+      toast.error("Only job seekers can apply for jobs");
       return;
     }
 
@@ -98,7 +102,9 @@ queryFn: () => jobService.getJob(id),
                   />
                 )}
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{job.title}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {job.title}
+                  </h1>
                   <p className="text-xl text-gray-600">{job.company.name}</p>
                 </div>
               </div>
@@ -113,31 +119,38 @@ queryFn: () => jobService.getJob(id),
               <div className="flex items-center text-gray-600">
                 <MapPin className="w-5 h-5 mr-2" />
                 {job.location.remote
-                  ? 'Remote'
+                  ? "Remote"
                   : `${job.location.city}, ${job.location.country}`}
               </div>
               <div className="flex items-center text-gray-600">
                 <Briefcase className="w-5 h-5 mr-2" />
-                {job.jobType.replace('_', ' ')}
+                {job.jobType.replace("_", " ")}
               </div>
               <div className="flex items-center text-gray-600">
                 <Users className="w-5 h-5 mr-2" />
-                {job.experienceLevel.charAt(0).toUpperCase() + job.experienceLevel.slice(1)} Level
+                {job.experienceLevel.charAt(0).toUpperCase() +
+                  job.experienceLevel.slice(1)}{" "}
+                Level
               </div>
               {job.salary.min && (
                 <div className="flex items-center text-gray-600">
                   <DollarSign className="w-5 h-5 mr-2" />
-                  {job.salary.min.toLocaleString()} - {job.salary.max?.toLocaleString()} / {job.salary.period}
+                  {job.salary.min.toLocaleString()} -{" "}
+                  {job.salary.max?.toLocaleString()} / {job.salary.period}
                 </div>
               )}
               <div className="flex items-center text-gray-600">
                 <Clock className="w-5 h-5 mr-2" />
-                Posted {formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}
+                Posted{" "}
+                {formatDistanceToNow(new Date(job.createdAt), {
+                  addSuffix: true,
+                })}
               </div>
               {job.applicationDeadline && (
                 <div className="flex items-center text-gray-600">
                   <Calendar className="w-5 h-5 mr-2" />
-                  Deadline: {format(new Date(job.applicationDeadline), 'MMM dd, yyyy')}
+                  Deadline:{" "}
+                  {format(new Date(job.applicationDeadline), "MMM dd, yyyy")}
                 </div>
               )}
             </div>
@@ -155,18 +168,22 @@ queryFn: () => jobService.getJob(id),
           </Card>
 
           <Card>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Job Description</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Job Description
+            </h2>
             <div className="prose max-w-none text-gray-700">
               <p className="whitespace-pre-line">{job.description}</p>
             </div>
           </Card>
 
           <Card>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Requirements</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Requirements
+            </h2>
             <ul className="space-y-2">
               {job.requirements.map((req, index) => (
                 <li key={index} className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5 shrink-0" />
                   <span className="text-gray-700">{req}</span>
                 </li>
               ))}
@@ -175,11 +192,13 @@ queryFn: () => jobService.getJob(id),
 
           {job.benefits && job.benefits.length > 0 && (
             <Card>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Benefits</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                Benefits
+              </h2>
               <ul className="space-y-2">
                 {job.benefits.map((benefit, index) => (
                   <li key={index} className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-primary-500 mr-2 mt-0.5 shrink-0" />
                     <span className="text-gray-700">{benefit}</span>
                   </li>
                 ))}
