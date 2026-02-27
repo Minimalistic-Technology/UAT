@@ -1,8 +1,13 @@
-import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { apiClient } from "@/lib/api";
-import { UserRole } from "@/types";
+import { CompanyRole, UserRole } from "@/types";
 import { toast } from "sonner";
 
 const COLUMNS = [
@@ -30,30 +35,45 @@ export interface PaginatedUserResponse {
   };
 }
 
-const roleStyles: Record<string, string> = {
-  [UserRole.EMPLOYER]: "bg-blue-50 text-blue-700 border-blue-200",
-  [UserRole.ADMIN]: "bg-purple-50 text-purple-700 border-purple-200",
-  DEFAULT: "bg-green-50 text-green-700 border-green-200",
+const badgeStyles = {
+  OWNER: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  EMPLOYEE: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  USER: "bg-purple-50 text-purple-700 border-purple-200",
+  INACTIVE: "bg-red-50 text-red-700 border-red-200",
 };
 
 const StatusBadge = ({
-  role,
+  role = "user",
+  companyRole,
   isActive,
+  isEmployee,
 }: {
   role?: string;
+  companyRole?: string;
   isActive?: boolean;
+  isEmployee?: boolean;
 }) => {
-  if (role) {
-    const style = roleStyles[role] || roleStyles.DEFAULT;
+  // when isEmployee is provided we override the default "role" display
+  if (typeof isEmployee === "boolean") {
+    // owner should get its own label/style even though it's also an employee
+    let label = isEmployee ? "Employee" : "User";
+    let style = isEmployee ? badgeStyles.EMPLOYEE : badgeStyles.USER;
+
+    if (companyRole === CompanyRole.OWNER) {
+      label = "Owner";
+      style = badgeStyles.OWNER;
+    }
+
     return (
       <span
         className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${style}`}
       >
-        {role.replace("_", " ")}
+        {label}
       </span>
     );
   }
 
+  // fallback for showing active/inactive status
   return (
     <span
       className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
@@ -74,10 +94,14 @@ const UserTableRow = ({ user }: { user: any }) => {
     mutationFn: ({ userId, isActive }: { userId: string; isActive: boolean }) =>
       apiClient.put(`/admin/users/${userId}/toggle-status`, { isActive }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('User updated');
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("User updated");
     },
   });
+
+  const isEmployee =
+    user.companyRole === CompanyRole.OWNER ||
+    user.companyRole === CompanyRole.ADMIN;
 
   return (
     <tr className="hover:bg-gray-50/50 transition-colors">
@@ -99,7 +123,10 @@ const UserTableRow = ({ user }: { user: any }) => {
         {user.email}
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <StatusBadge role={user.role} />
+        <StatusBadge
+          companyRole={user.companyRole}
+          isEmployee={isEmployee}
+        />
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <StatusBadge isActive={user.isActive} />
