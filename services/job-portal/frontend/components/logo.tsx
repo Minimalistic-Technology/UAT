@@ -16,7 +16,7 @@ export const Logo = () => {
       case "super_admin":
         return "/admin-dashboard";
       case "user":
-        if(session?.user.isEmployee) return "/employer-dashboard"
+        if(session?.user.isEmployee) return "/employer/dashboard"
         else return "/user-dashboard"
       default:
         return "/";

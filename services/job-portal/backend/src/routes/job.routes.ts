@@ -33,7 +33,7 @@ router.get('/:id', getJob);
 router.post(
   '/',
   protect,
-  authorize(GlobalRole.USER), // only for employer
+  authorize(GlobalRole.USER), // only for owner / admin
   validate(jobValidation),
   createJob
 );

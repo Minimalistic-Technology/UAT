@@ -4,6 +4,8 @@ import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
 import mongoose from "mongoose";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
+import User from "../models/User.model.js";
+import Company from "../models/Company.model.js";
 
 // @desc    Get all jobs with filters
 // @route   GET /api/jobs
@@ -153,26 +155,46 @@ export const getJob = async (req: AuthRequest, res: Response) => {
 
 // @desc    Create new job
 // @route   POST /api/jobs
-// @access  Private (Employer)
+// @access  Private (Owner)
 export const createJob = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    // Add user and company to req.body
-    req.body.postedBy = req.user.id;
-    req.body.company = req.user.company;
+    const userId = req.user.id;
 
-    console.log("Creating job:", req.user);
+    const companyMember = await CompanyMember.findOne({ user: userId });
 
-    if (!req.user.company) {
-      return res.status(400).json({
+    if (!companyMember) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Company member doesn't exists." });
+    }
+
+    const company = await Company.findById(companyMember.company);
+
+    if (!company) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No such company exists" });
+    }
+
+    if (
+      companyMember.role !== CompanyRole.OWNER &&
+      companyMember.role !== CompanyRole.ADMIN
+    ) {
+      return res.status(403).json({
         success: false,
-        message: "Please create a company profile first",
+        message: "You're not not authorized to create a job",
       });
     }
 
+    // Add user and company to req.body
+    req.body.postedBy = req.user.id;
+    req.body.company = company._id;
+
+    console.log("Creating job:", req.user);
     const job = await Job.create(req.body);
 
     res.status(201).json({
@@ -219,7 +241,8 @@ export const updateJob = async (
 
     // Only admin and owner can update job details
     if (
-      req.user.role !== CompanyRole.ADMIN || req.user.role !== CompanyRole.OWNER
+      req.user.role !== CompanyRole.ADMIN ||
+      req.user.role !== CompanyRole.OWNER
     ) {
       return res.status(403).json({
         success: false,
@@ -276,7 +299,8 @@ export const deleteJob = async (
 
     // Only admin and owner can delete the job
     if (
-      req.user.role !== CompanyRole.ADMIN || req.user.role !== CompanyRole.OWNER
+      req.user.role !== CompanyRole.ADMIN ||
+      req.user.role !== CompanyRole.OWNER
     ) {
       return res.status(403).json({
         success: false,
@@ -301,22 +325,32 @@ export const deleteJob = async (
 
 // @desc    Get jobs posted by logged in employer
 // @route   GET /api/jobs/my-jobs
-// @access  Private (Employer)
-export const getMyJobs = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
+// @access  Private (Owner and admin)
+export const getMyJobs = async (req: AuthRequest, res: Response) => {
   try {
-    const jobs = await Job.find({ postedBy: req.user.id }).populate(
-      "company",
-      "name logo",
-    );
-    res.status(200).json({
-      success: true,
-      count: jobs.length,
-      data: jobs,
-    });
+    const companyMember = await CompanyMember.findOne({ user: req.user.id });
+
+    if (!companyMember) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Company member not found" });
+    }
+
+    if (
+      companyMember.role === CompanyRole.ADMIN ||
+      companyMember.role === CompanyRole.OWNER
+    ) {
+      const jobs = await Job.find({ company: companyMember.company }).populate(
+        "company",
+        "name logo",
+      );
+
+      res.status(200).json({
+        success: true,
+        count: jobs.length,
+        data: jobs,
+      });
+    }
   } catch (error: any) {
     res.status(500).json({
       success: false,

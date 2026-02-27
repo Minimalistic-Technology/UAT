@@ -79,7 +79,7 @@ export default function LoginClient() {
       router.push("/admin-dashboard");
     } else if (role === "user") {
       if (isEmployee) {
-        router.push("/employer-dashboard");
+        router.push("/employer/dashboard");
       } else {
         router.push("/user-dashboard");
       }

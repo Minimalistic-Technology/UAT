@@ -47,7 +47,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-blue-100 text-sm mb-1">Total Users</p>
               <p className="text-3xl font-bold">
-                {stats.data?.data.totalUsers || 0}
+                {Number(stats.data?.data.totalUsers) - 1 || 0}
               </p>
             </div>
             <Users className="w-12 h-12 text-blue-200" />
