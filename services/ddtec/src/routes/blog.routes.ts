@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getBlogs, getBlogBySlug, getBlogById, createBlog, updateBlog, deleteBlog } from '../controllers/blog.controller';
-import { auth, admin } from '../middleware/auth.middleware';
+import { auth, checkPermission } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -22,16 +22,16 @@ router.get('/:id', getBlogById);
 // @route   POST api/blogs
 // @desc    Create a blog
 // @access  Private/Admin
-router.post('/', auth, admin, createBlog);
+router.post('/', auth, checkPermission(['marketing']), createBlog);
 
 // @route   PUT api/blogs/:id
 // @desc    Update a blog
 // @access  Private/Admin
-router.put('/:id', auth, admin, updateBlog);
+router.put('/:id', auth, checkPermission(['marketing']), updateBlog);
 
 // @route   DELETE api/blogs/:id
 // @desc    Delete a blog
 // @access  Private/Admin
-router.delete('/:id', auth, admin, deleteBlog);
+router.delete('/:id', auth, checkPermission(['marketing']), deleteBlog);
 
 export default router;

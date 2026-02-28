@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer';
 import sgMail from '@sendgrid/mail';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import Bill from '../models/Bill';
 
 class NotificationService {
     private static _emailTransporter: any = null;
@@ -31,6 +34,7 @@ class NotificationService {
                     html: mailOptions.html,
                     bcc: mailOptions.bcc,
                     replyTo: mailOptions.replyTo,
+                    attachments: mailOptions.attachments
                 };
 
                 const [response] = await sgMail.send(msg as any);
@@ -129,20 +133,28 @@ class NotificationService {
     }
 
     /**
-     * Sends an Order Confirmation email to the customer
+     * Sends an Order Confirmation email with a generated Bill PDF
      */
     static async sendOrderConfirmation(order: any): Promise<boolean> {
         try {
-            // const transporter = await this.getEmailTransporter();
-            // if (!transporter) {
-            //    console.error('[STRICT-ERROR] Cannot send order confirmation: Transporter not initialized.');
-            //    return false;
-            // }
-
             const to = order.shippingInfo?.email;
             if (!to) {
                 console.error('[STRICT-ERROR] Cannot send order confirmation: Recipient email is missing from order.');
                 return false;
+            }
+
+            // Find the associated bill
+            const bill = await Bill.findOne({ user: order.user, totalAmount: order.totalAmount }).sort({ createdAt: -1 });
+
+            let attachments: any[] = [];
+            if (bill) {
+                const pdfBuffer = await this.generateBillPDF(bill);
+                attachments.push({
+                    content: pdfBuffer.toString('base64'),
+                    filename: `Invoice_${bill.customerInfo.name || "Customer"}.pdf`,
+                    type: 'application/pdf',
+                    disposition: 'attachment'
+                });
             }
 
             const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
@@ -155,16 +167,16 @@ class NotificationService {
                 </tr>
             `).join('');
 
-            const mailOptions = {
+            const mailOptions: any = {
                 from,
                 to,
-                bcc: adminEmail || undefined, // Only CC admin if EMAIL_TO is defined
+                bcc: adminEmail || undefined,
                 subject: `Order Confirmed - #${order._id.toString().slice(-6).toUpperCase()}`,
                 html: `
                     <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                         <div style="text-align: center; margin-bottom: 20px;">
                             <h2 style="color: #0d9488;">Order Confirmed!</h2>
-                            <p style="color: #6b7280;">Thank you for your purchase at DDTEC.</p>
+                            <p style="color: #6b7280;">Thank you for your purchase at DDTEC. Your invoice is attached.</p>
                         </div>
                         
                         <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -194,30 +206,79 @@ class NotificationService {
                         <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 DDTEC. All rights reserved.</p>
                     </div>
                 `,
+                attachments: attachments.length > 0 ? attachments : undefined
             };
 
             console.log(`[NOTIFICATION] Attempting to send Order Confirmation to ${to}...`);
-
             const result = await this.sendWithFallback(mailOptions);
-
-            if (!result.success) return false;
-
-            console.log(`[NOTIFICATION] Order Confirmation Mail send call finished via ${result.method}.`);
-
-            if (result.method === 'nodemailer' && this._isTestAccount) {
-                console.log('[SANDBOX-ORDER] Receipt Preview:', nodemailer.getTestMessageUrl(result.info));
-            } else {
-                const host = process.env.EMAIL_HOST || 'unknown-host';
-                console.log(`[STRICT] Real Order Confirmation sent to ${to} via ${result.method} (${host}). From: ${from}`);
-            }
-
-            return true;
+            return result.success;
         } catch (error: any) {
             console.error('[STRICT-ERROR] Order confirmation failed:', error);
-            if (error.response) console.error('SMTP Response:', error.response);
-            if (error.code) console.error('Error Code:', error.code);
             return false;
         }
+    }
+
+    private static async generateBillPDF(bill: any): Promise<Buffer> {
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFillColor(20, 184, 166);
+        doc.rect(0, 0, 210, 25, 'F');
+        doc.setTextColor(255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(24);
+        doc.text("DDTECH", 20, 17);
+        doc.setFontSize(14);
+        doc.text("INVOICE", 190, 17, { align: "right" });
+
+        // Details
+        doc.setTextColor(50);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text("DDTECH TOOLS", 20, 45);
+        doc.setFont("helvetica", "normal");
+        doc.text("123 Tech Lane, Silicon Valley", 20, 51);
+        doc.text("Contact: +91 98765 43210", 20, 57);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("BILL TO:", 120, 45);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${bill.customerInfo.name}`, 120, 51);
+        doc.text(`${bill.customerInfo.email || ""}`, 120, 57);
+        doc.text(`${bill.customerInfo.address || ""}`, 120, 63, { maxWidth: 70 });
+
+        const tableData = bill.items.map((item: any) => {
+            const itemTotal = item.price * item.quantity;
+            const iTax = item.taxes.reduce((acc: number, tax: any) => acc + (itemTotal * (tax.rate / 100)), 0);
+            return [
+                item.name,
+                `Rs. ${item.price.toLocaleString()}`,
+                item.quantity,
+                `Rs. ${iTax.toLocaleString()}`,
+                `Rs. ${(itemTotal + iTax).toLocaleString()}`
+            ];
+        });
+
+        autoTable(doc, {
+            startY: 80,
+            head: [["Product Name", "Unit Price", "Quantity", "Tax Amount", "Total"]],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [20, 184, 166], halign: 'center' },
+            columnStyles: {
+                1: { halign: 'right' },
+                2: { halign: 'center' },
+                3: { halign: 'right' },
+                4: { halign: 'right', fontStyle: 'bold' }
+            }
+        });
+
+        const finalY = (doc as any).lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Amount: Rs. ${bill.totalAmount.toLocaleString()}`, 190, finalY, { align: "right" });
+
+        return Buffer.from(doc.output('arraybuffer'));
     }
 
     /**
