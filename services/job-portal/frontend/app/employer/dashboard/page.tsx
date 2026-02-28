@@ -204,6 +204,7 @@ export default function EmployerDashboard() {
   });
 
   const updateStatusMutation = useMutation({
+    
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       jobService.updateJob(id, { status }),
     onSuccess: () => {

@@ -229,7 +229,7 @@ export const updateJob = async (
     }
 
     const companyMember = await CompanyMember.findOne({
-      user: req.user.id,
+      user: req.user._id,
     }).populate("company", "name");
 
     if (!companyMember) {
@@ -241,8 +241,8 @@ export const updateJob = async (
 
     // Only admin and owner can update job details
     if (
-      req.user.role !== CompanyRole.ADMIN ||
-      req.user.role !== CompanyRole.OWNER
+      companyMember.role !== CompanyRole.ADMIN &&
+      companyMember.role !== CompanyRole.OWNER
     ) {
       return res.status(403).json({
         success: false,

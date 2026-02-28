@@ -43,7 +43,11 @@ class JobService {
   }
 
   async updateJob(id: string, data: Partial<Job>) {
-    return apiClient.put<{ success: boolean; data: Job }>(`/jobs/${id}`, data);
+    console.log(`id: ${id} and data: ${JSON.stringify(data)}`);
+    const response =  apiClient.patch<{ success: boolean; data: Job }>(`/jobs/${id}`, data);
+    console.log("response: ", response);
+
+    return response;
   }
 
   async deleteJob(id: string) {

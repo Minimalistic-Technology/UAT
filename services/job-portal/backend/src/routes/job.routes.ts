@@ -37,7 +37,7 @@ router.post(
   validate(jobValidation),
   createJob
 );
-router.put('/:id', protect, authorize(GlobalRole.USER), updateJob); // only for employer
+router.patch('/:id', protect, authorize(GlobalRole.USER), updateJob); // only for employer
 router.delete('/:id', protect, authorize(GlobalRole.USER), deleteJob); // only for employer
 
 export default router;
