@@ -6,6 +6,7 @@ import User from '../models/User';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 import OTP from '../models/OTP';
+import Settings from '../models/Settings';
 import NotificationService from '../services/notification.service';
 import ValidationService from '../services/validation.service';
 
@@ -21,6 +22,12 @@ export const sendOtp = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Identifier (email or phone) is required' });
         }
         identifier = identifier.trim();
+
+        // Check if global Login/Signup is disabled for regular users
+        const settings = await Settings.findOne();
+        if (settings && settings.components && settings.components.LoginSignup === false) {
+            return res.status(403).json({ msg: 'Public registration/login is currently disabled.' });
+        }
 
         // Check if user already exists
         const existingUser = await User.findOne({
@@ -92,6 +99,14 @@ export const register = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Invalid or expired OTP' });
         }
 
+        // Block new user registrations if public login/signup is disabled
+        if (!role || role === 'user') {
+            const settings = await Settings.findOne();
+            if (settings && settings.components && settings.components.LoginSignup === false) {
+                return res.status(403).json({ msg: 'Public registration is currently disabled.' });
+            }
+        }
+
         // Validate Real Contact Info
         if (email) {
             const emailValidation = ValidationService.isRealEmail(email);
@@ -133,7 +148,9 @@ export const register = async (req: Request, res: Response) => {
             id: user.id,
             name: user.name, // Keep using name for payload for compatibility
             email: user.email,
-            role: user.role
+            role: user.role,
+            customPages: user.customPages,
+            editPages: user.editPages
         };
 
         // Return success message
@@ -145,7 +162,9 @@ export const register = async (req: Request, res: Response) => {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                customPages: user.customPages,
+                editPages: user.editPages
             }
         });
     } catch (err) {
@@ -176,9 +195,15 @@ export const login = async (req: Request, res: Response) => {
         }
 
         // Check if user is active (bypass for admins to prevent lockout)
-        if (user.role !== 'admin') {
+        if (user.role === 'user') {
             if (!user.isActive) {
                 return res.status(403).json({ msg: 'Account is deactivated. Please contact admin.' });
+            }
+
+            // Check if global Login/Signup is disabled
+            const settings = await Settings.findOne();
+            if (settings && settings.components && settings.components.LoginSignup === false) {
+                return res.status(403).json({ msg: 'Public login is currently disabled.' });
             }
         }
 
@@ -188,7 +213,9 @@ export const login = async (req: Request, res: Response) => {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email, // Including email in payload is useful
-            role: user.role
+            role: user.role,
+            customPages: user.customPages,
+            editPages: user.editPages
         };
 
         jwt.sign(
@@ -241,41 +268,53 @@ export const getMe = async (req: Request, res: Response) => {
 // Admin: Create User directly
 export const createUser = async (req: Request, res: Response) => {
     try {
-        const { firstName, lastName, email, phone, password, role } = req.body;
+        let { firstName, lastName, email, phone, password, role, customPages, editPages } = req.body;
 
         // Validate Contact Info
         if (email) {
             const emailValidation = ValidationService.isRealEmail(email);
             if (!emailValidation.isValid) return res.status(400).json({ msg: emailValidation.msg });
         }
-        if (phone) {
+        if (phone && phone.trim() !== "") {
             const phoneValidation = ValidationService.isRealPhone(phone);
             if (!phoneValidation.isValid) return res.status(400).json({ msg: phoneValidation.msg });
+        } else {
+            phone = undefined; // Ensure empty string doesn't trigger unique constraint
         }
 
-        let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ msg: 'User already exists' });
+        // Robust uniqueness check
+        const checkQuery: any[] = [];
+        if (email) checkQuery.push({ email });
+        if (phone) checkQuery.push({ phone });
+
+        if (checkQuery.length > 0) {
+            const existingUser = await User.findOne({ $or: checkQuery });
+            if (existingUser) {
+                const conflictField = existingUser.email === email ? 'Email' : 'Phone number';
+                return res.status(400).json({ msg: `${conflictField} already exists` });
+            }
         }
 
-        user = new User({
+        const user = new User({
             firstName,
             lastName,
-            name: `${firstName} ${lastName}`,
+            name: `${firstName || ''} ${lastName || ''}`.trim(),
             email,
             phone,
             password, // Will be hashed by pre-save
             role: role || 'user',
+            customPages: customPages || [],
+            editPages: editPages || [],
             isEmailVerified: true, // Admin created, assume verified
-            isPhoneVerified: true,
+            isPhoneVerified: !!phone,
             isActive: true
         });
 
         await user.save();
         res.status(201).json({ msg: 'User created successfully', user });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server error');
+    } catch (err: any) {
+        console.error("[ERROR] createUser Failed:", err);
+        res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
 

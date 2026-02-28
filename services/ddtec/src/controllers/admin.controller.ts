@@ -11,6 +11,14 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         // 1. Stock Stats
         const products = await Product.find().select('stock name category');
         const totalStock = products.reduce((acc, p) => acc + p.stock, 0);
+
+        const lowStockProducts = await Product.find({ stock: { $gt: 0, $lt: 10 } })
+            .select('name stock image images')
+            .limit(10);
+        const outOfStockProducts = await Product.find({ stock: 0 })
+            .select('name stock image images')
+            .limit(10);
+
         const lowStock = products.filter(p => p.stock < 10 && p.stock > 0).length;
         const outOfStock = products.filter(p => p.stock === 0).length;
 
@@ -127,7 +135,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             stock: {
                 totalStock,
                 lowStock,
-                outOfStock
+                outOfStock,
+                lowStockProducts,
+                outOfStockProducts
             },
             trends: formattedTrends,
             categoryRevenue: revenueByCategory.map(c => ({ name: c._id, value: c.value })),

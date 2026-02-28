@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { getDashboardStats, getAllUsers, deleteUser } from '../controllers/admin.controller';
-import authMiddleware from '../middleware/auth.middleware';
-import adminMiddleware from '../middleware/admin.middleware';
+import { auth as authMiddleware, admin as adminMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
 

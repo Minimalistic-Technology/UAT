@@ -10,7 +10,9 @@ export interface IUser extends Document {
     phone?: string;
     isPhoneVerified: boolean;
     password?: string;
-    role: 'user' | 'admin';
+    role: 'user' | 'super_admin' | 'product_manager' | 'order_manager' | 'customer_support' | 'finance' | 'marketing' | 'admin';
+    customPages?: string[];
+    editPages?: string[];
     isActive?: boolean;
     creditBalance?: number;
     address?: {
@@ -61,9 +63,15 @@ const UserSchema: Schema = new Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'admin'],
+        enum: ['user', 'super_admin', 'product_manager', 'order_manager', 'customer_support', 'finance', 'marketing', 'admin'],
         default: 'user'
     },
+    customPages: [{
+        type: String
+    }],
+    editPages: [{
+        type: String
+    }],
     isActive: {
         type: Boolean,
         default: true

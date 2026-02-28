@@ -38,10 +38,26 @@ export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
         return res.status(401).json({ msg: 'Authorization denied' });
     }
 
-    if (req.user.role !== 'admin') {
+    const adminRoles = ['super_admin', 'product_manager', 'order_manager', 'customer_support', 'finance', 'marketing', 'admin'];
+
+    if (!adminRoles.includes(req.user.role)) {
         return res.status(403).json({ msg: 'Access denied. Admin only.' });
     }
     next();
+};
+
+export const checkPermission = (allowedRoles: string[]) => {
+    return (req: AuthRequest, res: Response, next: NextFunction) => {
+        if (!req.user) {
+            return res.status(401).json({ msg: 'Authorization denied' });
+        }
+
+
+        if (!allowedRoles.includes(req.user.role) && req.user.role !== 'super_admin' && req.user.role !== 'admin') {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission for this action.' });
+        }
+        next();
+    };
 };
 
 export default auth;

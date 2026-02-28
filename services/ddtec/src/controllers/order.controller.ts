@@ -3,6 +3,7 @@ import Order from '../models/Order';
 import Cart from '../models/Cart';
 import Product from '../models/Product';
 import User from '../models/User';
+import Bill from '../models/Bill';
 import NotificationService from '../services/notification.service';
 
 // Create a new order
@@ -67,6 +68,41 @@ export const createOrder = async (req: Request | any, res: Response) => {
 
         const savedOrder = await order.save();
 
+        // Auto-create Bill
+        try {
+            const billItems = [];
+            for (const item of items) {
+                const product = await Product.findById(item.product._id);
+                billItems.push({
+                    name: product?.name || 'Product',
+                    price: item.product.price,
+                    quantity: item.quantity,
+                    taxes: product?.taxes || [],
+                    fromInventory: true,
+                    productId: item.product._id
+                });
+            }
+
+            const billData = {
+                items: billItems,
+                totalAmount: savedOrder.totalAmount,
+                customerInfo: {
+                    name: shippingInfo.fullName,
+                    phone: shippingInfo.phone || '', // Need to ensure phone is in shippingInfo or checkout
+                    email: shippingInfo.email,
+                    address: `${shippingInfo.address}, ${shippingInfo.city}`
+                },
+                source: 'order_auto',
+                user: userId
+            };
+
+            const newBill = new Bill(billData);
+            const savedBill = await newBill.save();
+            (savedOrder as any).billId = savedBill._id; // Attach for reference if needed
+        } catch (billError) {
+            console.error('Error auto-creating bill:', billError);
+        }
+
         // Send Order Confirmation Email (Async - don't block response)
         // We populate the product data for the email template
         Order.findById(savedOrder._id).populate('items.product').then(populatedOrder => {
@@ -120,7 +156,7 @@ export const getMyOrders = async (req: Request | any, res: Response) => {
 export const updateOrderStatus = async (req: Request, res: Response) => {
     try {
         const { status } = req.body;
-        const validStatuses = ['processing', 'shipped', 'delivered', 'cancelled'];
+        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ msg: 'Invalid status' });
