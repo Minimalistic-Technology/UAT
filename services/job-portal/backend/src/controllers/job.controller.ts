@@ -299,8 +299,8 @@ export const deleteJob = async (
 
     // Only admin and owner can delete the job
     if (
-      req.user.role !== CompanyRole.ADMIN ||
-      req.user.role !== CompanyRole.OWNER
+      companyMember.role !== CompanyRole.ADMIN &&
+      companyMember.role !== CompanyRole.OWNER
     ) {
       return res.status(403).json({
         success: false,

@@ -142,6 +142,20 @@ function JobRow({
   onStatusChange: (id: string, status: string) => void;
   isPending: boolean;
 }) {
+  const queryClient = useQueryClient();
+
+  const deleteJobMutation = useMutation({
+    mutationFn: ({ id }: { id: string }) => jobService.deleteJob(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-jobs"] });
+      toast.success("Job status updated");
+    },
+    onError: (error) => {
+      toast.error("Failed to delete job");
+      console.error(error);
+    },
+  });
+
   return (
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-6 py-4">
@@ -185,6 +199,7 @@ function JobRow({
             size="sm"
             aria-label="Delete job"
             className="text-red-500 hover:text-red-700 hover:bg-red-50"
+            onClick={() => deleteJobMutation.mutate({ id: job._id })}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -204,7 +219,6 @@ export default function EmployerDashboard() {
   });
 
   const updateStatusMutation = useMutation({
-    
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       jobService.updateJob(id, { status }),
     onSuccess: () => {
@@ -276,7 +290,6 @@ export default function EmployerDashboard() {
           </p>
         </div>
         <Link href="/employer/jobs/new">
-          {/* /employer/jobs/new */}
           <Button className="flex items-center gap-2 shrink-0">
             <Plus className="h-4 w-4" />
             Post New Job
