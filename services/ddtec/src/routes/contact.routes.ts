@@ -12,7 +12,11 @@ router.post('/', submitContactForm);
 // Given previous context, routes seem to apply middleware at the controller or route level?
 // Looking at other routes, let's see.
 // I'll just add the route for now. Security should be handled by middleware.
-import { auth, checkPermission } from '../middleware/auth.middleware';
-router.get('/', auth as any, checkPermission(['customer_support']), getMessages);
+import { auth, checkGranularPermission } from '../middleware/auth.middleware';
+router.get('/', auth as any, checkGranularPermission('messages', 'view'), getMessages);
+
+// DELETE /api/contact/:id (Admin only)
+import { deleteMessage } from '../controllers/contact.controller';
+router.delete('/:id', auth as any, checkGranularPermission('messages', 'delete'), deleteMessage);
 
 export default router;

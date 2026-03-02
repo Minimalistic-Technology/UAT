@@ -13,6 +13,8 @@ export interface IUser extends Document {
     role: 'user' | 'super_admin' | 'product_manager' | 'order_manager' | 'customer_support' | 'finance' | 'marketing' | 'admin';
     customPages?: string[];
     editPages?: string[];
+    addPages?: string[];
+    deletePages?: string[];
     isActive?: boolean;
     creditBalance?: number;
     address?: {
@@ -70,6 +72,12 @@ const UserSchema: Schema = new Schema({
         type: String
     }],
     editPages: [{
+        type: String
+    }],
+    addPages: [{
+        type: String
+    }],
+    deletePages: [{
         type: String
     }],
     isActive: {

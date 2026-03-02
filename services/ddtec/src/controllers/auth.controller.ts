@@ -23,10 +23,10 @@ export const sendOtp = async (req: Request, res: Response) => {
         }
         identifier = identifier.trim();
 
-        // Check if global Login/Signup is disabled for regular users
+        // Check if global Signup is disabled for regular users
         const settings = await Settings.findOne();
-        if (settings && settings.components && settings.components.LoginSignup === false) {
-            return res.status(403).json({ msg: 'Public registration/login is currently disabled.' });
+        if (settings && settings.components && settings.components.Signup === false) {
+            return res.status(403).json({ msg: 'Public registration is currently disabled.' });
         }
 
         // Check if user already exists
@@ -102,7 +102,7 @@ export const register = async (req: Request, res: Response) => {
         // Block new user registrations if public login/signup is disabled
         if (!role || role === 'user') {
             const settings = await Settings.findOne();
-            if (settings && settings.components && settings.components.LoginSignup === false) {
+            if (settings && settings.components && settings.components.Signup === false) {
                 return res.status(403).json({ msg: 'Public registration is currently disabled.' });
             }
         }
@@ -150,7 +150,9 @@ export const register = async (req: Request, res: Response) => {
             email: user.email,
             role: user.role,
             customPages: user.customPages,
-            editPages: user.editPages
+            editPages: user.editPages,
+            addPages: user.addPages,
+            deletePages: user.deletePages
         };
 
         // Return success message
@@ -164,7 +166,9 @@ export const register = async (req: Request, res: Response) => {
                 email: user.email,
                 role: user.role,
                 customPages: user.customPages,
-                editPages: user.editPages
+                editPages: user.editPages,
+                addPages: user.addPages,
+                deletePages: user.deletePages
             }
         });
     } catch (err) {
@@ -200,11 +204,10 @@ export const login = async (req: Request, res: Response) => {
                 return res.status(403).json({ msg: 'Account is deactivated. Please contact admin.' });
             }
 
-            // Check if global Login/Signup is disabled
-            const settings = await Settings.findOne();
-            if (settings && settings.components && settings.components.LoginSignup === false) {
-                return res.status(403).json({ msg: 'Public login is currently disabled.' });
-            }
+            // Note: Per user request, existing users can login even if Login is "disabled" (Maintenance mode)
+            // The maintenance block is handled on the frontend for UX.
+            // If we wanted to block it here, we would check settings.components.Login.
+            // But user said: "in disabled login existing user can login".
         }
 
         const payload = {
@@ -215,7 +218,9 @@ export const login = async (req: Request, res: Response) => {
             email: user.email, // Including email in payload is useful
             role: user.role,
             customPages: user.customPages,
-            editPages: user.editPages
+            editPages: user.editPages,
+            addPages: user.addPages,
+            deletePages: user.deletePages
         };
 
         jwt.sign(
@@ -268,7 +273,7 @@ export const getMe = async (req: Request, res: Response) => {
 // Admin: Create User directly
 export const createUser = async (req: Request, res: Response) => {
     try {
-        let { firstName, lastName, email, phone, password, role, customPages, editPages } = req.body;
+        let { firstName, lastName, email, phone, password, role, customPages, editPages, addPages, deletePages } = req.body;
 
         // Validate Contact Info
         if (email) {
@@ -305,6 +310,8 @@ export const createUser = async (req: Request, res: Response) => {
             role: role || 'user',
             customPages: customPages || [],
             editPages: editPages || [],
+            addPages: addPages || [],
+            deletePages: deletePages || [],
             isEmailVerified: true, // Admin created, assume verified
             isPhoneVerified: !!phone,
             isActive: true
