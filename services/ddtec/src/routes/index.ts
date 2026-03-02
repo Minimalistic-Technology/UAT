@@ -9,6 +9,8 @@ import orderRoutes from './order.routes';
 import couponRoutes from './coupon.routes';
 import blogRoutes from './blog.routes';
 import categoryRoutes from './category.routes';
+import billRoutes from './bill.routes';
+import settingsRoutes from './settings';
 
 const router = Router();
 
@@ -23,5 +25,7 @@ router.use('/orders', orderRoutes);
 router.use('/coupons', couponRoutes);
 router.use('/blogs', blogRoutes);
 router.use('/categories', categoryRoutes);
+router.use('/bills', billRoutes);
+router.use('/settings', settingsRoutes);
 
 export default router;

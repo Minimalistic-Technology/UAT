@@ -1,16 +1,16 @@
 import { Router } from 'express';
 import { createCategory, getCategories, getCategoryById, updateCategory, deleteCategory } from '../controllers/category.controller';
-import { auth as protect, admin } from '../middleware/auth.middleware';
+import { auth, checkPermission } from '../middleware/auth.middleware';
 
 const router = Router();
 
 router.route('/')
-    .post(protect, admin, createCategory)
+    .post(auth as any, checkPermission(['product_manager']), createCategory)
     .get(getCategories);
 
 router.route('/:id')
     .get(getCategoryById)
-    .put(protect, admin, updateCategory)
-    .delete(protect, admin, deleteCategory);
+    .put(auth as any, checkPermission(['product_manager']), updateCategory)
+    .delete(auth as any, checkPermission(['product_manager']), deleteCategory);
 
 export default router;
