@@ -53,3 +53,15 @@ export const getMessages = async (req: Request, res: Response) => {
         res.status(500).send('Server Error');
     }
 };
+export const deleteMessage = async (req: Request, res: Response) => {
+    try {
+        const message = await Contact.findByIdAndDelete(req.params.id);
+        if (!message) {
+            return res.status(404).json({ msg: 'Message not found' });
+        }
+        res.json({ msg: 'Message deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};

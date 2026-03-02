@@ -60,4 +60,56 @@ export const checkPermission = (allowedRoles: string[]) => {
     };
 };
 
+export const checkGranularPermission = (module: string, action: 'add' | 'edit' | 'delete' | 'view') => {
+    return (req: AuthRequest, res: Response, next: NextFunction) => {
+        if (!req.user) {
+            return res.status(401).json({ msg: 'Authorization denied' });
+        }
+
+        // Super admins have all permissions
+        if (req.user.role === 'super_admin') return next();
+
+        let hasPermission = false;
+
+        // Check legacy role-based permissions first
+        const legacyAllowed = ROLE_PERMISSIONS[req.user.role as string] || [];
+        if (legacyAllowed.includes(module)) {
+            // For legacy roles, we often assume full access if they can see the module,
+            // or we might want to restrict strictly. For now, let's treat legacy views as 'view' permission.
+            if (action === 'view') hasPermission = true;
+        }
+
+        // Check granular permissions from user profile
+        if (action === 'view') {
+            const views = req.user.customPages || [];
+            if (views.includes(module)) hasPermission = true;
+        } else if (action === 'add') {
+            const adds = req.user.addPages || [];
+            if (adds.includes(module)) hasPermission = true;
+        } else if (action === 'edit') {
+            const edits = req.user.editPages || [];
+            if (edits.includes(module)) hasPermission = true;
+        } else if (action === 'delete') {
+            const deletes = req.user.deletePages || [];
+            if (deletes.includes(module)) hasPermission = true;
+        }
+
+        if (!hasPermission) {
+            return res.status(403).json({ msg: `Access denied. You do not have '${action}' permission for '${module}'.` });
+        }
+
+        next();
+    };
+};
+
+const ROLE_PERMISSIONS: Record<string, string[]> = {
+    super_admin: ['dashboard', 'categories', 'products', 'inventory', 'orders', 'billing', 'coupons', 'users', 'messages', 'blogs', 'components'],
+    product_manager: ['products', 'inventory', 'categories', 'dashboard'],
+    order_manager: ['orders', 'billing', 'dashboard'],
+    customer_support: ['users', 'messages', 'orders', 'dashboard'],
+    finance: ['dashboard', 'billing'],
+    marketing: ['coupons', 'blogs', 'dashboard'],
+    admin: ['dashboard', 'categories', 'products', 'inventory', 'orders', 'billing', 'coupons', 'users', 'messages', 'blogs']
+};
+
 export default auth;
