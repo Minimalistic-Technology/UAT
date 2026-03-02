@@ -9,14 +9,18 @@ import UserManagementTab from "@/app/pages/admin/userManagementTab";
 import PendingJobsTab from "@/app/pages/admin/pendingJobsTab";
 import AnalyticsTab from "@/app/pages/admin/analyticsTab";
 import { Card } from "@/components/ui/Card";
-import { Briefcase, FileText, Users } from "lucide-react";
+import { Briefcase, FileText, Users, Plus } from "lucide-react";
 import { StatusCard } from "@/components/ui/StatusCard";
+import { RegisterCompanyModel } from "@/components/models";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const [selectedTab, setSelectedTab] = useState<
     "users" | "analytics" | "jobs"
   >("users");
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const isAdmin = session?.user?.role === GlobalRole.SUPER_ADMIN;
   const admin = useAdminDashboard(status === "authenticated" && isAdmin);
@@ -38,13 +42,22 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Super Admin Dashboard
-        </h1>
-        <p className="text-gray-600">
-          Manage platform users, jobs, and analytics
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Super Admin Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Manage platform users, jobs, and analytics
+          </p>
+        </div>
+        <button
+          className="cursor-pointer group relative flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-800 hover:shadow-md active:scale-95"
+          onClick={() => setIsRegisterModalOpen(true)}
+        >
+          <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+          <span>Register New Company</span>
+        </button>
       </div>
 
       {/* Stats Grid */}
@@ -140,6 +153,18 @@ export default function AdminDashboard() {
           }
         />
       )}
+
+      <RegisterCompanyModel
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+        onSuccess={() => {
+          // invalidate the admin stats so they refresh when a company is created
+
+          queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["admin-pending-jobs"] });
+          queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+        }}
+      />
     </div>
   );
 }
