@@ -49,8 +49,8 @@ const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
       role: user.role,
       avatar: user.avatar,
       isEmployee: user.isEmployee,
-      companyId: user.membership,
-      companyRole: user.membership,
+      companyId: user.companyId,
+      companyRole: user.companyRole,
     };
   }
 
@@ -169,13 +169,15 @@ export const login = async (
       });
 
       const isEmployee = !!membership;
+      const companyId = membership?.company ?? null
+      const companyRole = membership?.role ?? null;
 
       sendTokenResponse(
         {
           ...user.toObject(),
           isEmployee,
-          companyId: membership?.company ?? null,
-          companyRole: membership?.role ?? null,
+          companyId,
+          companyRole,
         },
         200,
         res,

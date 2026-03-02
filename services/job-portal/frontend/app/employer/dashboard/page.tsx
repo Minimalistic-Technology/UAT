@@ -209,9 +209,50 @@ function JobRow({
   );
 }
 
+function OwnerDashboardControls() {
+  const controls = [
+    // {
+    //   title: "View All Company Jobs",
+    //   path: "/employer/jobs/all",
+    //   description: "Audit every listing posted by the team.",
+    // },
+    {
+      title: "Manage Team Access",
+      path: "/employer/team",
+      description: "Control who can post or edit jobs.",
+    },
+    {
+      title: "Company Settings",
+      path: "/employer/settings",
+      description: "Update your brand and public profile.",
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {controls.map((item) => (
+        <Card key={item.path} className="p-6 flex flex-col justify-between">
+          <div>
+            <h3 className="font-semibold text-gray-900">{item.title}</h3>
+            <p className="text-sm text-gray-500 mt-1 mb-4">
+              {item.description}
+            </p>
+          </div>
+          <Link href={item.path}>
+            <Button variant="outline" className="w-full">
+              View Details
+            </Button>
+          </Link>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export default function EmployerDashboard() {
   const queryClient = useQueryClient();
   const { user, data: session, status } = useAuth();
+  console.log("user", user);
 
   const { data: jobs } = useQuery({
     queryKey: ["my-jobs"],
@@ -303,6 +344,15 @@ export default function EmployerDashboard() {
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
+
+      {user?.companyRole === "owner" && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold text-gray-900">
+            Administrative Controls
+          </h2>
+          <OwnerDashboardControls />
+        </section>
+      )}
 
       {/* Jobs Table */}
       <Card className="overflow-hidden">

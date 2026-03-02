@@ -1,13 +1,14 @@
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import User, { UserRole } from '../models/User.model.js';
-import { config } from '../config/env.js';
-import { sendEmail } from '../utils/email.js';
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import User, { GlobalRole } from "../models/User.model.js";
+import { config } from "../config/env.js";
+import { sendEmail } from "../utils/email.js";
 // import { sendOTP } from '../utils/sms.js';
+import CompanyMember from "../models/CompanyMember.model.js";
 // Generate JWT Token
 const generateToken = (id) => {
     const jwtOptions = {
-        expiresIn: (config.jwtExpire || '7d'),
+        expiresIn: (config.jwtExpire || "7d"),
     };
     return jwt.sign({ id }, config.jwtSecret, jwtOptions);
 };
@@ -17,20 +18,37 @@ const sendTokenResponse = (user, statusCode, res) => {
     const options = {
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         httpOnly: true,
-        secure: config.nodeEnv === 'production',
-        sameSite: 'strict',
+        secure: config.nodeEnv === "production",
+        sameSite: "strict",
     };
-    res.status(statusCode).cookie('token', token, options).json({
-        success: true,
-        token,
-        user: {
+    let payload = {};
+    if (user.role === GlobalRole.SUPER_ADMIN) {
+        payload = {
             id: user._id,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
             role: user.role,
             avatar: user.avatar,
-        },
+        };
+    }
+    if (user.role === GlobalRole.USER) {
+        payload = {
+            id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role,
+            avatar: user.avatar,
+            isEmployee: user.isEmployee,
+            companyId: user.companyId,
+            companyRole: user.companyRole,
+        };
+    }
+    res.status(statusCode).cookie("token", token, options).json({
+        success: true,
+        token,
+        user: payload,
     });
 };
 // @desc    Register user
@@ -44,12 +62,10 @@ export const register = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({
                 success: false,
-                message: 'User already exists with this email',
+                message: "User already exists with this email",
             });
         }
-        const normalizedRole = role === 'employer'
-            ? UserRole.EMPLOYER
-            : UserRole.JOB_SEEKER;
+        const normalizedRole = role === "super_admin" ? GlobalRole.SUPER_ADMIN : GlobalRole.USER;
         // Create user
         const user = await User.create({
             firstName,
@@ -72,7 +88,7 @@ export const register = async (req, res) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error registering user',
+            message: "Error registering user",
             error: error.message,
         });
     }
@@ -87,15 +103,15 @@ export const login = async (req, res, next) => {
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide email and password',
+                message: "Please provide email and password",
             });
         }
         // Check for user
-        const user = await User.findOne({ email }).select('+password');
+        let user = await User.findOne({ email }).select("+password");
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid credentials',
+                message: "Invalid credentials",
             });
         }
         // Check password
@@ -103,15 +119,38 @@ export const login = async (req, res, next) => {
         if (!isMatch) {
             return res.status(401).json({
                 success: false,
-                message: 'Invalid credentials',
+                message: "Invalid credentials",
             });
         }
-        sendTokenResponse(user, 200, res);
+        const isActive = user.isActive;
+        if (!isActive) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. This account has been deactivated. Please contact support.",
+            });
+        }
+        if (user.role === GlobalRole.SUPER_ADMIN) {
+            sendTokenResponse(user, 200, res);
+        }
+        if (user.role === GlobalRole.USER) {
+            const membership = await CompanyMember.findOne({
+                user: user._id,
+            });
+            const isEmployee = !!membership;
+            const companyId = membership?.company ?? null;
+            const companyRole = membership?.role ?? null;
+            sendTokenResponse({
+                ...user.toObject(),
+                isEmployee,
+                companyId,
+                companyRole,
+            }, 200, res);
+        }
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error logging in',
+            message: "Error logging in",
             error: error.message,
         });
     }
@@ -130,7 +169,7 @@ export const getMe = async (req, res, next) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching user',
+            message: "Error fetching user",
             error: error.message,
         });
     }
@@ -139,13 +178,13 @@ export const getMe = async (req, res, next) => {
 // @route   POST /api/auth/logout
 // @access  Private
 export const logout = async (req, res, next) => {
-    res.cookie('token', 'none', {
+    res.cookie("token", "none", {
         expires: new Date(Date.now() + 10 * 1000),
         httpOnly: true,
     });
     res.status(200).json({
         success: true,
-        message: 'User logged out successfully',
+        message: "User logged out successfully",
     });
 };
 // @desc    Send OTP to phone
@@ -189,7 +228,7 @@ export const verifyOTP = async (req, res, next) => {
             user = await User.create({
                 phone,
                 phoneVerified: true,
-                firstName: 'User',
+                firstName: "User",
                 lastName: phone,
                 email: `${phone}@temp.com`, // Temporary email
             });
@@ -203,7 +242,7 @@ export const verifyOTP = async (req, res, next) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error verifying OTP',
+            message: "Error verifying OTP",
             error: error.message,
         });
     }
@@ -230,7 +269,7 @@ export const googleAuth = async (req, res, next) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error with Google authentication',
+            message: "Error with Google authentication",
             error: error.message,
         });
     }
@@ -245,17 +284,14 @@ export const forgotPassword = async (req, res, next) => {
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: 'There is no user with that email',
+                message: "There is no user with that email",
             });
         }
         // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         // Hash OTP. Format: salt:hash
-        const salt = crypto.randomBytes(16).toString('hex');
-        const hash = crypto
-            .createHmac('sha256', salt)
-            .update(otp)
-            .digest('hex');
+        const salt = crypto.randomBytes(16).toString("hex");
+        const hash = crypto.createHmac("sha256", salt).update(otp).digest("hex");
         const otpToSave = `${salt}:${hash}`;
         // Save to user
         user.resetPasswordOtp = otpToSave;
@@ -266,18 +302,18 @@ export const forgotPassword = async (req, res, next) => {
         try {
             await sendEmail({
                 email: user.email,
-                subject: 'Password Reset Valid for 10 mins',
+                subject: "Password Reset Valid for 10 mins",
                 message,
             });
             res.status(200).json({
                 success: true,
-                message: 'Email sent',
+                message: "Email sent",
             });
         }
         catch (err) {
             // Log the actual error for debugging
-            console.error('🚨 Error sending password reset email:', err);
-            console.error('Error details:', {
+            console.error("🚨 Error sending password reset email:", err);
+            console.error("Error details:", {
                 message: err.message,
                 code: err.code,
                 command: err.command,
@@ -289,11 +325,11 @@ export const forgotPassword = async (req, res, next) => {
             await user.save({ validateBeforeSave: false });
             return res.status(500).json({
                 success: false,
-                message: 'Email could not be sent',
+                message: "Email could not be sent",
                 // Include error details in development/staging for debugging
-                ...(config.nodeEnv !== 'production' && {
+                ...(config.nodeEnv !== "production" && {
                     error: err.message,
-                    errorCode: err.code
+                    errorCode: err.code,
                 }),
             });
         }
@@ -301,7 +337,7 @@ export const forgotPassword = async (req, res, next) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Server Error',
+            message: "Server Error",
             error: error.message,
         });
     }
@@ -319,29 +355,26 @@ export const verifyResetOTP = async (req, res, next) => {
         if (!user || !user.resetPasswordOtp) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid OTP or expired',
+                message: "Invalid OTP or expired",
             });
         }
-        const [salt, hash] = user.resetPasswordOtp.split(':');
-        const newHash = crypto
-            .createHmac('sha256', salt)
-            .update(otp)
-            .digest('hex');
+        const [salt, hash] = user.resetPasswordOtp.split(":");
+        const newHash = crypto.createHmac("sha256", salt).update(otp).digest("hex");
         if (hash !== newHash) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid OTP',
+                message: "Invalid OTP",
             });
         }
         res.status(200).json({
             success: true,
-            message: 'OTP Verified',
+            message: "OTP Verified",
         });
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Server Error',
+            message: "Server Error",
             error: error.message,
         });
     }
@@ -356,23 +389,20 @@ export const resetPassword = async (req, res, next) => {
         const user = await User.findOne({
             email,
             resetPasswordExpires: { $gt: Date.now() },
-        }).select('+password');
+        }).select("+password");
         if (!user || !user.resetPasswordOtp) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid OTP or expired',
+                message: "Invalid OTP or expired",
             });
         }
         // Verify OTP
-        const [salt, hash] = user.resetPasswordOtp.split(':');
-        const newHash = crypto
-            .createHmac('sha256', salt)
-            .update(otp)
-            .digest('hex');
+        const [salt, hash] = user.resetPasswordOtp.split(":");
+        const newHash = crypto.createHmac("sha256", salt).update(otp).digest("hex");
         if (hash !== newHash) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid OTP',
+                message: "Invalid OTP",
             });
         }
         // Set new password
@@ -385,7 +415,7 @@ export const resetPassword = async (req, res, next) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Server Error',
+            message: "Server Error",
             error: error.message,
         });
     }

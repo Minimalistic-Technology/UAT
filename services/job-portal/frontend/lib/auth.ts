@@ -65,7 +65,7 @@ export const authOptions: NextAuthOptions = {
               image: response.data.user.avatar,
 
               isEmployee: user.isEmployee ?? false,
-              companyId: user.companyId ?? null,
+              companyId: user.companyId ? user.companyId.toString() :  null,
               companyRole: user.companyRole ?? null,
             };
           }
