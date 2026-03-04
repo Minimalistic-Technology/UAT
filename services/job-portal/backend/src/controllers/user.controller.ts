@@ -1,7 +1,17 @@
-import type { Response, NextFunction } from 'express';
-import User from '../models/User.model.js';
-import type { AuthRequest } from '../middleware/auth.middleware.js';
-import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
+import type { Response, NextFunction } from "express";
+import User from "../models/User.model.js";
+import type { AuthRequest } from "../middleware/auth.middleware.js";
+import {
+  uploadToCloudinary,
+  deleteFromCloudinary
+} from "../utils/cloudinary.js";
+
+export const getPublicIdFromUrl = (url: string) => {
+  const parts = url.split("/");
+  const file = parts.slice(-2).join("/"); // resumes/filename.pdf
+  const publicId = file.replace(/\.[^/.]+$/, ""); // remove extension
+  return publicId;
+};
 
 // @desc    Update user profile
 // @route   PUT /api/users/profile
@@ -9,7 +19,7 @@ import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js
 export const updateProfile = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const fieldsToUpdate: any = {
@@ -25,7 +35,7 @@ export const updateProfile = async (
 
     // Remove undefined fields
     Object.keys(fieldsToUpdate).forEach(
-      (key) => fieldsToUpdate[key] === undefined && delete fieldsToUpdate[key]
+      (key) => fieldsToUpdate[key] === undefined && delete fieldsToUpdate[key],
     );
 
     const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
@@ -40,7 +50,7 @@ export const updateProfile = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error updating profile',
+      message: "Error updating profile",
       error: error.message,
     });
   }
@@ -52,39 +62,40 @@ export const updateProfile = async (
 export const uploadAvatar = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Please upload a file',
+        message: "Please upload a file",
       });
     }
 
     // Upload to Cloudinary
-    const result = await uploadToCloudinary(req.file.buffer, 'avatars');
+    const result = await uploadToCloudinary(req.file.buffer, "avatars");
 
     // Delete old avatar if exists
     if (req.user.avatar) {
-      await deleteFromCloudinary(req.user.avatar);
+      const publicUrl = getPublicIdFromUrl(req.user.avatar);
+      await deleteFromCloudinary(publicUrl);
     }
 
     // Update user
-    const user = await User.findByIdAndUpdate(
+    await User.findByIdAndUpdate(
       req.user.id,
       { avatar: result.secure_url },
-      { new: true }
+      { new: true },
     );
 
     res.status(200).json({
       success: true,
-      data: user,
+      message: "Avatar uploaded successfully",
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error uploading avatar',
+      message: "Error uploading avatar",
       error: error.message,
     });
   }
@@ -96,13 +107,13 @@ export const uploadAvatar = async (
 export const uploadResume = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Please upload a file',
+        message: "Please upload a file",
       });
     }
 
@@ -117,25 +128,25 @@ export const uploadResume = async (
 
     // Delete old resume if exists
     if (req.user.resume) {
-      await deleteFromCloudinary(req.user.resume);
+      const publicUrl = getPublicIdFromUrl(req.user.resume);
+      await deleteFromCloudinary(publicUrl);
     }
 
     // Update user
-    const user = await User.findByIdAndUpdate(
+    await User.findByIdAndUpdate(
       req.user.id,
       { resume: result.secure_url },
-      { new: true }
+      { new: true },
     );
 
     res.status(200).json({
       success: true,
-      message: 'Resume uploaded successfully',
-      data: user,
+      message: "Resume uploaded successfully",
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error uploading resume',
+      message: "Error uploading resume",
       error: error.message,
     });
   }
@@ -147,7 +158,7 @@ export const uploadResume = async (
 export const getUserById = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const user = await User.findById(req.params.id);
@@ -155,7 +166,7 @@ export const getUserById = async (
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found',
+        message: "User not found",
       });
     }
 
@@ -166,7 +177,7 @@ export const getUserById = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error fetching user',
+      message: "Error fetching user",
       error: error.message,
     });
   }

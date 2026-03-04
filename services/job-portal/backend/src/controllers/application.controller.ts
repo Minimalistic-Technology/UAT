@@ -1,7 +1,7 @@
-import type { Response, NextFunction } from 'express';
-import Application, { ApplicationStatus } from '../models/Application.model.js';
-import Job from '../models/Job.model.js';
-import type { AuthRequest } from '../middleware/auth.middleware.js';
+import type { Response, NextFunction } from "express";
+import Application, { ApplicationStatus } from "../models/Application.model.js";
+import Job from "../models/Job.model.js";
+import type { AuthRequest } from "../middleware/auth.middleware.js";
 // import { sendEmail } from '../utils/email.js';
 
 // @desc    Apply for a job
@@ -10,17 +10,24 @@ import type { AuthRequest } from '../middleware/auth.middleware.js';
 export const applyForJob = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { jobId, resume, coverLetter } = req.body;
+
+    if (!req.user.resume && !resume) {
+      return res.status(400).json({
+        success: false,
+        message: "Resume is required to apply for this job",
+      });
+    }
 
     // Check if job exists
     const job = await Job.findById(jobId);
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found',
+        message: "Job not found",
       });
     }
 
@@ -33,17 +40,22 @@ export const applyForJob = async (
     if (existingApplication) {
       return res.status(400).json({
         success: false,
-        message: 'You have already applied for this job',
+        message: "You have already applied for this job",
       });
     }
+
+    console.log(req.user._id);
+    console.log(req.user.resume);
 
     // Create application
     const application = await Application.create({
       job: jobId,
-      jobSeeker: req.user.id,
+      jobSeeker: req.user._id,
       resume: resume || req.user.resume,
-      coverLetter,
+      coverLetter: coverLetter || null,
     });
+    
+    console.log(application);
 
     // Increment applications count
     job.applicationsCount += 1;
@@ -58,13 +70,13 @@ export const applyForJob = async (
 
     res.status(201).json({
       success: true,
-      message: 'Application submitted successfully',
+      message: "Application submitted successfully",
       data: application,
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error submitting application',
+      message: "Error submitting application",
       error: error.message,
     });
   }
@@ -76,12 +88,12 @@ export const applyForJob = async (
 export const getMyApplications = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const applications = await Application.find({ jobSeeker: req.user.id })
-      .populate('job')
-      .sort('-createdAt');
+      .populate("job")
+      .sort("-createdAt");
 
     res.status(200).json({
       success: true,
@@ -91,7 +103,7 @@ export const getMyApplications = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error fetching applications',
+      message: "Error fetching applications",
       error: error.message,
     });
   }
@@ -103,7 +115,7 @@ export const getMyApplications = async (
 export const getJobApplicants = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { jobId } = req.params;
@@ -113,20 +125,23 @@ export const getJobApplicants = async (
     if (!job) {
       return res.status(404).json({
         success: false,
-        message: 'Job not found',
+        message: "Job not found",
       });
     }
 
     if (job.postedBy.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to view applicants',
+        message: "Not authorized to view applicants",
       });
     }
 
     const applications = await Application.find({ job: jobId })
-      .populate('jobSeeker', 'firstName lastName email phone skills experience education')
-      .sort('-createdAt');
+      .populate(
+        "jobSeeker",
+        "firstName lastName email phone skills experience education",
+      )
+      .sort("-createdAt");
 
     res.status(200).json({
       success: true,
@@ -136,7 +151,7 @@ export const getJobApplicants = async (
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error fetching applicants',
+      message: "Error fetching applicants",
       error: error.message,
     });
   }
@@ -148,19 +163,19 @@ export const getJobApplicants = async (
 export const updateApplicationStatus = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { status, note } = req.body;
 
     const application = await Application.findById(req.params.id)
-      .populate('job')
-      .populate('jobSeeker', 'email firstName lastName');
+      .populate("job")
+      .populate("jobSeeker", "email firstName lastName");
 
     if (!application) {
       return res.status(404).json({
         success: false,
-        message: 'Application not found',
+        message: "Application not found",
       });
     }
 
@@ -169,7 +184,7 @@ export const updateApplicationStatus = async (
     if (job.postedBy.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to update this application',
+        message: "Not authorized to update this application",
       });
     }
 
@@ -196,13 +211,13 @@ export const updateApplicationStatus = async (
 
     res.status(200).json({
       success: true,
-      message: 'Application status updated successfully',
+      message: "Application status updated successfully",
       data: application,
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error updating application status',
+      message: "Error updating application status",
       error: error.message,
     });
   }
@@ -214,7 +229,7 @@ export const updateApplicationStatus = async (
 export const withdrawApplication = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const application = await Application.findById(req.params.id);
@@ -222,7 +237,7 @@ export const withdrawApplication = async (
     if (!application) {
       return res.status(404).json({
         success: false,
-        message: 'Application not found',
+        message: "Application not found",
       });
     }
 
@@ -230,7 +245,7 @@ export const withdrawApplication = async (
     if (application.jobSeeker.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'Not authorized to withdraw this application',
+        message: "Not authorized to withdraw this application",
       });
     }
 
@@ -239,12 +254,12 @@ export const withdrawApplication = async (
 
     res.status(200).json({
       success: true,
-      message: 'Application withdrawn successfully',
+      message: "Application withdrawn successfully",
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Error withdrawing application',
+      message: "Error withdrawing application",
       error: error.message,
     });
   }
