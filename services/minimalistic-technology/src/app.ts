@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import errorMiddleware from "./middleware/errorMiddleware";
 import teamRoutes from "./routes/teams/teamRoutes";
+import mailRoutes from "./routes/mail/mailRoutes";
 import { rateLimit } from "express-rate-limit";
 
 dotenv.config();
@@ -28,6 +29,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 app.use("/api/team", teamRoutes);
+app.use("/api", mailRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Minimalistic Technology main site");
