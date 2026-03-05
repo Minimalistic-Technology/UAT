@@ -9,10 +9,13 @@ export interface ApplyJobData {
 
 class ApplicationService {
   async applyForJob(data: ApplyJobData) {
-    return apiClient.post<{ success: boolean; data: Application }>(
+    // { success: boolean; data: Application }
+    const response = await apiClient.post(
       '/applications',
       data
     );
+
+    return response;
   }
 
   async getMyApplications() {

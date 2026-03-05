@@ -1,37 +1,56 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { apiClient } from '@/lib/api';
-import { toast } from 'sonner';
-import { Camera, Plus, Trash2, Briefcase, GraduationCap, X } from 'lucide-react';
-import { UserRole } from '@/types';
-import { ExperienceForm } from '../../components/ExperienceForm';
-import { EducationForm } from '../../components/EducationForm';
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { Card } from "../../components/ui/Card";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { apiClient } from "@/lib/api";
+import { toast } from "sonner";
+import {
+  Camera,
+  Plus,
+  Trash2,
+  Briefcase,
+  GraduationCap,
+  X,
+  Loader2,
+} from "lucide-react";
+import { GlobalRole, UserRole } from "@/types";
+import { ExperienceForm } from "../../components/ExperienceForm";
+import { EducationForm } from "../../components/EducationForm";
+import { useAuth } from "@/hooks/useAuth";
+
+function Captialize(str: string) {
+  const capitalizedStr = str.charAt(0).toUpperCase() + str.slice(1);
+  return capitalizedStr;
+}
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
+  console.log("session: ", session);
+  // const { user: loggedInUser, isAuthenticated, isLoading: isUserPresent} = useAuth;
   const queryClient = useQueryClient();
 
   const [editingExperience, setEditingExperience] = useState(false);
   const [editingEducation, setEditingEducation] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  let role;
 
   // ✅ ALWAYS call hooks
   const { data: profile, isLoading } = useQuery({
-    queryKey: ['profile'],
+    queryKey: ["profile"],
     queryFn: async () => {
-      const response = await apiClient.get<any>('/auth/me');
+      const response = await apiClient.get<any>("/auth/me");
       return response.data;
     },
     enabled: !!session, // 🔑 important
   });
+  console.log("profile: ", profile);
 
   const {
     register,
@@ -49,13 +68,13 @@ export default function ProfilePage() {
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data: any) => apiClient.put('/users/profile', data),
+    mutationFn: (data: any) => apiClient.put("/users/profile", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast.success('Profile updated successfully');
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Profile updated successfully");
     },
     onError: () => {
-      toast.error('Failed to update profile');
+      toast.error("Failed to update profile");
     },
   });
 
@@ -63,18 +82,18 @@ export default function ProfilePage() {
   const uploadAvatarMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
-      formData.append('avatar', file);
-      return apiClient.put('/users/avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      formData.append("avatar", file);
+      return apiClient.put("/users/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast.success('Avatar updated successfully');
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Avatar updated successfully");
       setSelectedFile(null);
     },
     onError: () => {
-      toast.error('Failed to upload avatar');
+      toast.error("Failed to upload avatar");
     },
   });
 
@@ -82,17 +101,28 @@ export default function ProfilePage() {
   const uploadResumeMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
-      formData.append('resume', file);
-      return apiClient.put('/users/resume', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      formData.append("resume", file);
+
+      return apiClient.put("/users/resume", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast.success('Resume uploaded successfully');
+
+    onMutate: () => {
+      setIsUploading(true);
     },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Resume uploaded successfully");
+    },
+
     onError: () => {
-      toast.error('Failed to upload resume');
+      toast.error("Failed to upload resume");
+    },
+
+    onSettled: () => {
+      setIsUploading(false);
     },
   });
 
@@ -101,7 +131,7 @@ export default function ProfilePage() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size should be less than 5MB');
+      toast.error("File size should be less than 5MB");
       return;
     }
 
@@ -112,13 +142,13 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      toast.error('Resume must be a PDF file');
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Resume must be a PDF file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size should be less than 5MB');
+      toast.error("File size should be less than 5MB");
       return;
     }
 
@@ -129,12 +159,20 @@ export default function ProfilePage() {
     // Convert skills string to array
     const payload = {
       ...data,
-      skills: typeof data.skills === 'string'
-        ? data.skills.split(',').map((s: string) => s.trim()).filter(Boolean)
-        : data.skills,
-      languages: typeof data.languages === 'string'
-        ? data.languages.split(',').map((s: string) => s.trim()).filter(Boolean)
-        : data.languages,
+      skills:
+        typeof data.skills === "string"
+          ? data.skills
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : data.skills,
+      languages:
+        typeof data.languages === "string"
+          ? data.languages
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : data.languages,
     };
     updateProfileMutation.mutate(payload);
   };
@@ -152,24 +190,26 @@ export default function ProfilePage() {
   };
 
   const handleDeleteExperience = (index: number) => {
-    const updatedExperience = profile?.experience.filter((_: any, i: number) => i !== index);
+    const updatedExperience = profile?.experience.filter(
+      (_: any, i: number) => i !== index,
+    );
     updateProfileMutation.mutate({ experience: updatedExperience });
   };
 
   const handleDeleteEducation = (index: number) => {
-    const updatedEducation = profile?.education.filter((_: any, i: number) => i !== index);
+    const updatedEducation = profile?.education.filter(
+      (_: any, i: number) => i !== index,
+    );
     updateProfileMutation.mutate({ education: updatedEducation });
   };
 
-  // 🚦 CONDITIONAL RETURNS AFTER HOOKS
-  if (status === 'loading' || isLoading) {
+  if (status === "loading" || isLoading) {
     return <div>Loading...</div>;
   }
 
   if (!session) {
-    redirect('/login');
+    redirect("/login");
   }
-
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -216,7 +256,11 @@ export default function ProfilePage() {
             </h3>
             <p className="text-gray-600">{profile?.email}</p>
             <p className="text-sm text-gray-500 mt-1">
-              {profile?.role.replace('_', ' ')}
+              {profile?.role === "user"
+                ? session.user.isEmployee
+                  ? Captialize(session.user.companyRole as string)
+                  : "Job Seeker"
+                : "Super Admin"}
             </p>
           </div>
         </div>
@@ -230,19 +274,19 @@ export default function ProfilePage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <Input
-              {...register('firstName')}
+              {...register("firstName")}
               label="First Name"
               defaultValue={profile?.firstName}
             />
             <Input
-              {...register('lastName')}
+              {...register("lastName")}
               label="Last Name"
               defaultValue={profile?.lastName}
             />
           </div>
 
           <Input
-            {...register('email')}
+            {...register("email")}
             type="email"
             label="Email"
             defaultValue={profile?.email}
@@ -250,27 +294,27 @@ export default function ProfilePage() {
           />
 
           <Input
-            {...register('phone')}
+            {...register("phone")}
             type="tel"
             label="Phone Number"
             defaultValue={profile?.phone}
           />
 
-          {session.user.role === UserRole.JOB_SEEKER && (
+          {session.user.role === GlobalRole.USER && (
             <>
               <div className="grid md:grid-cols-3 gap-4">
                 <Input
-                  {...register('location.city')}
+                  {...register("location.city")}
                   label="City"
                   defaultValue={profile?.location?.city}
                 />
                 <Input
-                  {...register('location.state')}
+                  {...register("location.state")}
                   label="State"
                   defaultValue={profile?.location?.state}
                 />
                 <Input
-                  {...register('location.country')}
+                  {...register("location.country")}
                   label="Country"
                   defaultValue={profile?.location?.country}
                 />
@@ -281,10 +325,10 @@ export default function ProfilePage() {
                   Skills (comma separated)
                 </label>
                 <input
-                  {...register('skills')}
+                  {...register("skills")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   placeholder="React, Node.js, TypeScript"
-                  defaultValue={profile?.skills?.join(', ')}
+                  defaultValue={profile?.skills?.join(", ")}
                 />
               </div>
 
@@ -293,10 +337,10 @@ export default function ProfilePage() {
                   Languages (comma separated)
                 </label>
                 <input
-                  {...register('languages')}
+                  {...register("languages")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   placeholder="English, Hindi, Spanish"
-                  defaultValue={profile?.languages?.join(', ')}
+                  defaultValue={profile?.languages?.join(", ")}
                 />
               </div>
             </>
@@ -315,9 +359,10 @@ export default function ProfilePage() {
       </Card>
 
       {/* Resume Upload (Job Seeker Only) */}
-      {session.user.role === UserRole.JOB_SEEKER && (
+      {session.user.role === GlobalRole.USER && !session.user.isEmployee && (
         <Card className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Resume</h2>
+
           <div className="space-y-4">
             {profile?.resume ? (
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -325,10 +370,12 @@ export default function ProfilePage() {
                   <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
                     <Briefcase className="w-6 h-6 text-primary-600" />
                   </div>
+
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-900">
                       Current Resume
                     </p>
+
                     <a
                       href={profile.resume}
                       target="_blank"
@@ -339,29 +386,60 @@ export default function ProfilePage() {
                     </a>
                   </div>
                 </div>
-                <label htmlFor="resume-upload-update">
-                  <div className="inline-block">
-                    <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById('resume-upload-update')?.click()}>
-                      Update Resume
-                    </Button>
+
+                {isUploading ? (
+                  <div className="flex items-center gap-2 text-primary-600 text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Uploading...
                   </div>
-                  <input
-                    id="resume-upload-update"
-                    type="file"
-                    accept=".pdf"
-                    className="hidden"
-                    onChange={handleResumeChange}
-                  />
-                </label>
+                ) : (
+                  <label htmlFor="resume-upload-update">
+                    <div className="inline-block">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        disabled={isUploading}
+                        onClick={() =>
+                          document
+                            .getElementById("resume-upload-update")
+                            ?.click()
+                        }
+                      >
+                        Update Resume
+                      </Button>
+                    </div>
+
+                    <input
+                      id="resume-upload-update"
+                      type="file"
+                      accept=".pdf"
+                      className="hidden"
+                      onChange={handleResumeChange}
+                    />
+                  </label>
+                )}
               </div>
             ) : (
               <label
                 htmlFor="resume-upload-new"
                 className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-primary-500"
               >
-                <Briefcase className="w-12 h-12 text-gray-400 mb-4" />
-                <p className="text-gray-600 mb-2">Upload your resume</p>
-                <p className="text-sm text-gray-500">PDF Only (Max 5MB)</p>
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-10 h-10 text-primary-600 animate-spin mb-4" />
+                    <p className="text-primary-600 font-medium">
+                      Uploading Resume...
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Briefcase className="w-12 h-12 text-gray-400 mb-4" />
+                    <p className="text-gray-600 mb-2">Upload your resume</p>
+                    <p className="text-sm text-gray-500">PDF Only (Max 5MB)</p>
+                  </>
+                )}
+
                 <input
                   id="resume-upload-new"
                   type="file"
@@ -376,14 +454,11 @@ export default function ProfilePage() {
       )}
 
       {/* Experience Section (Job Seeker Only) */}
-      {session.user.role === UserRole.JOB_SEEKER && (
+      {session.user.role === GlobalRole.USER && !session.user.isEmployee && (
         <Card className="mb-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Experience</h2>
-            <Button
-              size="sm"
-              onClick={() => setEditingExperience(true)}
-            >
+            <Button size="sm" onClick={() => setEditingExperience(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Experience
             </Button>
@@ -410,10 +485,13 @@ export default function ProfilePage() {
                         </h3>
                         <p className="text-gray-600">{exp.company}</p>
                         <p className="text-sm text-gray-500 mt-1">
-                          {exp.location} • {new Date(exp.startDate).toLocaleDateString()} -{' '}
+                          {exp.location} •{" "}
+                          {new Date(exp.startDate).toLocaleDateString()} -{" "}
                           {exp.current
-                            ? 'Present'
-                            : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : ''}
+                            ? "Present"
+                            : exp.endDate
+                              ? new Date(exp.endDate).toLocaleDateString()
+                              : ""}
                         </p>
                         <p className="text-gray-700 mt-2">{exp.description}</p>
                       </div>
@@ -441,14 +519,11 @@ export default function ProfilePage() {
       )}
 
       {/* Education Section (Job Seeker Only) */}
-      {session.user.role === UserRole.JOB_SEEKER && (
+      {session.user.role === GlobalRole.USER && (
         <Card>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Education</h2>
-            <Button
-              size="sm"
-              onClick={() => setEditingEducation(true)}
-            >
+            <Button size="sm" onClick={() => setEditingEducation(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Education
             </Button>

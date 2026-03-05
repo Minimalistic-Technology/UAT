@@ -8,7 +8,7 @@ import { applicationService } from "@/lib/services/application.service";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { toast } from "sonner";
-import { UserRole } from "@/types";
+import { GlobalRole, UserRole } from "@/types";
 import {
   MapPin,
   Briefcase,
@@ -57,8 +57,8 @@ export default function JobDetailPage() {
       return;
     }
 
-    console.log(session.user.role);
-    if (session.user.role !== UserRole.JOB_SEEKER) {
+    console.log(session);
+    if (session.user.role !== GlobalRole.USER && !session.user.isEmployee) {
       toast.error("Only job seekers can apply for jobs");
       return;
     }
