@@ -1,52 +1,52 @@
 export enum UserRole {
-  JOB_SEEKER = 'jobseeker',
-  EMPLOYER = 'employer',
-  ADMIN = 'admin',
+  JOB_SEEKER = "jobseeker",
+  EMPLOYER = "employer",
+  ADMIN = "admin",
 }
 
 export enum CompanyRole {
-  OWNER = 'owner',
-  ADMIN = 'admin',
-  RECRUITER = 'recruiter',
+  OWNER = "owner",
+  ADMIN = "admin",
+  RECRUITER = "recruiter",
 }
 
 export enum GlobalRole {
   SUPER_ADMIN = "super_admin",
-  USER = "user"
+  USER = "user",
 }
 
 export enum JobType {
-  FULL_TIME = 'full_time',
-  PART_TIME = 'part_time',
-  CONTRACT = 'contract',
-  INTERNSHIP = 'internship',
-  FREELANCE = 'freelance',
+  FULL_TIME = "full_time",
+  PART_TIME = "part_time",
+  CONTRACT = "contract",
+  INTERNSHIP = "internship",
+  FREELANCE = "freelance",
 }
 
 export enum ExperienceLevel {
-  ENTRY = 'entry',
-  INTERMEDIATE = 'intermediate',
-  SENIOR = 'senior',
-  EXPERT = 'expert',
+  ENTRY = "entry",
+  INTERMEDIATE = "intermediate",
+  SENIOR = "senior",
+  EXPERT = "expert",
 }
 
 export enum ApplicationStatus {
-  PENDING = 'pending',
-  REVIEWED = 'reviewed',
-  SHORTLISTED = 'shortlisted',
-  REJECTED = 'rejected',
-  INTERVIEW = 'interview',
-  OFFERED = 'offered',
-  ACCEPTED = 'accepted',
-  WITHDRAWN = 'withdrawn',
+  PENDING = "pending",
+  REVIEWED = "reviewed",
+  SHORTLISTED = "shortlisted",
+  REJECTED = "rejected",
+  INTERVIEW = "interview",
+  OFFERED = "offered",
+  ACCEPTED = "accepted",
+  WITHDRAWN = "withdrawn",
 }
 
 export enum JobStatus {
-  ACTIVE = 'active',
-  CLOSED = 'closed',
-  DRAFT = 'draft',
-  ARCHIVED = 'archived',
-  PENDING = 'pending',
+  ACTIVE = "active",
+  CLOSED = "closed",
+  DRAFT = "draft",
+  ARCHIVED = "archived",
+  PENDING = "pending",
 }
 
 export interface User {
@@ -124,7 +124,7 @@ export interface Job {
     min?: number;
     max?: number;
     currency: string;
-    period: 'hourly' | 'monthly' | 'yearly';
+    period: "hourly" | "monthly" | "yearly";
   };
   skills: string[];
   requirements: string[];
@@ -137,6 +137,7 @@ export interface Job {
   viewsCount: number;
   createdAt: Date;
   updatedAt: Date;
+  hasApplied?: boolean;
 }
 
 export interface Application {

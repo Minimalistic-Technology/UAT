@@ -56,7 +56,7 @@ export default function PostJobPage() {
     mutationFn: (data: any) => jobService.createJob(data),
     onSuccess: () => {
       toast.success('Job posted successfully!');
-      router.push('/employer-dashboard');
+      router.push('/employer/dashboard');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to post job');

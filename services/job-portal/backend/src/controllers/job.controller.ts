@@ -22,10 +22,7 @@ export function isValidExperienceType(value: any): value is ExperienceLevel {
 // @desc    Get all jobs with filters
 // @route   GET /api/jobs
 // @access  Public
-// @desc    Get all jobs with filters
-// @route   GET /api/jobs
-// @access  Public
-export const getJobs = async (req: Request, res: Response) => {
+export const getJobs = async (req: AuthRequest, res: Response) => {
   try {
     const {
       search,
@@ -102,13 +99,41 @@ export const getJobs = async (req: Request, res: Response) => {
       Job.countDocuments(query),
     ]);
 
+    // Format plain objects so we can append properties
+    const jobsWithDetails: any[] = jobs.map((job) => job.toObject());
+    let formattedJobs = [...jobsWithDetails];
+
+    // Check if user is logged in as a job seeker to attach 'hasApplied' field
+    if (req.user && req.user.role === GlobalRole.USER && !req.user.isEmployer) {
+      // Import Application model locally to avoid circular dependencies if any are introduced later
+      const Application = (await import("../models/Application.model.js"))
+        .default;
+
+      const jobIds = jobsWithDetails.map((job) => job._id);
+
+      const applications = await Application.find({
+        jobSeeker: req.user._id,
+        job: { $in: jobIds },
+      });
+
+      const appliedJobIds = new Set(
+        applications.map((app) => app.job.toString()),
+      );
+
+      formattedJobs = jobsWithDetails.map((job) => ({
+        ...job,
+        hasApplied: appliedJobIds.has(job._id.toString()),
+      }));
+    }
+
     return res.status(200).json({
       success: true,
-      data: { jobs, totalJobs: total },
+      data: { jobs: formattedJobs, totalJobs: total },
       page: pageNumber,
       totalPages: Math.ceil(total / limitNumber),
     });
   } catch (error) {
+    console.error("Jobs fetch error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };

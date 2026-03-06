@@ -1,12 +1,40 @@
-import Link from 'next/link';
-import { Job } from '@/types';
-import { MapPin, Briefcase, DollarSign, Clock } from 'lucide-react';
-import { Card } from './ui/Card';
-import { formatDistanceToNow } from 'date-fns';
+import Link from "next/link";
+import { Job } from "@/types";
+import {
+  MapPin,
+  Briefcase,
+  DollarSign,
+  Clock,
+  IndianRupee,
+  Euro,
+  PoundSterling,
+} from "lucide-react";
+import { Card } from "./ui/Card";
+import { formatDistanceToNow } from "date-fns";
 
 interface JobCardProps {
   job: Job;
 }
+
+const CurrencyIcon = ({
+  currency,
+  className,
+}: {
+  currency?: string;
+  className?: string;
+}) => {
+  switch (currency?.toUpperCase()) {
+    case "INR":
+      return <IndianRupee className={className} />;
+    case "EUR":
+      return <Euro className={className} />;
+    case "GBP":
+      return <PoundSterling className={className} />;
+    case "USD":
+    default:
+      return <DollarSign className={className} />;
+  }
+};
 
 export default function JobCard({ job }: JobCardProps) {
   return (
@@ -18,7 +46,7 @@ export default function JobCard({ job }: JobCardProps) {
               {job.company?.logo && (
                 <img
                   src={job.company.logo}
-                  alt={job.company?.name || 'Company logo'}
+                  alt={job.company?.name || "Company logo"}
                   className="w-10 h-10 rounded-lg object-cover"
                 />
               )}
@@ -26,7 +54,7 @@ export default function JobCard({ job }: JobCardProps) {
               <div>
                 <h3 className="font-semibold text-lg">{job.title}</h3>
                 <p className="text-sm text-gray-600">
-                  {job.company?.name || 'Unknown Company'}
+                  {job.company?.name || "Unknown Company"}
                 </p>
               </div>
             </div>
@@ -34,21 +62,29 @@ export default function JobCard({ job }: JobCardProps) {
             <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
               <div className="flex items-center">
                 <MapPin className="w-4 h-4 mr-1" />
-                {job.location.remote ? 'Remote' : `${job.location.city}, ${job.location.country}`}
+                {job.location.remote
+                  ? "Remote"
+                  : `${job.location.city}, ${job.location.country}`}
               </div>
               <div className="flex items-center">
                 <Briefcase className="w-4 h-4 mr-1" />
-                {job.jobType.replace('_', ' ')}
+                {job.jobType.replace("_", " ")}
               </div>
-              {job.salary.min && (
+              {job.salary?.min && (
                 <div className="flex items-center">
-                  <DollarSign className="w-4 h-4 mr-1" />
-                  {job.salary.min.toLocaleString()} - {job.salary.max?.toLocaleString()} / {job.salary.period}
+                  <CurrencyIcon
+                    currency={job.salary.currency}
+                    className="w-4 h-4 mr-1"
+                  />
+                  {job.salary.min.toLocaleString()} -{" "}
+                  {job.salary.max?.toLocaleString()} / {job.salary.period}
                 </div>
               )}
               <div className="flex items-center">
                 <Clock className="w-4 h-4 mr-1" />
-                {formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })}
+                {formatDistanceToNow(new Date(job.createdAt), {
+                  addSuffix: true,
+                })}
               </div>
             </div>
 
@@ -71,11 +107,18 @@ export default function JobCard({ job }: JobCardProps) {
             <p className="text-gray-700 line-clamp-2">{job.description}</p>
           </div>
 
-          {job.isFeatured && (
-            <span className="ml-4 px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
-              Featured
-            </span>
-          )}
+          <div className="flex flex-col gap-2 items-end">
+            {job.hasApplied && (
+              <span className="ml-4 px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full shadow-sm">
+                Applied
+              </span>
+            )}
+            {job.isFeatured && (
+              <span className="ml-4 px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                Featured
+              </span>
+            )}
+          </div>
         </div>
       </Card>
     </Link>

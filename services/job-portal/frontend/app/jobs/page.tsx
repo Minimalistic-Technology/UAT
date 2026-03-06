@@ -39,7 +39,7 @@ export default function JobsPage() {
     value: string | number | boolean | string[] | undefined,
   ) => {
     const params = new URLSearchParams(searchParams.toString());
-    console.log("key: ", key, "value:", value)
+    console.log("key: ", key, "value:", value);
 
     if (
       value === "" ||
@@ -165,7 +165,7 @@ export default function JobsPage() {
             <div className="flex items-center mt-6 md:mt-8">
               <input
                 type="checkbox"
-                checked={filters.remote === "yes"}
+                checked={filters.remote === "true"}
                 onChange={(e) =>
                   updateParams("remote", e.target.checked ? true : undefined)
                 }
