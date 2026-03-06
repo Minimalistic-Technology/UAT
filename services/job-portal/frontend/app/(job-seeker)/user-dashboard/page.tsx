@@ -1,79 +1,78 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
-import { applicationService } from '@/lib/services/application.service';
-import { jobService } from '@/lib/services/job.service';
-import { Card } from '../../../components/ui/Card';
-import { Button } from '../../../components/ui/Button';
-import Link from 'next/link';
-import { 
-  Briefcase, 
-  FileText, 
-  TrendingUp, 
+import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
+import { applicationService } from "@/lib/services/application.service";
+import { jobService } from "@/lib/services/job.service";
+import { Card } from "../../../components/ui/Card";
+import { Button } from "../../../components/ui/Button";
+import Link from "next/link";
+import {
+  Briefcase,
+  FileText,
+  TrendingUp,
   Clock,
   CheckCircle,
   XCircle,
-  Eye 
-} from 'lucide-react';
-import { ApplicationStatus, GlobalRole } from '@/types';
+  Eye,
+} from "lucide-react";
+import { ApplicationStatus, GlobalRole } from "@/types";
 
 export default function JobSeekerDashboard() {
   const { data: session, status } = useSession();
 
-
   const { data: applications } = useQuery({
-    queryKey: ['my-applications'],
+    queryKey: ["my-applications"],
     queryFn: () => applicationService.getMyApplications(),
   });
 
   const { data: recommendedJobs } = useQuery({
-    queryKey: ['recommended-jobs'],
+    queryKey: ["recommended-jobs"],
     queryFn: () => jobService.getJobs({ limit: 5 }),
   });
 
-  
-  if (status === 'loading') {
+  if (status === "loading") {
     return <div>Loading...</div>;
   }
 
-  if(!session || session.user.role === GlobalRole.SUPER_ADMIN ){
-    redirect('/login');
+  if (!session || session.user.role === GlobalRole.SUPER_ADMIN) {
+    redirect("/login");
   }
 
-  if(session.user.isEmployee){
-    redirect("/login")
+  if (session.user.isEmployee) {
+    redirect("/login");
   }
-  
+
   const totalApplications = applications?.data.length || 0;
   const pendingApplications =
     applications?.data.filter((app) => app.status === ApplicationStatus.PENDING)
       .length || 0;
   const shortlistedApplications =
     applications?.data.filter(
-      (app) => app.status === ApplicationStatus.SHORTLISTED
+      (app) => app.status === ApplicationStatus.SHORTLISTED,
     ).length || 0;
   const rejectedApplications =
-    applications?.data.filter((app) => app.status === ApplicationStatus.REJECTED)
-      .length || 0;
+    applications?.data.filter(
+      (app) => app.status === ApplicationStatus.REJECTED,
+    ).length || 0;
 
   const getStatusColor = (status: ApplicationStatus) => {
     switch (status) {
       case ApplicationStatus.PENDING:
-        return 'bg-yellow-100 text-yellow-800';
+        return "bg-yellow-100 text-yellow-800";
       case ApplicationStatus.REVIEWED:
-        return 'bg-blue-100 text-blue-800';
+        return "bg-blue-100 text-blue-800";
       case ApplicationStatus.SHORTLISTED:
-        return 'bg-green-100 text-green-800';
+        return "bg-green-100 text-green-800";
       case ApplicationStatus.INTERVIEW:
-        return 'bg-purple-100 text-purple-800';
+        return "bg-purple-100 text-purple-800";
       case ApplicationStatus.REJECTED:
-        return 'bg-red-100 text-red-800';
+        return "bg-red-100 text-red-800";
       case ApplicationStatus.OFFERED:
-        return 'bg-emerald-100 text-emerald-800';
+        return "bg-emerald-100 text-emerald-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -81,9 +80,11 @@ export default function JobSeekerDashboard() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Welcome back, {session.user.name?.split(' ')[0]}!
+          Welcome back, {session.user.name?.split(" ")[0]}!
         </h1>
-        <p className="text-gray-600">Track your job applications and discover new opportunities</p>
+        <p className="text-gray-600">
+          Track your job applications and discover new opportunities
+        </p>
       </div>
 
       {/* Stats Grid */}
@@ -91,7 +92,9 @@ export default function JobSeekerDashboard() {
         <Card className="bg-linear-to-br from-primary-500 to-primary-600 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-primary-100 text-sm mb-1">Total Applications</p>
+              <p className="text-primary-100 text-sm mb-1">
+                Total Applications
+              </p>
               <p className="text-3xl font-bold">{totalApplications}</p>
             </div>
             <Briefcase className="w-12 h-12 text-primary-200" />
@@ -134,7 +137,9 @@ export default function JobSeekerDashboard() {
         <div className="lg:col-span-2">
           <Card>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Recent Applications</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Recent Applications
+              </h2>
               <Link href="/applications">
                 <Button variant="outline" size="sm">
                   View All
@@ -154,20 +159,20 @@ export default function JobSeekerDashboard() {
                         {application.job.title}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        {application.job.company.name || 'Unknown Company'}
+                        {application.job.company.name || "Unknown Company"}
                       </p>
                     </div>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        application.status
+                        application.status,
                       )}`}
                     >
-                      {application.status.replace('_', ' ')}
+                      {application.status.replace("_", " ")}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>
-                      Applied{' '}
+                      Applied{" "}
                       {new Date(application.createdAt).toLocaleDateString()}
                     </span>
                     <Link href={`/applications/${application._id}`}>
@@ -207,7 +212,7 @@ export default function JobSeekerDashboard() {
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-primary-600 h-2 rounded-full"
-                  style={{ width: '75%' }}
+                  style={{ width: "75%" }}
                 />
               </div>
             </div>
@@ -224,18 +229,22 @@ export default function JobSeekerDashboard() {
               Recommended for You
             </h3>
             <div className="space-y-3">
-              {recommendedJobs?.data.slice(0, 3).map((job) => (
+              {recommendedJobs?.data?.jobs?.slice(0, 3).map((job) => (
                 <Link
                   key={job._id}
                   href={`/jobs/${job._id}`}
                   className="block p-3 border border-gray-200 rounded-lg hover:border-primary-300 transition-colors"
                 >
-                  <h4 className="font-medium text-gray-900 mb-1">{job.title}</h4>
-                <p className="text-sm text-gray-600">{job.company?.name || 'Unknown Company'}</p>
+                  <h4 className="font-medium text-gray-900 mb-1">
+                    {job.title}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {job.company?.name || "Unknown Company"}
+                  </p>
                   <div className="flex items-center text-xs text-gray-500 mt-2">
                     <span>{job.location.city}</span>
                     <span className="mx-2">•</span>
-                    <span>{job.jobType.replace('_', ' ')}</span>
+                    <span>{job.jobType.replace("_", " ")}</span>
                   </div>
                 </Link>
               ))}

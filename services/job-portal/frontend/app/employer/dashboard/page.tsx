@@ -226,6 +226,11 @@ function OwnerDashboardControls() {
       path: "/employer/settings",
       description: "Update your brand and public profile.",
     },
+    {
+      title: "View Applications",
+      path: "/employer/applications",
+      description: "View all applications received for your jobs.",
+    }
   ];
 
   return (
