@@ -9,7 +9,8 @@ export interface ISettings extends Document {
         WhoWeAre: boolean;
         FeaturedProducts: boolean;
         Contact: boolean;
-        LoginSignup: boolean;
+        Login: boolean;
+        Signup: boolean;
     };
     updatedAt: Date;
 }
@@ -23,7 +24,8 @@ const SettingsSchema: Schema = new Schema({
         WhoWeAre: { type: Boolean, default: true },
         FeaturedProducts: { type: Boolean, default: true },
         Contact: { type: Boolean, default: true },
-        LoginSignup: { type: Boolean, default: true },
+        Login: { type: Boolean, default: true },
+        Signup: { type: Boolean, default: true },
     }
 }, { timestamps: true });
 
