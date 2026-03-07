@@ -3,6 +3,7 @@ import Team from "../../models/teams/team";
 import asyncHandler from "../../utils/asyncHandler";
 import ErrorHandler from "../../utils/errorHandler";
 import mongoose from "mongoose";
+import { cache } from "../../utils/cache/cache";
 
 export const createTeamMember = asyncHandler(
   async (req: Request, res: Response) => {
@@ -34,13 +35,23 @@ export const createTeamMember = asyncHandler(
       imageUrl,
     });
 
+    await cache.evict("teams", ["all"]);
+
     res.status(201).json(newMember);
   },
 );
 
 export const getAllTeamMembers = asyncHandler(
   async (_req: Request, res: Response) => {
+    const cachedMembers = await cache.get("teams", ["all"]);
+    if (cachedMembers) {
+      res.status(200).json(cachedMembers);
+      return;
+    }
+
     const members = await Team.find();
+    await cache.set("teams", ["all"], members);
+
     res.status(200).json(members);
   },
 );
@@ -55,11 +66,19 @@ export const getTeamMemberById = asyncHandler(
       throw new ErrorHandler("Invalid team member ID", 400);
     }
 
+    const cachedMember = await cache.get("team", [req.params.id]);
+    if (cachedMember) {
+      res.status(200).json(cachedMember);
+      return;
+    }
+
     const member = await Team.findById(req.params.id);
 
     if (!member) {
       throw new ErrorHandler("Team member not found", 404);
     }
+
+    await cache.set("team", [req.params.id], member);
 
     res.status(200).json(member);
   },
@@ -84,6 +103,9 @@ export const updateTeamMember = asyncHandler(
       throw new ErrorHandler("Team member not found", 404);
     }
 
+    await cache.evict("teams", ["all"]);
+    await cache.evict("team", [req.params.id]);
+
     res.status(200).json(updated);
   },
 );
@@ -103,6 +125,9 @@ export const deleteTeamMember = asyncHandler(
     if (!deleted) {
       throw new ErrorHandler("Team member not found", 404);
     }
+
+    await cache.evict("teams", ["all"]);
+    await cache.evict("team", [req.params.id]);
 
     res.status(200).json({ message: "Team member deleted successfully" });
   },
