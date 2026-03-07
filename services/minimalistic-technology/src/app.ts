@@ -1,12 +1,9 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import errorMiddleware from "./middleware/errorMiddleware";
 import teamRoutes from "./routes/teams/teamRoutes";
 import mailRoutes from "./routes/mail/mailRoutes";
 import { rateLimit } from "express-rate-limit";
-
-dotenv.config();
 
 const app = express();
 
