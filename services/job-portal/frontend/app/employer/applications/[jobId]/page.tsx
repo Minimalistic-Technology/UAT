@@ -565,6 +565,12 @@ const Page = () => {
                   <input
                     type="datetime-local"
                     value={interviewDate}
+                    min={new Date(
+                      new Date().getTime() -
+                        new Date().getTimezoneOffset() * 60000,
+                    )
+                      .toISOString()
+                      .slice(0, 16)}
                     onChange={(e) => setInterviewDate(e.target.value)}
                     className="w-full text-sm border border-gray-300 rounded-lg p-3 mb-5 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none shadow-sm transition-all bg-white"
                   />

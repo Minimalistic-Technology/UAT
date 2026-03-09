@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { jobService } from "@/lib/services/job.service";
 import JobCard from "../../components/JobCard";
@@ -10,7 +11,7 @@ import { JobType, ExperienceLevel } from "@/types";
 import { Search, Loader2 } from "lucide-react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
-export default function JobsPage() {
+function JobsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -288,5 +289,13 @@ export default function JobsPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+      <JobsPageContent />
+    </Suspense>
   );
 }
