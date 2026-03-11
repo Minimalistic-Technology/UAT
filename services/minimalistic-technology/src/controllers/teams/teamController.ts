@@ -4,18 +4,17 @@ import asyncHandler from "../../utils/asyncHandler";
 import ErrorHandler from "../../utils/errorHandler";
 import mongoose from "mongoose";
 import { cache } from "../../utils/cache/cache";
+import { getTeamMemberByIdSchema, deleteTeamMemberSchema, createTeamMemberSchema, updateTeamMemberParamsSchema, updateTeamMemberBodySchema } from "../../schema";
 
 export const createTeamMember = asyncHandler(
   async (req: Request, res: Response) => {
-    const { name, position, imageUrl } = req.body;
+    const result = createTeamMemberSchema.safeParse(req.body);
 
-    if (!name || !position || !imageUrl) {
-      throw new ErrorHandler("Name, position and image URL are required", 400);
+    if(!result.success){
+      throw new ErrorHandler(`Validation error: ${JSON.stringify(result.error.flatten().fieldErrors)}`, 200);
     }
 
-    if (!imageUrl) {
-      throw new ErrorHandler("Image URL is required", 400);
-    }
+    const { name, position, imageUrl } = result.data;
 
     const memberExists = await Team.findOne({
       name: { $regex: `^${name}$`, $options: "i" },
@@ -25,7 +24,7 @@ export const createTeamMember = asyncHandler(
     if (memberExists) {
       throw new ErrorHandler(
         "The member with this name and position already exists",
-        400,
+        200,
       );
     }
 
@@ -58,27 +57,31 @@ export const getAllTeamMembers = asyncHandler(
 
 export const getTeamMemberById = asyncHandler(
   async (req: Request, res: Response) => {
-    if (!req.params.id) {
-      throw new ErrorHandler("Team member ID is required", 400);
+    const result = getTeamMemberByIdSchema.safeParse(req.body);
+
+    if (!result.success) {
+      throw new ErrorHandler(`Validation error: ${JSON.stringify(result.error.flatten().fieldErrors)}`, 200);
     }
 
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      throw new ErrorHandler("Invalid team member ID", 400);
+    const { id } = result.data;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new ErrorHandler("Invalid team member ID", 200);
     }
 
-    const cachedMember = await cache.get("team", [req.params.id]);
+    const cachedMember = await cache.get("team", [id]);
     if (cachedMember) {
       res.status(200).json(cachedMember);
       return;
     }
 
-    const member = await Team.findById(req.params.id);
+    const member = await Team.findById(id);
 
     if (!member) {
-      throw new ErrorHandler("Team member not found", 404);
+      throw new ErrorHandler("Team member not found", 200);
     }
 
-    await cache.set("team", [req.params.id], member);
+    await cache.set("team", [id], member);
 
     res.status(200).json(member);
   },
@@ -86,25 +89,33 @@ export const getTeamMemberById = asyncHandler(
 
 export const updateTeamMember = asyncHandler(
   async (req: Request, res: Response) => {
-    if (!req.params.id) {
-      throw new ErrorHandler("Team member ID is required", 400);
+    const paramsResult = updateTeamMemberParamsSchema.safeParse(req.params);
+
+    if (!paramsResult.success) {
+      throw new ErrorHandler(`Validation error: ${JSON.stringify(paramsResult.error.flatten().fieldErrors)}`, 200);
     }
 
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      throw new ErrorHandler("Invalid team member ID", 400);
+    const bodyResult = updateTeamMemberBodySchema.safeParse(req.body);
+
+    if (!bodyResult.success) {
+      throw new ErrorHandler(`Validation error: ${JSON.stringify(bodyResult.error.flatten().fieldErrors)}`, 200);
     }
 
-    const updated = await Team.findByIdAndUpdate(req.params.id, req.body, {
+    if (!mongoose.Types.ObjectId.isValid(paramsResult.data.id)) {
+      throw new ErrorHandler("Invalid team member ID", 200);
+    }
+
+    const updated = await Team.findByIdAndUpdate(paramsResult.data.id, bodyResult.data, {
       new: true,
       runValidators: true,
     });
 
     if (!updated) {
-      throw new ErrorHandler("Team member not found", 404);
+      throw new ErrorHandler("Team member not found", 200);
     }
 
     await cache.evict("teams", ["all"]);
-    await cache.evict("team", [req.params.id]);
+    await cache.evict("team", [paramsResult.data.id]);
 
     res.status(200).json(updated);
   },
@@ -112,22 +123,26 @@ export const updateTeamMember = asyncHandler(
 
 export const deleteTeamMember = asyncHandler(
   async (req: Request, res: Response) => {
-    if (!req.params.id) {
-      throw new ErrorHandler("Team member ID is required", 400);
+    const result = deleteTeamMemberSchema.safeParse(req.body);
+
+    if (!result.success) {
+      throw new ErrorHandler(`Validation error: ${JSON.stringify(result.error.flatten().fieldErrors)}`, 200);
     }
 
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      throw new ErrorHandler("Invalid team member ID", 400);
+    const { id } = result.data;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new ErrorHandler("Invalid team member ID", 200);
     }
 
-    const deleted = await Team.findByIdAndDelete(req.params.id);
+    const deleted = await Team.findByIdAndDelete(id);
 
     if (!deleted) {
-      throw new ErrorHandler("Team member not found", 404);
+      throw new ErrorHandler("Team member not found", 200);
     }
 
     await cache.evict("teams", ["all"]);
-    await cache.evict("team", [req.params.id]);
+    await cache.evict("team", [id]);
 
     res.status(200).json({ message: "Team member deleted successfully" });
   },
