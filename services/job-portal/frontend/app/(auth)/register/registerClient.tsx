@@ -1,69 +1,52 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "../../../components/ui/Button";
 import { Input } from "../../../components/ui/Input";
 import { Card } from "../../../components/ui/Card";
-import { authService } from "@/lib/services/auth.service";
 import { toast } from "sonner";
-import { UserRole } from "@/types";
+import { registerUserSchema, RegisterUserInput } from "@/features/auth/auth.schema";
+import { useRegister } from "@/features/auth/hooks/use-register";
 
-const registerSchema = z
-  .object({
-    firstName: z.string().min(2, "First name must be at least 2 characters"),
-    lastName: z.string().min(2, "Last name must be at least 2 characters"),
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    confirmPassword: z.string(),
-    role: z.enum([UserRole.JOB_SEEKER, UserRole.EMPLOYER]),
-    phone: z.string().optional(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-type RegisterFormData = z.infer<typeof registerSchema>;
+type RegisterFormValues = Omit<RegisterUserInput, "role">;
 
 export default function RegisterClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const roleParam = searchParams?.get("role");
-  const defaultRole =
-    roleParam === UserRole.EMPLOYER ? UserRole.EMPLOYER : UserRole.JOB_SEEKER;
-  const [isLoading, setIsLoading] = useState(false);
+  const registerMutation = useRegister();
 
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
-    watch,
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      role: defaultRole,
-    },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerUserSchema),
   });
 
-  const selectedRole = watch("role");
-
-  const onSubmit = async (data: RegisterFormData) => {
-    setIsLoading(true);
-    try {
-      await authService.register(data);
-      toast.success("Registration successful! Please login.");
-      router.push("/login");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Registration failed");
-    } finally {
-      setIsLoading(false);
+  const onSubmit = async (data: RegisterFormValues) => {
+    if (data.password !== data.confirmPassword) {
+      setError("confirmPassword", {
+        type: "manual",
+        message: "Passwords don't match",
+      });
+      return;
     }
+    
+    registerMutation.mutate(data as RegisterUserInput, {
+      onSuccess: () => {
+        toast.success("Registration successful! Please login.");
+        router.push("/login");
+      },
+      onError: (error: any) => {
+        toast.error(error.response?.data?.message || "Registration failed");
+      },
+    });
   };
+
+  const isLoading = registerMutation.isPending;
 
   return (
     <div className="max-h-[calc(100vh-64px)] h-full flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -75,56 +58,20 @@ export default function RegisterClient() {
 
         <Card>
           <form onSubmit={handleSubmit(onSubmit) as any} className="space-y-6">
-            {/* Role Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                I am a
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <label
-                  className={`cursor-pointer ${selectedRole === UserRole.JOB_SEEKER ? "ring-2 ring-primary-600" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    {...register("role")}
-                    value={UserRole.JOB_SEEKER}
-                    className="sr-only"
-                  />
-                  <div className="border-2 border-gray-300 rounded-lg p-4 text-center hover:border-primary-600 transition-colors">
-                    <p className="font-medium">Job Seeker</p>
-                    <p className="text-xs text-gray-500">Looking for jobs</p>
-                  </div>
-                </label>
-                <label
-                  className={`cursor-pointer ${selectedRole === UserRole.EMPLOYER ? "ring-2 ring-primary-600" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    {...register("role")}
-                    value={UserRole.EMPLOYER}
-                    className="sr-only"
-                  />
-                  <div className="border-2 border-gray-300 rounded-lg p-4 text-center hover:border-primary-600 transition-colors">
-                    <p className="font-medium">Employer</p>
-                    <p className="text-xs text-gray-500">Hiring talent</p>
-                  </div>
-                </label>
-              </div>
-            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <Input
                 {...register("firstName")}
                 label="First Name"
                 placeholder="John"
-                error={errors.firstName?.message}
+                error={errors.firstName?.message as string}
                 disabled={isLoading}
               />
               <Input
                 {...register("lastName")}
                 label="Last Name"
                 placeholder="Doe"
-                error={errors.lastName?.message}
+                error={errors.lastName?.message as string}
                 disabled={isLoading}
               />
             </div>
@@ -134,7 +81,7 @@ export default function RegisterClient() {
               type="email"
               label="Email Address"
               placeholder="you@example.com"
-              error={errors.email?.message}
+              error={errors.email?.message as string}
               disabled={isLoading}
             />
 
@@ -143,7 +90,7 @@ export default function RegisterClient() {
               type="tel"
               label="Phone Number (Optional)"
               placeholder="+1234567890"
-              error={errors.phone?.message}
+              error={errors.phone?.message as string}
               disabled={isLoading}
             />
 
@@ -152,7 +99,7 @@ export default function RegisterClient() {
               type="password"
               label="Password"
               placeholder="••••••••"
-              error={errors.password?.message}
+              error={errors.password?.message as string}
               disabled={isLoading}
             />
 
@@ -161,7 +108,7 @@ export default function RegisterClient() {
               type="password"
               label="Confirm Password"
               placeholder="••••••••"
-              error={errors.confirmPassword?.message}
+              error={errors.confirmPassword?.message as string}
               disabled={isLoading}
             />
 
