@@ -1,34 +1,35 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useMutation } from '@tanstack/react-query';
-import { jobService } from '@/lib/services/job.service';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { toast } from 'sonner';
-import { JobType, ExperienceLevel } from '@/types';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { jobService } from "@/lib/services/job.service";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { toast } from "sonner";
+import { JobType, ExperienceLevel } from "@/types";
+import { Asterisk, X } from "lucide-react";
 
 const jobSchema = z.object({
-  title: z.string().min(3, 'Job title must be at least 3 characters'),
-  description: z.string().min(50, 'Description must be at least 50 characters'),
+  title: z.string().min(3, "Job title must be at least 3 characters"),
+  description: z.string().min(50, "Description must be at least 50 characters"),
   jobType: z.nativeEnum(JobType),
   experienceLevel: z.nativeEnum(ExperienceLevel),
-  locationCity: z.string().min(2, 'City is required'),
-  locationCountry: z.string().min(2, 'Country is required'),
+  locationCity: z.string().min(2, "City is required"),
+  locationCountry: z.string().min(2, "Country is required"),
   remote: z.boolean(),
   salaryMin: z.number().min(0).optional(),
   salaryMax: z.number().min(0).optional(),
-  salaryCurrency: z.string().default('USD'),
-  salaryPeriod: z.enum(['hourly', 'monthly', 'yearly']).default('yearly'),
-  skills: z.string(),
-  requirements: z.string(),
+  salaryCurrency: z.string().default("USD"),
+  salaryPeriod: z.enum(["hourly", "monthly", "yearly"]).default("yearly"),
+  skills: z.array(z.string()).min(1, "At least one skill is required"),
+  requirements: z.string().min(10, "Requirements must be at least 10 characters"),
   benefits: z.string().optional(),
-  openings: z.number().min(1).default(1),
+  openings: z.number().min(1, "Minimum 1 opening is required").default(1),
 });
 
 type JobFormData = z.infer<typeof jobSchema>;
@@ -36,30 +37,33 @@ type JobFormData = z.infer<typeof jobSchema>;
 export default function PostJobPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [skillInput, setSkillInput] = useState("");
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
+    setValue,
   } = useForm({
     resolver: zodResolver(jobSchema),
     defaultValues: {
       remote: false,
-      salaryCurrency: 'USD',
-      salaryPeriod: 'yearly',
+      salaryCurrency: "USD",
+      salaryPeriod: "yearly",
       openings: 1,
+      skills: [] as string[],
     },
   });
 
   const createJobMutation = useMutation({
     mutationFn: (data: any) => jobService.createJob(data),
     onSuccess: () => {
-      toast.success('Job posted successfully!');
-      router.push('/employer/dashboard');
+      toast.success("Job posted successfully!");
+      router.push("/employer/dashboard");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to post job');
+      toast.error(error.response?.data?.message || "Failed to post job");
     },
   });
 
@@ -82,9 +86,9 @@ export default function PostJobPage() {
           currency: data.salaryCurrency,
           period: data.salaryPeriod,
         },
-        skills: data.skills.split(',').map((s) => s.trim()),
-        requirements: data.requirements.split('\n').filter((r) => r.trim()),
-        benefits: data.benefits?.split('\n').filter((b) => b.trim()),
+        skills: data.skills,
+        requirements: data.requirements.split("\n").filter((r) => r.trim()),
+        benefits: data.benefits?.split("\n").filter((b) => b.trim()),
         openings: data.openings,
       };
 
@@ -99,8 +103,12 @@ export default function PostJobPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Post a New Job</h1>
-        <p className="text-gray-600">Fill in the details to create a job posting</p>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          Post a New Job
+        </h1>
+        <p className="text-gray-600">
+          Fill in the details to create a job posting
+        </p>
       </div>
 
       <Card>
@@ -111,19 +119,25 @@ export default function PostJobPage() {
               Basic Information
             </h2>
             <div className="space-y-4">
-              <Input
-                {...register('title')}
-                label="Job Title *"
-                placeholder="e.g., Senior Software Engineer"
-                error={errors.title?.message}
-              />
+              <>
+                <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
+                  Job Title
+                  <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
+                </label>
+                <Input
+                  {...register("title")}
+                  placeholder="e.g., Senior Software Engineer"
+                  error={errors.title?.message}
+                />
+              </>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Job Description *
+                <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
+                  Job Description
+                  <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
                 </label>
                 <textarea
-                  {...register('description')}
+                  {...register("description")}
                   rows={6}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Describe the role, responsibilities, and what you're looking for..."
@@ -137,27 +151,29 @@ export default function PostJobPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Job Type *
+                  <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
+                    Job Type
+                    <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
                   </label>
                   <select
-                    {...register('jobType')}
+                    {...register("jobType")}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   >
                     {Object.values(JobType).map((type) => (
                       <option key={type} value={type}>
-                        {type.replace('_', ' ')}
+                        {type.replace("_", " ")}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Experience Level *
+                  <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
+                    Experience Level
+                    <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
                   </label>
                   <select
-                    {...register('experienceLevel')}
+                    {...register("experienceLevel")}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   >
                     {Object.values(ExperienceLevel).map((level) => (
@@ -173,31 +189,47 @@ export default function PostJobPage() {
 
           {/* Location */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Location</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Location
+            </h2>
             <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
-                <Input
-                  {...register('locationCity')}
-                  label="City *"
-                  placeholder="e.g., San Francisco"
-                  error={errors.locationCity?.message}
-                />
-                <Input
-                  {...register('locationCountry')}
-                  label="Country *"
-                  placeholder="e.g., United States"
-                  error={errors.locationCountry?.message}
-                />
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
+                    City
+                    <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
+                  </label>
+                  <Input
+                    {...register("locationCity")}
+                    placeholder="e.g., San Francisco"
+                    error={errors.locationCity?.message}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
+                    Country
+                    <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
+                  </label>
+                  <Input
+                    {...register("locationCountry")}
+                    placeholder="e.g., United States"
+                    error={errors.locationCountry?.message}
+                  />
+                </div>
               </div>
 
               <div className="flex items-center">
                 <input
-                  {...register('remote')}
+                  {...register("remote")}
                   type="checkbox"
                   id="remote"
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remote" className="ml-2 block text-sm text-gray-900">
+                <label
+                  htmlFor="remote"
+                  className="ml-2 block text-sm text-gray-900"
+                >
                   This is a remote position
                 </label>
               </div>
@@ -211,13 +243,13 @@ export default function PostJobPage() {
             </h2>
             <div className="grid md:grid-cols-4 gap-4">
               <Input
-                {...register('salaryMin', { valueAsNumber: true })}
+                {...register("salaryMin", { valueAsNumber: true })}
                 type="number"
                 label="Minimum"
                 placeholder="50000"
               />
               <Input
-                {...register('salaryMax', { valueAsNumber: true })}
+                {...register("salaryMax", { valueAsNumber: true })}
                 type="number"
                 label="Maximum"
                 placeholder="80000"
@@ -227,7 +259,7 @@ export default function PostJobPage() {
                   Currency
                 </label>
                 <select
-                  {...register('salaryCurrency')}
+                  {...register("salaryCurrency")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="USD">USD</option>
@@ -241,7 +273,7 @@ export default function PostJobPage() {
                   Period
                 </label>
                 <select
-                  {...register('salaryPeriod')}
+                  {...register("salaryPeriod")}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="hourly">Hourly</option>
@@ -259,25 +291,74 @@ export default function PostJobPage() {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Required Skills * (comma separated)
+                <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
+                   Required Skills
+                  <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
+                  <span className="">( Press enter too add )</span>
                 </label>
-                <input
-                  {...register('skills')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="e.g., React, Node.js, TypeScript"
-                />
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={skillInput}
+                    onChange={(e) => setSkillInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const newSkill = skillInput.trim();
+                        if (newSkill) {
+                          const currentSkills = watch("skills") || [];
+                          if (!currentSkills.includes(newSkill)) {
+                            setValue("skills", [...currentSkills, newSkill], { shouldValidate: true });
+                          }
+                          setSkillInput("");
+                        }
+                      }
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder="e.g., React, Node.js, TypeScript"
+                  />
+                  {(watch("skills")?.length ?? 0) > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {watch("skills").map((skill: string) => (
+                        <div
+                          key={skill}
+                          className="flex items-center gap-1 px-3 py-1 bg-primary-50 text-primary-700 border border-primary-200 rounded-full text-sm font-medium"
+                        >
+                          <span>{skill}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentSkills = watch("skills") || [];
+                              setValue(
+                                "skills",
+                                currentSkills.filter((s: string) => s !== skill),
+                                { shouldValidate: true }
+                              );
+                            }}
+                            className="hover:bg-primary-200 p-0.5 rounded-full focus:outline-none transition-colors"
+                          >
+                            <X className="size-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {errors.skills && (
-                  <p className="mt-1 text-sm text-red-600">{errors.skills.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.skills.message as string}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Requirements * (one per line)
+                <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
+                   Requirements 
+                  <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
+                  <span className="">( one per line )</span>
                 </label>
                 <textarea
-                  {...register('requirements')}
+                  {...register("requirements")}
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   placeholder="e.g.,&#10;5+ years of experience&#10;Bachelor's degree in CS&#10;Strong problem-solving skills"
@@ -294,20 +375,25 @@ export default function PostJobPage() {
                   Benefits (one per line, optional)
                 </label>
                 <textarea
-                  {...register('benefits')}
+                  {...register("benefits")}
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   placeholder="e.g.,&#10;Health insurance&#10;401(k) matching&#10;Flexible hours"
                 />
               </div>
 
-              <Input
-                {...register('openings', { valueAsNumber: true })}
-                type="number"
-                label="Number of Openings *"
-                placeholder="1"
-                min={1}
-              />
+              <>
+                <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
+                  Number of Openings
+                  <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
+                </label>
+                <Input
+                  {...register("openings", { valueAsNumber: true })}
+                  type="number"
+                  placeholder="1"
+                  min={1}
+                />
+              </>
             </div>
           </div>
 
