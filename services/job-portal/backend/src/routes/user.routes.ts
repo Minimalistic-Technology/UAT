@@ -5,6 +5,7 @@ import {
   uploadAvatar,
   uploadResume,
   getUserById,
+  submitKyc,
 } from '../controllers/user.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 
@@ -41,9 +42,32 @@ const resumeUpload = multer({
   },
 });
 
+const kycUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'application/pdf',
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  },
+});
+
 router.put('/profile', protect, updateProfile);
 router.put('/avatar', protect, avatarUpload.single('avatar'), uploadAvatar);
 router.put('/resume', protect, resumeUpload.single('resume'), uploadResume);
 router.get('/:id', protect, getUserById);
+router.post('/kyc', protect, kycUpload.fields([
+  { name: 'photo', maxCount: 1 },
+  { name: 'lightbill', maxCount: 1 }
+]), submitKyc);
 
 export default router;

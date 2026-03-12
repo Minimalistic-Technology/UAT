@@ -152,6 +152,73 @@ export const uploadResume = async (
   }
 };
 
+// @desc    Submit KYC details (Employer)
+// @route   POST /api/users/kyc
+// @access  Private (Employer)
+export const submitKyc = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { companyName, aadharNo, gstNo, cinNo } = req.body;
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    
+    if (!files?.photo?.[0] || !files?.lightbill?.[0]) {
+      return res.status(400).json({
+        success: false,
+        message: "Both photo and lightbill documents are required.",
+      });
+    }
+
+    // Upload Photo
+    const photoResult = await uploadToCloudinary(
+      files.photo[0].buffer,
+      "kyc_photos",
+      "image",
+      `kyc-photo-${req.user.id}-${Date.now()}`
+    );
+
+    // Upload Lightbill
+    const isLightbillPdf = files.lightbill[0].mimetype === "application/pdf";
+    const lightbillResult = await uploadToCloudinary(
+      files.lightbill[0].buffer,
+      "kyc_lightbills",
+      isLightbillPdf ? "raw" : "image",
+      `kyc-lightbill-${req.user.id}-${Date.now()}`,
+      isLightbillPdf ? "pdf" : undefined
+    );
+
+    // TODO: Link these details to a proper KYC model or Company model depending on your schema.
+    // Right now, simply storing or acknowledging the upload for the process.
+    
+    // We can also update the global user object to flag that KYC is submitted if exists on schema
+    // await User.findByIdAndUpdate(req.user.id, { kycSubmitted: true });
+
+    res.status(200).json({
+      success: true,
+      message: "KYC Details Submitted Successfully!",
+      data: {
+        companyName,
+        aadharNo,
+        gstNo,
+        cinNo,
+        documents: {
+          photoUrl: photoResult.secure_url,
+          lightbillUrl: lightbillResult.secure_url
+        }
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: "Error submitting KYC documents",
+      error: error.message,
+    });
+  }
+};
+
 // @desc    Get user by ID
 // @route   GET /api/users/:id
 // @access  Private
