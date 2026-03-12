@@ -6,6 +6,8 @@ import {
   getJobsByStatus,
   getStats,
   updateUserStatus,
+  getKycApplications,
+  updateKycStatus
 } from "../controllers/admin.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
 import { body } from "express-validator";
@@ -30,6 +32,19 @@ router.put(
   updateUserStatus,
 );
 router.get("/stats", getStats)
+
+router.get("/kyc-applications", getKycApplications);
+router.put(
+  "/kyc-applications/:applicationId/status",
+  validate([
+    body("status")
+      .exists({ checkNull: true })
+      .withMessage("Status is required")
+      .isIn(["approved", "rejected"])
+      .withMessage("Status must be either 'approved' or 'rejected'"),
+  ]),
+  updateKycStatus
+);
 
 
 export default router;

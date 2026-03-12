@@ -13,11 +13,12 @@ import { Briefcase, FileText, Users, Plus } from "lucide-react";
 import { StatusCard } from "@/components/ui/StatusCard";
 import { RegisterCompanyModel } from "@/components/models";
 import { useQueryClient } from "@tanstack/react-query";
+import { KycApplicationsTab } from "@/features/super-admin";
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const [selectedTab, setSelectedTab] = useState<
-    "users" | "analytics" | "jobs"
+    "users" | "analytics" | "jobs" | "kyc applications"
   >("users");
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -130,6 +131,16 @@ export default function AdminDashboard() {
             >
               Analytics
             </button>
+            <button
+              onClick={() => setSelectedTab("kyc applications")}
+              className={`${
+                selectedTab === "kyc applications"
+                  ? "border-primary-500 text-primary-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              KYC Applications
+            </button>
           </nav>
         </div>
       </div>
@@ -153,6 +164,9 @@ export default function AdminDashboard() {
           }
         />
       )}
+
+      {/* KYC Applications Tab */}
+      {selectedTab === "kyc applications" && <KycApplicationsTab />}
 
       <RegisterCompanyModel
         isOpen={isRegisterModalOpen}

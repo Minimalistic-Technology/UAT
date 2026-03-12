@@ -6,7 +6,7 @@ cloudinary.config({
     api_secret: config.cloudinaryApiSecret,
 });
 export const uploadToCloudinary = async (fileBuffer, folder, resourceType = 'auto', id, format) => {
-    return new Promise((resolve, reject) => {
+    const response = new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream({
             folder,
             resource_type: resourceType,
@@ -21,7 +21,25 @@ export const uploadToCloudinary = async (fileBuffer, folder, resourceType = 'aut
         });
         uploadStream.end(fileBuffer);
     });
+    return response;
 };
 export const deleteFromCloudinary = async (publicId) => {
-    await cloudinary.uploader.destroy(publicId);
+    try {
+        if (!publicId) {
+            console.warn("Cloudinary delete skipped: publicId is missing");
+            return false;
+        }
+        // resource_type is required if deleting pdf or other non-image files
+        const result = await cloudinary.uploader.destroy(publicId);
+        if (result.result !== "ok" && result.result !== "not found") {
+            console.warn("Cloudinary deletion unexpected response:", result);
+            return false;
+        }
+        console.log("Old file deleted successfully:", publicId);
+        return true;
+    }
+    catch (error) {
+        console.error("Error deleting file from Cloudinary:", error);
+        return false;
+    }
 };

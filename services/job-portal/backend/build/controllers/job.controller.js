@@ -1,78 +1,102 @@
-import Job, { JobStatus } from "../models/Job.model.js";
+import Job, { ExperienceLevel, JobStatus, JobType, } from "../models/Job.model.js";
+import { GlobalRole } from "../models/User.model.js";
 import mongoose from "mongoose";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import Company from "../models/Company.model.js";
+export function isValidJobType(value) {
+    return Object.values(JobType).includes(value);
+}
+export function isValidExperienceType(value) {
+    return Object.values(ExperienceLevel).includes(value);
+}
 // @desc    Get all jobs with filters
 // @route   GET /api/jobs
 // @access  Public
-// @desc    Get all jobs with filters
-// @route   GET /api/jobs
-// @access  Public
-export const getJobs = async (req, res, next) => {
+export const getJobs = async (req, res) => {
     try {
-        const { search, location, jobType, experienceLevel, minSalary, maxSalary, skills, remote, page = 1, limit = 10, sort = "-createdAt", } = req.query;
-        // Build query
-        const query = { status: JobStatus.ACTIVE };
-        // Text search
-        if (search) {
-            query.$text = { $search: search };
+        const { search, remote, jobType, experienceLevel, skills, minSalary, maxSalary, city, state, country, page = 1, limit = 10, } = req.query;
+        let query = { status: JobStatus.ACTIVE };
+        if (remote && typeof remote === "string") {
+            query["location.remote"] = remote === "true";
         }
-        // Location filter
-        if (location) {
-            query["location.city"] = new RegExp(location, "i");
-        }
-        // Job type filter
         if (jobType) {
+            if (!isValidJobType(jobType)) {
+                return res
+                    .status(400)
+                    .json({ success: false, message: "Invalid job type" });
+            }
             query.jobType = jobType;
         }
-        // Experience level filter
         if (experienceLevel) {
+            if (!isValidExperienceType(experienceLevel)) {
+                return res
+                    .status(400)
+                    .json({ success: false, message: "Invalid experience type" });
+            }
             query.experienceLevel = experienceLevel;
         }
-        // Salary range filter
+        if (search && typeof search === "string") {
+            query.$text = { $search: search };
+        }
+        if (skills) {
+            const skillArray = Array.isArray(skills) ? skills : [skills];
+            query.skills = { $in: skillArray };
+        }
         if (minSalary || maxSalary) {
             query["salary.min"] = {};
             if (minSalary)
                 query["salary.min"].$gte = Number(minSalary);
             if (maxSalary)
-                query["salary.max"].$lte = Number(maxSalary);
+                query["salary.max"] = { $lte: Number(maxSalary) };
         }
-        // Skills filter
-        if (skills) {
-            const skillsArray = skills.split(",");
-            query.skills = { $in: skillsArray };
+        if (city)
+            query["location.city"] = new RegExp(city, "i");
+        if (state)
+            query["location.state"] = new RegExp(state, "i");
+        if (country)
+            query["location.country"] = new RegExp(country, "i");
+        const pageNumber = Number(page) || 1;
+        const limitNumber = Number(limit) || 10;
+        const skip = (pageNumber - 1) * limitNumber;
+        console.log(query);
+        const [jobs, total] = await Promise.all([
+            Job.find(query)
+                .sort({ createdAt: -1 })
+                .populate("postedBy", "firstName lastName")
+                .populate("company", "name logo location industry")
+                .skip(skip)
+                .limit(limitNumber),
+            Job.countDocuments(query),
+        ]);
+        // Format plain objects so we can append properties
+        const jobsWithDetails = jobs.map((job) => job.toObject());
+        let formattedJobs = [...jobsWithDetails];
+        // Check if user is logged in as a job seeker to attach 'hasApplied' field
+        if (req.user && req.user.role === GlobalRole.USER && !req.user.isEmployer) {
+            // Import Application model locally to avoid circular dependencies if any are introduced later
+            const Application = (await import("../models/Application.model.js"))
+                .default;
+            const jobIds = jobsWithDetails.map((job) => job._id);
+            const applications = await Application.find({
+                jobSeeker: req.user._id,
+                job: { $in: jobIds },
+            });
+            const appliedJobIds = new Set(applications.map((app) => app.job.toString()));
+            formattedJobs = jobsWithDetails.map((job) => ({
+                ...job,
+                hasApplied: appliedJobIds.has(job._id.toString()),
+            }));
         }
-        // Remote filter
-        if (remote === "true") {
-            query["location.remote"] = true;
-        }
-        // Pagination
-        const pageNum = parseInt(page, 10);
-        const limitNum = parseInt(limit, 10);
-        const skip = (pageNum - 1) * limitNum;
-        // Execute query
-        const jobs = await Job.find(query)
-            .populate("postedBy", "firstName lastName")
-            .populate("company", "name logo location industry")
-            .sort(sort)
-            .skip(skip)
-            .limit(limitNum);
-        const total = await Job.countDocuments(query);
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            count: jobs.length,
-            total,
-            totalPages: Math.ceil(total / limitNum),
-            currentPage: pageNum,
-            data: jobs,
+            data: { jobs: formattedJobs, totalJobs: total },
+            page: pageNumber,
+            totalPages: Math.ceil(total / limitNumber),
         });
     }
     catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error fetching jobs",
-            error: error.message,
-        });
+        console.error("Jobs fetch error:", error);
+        return res.status(500).json({ success: false, message: "Server error" });
     }
 };
 // @desc    Get single job

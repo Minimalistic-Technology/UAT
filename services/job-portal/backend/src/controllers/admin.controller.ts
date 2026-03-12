@@ -192,4 +192,105 @@ export const getStats = async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
-}
+};
+
+export const getKycApplications = async (req: Request, res: Response) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const status = req.query.status as string;
+
+    const skip = (page - 1) * limit;
+
+    const filter: any = {};
+    if (status) {
+      filter.status = status;
+    }
+
+    // Dynamic import to avoid circular dependency if Model architecture changed,
+    // assuming KYC is exported from User.model.ts or from its own KYC.model.ts file.
+    // For safety, checking whether KYC model is injected or available.
+    // I know that KYC model was created in src/models/KYC.model.ts earlier. 
+    const KYC = (await import("../models/KYC.model.js")).default;
+
+    const [applications, totalApplications] = await Promise.all([
+      KYC.find(filter)
+        .populate("user", "firstName lastName email phone")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      KYC.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(totalApplications / limit);
+
+    return res.status(200).json({
+      success: true,
+      message: "KYC applications fetched successfully",
+      data: {
+        count: totalApplications,
+        applications,
+        pagination: {
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+        },
+      },
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch KYC applications",
+      error: error.message,
+    });
+  }
+};
+
+export const updateKycStatus = async (req: Request, res: Response) => {
+  const { applicationId } = req.params;
+  const { status } = req.body;
+
+  try {
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status provided. Must be 'approved' or 'rejected'.",
+      });
+    }
+
+    const KYC = (await import("../models/KYC.model.js")).default;
+
+    const kycApplication = await KYC.findById(applicationId);
+
+    if (!kycApplication) {
+      return res.status(404).json({
+        success: false,
+        message: "KYC application not found.",
+      });
+    }
+
+    kycApplication.status = status;
+    await kycApplication.save();
+
+    // Optionally: if 'approved', elevate user privileges/flags logic here
+    if (status === "approved") {
+      // You could flag the user as full employer, or update `isVerified: true`
+      await User.findByIdAndUpdate(kycApplication.user, { isVerified: true });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `KYC application has been successfully ${status}.`,
+      data: kycApplication,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update KYC application status.",
+      error: error.message,
+    });
+  }
+};
