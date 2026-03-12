@@ -1,9 +1,10 @@
 import type { Response, NextFunction } from "express";
 import User from "../models/User.model.js";
+import KYC from "../models/KYC.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import {
   uploadToCloudinary,
-  deleteFromCloudinary
+  deleteFromCloudinary,
 } from "../utils/cloudinary.js";
 
 export const getPublicIdFromUrl = (url: string) => {
@@ -120,10 +121,10 @@ export const uploadResume = async (
     // Upload to Cloudinary
     const result = await uploadToCloudinary(
       req.file.buffer,
-      'resumes',
-      'image',
+      "resumes",
+      "image",
       `resume-${req.user.id}-${Date.now()}`,
-      'pdf'
+      "pdf",
     );
 
     // Delete old resume if exists
@@ -164,7 +165,7 @@ export const submitKyc = async (
     const { companyName, aadharNo, gstNo, cinNo } = req.body;
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-    
+
     if (!files?.photo?.[0] || !files?.lightbill?.[0]) {
       return res.status(400).json({
         success: false,
@@ -172,43 +173,71 @@ export const submitKyc = async (
       });
     }
 
-    // Upload Photo
+    let existingKyc = await KYC.findOne({ user: req.user.id });
+
+    if (existingKyc && existingKyc.status === "approved") {
+      return res.status(400).json({
+        success: false,
+        message: "Your KYC is already approved.",
+      });
+    }
+
+    if (existingKyc && existingKyc.status === "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Your KYC is already submitted.",
+      });
+    }
+
     const photoResult = await uploadToCloudinary(
       files.photo[0].buffer,
       "kyc_photos",
       "image",
-      `kyc-photo-${req.user.id}-${Date.now()}`
+      `kyc-photo-${req.user.id}-${Date.now()}`,
     );
 
-    // Upload Lightbill
     const isLightbillPdf = files.lightbill[0].mimetype === "application/pdf";
     const lightbillResult = await uploadToCloudinary(
       files.lightbill[0].buffer,
       "kyc_lightbills",
       isLightbillPdf ? "raw" : "image",
       `kyc-lightbill-${req.user.id}-${Date.now()}`,
-      isLightbillPdf ? "pdf" : undefined
+      isLightbillPdf ? "pdf" : undefined,
     );
 
-    // TODO: Link these details to a proper KYC model or Company model depending on your schema.
-    // Right now, simply storing or acknowledging the upload for the process.
-    
-    // We can also update the global user object to flag that KYC is submitted if exists on schema
-    // await User.findByIdAndUpdate(req.user.id, { kycSubmitted: true });
+    const kycData = {
+      user: req.user.id,
+      companyName,
+      aadharNo,
+      gstNo,
+      cinNo,
+      photoUrl: photoResult.secure_url,
+      lightbillUrl: lightbillResult.secure_url,
+      status: "pending" as const,
+    };
+
+    const kyc = await KYC.create(kycData);
+
+    if (!kyc) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to submit KYC details. Please try again later.",
+      });
+    }
 
     res.status(200).json({
       success: true,
       message: "KYC Details Submitted Successfully!",
       data: {
-        companyName,
-        aadharNo,
-        gstNo,
-        cinNo,
+        companyName: kyc?.companyName,
+        aadharNo: kyc?.aadharNo,
+        gstNo: kyc?.gstNo,
+        cinNo: kyc?.cinNo,
         documents: {
-          photoUrl: photoResult.secure_url,
-          lightbillUrl: lightbillResult.secure_url
-        }
-      }
+          photoUrl: kyc?.photoUrl,
+          lightbillUrl: kyc?.lightbillUrl,
+        },
+      },
     });
   } catch (error: any) {
     res.status(500).json({
