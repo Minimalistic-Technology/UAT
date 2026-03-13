@@ -173,7 +173,15 @@ export const submitKyc = async (
       });
     }
 
-    let existingKyc = await KYC.findOne({ user: req.user.id });
+    let existingKyc = await KYC.findOne({
+      $or: [
+        { user: req.user.id },
+        // Use a case-insensitive regex to catch "Acme Corp" vs "ACME Corp"
+        // { companyName: { $regex: new RegExp(`^${companyName}$`, "i") } },
+        // { gstNo },
+        // { cinNo },
+      ],
+    });
 
     if (existingKyc && existingKyc.status === "approved") {
       return res.status(400).json({
@@ -219,6 +227,7 @@ export const submitKyc = async (
     const kyc = await KYC.create(kycData);
 
     if (!kyc) {
+      // optionally delete the uploaded images
       return res.status(500).json({
         success: false,
         message: "Failed to submit KYC details. Please try again later.",

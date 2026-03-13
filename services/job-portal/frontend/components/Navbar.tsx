@@ -68,6 +68,11 @@ export default function Navbar() {
                     Sign Up
                   </Button>
                 </Link>
+                <Link href="/employer/register">
+                  <Button variant="primary" size="sm">
+                    Sign Up as Employer
+                  </Button>
+                </Link>
               </>
             )}
           </div>

@@ -7,6 +7,8 @@ import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { sendEmail } from "../utils/email.js";
 // import { sendOTP } from '../utils/sms.js';
 import CompanyMember from "../models/CompanyMember.model.js";
+import Company from "../models/Company.model.js";
+import mongoose from "mongoose";
 
 // Generate JWT Token
 const generateToken = (id: string): string => {
@@ -71,6 +73,18 @@ export const register = async (req: AuthRequest, res: Response) => {
     // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      const companyOwner = await Company.findOne({ owner: existingUser._id });
+
+      if (companyOwner) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "You're register as employer with us. you can't create a normal job seeker account with the same email. please use different email",
+          });
+      }
+
       return res.status(400).json({
         success: false,
         message: "User already exists with this email",
@@ -169,7 +183,7 @@ export const login = async (
       });
 
       const isEmployee = !!membership;
-      const companyId = membership?.company ?? null
+      const companyId = membership?.company ?? null;
       const companyRole = membership?.role ?? null;
 
       sendTokenResponse(
@@ -233,6 +247,70 @@ export const logout = async (
     success: true,
     message: "User logged out successfully",
   });
+};
+
+export const employerRegister = async (req: AuthRequest, res: Response) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { email, companyName, role, industry, ...userData } = req.body;
+
+    let user = await User.findOne({ email }).session(session);
+    const isNewUser = !user;
+
+    if (isNewUser) {
+      user = await User.create(
+        [{ ...userData, email, role: GlobalRole.USER }],
+        { session },
+      ).then((res) => res[0]);
+
+      if (!user) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to create the user",
+        });
+      }
+    }
+
+    const existingCompany = await Company.findOne({
+      owner: user!._id,
+      name: { $regex: new RegExp(`^${companyName}$`, "i") },
+    }).session(session);
+
+    if (existingCompany) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        message: "You are already registered with this company",
+      });
+    }
+
+    const [company] = await Company.create(
+      [{ name: companyName, industry, owner: user!._id }],
+      { session },
+    );
+
+    await CompanyMember.create(
+      [{ user: user!._id, company: company._id, role }],
+      { session },
+    );
+
+    await session.commitTransaction();
+
+    return sendTokenResponse(user, isNewUser ? 201 : 200, res);
+  } catch (error: any) {
+    await session.abortTransaction();
+    console.error("Registration Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Error during registration process",
+      error: error.message,
+    });
+  } finally {
+    session.endSession();
+  }
 };
 
 // @desc    Send OTP to phone
