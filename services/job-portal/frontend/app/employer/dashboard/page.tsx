@@ -18,6 +18,9 @@ import {
 } from "lucide-react";
 import { JobStatus, GlobalRole } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
+import { KycBanner } from "@/features/employer/components/kyc-banner";
+import { useState } from "react";
+import KycModel from "@/features/employer/components/kyc-model";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +63,7 @@ const ACCENT_STYLES: Record<NonNullable<StatCardProps["accent"]>, string> = {
 
 function StatCard({ icon, label, value, accent = "blue" }: StatCardProps) {
   return (
-    <Card className="p-5 flex items-center gap-4">
+    <Card className="p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
       <div className={`p-3 rounded-xl ${ACCENT_STYLES[accent]}`}>{icon}</div>
       <div>
         <p className="text-sm text-gray-500 font-medium">{label}</p>
@@ -230,7 +233,7 @@ function OwnerDashboardControls() {
       title: "View Applications",
       path: "/employer/applications",
       description: "View all applications received for your jobs.",
-    }
+    },
   ];
 
   return (
@@ -255,6 +258,7 @@ function OwnerDashboardControls() {
 }
 
 export default function EmployerDashboard() {
+  const [isKycOpen, setIsKycOpen] = useState(false);
   const queryClient = useQueryClient();
   const { user, data: session, status } = useAuth();
   console.log("user", user);
@@ -326,29 +330,48 @@ export default function EmployerDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Employer Dashboard
           </h1>
+
           <p className="text-sm text-gray-500 mt-1">
-            Manage your job postings and candidates
+            Manage job listings, applicants and company profile
           </p>
         </div>
-        <Link href="/employer/jobs/new">
-          <Button className="flex items-center gap-2 shrink-0">
-            <Plus className="h-4 w-4" />
-            Post New Job
-          </Button>
-        </Link>
+
+        <div className="flex items-center gap-3">
+          <Link href="/employer/applications">
+            <Button variant="outline" size="sm">
+              View Applications
+            </Button>
+          </Link>
+
+          <Link href="/employer/jobs/new">
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Post New Job
+            </Button>
+          </Link>
+        </div>
       </div>
 
+      <KycBanner
+        isVerified={false}
+        setIsKycOpen={() => setIsKycOpen(!isKycOpen)}
+      />
+
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </div>
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900">Overview</h2>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((stat) => (
+            <StatCard key={stat.label} {...stat} />
+          ))}
+        </div>
+      </section>
 
       {user?.companyRole === "owner" && (
         <section className="space-y-4">
@@ -362,9 +385,14 @@ export default function EmployerDashboard() {
       {/* Jobs Table */}
       <Card className="overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">
-            Your Job Postings
-          </h2>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Your Job Listings
+            </h2>
+            <p className="text-xs text-gray-500">
+              Manage status, edit jobs and track performance
+            </p>
+          </div>
           <Link href="/employer/jobs/new">
             <Button
               variant="outline"
@@ -415,6 +443,8 @@ export default function EmployerDashboard() {
           </table>
         </div>
       </Card>
+
+      <KycModel isOpen={isKycOpen} onClose={() => setIsKycOpen(false)} />
     </div>
   );
 }

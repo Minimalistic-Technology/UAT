@@ -1,9 +1,8 @@
 import { X, AlertCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { KYCFormValues, kycSchema } from "../schemas/kyc.schema";
+import { KYCFormValues, kycSchema } from "../schemas";
 import { useSubmitKyc } from "../hooks/use-kyc";
-import { toast } from "sonner";
 
 interface KycModelProps {
   isOpen: boolean;
@@ -17,7 +16,7 @@ const KycModel = ({ isOpen, onClose }: KycModelProps) => {
     register,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
   } = useForm<KYCFormValues>({
     resolver: zodResolver(kycSchema),
   });
@@ -27,7 +26,7 @@ const KycModel = ({ isOpen, onClose }: KycModelProps) => {
       onSuccess: () => {
         reset();
         onClose();
-      }
+      },
     });
   };
 
@@ -54,19 +53,12 @@ const KycModel = ({ isOpen, onClose }: KycModelProps) => {
         </div>
 
         {/* Content - Scrollable */}
-        <form id="kyc-form" onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto custom-scrollbar flex-1 flex flex-col">
+        <form
+          id="kyc-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="overflow-y-auto custom-scrollbar flex-1 flex flex-col"
+        >
           <div className="p-6">
-            {/* Warning Banner */}
-            <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3 text-amber-800 items-start">
-              <AlertCircle className="size-5 shrink-0 mt-0.5 text-amber-600" />
-              <div>
-                <p className="font-semibold text-amber-900">For Employers Only</p>
-                <p className="text-sm mt-1">
-                  This verification process is strictly for Employers to verify their business identity. If you are a Job Seeker, you can safely ignore this step.
-                </p>
-              </div>
-            </div>
-
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Company Name */}
@@ -80,7 +72,11 @@ const KycModel = ({ isOpen, onClose }: KycModelProps) => {
                     placeholder="Enter registered company name"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                   />
-                  {errors.companyName && <p className="text-xs text-red-500">{errors.companyName.message}</p>}
+                  {errors.companyName && (
+                    <p className="text-xs text-red-500">
+                      {errors.companyName.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Aadhar No */}
@@ -95,7 +91,11 @@ const KycModel = ({ isOpen, onClose }: KycModelProps) => {
                     maxLength={12}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                   />
-                  {errors.aadharNo && <p className="text-xs text-red-500">{errors.aadharNo.message}</p>}
+                  {errors.aadharNo && (
+                    <p className="text-xs text-red-500">
+                      {errors.aadharNo.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* GST Certificate */}
@@ -110,7 +110,11 @@ const KycModel = ({ isOpen, onClose }: KycModelProps) => {
                     maxLength={15}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                   />
-                  {errors.gstNo && <p className="text-xs text-red-500">{errors.gstNo.message}</p>}
+                  {errors.gstNo && (
+                    <p className="text-xs text-red-500">
+                      {errors.gstNo.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* CIN Number */}
@@ -125,13 +129,19 @@ const KycModel = ({ isOpen, onClose }: KycModelProps) => {
                     maxLength={21}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                   />
-                  {errors.cinNo && <p className="text-xs text-red-500">{errors.cinNo.message}</p>}
+                  {errors.cinNo && (
+                    <p className="text-xs text-red-500">
+                      {errors.cinNo.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="border-t border-gray-100 pt-6 mt-6 space-y-6">
-                <h3 className="text-lg font-semibold text-gray-900">Document Uploads</h3>
-                
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Document Uploads
+                </h3>
+
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* User Photo */}
                   <div className="space-y-2">
@@ -143,38 +153,61 @@ const KycModel = ({ isOpen, onClose }: KycModelProps) => {
                         <div className="flex text-sm text-gray-600 justify-center">
                           <label className="relative cursor-pointer rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
                             <span>Upload a file</span>
-                            <input {...register("photo")} type="file" className="sr-only" accept="image/*" />
+                            <input
+                              {...register("photo")}
+                              type="file"
+                              className="sr-only"
+                              accept="image/*"
+                            />
                           </label>
                         </div>
-                        <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG up to 5MB
+                        </p>
                       </div>
                     </div>
-                    {errors.photo && <p className="text-xs text-red-500">{errors.photo.message as string}</p>}
+                    {errors.photo && (
+                      <p className="text-xs text-red-500">
+                        {errors.photo.message as string}
+                      </p>
+                    )}
                   </div>
 
                   {/* Lightbill */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700 block">
-                      Upload Lightbill (Address Proof) <span className="text-red-500">*</span>
+                      Upload Lightbill (Address Proof){" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-primary-500 transition-colors cursor-pointer bg-gray-50">
                       <div className="space-y-1 text-center">
                         <div className="flex text-sm text-gray-600 justify-center">
                           <label className="relative cursor-pointer rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
                             <span>Upload a file</span>
-                            <input {...register("lightbill")} type="file" className="sr-only" accept=".pdf,image/*" />
+                            <input
+                              {...register("lightbill")}
+                              type="file"
+                              className="sr-only"
+                              accept=".pdf,image/*"
+                            />
                           </label>
                         </div>
-                        <p className="text-xs text-gray-500">PDF, PNG, JPG up to 5MB</p>
+                        <p className="text-xs text-gray-500">
+                          PDF, PNG, JPG up to 5MB
+                        </p>
                       </div>
                     </div>
-                    {errors.lightbill && <p className="text-xs text-red-500">{errors.lightbill.message as string}</p>}
+                    {errors.lightbill && (
+                      <p className="text-xs text-red-500">
+                        {errors.lightbill.message as string}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          
+
           {/* Footer */}
           <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-4 rounded-b-xl shrink-0 mt-auto">
             <button

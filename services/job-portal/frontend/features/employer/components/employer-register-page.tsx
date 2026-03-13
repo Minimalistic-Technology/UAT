@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
-import { employerRegisterSchema, EmployerRegisterInput } from "../employer.schema";
+import { employerRegisterSchema, EmployerRegisterInput } from "../schemas";
 import { useEmployerRegister } from "../hooks/use-employer-register";
 import { useRouter } from "next/navigation";
 
@@ -56,7 +56,6 @@ export default function EmployerRegisterPage() {
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="w-full max-w-lg">
-
         {/* Heading */}
         <div className="text-center mb-8">
           <h2 className="text-4xl font-bold text-gray-900">
@@ -68,9 +67,7 @@ export default function EmployerRegisterPage() {
         </div>
 
         <Card className="p-8 shadow-lg">
-
           <form onSubmit={handleSubmit(onSubmit) as any} className="space-y-6">
-
             {/* Personal Info */}
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3">

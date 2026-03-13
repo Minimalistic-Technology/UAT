@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { registerEmployer } from "../services/employer.service";
-import { EmployerRegisterInput } from "../employer.schema";
+import { registerEmployer } from "../services";
+import { EmployerRegisterInput } from "../schemas";
 import { toast } from "sonner";
 
 export const useEmployerRegister = () => {

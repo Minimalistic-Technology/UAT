@@ -1,3 +1,9 @@
+export enum CompanyRole {
+  OWNER = "owner",
+  ADMIN = "admin",
+  RECRUITER = "recruiter",
+}
+
 export interface FileUploadData {
   file: File;
   previewUrl?: string;
