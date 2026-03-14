@@ -11,7 +11,10 @@ const envSchema = z.object({
   REFRESH_TOKEN_EXPIRE: z.string().default('7d'),
   COOKIE_SECRET: z.string().optional(),
   CORS_ORIGIN: z.string().optional(),
-  PASSWORD_RESET_EXPIRE: z.string().default('1h')
+  PASSWORD_RESET_EXPIRE: z.string().default('1h'),
+  CLOUDINARY_CLOUD_NAME: z.string().min(1, 'CLOUDINARY_CLOUD_NAME is required'),
+  CLOUDINARY_API_KEY: z.string().min(1, 'CLOUDINARY_API_KEY is required'),
+  CLOUDINARY_API_SECRET: z.string().min(1, 'CLOUDINARY_API_SECRET is required'),
 });
 
 const parsed = envSchema.parse(process.env);
