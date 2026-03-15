@@ -21,7 +21,7 @@ export const listPosts = async (
 
   const [items, total] = await Promise.all([
     Post.find(query)
-      .populate("authorId", "name")
+      .populate("authorId", "firstName lastName")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),

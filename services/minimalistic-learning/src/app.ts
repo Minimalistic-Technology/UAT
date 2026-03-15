@@ -3,7 +3,6 @@ import { connectDatabase } from './config/db';
 // import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import routes from './routes';
 import { env } from './config/env';
 import { defaultLimiter } from './config/rateLimit';
 import errorHandler from './middleware/errorHandler';
