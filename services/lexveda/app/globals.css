@@ -143,3 +143,17 @@
     @apply font-serif;
   }
 }
+
+@layer components {
+  .section-padding {
+    @apply px-6 py-20 md:px-12 lg:px-24;
+  }
+
+  .gold-divider {
+    @apply w-16 h-0.5 bg-accent mx-auto;
+  }
+
+  .gold-divider-left {
+    @apply w-16 h-0.5 bg-accent;
+  }
+}
