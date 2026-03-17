@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    globalNotFound: true
-  }
+  // next configurations
 };
 
 export default nextConfig;
