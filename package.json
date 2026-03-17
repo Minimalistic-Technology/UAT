@@ -24,6 +24,7 @@
     "concurrently": "^8.2.0"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
     "http-status-codes": "^2.3.0"
   }
 }
