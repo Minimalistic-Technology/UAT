@@ -18,7 +18,7 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-sm border-b border-accent/20">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between h-16">
-        <a href="#" className="flex items-center gap-3 py-1">
+        <a href="/" className="flex items-center gap-3 py-1">
           <Image 
             src="/LOGO.png" 
             alt="LexVeda Logo" 
@@ -30,7 +30,7 @@ const Navbar = () => {
             <span className="font-serif text-xl font-bold text-primary-foreground tracking-wider">
               Lex<span className="text-accent">Veda</span>
             </span>
-            <div className="h-px w-full max-w-[40px] bg-linear-to-r from-transparent via-accent to-transparent my-1 hidden sm:block" />
+            <div className="h-px w-full max-w-10 bg-linear-to-r from-transparent via-accent to-transparent my-1 hidden sm:block" />
             <span className="text-[10px] font-sans text-accent/80 tracking-tight hidden sm:block text-center">
               Legal Services and Consultation
             </span>

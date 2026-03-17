@@ -14,10 +14,10 @@ export default function Home() {
       <HeroSection />
       <ServicesSection />
       <HowItWorksSection />
+      <WhyChooseSection />
+      <RequestForm />
       <PricingSection />
       <TrustSection />
-      <RequestForm />
-      <WhyChooseSection />
     </>
   );
 }

@@ -15,7 +15,7 @@ const Footer = () => {
                 <span className="font-serif text-2xl font-bold text-primary-foreground tracking-wider">
                   Lex<span className="text-accent">Veda</span>
                 </span>
-                <div className="h-px w-full max-w-[60px] bg-linear-to-r from-transparent via-accent to-transparent my-1.5" />
+                <div className="h-px w-full max-w-15 bg-linear-to-r from-transparent via-accent to-transparent my-1.5" />
                 <span className="text-xs font-sans text-accent/80 tracking-wide text-center">
                   Legal Services and Consultation
                 </span>
