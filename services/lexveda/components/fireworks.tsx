@@ -46,13 +46,16 @@ const Fireworks: React.FC<FireworksProps> = ({
     if (typeof window === 'undefined') return false;
 
     const startTimeStr = localStorage.getItem(FIREWORKS_START_TIME_KEY);
+    console.log("Start time str", startTimeStr);
     
-    if (!startTimeStr) {
-      // First time - set start time now
-      const now = Date.now();
-      localStorage.setItem(FIREWORKS_START_TIME_KEY, now.toString());
-      return true;
-    }
+    // if (!startTimeStr) {
+    //   // First time - set start time now
+    //   const now = Date.now();
+    //   localStorage.setItem(FIREWORKS_START_TIME_KEY, now.toString());
+    //   return true;
+    // }
+
+    if(!startTimeStr) return false;
 
     const startTime = parseInt(startTimeStr, 10);
     const elapsedMinutes = (Date.now() - startTime) / (1000 * 60);
