@@ -1,11 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Scale } from "lucide-react";
+import Fireworks from "./fireworks";
 
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center bg-primary overflow-hidden">
+      {/* Fireworks Background */}
+      <div className="absolute inset-0 z-0">
+        <Fireworks options={{ opacity: 0.6 }} />
+      </div>
+
       {/* Subtle pattern overlay */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 opacity-5 z-5">
         <div className="absolute inset-0" style={{
           backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, hsl(42 65% 52% / 0.1) 35px, hsl(42 65% 52% / 0.1) 36px)`
         }} />
