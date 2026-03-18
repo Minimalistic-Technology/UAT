@@ -26,7 +26,9 @@
 
     this.particles = [];
     this.rockets = [];
-    this.maxParticles = 400;
+    
+    // INCREASED: Allows for many more particles on screen at once
+    this.maxParticles = 2000; 
 
     this.screenWidth = this.getWidth();
     this.screenHeight = this.getHeight();
@@ -161,7 +163,8 @@
     Rocket.prototype.constructor = Rocket;
 
     Rocket.prototype.explode = function () {
-      var count = Math.random() * 10 + 80;
+      // INCREASED: More particles per explosion (Original was ~80-90)
+      var count = Math.random() * 50 + 150; 
 
       for (var i = 0; i < count; i++) {
         var particle = new Particle(this.pos);
@@ -264,7 +267,8 @@
     }
 
     function launchFrom(x) {
-      if (self.rockets.length < 10) {
+      // INCREASED: Allow up to 25 rockets at once (Original was 10)
+      if (self.rockets.length < 25) { 
         var rocket = new Rocket(x);
         rocket.explosionColor = Math.floor(Math.random() * 360 / 10) * 10;
         rocket.vel.y = Math.random() * -3 - 4;
@@ -277,10 +281,13 @@
     }
 
     function launch() {
-      launchFrom(self.screenWidth / 2);
+      // MODIFIED: Randomizes launch position across the screen width
+      var xPos = Math.random() * self.screenWidth;
+      launchFrom(xPos);
     }
 
-    self.launchTimer = setInterval(launch, 800);
+    // INCREASED: Launches a new rocket every 300ms (Original was 800ms)
+    self.launchTimer = setInterval(launch, 300);
     self.loopTimer = setInterval(loop, 1000 / 50);
   };
 
