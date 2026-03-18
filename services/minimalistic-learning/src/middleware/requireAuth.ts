@@ -10,7 +10,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 
     const token =
       tokenFromCookie ||
-      (bearer && bearer.startsWith('Bearer ') ? bearer.substring('Bearer '.length) : undefined);
+      (bearer && bearer.startsWith('Bearer ') ? bearer.split(" ")[1] : undefined);
 
     if (!token) {
       return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Authentication required' });

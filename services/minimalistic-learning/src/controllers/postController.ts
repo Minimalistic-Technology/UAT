@@ -1,8 +1,13 @@
-import { Request, Response } from 'express';
-import Post from '../models/Post';
-import Comment from '../models/Comment';
+import { Request, Response } from "express";
+import mongoose from "mongoose";
+import Post from "../models/Post";
+import Comment from "../models/Comment";
+import { uploadToCloudinary } from "../utils/cloudinary";
 
-export const listPosts = async (req: Request, res: Response): Promise<Response> => {
+export const listPosts = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
   const { tag, q } = req.query;
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 10, 10);
@@ -16,111 +21,154 @@ export const listPosts = async (req: Request, res: Response): Promise<Response> 
 
   const [items, total] = await Promise.all([
     Post.find(query)
-      .select('title slug tags createdAt authorId')
-      .populate('authorId', 'name')
+      .populate("authorId", "firstName lastName")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
-    Post.countDocuments(query)
+    Post.countDocuments(query),
   ]);
 
   return res.json({ items, total });
 };
 
-export const getPostBySlug = async (req: Request, res: Response): Promise<Response> => {
+export const getPostBySlug = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
   const post = await Post.findOne({
     slug: req.params.slug,
-    published: true
+    published: true,
   })
-    .populate('authorId', 'name')
-    .select('-__v');
+    .populate("authorId", "name")
+    .select("-__v");
 
-  if (!post) {
-    return res.sendStatus(404);
-  }
+  if (!post) return res.sendStatus(404);
 
   return res.json(post);
 };
 
-export const listComments = async (req: Request, res: Response): Promise<Response> => {
-  const post = await Post.findOne({
-    _id: req.params.id,
-    published: true
-  });
+export const listComments = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  const { id } = req.params;
 
-  if (!post) {
-    return res.sendStatus(404);
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid post ID" });
   }
 
-  const comments = await Comment.find({ postId: req.params.id })
-    .populate('authorId', 'name')
-    .select('content createdAt authorId')
+  const post = await Post.findById(id);
+
+  if (!post || !post.published) return res.sendStatus(404);
+
+  const comments = await Comment.find({ postId: id })
+    .populate("authorId", "name")
+    .select("content createdAt authorId")
     .sort({ createdAt: 1 });
 
   return res.json(comments);
 };
 
-export const createPost = async (req: Request, res: Response): Promise<Response> => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
+export const createPost = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
-  const { title, content, tags, published } = req.body;
+  const { title, content, tags, published, category } = req.body;
 
-  if (!title || !content) {
-    return res.status(400).json({ message: 'Title and content required' });
-  }
+  if (!title?.trim())
+    return res.status(400).json({ message: "Title is required" });
+  if (!content?.trim())
+    return res.status(400).json({ message: "Content is required" });
+  if (!category?.trim())
+    return res.status(400).json({ message: "Category is required" });
 
-  const slug = title
+  // Slug
+  const baseSlug = title
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  let slug = baseSlug;
+  if (await Post.findOne({ slug })) slug = `${baseSlug}-${Date.now()}`;
+
+  // Tags
+  const sanitizedTags: string[] = Array.isArray(tags)
+    ? [...new Set(tags.map((t: string) => t.trim()).filter(Boolean))]
+    : [];
+
+  // Cover image — upload if a file was attached
+  let coverImage = { url: "", alt: title.trim(), publicId: "" };
+  if (req.file) {
+    const uploaded = await uploadToCloudinary(
+      req.file.buffer,
+      req.file.mimetype,
+    );
+    coverImage = {
+      url: uploaded.url,
+      alt: title.trim(),
+      publicId: uploaded.publicId,
+    };
+  }
 
   const post = await Post.create({
-    title,
+    title: title.trim(),
     slug,
-    content,
-    tags,
+    content: content.trim(),
+    category: category.trim(),
+    coverImage,
+    tags: sanitizedTags,
     published: published ?? false,
-    authorId: req.user._id.toString()
+    authorId: req.user._id.toString(),
   });
 
   return res.status(201).json(post);
 };
 
-export const updatePost = async (req: Request, res: Response): Promise<Response> => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Unauthorized' });
+export const updatePost = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid post ID" });
   }
 
   const { title, content, tags, published } = req.body;
 
   const post = await Post.findOneAndUpdate(
-    { _id: req.params.id, authorId: req.user._id.toString() },
+    { _id: id, authorId: req.user._id.toString() },
     { title, content, tags, published },
-    { new: true }
+    { new: true },
   );
 
-  if (!post) {
-    return res.sendStatus(404);
-  }
+  if (!post) return res.sendStatus(404);
 
   return res.json(post);
 };
 
-export const deletePost = async (req: Request, res: Response): Promise<Response> => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Unauthorized' });
+export const deletePost = async (
+  req: Request,
+  res: Response,
+): Promise<Response> => {
+  if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid post ID" });
   }
 
   const post = await Post.findOneAndDelete({
-    _id: req.params.id,
-    authorId: req.user._id.toString()
+    _id: id,
+    authorId: req.user._id.toString(),
   });
 
-  if (!post) {
-    return res.sendStatus(404);
-  }
+  if (!post) return res.sendStatus(404);
 
   return res.sendStatus(204);
 };

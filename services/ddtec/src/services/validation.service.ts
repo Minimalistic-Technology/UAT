@@ -22,8 +22,9 @@ class ValidationService {
      * Validates if an email is real and not from a disposable domain
      */
     static isRealEmail(email: string): { isValid: boolean, msg?: string } {
+        const trimmedEmail = email.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
+        if (!emailRegex.test(trimmedEmail)) {
             return { isValid: false, msg: 'Invalid email format' };
         }
 
