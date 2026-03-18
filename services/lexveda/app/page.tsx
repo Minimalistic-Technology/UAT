@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { Footer } from "react-day-picker";
 
 export default function Home() {
-  const releaseDate = new Date("2026-03-17T23:59:00");
+  const releaseDate = new Date("2026-03-18T23:59:00");
   const [isReleased, setIsReleased] = useState(new Date() >= releaseDate);
 
   useEffect(() => {
