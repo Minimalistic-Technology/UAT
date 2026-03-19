@@ -7,7 +7,6 @@ import PricingSection from "./pricing-section";
 import TrustSection from "./trust-section";
 import RequestForm from "./request-form";
 import WhyChooseSection from "./why-choose-section";
-import ComingSoon from "./coming-soon";
 
 export {
   Footer,
@@ -19,5 +18,4 @@ export {
   TrustSection,
   RequestForm,
   WhyChooseSection,
-  ComingSoon
 };
