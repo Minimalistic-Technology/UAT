@@ -14,17 +14,17 @@ import {
 export default function Home() {
 
   return (
-    // <div className="min-h-screen bg-background">
-    //   <Navbar />
-    //   <HeroSection />
-    //   <ServicesSection />
-    //   <HowItWorksSection />
-    //   <WhyChooseSection />
-    //   <RequestForm />
-    //   <PricingSection />
-    //   <TrustSection />
-    //   <Footer />
-    // </div>
-    <ComingSoon />
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <HeroSection />
+      <ServicesSection />
+      <HowItWorksSection />
+      <WhyChooseSection />
+      <RequestForm />
+      <PricingSection />
+      <TrustSection />
+      <Footer />
+    </div>
+    // <ComingSoon />
   );
 }
