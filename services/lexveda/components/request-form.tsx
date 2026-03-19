@@ -8,8 +8,8 @@ import { toast } from "sonner";
 
 // Configuration for hidden backend details
 const BACKEND_CONFIG = {
-  whatsappNumber: "7588723642",
-  email: "lexveda.28@gmail.com"
+  whatsappNumber: "7045882828",
+  email: "info@lexvedalegalservices.in"
 };
 
 const SUCCESS_MESSAGE = "Your request has been successfully submitted. The LexVeda team will review your details and contact you shortly.";
