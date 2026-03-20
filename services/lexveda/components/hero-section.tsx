@@ -28,19 +28,15 @@ const HeroSection = () => {
           </div>
 
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-primary-foreground leading-tight mb-6">
-            Future of Legal Drafting and{" "}
-            <span className="text-accent"> Online Consultation</span>
+            Future of Legal Services and{" "}
+            <span className="text-accent"> Consultation</span>
           </h1>
 
           <div className="gold-divider-left mb-8" />
 
-          <p className="text-lg md:text-xl font-sans text-primary-foreground/75 leading-relaxed mb-10 max-w-2xl">
-            Professional Legal Notice drafting and reply services handled exclusively by practising advocates.
-          </p>
-
           <div className="flex flex-col sm:flex-row gap-4">
             <Button variant="gold" size="lg" className="text-base px-8 py-6" asChild>
-              <a href="#draft-form">Request Legal Drafting</a>
+              <a href="#draft-form">Raise Query</a>
             </Button>
             <Button variant="gold-outline" size="lg" className="text-base px-8 py-6" asChild>
               <a href="#consultation-form">Book Online Consultation</a>
