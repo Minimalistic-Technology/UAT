@@ -6,6 +6,7 @@ export const createCommentSchema = z.object({
     .string()
     .min(1, "Comment content is required")
     .max(1000, "Comment is too long"),
+  parentId: objectIdSchema.optional(),
 });
 
 export const updateCommentSchema = z.object({

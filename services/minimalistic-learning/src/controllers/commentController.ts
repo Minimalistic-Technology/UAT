@@ -22,21 +22,33 @@ export const createComment = asyncHandler(async (req: Request, res: Response) =>
   }
 
   const { postId } = postCommentsParamsSchema.parse(req.params);
-  const { content } = createCommentSchema.parse(req.body);
+  const { content, parentId } = createCommentSchema.parse(req.body);
 
   if(!mongoose.Types.ObjectId.isValid(postId)){
     throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid post ID");
   }
 
+  if(parentId && !mongoose.Types.ObjectId.isValid(parentId)){
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid parent comment ID");
+  }
+
   const post = await Post.findById(postId);
-  if (!post) {
+  if (!post) {  
     throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
+  }
+
+  if (parentId) {
+    const parentComment = await Comment.findById(parentId);
+    if (!parentComment) {
+      throw new ApiError(StatusCodes.NOT_FOUND, "Parent comment not found");
+    }
   }
 
   const comment = await Comment.create({
     postId,
     authorId: userId,
-    content
+    content,
+    parentId: parentId || null
   });
 
   return res.status(StatusCodes.CREATED).json(
@@ -58,7 +70,7 @@ export const getPostComments = asyncHandler(async (req: Request, res: Response) 
 
   const comments = await Comment.find({ postId: postId })
     .populate("authorId", "firstName lastName")
-    .select("content createdAt updatedAt authorId likes")
+    .select("content createdAt updatedAt authorId likes parentId")
     .sort({ createdAt: 1 });
 
   return res.status(StatusCodes.OK).json(
@@ -114,5 +126,35 @@ export const deleteComment = asyncHandler(async (req: Request, res: Response) =>
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, null, "Comment deleted successfully")
+  );
+});
+
+export const likeComment = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = commentParamsSchema.parse(req.params);
+
+  if(!mongoose.Types.ObjectId.isValid(id)){
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid comment ID");
+  }
+
+  const userId = req.user!._id.toString();
+
+  const comment = await Comment.findById(id);
+  if (!comment) throw new ApiError(StatusCodes.NOT_FOUND, "Comment not found");
+
+  const hasLiked = comment.likes.some(likeId => likeId.toString() === userId);
+
+  if (hasLiked) {
+    comment.likes = comment.likes.filter((likeId) => likeId.toString() !== userId);
+  } else {
+    comment.likes.push(new mongoose.Types.ObjectId(userId));
+  }
+
+  await comment.save();
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, { 
+      likesCount: comment.likes.length, 
+      hasLiked: !hasLiked 
+    }, "Comment like toggled")
   );
 });

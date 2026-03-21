@@ -5,6 +5,8 @@ const CommentSchema = new Schema(
     postId: { type: Types.ObjectId, ref: "Post", required: true, index: true },
     authorId: { type: Types.ObjectId, ref: "User", required: true },
     content: { type: String, required: true },
+    parentId: { type: Types.ObjectId, ref: "Comment", default: null },
+    likes: [{ type: Types.ObjectId, ref: "User" }],
   },
   { timestamps: true },
 );
