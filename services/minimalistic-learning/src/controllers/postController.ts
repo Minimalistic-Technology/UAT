@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Post from "../models/Post";
-import Comment from "../models/Comment";
 import { uploadToCloudinary } from "../utils/cloudinary";
 import { StatusCodes } from 'http-status-codes';
+import { asyncHandler } from '../utils/asyncHandler';
+import { ApiError } from '../utils/ApiError';
+import { ApiResponse } from '../utils/ApiResponse';
+import { postParamsSchema } from '../validators/postValidator';
 
 export const listPosts = async (
   req: Request,
@@ -212,3 +215,67 @@ export const deletePost = async (
 
   return res.sendStatus(204);
 };
+
+export const upvotePost = asyncHandler(async (req: Request, res: Response) => {
+  const { blogId } = postParamsSchema.parse(req.params);
+  const userId = req.user!._id;
+
+  if(!mongoose.Types.ObjectId.isValid(blogId)){
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid post ID");
+  }
+
+  const post = await Post.findById(blogId);
+  if (!post) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
+
+  const hasUpvoted = post.upvotes.includes(userId);
+  const hasDownvoted = post.downvotes.includes(userId);
+
+  if (hasUpvoted) {
+    post.upvotes = post.upvotes.filter((id) => id.toString() !== userId.toString());
+  } else {
+    post.upvotes.push(userId);
+    if (hasDownvoted) {
+      post.downvotes = post.downvotes.filter((id) => id.toString() !== userId.toString());
+    }
+  }
+
+  await post.save();
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, {
+    upvotes: post.upvotes.length,
+    downvotes: post.downvotes.length,
+    hasUpvoted: !hasUpvoted,
+    hasDownvoted: hasDownvoted && !hasUpvoted ? false : hasDownvoted
+  }, "Post upvoted toggled effectively"));
+});
+
+export const downvotePost = asyncHandler(async (req: Request, res: Response) => {
+  const { blogId } = postParamsSchema.parse(req.params);
+  const userId = req.user!._id;
+
+  if(!mongoose.Types.ObjectId.isValid(blogId)){
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid post ID");
+  }
+
+  const post = await Post.findById(blogId);
+  if (!post) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
+
+  const hasUpvoted = post.upvotes.includes(userId);
+  const hasDownvoted = post.downvotes.includes(userId);
+
+  if (hasDownvoted) {
+    post.downvotes = post.downvotes.filter((id) => id.toString() !== userId.toString());
+  } else {
+    post.downvotes.push(userId);
+    if (hasUpvoted) {
+      post.upvotes = post.upvotes.filter((id) => id.toString() !== userId.toString());
+    }
+  }
+
+  await post.save();
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, {
+    upvotes: post.upvotes.length,
+    downvotes: post.downvotes.length,
+    hasUpvoted: hasUpvoted && !hasDownvoted ? false : hasUpvoted,
+    hasDownvoted: !hasDownvoted
+  }, "Post downvote toggled effectively"));
+});

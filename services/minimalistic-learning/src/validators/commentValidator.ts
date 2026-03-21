@@ -1,10 +1,5 @@
 import { z } from "zod";
-import mongoose from "mongoose";
-
-const objectIdSchema = z
-  .string()
-  .min(1, "Invalid ObjectId")
-  .max(24, "Invalid ObjectId");
+import { objectIdSchema } from "./objectId";
 
 export const createCommentSchema = z.object({
   content: z
