@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Post from "../models/Post";
 import Comment from "../models/Comment";
 import { uploadToCloudinary } from "../utils/cloudinary";
+import { StatusCodes } from 'http-status-codes';
 
 export const listPosts = async (
   req: Request,
@@ -35,39 +36,78 @@ export const getPostBySlug = async (
   req: Request,
   res: Response,
 ): Promise<Response> => {
-  const post = await Post.findOne({
-    slug: req.params.slug,
-    published: true,
-  })
-    .populate("authorId", "name")
-    .select("-__v");
+  try {
+    const { slug } = req.params;
 
-  if (!post) return res.sendStatus(404);
+    if (!slug) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ 
+        message: "Slug parameter is required." 
+      });
+    }
 
-  return res.json(post);
+    const post = await Post.findOne({
+      slug: slug,
+      published: true,
+    })
+      .populate("authorId", "firstName lastName")
+      .select("-__v")
+      .lean(); 
+
+    if (!post) {
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        message: `Post with slug '${slug}' not found.` 
+      });
+    }
+
+    return res.status(StatusCodes.OK).json(post);
+
+  } catch (error) {
+    console.error(`Error fetching post by slug: ${req.params.slug}`, error);
+    
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      message: "An unexpected error occurred while retrieving the post." 
+    });
+  }
 };
 
-export const listComments = async (
+export const getPostById = async (
   req: Request,
   res: Response,
 ): Promise<Response> => {
-  const { id } = req.params;
+  try {
+    const { blogId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid post ID" });
+    if (!blogId) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ 
+        message: "Blog ID is required." 
+      });
+    }
+
+    const post = await Post.findById(blogId)
+      .populate("authorId", "firstName lastName")
+      .select("-__v")
+      .lean(); 
+
+      console.log("post: ",post)
+
+    if (!post) {
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        message: `Post with id '${blogId}' not found.` 
+      });
+    }
+
+    return res.status(StatusCodes.OK).json(post);
+
+  } catch (error) {
+    console.error(`Error fetching post by slug: ${req.params.slug}`, error);
+    
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      message: "An unexpected error occurred while retrieving the post." 
+    });
   }
-
-  const post = await Post.findById(id);
-
-  if (!post || !post.published) return res.sendStatus(404);
-
-  const comments = await Comment.find({ postId: id })
-    .populate("authorId", "name")
-    .select("content createdAt authorId")
-    .sort({ createdAt: 1 });
-
-  return res.json(comments);
 };
+
+
 
 export const createPost = async (
   req: Request,
@@ -132,17 +172,17 @@ export const updatePost = async (
 ): Promise<Response> => {
   if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
-  const { id } = req.params;
+  const { blogId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+  if (!mongoose.Types.ObjectId.isValid(blogId)) {
     return res.status(400).json({ message: "Invalid post ID" });
   }
 
-  const { title, content, tags, published } = req.body;
+  const { title, content, tags, published, category } = req.body;
 
   const post = await Post.findOneAndUpdate(
-    { _id: id, authorId: req.user._id.toString() },
-    { title, content, tags, published },
+    { _id: blogId, authorId: req.user._id.toString() },
+    { title, content, tags, published, category },
     { new: true },
   );
 
@@ -157,14 +197,14 @@ export const deletePost = async (
 ): Promise<Response> => {
   if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
-  const { id } = req.params;
+  const { blogId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+  if (!mongoose.Types.ObjectId.isValid(blogId)) {
     return res.status(400).json({ message: "Invalid post ID" });
   }
 
   const post = await Post.findOneAndDelete({
-    _id: id,
+    _id: blogId,
     authorId: req.user._id.toString(),
   });
 
