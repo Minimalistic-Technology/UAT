@@ -19,6 +19,7 @@ export const toPublicUser = (user: UserDocument) => ({
   lastName: user.lastName,
   contactNumber: user.contactNumber,
   email: user.email,
+  role: user.role,
   createdAt: user.createdAt
 });
 

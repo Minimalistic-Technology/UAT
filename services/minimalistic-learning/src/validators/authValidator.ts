@@ -9,6 +9,7 @@ export const signupSchema = z.object({
     .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number"),
   email: z.string().email(),
   password: z.string().min(8),
+  role: z.enum(['user', 'admin']).optional().default('user'),
 });
 
 export const loginSchema = z.object({
