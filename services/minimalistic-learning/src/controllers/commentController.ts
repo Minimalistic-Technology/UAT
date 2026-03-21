@@ -13,6 +13,7 @@ import {
   commentParamsSchema, 
   postCommentsParamsSchema 
 } from '../validators/commentValidator';
+import { verifyAccessToken } from '../utils/jwt';
 
 export const createComment = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!._id.toString();
@@ -68,13 +69,43 @@ export const getPostComments = asyncHandler(async (req: Request, res: Response) 
     throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
   }
 
+  const bearer = req.headers.authorization;
+  const tokenFromCookie = req.cookies?.access_token as string | undefined;
+  const token = tokenFromCookie || (bearer && bearer.startsWith('Bearer ') ? bearer.split(" ")[1] : undefined);
+
+  let currentUserId: string | null = null;
+  if (token) {
+    try {
+      const payload = verifyAccessToken(token) as { sub: string };
+      currentUserId = payload.sub;
+    } catch (e) {
+      // Ignored for public route
+    }
+  }
+
   const comments = await Comment.find({ postId: postId })
     .populate("authorId", "firstName lastName")
     .select("content createdAt updatedAt authorId likes parentId")
-    .sort({ createdAt: 1 });
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const commentsResponse = comments.map(comment => {
+    const likesCount = comment.likes?.length || 0;
+    const hasLiked = currentUserId ? comment.likes?.some((id: any) => id.toString() === currentUserId) : false;
+
+    const mappedComment: any = {
+      ...comment,
+      likesCount,
+      hasLiked,
+    };
+    
+    delete mappedComment.likes;
+
+    return mappedComment;
+  });
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, comments, "Comments fetched successfully")
+    new ApiResponse(StatusCodes.OK, commentsResponse, "Comments fetched successfully")
   );
 });
 
