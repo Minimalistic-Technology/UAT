@@ -48,7 +48,7 @@ const practiceAreas = [
 
 const ServicesSection = () => {
   return (
-    <section id="services" className="section-padding bg-background">
+    <section id="practice-areas" className="section-padding bg-background">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">

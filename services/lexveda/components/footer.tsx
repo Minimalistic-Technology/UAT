@@ -30,7 +30,7 @@ const Footer = () => {
               </div>
             </div>
             <p className="font-sans text-sm text-primary-foreground/60 leading-relaxed max-w-xs">
-              Professional legal notice drafting and reply services handled exclusively by practising advocates.
+              {/* Professional legal notice drafting and reply services handled exclusively by practising advocates. */}
             </p>
           </div>
 

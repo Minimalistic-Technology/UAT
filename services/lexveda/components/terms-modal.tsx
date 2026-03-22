@@ -62,7 +62,7 @@ export default function TermsModal() {
               </span>{" "}
               prohibit Advocates from advertising or soliciting work in any form
               or manner. By accessing the LexVeda website (
-              <span className="italic text-blue-700">www.lexveda.com</span>), the user
+              <span className="italic text-blue-700">www.lexveda.in</span>), the user
               acknowledges and agrees to the following:
             </p>
 

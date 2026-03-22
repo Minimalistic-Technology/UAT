@@ -1,9 +1,9 @@
 import { Gavel, ShieldCheck, Lock, MessageCircle, ClipboardCheck, Clock } from "lucide-react";
 
 const reasons = [
-  { icon: Lock, text: "Strict Client Confidentiality" },
-  { icon: MessageCircle, text: "Clear Communication" },
-  { icon: ShieldCheck, text: "Professional Legal Review" },
+  { icon: Lock, text: "Guided By Practicing Advocates" },
+  { icon: MessageCircle, text: "Hassel Free Process" },
+  { icon: ShieldCheck, text: "Direct Access Legal Professionals" },
 ];
 
 const WhyChooseSection = () => {
