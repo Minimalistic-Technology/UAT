@@ -20,13 +20,13 @@ export default function TermsModal() {
     if (typeof window === "undefined") return;
     const accepted = window.localStorage.getItem(STORAGE_KEY);
 
-    if (true) {
+    if (accepted !== "true") {
       setOpen(true);
     }
   }, []);
 
   const handleAccept = () => {
-    // window.localStorage.setItem(STORAGE_KEY, "true");
+    window.localStorage.setItem(STORAGE_KEY, "true");
     setOpen(false);
   };
 
@@ -44,9 +44,10 @@ export default function TermsModal() {
           </AlertDialogTitle>
         </AlertDialogHeader>
 
-        <AlertDialogDescription className="px-6 py-4 max-h-[60vh] overflow-y-auto text-sm md:text-base leading-relaxed">
-          <div className="mb-6 border-b pb-4">
-            <h2 className="text-lg font-serif font-bold uppercase tracking-tight text-slate-900">
+        <AlertDialogDescription asChild>
+          <div className="px-6 py-4 max-h-[60vh] overflow-y-auto text-sm md:text-base leading-relaxed">
+            <div className="mb-6 border-b pb-4">
+              <h2 className="text-lg font-serif font-bold uppercase tracking-tight text-slate-900">
               Disclaimer & User Acknowledgement
             </h2>
             <p className="mt-2 text-sm font-semibold text-slate-700 font-sans">
@@ -135,6 +136,7 @@ export default function TermsModal() {
                 actions taken based on website content.
               </p>
             </section>
+          </div>
           </div>
         </AlertDialogDescription>
 

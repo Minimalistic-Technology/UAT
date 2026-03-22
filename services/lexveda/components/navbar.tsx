@@ -3,9 +3,25 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
+
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+      setOpen(false);
+    }
+  };
 
   const links = [
     { label: "Practice Areas", href: "#practice-areas" },
@@ -38,7 +54,6 @@ const Navbar = () => {
           </div>
         </a>
 
-        {/* Desktop */}
         <div className="hidden lg:flex items-center gap-6 xl:gap-8">
           {links.map((l) =>
           <a
@@ -49,9 +64,21 @@ const Navbar = () => {
               {l.label}
             </a>
           )}
-          <Button variant="gold" size="sm" asChild>
-            <a href="#request-form">Submit Request</a>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="gold" size="sm">
+                Submit Request
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem asChild>
+                <a href="#consultation-form" onClick={(e) => handleScroll(e, 'consultation-form')} className="cursor-pointer font-sans w-full">Online Legal Consultation</a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href="#draft-form" onClick={(e) => handleScroll(e, 'draft-form')} className="cursor-pointer font-sans w-full">Legal Services Request</a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Mobile toggle */}
@@ -73,9 +100,25 @@ const Navbar = () => {
               {l.label}
             </a>
         )}
-          <Button variant="gold" size="sm" className="mt-3 sm:mt-4 w-full" asChild>
-            <a href="#request-form">Submit Request</a>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="gold" size="sm" className="mt-3 sm:mt-4 w-full">
+                Submit Request
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-[90vw] max-w-[300px]">
+              <DropdownMenuItem asChild>
+                <a href="#consultation-form" onClick={(e) => handleScroll(e, 'consultation-form')} className="cursor-pointer font-sans w-full block py-2">
+                  Online Legal Consultation
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href="#draft-form" onClick={(e) => handleScroll(e, 'draft-form')} className="cursor-pointer font-sans w-full block py-2">
+                  Legal Services Request
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       }
     </nav>);
