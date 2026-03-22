@@ -17,9 +17,7 @@ const HeroSection = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 w-full pt-24 pb-16">
         <div className="max-w-3xl">
           {/* Trust badge */}
-          <div className="inline-flex items-center gap-2 border border-accent/30 rounded-sm px-4 py-2 mb-8">
-            <Scale className="w-4 h-4 text-accent" />
-          </div>
+         
 
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-primary-foreground leading-tight mb-6">
             Future of Legal Services and{" "}
