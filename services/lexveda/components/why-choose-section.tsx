@@ -1,6 +1,11 @@
 import { Gavel, ShieldCheck, Lock, MessageCircle, ClipboardCheck, Clock } from "lucide-react";
 
 const reasons = [
+
+  { icon: Gavel, text: "Strict Client Confidentiality" },
+  { icon: ClipboardCheck, text: "Clear Communication" },
+  { icon: Clock, text: "Professional Legal Review" },
+
   { icon: Lock, text: "Guided By Practicing Advocates" },
   { icon: MessageCircle, text: "Hassel Free Process" },
   { icon: ShieldCheck, text: "Direct Access Legal Professionals" },

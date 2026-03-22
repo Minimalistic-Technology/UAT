@@ -20,7 +20,7 @@ const HeroSection = () => {
           <div className="inline-flex items-center gap-2 border border-accent/30 rounded-sm px-4 py-2 mb-8">
             <Scale className="w-4 h-4 text-accent" />
             <span className="text-xs font-sans font-semibold text-accent tracking-widest uppercase">
-              PREPARED BY PRACTISING ADVOCATES – NOT AI
+              PREPARED BY PRACTISING ADVOCATES
             </span>
           </div>
 

@@ -42,8 +42,8 @@ const Footer = () => {
             <ul className="space-y-2 font-sans text-sm text-primary-foreground/60">
               <li><a href="#" className="hover:text-accent transition-colors">About LexVeda</a></li>
               <li><a href="#" className="hover:text-accent transition-colors">Legal Disclaimer</a></li>
-              <li><a href="#" className="hover:text-accent transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-accent transition-colors">Terms & Conditions</a></li>
+              <li><a href="/privacy-policy" className="hover:text-accent transition-colors">Privacy Policy</a></li>
+              <li><a href="/terms-and-condition" className="hover:text-accent transition-colors">Terms & Conditions</a></li>
             </ul>
           </div>
 
@@ -72,7 +72,7 @@ const Footer = () => {
 
         <div className="mt-10 pt-6 border-t border-accent/10 text-center">
           <p className="font-sans text-xs text-primary-foreground/40">
-            © {new Date().getFullYear()} LexVeda. All rights reserved. Prepared by Practising Advocates – Not AI.
+            © {new Date().getFullYear()} LexVeda. All rights reserved. Prepared by Practising Advocates.
           </p>
         </div>
       </div>

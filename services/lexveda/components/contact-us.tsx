@@ -6,14 +6,14 @@ const ContactUs = () => {
       id: 1,
       title: "General Inquiries",
       description: "For general questions, service information, and business inquiries",
-      email: "info@lexveda.com",
+      email: "info@lexvedalegalservices.com",
       icon: Mail,
     },
     {
       id: 2,
       title: "Consultation Requests",
       description: "For legal consultation requests and case-specific inquiries",
-      email: "consult@lexveda.com",
+      email: "lexvega.legalservices@gmail.com",
       icon: Phone,
     },
   ];
