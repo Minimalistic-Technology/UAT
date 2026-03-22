@@ -1,12 +1,14 @@
 import { Gavel, ShieldCheck, Lock, MessageCircle, ClipboardCheck, Clock } from "lucide-react";
 
 const reasons = [
-  { icon: Gavel, text: "Drafted by Practising Advocates" },
-  { icon: ClipboardCheck, text: "Court Ready Professional Drafting" },
-  { icon: Clock, text: "Get Your Draft Within 24–48 Hours" },
-  { icon: Lock, text: "Strict Client Confidentiality" },
-  { icon: MessageCircle, text: "Clear Communication" },
-  { icon: ShieldCheck, text: "Professional Legal Review" },
+
+  { icon: Gavel, text: "Strict Client Confidentiality" },
+  { icon: ClipboardCheck, text: "Clear Communication" },
+  { icon: Clock, text: "Professional Legal Review" },
+
+  { icon: Lock, text: "Guided By Practicing Advocates" },
+  { icon: MessageCircle, text: "Hassel Free Process" },
+  { icon: ShieldCheck, text: "Direct Access Legal Professionals" },
 ];
 
 const WhyChooseSection = () => {

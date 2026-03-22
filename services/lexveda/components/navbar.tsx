@@ -3,78 +3,122 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
 
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+      setOpen(false);
+    }
+  };
+
   const links = [
-    { label: "Services", href: "#services" },
+    { label: "Practice Areas", href: "#practice-areas" },
     { label: "Consultation", href: "#consultation-form" },
-    { label: "Drafting", href: "#draft-form" },
-    { label: "Why LexVeda", href: "#why-lexveda" }
+    // { label: "Services", href: "#services" },
+    { label: "Why LexVeda", href: "#why-lexveda" },
+    { label: "Contact Us", href: "#contact-us" }
   ];
 
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-sm border-b border-accent/20">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between h-16">
-        <a href="/" className="flex items-center gap-3 py-1">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between h-14 sm:h-16 lg:h-16">
+        <a href="/" className="flex items-center gap-2 sm:gap-3 py-1 flex-shrink-0">
           <Image 
             src="/LOGO.png" 
             alt="LexVeda Logo" 
-            className="h-10 w-auto object-contain"
+            className="h-8 sm:h-10 w-auto object-contain"
             height={100}
             width={150}
           />
-          <div className="flex flex-col items-center leading-none">
-            <span className="font-serif text-xl font-bold text-primary-foreground tracking-wider">
+          <div className="flex flex-col items-center leading-none hidden sm:flex">
+            <span className="font-serif text-lg sm:text-xl font-bold text-primary-foreground tracking-wider">
               Lex<span className="text-accent">Veda</span>
             </span>
-            <div className="h-px w-full max-w-10 bg-linear-to-r from-transparent via-accent to-transparent my-1 hidden sm:block" />
-            <span className="text-[10px] font-sans text-accent/80 tracking-tight hidden sm:block text-center">
+            <div className="h-px w-full max-w-10 bg-linear-to-r from-transparent via-accent to-transparent my-1 hidden md:block" />
+            <span className="text-[9px] sm:text-[10px] font-sans text-accent/80 tracking-tight hidden md:block text-center">
               Legal Services and Consultation
             </span>
           </div>
         </a>
 
-        {/* Desktop */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden lg:flex items-center gap-6 xl:gap-8">
           {links.map((l) =>
           <a
             key={l.href}
             href={l.href}
-            className="text-sm font-sans font-medium text-primary-foreground/80 hover:text-accent transition-colors tracking-wide">
+            className="text-xs sm:text-sm font-sans font-medium text-primary-foreground/80 hover:text-accent transition-colors tracking-wide whitespace-nowrap">
             
               {l.label}
             </a>
           )}
-          <Button variant="gold" size="sm" asChild>
-            <a href="#request-form">Submit Request</a>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="gold" size="sm">
+                Submit Request
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem asChild>
+                <a href="#consultation-form" onClick={(e) => handleScroll(e, 'consultation-form')} className="cursor-pointer font-sans w-full">Online Legal Consultation</a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href="#draft-form" onClick={(e) => handleScroll(e, 'draft-form')} className="cursor-pointer font-sans w-full">Legal Services Request</a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Mobile toggle */}
-        <button className="md:hidden text-primary-foreground" onClick={() => setOpen(!open)}>
+        <button className="lg:hidden text-primary-foreground p-2" onClick={() => setOpen(!open)}>
           {open ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {/* Mobile menu */}
       {open &&
-      <div className="md:hidden bg-primary border-t border-accent/20 px-6 pb-4">
+      <div className="lg:hidden bg-primary border-t border-accent/20 px-4 sm:px-6 pb-4 sm:pb-6">
           {links.map((l) =>
         <a
           key={l.href}
           href={l.href}
           onClick={() => setOpen(false)}
-          className="block py-3 text-sm font-sans text-primary-foreground/80 hover:text-accent transition-colors">
+          className="block py-2.5 sm:py-3 text-sm font-sans text-primary-foreground/80 hover:text-accent transition-colors">
           
               {l.label}
             </a>
         )}
-          <Button variant="gold" size="sm" className="mt-2 w-full" asChild>
-            <a href="#request-form">Submit Request</a>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="gold" size="sm" className="mt-3 sm:mt-4 w-full">
+                Submit Request
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-[90vw] max-w-[300px]">
+              <DropdownMenuItem asChild>
+                <a href="#consultation-form" onClick={(e) => handleScroll(e, 'consultation-form')} className="cursor-pointer font-sans w-full block py-2">
+                  Online Legal Consultation
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href="#draft-form" onClick={(e) => handleScroll(e, 'draft-form')} className="cursor-pointer font-sans w-full block py-2">
+                  Legal Services Request
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       }
     </nav>);

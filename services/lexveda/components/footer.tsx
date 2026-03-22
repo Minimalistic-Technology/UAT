@@ -1,8 +1,16 @@
+import { Linkedin, Facebook, Instagram } from "lucide-react";
+
 const Footer = () => {
+  const socialLinks = [
+    { name: "LinkedIn", icon: Linkedin, href: "#" },
+    { name: "Facebook", icon: Facebook, href: "#" },
+    { name: "Instagram", icon: Instagram, href: "#" },
+  ];
+
   return (
-    <footer className="bg-navy-dark border-t border-accent/20 px-6 py-12 lg:px-12">
+    <footer className="bg-navy-dark border-t border-accent/20 px-4 sm:px-6 py-12 lg:px-12">
       <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
           {/* Brand */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
@@ -22,7 +30,7 @@ const Footer = () => {
               </div>
             </div>
             <p className="font-sans text-sm text-primary-foreground/60 leading-relaxed max-w-xs">
-              Professional legal notice drafting and reply services handled exclusively by practising advocates.
+              {/* Professional legal notice drafting and reply services handled exclusively by practising advocates. */}
             </p>
           </div>
 
@@ -34,15 +42,37 @@ const Footer = () => {
             <ul className="space-y-2 font-sans text-sm text-primary-foreground/60">
               <li><a href="#" className="hover:text-accent transition-colors">About LexVeda</a></li>
               <li><a href="#" className="hover:text-accent transition-colors">Legal Disclaimer</a></li>
-              <li><a href="#" className="hover:text-accent transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-accent transition-colors">Terms & Conditions</a></li>
+              <li><a href="/privacy-policy" className="hover:text-accent transition-colors">Privacy Policy</a></li>
+              <li><a href="/terms-and-condition" className="hover:text-accent transition-colors">Terms & Conditions</a></li>
             </ul>
+          </div>
+
+          {/* Follow Us */}
+          <div>
+            <h4 className="font-sans font-semibold text-primary-foreground text-sm tracking-wider uppercase mb-4">
+              Follow Us
+            </h4>
+            <div className="flex flex-col gap-3">
+              {socialLinks.map((social) => {
+                const Icon = social.icon;
+                return (
+                  <a
+                    key={social.name}
+                    href={social.href}
+                    className="flex items-center gap-3 text-primary-foreground/60 hover:text-accent transition-colors group"
+                  >
+                    <Icon size={20} />
+                    <span className="font-sans text-sm">{social.name}</span>
+                  </a>
+                );
+              })}
+            </div>
           </div>
         </div>
 
         <div className="mt-10 pt-6 border-t border-accent/10 text-center">
           <p className="font-sans text-xs text-primary-foreground/40">
-            © {new Date().getFullYear()} LexVeda. All rights reserved. Prepared by Practising Advocates – Not AI.
+            © {new Date().getFullYear()} LexVeda. All rights reserved. Prepared by Practising Advocates.
           </p>
         </div>
       </div>

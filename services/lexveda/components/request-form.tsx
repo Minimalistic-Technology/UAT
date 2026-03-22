@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 // Configuration for hidden backend details
 const BACKEND_CONFIG = {
-  whatsappNumber: "7045882828",
+  whatsappNumber: "+917045882828",
   email: "info@lexvedalegalservices.in"
 };
 
@@ -126,7 +126,6 @@ export const DraftRequestForm = () => {
     fullName: "",
     email: "",
     mobile: "",
-    draftType: "notice-draft",
     caseDetails: "",
   });
 
@@ -152,20 +151,17 @@ export const DraftRequestForm = () => {
     console.log(`Drafting request email sent to: ${BACKEND_CONFIG.email}`);
 
     toast.success(SUCCESS_MESSAGE);
-    setFormData({ fullName: "", email: "", mobile: "", draftType: "notice-draft", caseDetails: "" });
+    setFormData({ fullName: "", email: "", mobile: "", caseDetails: "" });
   };
 
   return (
     <section id="draft-form" className="section-padding bg-background">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4">
-            Request Legal Drafting
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4 leading-relaxed">
+            Submit Your Requests For Legal Services
           </h2>
           <div className="gold-divider mb-6" />
-          <p className="text-muted-foreground font-sans">
-            Submit your drafting requirements to our legal team.
-          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card rounded-sm border border-border p-8 space-y-6 shadow-sm">
@@ -202,29 +198,17 @@ export const DraftRequestForm = () => {
           </div>
 
           <div>
-            <Label htmlFor="draftType" className="font-sans text-card-foreground">Type of Draft Required *</Label>
-            <select
-              id="draftType"
-              value={formData.draftType}
-              onChange={(e) => setFormData({ ...formData, draftType: e.target.value })}
-              className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm font-sans text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-              <option value="notice-draft">Legal Notice</option>
-              <option value="notice-reply">Reply to Legal Notice</option>
-            </select>
-          </div>
-
-          <div>
             <Label htmlFor="draft-caseDetails" className="font-sans text-card-foreground">Case Details / Description *</Label>
             <Textarea
               id="draft-caseDetails"
               value={formData.caseDetails}
               onChange={(e) => setFormData({ ...formData, caseDetails: e.target.value })}
               className="mt-1 font-sans min-h-[120px]"
-              placeholder="Describe your case details and drafting requirements..." />
+              placeholder="Describe your case details..." />
           </div>
 
           <Button variant="gold" size="lg" type="submit" className="w-full text-base">
-            Submit Drafting Request
+            Submit
           </Button>
         </form>
       </div>
