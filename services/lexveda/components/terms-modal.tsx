@@ -20,13 +20,13 @@ export default function TermsModal() {
     if (typeof window === "undefined") return;
     const accepted = window.localStorage.getItem(STORAGE_KEY);
 
-    if (accepted !== "true") {
+    if (true) {
       setOpen(true);
     }
   }, []);
 
   const handleAccept = () => {
-    window.localStorage.setItem(STORAGE_KEY, "true");
+    // window.localStorage.setItem(STORAGE_KEY, "true");
     setOpen(false);
   };
 
@@ -37,7 +37,7 @@ export default function TermsModal() {
 
   return (
     <AlertDialog open={open} onOpenChange={(nextOpen) => setOpen(nextOpen)}>
-      <AlertDialogContent className="w-[92vw] max-w-lg md:max-w-2xl lg:max-w-3xl rounded-lg p-0 overflow-hidden">
+      <AlertDialogContent className="font-serif w-[92vw] max-w-lg md:max-w-2xl lg:max-w-3xl rounded-lg p-0 overflow-hidden">
         <AlertDialogHeader className="px-6 pt-6 pb-3 border-b">
           <AlertDialogTitle className="text-lg md:text-xl font-semibold">
             Terms & Agreement
@@ -61,7 +61,7 @@ export default function TermsModal() {
                 Bar Council of India rules
               </span>{" "}
               prohibit Advocates from advertising or soliciting work in any form
-              or manner. By accessing the LexVeda Legal website (
+              or manner. By accessing the LexVeda website (
               <span className="italic text-blue-700">www.lexveda.com</span>), the user
               acknowledges and agrees to the following:
             </p>
@@ -116,7 +116,7 @@ export default function TermsModal() {
             <div className="rounded-sm border-l-4 border-amber-500 bg-amber-50 p-3">
               <p className="text-sm font-bold text-amber-900">FRAUD ALERT:</p>
               <p className="text-sm text-amber-800">
-                DSK Legal <span className="underline">does not</span> request
+                Lex Veda <span className="underline">does not</span> request
                 payments for recruitment. Any such solicitation is fraudulent
                 and should be ignored.
               </p>
@@ -127,12 +127,11 @@ export default function TermsModal() {
                 <span className="font-bold uppercase">
                   Intellectual Property:
                 </span>{" "}
-                All content is the exclusive property of DSK Legal. Unauthorized
+                All content is the exclusive property of Lex Veda. Unauthorized
                 use or distribution is strictly prohibited.
               </p>
               <p className="mt-2">
-                <span className="font-bold uppercase">Liability:</span> DSK
-                Legal takes no responsibility for consequences arising from
+                <span className="font-bold uppercase">Liability:</span> Lex Veda takes no responsibility for consequences arising from
                 actions taken based on website content.
               </p>
             </section>
