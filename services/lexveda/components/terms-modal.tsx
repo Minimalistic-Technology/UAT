@@ -61,7 +61,7 @@ export default function TermsModal() {
                 Bar Council of India rules
               </span>{" "}
               prohibit Advocates from advertising or soliciting work in any form
-              or manner. By accessing the DSK Legal website (
+              or manner. By accessing the LexVeda Legal website (
               <span className="italic text-blue-700">www.lexveda.com</span>), the user
               acknowledges and agrees to the following:
             </p>

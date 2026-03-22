@@ -6,6 +6,7 @@ import {
   Navbar,
   Footer,
   ContactUs,
+  CommitmentsSection,
 } from "@/components/index";
 import TermsModal from "@/components/terms-modal";
 
@@ -16,6 +17,7 @@ export default function Home() {
       <Navbar />
       <HeroSection />
       <ServicesSection />
+      <CommitmentsSection />
       <ContactUs />
       <WhyChooseSection />
       <RequestForm />
