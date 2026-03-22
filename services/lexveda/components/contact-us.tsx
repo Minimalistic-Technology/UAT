@@ -13,7 +13,7 @@ const ContactUs = () => {
       id: 2,
       title: "Consultation Requests",
       description: "For legal consultation requests and case-specific inquiries",
-      email: "lexvega.legalservices@gmail.com",
+      email: "lexveda.legalservices@gmail.com",
       icon: Phone,
     },
   ];

@@ -19,9 +19,6 @@ const HeroSection = () => {
           {/* Trust badge */}
           <div className="inline-flex items-center gap-2 border border-accent/30 rounded-sm px-4 py-2 mb-8">
             <Scale className="w-4 h-4 text-accent" />
-            <span className="text-xs font-sans font-semibold text-accent tracking-widest uppercase">
-              PREPARED BY PRACTISING ADVOCATES
-            </span>
           </div>
 
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-primary-foreground leading-tight mb-6">

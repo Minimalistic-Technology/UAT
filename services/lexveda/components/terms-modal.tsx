@@ -116,7 +116,7 @@ export default function TermsModal() {
             <div className="rounded-sm border-l-4 border-amber-500 bg-amber-50 p-3">
               <p className="text-sm font-bold text-amber-900">FRAUD ALERT:</p>
               <p className="text-sm text-amber-800">
-                Lex Veda <span className="underline">does not</span> request
+                LexVeda <span className="underline">does not</span> request
                 payments for recruitment. Any such solicitation is fraudulent
                 and should be ignored.
               </p>
@@ -127,11 +127,11 @@ export default function TermsModal() {
                 <span className="font-bold uppercase">
                   Intellectual Property:
                 </span>{" "}
-                All content is the exclusive property of Lex Veda. Unauthorized
+                All content is the exclusive property of LexVeda. Unauthorized
                 use or distribution is strictly prohibited.
               </p>
               <p className="mt-2">
-                <span className="font-bold uppercase">Liability:</span> Lex Veda takes no responsibility for consequences arising from
+                <span className="font-bold uppercase">Liability:</span> LexVeda takes no responsibility for consequences arising from
                 actions taken based on website content.
               </p>
             </section>

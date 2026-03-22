@@ -10,7 +10,7 @@ const Navbar = () => {
   const links = [
     { label: "Practice Areas", href: "#practice-areas" },
     { label: "Consultation", href: "#consultation-form" },
-    { label: "Services", href: "#services" },
+    // { label: "Services", href: "#services" },
     { label: "Why LexVeda", href: "#why-lexveda" },
     { label: "Contact Us", href: "#contact-us" }
   ];
