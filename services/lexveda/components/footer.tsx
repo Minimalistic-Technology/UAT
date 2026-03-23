@@ -1,3 +1,5 @@
+"use client";
+
 import { Linkedin, Facebook, Instagram } from "lucide-react";
 
 const Footer = () => {
@@ -41,7 +43,7 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2 font-sans text-sm text-primary-foreground/60">
               <li><a href="#" className="hover:text-accent transition-colors">About LexVeda</a></li>
-              <li><a href="#" className="hover:text-accent transition-colors">Legal Disclaimer</a></li>
+              <li><button onClick={(e) => { e.preventDefault(); window.dispatchEvent(new Event("open-terms-modal")); }} className="hover:text-accent transition-colors cursor-pointer">Legal Disclaimer</button></li>
               <li><a href="/privacy-policy" className="hover:text-accent transition-colors">Privacy Policy</a></li>
               <li><a href="/terms-and-condition" className="hover:text-accent transition-colors">Terms & Conditions</a></li>
             </ul>

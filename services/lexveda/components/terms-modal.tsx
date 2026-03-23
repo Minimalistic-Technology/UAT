@@ -18,11 +18,18 @@ export default function TermsModal() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const accepted = window.localStorage.getItem(STORAGE_KEY);
+    // const accepted = window.localStorage.getItem(STORAGE_KEY);
 
-    if (accepted !== "true") {
+    // if (accepted !== "true") {
       setOpen(true);
-    }
+    // }
+
+    const handleOpenModal = () => setOpen(true);
+    window.addEventListener("open-terms-modal", handleOpenModal);
+
+    return () => {
+      window.removeEventListener("open-terms-modal", handleOpenModal);
+    };
   }, []);
 
   const handleAccept = () => {
