@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api";
 import { IPaginatedKycApplications, IKycApplication } from "./super-admin.types";
+import { PlanFormValues } from "./super-admin.schema";
 
 export const superAdminServices = {
   getKycApplications: async (
@@ -31,6 +32,11 @@ export const superAdminServices = {
       `/admin/kyc-applications/${applicationId}/status`, 
       { status }
     );
+    return res;
+  },
+
+  createPlan: async (payload: PlanFormValues): Promise<{ success: boolean; data: any }> => {
+    const res = await apiClient.post<{ success: boolean; data: any }>("/plans", payload);
     return res;
   },
 };
