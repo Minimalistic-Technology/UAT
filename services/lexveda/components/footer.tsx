@@ -4,9 +4,9 @@ import { Linkedin, Facebook, Instagram } from "lucide-react";
 
 const Footer = () => {
   const socialLinks = [
-    { name: "LinkedIn", icon: Linkedin, href: "#" },
+    { name: "LinkedIn", icon: Linkedin, href: "https://www.linkedin.com/company/lexvedalegalservices/" },
     { name: "Facebook", icon: Facebook, href: "#" },
-    { name: "Instagram", icon: Instagram, href: "#" },
+    { name: "Instagram", icon: Instagram, href: "https://www.instagram.com/lexveda_?igsh=MTB6dDFpcWxqeHJxMA%3D%3D&utm_source=qr" },
   ];
 
   return (
