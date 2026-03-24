@@ -2,13 +2,21 @@
 
 import { Linkedin, Facebook, Instagram } from "lucide-react";
 
-const Footer = () => {
-  const socialLinks = [
-    { name: "LinkedIn", icon: Linkedin, href: "https://www.linkedin.com/company/lexvedalegalservices/" },
-    { name: "Facebook", icon: Facebook, href: "#" },
-    { name: "Instagram", icon: Instagram, href: "https://www.instagram.com/lexveda_?igsh=MTB6dDFpcWxqeHJxMA%3D%3D&utm_source=qr" },
-  ];
+const socialLinks = [
+  {
+    name: "LinkedIn",
+    icon: Linkedin,
+    href: "https://www.linkedin.com/company/lexvedalegalservices/",
+  },
+  { name: "Facebook", icon: Facebook, href: "#" },
+  {
+    name: "Instagram",
+    icon: Instagram,
+    href: "https://www.instagram.com/lexveda_?igsh=MTB6dDFpcWxqeHJxMA%3D%3D&utm_source=qr",
+  },
+];
 
+const Footer = () => {
   return (
     <footer className="bg-navy-dark border-t border-accent/20 px-4 sm:px-6 py-12 lg:px-12">
       <div className="max-w-7xl mx-auto">
@@ -16,9 +24,9 @@ const Footer = () => {
           {/* Brand */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <img 
-                src="/LOGO.png" 
-                alt="LexVeda Logo" 
+              <img
+                src="/LOGO.png"
+                alt="LexVeda Logo"
                 className="h-12 w-auto object-contain"
               />
               <div className="flex flex-col items-center leading-none">
@@ -42,10 +50,38 @@ const Footer = () => {
               Quick Links
             </h4>
             <ul className="space-y-2 font-sans text-sm text-primary-foreground/60">
-              <li><a href="#" className="hover:text-accent transition-colors">About LexVeda</a></li>
-              <li><button onClick={(e) => { e.preventDefault(); window.dispatchEvent(new Event("open-terms-modal")); }} className="hover:text-accent transition-colors cursor-pointer">Legal Disclaimer</button></li>
-              <li><a href="/privacy-policy" className="hover:text-accent transition-colors">Privacy Policy</a></li>
-              <li><a href="/terms-and-condition" className="hover:text-accent transition-colors">Terms & Conditions</a></li>
+              <li>
+                <a href="#" className="hover:text-accent transition-colors">
+                  About LexVeda
+                </a>
+              </li>
+              <li>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.dispatchEvent(new Event("open-terms-modal"));
+                  }}
+                  className="hover:text-accent transition-colors cursor-pointer"
+                >
+                  Legal Disclaimer
+                </button>
+              </li>
+              <li>
+                <a
+                  href="/privacy-policy"
+                  className="hover:text-accent transition-colors"
+                >
+                  Privacy Policy
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/terms-and-condition"
+                  className="hover:text-accent transition-colors"
+                >
+                  Terms & Conditions
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -74,7 +110,8 @@ const Footer = () => {
 
         <div className="mt-10 pt-6 border-t border-accent/10 text-center">
           <p className="font-sans text-xs text-primary-foreground/40">
-            © {new Date().getFullYear()} LexVeda. All rights reserved. Prepared by Practising Advocates.
+            © {new Date().getFullYear()} LexVeda. All rights reserved. Prepared
+            by Practising Advocates.
           </p>
         </div>
       </div>

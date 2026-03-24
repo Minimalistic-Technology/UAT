@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Scale } from "lucide-react";
 
 const HeroSection = () => {
   return (
