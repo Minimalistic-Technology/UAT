@@ -14,11 +14,12 @@ export const updatePassword = async (user: UserDocument, password: string) => {
 };
 
 export const toPublicUser = (user: UserDocument) => ({
-  id: user._id.toString(),
+  _id: user._id.toString(),
   firstName: user.firstName,
   lastName: user.lastName,
   contactNumber: user.contactNumber,
   email: user.email,
+  role: user.role,
   createdAt: user.createdAt
 });
 

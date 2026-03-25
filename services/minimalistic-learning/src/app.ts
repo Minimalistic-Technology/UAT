@@ -24,7 +24,7 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(cookieParser());
 app.use(cors({
-    origin: ['https://minimalistic-learning.onrender.com', 'http://localhost:3000'], 
+    origin: env.NODE_ENV === "development" ? "http://localhost:3000" : "https://minimalistic-learning.onrender.com",
     credentials: true,                
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
   }));
@@ -33,9 +33,9 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use('/api/v1', authRoutes);
-app.use('/api/v1', postRoutes);
-app.use('/api/v1', commentRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/posts', postRoutes);
+app.use('/api/v1/comments', commentRoutes);
 
 app.use(errorHandler);
 

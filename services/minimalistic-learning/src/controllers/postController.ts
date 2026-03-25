@@ -1,16 +1,21 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
 import Post from "../models/Post";
-import Comment from "../models/Comment";
 import { uploadToCloudinary } from "../utils/cloudinary";
+import { StatusCodes } from "http-status-codes";
+import { asyncHandler } from "../utils/asyncHandler";
+import { 
+  postParamsSchema, 
+  createPostSchema, 
+  updatePostSchema 
+} from "../validators/postValidator";
+import { verifyAccessToken } from '../utils/jwt';
+import { ApiError } from "../utils/ApiError";
+import { ApiResponse } from "../utils/ApiResponse";
 
-export const listPosts = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
-  const { tag, q } = req.query;
+export const listPosts = asyncHandler(async (req: Request, res: Response) => {
   const page = Math.max(Number(req.query.page) || 1, 1);
-  const limit = Math.min(Number(req.query.limit) || 10, 10);
+  const limit = Math.min(Number(req.query.limit) || 10, 50);
+  const { tag, q } = req.query;
 
   const query: Record<string, unknown> = { published: true };
 
@@ -24,81 +29,186 @@ export const listPosts = async (
       .populate("authorId", "firstName lastName")
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit),
+      .limit(limit)
+      .lean(),
     Post.countDocuments(query),
   ]);
 
-  return res.json({ items, total });
-};
+  const totalPages = Math.ceil(total / limit);
+  const hasNextPage = page < totalPages;
+  const hasPrevPage = page > 1;
 
-export const getPostBySlug = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
-  const post = await Post.findOne({
-    slug: req.params.slug,
-    published: true,
-  })
-    .populate("authorId", "name")
-    .select("-__v");
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(
+      StatusCodes.OK,
+      {
+        items,
+        pagination: {
+          total,
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNextPage,
+          hasPrevPage,
+        },
+      },
+      "Posts fetched successfully",
+    ),
+  );
+});
 
-  if (!post) return res.sendStatus(404);
+export const getPostBySlug = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { slug } = req.params;
 
-  return res.json(post);
-};
+    if (!slug) {
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        "Slug parameter is required.",
+      );
+    }
 
-export const listComments = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
-  const { id } = req.params;
+    const post = await Post.findOne({
+      slug: slug,
+      published: true,
+    })
+      .populate("authorId", "firstName lastName")
+      .select("-__v")
+      .lean();
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid post ID" });
+    if (!post) {
+      throw new ApiError(
+        StatusCodes.NOT_FOUND,
+        `Post with slug '${slug}' not found.`,
+      );
+    }
+
+    const bearer = req.headers.authorization;
+    const tokenFromCookie = req.cookies?.access_token as string | undefined;
+    const token = tokenFromCookie || (bearer && bearer.startsWith('Bearer ') ? bearer.split(" ")[1] : undefined);
+
+    let currentUserId: string | null = null;
+    if (token) {
+      try {
+        const payload = verifyAccessToken(token) as { sub: string };
+        currentUserId = payload.sub;
+      } catch (e) {
+        // Ignored for public route
+      }
+    }
+
+    const upvotesCount = post.upvotes?.length || 0;
+    const downvotesCount = post.downvotes?.length || 0;
+    
+    let hasUpvoted = false;
+    let hasDownvoted = false;
+
+    if (currentUserId) {
+      hasUpvoted = post.upvotes?.some((id: any) => id.toString() === currentUserId) || false;
+      hasDownvoted = post.downvotes?.some((id: any) => id.toString() === currentUserId) || false;
+    }
+
+    const postResponse: any = {
+      ...post,
+      upvotesCount,
+      downvotesCount,
+      hasUpvoted,
+      hasDownvoted,
+    };
+
+    delete postResponse.upvotes;
+    delete postResponse.downvotes;
+
+    return res
+      .status(StatusCodes.OK)
+      .json(new ApiResponse(StatusCodes.OK, postResponse, "Post fetched successfully"));
+  },
+);
+
+export const getPostById = asyncHandler(async (req: Request, res: Response) => {
+  const { blogId } = postParamsSchema.parse(req.params);
+
+  const post = await Post.findById(blogId)
+    .populate("authorId", "firstName lastName")
+    .select("-__v")
+    .lean();
+
+  if (!post) {
+    throw new ApiError(
+      StatusCodes.NOT_FOUND,
+      `Post with id '${blogId}' not found.`,
+    );
   }
 
-  const post = await Post.findById(id);
+  const bearer = req.headers.authorization;
+  const tokenFromCookie = req.cookies?.access_token as string | undefined;
+  const token = tokenFromCookie || (bearer && bearer.startsWith('Bearer ') ? bearer.split(" ")[1] : undefined);
 
-  if (!post || !post.published) return res.sendStatus(404);
+  let currentUserId: string | null = null;
+  if (token) {
+    try {
+      const payload = verifyAccessToken(token) as { sub: string };
+      currentUserId = payload.sub;
+    } catch (e) {
+      // Ignored for public route
+    }
+  }
 
-  const comments = await Comment.find({ postId: id })
-    .populate("authorId", "name")
-    .select("content createdAt authorId")
-    .sort({ createdAt: 1 });
+  const upvotesCount = post.upvotes?.length || 0;
+  const downvotesCount = post.downvotes?.length || 0;
+  
+  let hasUpvoted = false;
+  let hasDownvoted = false;
 
-  return res.json(comments);
-};
+  if (currentUserId) {
+    hasUpvoted = post.upvotes?.some((id: any) => id.toString() === currentUserId) || false;
+    hasDownvoted = post.downvotes?.some((id: any) => id.toString() === currentUserId) || false;
+  }
 
-export const createPost = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
-  if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+  const postResponse: any = {
+    ...post,
+    upvotesCount,
+    downvotesCount,
+    hasUpvoted,
+    hasDownvoted,
+  };
 
-  const { title, content, tags, published, category } = req.body;
+  delete postResponse.upvotes;
+  delete postResponse.downvotes;
 
-  if (!title?.trim())
-    return res.status(400).json({ message: "Title is required" });
-  if (!content?.trim())
-    return res.status(400).json({ message: "Content is required" });
-  if (!category?.trim())
-    return res.status(400).json({ message: "Category is required" });
+  return res
+    .status(StatusCodes.OK)
+    .json(new ApiResponse(StatusCodes.OK, postResponse, "Post fetched successfully"));
+});
 
-  // Slug
+export const createPost = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!._id.toString();
+
+  const parsedBody = createPostSchema.parse(req.body);
+  const { title, content, tags, published, category } = parsedBody;
+
   const baseSlug = title
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+
   let slug = baseSlug;
   if (await Post.findOne({ slug })) slug = `${baseSlug}-${Date.now()}`;
 
-  // Tags
   const sanitizedTags: string[] = Array.isArray(tags)
     ? [...new Set(tags.map((t: string) => t.trim()).filter(Boolean))]
-    : [];
+    : typeof tags === "string"
+      ? [
+          ...new Set(
+            (tags as string)
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean),
+          ),
+        ]
+      : [];
 
-  // Cover image — upload if a file was attached
   let coverImage = { url: "", alt: title.trim(), publicId: "" };
   if (req.file) {
     const uploaded = await uploadToCloudinary(
@@ -119,56 +229,174 @@ export const createPost = async (
     category: category.trim(),
     coverImage,
     tags: sanitizedTags,
-    published: published ?? false,
-    authorId: req.user._id.toString(),
+    published: published === true ? true : false,
+    authorId: userId,
   });
 
-  return res.status(201).json(post);
-};
+  return res
+    .status(StatusCodes.CREATED)
+    .json(
+      new ApiResponse(StatusCodes.CREATED, post, "Post created successfully"),
+    );
+});
 
-export const updatePost = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
-  if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+export const updatePost = asyncHandler(async (req: Request, res: Response) => {
+  const { blogId } = postParamsSchema.parse(req.params);
+  const userId = req.user!._id.toString();
 
-  const { id } = req.params;
+  const parsedBody = updatePostSchema.parse(req.body);
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid post ID" });
+  let sanitizedTags = undefined;
+  if (parsedBody.tags) {
+    sanitizedTags = Array.isArray(parsedBody.tags)
+      ? [
+          ...new Set(
+            parsedBody.tags.map((t: string) => t.trim()).filter(Boolean),
+          ),
+        ]
+      : typeof parsedBody.tags === "string"
+        ? [
+            ...new Set(
+              (parsedBody.tags as string)
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean),
+            ),
+          ]
+        : [];
   }
 
-  const { title, content, tags, published } = req.body;
+  let updatePayload: any = { ...parsedBody };
+  if (sanitizedTags) updatePayload.tags = sanitizedTags;
+
+  if (updatePayload.published !== undefined) {
+    updatePayload.published =
+      updatePayload.published === true || updatePayload.published === "true";
+  }
+
+  if (req.file) {
+    const uploaded = await uploadToCloudinary(
+      req.file.buffer,
+      req.file.mimetype,
+    );
+    updatePayload.coverImage = {
+      url: uploaded.url,
+      alt: parsedBody.title?.trim() || "",
+      publicId: uploaded.publicId,
+    };
+  }
 
   const post = await Post.findOneAndUpdate(
-    { _id: id, authorId: req.user._id.toString() },
-    { title, content, tags, published },
+    { _id: blogId, authorId: userId },
+    updatePayload,
     { new: true },
   );
 
-  if (!post) return res.sendStatus(404);
+  if (!post)
+    throw new ApiError(
+      StatusCodes.NOT_FOUND,
+      "Post not found or you don't have permission",
+    );
 
-  return res.json(post);
-};
+  return res
+    .status(StatusCodes.OK)
+    .json(new ApiResponse(StatusCodes.OK, post, "Post updated successfully"));
+});
 
-export const deletePost = async (
-  req: Request,
-  res: Response,
-): Promise<Response> => {
-  if (!req.user) return res.status(401).json({ message: "Unauthorized" });
-
-  const { id } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid post ID" });
-  }
+export const deletePost = asyncHandler(async (req: Request, res: Response) => {
+  const { blogId } = postParamsSchema.parse(req.params);
+  const userId = req.user!._id.toString();
 
   const post = await Post.findOneAndDelete({
-    _id: id,
-    authorId: req.user._id.toString(),
+    _id: blogId,
+    authorId: userId,
   });
 
-  if (!post) return res.sendStatus(404);
+  if (!post)
+    throw new ApiError(
+      StatusCodes.NOT_FOUND,
+      "Post not found or you don't have permission",
+    );
 
-  return res.sendStatus(204);
-};
+  return res
+    .status(StatusCodes.OK)
+    .json(new ApiResponse(StatusCodes.OK, null, "Post deleted successfully"));
+});
+
+export const upvotePost = asyncHandler(async (req: Request, res: Response) => {
+  const { blogId } = postParamsSchema.parse(req.params);
+  const userId = req.user!._id;
+
+  const post = await Post.findById(blogId);
+  if (!post) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
+
+  const hasUpvoted = post.upvotes.includes(userId);
+  const hasDownvoted = post.downvotes.includes(userId);
+
+  if (hasUpvoted) {
+    post.upvotes = post.upvotes.filter(
+      (id) => id.toString() !== userId.toString(),
+    );
+  } else {
+    post.upvotes.push(userId);
+    if (hasDownvoted) {
+      post.downvotes = post.downvotes.filter(
+        (id) => id.toString() !== userId.toString(),
+      );
+    }
+  }
+
+  await post.save();
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(
+      StatusCodes.OK,
+      {
+        upvotes: post.upvotes.length,
+        downvotes: post.downvotes.length,
+        hasUpvoted: !hasUpvoted,
+        hasDownvoted: hasDownvoted && !hasUpvoted ? false : hasDownvoted,
+      },
+      "Post upvoted toggled effectively",
+    ),
+  );
+});
+
+export const downvotePost = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { blogId } = postParamsSchema.parse(req.params);
+    const userId = req.user!._id;
+
+    const post = await Post.findById(blogId);
+    if (!post) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
+
+    const hasUpvoted = post.upvotes.includes(userId);
+    const hasDownvoted = post.downvotes.includes(userId);
+
+    if (hasDownvoted) {
+      post.downvotes = post.downvotes.filter(
+        (id) => id.toString() !== userId.toString(),
+      );
+    } else {
+      post.downvotes.push(userId);
+      if (hasUpvoted) {
+        post.upvotes = post.upvotes.filter(
+          (id) => id.toString() !== userId.toString(),
+        );
+      }
+    }
+
+    await post.save();
+    return res.status(StatusCodes.OK).json(
+      new ApiResponse(
+        StatusCodes.OK,
+        {
+          upvotes: post.upvotes.length,
+          downvotes: post.downvotes.length,
+          hasUpvoted: hasUpvoted && !hasDownvoted ? false : hasUpvoted,
+          hasDownvoted: !hasDownvoted,
+        },
+        "Post downvote toggled effectively",
+      ),
+    );
+  },
+);

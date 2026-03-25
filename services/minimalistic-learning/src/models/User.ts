@@ -7,6 +7,7 @@ export interface IUser {
   contactNumber: string;
   email: string;
   password: string;
+  role: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,7 +25,8 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     lastName: { type: String, required: true, trim: true },
     contactNumber: { type: String, required: true, trim: true },
     email: { type: String, required: true, lowercase: true, trim: true },
-    password: { type: String, required: true }
+    password: { type: String, required: true },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' }
   },
   {
     timestamps: { createdAt: true, updatedAt: true }
