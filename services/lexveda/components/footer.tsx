@@ -8,7 +8,7 @@ const socialLinks = [
     icon: Linkedin,
     href: "https://www.linkedin.com/company/lexvedalegalservices/",
   },
-  { name: "Facebook", icon: Facebook, href: "#" },
+  { name: "Facebook", icon: Facebook, href: "https://www.facebook.com/share/18AHtaiEAS/?mibextid=wwXIfr" },
   {
     name: "Instagram",
     icon: Instagram,
