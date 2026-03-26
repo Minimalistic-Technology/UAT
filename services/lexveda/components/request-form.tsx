@@ -1,5 +1,6 @@
 "use client"
 import { useState } from "react";
+import emailjs from '@emailjs/browser';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -129,7 +130,7 @@ export const DraftRequestForm = () => {
     caseDetails: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fullName || !formData.email || !formData.mobile || !formData.caseDetails) {
       toast.error("Please fill in all required fields.");
@@ -146,12 +147,38 @@ export const DraftRequestForm = () => {
     const existingRequests = JSON.parse(localStorage.getItem("consultation_requests") || "[]");
     localStorage.setItem("consultation_requests", JSON.stringify([...existingRequests, submission]));
 
-    // In a real backend, we would send an email notification here:
-    // To: lexveda.28@gmail.com
-    console.log(`Drafting request email sent to: ${BACKEND_CONFIG.email}`);
+    const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+    const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+    const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
 
-    toast.success(SUCCESS_MESSAGE);
-    setFormData({ fullName: "", email: "", mobile: "", caseDetails: "" });
+    if (!serviceId || !templateId || !publicKey) {
+      console.error("EmailJS credentials are not configured in environment variables.");
+      toast.error("Email configuration is missing. Please contact support.");
+      return;
+    }
+
+    const toastId = toast.loading("Sending your request...");
+
+    try {
+      await emailjs.send(
+        serviceId,
+        templateId,
+        {
+          from_name: formData.fullName,
+          from_email: formData.email,
+          mobile: formData.mobile,
+          message: formData.caseDetails,
+          to_email: BACKEND_CONFIG.email,
+        },
+        publicKey
+      );
+
+      toast.success(SUCCESS_MESSAGE, { id: toastId });
+      setFormData({ fullName: "", email: "", mobile: "", caseDetails: "" });
+    } catch (error) {
+      console.error("EmailJS Error:", error);
+      toast.error("Failed to send your request. Please try again later.", { id: toastId });
+    }
   };
 
   return (

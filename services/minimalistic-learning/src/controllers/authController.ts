@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import {
   signupSchema,
@@ -22,180 +22,164 @@ import {
 } from '../services/tokenService';
 import { env } from '../config/env';
 import { durationToMs } from '../utils/time';
+import { asyncHandler } from '../utils/asyncHandler';
+import { ApiError } from '../utils/ApiError';
+import { ApiResponse } from '../utils/ApiResponse';
 
-export const signup = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const payload = signupSchema.parse(req.body) as userService.CreateUserPayload;
+export const signup = asyncHandler(async (req: Request, res: Response) => {
+  const payload = signupSchema.parse(req.body) as userService.CreateUserPayload;
 
-    const existing = await userService.findByEmail(payload.email);
-    if (existing) {
-      return res.status(StatusCodes.CONFLICT).json({ message: 'Email already in use' });
-    }
-
-    const user = await userService.createUser(payload);
-
-    return res.status(StatusCodes.CREATED).json({
-      user: userService.toPublicUser(user)
-    });
-  } catch (error) {
-    next(error);
+  const existing = await userService.findByEmail(payload.email);
+  if (existing) {
+    throw new ApiError(StatusCodes.CONFLICT, 'Email already in use');
   }
-};
 
-export const login = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const credentials = loginSchema.parse(req.body);
+  const user = await userService.createUser(payload);
 
-    const user = await userService.findByEmail(credentials.email);
-    if (!user) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Invalid credentials' });
-    }
+  return res.status(StatusCodes.CREATED).json(
+    new ApiResponse(StatusCodes.CREATED, { user: userService.toPublicUser(user) }, "User signed up successfully")
+  );
+});
 
-    const isPasswordValid = await user.comparePassword(credentials.password);
-    if (!isPasswordValid) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Invalid credentials' });
-    }
+export const login = asyncHandler(async (req: Request, res: Response) => {
+  const credentials = loginSchema.parse(req.body);
 
-    const accessToken = signAccessToken(user.id);
-    const refreshToken = signRefreshToken(user.id);
+  const user = await userService.findByEmail(credentials.email);
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
+  }
 
-    await replaceRefreshToken(user.id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
+  const isPasswordValid = await user.comparePassword(credentials.password);
+  if (!isPasswordValid) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
+  }
 
-    const cookieBase = {
-      httpOnly: true,
-      secure: env.isProduction,
-      sameSite: 'lax' as const
-    };
+  const accessToken = signAccessToken(user._id);
+  const refreshToken = signRefreshToken(user._id);
 
-    res
-      .cookie('access_token', accessToken, {
-        ...cookieBase,
-        maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
-      })
-      .cookie('refresh_token', refreshToken, {
-        ...cookieBase,
-        maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
-      })
-      .status(StatusCodes.OK)
-      .json({
+  await replaceRefreshToken(user._id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
+
+  const cookieBase = {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: 'lax' as const
+  };
+
+  res
+    .cookie('access_token', accessToken, {
+      ...cookieBase,
+      maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
+    })
+    .cookie('refresh_token', refreshToken, {
+      ...cookieBase,
+      maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
+    })
+    .status(StatusCodes.OK)
+    .json(
+      new ApiResponse(StatusCodes.OK, {
         user: userService.toPublicUser(user),
         tokens: {
           accessToken,
           refreshToken
         }
-      });
-  } catch (error) {
-    next(error);
+      }, "Login successful")
+    );
+});
+
+export const refreshToken = asyncHandler(async (req: Request, res: Response) => {
+  const tokenFromCookie = req.cookies?.refresh_token as string | undefined;
+  const tokenFromBody = req.body?.refreshToken as string | undefined;
+
+  const refreshTokenValue = tokenFromBody || tokenFromCookie;
+  if (!refreshTokenValue) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Refresh token missing');
   }
-};
 
-export const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+  let payload;
   try {
-    const tokenFromCookie = req.cookies?.refresh_token as string | undefined;
-    const tokenFromBody = req.body?.refreshToken as string | undefined;
+    payload = verifyRefreshToken(refreshTokenValue);
+  } catch {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid refresh token');
+  }
 
-    const refreshTokenValue = tokenFromBody || tokenFromCookie;
-    if (!refreshTokenValue) {
-      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Refresh token missing' });
-    }
+  const tokenDoc = await verifyStoredToken(payload.sub, refreshTokenValue, 'refresh');
+  if (!tokenDoc) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Refresh token invalid or expired');
+  }
 
-    let payload;
-    try {
-      payload = verifyRefreshToken(refreshTokenValue);
-    } catch {
-      return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Invalid refresh token' });
-    }
-
-    const tokenDoc = await verifyStoredToken(payload.sub, refreshTokenValue, 'refresh');
-    if (!tokenDoc) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Refresh token invalid or expired' });
-    }
-
-    const user = await userService.findById(payload.sub);
-    if (!user) {
-      await deleteToken(tokenDoc);
-      return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'User no longer exists' });
-    }
-
+  const user = await userService.findById(payload.sub);
+  if (!user) {
     await deleteToken(tokenDoc);
+    throw new ApiError(StatusCodes.UNAUTHORIZED, 'User no longer exists');
+  }
 
-    const accessToken = signAccessToken(user.id);
-    const newRefreshToken = signRefreshToken(user.id);
+  await deleteToken(tokenDoc);
 
-    await replaceRefreshToken(user.id, newRefreshToken, env.REFRESH_TOKEN_EXPIRE);
+  const accessToken = signAccessToken(user.id);
+  const newRefreshToken = signRefreshToken(user.id);
 
-    const cookieBase = {
-      httpOnly: true,
-      secure: env.isProduction,
-      sameSite: 'lax' as const
-    };
+  await replaceRefreshToken(user.id, newRefreshToken, env.REFRESH_TOKEN_EXPIRE);
 
-    res
-      .cookie('access_token', accessToken, {
-        ...cookieBase,
-        maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
-      })
-      .cookie('refresh_token', newRefreshToken, {
-        ...cookieBase,
-        maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
-      })
-      .status(StatusCodes.OK)
-      .json({
+  const cookieBase = {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: 'lax' as const
+  };
+
+  res
+    .cookie('access_token', accessToken, {
+      ...cookieBase,
+      maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
+    })
+    .cookie('refresh_token', newRefreshToken, {
+      ...cookieBase,
+      maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
+    })
+    .status(StatusCodes.OK)
+    .json(
+      new ApiResponse(StatusCodes.OK, {
         accessToken,
         refreshToken: newRefreshToken
-      });
-  } catch (error) {
-    next(error);
+      }, "Tokens refreshed successfully")
+    );
+});
+
+export const initiatePasswordReset = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = passwordResetInitSchema.parse(req.body);
+
+  const user = await userService.findByEmail(email);
+  if (!user) {
+    return res.status(StatusCodes.OK).json(
+      new ApiResponse(StatusCodes.OK, null, 'If the email exists, a reset token has been sent.')
+    );
   }
-};
 
-export const initiatePasswordReset = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email } = passwordResetInitSchema.parse(req.body);
+  const resetToken = createTokenString();
+  await storeResetToken(user.id, resetToken, env.PASSWORD_RESET_EXPIRE);
 
-    const user = await userService.findByEmail(email);
-    if (!user) {
-      return res.status(StatusCodes.OK).json({ message: 'If the email exists, a reset token has been sent.' });
-    }
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, { resetToken }, 'Password reset token generated successfully.')
+  );
+});
 
-    const resetToken = createTokenString();
-    await storeResetToken(user.id, resetToken, env.PASSWORD_RESET_EXPIRE);
+export const completePasswordReset = asyncHandler(async (req: Request, res: Response) => {
+  const payload = passwordResetCompleteSchema.parse(req.body);
 
-    return res.status(StatusCodes.OK).json({
-      message: 'Password reset token generated successfully.',
-      resetToken
-    });
-  } catch (error) {
-    next(error);
+  const user = await userService.findByEmail(payload.email);
+  if (!user) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired password reset token.');
   }
-};
 
-export const completePasswordReset = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const payload = passwordResetCompleteSchema.parse(req.body);
-
-    const user = await userService.findByEmail(payload.email);
-    if (!user) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ message: 'Invalid or expired password reset token.' });
-    }
-
-    const tokenDoc = await verifyStoredToken(user.id, payload.token, 'reset');
-    if (!tokenDoc) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ message: 'Invalid or expired password reset token.' });
-    }
-
-    await userService.updatePassword(user, payload.password);
-    await deleteToken(tokenDoc);
-    await invalidateTokens(user.id, 'refresh');
-
-    return res.status(StatusCodes.OK).json({ message: 'Password updated successfully.' });
-  } catch (error) {
-    next(error);
+  const tokenDoc = await verifyStoredToken(user.id, payload.token, 'reset');
+  if (!tokenDoc) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired password reset token.');
   }
-};
 
+  await userService.updatePassword(user, payload.password);
+  await deleteToken(tokenDoc);
+  await invalidateTokens(user.id, 'refresh');
 
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, null, 'Password updated successfully.')
+  );
+});

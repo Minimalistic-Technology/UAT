@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const links = [
+  { label: "Practice Areas", href: "#practice-areas" },
+  { label: "Consultation", href: "#consultation-form" },
+  // { label: "Services", href: "#services" },
+  { label: "Why LexVeda", href: "#why-lexveda" },
+  { label: "Contact Us", href: "#contact-us" },
+];
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -23,27 +30,18 @@ const Navbar = () => {
     }
   };
 
-  const links = [
-    { label: "Practice Areas", href: "#practice-areas" },
-    { label: "Consultation", href: "#consultation-form" },
-    // { label: "Services", href: "#services" },
-    { label: "Why LexVeda", href: "#why-lexveda" },
-    { label: "Contact Us", href: "#contact-us" }
-  ];
-
-
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-sm border-b border-accent/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between h-14 sm:h-16 lg:h-16">
-        <a href="/" className="flex items-center gap-2 sm:gap-3 py-1 flex-shrink-0">
-          <Image 
-            src="/LOGO.png" 
-            alt="LexVeda Logo" 
+        <a href="/" className="flex items-center gap-2 sm:gap-3 py-1 shrink-0">
+          <Image
+            src="/LOGO.png"
+            alt="LexVeda Logo"
             className="h-8 sm:h-10 w-auto object-contain"
             height={100}
             width={150}
           />
-          <div className="flex flex-col items-center leading-none hidden sm:flex">
+          <div className="flex-col items-center leading-none hidden sm:flex">
             <span className="font-serif text-lg sm:text-xl font-bold text-primary-foreground tracking-wider">
               Lex<span className="text-accent">Veda</span>
             </span>
@@ -55,15 +53,15 @@ const Navbar = () => {
         </a>
 
         <div className="hidden lg:flex items-center gap-6 xl:gap-8">
-          {links.map((l) =>
-          <a
-            key={l.href}
-            href={l.href}
-            className="text-xs sm:text-sm font-sans font-medium text-primary-foreground/80 hover:text-accent transition-colors tracking-wide whitespace-nowrap">
-            
+          {links.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="text-xs sm:text-sm font-sans font-medium text-primary-foreground/80 hover:text-accent transition-colors tracking-wide whitespace-nowrap"
+            >
               {l.label}
             </a>
-          )}
+          ))}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="gold" size="sm">
@@ -72,57 +70,83 @@ const Navbar = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem asChild>
-                <a href="#consultation-form" onClick={(e) => handleScroll(e, 'consultation-form')} className="cursor-pointer font-sans w-full">Online Legal Consultation</a>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <a href="#draft-form" onClick={(e) => handleScroll(e, 'draft-form')} className="cursor-pointer font-sans w-full">Legal Services Request</a>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Mobile toggle */}
-        <button className="lg:hidden text-primary-foreground p-2" onClick={() => setOpen(!open)}>
-          {open ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      {open &&
-      <div className="lg:hidden bg-primary border-t border-accent/20 px-4 sm:px-6 pb-4 sm:pb-6">
-          {links.map((l) =>
-        <a
-          key={l.href}
-          href={l.href}
-          onClick={() => setOpen(false)}
-          className="block py-2.5 sm:py-3 text-sm font-sans text-primary-foreground/80 hover:text-accent transition-colors">
-          
-              {l.label}
-            </a>
-        )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="gold" size="sm" className="mt-3 sm:mt-4 w-full">
-                Submit Request
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-[90vw] max-w-[300px]">
-              <DropdownMenuItem asChild>
-                <a href="#consultation-form" onClick={(e) => handleScroll(e, 'consultation-form')} className="cursor-pointer font-sans w-full block py-2">
+                <a
+                  href="#consultation-form"
+                  onClick={(e) => handleScroll(e, "consultation-form")}
+                  className="cursor-pointer font-sans w-full"
+                >
                   Online Legal Consultation
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="#draft-form" onClick={(e) => handleScroll(e, 'draft-form')} className="cursor-pointer font-sans w-full block py-2">
+                <a
+                  href="#draft-form"
+                  onClick={(e) => handleScroll(e, "draft-form")}
+                  className="cursor-pointer font-sans w-full"
+                >
                   Legal Services Request
                 </a>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      }
-    </nav>);
 
+        {/* Mobile toggle */}
+        <button
+          className="lg:hidden text-primary-foreground p-2"
+          onClick={() => setOpen(!open)}
+        >
+          {open ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Mobile menu */}
+      {open && (
+        <div className="lg:hidden bg-primary border-t border-accent/20 px-4 sm:px-6 pb-4 sm:pb-6">
+          {links.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              onClick={() => setOpen(false)}
+              className="block py-2.5 sm:py-3 text-sm font-sans text-primary-foreground/80 hover:text-accent transition-colors"
+            >
+              {l.label}
+            </a>
+          ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="gold" size="sm" className="mt-3 sm:mt-4 w-full">
+                Submit Request
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="center"
+              className="w-[90vw] max-w-[300px]"
+            >
+              <DropdownMenuItem asChild>
+                <a
+                  href="#consultation-form"
+                  onClick={(e) => handleScroll(e, "consultation-form")}
+                  className="cursor-pointer font-sans w-full block py-2"
+                >
+                  Online Legal Consultation
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a
+                  href="#draft-form"
+                  onClick={(e) => handleScroll(e, "draft-form")}
+                  className="cursor-pointer font-sans w-full block py-2"
+                >
+                  Legal Services Request
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+    </nav>
+  );
 };
 
 export default Navbar;

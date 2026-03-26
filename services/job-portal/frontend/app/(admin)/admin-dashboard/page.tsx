@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { GlobalRole } from "@/types";
 import { useEffect, useState } from "react";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
@@ -52,13 +53,22 @@ export default function AdminDashboard() {
             Manage platform users, jobs, and analytics
           </p>
         </div>
-        <button
-          className="cursor-pointer group relative flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-800 hover:shadow-md active:scale-95"
-          onClick={() => setIsRegisterModalOpen(true)}
-        >
-          <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
-          <span>Register New Company</span>
-        </button>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/admin-dashboard/plans/create"
+            className="cursor-pointer group relative flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-indigo-700 hover:shadow-md active:scale-95"
+          >
+            <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+            <span>Create Plan</span>
+          </Link>
+          <button
+            className="cursor-pointer group relative flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-blue-800 hover:shadow-md active:scale-95"
+            onClick={() => setIsRegisterModalOpen(true)}
+          >
+            <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+            <span>Register New Company</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}

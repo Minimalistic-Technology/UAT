@@ -22,7 +22,8 @@ const PostSchema = new Schema(
     authorId: { type: Types.ObjectId, ref: "User", required: true },
     published: { type: Boolean, default: false },
     category: { type: String, required: true, trim: true, maxLength: 30 },
-    
+    upvotes: [{ type: Types.ObjectId, ref: "User" }],
+    downvotes: [{ type: Types.ObjectId, ref: "User" }],
   },
   { timestamps: true },
 );
