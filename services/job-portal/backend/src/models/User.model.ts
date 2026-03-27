@@ -1,10 +1,15 @@
-import mongoose, { Document, Schema } from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose, { Document, Schema } from "mongoose";
+import bcrypt from "bcryptjs";
 
-export enum UserRole {
-  JOB_SEEKER = 'jobseeker',
-  EMPLOYER = 'employer',
-  ADMIN = 'admin',
+// export enum UserRole {
+//   JOB_SEEKER = "jobseeker",
+//   EMPLOYER = "employer",
+//   ADMIN = "admin",
+// }
+
+export enum GlobalRole {
+  USER = "user",
+  SUPER_ADMIN = "super_admin",
 }
 
 export interface IUser extends Document {
@@ -14,12 +19,13 @@ export interface IUser extends Document {
   password?: string;
   phone?: string;
   phoneVerified: boolean;
-  role: UserRole;
+  role: GlobalRole;
   avatar?: string;
-  
+
   // Job Seeker Specific
   resume?: string;
   skills?: string[];
+  languages?: string[];
   experience?: Array<{
     title: string;
     company: string;
@@ -40,49 +46,53 @@ export interface IUser extends Document {
     state: string;
     country: string;
   };
-  
+
   // Employer Specific
   company?: mongoose.Types.ObjectId;
-  
+
   // OAuth
   googleId?: string;
-  
+
   // Status
   isActive: boolean;
   isVerified: boolean;
-  
+
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
-  
+
   // Methods
   comparePassword(candidatePassword: string): Promise<boolean>;
+
+  // Password Reset
+  resetPasswordOtp?: string;
+  resetPasswordExpires?: Date;
 }
 
 const userSchema = new Schema<IUser>(
   {
     firstName: {
       type: String,
-      required: [true, 'First name is required'],
+      required: [true, "First name is required"],
       trim: true,
     },
     lastName: {
       type: String,
-      required: [true, 'Last name is required'],
+      required: [true, "Last name is required"],
       trim: true,
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, "Email is required"],
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
+      match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
     },
     password: {
       type: String,
-      required:true,
-      minlength: [6, 'Password must be at least 6 characters'],
+      required: true,
+      minlength: [6, "Password must be at least 6 characters"],
       select: false,
     },
     phone: {
@@ -95,14 +105,15 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: Object.values(UserRole),
-      default: UserRole.JOB_SEEKER,
+      enum: Object.values(GlobalRole),
+      default: GlobalRole.USER,
     },
     avatar: String,
-    
+
     // Job Seeker Fields
     resume: String,
     skills: [String],
+    languages: [String],
     experience: [
       {
         title: String,
@@ -127,16 +138,10 @@ const userSchema = new Schema<IUser>(
       state: String,
       country: String,
     },
-    
-    // Employer Fields
-    company: {
-      type: Schema.Types.ObjectId,
-      ref: 'Company',
-    },
-    
+
     // OAuth
     googleId: String,
-    
+
     // Status
     isActive: {
       type: Boolean,
@@ -146,16 +151,20 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+
+    // Password Reset
+    resetPasswordOtp: String,
+    resetPasswordExpires: Date,
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Hash password before saving
-userSchema.pre('save', async function () {
-  if (!this.isModified('password')) return;
-  
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+
   if (this.password) {
     this.password = await bcrypt.hash(this.password, 12);
   }
@@ -163,10 +172,10 @@ userSchema.pre('save', async function () {
 
 // Compare password method
 userSchema.methods.comparePassword = async function (
-  candidatePassword: string
+  candidatePassword: string,
 ): Promise<boolean> {
   if (!this.password) return false;
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-export default mongoose.model<IUser>('User', userSchema);
+export default mongoose.model<IUser>("User", userSchema);

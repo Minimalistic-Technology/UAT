@@ -14,7 +14,9 @@ import jobRoutes from './routes/job.routes.js';
 import applicationRoutes from './routes/application.routes.js';
 import userRoutes from './routes/user.routes.js';
 import companyRoutes from './routes/company.routes.js';
-
+import adminRoutes from "./routes/admin.route.js";
+import companyMemberRoutes from './routes/companyMember.routes.js';
+import planRoutes from './routes/plan.routes.js';
 // Initialize express app
 const app: Application = express();
 
@@ -46,7 +48,9 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/companies', companyRoutes);
-
+app.use("/api/admin", adminRoutes);
+app.use("/api/company-members", companyMemberRoutes);
+app.use("/api/plans", planRoutes);
 // Health check
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({

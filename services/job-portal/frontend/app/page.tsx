@@ -1,12 +1,12 @@
 import Link from 'next/link';
 import { Search, Briefcase, Users, TrendingUp } from 'lucide-react';
-import { Button } from './components/ui/Button';
+import { Button } from '../components/ui/Button';
 
 export default function Home() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white">
+      <section className="bg-linear-to-r from-primary-600 to-primary-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center">
             <h1 className="text-5xl md:text-6xl font-bold mb-6">

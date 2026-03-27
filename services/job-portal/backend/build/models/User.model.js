@@ -1,34 +1,38 @@
-import mongoose, { Schema } from 'mongoose';
-import bcrypt from 'bcryptjs';
-export var UserRole;
-(function (UserRole) {
-    UserRole["JOB_SEEKER"] = "jobseeker";
-    UserRole["EMPLOYER"] = "employer";
-    UserRole["ADMIN"] = "admin";
-})(UserRole || (UserRole = {}));
+import mongoose, { Schema } from "mongoose";
+import bcrypt from "bcryptjs";
+// export enum UserRole {
+//   JOB_SEEKER = "jobseeker",
+//   EMPLOYER = "employer",
+//   ADMIN = "admin",
+// }
+export var GlobalRole;
+(function (GlobalRole) {
+    GlobalRole["USER"] = "user";
+    GlobalRole["SUPER_ADMIN"] = "super_admin";
+})(GlobalRole || (GlobalRole = {}));
 const userSchema = new Schema({
     firstName: {
         type: String,
-        required: [true, 'First name is required'],
+        required: [true, "First name is required"],
         trim: true,
     },
     lastName: {
         type: String,
-        required: [true, 'Last name is required'],
+        required: [true, "Last name is required"],
         trim: true,
     },
     email: {
         type: String,
-        required: [true, 'Email is required'],
+        required: [true, "Email is required"],
         unique: true,
         lowercase: true,
         trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email'],
+        match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
     },
     password: {
         type: String,
         required: true,
-        minlength: [6, 'Password must be at least 6 characters'],
+        minlength: [6, "Password must be at least 6 characters"],
         select: false,
     },
     phone: {
@@ -41,13 +45,14 @@ const userSchema = new Schema({
     },
     role: {
         type: String,
-        enum: Object.values(UserRole),
-        default: UserRole.JOB_SEEKER,
+        enum: Object.values(GlobalRole),
+        default: GlobalRole.USER,
     },
     avatar: String,
     // Job Seeker Fields
     resume: String,
     skills: [String],
+    languages: [String],
     experience: [
         {
             title: String,
@@ -72,11 +77,6 @@ const userSchema = new Schema({
         state: String,
         country: String,
     },
-    // Employer Fields
-    company: {
-        type: Schema.Types.ObjectId,
-        ref: 'Company',
-    },
     // OAuth
     googleId: String,
     // Status
@@ -88,12 +88,15 @@ const userSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    // Password Reset
+    resetPasswordOtp: String,
+    resetPasswordExpires: Date,
 }, {
     timestamps: true,
 });
 // Hash password before saving
-userSchema.pre('save', async function () {
-    if (!this.isModified('password'))
+userSchema.pre("save", async function () {
+    if (!this.isModified("password"))
         return;
     if (this.password) {
         this.password = await bcrypt.hash(this.password, 12);
@@ -105,4 +108,4 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
         return false;
     return await bcrypt.compare(candidatePassword, this.password);
 };
-export default mongoose.model('User', userSchema);
+export default mongoose.model("User", userSchema);

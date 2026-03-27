@@ -1,33 +1,78 @@
-import Company from '../models/Company.model.js';
-import User, { UserRole } from '../models/User.model.js';
+import Company from "../models/Company.model.js";
+import User, { GlobalRole } from "../models/User.model.js";
+import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
+import mongoose from "mongoose";
 // @desc    Create new company
 // @route   POST /api/companies
-// @access  Private (Employer)
-export const createCompany = async (req, res, next) => {
+// @access  Super_Admin
+export const createCompany = async (req, res) => {
+    const { email, firstName, lastName, password, phone, companyName, companyDescription, industry, } = req.body;
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
-        // Check if user already has a company
-        const existingCompany = await Company.findOne({ owner: req.user.id });
-        if (existingCompany) {
+        let owner = await User.findOne({ email }).session(session);
+        if (!owner) {
+            const ownerRecords = await User.create([
+                {
+                    firstName,
+                    lastName,
+                    email,
+                    password,
+                    phone,
+                    role: GlobalRole.USER,
+                },
+            ], { session });
+            owner = ownerRecords[0];
+        }
+        // Check if owner already has a company
+        const existingOwnership = await Company.findOne({
+            owner: owner._id,
+        }).session(session);
+        if (existingOwnership) {
+            await session.abortTransaction();
             return res.status(400).json({
                 success: false,
-                message: 'You have already created a company',
+                message: "This user is already an owner of an existing company.",
             });
         }
-        req.body.owner = req.user.id;
-        const company = await Company.create(req.body);
-        // Update user with company id
-        await User.findByIdAndUpdate(req.user.id, {
-            company: company._id,
-        });
-        res.status(201).json({
+        const newCompany = await Company.create([
+            {
+                name: companyName,
+                owner: owner._id,
+                description: companyDescription,
+                industry,
+            },
+        ], { session });
+        const company = newCompany[0];
+        await CompanyMember.create([
+            {
+                user: owner._id,
+                company: company._id,
+                role: CompanyRole.OWNER,
+                isActive: true,
+            },
+        ], { session });
+        await session.commitTransaction();
+        session.endSession();
+        return res.status(201).json({
             success: true,
-            data: company,
+            message: "Company and Owner account set up successfully",
+            data: {
+                company,
+                owner: {
+                    id: owner._id,
+                    email: owner.email,
+                    fullName: `${owner.firstName} ${owner.lastName}`,
+                },
+            },
         });
     }
     catch (error) {
+        await session.abortTransaction();
+        session.endSession();
         res.status(500).json({
             success: false,
-            message: 'Error creating company',
+            message: "Error creating company",
             error: error.message,
         });
     }
@@ -37,11 +82,11 @@ export const createCompany = async (req, res, next) => {
 // @access  Public
 export const getCompanies = async (req, res, next) => {
     try {
-        const { search, industry, location, page = 1, limit = 10, sort = '-createdAt', } = req.query;
+        const { search, industry, location, page = 1, limit = 10, sort = "-createdAt", } = req.query;
         const query = {};
         // Search by name
         if (search) {
-            query.name = { $regex: search, $options: 'i' };
+            query.name = { $regex: search, $options: "i" };
         }
         // Filter by industry
         if (industry) {
@@ -49,7 +94,7 @@ export const getCompanies = async (req, res, next) => {
         }
         // Filter by location (city)
         if (location) {
-            query['location.city'] = { $regex: location, $options: 'i' };
+            query["location.city"] = { $regex: location, $options: "i" };
         }
         const pageNum = parseInt(page, 10);
         const limitNum = parseInt(limit, 10);
@@ -61,17 +106,21 @@ export const getCompanies = async (req, res, next) => {
         const total = await Company.countDocuments(query);
         res.status(200).json({
             success: true,
-            count: companies.length,
-            total,
-            totalPages: Math.ceil(total / limitNum),
-            currentPage: pageNum,
-            data: companies,
+            data: {
+                companies,
+                pagination: {
+                    count: companies.length,
+                    total,
+                    totalPages: Math.ceil(total / limitNum),
+                    currentPage: pageNum,
+                },
+            },
         });
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching companies',
+            message: "Error fetching companies",
             error: error.message,
         });
     }
@@ -81,11 +130,11 @@ export const getCompanies = async (req, res, next) => {
 // @access  Public
 export const getCompany = async (req, res, next) => {
     try {
-        const company = await Company.findById(req.params.id).populate('owner', 'firstName lastName email');
+        const company = await Company.findById(req.params.id).populate("owner", "firstName lastName email");
         if (!company) {
             return res.status(404).json({
                 success: false,
-                message: 'Company not found',
+                message: "Company not found",
             });
         }
         res.status(200).json({
@@ -96,7 +145,7 @@ export const getCompany = async (req, res, next) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching company',
+            message: "Error fetching company",
             error: error.message,
         });
     }
@@ -106,13 +155,11 @@ export const getCompany = async (req, res, next) => {
 // @access  Private (Employer)
 export const getMyCompany = async (req, res, next) => {
     try {
-        console.log('Fetching company for user:', req.user.id);
-        console.log("user company id:", req.user.company);
         const company = await Company.findOne({ owner: req.user.id });
         if (!company) {
             return res.status(404).json({
                 success: false,
-                message: 'You have not created a company yet',
+                message: "You have not created a company yet",
             });
         }
         res.status(200).json({
@@ -123,13 +170,13 @@ export const getMyCompany = async (req, res, next) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching your company',
+            message: "Error fetching your company",
             error: error.message,
         });
     }
 };
 // @desc    Update company
-// @route   PUT /api/companies/:id
+// @route   PUT /api/companies/me
 // @access  Private (Employer - Owner only)
 export const updateCompany = async (req, res, next) => {
     try {
@@ -137,18 +184,28 @@ export const updateCompany = async (req, res, next) => {
         if (!company) {
             return res.status(404).json({
                 success: false,
-                message: 'Company not found',
+                message: "Company not found",
+            });
+        }
+        const companyMember = await CompanyMember.findOne({
+            user: req.user.id,
+        });
+        if (!companyMember) {
+            return res.status(404).json({
+                success: false,
+                message: `${req.user.firstName} ${req.user.lastName} is not a memeber of the company ${company.name}`,
             });
         }
         // Make sure user is company owner
         if (company.owner.toString() !== req.user.id &&
-            req.user.role !== UserRole.ADMIN) {
+            companyMember.role !== CompanyRole.OWNER) {
             return res.status(403).json({
                 success: false,
-                message: 'Not authorized to update this company',
+                message: "Not authorized to update this company",
             });
         }
-        company = await Company.findByIdAndUpdate(req.params.id, req.body, {
+        // Use company._id instead of req.params.id since this is the /me route
+        company = await Company.findByIdAndUpdate(company._id, req.body, {
             new: true,
             runValidators: true,
         });
@@ -160,7 +217,7 @@ export const updateCompany = async (req, res, next) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error updating company',
+            message: "Error updating company",
             error: error.message,
         });
     }
@@ -174,15 +231,24 @@ export const deleteCompany = async (req, res, next) => {
         if (!company) {
             return res.status(404).json({
                 success: false,
-                message: 'Company not found',
+                message: "Company not found",
+            });
+        }
+        const companyMember = await CompanyMember.findOne({
+            user: req.user.id,
+        });
+        if (!companyMember) {
+            return res.status(404).json({
+                success: false,
+                message: `${req.user.firstName} ${req.user.lastName} is not a memeber of the company ${company.name}`,
             });
         }
         // Make sure user is company owner
         if (company.owner.toString() !== req.user.id &&
-            req.user.role !== UserRole.ADMIN) {
+            companyMember.role !== CompanyRole.OWNER) {
             return res.status(403).json({
                 success: false,
-                message: 'Not authorized to delete this company',
+                message: "Not authorized to update this company",
             });
         }
         await company.deleteOne();
@@ -192,13 +258,13 @@ export const deleteCompany = async (req, res, next) => {
         });
         res.status(200).json({
             success: true,
-            message: 'Company deleted successfully',
+            message: "Company deleted successfully",
         });
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error deleting company',
+            message: "Error deleting company",
             error: error.message,
         });
     }

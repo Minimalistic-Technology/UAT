@@ -34,7 +34,7 @@ const companySchema = new Schema<ICompany>(
     },
     description: {
       type: String,
-      required: [true, 'Company description is required'],
+      default: ""
     },
     logo: String,
     website: String,

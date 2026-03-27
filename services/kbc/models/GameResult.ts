@@ -20,8 +20,8 @@ type LangMap = Record<string, ILangPack>;
 export interface IQuestionLite {
   id: mongoose.Types.ObjectId | string;
   bankId: mongoose.Types.ObjectId | string;
-  lang?: LangMap;                
-  correctIndex?: number;          
+  lang?: LangMap;
+  correctIndices: number[];
   status?: string;
   media?: { public_id?: string; url?: string; type?: string; format?: string } | null;
 }
@@ -32,7 +32,7 @@ export interface IGameResult extends Document {
   gameConfigId: mongoose.Types.ObjectId;
   finalScore: number;
   isWinner: boolean;
-  correctAnswered:number;
+  correctAnswered: number;
   prizeLadder: IPrizeLevel[];
   totalTimeSeconds?: number;
   lifelinesUsed: string[];
@@ -77,7 +77,7 @@ const QuestionLiteSchema = new Schema<IQuestionLite>(
     id: { type: Schema.Types.Mixed, required: true },
     bankId: { type: Schema.Types.Mixed, required: true },
     lang: { type: Map, of: LangPackSchema, required: false, default: undefined },
-    correctIndex: { type: Number, required: false, min: 0 },
+    correctIndices: { type: [Number], required: true, validate: [(v: number[]) => v.length > 0, "At least one correct answer is required."] },
     status: { type: String, required: false },
     media: { type: MediaSchema, required: false, default: null },
   },
@@ -88,7 +88,7 @@ const QuestionLiteSchema = new Schema<IQuestionLite>(
 QuestionLiteSchema.pre("validate", function (next) {
   const q = this as any;
 
-  // Ensure at least one language pack and valid correctIndex
+  // Ensure at least one language pack and valid correctIndices
   const hasLang =
     q.lang &&
     q.lang.size > 0 &&
@@ -106,8 +106,8 @@ QuestionLiteSchema.pre("validate", function (next) {
     );
   }
 
-  if (typeof q.correctIndex !== "number" || q.correctIndex < 0) {
-    (this as any).invalidate("correctIndex", "A valid correctIndex is required.");
+  if (!Array.isArray(q.correctIndices) || q.correctIndices.length === 0 || q.correctIndices.some((i: any) => typeof i !== "number" || i < 0)) {
+    (this as any).invalidate("correctIndices", "Valid correctIndices array is required.");
   }
 
   next();
@@ -120,7 +120,7 @@ const GameResultSchema = new Schema<IGameResult>(
     userId: { type: Schema.Types.ObjectId, ref: "RegisteredUser", required: true },
     userName: { type: String },
     gameConfigId: { type: Schema.Types.ObjectId, ref: "GameConfig", required: true },
-    correctAnswered:{ type: Number, required: true },
+    correctAnswered: { type: Number, required: true },
     finalScore: { type: Number, required: true },
     isWinner: { type: Boolean, required: true },
     totalTimeSeconds: { type: Number },
@@ -137,4 +137,4 @@ GameResultSchema.index({ gameConfigId: 1, createdAt: -1 });
 GameResultSchema.index({ userId: 1, gameConfigId: 1 }, { unique: true });
 
 export default (mongoose.models.GameResult as Model<IGameResult>) ||
-mongoose.model<IGameResult>("GameResult", GameResultSchema);
+  mongoose.model<IGameResult>("GameResult", GameResultSchema);

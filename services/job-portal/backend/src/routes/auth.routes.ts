@@ -4,9 +4,12 @@ import {
   login,
   logout,
   getMe,
- 
+  employerRegister,
   verifyOTP,
   googleAuth,
+  forgotPassword,
+  verifyResetOTP,
+  resetPassword,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
@@ -24,10 +27,25 @@ router.post(
     body("password")
       .isLength({ min: 6 })
       .withMessage("Password must be at least 6 characters"),
-    body("role").isIn(["jobseeker", "employer"]).withMessage("Invalid role"),
+    body("role").isIn(["super_admin", "user"]).withMessage("Invalid role"),
   ]),
   register
 );
+
+router.post("/employer/register", 
+  validate([
+    body("firstName").trim().notEmpty().withMessage("First name is required"),
+    body("lastName").trim().notEmpty().withMessage("Last name is required"),
+    body("email").isEmail().withMessage("Valid email is required"),
+    body("password")
+      .isLength({ min: 6 })
+      .withMessage("Password must be at least 6 characters"),
+    body("role").isIn(["owner", "admin", "recruiter"]).withMessage("Invalid role"),
+    body("companyName").trim().notEmpty().withMessage("Company name is required"),
+    body("industry").trim().notEmpty().withMessage("Industry is required"),
+  ]),
+  employerRegister
+)
 
 // Login
 router.post(
@@ -67,6 +85,34 @@ router.post(
   "/google-auth",
   validate([body("token").notEmpty().withMessage("Google token is required")]),
   googleAuth
+);
+
+// Forgot Password
+router.post(
+  "/forgot-password",
+  validate([body("email").isEmail().withMessage("Valid email is required")]),
+  forgotPassword
+);
+
+// Verify Reset OTP
+router.post(
+  "/verify-reset-otp",
+  validate([
+    body("email").isEmail().withMessage("Valid email is required"),
+    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digits"),
+  ]),
+  verifyResetOTP
+);
+
+// Reset Password
+router.post(
+  "/reset-password",
+  validate([
+    body("email").isEmail().withMessage("Valid email is required"),
+    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digits"),
+    body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
+  ]),
+  resetPassword
 );
 
 export default router;

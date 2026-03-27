@@ -76,5 +76,8 @@ if (process.env.MONGO_URI) {
 
 // Routes
 app.use('/', routes);
+app.use("/test",(req, res) => {
+    res.send('DDTEC Backend is running');
+});
 
 export default app;

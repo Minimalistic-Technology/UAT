@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import Admin from "../models/Admin";
 import { generateToken, hashToken } from "../userUtils/token";
 import { sendEmail } from "../userUtils/email";
+import crypto from "crypto";
 
 const BCRYPT_SALT = Number(process.env.BCRYPT_SALT_ROUNDS || 10);
 
@@ -22,6 +23,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const admin = await Admin.create({
       email,
       passwordHash,
+      role: "admin",
       verifyToken: hashToken(verifyToken),
       verifyTokenExpires: new Date(Date.now() + 60 * 60 * 1000),
     });
@@ -92,18 +94,27 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const token = jwt.sign({ id: admin._id , role: "admin" }, process.env.JWT_SECRET!, { expiresIn: "1d" });
+    // Generate a new session ID
+    const sessionId = crypto.randomBytes(16).toString("hex");
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure:true,
-      sameSite: "none",
-    });
-
+    // Save session ID to admin
+    admin.currentSessionId = sessionId;
     admin.lastLogin = new Date();
     await admin.save();
 
-   res.json({ status: "success", role: "admin", user: { id: admin._id, email: admin.email } });
+    const token = jwt.sign(
+      { id: admin._id, role: admin.role, sessionId },
+      process.env.JWT_SECRET!,
+      { expiresIn: "1d" }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
+    res.json({ status: "success", role: admin.role, user: { id: admin._id, email: admin.email, name: admin.name } });
     return;
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -164,7 +175,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 export const me = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const admin = (req as any).admin;
-    res.json({ id: admin._id, email: admin.email, verified: admin.verified });
+    res.json({ id: admin._id, email: admin.email, role: admin.role, verified: admin.verified, name: admin.name });
     return;
   } catch (err) {
     next(err);
@@ -173,10 +184,112 @@ export const me = async (req: Request, res: Response, next: NextFunction): Promi
 
 export const logout = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    const admin = (req as any).admin;
+    if (admin) {
+      admin.currentSessionId = undefined;
+      await admin.save();
+    }
     res.clearCookie("token");
     res.json({ message: "Logged out" });
     return;
   } catch (err) {
     next(err);
+  }
+};
+
+export const createQuestioner = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const admin = (req as any).admin;
+    if (admin.role !== "admin") {
+      res.status(403).json({ message: "Access denied" });
+      return;
+    }
+
+    const { email, password, name } = req.body;
+    const existing = await Admin.findOne({ email });
+    if (existing) {
+      res.status(403).json({ message: "Email in use" });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_SALT);
+    // Questioners created by admin are auto-verified
+    const questioner = await Admin.create({
+      email,
+      passwordHash,
+      role: "questioner",
+      name,
+      verified: true,
+    });
+
+    res.status(201).json({ message: "Questioner created", user: { id: questioner._id, email: questioner.email, name: questioner.name } });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getQuestioners = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const admin = (req as any).admin;
+    if (admin.role !== "admin") {
+      res.status(403).json({ message: "Access denied" });
+      return;
+    }
+
+    const questioners = await Admin.find({ role: "questioner" }).select("-passwordHash -resetToken -verifyToken");
+    res.json(questioners);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const updateQuestioner = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const admin = (req as any).admin;
+    if (admin.role !== "admin") {
+      res.status(403).json({ message: "Access denied" });
+      return;
+    }
+
+    const { id } = req.params;
+    const { email, password, name } = req.body;
+
+    const questioner = await Admin.findById(id);
+    if (!questioner || questioner.role !== "questioner") {
+      res.status(404).json({ message: "Questioner not found" });
+      return;
+    }
+
+    if (email) questioner.email = email;
+    if (name) questioner.name = name;
+    if (password) questioner.passwordHash = await bcrypt.hash(password, BCRYPT_SALT);
+
+    await questioner.save();
+    res.json({ message: "Questioner updated", user: { id: questioner._id, email: questioner.email, name: questioner.name } });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteQuestioner = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const admin = (req as any).admin;
+    if (admin.role !== "admin") {
+      res.status(403).json({ message: "Access denied" });
+      return;
+    }
+
+    const { id } = req.params;
+    const questioner = await Admin.findById(id);
+
+    if (!questioner || questioner.role !== "questioner") {
+      res.status(404).json({ message: "Questioner not found" });
+      return;
+    }
+
+    await Admin.findByIdAndDelete(id);
+    res.json({ message: "Questioner deleted" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 };

@@ -1,5 +1,5 @@
-import Application, { ApplicationStatus } from '../models/Application.model.js';
-import Job from '../models/Job.model.js';
+import Application, { ApplicationStatus } from "../models/Application.model.js";
+import Job from "../models/Job.model.js";
 // import { sendEmail } from '../utils/email.js';
 // @desc    Apply for a job
 // @route   POST /api/applications
@@ -7,12 +7,18 @@ import Job from '../models/Job.model.js';
 export const applyForJob = async (req, res, next) => {
     try {
         const { jobId, resume, coverLetter } = req.body;
+        if (!req.user.resume && !resume) {
+            return res.status(400).json({
+                success: false,
+                message: "Resume is required to apply for this job",
+            });
+        }
         // Check if job exists
         const job = await Job.findById(jobId);
         if (!job) {
             return res.status(404).json({
                 success: false,
-                message: 'Job not found',
+                message: "Job not found",
             });
         }
         // Check if already applied
@@ -23,16 +29,19 @@ export const applyForJob = async (req, res, next) => {
         if (existingApplication) {
             return res.status(400).json({
                 success: false,
-                message: 'You have already applied for this job',
+                message: "You have already applied for this job",
             });
         }
+        console.log(req.user._id);
+        console.log(req.user.resume);
         // Create application
         const application = await Application.create({
             job: jobId,
-            jobSeeker: req.user.id,
+            jobSeeker: req.user._id,
             resume: resume || req.user.resume,
-            coverLetter,
+            coverLetter: coverLetter || null,
         });
+        console.log(application);
         // Increment applications count
         job.applicationsCount += 1;
         await job.save();
@@ -44,14 +53,14 @@ export const applyForJob = async (req, res, next) => {
         // });
         res.status(201).json({
             success: true,
-            message: 'Application submitted successfully',
+            message: "Application submitted successfully",
             data: application,
         });
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error submitting application',
+            message: "Error submitting application",
             error: error.message,
         });
     }
@@ -62,8 +71,8 @@ export const applyForJob = async (req, res, next) => {
 export const getMyApplications = async (req, res, next) => {
     try {
         const applications = await Application.find({ jobSeeker: req.user.id })
-            .populate('job')
-            .sort('-createdAt');
+            .populate("job")
+            .sort("-createdAt");
         res.status(200).json({
             success: true,
             count: applications.length,
@@ -73,7 +82,7 @@ export const getMyApplications = async (req, res, next) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching applications',
+            message: "Error fetching applications",
             error: error.message,
         });
     }
@@ -89,18 +98,18 @@ export const getJobApplicants = async (req, res, next) => {
         if (!job) {
             return res.status(404).json({
                 success: false,
-                message: 'Job not found',
+                message: "Job not found",
             });
         }
         if (job.postedBy.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
-                message: 'Not authorized to view applicants',
+                message: "Not authorized to view applicants",
             });
         }
         const applications = await Application.find({ job: jobId })
-            .populate('jobSeeker', 'firstName lastName email phone skills experience education')
-            .sort('-createdAt');
+            .populate("jobSeeker", "firstName lastName email phone skills experience education")
+            .sort("-createdAt");
         res.status(200).json({
             success: true,
             count: applications.length,
@@ -110,7 +119,7 @@ export const getJobApplicants = async (req, res, next) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching applicants',
+            message: "Error fetching applicants",
             error: error.message,
         });
     }
@@ -122,12 +131,12 @@ export const updateApplicationStatus = async (req, res, next) => {
     try {
         const { status, note } = req.body;
         const application = await Application.findById(req.params.id)
-            .populate('job')
-            .populate('jobSeeker', 'email firstName lastName');
+            .populate("job")
+            .populate("jobSeeker", "email firstName lastName");
         if (!application) {
             return res.status(404).json({
                 success: false,
-                message: 'Application not found',
+                message: "Application not found",
             });
         }
         // Verify job belongs to employer
@@ -135,7 +144,7 @@ export const updateApplicationStatus = async (req, res, next) => {
         if (job.postedBy.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
-                message: 'Not authorized to update this application',
+                message: "Not authorized to update this application",
             });
         }
         // Update status
@@ -158,14 +167,14 @@ export const updateApplicationStatus = async (req, res, next) => {
         // });
         res.status(200).json({
             success: true,
-            message: 'Application status updated successfully',
+            message: "Application status updated successfully",
             data: application,
         });
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error updating application status',
+            message: "Error updating application status",
             error: error.message,
         });
     }
@@ -179,27 +188,27 @@ export const withdrawApplication = async (req, res, next) => {
         if (!application) {
             return res.status(404).json({
                 success: false,
-                message: 'Application not found',
+                message: "Application not found",
             });
         }
         // Verify application belongs to user
         if (application.jobSeeker.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
-                message: 'Not authorized to withdraw this application',
+                message: "Not authorized to withdraw this application",
             });
         }
         application.status = ApplicationStatus.WITHDRAWN;
         await application.save();
         res.status(200).json({
             success: true,
-            message: 'Application withdrawn successfully',
+            message: "Application withdrawn successfully",
         });
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error withdrawing application',
+            message: "Error withdrawing application",
             error: error.message,
         });
     }

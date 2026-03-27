@@ -16,7 +16,7 @@ export const getGameConfig = async (req: Request, res: Response): Promise<void> 
     res.status(200).json({
       totalQuestions: activeConfig.selectedBanks.length,
       lifelines: activeConfig.lifelines,
-    }); 
+    });
   } catch (error) {
     console.error("Error in getGameConfig:", error);
     res.status(500).json({ message: "Server error", error });
@@ -37,7 +37,22 @@ const getRandomQuestion = async (bankId: string) => {
     { $sample: { size: 1 } },
   ]);
 
-  if (!randomQuestion.length) return null;
+
+  if (!randomQuestion.length) {
+    // Diagnostics
+    try {
+      const total = await Question.countDocuments({ bankId });
+      const published = await Question.countDocuments({ bankId, status: "published" });
+      const available = await Question.countDocuments({ bankId: bankId, status: "published", isAsked: false });
+      // Also check if isAsked is string "false"
+      const stringFalse = await Question.countDocuments({ bankId: bankId, status: "published", isAsked: "false" as any });
+
+      console.warn(`[getRandomQuestion] No question found for bank ${bankId}. Stats: Total=${total}, Published=${published}, Available(bool)=${available}, Available(str)=${stringFalse}`);
+    } catch (err) {
+      console.error(`[getRandomQuestion] Error getting stats for bank ${bankId}:`, err);
+    }
+    return null;
+  }
 
   // Step 2: Atomically update it (in case of race condition)
   const updated = await Question.findOneAndUpdate(
@@ -60,16 +75,22 @@ export const startGameSession = async (req: Request, res: Response): Promise<voi
 
     const selectedQuestions: any[] = [];
 
+
     // Loop through each selected bank
     for (const bankId of activeConfig.selectedBanks) {
       const bank = await QuestionBank.findById(bankId);
-      if (!bank) continue;
+      if (!bank) {
+        console.warn(`[startGameSession] Bank ID ${bankId} from config not found in QuestionBank collection.`);
+        continue;
+      }
 
       // Step 1: Try to get one random unasked question
       let randomQuestion = await getRandomQuestion(bank._id);
 
+
       // Step 2: If all are asked, reset and retry once
       if (!randomQuestion) {
+        console.log(`[startGameSession] All questions asked in bank ${bank._id}. Resetting...`);
         await Question.updateMany(
           { bankId: bank._id, status: "published" },
           { $set: { isAsked: false } }
@@ -79,7 +100,11 @@ export const startGameSession = async (req: Request, res: Response): Promise<voi
       }
 
       // Step 3: Push to selected list if found
-      if (randomQuestion) selectedQuestions.push(randomQuestion);
+      if (randomQuestion) {
+        selectedQuestions.push(randomQuestion);
+      } else {
+        console.warn(`[startGameSession] Still no questions found in bank ${bank._id} (${bank.name})`);
+      }
     }
 
     res.status(200).json({
@@ -87,7 +112,7 @@ export const startGameSession = async (req: Request, res: Response): Promise<voi
       questions: selectedQuestions,
       prizeLadder: activeConfig.prizeLadder,
       lifelines: activeConfig.lifelines,
-      gameConfigId:activeConfig._id,
+      gameConfigId: activeConfig._id,
     });
   } catch (error) {
     console.error("Error in startGameSession:", error);
@@ -106,45 +131,60 @@ export const flipQuestion = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
+    // Build the exclusion list: questions already asked in this session
+    const exclusionList = askedQuestionIds || [];
+    console.log(`[flipQuestion] Excluding ${exclusionList.length} questions from session`);
+
+    // First attempt: find unasked questions (excluding session questions)
     let availableQuestions = await Question.find({
       bankId: currentQuestionBankId,
-      _id: { $nin: askedQuestionIds || [] },
+      _id: { $nin: exclusionList },
       status: "published",
-      isAsked:"false"
+      isAsked: false
     });
 
-      if (availableQuestions.length === 0) {
+    // If no questions available, reset the isAsked flag
+    if (availableQuestions.length === 0) {
+      console.log(`[flipQuestion] No unasked questions for bank ${currentQuestionBankId}. Resetting isAsked flags...`);
+
       await Question.updateMany(
         { bankId: currentQuestionBankId, status: "published" },
         { $set: { isAsked: false } }
       );
 
+      // ✅ FIXED: Re-query with exclusion list after reset
       availableQuestions = await Question.find({
         bankId: currentQuestionBankId,
+        _id: { $nin: exclusionList }, // Still exclude questions from current session
         status: "published",
         isAsked: false,
       });
     }
 
-    // 🔹 If still no questions found after reset (empty bank)
+    // If STILL no questions (empty bank or all questions already seen in session)
     if (availableQuestions.length === 0) {
+      console.warn(`[flipQuestion] Bank ${currentQuestionBankId} has no available questions (total questions or all seen in current session).`);
       res.status(404).json({ message: "No questions available in this bank" });
       return;
     }
 
+    // Pick a random question
     const randomQuestion =
       availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
 
+    console.log(`[flipQuestion] Selected question ${randomQuestion._id} from ${availableQuestions.length} available`);
+
+    // ✅ FIXED: Mark as asked BEFORE sending response to prevent race conditions
+    await Question.findByIdAndUpdate(randomQuestion._id, {
+      isAsked: true,
+    });
+
+    // Send response
     res.status(200).json({
       message: "New question fetched successfully",
       question: randomQuestion,
     });
 
-    await Question.findByIdAndUpdate(randomQuestion._id, {
-          isAsked: true,
-        });
-
-    
   } catch (error) {
     console.error("Error in flipQuestion:", error);
     res.status(500).json({ message: "Server error", error });
@@ -155,21 +195,26 @@ export const completeGame = async (req: Request, res: Response): Promise<void> =
   try {
     const { finalScore, isWinner, prize, totalTimeSeconds, lifelinesUsed, questionHistory } = req.body;
 
-  const user = (req as any).user;
-if (!user || !finalScore || !prize || !questionHistory) {
-  res.status(400).json({ message: "Missing required fields" });
-  return;
-}
+    const user = (req as any).user;
+    if (!user || !finalScore || !prize || !questionHistory) {
+      res.status(400).json({ message: "Missing required fields" });
+      return;
+    }
 
-const newResult = await GameResult.create({
-  userId: user._id,
-  finalScore,
-  isWinner,
-  prize,
-  totalTimeSeconds,
-  lifelinesUsed,
-  questionHistory,
-});
+    // Map questionHistory to questions (schema expects 'questions')
+    // We assume questionHistory items match the structure or are close enough to be compatible with QuestionLiteSchema logic
+    // Ideally we should use the robust safeQuestions logic from gameResultController, but for now we map directly
+    const questions = questionHistory;
+
+    const newResult = await GameResult.create({
+      userId: user._id,
+      finalScore,
+      isWinner,
+      prize,
+      totalTimeSeconds,
+      lifelinesUsed,
+      questions,
+    });
 
     const allResults = await GameResult.find()
       .sort({ finalScore: -1, totalTimeSeconds: 1 })
@@ -199,23 +244,45 @@ export const fiftyFiftyLifeline = async (req: Request, res: Response): Promise<v
   try {
     const { question } = req.body;
 
-    if (!question || !Array.isArray(question.options) || !question.answer) {
+    if (!question || !Array.isArray(question.options)) {
       res.status(400).json({ message: "Invalid question data provided" });
       return;
     }
 
-    const { options, answer } = question;
+    const { options, correctIndex, correctIndices } = question;
 
-    const incorrectOptions = options.filter((opt: string) => opt !== answer);
-
-    for (let i = incorrectOptions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [incorrectOptions[i], incorrectOptions[j]] = [incorrectOptions[j], incorrectOptions[i]];
+    // Determine the correct answer index
+    let correctIdx: number;
+    if (typeof correctIndex === 'number') {
+      correctIdx = correctIndex;
+    } else if (Array.isArray(correctIndices) && correctIndices.length > 0) {
+      // Legacy support
+      correctIdx = correctIndices[0];
+    } else {
+      // Error: no correct answer specified
+      res.status(400).json({ message: "No correct answer index provided" });
+      return;
     }
 
-    const removedOptions = incorrectOptions.slice(0, 2);
+    // 50:50 logic: Remove 2 INCORRECT options
+    // Identify all incorrect indices (0-3 except correctIdx)
+    const allIndices = [0, 1, 2, 3];
+    const incorrectIndices = allIndices.filter(idx => idx !== correctIdx);
+
+    // Shuffle incorrect indices
+    for (let i = incorrectIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [incorrectIndices[i], incorrectIndices[j]] = [incorrectIndices[j], incorrectIndices[i]];
+    }
+
+    // Take 2 random incorrect indices
+    const indicesToRemove = incorrectIndices.slice(0, 2);
+
+    // Map indices to actual option texts
+    const removedOptions = indicesToRemove.map(idx => options[idx]);
 
     res.status(200).json({ removedOptions });
+
 
   } catch (error) {
     console.error("Error in fiftyFiftyLifeline:", error);

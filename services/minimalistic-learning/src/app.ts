@@ -3,7 +3,6 @@ import { connectDatabase } from './config/db';
 // import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import routes from './routes';
 import { env } from './config/env';
 import { defaultLimiter } from './config/rateLimit';
 import errorHandler from './middleware/errorHandler';
@@ -25,7 +24,7 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(cookieParser());
 app.use(cors({
-    origin: 'https://minimalistic-learning.onrender.com', 
+    origin: env.NODE_ENV === "development" ? "http://localhost:3000" : "https://minimalistic-learning.onrender.com",
     credentials: true,                
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
   }));
@@ -34,9 +33,9 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use('/api/v1', authRoutes);
-app.use('/api/v1', postRoutes);
-app.use('/api/v1', commentRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/posts', postRoutes);
+app.use('/api/v1/comments', commentRoutes);
 
 app.use(errorHandler);
 
