@@ -1,0 +1,40 @@
+name: Deploy On EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo rm -rf /home/ubuntu/.cache/*
+            sudo npm cache clean --force
+            sudo rm -rf /home/ubuntu/.pm2/logs/*
+            sudo npm cache clean --force 
+            cd education_platform/
+            git pull origin main
+            npm ci
+            rm -rf .next
+            NODE_OPTIONS='--max_old_space_size=4096' yarn build
+            pm2 restart all
