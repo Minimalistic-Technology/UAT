@@ -1,8 +1,8 @@
 import express from 'express';
-import helmet from 'helmet';
+import { connectDatabase } from './config/db';  
+// import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import routes from './routes';
 import { env } from './config/env';
 import { defaultLimiter } from './config/rateLimit';
 import errorHandler from './middleware/errorHandler';
@@ -12,25 +12,30 @@ import commentRoutes from './routes/commentRoutes';
 
 const app = express();
 
-app.disable('x-powered-by');
-app.use(helmet());
-app.use(
-  cors({
-    origin: env.corsOrigins,
-    credentials: true
-  })
-);
-app.use(cookieParser(env.COOKIE_SECRET));
-app.use(express.json());
-app.use(defaultLimiter);
+(async () => {
+  try {
+    await connectDatabase();
+  } catch (err) {
+    console.error(' MongoDB connection failed', err);
+    process.exit(1);
+  }
+})();
+
+app.use(express.json({ limit: "50mb" }));
+app.use(cookieParser());
+app.use(cors({
+    origin: env.NODE_ENV === "development" ? "http://localhost:3000" : "https://minimalistic-learning.onrender.com",
+    credentials: true,                
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+  }));
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use('/api/v1', authRoutes);
-app.use('/api/v1', postRoutes);
-app.use('/api/v1', commentRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/posts', postRoutes);
+app.use('/api/v1/comments', commentRoutes);
 
 app.use(errorHandler);
 

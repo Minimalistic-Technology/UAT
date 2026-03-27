@@ -7,6 +7,10 @@ import cartRoutes from './cart.routes';
 import adminRoutes from './admin.routes';
 import orderRoutes from './order.routes';
 import couponRoutes from './coupon.routes';
+import blogRoutes from './blog.routes';
+import categoryRoutes from './category.routes';
+import billRoutes from './bill.routes';
+import settingsRoutes from './settings';
 
 const router = Router();
 
@@ -19,5 +23,9 @@ router.use('/cart', cartRoutes);
 router.use('/admin', adminRoutes);
 router.use('/orders', orderRoutes);
 router.use('/coupons', couponRoutes);
+router.use('/blogs', blogRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/bills', billRoutes);
+router.use('/settings', settingsRoutes);
 
 export default router;

@@ -6,7 +6,7 @@ export interface IProduct extends Document {
     description: string;
     image: string;
     images: string[];
-    category: string;
+    category: mongoose.Types.ObjectId | string; // Allow string for legacy or populated objects
     stock: number;
     rating: number;
     numReviews: number;
@@ -18,6 +18,8 @@ export interface IProduct extends Document {
     discountType: 'percentage' | 'fixed';
     discountValue: number;
     isActive: boolean;
+    showOnHome: boolean;
+    taxes: Array<{ name: string; rate: number }>;
 }
 
 const ProductSchema: Schema = new Schema({
@@ -26,7 +28,7 @@ const ProductSchema: Schema = new Schema({
     description: { type: String },
     image: { type: String },
     images: { type: [String], default: [] },
-    category: { type: String },
+    category: { type: Schema.Types.ObjectId, ref: 'Category' },
     stock: { type: Number, required: true, default: 0 },
     rating: { type: Number, required: true, default: 0 },
     numReviews: { type: Number, required: true, default: 0 },
@@ -37,7 +39,14 @@ const ProductSchema: Schema = new Schema({
     discountPercentage: { type: Number, default: 0 }, // Deprecated, use discountValue
     discountType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
     discountValue: { type: Number, default: 0 },
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    showOnHome: { type: Boolean, default: false },
+    taxes: [
+        {
+            name: { type: String },
+            rate: { type: Number }
+        }
+    ]
 }, { timestamps: true });
 
 export default mongoose.model<IProduct>('Product', ProductSchema);

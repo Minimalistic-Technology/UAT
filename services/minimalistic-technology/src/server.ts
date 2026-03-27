@@ -1,16 +1,15 @@
-import express, { Request, Response } from "express";
+import dotenv from "dotenv";
+dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 5003;
+import app from "./app";
+import connectDB from "./utils/db";
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("Minimalistic Technology main site");
-});
+const MONGO_URI = process.env.MONGO_URI || "";
 
-app.get("/health", (req: Request, res: Response) => {
-  res.json({ status: "ok", service: "minimalistic-technology" });
-});
+const PORT = process.env.PORT || 5002;
+
+connectDB(MONGO_URI);
 
 app.listen(PORT, () => {
-  console.log(`Minimalistic Technology service listening on port ${PORT}`);
+  console.log(`Minimalistic Technology service listening on port http://localhost:${PORT}`);
 });

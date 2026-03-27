@@ -1,8 +1,20 @@
 import { Router } from 'express';
-import { deleteComment } from '../controllers/commentController';
+import { 
+  createComment, 
+  getPostComments, 
+  updateComment, 
+  deleteComment, 
+  likeComment
+} from '../controllers/commentController';
 import requireAuth from '../middleware/requireAuth';
 
-
 const router = Router();
-router.delete('/comments/:id', requireAuth, deleteComment);
+
+router.post('/post/:postId', requireAuth, createComment);
+router.get('/post/:postId', getPostComments);
+
+router.put('/:id', requireAuth, updateComment);
+router.delete('/:id', requireAuth, deleteComment);
+router.post('/:id/like', requireAuth, likeComment);
+
 export default router;

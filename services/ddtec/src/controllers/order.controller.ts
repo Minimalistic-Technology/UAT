@@ -2,10 +2,12 @@ import { Request, Response } from 'express';
 import Order from '../models/Order';
 import Cart from '../models/Cart';
 import Product from '../models/Product';
+import User from '../models/User';
+import Bill from '../models/Bill';
 import NotificationService from '../services/notification.service';
 
 // Create a new order
-export const createOrder = async (req: Request | any, res: Response): Promise<void> => {
+export const createOrder = async (req: Request | any, res: Response) => {
     try {
         const { items, totalAmount, shippingInfo, paymentMethod } = req.body;
         // User is optional
@@ -34,6 +36,21 @@ export const createOrder = async (req: Request | any, res: Response): Promise<vo
             orderData.user = userId;
         }
 
+        if (paymentMethod === 'credit') {
+            if (!userId) {
+                return res.status(400).json({ msg: 'User must be logged in to use credit points' });
+            }
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ msg: 'User not found' });
+            }
+            if ((user.creditBalance || 0) < totalAmount) {
+                return res.status(400).json({ msg: 'Insufficient credit balance' });
+            }
+            user.creditBalance = (user.creditBalance || 0) - totalAmount;
+            await user.save();
+        }
+
         const order = new Order(orderData);
 
         // Decrement Stock
@@ -50,6 +67,41 @@ export const createOrder = async (req: Request | any, res: Response): Promise<vo
         }
 
         const savedOrder = await order.save();
+
+        // Auto-create Bill
+        try {
+            const billItems = [];
+            for (const item of items) {
+                const product = await Product.findById(item.product._id);
+                billItems.push({
+                    name: product?.name || 'Product',
+                    price: item.product.price,
+                    quantity: item.quantity,
+                    taxes: product?.taxes || [],
+                    fromInventory: true,
+                    productId: item.product._id
+                });
+            }
+
+            const billData = {
+                items: billItems,
+                totalAmount: savedOrder.totalAmount,
+                customerInfo: {
+                    name: shippingInfo.fullName,
+                    phone: shippingInfo.phone || '', // Need to ensure phone is in shippingInfo or checkout
+                    email: shippingInfo.email,
+                    address: `${shippingInfo.address}, ${shippingInfo.city}`
+                },
+                source: 'order_auto',
+                user: userId
+            };
+
+            const newBill = new Bill(billData);
+            const savedBill = await newBill.save();
+            (savedOrder as any).billId = savedBill._id; // Attach for reference if needed
+        } catch (billError) {
+            console.error('Error auto-creating bill:', billError);
+        }
 
         // Send Order Confirmation Email (Async - don't block response)
         // We populate the product data for the email template
@@ -76,7 +128,10 @@ export const createOrder = async (req: Request | any, res: Response): Promise<vo
 // Get all orders (Admin only - placeholder for future)
 export const getAllOrders = async (req: Request, res: Response) => {
     try {
-        const orders = await Order.find().populate('user', 'name email').sort({ createdAt: -1 });
+        const orders = await Order.find()
+            .populate('user', 'name email')
+            .populate('items.product', 'name price image')
+            .sort({ createdAt: -1 });
         res.json(orders);
     } catch (error) {
         res.status(500).json({ msg: 'Server error' });
@@ -101,7 +156,7 @@ export const getMyOrders = async (req: Request | any, res: Response) => {
 export const updateOrderStatus = async (req: Request, res: Response) => {
     try {
         const { status } = req.body;
-        const validStatuses = ['processing', 'shipped', 'delivered', 'cancelled'];
+        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ msg: 'Invalid status' });

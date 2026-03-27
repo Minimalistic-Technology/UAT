@@ -6,6 +6,7 @@ import User from '../models/User';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 import OTP from '../models/OTP';
+import Settings from '../models/Settings';
 import NotificationService from '../services/notification.service';
 import ValidationService from '../services/validation.service';
 
@@ -16,9 +17,16 @@ const generateOTP = () => {
 
 export const sendOtp = async (req: Request, res: Response) => {
     try {
-        const { identifier } = req.body; // email or phone
+        let { identifier } = req.body; // email or phone
         if (!identifier) {
             return res.status(400).json({ msg: 'Identifier (email or phone) is required' });
+        }
+        identifier = identifier.trim();
+
+        // Check if global Signup is disabled for regular users
+        const settings = await Settings.findOne();
+        if (settings && settings.components && settings.components.Signup === false) {
+            return res.status(403).json({ msg: 'Public registration is currently disabled.' });
         }
 
         // Check if user already exists
@@ -48,12 +56,12 @@ export const sendOtp = async (req: Request, res: Response) => {
         );
 
         // REAL SENDING
-        const sent = await NotificationService.sendOTP(identifier, otp);
+        const result = await NotificationService.sendOTP(identifier, otp);
 
-        if (sent) {
+        if (result.success) {
             res.json({ msg: 'OTP sent successfully', success: true });
         } else {
-            res.status(500).json({ msg: 'Failed to send OTP. Please try again.', success: false });
+            res.status(500).json({ msg: result.msg || 'Failed to send OTP. Please try again.', success: false });
         }
     } catch (err) {
         console.error(err);
@@ -89,6 +97,14 @@ export const register = async (req: Request, res: Response) => {
         });
         if (!otpRecord) {
             return res.status(400).json({ msg: 'Invalid or expired OTP' });
+        }
+
+        // Block new user registrations if public login/signup is disabled
+        if (!role || role === 'user') {
+            const settings = await Settings.findOne();
+            if (settings && settings.components && settings.components.Signup === false) {
+                return res.status(403).json({ msg: 'Public registration is currently disabled.' });
+            }
         }
 
         // Validate Real Contact Info
@@ -132,7 +148,11 @@ export const register = async (req: Request, res: Response) => {
             id: user.id,
             name: user.name, // Keep using name for payload for compatibility
             email: user.email,
-            role: user.role
+            role: user.role,
+            customPages: user.customPages,
+            editPages: user.editPages,
+            addPages: user.addPages,
+            deletePages: user.deletePages
         };
 
         // Return success message
@@ -144,7 +164,11 @@ export const register = async (req: Request, res: Response) => {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                customPages: user.customPages,
+                editPages: user.editPages,
+                addPages: user.addPages,
+                deletePages: user.deletePages
             }
         });
     } catch (err) {
@@ -155,8 +179,8 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
     try {
-        const { email, phone, password } = req.body;
-        const identifier = email || phone;
+        let { email, phone, password } = req.body;
+        const identifier = (email || phone || '').trim();
 
         // Check if user exists
         const user = await User.findOne({
@@ -175,10 +199,15 @@ export const login = async (req: Request, res: Response) => {
         }
 
         // Check if user is active (bypass for admins to prevent lockout)
-        if (user.role !== 'admin') {
+        if (user.role === 'user') {
             if (!user.isActive) {
                 return res.status(403).json({ msg: 'Account is deactivated. Please contact admin.' });
             }
+
+            // Note: Per user request, existing users can login even if Login is "disabled" (Maintenance mode)
+            // The maintenance block is handled on the frontend for UX.
+            // If we wanted to block it here, we would check settings.components.Login.
+            // But user said: "in disabled login existing user can login".
         }
 
         const payload = {
@@ -187,7 +216,11 @@ export const login = async (req: Request, res: Response) => {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email, // Including email in payload is useful
-            role: user.role
+            role: user.role,
+            customPages: user.customPages,
+            editPages: user.editPages,
+            addPages: user.addPages,
+            deletePages: user.deletePages
         };
 
         jwt.sign(
@@ -196,14 +229,16 @@ export const login = async (req: Request, res: Response) => {
             { expiresIn: '1h' },
             (err, token) => {
                 if (err) throw err;
+                console.log(`[AUTH] Session created for user ${payload.email}`);
                 res.cookie('token', token, {
                     httpOnly: true,
-                    // secure: process.env.NODE_ENV === 'production', 
+                    secure: true, // Required for SameSite=None
                     maxAge: 3600000,
                     path: '/',
-                    sameSite: 'lax'
+                    sameSite: 'none' // Allow cross-site cookie
                 });
-                res.json({ user: payload });
+                // Return token in body for fallback
+                res.json({ user: payload, token });
             }
         );
     } catch (err) {
@@ -238,41 +273,55 @@ export const getMe = async (req: Request, res: Response) => {
 // Admin: Create User directly
 export const createUser = async (req: Request, res: Response) => {
     try {
-        const { firstName, lastName, email, phone, password, role } = req.body;
+        let { firstName, lastName, email, phone, password, role, customPages, editPages, addPages, deletePages } = req.body;
 
         // Validate Contact Info
         if (email) {
             const emailValidation = ValidationService.isRealEmail(email);
             if (!emailValidation.isValid) return res.status(400).json({ msg: emailValidation.msg });
         }
-        if (phone) {
+        if (phone && phone.trim() !== "") {
             const phoneValidation = ValidationService.isRealPhone(phone);
             if (!phoneValidation.isValid) return res.status(400).json({ msg: phoneValidation.msg });
+        } else {
+            phone = undefined; // Ensure empty string doesn't trigger unique constraint
         }
 
-        let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ msg: 'User already exists' });
+        // Robust uniqueness check
+        const checkQuery: any[] = [];
+        if (email) checkQuery.push({ email });
+        if (phone) checkQuery.push({ phone });
+
+        if (checkQuery.length > 0) {
+            const existingUser = await User.findOne({ $or: checkQuery });
+            if (existingUser) {
+                const conflictField = existingUser.email === email ? 'Email' : 'Phone number';
+                return res.status(400).json({ msg: `${conflictField} already exists` });
+            }
         }
 
-        user = new User({
+        const user = new User({
             firstName,
             lastName,
-            name: `${firstName} ${lastName}`,
+            name: `${firstName || ''} ${lastName || ''}`.trim(),
             email,
             phone,
             password, // Will be hashed by pre-save
             role: role || 'user',
+            customPages: customPages || [],
+            editPages: editPages || [],
+            addPages: addPages || [],
+            deletePages: deletePages || [],
             isEmailVerified: true, // Admin created, assume verified
-            isPhoneVerified: true,
+            isPhoneVerified: !!phone,
             isActive: true
         });
 
         await user.save();
         res.status(201).json({ msg: 'User created successfully', user });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server error');
+    } catch (err: any) {
+        console.error("[ERROR] createUser Failed:", err);
+        res.status(500).json({ msg: 'Server error', error: err.message });
     }
 };
 
@@ -402,16 +451,63 @@ export const changePassword = async (req: Request | any, res: Response) => {
 
 export const checkUser = async (req: Request, res: Response) => {
     try {
-        const { identifier } = req.body;
+        let { identifier } = req.body;
         if (!identifier) {
             return res.status(400).json({ msg: 'Identifier is required' });
         }
+        identifier = identifier.trim();
 
         const user = await User.findOne({
             $or: [{ email: identifier }, { phone: identifier }]
         });
 
         res.json({ exists: !!user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+// Admin: Update User Credit Balance
+export const updateCreditBalance = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        let { amount, type } = req.body; // type: 'add' or 'set'
+
+        // Convert to number if string
+        if (typeof amount === 'string') {
+            amount = Number(amount);
+        }
+
+        if (typeof amount !== 'number' || isNaN(amount)) {
+            return res.status(400).json({ msg: 'Amount must be a valid number' });
+        }
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        if (type === 'set') {
+            user.creditBalance = amount;
+        } else {
+            // Default to adding (can be negative to subtract)
+            user.creditBalance = (user.creditBalance || 0) + amount;
+        }
+
+        await user.save();
+
+        res.json({ msg: 'Credit balance updated', creditBalance: user.creditBalance, user });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+// Admin: Get All Users
+export const getAllUsers = async (req: Request, res: Response) => {
+    try {
+        const users = await User.find().select('-password').sort({ createdAt: -1 });
+        res.json(users);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
