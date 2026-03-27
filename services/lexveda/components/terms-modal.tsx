@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "lexveda_terms_accepted";
 
-export default function TermsModal() {
+export default function TermsModal({ onClose }: { onClose?: () => void } = {}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -35,6 +35,7 @@ export default function TermsModal() {
   const handleAccept = () => {
     window.localStorage.setItem(STORAGE_KEY, "true");
     setOpen(false);
+    if (onClose) onClose();
   };
 
   const handleReject = () => {
@@ -43,7 +44,10 @@ export default function TermsModal() {
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={(nextOpen) => setOpen(nextOpen)}>
+    <AlertDialog open={open} onOpenChange={(nextOpen) => {
+      setOpen(nextOpen);
+      if (!nextOpen && onClose) onClose();
+    }}>
       <AlertDialogContent className="font-serif w-[92vw] max-w-lg md:max-w-2xl lg:max-w-3xl rounded-lg p-0 overflow-hidden">
         <AlertDialogHeader className="px-6 pt-6 pb-3 border-b">
           <AlertDialogTitle className="text-lg md:text-xl font-semibold">
