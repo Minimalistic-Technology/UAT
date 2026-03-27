@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Linkedin, Facebook, Instagram } from "lucide-react";
+import TermsModal from "./terms-modal";
 
 const socialLinks = [
   {
@@ -17,6 +19,8 @@ const socialLinks = [
 ];
 
 const Footer = () => {
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
   return (
     <footer className="bg-navy-dark border-t border-accent/20 px-4 sm:px-6 py-12 lg:px-12">
       <div className="max-w-7xl mx-auto">
@@ -59,7 +63,7 @@ const Footer = () => {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    window.dispatchEvent(new Event("open-terms-modal"));
+                    setShowTermsModal(true);
                   }}
                   className="hover:text-accent transition-colors cursor-pointer"
                 >
@@ -115,6 +119,7 @@ const Footer = () => {
           </p>
         </div>
       </div>
+      {showTermsModal && <TermsModal onClose={() => setShowTermsModal(false)} />}
     </footer>
   );
 };
