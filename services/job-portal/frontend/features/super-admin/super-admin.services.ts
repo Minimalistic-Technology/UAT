@@ -1,6 +1,6 @@
 import { apiClient } from "@/lib/api";
 import { IPaginatedKycApplications, IKycApplication } from "./super-admin.types";
-import { PlanFormValues } from "./super-admin.schema";
+import { PlanFormValues, CouponFormValues } from "./super-admin.schema";
 
 export const superAdminServices = {
   getKycApplications: async (
@@ -37,6 +37,11 @@ export const superAdminServices = {
 
   createPlan: async (payload: PlanFormValues): Promise<{ success: boolean; data: any }> => {
     const res = await apiClient.post<{ success: boolean; data: any }>("/plans", payload);
+    return res;
+  },
+
+  createCoupon: async (payload: CouponFormValues): Promise<{ success: boolean; data: any }> => {
+    const res = await apiClient.post<{ success: boolean; data: any }>("/coupons", payload);
     return res;
   },
 };
