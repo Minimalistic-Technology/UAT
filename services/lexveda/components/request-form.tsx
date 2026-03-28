@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 // Configuration for hidden backend details
 const BACKEND_CONFIG = {
-  whatsappNumber: "+917045882828",
+  whatsappNumber: "7045882828",
   email: "info@lexvedalegalservices.in"
 };
 
