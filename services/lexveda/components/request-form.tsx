@@ -55,7 +55,8 @@ export const ConsultationForm = () => {
 
     // Open WhatsApp after a brief delay
     setTimeout(() => {
-      window.open(whatsappUrl, "_blank");
+      window.location.href = whatsappUrl;
+      // window.open(whatsappUrl, "_blank");
     }, 1500);
   };
 
