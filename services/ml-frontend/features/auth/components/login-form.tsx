@@ -7,7 +7,7 @@ import { loginSchema } from "../schema/auth-schema";
 import { LoginValues } from "../types/auth-type";
 import { useLogin } from "../hooks/use-login";
 import Link from "next/link";
-import axios from "axios";
+import { isAxiosError } from "@/lib/api";
 
 const LoginForm = () => {
   const { mutate, isPending, error } = useLogin();
@@ -55,7 +55,7 @@ const LoginForm = () => {
 
         {error && (
           <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">
-            {axios.isAxiosError(error) ? error.response?.data?.message || "Login failed" : "An error occurred"}
+            {isAxiosError(error) ? error.response?.data?.message || "Login failed" : "An error occurred"}
           </div>
         )}
 

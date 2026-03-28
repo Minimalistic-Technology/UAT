@@ -25,6 +25,12 @@ import { durationToMs } from '../utils/time';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
+import type {
+  LoginResponseData,
+  SignupResponseData,
+  RefreshTokenResponseData,
+  PasswordResetInitResponseData
+} from '../types/auth.types';
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const payload = signupSchema.parse(req.body) as userService.CreateUserPayload;
@@ -37,7 +43,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   const user = await userService.createUser(payload);
 
   return res.status(StatusCodes.CREATED).json(
-    new ApiResponse(StatusCodes.CREATED, { user: userService.toPublicUser(user) }, "User signed up successfully")
+    new ApiResponse<SignupResponseData>(StatusCodes.CREATED, { user: userService.toPublicUser(user) }, "User signed up successfully")
   );
 });
 
@@ -76,7 +82,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     })
     .status(StatusCodes.OK)
     .json(
-      new ApiResponse(StatusCodes.OK, {
+      new ApiResponse<LoginResponseData>(StatusCodes.OK, {
         user: userService.toPublicUser(user),
         tokens: {
           accessToken,
@@ -137,7 +143,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     })
     .status(StatusCodes.OK)
     .json(
-      new ApiResponse(StatusCodes.OK, {
+      new ApiResponse<RefreshTokenResponseData>(StatusCodes.OK, {
         accessToken,
         refreshToken: newRefreshToken
       }, "Tokens refreshed successfully")
@@ -158,7 +164,7 @@ export const initiatePasswordReset = asyncHandler(async (req: Request, res: Resp
   await storeResetToken(user.id, resetToken, env.PASSWORD_RESET_EXPIRE);
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { resetToken }, 'Password reset token generated successfully.')
+    new ApiResponse<PasswordResetInitResponseData>(StatusCodes.OK, { resetToken }, 'Password reset token generated successfully.')
   );
 });
 

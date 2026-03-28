@@ -1,21 +1,14 @@
-import { useMutation } from "@tanstack/react-query";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { LoginValues, RegisterValues } from "../types/auth-type";
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import { LoginResponse, SignupResponse } from "../types/auth-response";
 
 export const authService = {
-  login: async (data: LoginValues) => {
+  login: async (data: LoginValues): Promise<LoginResponse> => {
     const response = await api.post("/auth/login", data);
     return response.data;
   },
-  register: async (data: RegisterValues) => {
-    const response = await api.post("/auth/register", data);
+  register: async (data: RegisterValues): Promise<SignupResponse> => {
+    const response = await api.post("/auth/signup", data);
     return response.data;
   },
 };
