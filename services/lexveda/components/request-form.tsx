@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 // Configuration for hidden backend details
 const BACKEND_CONFIG = {
-  whatsappNumber: "+917045882828",
+  whatsappNumber: "7045882828",
   email: "info@lexvedalegalservices.in"
 };
 
@@ -43,7 +43,9 @@ export const ConsultationForm = () => {
     // WhatsApp redirection
     const message = `Hello LexVeda Team,\n\nI would like to book an online legal consultation.\n\nName: ${formData.fullName}\n\nMobile: ${formData.mobile}\n\nEmail: ${formData.email}\n\nLegal Issue: ${formData.description}\n\nPlease let me know the available consultation time.`;
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/91${BACKEND_CONFIG.whatsappNumber}?text=${encodedMessage}`;
+
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=91${BACKEND_CONFIG.whatsappNumber}&text=${encodedMessage}`;
+    // const whatsappUrl = `https://wa.me/91${BACKEND_CONFIG.whatsappNumber}?text=${encodedMessage}`;
 
     // Show success toast and redirect
     toast.success(SUCCESS_MESSAGE);
@@ -53,7 +55,8 @@ export const ConsultationForm = () => {
 
     // Open WhatsApp after a brief delay
     setTimeout(() => {
-      window.open(whatsappUrl, "_blank");
+      window.location.href = whatsappUrl;
+      // window.open(whatsappUrl, "_blank");
     }, 1500);
   };
 
