@@ -1,12 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
-// export enum UserRole {
-//   JOB_SEEKER = "jobseeker",
-//   EMPLOYER = "employer",
-//   ADMIN = "admin",
-// }
-
 export enum GlobalRole {
   USER = "user",
   SUPER_ADMIN = "super_admin",
@@ -160,15 +154,6 @@ const userSchema = new Schema<IUser>(
     timestamps: true,
   },
 );
-
-// Hash password before saving
-userSchema.pre("save", async function () {
-  if (!this.isModified("password")) return;
-
-  if (this.password) {
-    this.password = await bcrypt.hash(this.password, 12);
-  }
-});
 
 // Compare password method
 userSchema.methods.comparePassword = async function (

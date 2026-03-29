@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../config/env.js";
 import User, { GlobalRole } from "../models/User.model.js";
+import { ApiError } from "../utils/apiError.js";
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -26,10 +27,7 @@ export const protect = async (
     }
 
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Not authorized to access this route",
-      });
+      return next(new ApiError(401, "Not authorized to access this route"));
     }
 
     // Verify token
@@ -39,25 +37,16 @@ export const protect = async (
     req.user = await User.findById(decoded.id);
 
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "User not found",
-      });
+      return next(new ApiError(401, "User not found"));
     }
 
     if (!req.user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: "User account is deactivated",
-      });
+      return next(new ApiError(403, "User account is deactivated"));
     }
 
     next();
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: "Not authorized to access this route",
-    });
+  } catch (error: any) {
+    return next(new ApiError(401, error.message ?? "Not authorized to access this route"));
   }
 };
 
@@ -100,10 +89,12 @@ export const optionalAuth = async (
 export const authorize = (...roles: GlobalRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: `User role '${req.user.role}' is not authorized to access this route`,
-      });
+      return next(
+        new ApiError(
+          403,
+          `User role '${req.user.role}' is not authorized to access this route`,
+        ),
+      );
     }
     next();
   };

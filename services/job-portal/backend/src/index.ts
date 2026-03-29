@@ -18,6 +18,7 @@ import adminRoutes from "./routes/admin.route.js";
 import companyMemberRoutes from './routes/companyMember.routes.js';
 import planRoutes from './routes/plan.routes.js';
 import couponRoutes from './routes/coupon.routes.js';
+import { ApiResponse } from './utils/apiResponse.js';
 
 // Initialize express app
 const app: Application = express();
@@ -56,10 +57,7 @@ app.use("/api/plans", planRoutes);
 app.use("/api/coupons", couponRoutes);
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is running',
-  });
+  res.status(200).json(new ApiResponse(200, null, "Server is running"));
 });
 
 // Error handler
