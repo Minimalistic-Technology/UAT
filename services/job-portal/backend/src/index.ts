@@ -1,5 +1,5 @@
 import express from 'express';
-import type { Application, Request, Response } from 'express';
+import type { Application, NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -18,6 +18,7 @@ import adminRoutes from "./routes/admin.route.js";
 import companyMemberRoutes from './routes/companyMember.routes.js';
 import planRoutes from './routes/plan.routes.js';
 import couponRoutes from './routes/coupon.routes.js';
+
 // Initialize express app
 const app: Application = express();
 
@@ -54,7 +55,7 @@ app.use("/api/company-members", companyMemberRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/coupons", couponRoutes);
 // Health check
-app.get('/health', (req: Request, res: Response) => {
+app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: 'Server is running',
@@ -62,7 +63,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // Error handler
-app.use((err: any, req: Request, res: Response, next: any) => {
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(err.statusCode || 500).json({
     success: false,

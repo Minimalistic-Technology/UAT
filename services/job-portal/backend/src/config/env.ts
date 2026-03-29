@@ -6,6 +6,7 @@ const config = {
   mongoUri: process.env.MONGO_URI || '',
   jwtSecret: process.env.JWT_SECRET || '',
   jwtExpire: process.env.JWT_EXPIRE || '7d',
+  otpSecret: process.env.OTP_SECRET || 'fallback_secret',
 
   // OAuth
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
