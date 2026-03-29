@@ -1,79 +1,162 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import Plan from "../models/Plan.model.js";
+import { ApiError } from "../utils/apiError.js";
+import { ApiResponse } from "../utils/apiResponse.js";
+import mongoose from "mongoose";
 
-// @desc    Create a new plan
-// @route   POST /api/plans
-// @access  Protected/Super_Admin
-export const createPlan = async (req: Request, res: Response) => {
+export const createPlan = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const { name, price, durationDays, features, isActive } = req.body;
+    const {
+      name,
+      description,
+      price,
+      currency,
+      durationDays,
+      jobPostLimit,
+      isFeatured,
+      isDefault,
+      displayOrder,
+      features,
+      isActive,
+    } = req.body;
 
-    if (!name || price === undefined || !durationDays) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide name, price, and durationDays",
-      });
+    // If making this the default plan, remove default status from others
+    if (isDefault) {
+      await Plan.updateMany({}, { isDefault: false });
     }
 
     const plan = await Plan.create({
       name,
+      description,
       price,
+      currency: currency || "INR",
       durationDays,
-      features,
+      jobPostLimit,
+      isFeatured: isFeatured !== undefined ? isFeatured : false,
+      isDefault: isDefault !== undefined ? isDefault : false,
+      displayOrder: displayOrder !== undefined ? displayOrder : 0,
+      features: features || [],
       isActive: isActive !== undefined ? isActive : true,
     });
 
-    return res.status(201).json({
-      success: true,
-      data: plan,
-    });
+    return res
+      .status(201)
+      .json(new ApiResponse(201, plan, "Plan created successfully"));
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: error.message,
-    });
+    if (error.code === 11000) {
+      return next(new ApiError(400, "A plan with this name already exists."));
+    }
+    next(new ApiError(500, error.message ?? "Server Error"));
   }
 };
 
-// @desc    Get all active plans
-// @route   GET /api/plans
-// @access  Public
-export const getPlans = async (req: Request, res: Response) => {
+export const getPlans = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const plans = await Plan.find({ isActive: true });
+    const plans = await Plan.find({ isActive: true }).sort({ displayOrder: 1 });
 
-    return res.status(200).json({
-      success: true,
-      count: plans.length,
-      data: plans,
-    });
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { count: plans.length, plans },
+          "Active plans fetched successfully",
+        ),
+      );
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-// @desc    Get all plans (including inactive)
-// @route   GET /api/admin/plans
-// @access  Protected/Super_Admin
-export const getAllAdminPlans = async (req: Request, res: Response) => {
+export const getAllAdminPlans = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const plans = await Plan.find();
+    const plans = await Plan.find().sort({ displayOrder: 1, createdAt: -1 });
 
-    return res.status(200).json({
-      success: true,
-      count: plans.length,
-      data: plans,
-    });
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { count: plans.length, plans },
+          "All plans fetched successfully for admin",
+        ),
+      );
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: error.message,
+    next(error);
+  }
+};
+
+export const updatePlan = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = req.params.id as string;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(new ApiError(400, "Invalid plan ID"));
+    }
+
+    // If making this the default plan, remove default status from others
+    if (req.body.isDefault) {
+      await Plan.updateMany({ _id: { $ne: id } }, { isDefault: false });
+    }
+
+    const plan = await Plan.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
     });
+
+    if (!plan) {
+      return next(new ApiError(404, "Plan not found"));
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, plan, "Plan updated successfully"));
+  } catch (error: any) {
+    if (error.code === 11000) {
+      return next(new ApiError(400, "A plan with this name already exists."));
+    }
+    next(error);
+  }
+};
+
+export const deletePlan = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = req.params.id as string;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(new ApiError(400, "Invalid plan ID"));
+    }
+
+    const plan = await Plan.findByIdAndDelete(id);
+
+    if (!plan) {
+      return next(new ApiError(404, "Plan not found"));
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Plan deleted successfully"));
+  } catch (error: any) {
+    next(error);
   }
 };
