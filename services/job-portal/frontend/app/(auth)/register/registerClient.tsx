@@ -37,10 +37,12 @@ export default function RegisterClient() {
     
     registerMutation.mutate(data as RegisterUserInput, {
       onSuccess: () => {
-        toast.success("Registration successful! Please login.");
-        router.push("/login");
+        alert("success")
+        toast.success("OTP sent to your email!");
+        router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
       },
       onError: (error: any) => {
+        alert("error")
         toast.error(error.response?.data?.message || "Registration failed");
       },
     });

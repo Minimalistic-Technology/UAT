@@ -75,14 +75,14 @@ couponSchema.methods.canBeUsed = function (): boolean {
   return true;
 };
 
-couponSchema.pre("save", function (this: ICoupon, next: any) {
+couponSchema.pre("save", function (this: ICoupon, next) {
   if (this.expiryDate && this.expiryDate < new Date()) {
     this.isActive = false;
   }
-  next();
+  next;
 });
 
-couponSchema.pre("findOneAndUpdate", function (next: any) {
+couponSchema.pre("findOneAndUpdate", function (next) {
   const update: any = this.getUpdate();
 
   if (update?.expiryDate && update.expiryDate < new Date()) {
@@ -90,7 +90,7 @@ couponSchema.pre("findOneAndUpdate", function (next: any) {
     this.setUpdate(update);
   }
 
-  next();
+  next;
 });
 
 export default mongoose.model<ICoupon>("Coupon", couponSchema);

@@ -16,7 +16,11 @@ export const registerUserSchema = z.object({
     .string()
     .min(6, "Password must be at least 6 characters")
     .max(30, "Password at max can have 30 characters"),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .regex(/^\d{10}$/, "Phone number must be exactly 10 digits")
+    .optional()
+    .or(z.literal("")),
   role: z.enum([GlobalRole.USER]).default(GlobalRole.USER),
 });
 

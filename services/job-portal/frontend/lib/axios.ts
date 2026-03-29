@@ -1,16 +1,20 @@
 import axios from "axios";
 import { getSession } from "next-auth/react";
 
-export interface ApiResponse<T> {
+export interface ApiResponse<T = any> {
+  statusCode: number;
+  data: T;
+  message: string;
   success: boolean;
-  message?: string;
-  data?: T;
 }
 
-export interface ApiError<T> {
-  success: boolean;
+export interface ApiError {
+  statusCode: number;
   message: string;
-  error?: unknown;
+  success: boolean;
+  data: null;
+  errors: any[];
+  stack?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
