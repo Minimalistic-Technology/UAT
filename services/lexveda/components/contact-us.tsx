@@ -6,7 +6,7 @@ const ContactUs = () => {
       id: 1,
       title: "General Inquiries",
       description: "For general questions, service information, and business inquiries",
-      email: "info@lexvedalegalservices.com",
+      email: "info@lexvedalegalservices.in",
       icon: Mail,
     },
     {
