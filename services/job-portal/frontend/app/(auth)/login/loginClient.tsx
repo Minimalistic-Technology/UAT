@@ -6,67 +6,46 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "../../../components/ui/Button";
 import { Input } from "../../../components/ui/Input";
 import { Card } from "../../../components/ui/Card";
 import { toast } from "sonner";
 import { Mail, Lock, Chrome } from "lucide-react";
-import { getSession } from "next-auth/react";
-
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { loginSchema, LoginUserInput } from "@/features/auth/auth.schema";
+import { useLogin } from "@/features/auth/hooks/use-login";
 
 export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get("callbackUrl") ?? "/dashboard";
-  const [isLoading, setIsLoading] = useState(false);
   const { data: session, status } = useSession();
+  
+  const loginMutation = useLogin();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
+  } = useForm<LoginUserInput>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-
-    try {
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
-
-      if (!result?.ok) {
-        toast.error(result?.error || "Something went wrong");
-        return;
+  const onSubmit = async (data: LoginUserInput) => {
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        toast.success("Login successful!");
+      },
+      onError: (error: any) => {
+        toast.error(error.message || "Login failed");
       }
-
-      toast.success("Login successful!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Unexpected error. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
     try {
       await signIn("google", { callbackUrl });
     } catch (error) {
       toast.error("Google login failed");
-      setIsLoading(false);
     }
   };
 
@@ -89,6 +68,8 @@ export default function LoginClient() {
 
     router.refresh();
   }, [session, status, router, callbackUrl]);
+
+  const isLoading = loginMutation.isPending || status === "loading";
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { OTPInput } from "@/features/auth/components/OTPInput";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
@@ -13,9 +13,12 @@ export default function VerifyOtpClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
+  const callbackUrl = searchParams?.get("callbackUrl") ?? "/dashboard";
+
+  const { data: session, status } = useSession();
 
   const [otp, setOtp] = useState<string>("");
-  const confirmMutation = useConfirmRegistration();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!email) {
@@ -23,6 +26,26 @@ export default function VerifyOtpClient() {
       router.push("/register");
     }
   }, [email, router]);
+
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user) return;
+
+    const { role, isEmployee } = session.user as any;
+
+    if (role === "super_admin") {
+      router.push("/admin-dashboard");
+    } else if (role === "user") {
+      if (isEmployee) {
+        router.push("/employer/dashboard");
+      } else {
+        router.push("/user-dashboard");
+      }
+    } else {
+      router.push(callbackUrl);
+    }
+
+    router.refresh();
+  }, [session, status, router, callbackUrl]);
 
   const onSubmit = async () => {
     if (otp.length !== 6) {
@@ -32,31 +55,28 @@ export default function VerifyOtpClient() {
 
     if (!email) return;
 
-    confirmMutation.mutate(
-      { email, otp },
-      {
-        onSuccess: async () => {
-          toast.success("Identity verified successfully!");
+    setIsLoading(true);
 
-          // Automatically sign the user in using next-auth locally, relying on the fact that
-          // their credentials and HTTP-only cookie are natively handled by our backend via signIn override
-          // Or if your credentials provider relies on sending password here, we might just redirect them to login! 
-          // Wait, we don't have their password here. The backend controller automatically sets an httpOnly cookie.
-          // But NextAuth doesn't know about it unless we do a custom signIn flow or just redirect back home/login.
-          // For now we'll do:
-          
-          await signIn("credentials", { callbackUrl: "/" }); // the user asked to call signIn. We'll fire it blank, but usually credentials needs email/password.
-          
-          router.push("/login?verified=true");
-        },
-        onError: (error: any) => {
-          toast.error(error.response?.data?.message || "Invalid OTP or session expired.");
-        },
+    try {
+      const result = await signIn("credentials", {
+        email,
+        otp,
+        redirect: false,
+      });
+
+      if (!result?.ok) {
+        toast.error(result?.error || "Invalid OTP or session expired.");
+        setIsLoading(false);
+        return;
       }
-    );
-  };
 
-  const isLoading = confirmMutation.isPending;
+      toast.success("Identity verified and successfully logged in!");
+      // Natively relies on the useEffect layer to reroute the user dynamically based on the newly hydrated session!
+    } catch (err) {
+      toast.error("An unexpected error occurred.");
+      setIsLoading(false);
+    }
+  };
 
   if (!email) return null;
 

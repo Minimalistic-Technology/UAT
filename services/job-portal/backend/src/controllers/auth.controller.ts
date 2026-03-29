@@ -34,6 +34,7 @@ const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
       email: user.email,
       role: user.role,
       avatar: user.avatar,
+      token,
     };
   }
 
@@ -48,6 +49,7 @@ const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
       isEmployee: user.isEmployee,
       companyId: user.companyId,
       companyRole: user.companyRole,
+      token,
     };
   }
 

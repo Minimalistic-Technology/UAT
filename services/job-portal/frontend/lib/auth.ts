@@ -45,24 +45,33 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        otp: { label: "OTP", type: "text" },
       },
       async authorize(credentials) {
         try {
-          const response = await axios.post(`${API_URL}/auth/login`, {
-            email: credentials?.email,
-            password: credentials?.password,
-          });
+          let response: any;
+          if (credentials?.otp) {
+            response = await axios.post(`${API_URL}/auth/register/confirm`, {
+              email: credentials.email,
+              otp: credentials.otp,
+            });
+          } else {
+            response = await axios.post(`${API_URL}/auth/login`, {
+              email: credentials?.email,
+              password: credentials?.password,
+            });
+          }
 
           if (response.data.success) {
-            const { user } = response.data;
+            const user = response.data.data;
 
             return {
-              id: response.data.user.id,
-              email: response.data.user.email,
-              name: `${response.data.user.firstName} ${response.data.user.lastName}`,
-              role: response.data.user.role,
-              token: response.data.token,
-              image: response.data.user.avatar,
+              id: user.id || user._id,
+              email: user.email,
+              name: `${user.firstName} ${user.lastName}`,
+              role: user.role,
+              token: user.token,
+              image: user.avatar,
 
               isEmployee: user.isEmployee ?? false,
               companyId: user.companyId ? user.companyId.toString() :  null,
@@ -147,8 +156,9 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (response.data.success) {
-            token.role = response.data.user.role;
-            token.accessToken = response.data.token;
+            const payload = response.data.data;
+            token.role = payload.role;
+            token.accessToken = payload.token;
           }
         } catch (error) {
           console.error("Google auth error:", error);
