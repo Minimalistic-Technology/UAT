@@ -4,40 +4,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useMutation } from "@tanstack/react-query";
-import { jobService } from "@/lib/services/job.service";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { toast } from "sonner";
-import { JobType, ExperienceLevel } from "@/types";
 import { Asterisk, X } from "lucide-react";
-
-const jobSchema = z.object({
-  title: z.string().min(3, "Job title must be at least 3 characters"),
-  description: z.string().min(50, "Description must be at least 50 characters"),
-  jobType: z.nativeEnum(JobType),
-  experienceLevel: z.nativeEnum(ExperienceLevel),
-  locationCity: z.string().min(2, "City is required"),
-  locationCountry: z.string().min(2, "Country is required"),
-  remote: z.boolean(),
-  salaryMin: z.number().min(0).optional(),
-  salaryMax: z.number().min(0).optional(),
-  salaryCurrency: z.string().default("USD"),
-  salaryPeriod: z.enum(["hourly", "monthly", "yearly"]).default("yearly"),
-  skills: z.array(z.string()).min(1, "At least one skill is required"),
-  requirements: z.string().min(10, "Requirements must be at least 10 characters"),
-  benefits: z.string().optional(),
-  openings: z.number().min(1, "Minimum 1 opening is required").default(1),
-});
-
-type JobFormData = z.infer<typeof jobSchema>;
+import { createJobSchema, CreateJobFormData } from "@/features/job/schema";
+import { ExperienceLevel, JobType } from "@/types";
+import { useCreateJob } from "@/features/job/hooks/use-create-job";
 
 export default function PostJobPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [skillInput, setSkillInput] = useState("");
+
+  const { createJob, isPending } = useCreateJob();
 
   const {
     register,
@@ -45,59 +24,39 @@ export default function PostJobPage() {
     formState: { errors },
     watch,
     setValue,
-  } = useForm({
-    resolver: zodResolver(jobSchema),
+  } = useForm<CreateJobFormData>({
+    resolver: zodResolver(createJobSchema),
     defaultValues: {
       remote: false,
       salaryCurrency: "USD",
       salaryPeriod: "yearly",
       openings: 1,
-      skills: [] as string[],
+      skills: [],
     },
   });
 
-  const createJobMutation = useMutation({
-    mutationFn: (data: any) => jobService.createJob(data),
-    onSuccess: () => {
-      toast.success("Job posted successfully!");
-      router.push("/employer/dashboard");
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to post job");
-    },
-  });
-
-  const onSubmit = async (data: JobFormData): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const jobData = {
-        title: data.title,
-        description: data.description,
-        jobType: data.jobType,
-        experienceLevel: data.experienceLevel,
-        location: {
-          city: data.locationCity,
-          country: data.locationCountry,
-          remote: data.remote,
-        },
-        salary: {
-          min: data.salaryMin,
-          max: data.salaryMax,
-          currency: data.salaryCurrency,
-          period: data.salaryPeriod,
-        },
-        skills: data.skills,
-        requirements: data.requirements.split("\n").filter((r) => r.trim()),
-        benefits: data.benefits?.split("\n").filter((b) => b.trim()),
-        openings: data.openings,
-      };
-
-      await createJobMutation.mutateAsync(jobData);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
+  const onSubmit = async (data: CreateJobFormData): Promise<void> => {
+    await createJob({
+      title: data.title,
+      description: data.description,
+      jobType: data.jobType,
+      experienceLevel: data.experienceLevel,
+      location: {
+        city: data.locationCity,
+        country: data.locationCountry,
+        remote: data.remote,
+      },
+      salary: {
+        min: data.salaryMin,
+        max: data.salaryMax,
+        currency: data.salaryCurrency ?? "USD",
+        period: data.salaryPeriod ?? "yearly",
+      },
+      skills: data.skills,
+      requirements: data.requirements.split("\n").filter((r) => r.trim()),
+      benefits: data.benefits?.split("\n").filter((b) => b.trim()),
+      openings: data.openings ?? 1,
+    });
   };
 
   return (
@@ -287,14 +246,14 @@ export default function PostJobPage() {
           {/* Skills */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Skills & Requirements
+              Skills &amp; Requirements
             </h2>
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
-                   Required Skills
+                  Required Skills
                   <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
-                  <span className="">( Press enter too add )</span>
+                  <span className="">(Press Enter to add)</span>
                 </label>
                 <div className="space-y-3">
                   <input
@@ -308,7 +267,9 @@ export default function PostJobPage() {
                         if (newSkill) {
                           const currentSkills = watch("skills") || [];
                           if (!currentSkills.includes(newSkill)) {
-                            setValue("skills", [...currentSkills, newSkill], { shouldValidate: true });
+                            setValue("skills", [...currentSkills, newSkill], {
+                              shouldValidate: true,
+                            });
                           }
                           setSkillInput("");
                         }
@@ -331,7 +292,9 @@ export default function PostJobPage() {
                               const currentSkills = watch("skills") || [];
                               setValue(
                                 "skills",
-                                currentSkills.filter((s: string) => s !== skill),
+                                currentSkills.filter(
+                                  (s: string) => s !== skill
+                                ),
                                 { shouldValidate: true }
                               );
                             }}
@@ -353,15 +316,15 @@ export default function PostJobPage() {
 
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-1 relative">
-                   Requirements 
+                  Requirements
                   <Asterisk className="inline-block size-4 stroke-red-500 mb-1" />
-                  <span className="">( one per line )</span>
+                  <span className="">(one per line)</span>
                 </label>
                 <textarea
                   {...register("requirements")}
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="e.g.,&#10;5+ years of experience&#10;Bachelor's degree in CS&#10;Strong problem-solving skills"
+                  placeholder={`e.g.,\n5+ years of experience\nBachelor's degree in CS\nStrong problem-solving skills`}
                 />
                 {errors.requirements && (
                   <p className="mt-1 text-sm text-red-600">
@@ -378,7 +341,7 @@ export default function PostJobPage() {
                   {...register("benefits")}
                   rows={4}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="e.g.,&#10;Health insurance&#10;401(k) matching&#10;Flexible hours"
+                  placeholder={`e.g.,\nHealth insurance\n401(k) matching\nFlexible hours`}
                 />
               </div>
 
@@ -403,11 +366,11 @@ export default function PostJobPage() {
               type="button"
               variant="outline"
               onClick={() => router.back()}
-              disabled={isLoading}
+              disabled={isPending}
             >
               Cancel
             </Button>
-            <Button type="submit" loading={isLoading} disabled={isLoading}>
+            <Button type="submit" loading={isPending} disabled={isPending}>
               Post Job
             </Button>
           </div>
