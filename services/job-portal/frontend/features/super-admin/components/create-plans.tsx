@@ -19,9 +19,15 @@ export default function CreatePlanForm() {
     resolver: zodResolver(planSchema),
     defaultValues: {
       name: "",
+      description: "",
       price: 0,
+      currency: "INR",
       durationDays: 30,
+      jobPostLimit: -1,
       features: [{ value: "" }],
+      isFeatured: false,
+      isDefault: false,
+      displayOrder: 0,
       isActive: true,
     },
   });
@@ -32,7 +38,12 @@ export default function CreatePlanForm() {
   });
 
   const onSubmit = (data: PlanFormValues) => {
-    createPlan(data);
+    // Transform features from { value: string }[] → string[] for the backend
+    const payload = {
+      ...data,
+      features: data.features.map((f) => f.value).filter(Boolean),
+    };
+    createPlan(payload as any);
   };
 
   return (
@@ -53,6 +64,7 @@ export default function CreatePlanForm() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
@@ -71,7 +83,42 @@ export default function CreatePlanForm() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
-                Price ($)
+                Display Order
+              </label>
+              <input
+                {...register("displayOrder", { valueAsNumber: true })}
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-hidden transition"
+              />
+              {errors.displayOrder && (
+                <p className="text-sm text-red-600">{errors.displayOrder.message}</p>
+              )}
+            </div>
+
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Description{" "}
+                <span className="text-gray-400 font-normal">(optional, max 500 chars)</span>
+              </label>
+              <textarea
+                {...register("description")}
+                rows={3}
+                placeholder="Briefly describe what this plan offers…"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-hidden transition resize-none"
+              />
+              {errors.description && (
+                <p className="text-sm text-red-600">{errors.description.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Price
               </label>
               <input
                 {...register("price", { valueAsNumber: true })}
@@ -88,35 +135,83 @@ export default function CreatePlanForm() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
+                Currency
+              </label>
+              <select
+                {...register("currency")}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-hidden transition bg-white"
+              >
+                <option value="INR">INR — Indian Rupee</option>
+                <option value="USD">USD — US Dollar</option>
+                <option value="EUR">EUR — Euro</option>
+                <option value="GBP">GBP — British Pound</option>
+              </select>
+              {errors.currency && (
+                <p className="text-sm text-red-600">{errors.currency.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* ── Limits ─────────────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
                 Duration (Days)
               </label>
               <input
                 {...register("durationDays", { valueAsNumber: true })}
                 type="number"
                 min="1"
+                step="1"
                 placeholder="30"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-hidden transition"
               />
               {errors.durationDays && (
-                <p className="text-sm text-red-600">
-                  {errors.durationDays.message}
-                </p>
+                <p className="text-sm text-red-600">{errors.durationDays.message}</p>
               )}
             </div>
 
-            <div className="space-y-2 flex items-center pt-6">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  {...register("isActive")}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                <span className="ml-3 text-sm font-medium text-gray-700">
-                  Active Plan
-                </span>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Job Post Limit{" "}
+                <span className="text-gray-400 font-normal">(-1 = unlimited)</span>
               </label>
+              <input
+                {...register("jobPostLimit", { valueAsNumber: true })}
+                type="number"
+                min="-1"
+                step="1"
+                placeholder="-1"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-hidden transition"
+              />
+              {errors.jobPostLimit && (
+                <p className="text-sm text-red-600">{errors.jobPostLimit.message}</p>
+              )}
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+            {(
+              [
+                { field: "isActive", label: "Active Plan" },
+                { field: "isFeatured", label: "Featured Plan" },
+                { field: "isDefault", label: "Default Plan" },
+              ] as const
+            ).map(({ field, label }) => (
+              <div key={field} className="flex items-center">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    {...register(field)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600" />
+                  <span className="ml-3 text-sm font-medium text-gray-700">
+                    {label}
+                  </span>
+                </label>
+              </div>
+            ))}
           </div>
 
           <div className="space-y-4 pt-4 border-t border-gray-100">
