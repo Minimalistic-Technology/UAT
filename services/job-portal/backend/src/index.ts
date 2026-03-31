@@ -18,7 +18,9 @@ import adminRoutes from "./routes/admin.route.js";
 import companyMemberRoutes from './routes/companyMember.routes.js';
 import planRoutes from './routes/plan.routes.js';
 import couponRoutes from './routes/coupon.routes.js';
+import paymentRoutes from './routes/payment.route.js';
 import { ApiResponse } from './utils/apiResponse.js';
+import { handleRazorpayWebhook } from './controllers/payment.controller.js';
 
 // Initialize express app
 const app: Application = express();
@@ -35,7 +37,13 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: '10mb' }));
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/webhook/razorpay') {
+    next(); // Skip JSON parsing for the webhook route
+  } else {
+    express.json({limit: "10mb"})(req, res, next);
+  }
+});
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
@@ -44,6 +52,12 @@ app.use(cookieParser());
 
 // Rate limiting
 app.use('/api', generalLimiter);
+
+app.post(
+  '/api/webhook/razorpay', 
+  express.raw({ type: 'application/json' }), 
+  handleRazorpayWebhook
+);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -55,6 +69,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/company-members", companyMemberRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/coupons", couponRoutes);
+app.use("/api/payments", paymentRoutes);
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, null, "Server is running"));
