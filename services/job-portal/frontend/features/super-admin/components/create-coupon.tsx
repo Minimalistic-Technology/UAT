@@ -22,6 +22,8 @@ export default function CreateCouponForm() {
       type: "percentage",
       value: 0,
       isActive: true,
+      expiryDate: undefined,
+      maxUses: undefined,
     },
   });
 
@@ -96,6 +98,35 @@ export default function CreateCouponForm() {
               />
               {errors.value && (
                 <p className="text-sm text-red-600">{errors.value.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Expiry Date <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                {...register("expiryDate")}
+                type="date"
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-hidden transition"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Max Uses <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                {...register("maxUses", { valueAsNumber: true, setValueAs: (v) => v === "" || isNaN(Number(v)) ? undefined : Number(v) })}
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Unlimited"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-hidden transition"
+              />
+              {errors.maxUses && (
+                <p className="text-sm text-red-600">{errors.maxUses.message}</p>
               )}
             </div>
 
