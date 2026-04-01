@@ -10,11 +10,8 @@ export const useCreatePlan = () => {
 
   return useMutation({
     mutationFn: (data: PlanFormValues) => {
-      const payload = {
-        ...data,
-        features: data.features.map((f) => f.value),
-      } as any;
-      return superAdminServices.createPlan(payload);
+      console.log("payload again", data);
+      return superAdminServices.createPlan(data);
     },
     onSuccess: () => {
       toast.success("Plan created successfully!");

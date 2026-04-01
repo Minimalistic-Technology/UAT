@@ -11,15 +11,6 @@ import { getPlans } from "@/features/employer";
 
 export default function PlansPage() {
   const {
-    couponData,
-    couponError,
-    isLoading: isCouponLoading,
-    handleApply,
-    handleRemove,
-    appliedCode,
-  } = useCoupon();
-
-  const {
     data: getAllPlansResponse,
     isLoading,
     isError,
@@ -48,21 +39,6 @@ export default function PlansPage() {
           </p>
         </div>
 
-        {/* Coupon Section */}
-        <div className="max-w-md mx-auto mb-10">
-          <CouponInput
-            appliedCoupon={appliedCode}
-            onApply={handleApply}
-            onRemove={handleRemove}
-            isLoading={isCouponLoading}
-          />
-          {couponError && (
-            <p className="text-xs text-red-500 mt-2 text-center font-medium">
-              {couponError}
-            </p>
-          )}
-        </div>
-
         {isError && (
           <Card className="text-center py-12 border border-red-200 bg-red-50 rounded-xl mb-8">
             <p className="text-sm font-semibold text-red-600 text-center w-full">Failed to load plans</p>
@@ -84,7 +60,6 @@ export default function PlansPage() {
                 <PlanCard 
                   plan={plan} 
                   index={i} 
-                  discountDetails={couponData} 
                 />
               </div>
             ))
