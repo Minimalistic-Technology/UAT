@@ -49,3 +49,14 @@ export interface Plan {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CouponResponse {
+  coupon: {
+    code: string;
+    discountType: "percentage" | "fixed";
+    discountValue: number;
+  };
+  baseAmount: number;
+  discountValue: number;
+  finalPrice: number;
+}
