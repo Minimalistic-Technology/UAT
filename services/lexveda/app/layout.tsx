@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lex Veda Legal Services",
-  description: "Lex Veda Legal Services",
+  title: "LexVeda Legal Services",
+  description:
+    "LexVeda is an online platform that facilitates access to legal information and enables users to connect with independent legal professionals for consultation. The platform aims to improve accessibility to legal services by overcoming geographical and time-related constraints.",
 };
 
 export default function RootLayout({
