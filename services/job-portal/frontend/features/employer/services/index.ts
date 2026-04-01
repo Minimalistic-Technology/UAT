@@ -1,7 +1,7 @@
 import apiClient, { ApiResponse } from "@/lib/axios";
 import { EmployerRegisterInput } from "../schemas";
 import { GlobalRole } from "@/types";
-import { KYCSubmissionResponse, Plan } from "../types";
+import { CouponResponse, KYCSubmissionResponse, Plan } from "../types";
 
 interface AuthenticatedUser {
   firstName: string;
@@ -45,5 +45,13 @@ export const getPlans = async () => {
     await apiClient.get<ApiResponse<{ count: number; plans: Plan[] }>>(
       "/plans",
     );
+  return response.data;
+};
+
+export const applyCoupon = async (code: string, planId: string) => {
+  const response = await apiClient.post<ApiResponse<CouponResponse>>(
+    "/coupons/apply",
+    { code, planId },
+  );
   return response.data;
 };
