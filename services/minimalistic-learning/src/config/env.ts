@@ -18,6 +18,7 @@ const envSchema = z.object({
 });
 
 const parsed = envSchema.parse(process.env);
+console.log('[env] Environment variables validated successfully');
 
 const corsOrigins = parsed.CORS_ORIGIN
   ? parsed.CORS_ORIGIN.split(',').map((origin: string) => origin.trim()).filter(Boolean)

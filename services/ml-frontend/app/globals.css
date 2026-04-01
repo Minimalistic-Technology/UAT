@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
 
 :root {
   --background: #ffffff;
@@ -24,3 +26,99 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(161, 161, 170, 0.4);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(161, 161, 170, 0.6);
+}
+
+/* Dark Mode Quill overrides */
+.dark .quill-dark-theme-wrapper .ql-toolbar.ql-snow {
+  border-color: #27272a;
+  background-color: #09090b;
+}
+.dark .quill-dark-theme-wrapper .ql-container.ql-snow {
+  border-color: #27272a;
+  background-color: #09090b;
+  color: #f4f4f5;
+  font-family: inherit;
+  font-size: 1.125rem;
+}
+.quill-dark-theme-wrapper .ql-toolbar.ql-snow {
+  border-color: #e4e4e7;
+  background-color: #fafafa;
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+}
+.quill-dark-theme-wrapper .ql-container.ql-snow {
+  border-color: #e4e4e7;
+  background-color: #ffffff;
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+  font-family: inherit;
+  font-size: 1.125rem;
+  min-height: 400px;
+}
+.dark .quill-dark-theme-wrapper .ql-snow .ql-stroke {
+  stroke: #a1a1aa;
+}
+.dark .quill-dark-theme-wrapper .ql-snow .ql-fill, 
+.dark .quill-dark-theme-wrapper .ql-snow .ql-stroke.ql-fill {
+  fill: #a1a1aa;
+}
+.dark .quill-dark-theme-wrapper .ql-snow .ql-picker {
+  color: #a1a1aa;
+}
+
+/* Quill Alignment Support */
+.ql-align-center {
+  text-align: center;
+}
+.ql-align-right {
+  text-align: right;
+}
+.ql-align-justify {
+  text-align: justify;
+}
+
+/* Quill Indentation Support */
+.ql-indent-1 { padding-left: 3em; }
+.ql-indent-2 { padding-left: 6em; }
+.ql-indent-3 { padding-left: 9em; }
+.ql-indent-4 { padding-left: 12em; }
+.ql-indent-5 { padding-left: 15em; }
+.ql-indent-6 { padding-left: 18em; }
+.ql-indent-7 { padding-left: 21em; }
+.ql-indent-8 { padding-left: 24em; }
+
+/* Horizontal Rule (Break Line) Support */
+hr {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.5rem 0;
+}
+.dark hr {
+  border-top-color: #27272a;
+}
+
+/* Ensure empty paragraphs (enters) occupied space */
+.prose p:empty,
+.prose p > br:only-child {
+  min-height: 1.5em;
+  display: block;
+  content: "";
+}
+
+
+

@@ -25,6 +25,12 @@ import { durationToMs } from '../utils/time';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
+import type {
+  LoginResponseData,
+  SignupResponseData,
+  RefreshTokenResponseData,
+  PasswordResetInitResponseData
+} from '../types/auth.types';
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const payload = signupSchema.parse(req.body) as userService.CreateUserPayload;
@@ -34,11 +40,46 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(StatusCodes.CONFLICT, 'Email already in use');
   }
 
-  const user = await userService.createUser(payload);
+  let user;
+  try {
+    user = await userService.createUser(payload);
+  } catch (err: any) {
+    if (err.code === 11000) {
+      throw new ApiError(StatusCodes.CONFLICT, 'Email already in use');
+    }
+    throw err;
+  }
 
-  return res.status(StatusCodes.CREATED).json(
-    new ApiResponse(StatusCodes.CREATED, { user: userService.toPublicUser(user) }, "User signed up successfully")
-  );
+  const accessToken = signAccessToken(user._id);
+  const refreshToken = signRefreshToken(user._id);
+
+  await replaceRefreshToken(user._id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
+
+  const cookieBase = {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: 'lax' as const
+  };
+
+  return res
+    .cookie('access_token', accessToken, {
+      ...cookieBase,
+      maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
+    })
+    .cookie('refresh_token', refreshToken, {
+      ...cookieBase,
+      maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
+    })
+    .status(StatusCodes.CREATED)
+    .json(
+      new ApiResponse<SignupResponseData>(StatusCodes.CREATED, {
+        user: userService.toPublicUser(user),
+        tokens: {
+          accessToken,
+          refreshToken
+        }
+      }, "User signed up successfully and logged in")
+    );
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
@@ -76,7 +117,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     })
     .status(StatusCodes.OK)
     .json(
-      new ApiResponse(StatusCodes.OK, {
+      new ApiResponse<LoginResponseData>(StatusCodes.OK, {
         user: userService.toPublicUser(user),
         tokens: {
           accessToken,
@@ -137,7 +178,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     })
     .status(StatusCodes.OK)
     .json(
-      new ApiResponse(StatusCodes.OK, {
+      new ApiResponse<RefreshTokenResponseData>(StatusCodes.OK, {
         accessToken,
         refreshToken: newRefreshToken
       }, "Tokens refreshed successfully")
@@ -158,7 +199,7 @@ export const initiatePasswordReset = asyncHandler(async (req: Request, res: Resp
   await storeResetToken(user.id, resetToken, env.PASSWORD_RESET_EXPIRE);
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { resetToken }, 'Password reset token generated successfully.')
+    new ApiResponse<PasswordResetInitResponseData>(StatusCodes.OK, { resetToken }, 'Password reset token generated successfully.')
   );
 });
 
@@ -183,3 +224,30 @@ export const completePasswordReset = asyncHandler(async (req: Request, res: Resp
     new ApiResponse(StatusCodes.OK, null, 'Password updated successfully.')
   );
 });
+
+export const getMe = asyncHandler(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, "User not found");
+  }
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(user) }, "User profile fetched successfully")
+  );
+});
+
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  const cookieBase = {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: 'lax' as const
+  };
+
+  res
+    .clearCookie('access_token', cookieBase)
+    .clearCookie('refresh_token', cookieBase)
+    .status(StatusCodes.OK)
+    .json(new ApiResponse(StatusCodes.OK, null, "Logged out successfully"));
+});
+
+
