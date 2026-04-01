@@ -60,3 +60,8 @@ export interface CouponResponse {
   discountValue: number;
   finalPrice: number;
 }
+
+export interface OrderResponse {
+  order: any;
+  paymentId: string;
+}
