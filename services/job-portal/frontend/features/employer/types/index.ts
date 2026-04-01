@@ -32,3 +32,20 @@ export interface KYCSubmissionResponse {
     };
   };
 }
+
+export interface Plan {
+  _id: string;
+  name: string;
+  description?: string;
+  price: number;
+  currency: string;
+  durationDays: number;
+  jobPostLimit: number;
+  isFeatured: boolean;
+  isDefault: boolean;
+  displayOrder: number;
+  features: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

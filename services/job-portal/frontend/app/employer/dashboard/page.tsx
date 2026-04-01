@@ -291,14 +291,15 @@ export default function EmployerDashboard() {
   if (user && !user.isEmployee) redirect("/login");
 
   const jobList = jobs?.data ?? [];
-  const activeJobs = Array.isArray(jobList) ? jobList.filter(
-    (j) => j.status === JobStatus.ACTIVE,
-  ).length : 0;
-  const totalApplications = Array.isArray(jobList) ? jobList.reduce(
-    (sum, j) => sum + j.applicationsCount,
-    0,
-  ) : 0;
-  const totalViews = Array.isArray(jobList) ? jobList.reduce((sum, j) => sum + j.viewsCount, 0) : 0;
+  const activeJobs = Array.isArray(jobList)
+    ? jobList.filter((j) => j.status === JobStatus.ACTIVE).length
+    : 0;
+  const totalApplications = Array.isArray(jobList)
+    ? jobList.reduce((sum, j) => sum + j.applicationsCount, 0)
+    : 0;
+  const totalViews = Array.isArray(jobList)
+    ? jobList.reduce((sum, j) => sum + j.viewsCount, 0)
+    : 0;
 
   const stats: StatCardProps[] = [
     {
@@ -342,6 +343,12 @@ export default function EmployerDashboard() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link href="/employer/plans">
+            <Button variant="outline" size="sm">
+              Buy a plan
+            </Button>
+          </Link>
+
           <Link href="/employer/applications">
             <Button variant="outline" size="sm">
               View Applications
@@ -430,7 +437,8 @@ export default function EmployerDashboard() {
               {jobList.length === 0 ? (
                 <EmptyState />
               ) : (
-                Array.isArray(jobList) && jobList.map((job) => (
+                Array.isArray(jobList) &&
+                jobList.map((job) => (
                   <JobRow
                     key={job._id}
                     job={job}

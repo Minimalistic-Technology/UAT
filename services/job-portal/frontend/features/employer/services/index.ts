@@ -1,7 +1,8 @@
 import apiClient, { ApiResponse } from "@/lib/axios";
 import { EmployerRegisterInput } from "../schemas";
 import { GlobalRole } from "@/types";
-import { KYCSubmissionResponse } from "../types";
+import { KYCSubmissionResponse, Plan } from "../types";
+
 interface AuthenticatedUser {
   firstName: string;
   lastName: string;
@@ -36,5 +37,13 @@ export const submitKyc = async (
       },
     },
   );
+  return response.data;
+};
+
+export const getPlans = async () => {
+  const response =
+    await apiClient.get<ApiResponse<{ count: number; plans: Plan[] }>>(
+      "/plans",
+    );
   return response.data;
 };
