@@ -7,16 +7,44 @@ export interface BlogResponse {
   success: boolean;
   message: string;
   data: {
-    id: string;
+    _id: string;
+    id?: string;
     title: string;
     slug: string;
     content: string;
     excerpt?: string;
+    coverImage: {
+      url: string;
+      alt?: string;
+      publicId?: string;
+    };
     coverImageUrl?: string;
     tags: string[];
     status: "draft" | "published";
-    authorId: string;
+    category: string;
+    published: boolean;
+    authorId: string | { _id: string; firstName: string; lastName: string };
+    upvotesCount?: number;
+    downvotesCount?: number;
+    hasUpvoted?: boolean;
+    hasDownvoted?: boolean;
     createdAt: string;
     updatedAt: string;
+  };
+}
+
+export interface BlogListResponse {
+  success: boolean;
+  message: string;
+  data: {
+    items: BlogResponse["data"][];
+    pagination: {
+      total: number;
+      totalPages: number;
+      currentPage: number;
+      limit: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
   };
 }

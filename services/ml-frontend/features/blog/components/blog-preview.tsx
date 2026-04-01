@@ -17,7 +17,7 @@ export const BlogPreview: React.FC<BlogPreviewProps> = ({
 }) => {
   return (
     <div className="w-full h-full overflow-y-auto bg-gray-50/80 dark:bg-[#0f0f0f] p-8 rounded-2xl border border-gray-200/60 dark:border-gray-800/60 shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)] custom-scrollbar">
-      <div className="max-w-3xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200 dark:border-gray-800">
           <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
           <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400">
@@ -62,7 +62,7 @@ export const BlogPreview: React.FC<BlogPreviewProps> = ({
         )}
 
         <div 
-          className="prose prose-lg dark:prose-invert max-w-none pt-4 prose-emerald prose-headings:font-bold prose-headings:tracking-tight prose-h1:text-4xl prose-h2:text-3xl prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-a:decoration-emerald-500/30 hover:prose-a:decoration-emerald-500 prose-img:rounded-2xl prose-img:shadow-lg prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-pre:border prose-pre:border-gray-200 dark:prose-pre:border-gray-800"
+          className="prose prose-lg dark:prose-invert max-w-none pt-4 prose-emerald prose-headings:font-bold prose-headings:tracking-tight prose-h1:text-4xl prose-h2:text-3xl prose-a:text-emerald-600 dark:prose-a:text-emerald-400 prose-a:decoration-emerald-500/30 hover:prose-a:decoration-emerald-500 prose-img:rounded-2xl prose-img:shadow-lg prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-pre:border prose-pre:border-gray-200 dark:prose-pre:border-gray-800 prose-p:mt-0 prose-p:mb-2 prose-p:leading-snug prose-headings:mt-6 prose-headings:mb-2"
           dangerouslySetInnerHTML={{ __html: content || "<p class='text-gray-400 dark:text-gray-500 italic'>Start writing to see your content preview here...</p>" }}
         />
       </div>

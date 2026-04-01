@@ -8,8 +8,13 @@ import { RegisterValues } from "../types/auth-type";
 import { useRegister } from "../hooks/use-register";
 import Link from "next/link";
 import { isAxiosError } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useAuth } from "../context/auth-context";
 
 const RegisterForm = () => {
+  const router = useRouter();
+  const { refreshUser } = useAuth();
   const { mutate, isPending, error } = useRegister();
   const {
     register,
@@ -22,8 +27,9 @@ const RegisterForm = () => {
   const onSubmit = (data: RegisterValues) => {
     mutate(data, {
       onSuccess: () => {
-        console.log("Registration success");
-        // Redirect or handle success
+        toast.success("Account created successfully! Redirecting...");
+        refreshUser();
+        router.push("/");
       },
     });
   };
@@ -106,14 +112,14 @@ const RegisterForm = () => {
         <button
           type="submit"
           disabled={isPending}
-          className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-200"
+          className="w-full py-2.5 bg-[#1877F2] hover:bg-[#1877F2] text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#1877F2]"
         >
           {isPending ? "Creating account..." : "Register"}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-gray-600">
         Already have an account?{" "}
-        <Link href="/login" className="text-blue-600 hover:underline font-medium">
+        <Link href="/login" className="text-[#1877F2] hover:underline font-medium">
           Login here
         </Link>
       </p>

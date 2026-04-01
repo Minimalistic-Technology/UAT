@@ -11,4 +11,11 @@ export const authService = {
     const response = await api.post("/auth/signup", data);
     return response.data;
   },
+  getMe: async (): Promise<LoginResponse> => {
+    const response = await api.get("/auth/me");
+    return response.data;
+  },
+  logout: async (): Promise<void> => {
+    await api.post("/auth/logout");
+  },
 };

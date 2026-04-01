@@ -40,11 +40,46 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(StatusCodes.CONFLICT, 'Email already in use');
   }
 
-  const user = await userService.createUser(payload);
+  let user;
+  try {
+    user = await userService.createUser(payload);
+  } catch (err: any) {
+    if (err.code === 11000) {
+      throw new ApiError(StatusCodes.CONFLICT, 'Email already in use');
+    }
+    throw err;
+  }
 
-  return res.status(StatusCodes.CREATED).json(
-    new ApiResponse<SignupResponseData>(StatusCodes.CREATED, { user: userService.toPublicUser(user) }, "User signed up successfully")
-  );
+  const accessToken = signAccessToken(user._id);
+  const refreshToken = signRefreshToken(user._id);
+
+  await replaceRefreshToken(user._id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
+
+  const cookieBase = {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: 'lax' as const
+  };
+
+  return res
+    .cookie('access_token', accessToken, {
+      ...cookieBase,
+      maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
+    })
+    .cookie('refresh_token', refreshToken, {
+      ...cookieBase,
+      maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
+    })
+    .status(StatusCodes.CREATED)
+    .json(
+      new ApiResponse<SignupResponseData>(StatusCodes.CREATED, {
+        user: userService.toPublicUser(user),
+        tokens: {
+          accessToken,
+          refreshToken
+        }
+      }, "User signed up successfully and logged in")
+    );
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
@@ -189,3 +224,30 @@ export const completePasswordReset = asyncHandler(async (req: Request, res: Resp
     new ApiResponse(StatusCodes.OK, null, 'Password updated successfully.')
   );
 });
+
+export const getMe = asyncHandler(async (req: Request, res: Response) => {
+  const user = req.user;
+  if (!user) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, "User not found");
+  }
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(user) }, "User profile fetched successfully")
+  );
+});
+
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  const cookieBase = {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: 'lax' as const
+  };
+
+  res
+    .clearCookie('access_token', cookieBase)
+    .clearCookie('refresh_token', cookieBase)
+    .status(StatusCodes.OK)
+    .json(new ApiResponse(StatusCodes.OK, null, "Logged out successfully"));
+});
+
+

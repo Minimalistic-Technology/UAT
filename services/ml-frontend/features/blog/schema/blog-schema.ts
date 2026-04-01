@@ -8,5 +8,6 @@ export const blogSchema = z.object({
   tags: z.array(z.string().min(2, "Tag must be at least 2 characters").max(30, "Tag must not exceed 30 characters"))
     .min(1, "At least one tag is required")
     .max(5, "Maximum 5 tags allowed"),
+  category: z.string().min(2, "Category must be at least 2 characters").max(30, "Category must not exceed 30 characters"),
   status: z.enum(["draft", "published"]),
 });

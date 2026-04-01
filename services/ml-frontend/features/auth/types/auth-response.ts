@@ -27,6 +27,7 @@ export interface LoginResponseData {
 
 export interface SignupResponseData {
   user: AuthUser;
+  tokens: TokenResponseData;
 }
 
 export interface PasswordResetInitResponse {

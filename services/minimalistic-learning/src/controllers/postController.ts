@@ -57,6 +57,42 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
+export const listMyPosts = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!._id;
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const limit = Math.min(Number(req.query.limit) || 10, 50);
+
+  const query = { authorId: userId };
+  const skip = (page - 1) * limit;
+
+  const [items, total] = await Promise.all([
+    Post.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Post.countDocuments(query),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(
+      StatusCodes.OK,
+      {
+        items,
+        pagination: {
+          total,
+          totalPages,
+          currentPage: page,
+          limit,
+        },
+      },
+      "My posts fetched successfully",
+    ),
+  );
+});
+
 export const getPostBySlug = asyncHandler(
   async (req: Request, res: Response) => {
     const { slug } = req.params;
@@ -185,7 +221,7 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!._id.toString();
 
   const parsedBody = createPostSchema.parse(req.body);
-  const { title, content, tags, published, category } = parsedBody;
+  const { title, content, tags, published, category, coverImageUrl } = parsedBody;
 
   const baseSlug = title
     .toLowerCase()
@@ -209,7 +245,7 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
         ]
       : [];
 
-  let coverImage = { url: "", alt: title.trim(), publicId: "" };
+  let coverImage = { url: coverImageUrl || "", alt: title.trim(), publicId: "" };
   if (req.file) {
     const uploaded = await uploadToCloudinary(
       req.file.buffer,
@@ -283,6 +319,12 @@ export const updatePost = asyncHandler(async (req: Request, res: Response) => {
       url: uploaded.url,
       alt: parsedBody.title?.trim() || "",
       publicId: uploaded.publicId,
+    };
+  } else if (parsedBody.coverImageUrl) {
+    updatePayload.coverImage = {
+      url: parsedBody.coverImageUrl,
+      alt: parsedBody.title?.trim() || "",
+      publicId: "",
     };
   }
 

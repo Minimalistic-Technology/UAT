@@ -65,6 +65,7 @@ export interface LoginResponseData {
  */
 export interface SignupResponseData {
   user: PublicUser;
+  tokens: TokenPair;
 }
 
 /**
