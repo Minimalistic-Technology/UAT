@@ -2,7 +2,7 @@
 
 import { formatCurrency, formatJobLimit, formatDuration } from "../helpers/employer.helper";
 import { Briefcase, Check, Clock, Infinity, Star, Zap } from "lucide-react";
-import type { Plan, CouponResponse } from "../types";
+import type { Plan } from "../types";
 import { loadRazorpayScript } from "@/lib/razorpay-script";
 
 const PLAN_ACCENTS = [
@@ -43,16 +43,12 @@ const PLAN_ACCENTS = [
 interface PlanCardProps {
   plan: Plan;
   index: number;
-  discountDetails: CouponResponse | null;
 }
 
-export function PlanCard({ plan, index, discountDetails }: PlanCardProps) {
+export function PlanCard({ plan, index }: PlanCardProps) {
   const accent = PLAN_ACCENTS[index % PLAN_ACCENTS.length];
   const isUnlimited = plan.jobPostLimit === -1;
-
-  // Use discounted price if coupon is applied, otherwise use base price
-  const hasDiscount = !!discountDetails;
-  const finalPrice = hasDiscount ? discountDetails.finalPrice : plan.price;
+  console.log("plan details", plan)
 
   const handlePayment = async () => {
     const isLoaded = await loadRazorpayScript();
@@ -63,28 +59,25 @@ export function PlanCard({ plan, index, discountDetails }: PlanCardProps) {
     }
 
     try {
-      // 1. Call your API to create an order
-      // Ensure your backend takes planId and optional couponCode
+      // Call API to create an order without coupon logic
       const response = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planId: plan._id,
-          couponCode: discountDetails?.coupon?.code || null,
         }),
       });
 
       const orderData = await response.json();
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, 
-        amount: orderData.data.amount, // Amount in subunits
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.data.amount,
         currency: orderData.data.currency,
         name: "HireHub",
         description: `Upgrade to ${plan.name}`,
         order_id: orderData.data.id,
         handler: function (response: any) {
-          // Success: Verify payment on your backend
           console.log("Payment Successful", response);
           window.location.href = "/employer/dashboard?payment=success";
         },
@@ -137,25 +130,14 @@ export function PlanCard({ plan, index, discountDetails }: PlanCardProps) {
 
         <div className="mt-5 flex items-end gap-1">
           <div className="flex flex-col">
-            {hasDiscount && (
-              <span className="text-sm text-gray-400 line-through decoration-red-400 mb-1">
-                {formatCurrency(plan.price, plan.currency)}
-              </span>
-            )}
             <span className="text-4xl font-extrabold text-gray-900 leading-none">
-              {formatCurrency(finalPrice, plan.currency)}
+              {formatCurrency(plan.price, plan.currency)}
             </span>
           </div>
           <span className="text-sm text-gray-500 mb-1">
             / {formatDuration(plan.durationDays)}
           </span>
         </div>
-
-        {hasDiscount && (
-          <div className="mt-3 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
-            Coupon Applied: -{formatCurrency(discountDetails.discountValue, plan.currency)}
-          </div>
-        )}
 
         {/* Quick stats */}
         <div className="mt-4 flex flex-wrap gap-2">
@@ -197,7 +179,7 @@ export function PlanCard({ plan, index, discountDetails }: PlanCardProps) {
           }`}
         >
           <Zap className="h-4 w-4 fill-current" />
-          {hasDiscount ? "Get Discounted Plan" : `Get ${plan.name}`}
+          Get {plan.name}
         </button>
       </div>
     </div>

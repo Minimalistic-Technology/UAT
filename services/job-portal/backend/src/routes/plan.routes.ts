@@ -40,6 +40,18 @@ router.post(
     body("jobPostLimit")
       .isInt({ min: -1 })
       .withMessage("Job post limit is required (-1 for unlimited)"),
+
+    body("features").isArray(),
+    body("features.*")
+      .isString()
+      .trim()
+      .notEmpty()
+      .withMessage("Feature text cannot be empty"),
+
+    body("isFeatured").isBoolean().withMessage("isFeatured must be a boolean"),
+    body("isActive").isBoolean().withMessage("isActive must be a boolean"),
+    body("isDefault").isBoolean().withMessage("isDefault must be a boolean"),
+    body("displayOrder").isInt().withMessage("Display order must be a number"),
   ]),
   createPlan,
 );
