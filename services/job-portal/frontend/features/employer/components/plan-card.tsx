@@ -4,6 +4,8 @@ import { formatCurrency, formatJobLimit, formatDuration } from "../helpers/emplo
 import { Briefcase, Check, Clock, Infinity, Star, Zap } from "lucide-react";
 import type { Plan } from "../types";
 import { loadRazorpayScript } from "@/lib/razorpay-script";
+import { createOrder } from "../services";
+import { useSession } from "next-auth/react";
 
 const PLAN_ACCENTS = [
   {
@@ -48,7 +50,9 @@ interface PlanCardProps {
 export function PlanCard({ plan, index }: PlanCardProps) {
   const accent = PLAN_ACCENTS[index % PLAN_ACCENTS.length];
   const isUnlimited = plan.jobPostLimit === -1;
-  console.log("plan details", plan)
+
+  const { data: session, status } = useSession();
+  const userId = session?.user.id;
 
   const handlePayment = async () => {
     const isLoaded = await loadRazorpayScript();
@@ -59,27 +63,28 @@ export function PlanCard({ plan, index }: PlanCardProps) {
     }
 
     try {
-      // Call API to create an order without coupon logic
-      const response = await fetch("/api/payments/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planId: plan._id,
-        }),
-      });
+      const payload = {
+        amount: Number(plan.price) * 100,
+        planId: plan._id,
+        userId: userId!,
+        internalOrderId: `ORD_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+      };
+      console.log(payload)
 
-      const orderData = await response.json();
+      const orderData = await createOrder(payload);
+      console.log("orderData", orderData);
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.data.amount,
-        currency: orderData.data.currency,
+        amount: orderData.amount,
+        currency: orderData.currency,
         name: "HireHub",
         description: `Upgrade to ${plan.name}`,
-        order_id: orderData.data.id,
+        order_id: orderData.id, // This is the rpOrder.id from backend
         handler: function (response: any) {
+          // This runs on successful payment
           console.log("Payment Successful", response);
-          window.location.href = "/employer/dashboard?payment=success";
+          window.location.href = `/employer/dashboard?payment=success&orderId=${orderData.id}`;
         },
         prefill: {
           name: "Employer Name",

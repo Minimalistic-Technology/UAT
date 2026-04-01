@@ -1,7 +1,7 @@
 import apiClient, { ApiResponse } from "@/lib/axios";
 import { EmployerRegisterInput } from "../schemas";
 import { GlobalRole } from "@/types";
-import { CouponResponse, KYCSubmissionResponse, Plan } from "../types";
+import { CouponResponse, KYCSubmissionResponse, OrderResponse, Plan } from "../types";
 
 interface AuthenticatedUser {
   firstName: string;
@@ -53,5 +53,19 @@ export const applyCoupon = async (code: string, planId: string) => {
     "/coupons/apply",
     { code, planId },
   );
+  return response.data;
+};
+
+export const createOrder = async (orderPayload: {
+  amount: number;
+  planId: string;
+  userId: string;
+  internalOrderId: string;
+}) => {
+  const response = await apiClient.post(
+    "/payments/create-order",
+    orderPayload
+  );
+
   return response.data;
 };
