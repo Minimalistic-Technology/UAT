@@ -19,12 +19,12 @@ export const createCoupon = async (req: Request, res: Response, next: NextFuncti
     }
 
     const coupon = await Coupon.create({
-      code,
+      code: code.toUpperCase(),
       type,
       value,
       isActive,
       expiryDate,
-      maxUses,
+      maxUses: maxUses === -1 ? -1 : maxUses,
     });
 
     res.status(201).json(

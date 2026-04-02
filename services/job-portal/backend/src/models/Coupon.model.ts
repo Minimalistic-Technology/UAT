@@ -52,7 +52,8 @@ const couponSchema = new Schema<ICoupon>(
     },
     maxUses: {
       type: Number,
-      min: [1, "Max uses must be at least 1"],
+      min: [-1, "Max uses must be at least -1"],
+      default: -1,
     },
     usageCount: {
       type: Number,
