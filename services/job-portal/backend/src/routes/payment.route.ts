@@ -8,9 +8,10 @@ const router = Router();
 router.post(
   "/create-order",
   validate([
-    body("amount").notEmpty().withMessage("Amount is required"),
+    body("planId").notEmpty().withMessage("Plan ID is required"),
     body("userId").notEmpty().withMessage("User ID is required"),
     body("internalOrderId").notEmpty().withMessage("Internal order ID is required"),
+    body("couponCode").optional().isString(),
   ]),
   createOrder,
 );
