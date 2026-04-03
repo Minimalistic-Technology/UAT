@@ -60,7 +60,7 @@ export const BlogManagement = () => {
         </div>
         <Link
           href="/blog/create"
-          className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#1877F2] dark:bg-[#1877F2] text-white rounded-2xl font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-[#1877F2] dark:shadow-none"
+          className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#1877F2] dark:bg-[#1877F2] text-white rounded-2xl font-bold text-sm hover:scale-105 active:scale-95 transition-all shadow-md shadow-[#1877F2] dark:shadow-none"
         >
           <Plus size={18} />
           Create New Post

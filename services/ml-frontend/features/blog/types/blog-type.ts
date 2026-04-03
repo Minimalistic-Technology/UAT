@@ -48,3 +48,25 @@ export interface BlogListResponse {
     };
   };
 }
+
+export interface Comment {
+  _id: string;
+  postId: string;
+  authorId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
+  content: string;
+  likesCount: number;
+  hasLiked: boolean;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommentListResponse {
+  success: boolean;
+  message: string;
+  data: Comment[];
+}

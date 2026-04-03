@@ -102,6 +102,56 @@ body {
 .ql-indent-7 { padding-left: 21em; }
 .ql-indent-8 { padding-left: 24em; }
 
+/* Quill Font Family Support */
+.ql-font-serif {
+  font-family: Georgia, Times New Roman, serif;
+}
+.ql-font-monospace {
+  font-family: Courier New, Courier, monospace;
+}
+.ql-font-roboto {
+  font-family: 'Roboto', sans-serif;
+}
+.ql-font-playfair {
+  font-family: 'Playfair Display', serif;
+}
+.ql-font-montserrat {
+  font-family: 'Montserrat', sans-serif;
+}
+.ql-font-lora {
+  font-family: 'Lora', serif;
+}
+
+/* Ensure Quill editor content respects font selection in all contexts */
+.ql-editor .ql-font-serif { font-family: Georgia, Times New Roman, serif; }
+.ql-editor .ql-font-monospace { font-family: Courier New, Courier, monospace; }
+.ql-editor .ql-font-roboto { font-family: 'Roboto', sans-serif; }
+.ql-editor .ql-font-playfair { font-family: 'Playfair Display', serif; }
+.ql-editor .ql-font-montserrat { font-family: 'Montserrat', sans-serif; }
+.ql-editor .ql-font-lora { font-family: 'Lora', serif; }
+
+/* Quill Toolbar Font Picker Labels */
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="roboto"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="roboto"]::before {
+  content: "Roboto";
+  font-family: 'Roboto', sans-serif;
+}
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="playfair"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="playfair"]::before {
+  content: "Playfair Display";
+  font-family: 'Playfair Display', serif;
+}
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="montserrat"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="montserrat"]::before {
+  content: "Montserrat";
+  font-family: 'Montserrat', sans-serif;
+}
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="lora"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="lora"]::before {
+  content: "Lora";
+  font-family: 'Lora', serif;
+}
+
 /* Horizontal Rule (Break Line) Support */
 hr {
   border: 0;
@@ -118,6 +168,29 @@ hr {
   min-height: 1.5em;
   display: block;
   content: "";
+}
+
+/* Fix for long lines and overflow in Blog Content */
+.ql-editor {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.prose pre {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre;
+  word-wrap: normal;
+}
+
+.prose code {
+  word-break: break-all;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
 }
 
 
