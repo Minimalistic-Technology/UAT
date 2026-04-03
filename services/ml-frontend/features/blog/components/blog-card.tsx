@@ -52,12 +52,12 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
         </div>
 
         {/* Author Overlay (New) */}
-        <div className="absolute bottom-3 left-3 flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/20">
+        {/* <div className="absolute bottom-3 left-3 flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/20">
           <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] text-white font-bold uppercase">
             {authorName.charAt(0)}
           </div>
-          <span className="text-white text-[10px] font-bold truncate max-w-[100px]">{authorName}</span>
-        </div>
+          <span className="text-white text-[10px] font-bold truncate max-w-[88px]">{authorName}</span>
+        </div> */}
       </div>
 
       {/* Content Section */}
@@ -76,11 +76,11 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
 
         {/* Footer Metadata (Compact) */}
         <div className="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-            <span>{formattedDate}</span>
-            <div className="flex items-center gap-1.5">
-              <Clock size={10} />
-              <span>{readingTime} min</span>
-            </div>
+          <span>{formattedDate}</span>
+          <div className="flex items-center gap-1.5">
+            <Clock size={10} />
+            <span>{readingTime} min</span>
+          </div>
         </div>
       </div>
     </div>

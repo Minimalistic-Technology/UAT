@@ -6,6 +6,7 @@ import { blogService } from '@/features/blog/services/blog-service';
 import { BlogResponse } from '@/features/blog/types/blog-type';
 import { BlogDetail } from '@/features/blog/components/blog-detail';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import { Loader2, AlertCircle, ArrowLeft, Home } from 'lucide-react';
 import Link from 'next/link';
 
@@ -103,22 +104,7 @@ const BlogDetailPage = () => {
         <BlogDetail blog={blog} latestBlogs={latestBlogs} />
       </main>
 
-      {/* Simplified Footer for Detail Page */}
-      <footer className="py-20 border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-[#0c0c0c]">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-           <div className="inline-flex items-center gap-4 text-emerald-600 mb-8">
-              <div className="w-10 h-1 rounded-full bg-current opacity-20" />
-              <Home size={20} />
-              <div className="w-10 h-1 rounded-full bg-current opacity-20" />
-           </div>
-           <p className="text-gray-400 dark:text-gray-500 text-xs font-black uppercase tracking-[0.2em] mb-2">
-             Minimalistic Learning Platform
-           </p>
-           <p className="text-gray-400 dark:text-gray-600 text-[10px] uppercase font-bold tracking-widest">
-             &copy; {new Date().getFullYear()} - All Rights Reserved
-           </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

@@ -15,11 +15,12 @@ import { ApiResponse } from "../utils/ApiResponse";
 export const listPosts = asyncHandler(async (req: Request, res: Response) => {
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 10, 50);
-  const { tag, q } = req.query;
+  const { tag, q, category } = req.query;
 
   const query: Record<string, unknown> = { published: true };
 
   if (tag) query.tags = tag;
+  if (category) query.category = category;
   if (q) query.$text = { $search: String(q) };
 
   const skip = (page - 1) * limit;
