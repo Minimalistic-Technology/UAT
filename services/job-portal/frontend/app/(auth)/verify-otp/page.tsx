@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import VerifyOtpClient from "./verifyOtpClient";
+import VerifyOtpClient from "./verify-otp-client";
 
 export default function VerifyOtpPage() {
   return (

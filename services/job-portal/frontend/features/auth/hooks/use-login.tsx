@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { signIn } from "next-auth/react";
-import { LoginUserInput } from "../auth.schema";
+import { LoginUserInput } from "../validations/auth.schema";
 
 export const useLogin = () => {
   return useMutation({

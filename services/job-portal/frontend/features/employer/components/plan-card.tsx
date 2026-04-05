@@ -1,94 +1,123 @@
 "use client";
 
-import { formatCurrency, formatJobLimit, formatDuration } from "../helpers/employer.helper";
-import { Briefcase, Check, Clock, Infinity, Star, Zap } from "lucide-react";
-import type { Plan } from "../types";
-import { loadRazorpayScript } from "@/lib/razorpay-script";
-import { createOrder } from "../services";
 import { useSession } from "next-auth/react";
+import {
+  Briefcase,
+  Check,
+  Clock,
+  Infinity,
+  Star,
+  Zap,
+  AlertCircle,
+  Tag,
+  X
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const PLAN_ACCENTS = [
-  {
-    border: "border-blue-200",
-    badge: "bg-blue-50 text-blue-700",
-    check: "text-blue-500",
-    button: "bg-blue-600 hover:bg-blue-700 text-white",
-    highlight: "bg-blue-50",
-    tag: "bg-blue-100 text-blue-800",
-  },
-  {
-    border: "border-violet-200",
-    badge: "bg-violet-50 text-violet-700",
-    check: "text-violet-500",
-    button: "bg-violet-600 hover:bg-violet-700 text-white",
-    highlight: "bg-violet-50",
-    tag: "bg-violet-100 text-violet-800",
-  },
-  {
-    border: "border-emerald-200",
-    badge: "bg-emerald-50 text-emerald-700",
-    check: "text-emerald-500",
-    button: "bg-emerald-600 hover:bg-emerald-700 text-white",
-    highlight: "bg-emerald-50",
-    tag: "bg-emerald-100 text-emerald-800",
-  },
-  {
-    border: "border-orange-200",
-    badge: "bg-orange-50 text-orange-700",
-    check: "text-orange-500",
-    button: "bg-orange-600 hover:bg-orange-700 text-white",
-    highlight: "bg-orange-50",
-    tag: "bg-orange-100 text-orange-800",
-  },
-];
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import {
+  formatCurrency,
+  formatJobLimit,
+  formatDuration,
+} from "@/features/employer/helper/plan.helper";
+import { loadRazorpayScript } from "@/lib/razorpay-script";
+import { createOrder } from "@/features/employer/services/payment.service";
+import type { Plan } from "../types";
+import { useState } from "react";
+import { useValidateCoupon } from "../hooks/use-coupons";
 
-interface PlanCardProps {
-  plan: Plan;
-  index: number;
-}
-
-export function PlanCard({ plan, index }: PlanCardProps) {
-  const accent = PLAN_ACCENTS[index % PLAN_ACCENTS.length];
+export function PlanCard({ plan }: { plan: Plan }) {
+  const { data: session } = useSession();
+  const userId = session?.user.id;
   const isUnlimited = plan.jobPostLimit === -1;
 
-  const { data: session, status } = useSession();
-  const userId = session?.user.id;
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [discountedPrice, setDiscountedPrice] = useState<number | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+
+  const validateMutation = useValidateCoupon();
+
+  function handleValidateCoupon() {
+    if (!couponCode.trim()) {
+      toast.error("Please enter a coupon code");
+      return;
+    }
+    setIsValidating(true);
+
+    try {
+      validateMutation.mutate(
+        {
+          code: couponCode,
+          baseAmount: plan.price,
+        },
+        {
+          onSuccess: (response) => {
+            setAppliedCoupon(response.data.coupon);
+            setDiscountedPrice(response.data.finalPrice);
+          },
+          onError: (error: any) => {
+            setAppliedCoupon(null);
+            setDiscountedPrice(null);
+            const msg = error?.response?.data?.message || "Invalid or expired coupon";
+            toast.error(msg);
+          },
+        },
+      );
+    } catch (error) {
+      console.error("Unexpected error during coupon validation:", error);
+      toast.error("An unexpected error occurred while validating the coupon.");
+    } finally {
+      setIsValidating(false);
+    }
+  }
+
+  // Helper to remove coupon
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setDiscountedPrice(null);
+    setCouponCode("");
+  };
 
   const handlePayment = async () => {
     const isLoaded = await loadRazorpayScript();
 
     if (!isLoaded) {
-      alert("Razorpay SDK failed to load. Please check your connection.");
+      toast.error("Razorpay SDK failed to load.");
       return;
     }
 
     try {
       const payload = {
-        amount: Number(plan.price) * 100,
         planId: plan._id,
         userId: userId!,
+        couponCode: appliedCoupon?.code,
         internalOrderId: `ORD_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       };
-      console.log(payload)
 
       const orderData = await createOrder(payload);
-      console.log("orderData", orderData);
-
+      
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "HireHub",
-        description: `Upgrade to ${plan.name}`,
-        order_id: orderData.id, // This is the rpOrder.id from backend
+        amount: orderData.data.order.amount,
+        currency: orderData.data.order.currency,
+        name: "Job Portal",
+        description: `Upgrade to ${plan.name} Plan`,
+        order_id: orderData.data.order.id,
         handler: function (response: any) {
-          // This runs on successful payment
-          console.log("Payment Successful", response);
-          window.location.href = `/employer/dashboard?payment=success&orderId=${orderData.id}`;
+          window.location.href = `/employer/dashboard?payment=success&orderId=${orderData.data.order.id}`;
         },
         prefill: {
-          name: "Employer Name",
-          email: "employer@example.com",
+          name: session?.user?.name || "Employer",
+          email: session?.user?.email || "",
         },
         theme: {
           color: plan.isFeatured ? "#7c3aed" : "#2563eb",
@@ -99,94 +128,183 @@ export function PlanCard({ plan, index }: PlanCardProps) {
       rzp.open();
     } catch (error) {
       console.error("Payment error:", error);
+      toast.error("Failed to initialize payment.");
     }
   };
 
   return (
-    <div
-      className={`relative flex flex-col h-full rounded-2xl border-2 ${
+    <Card
+      className={cn(
+        "relative flex h-full flex-col border-2 transition-all duration-300",
         plan.isFeatured
-          ? "border-violet-400 shadow-xl shadow-violet-100 scale-[1.02]"
-          : accent.border + " shadow-sm hover:shadow-md"
-      } bg-white transition-all duration-200 overflow-hidden`}
+          ? "border-primary shadow-primary/10 z-10 scale-[1.02] shadow-xl"
+          : "border-border hover:shadow-lg",
+      )}
     >
-      {/* Featured ribbon */}
-      {plan.isFeatured && (
-        <div className="absolute top-0 right-0 bg-violet-600 text-white text-xs font-semibold px-4 py-1 rounded-bl-xl flex items-center gap-1 z-10">
-          <Star className="h-3 w-3 fill-white" />
-          Most Popular
-        </div>
-      )}
-
-      {plan.isDefault && (
-        <div className="absolute top-0 left-0 bg-gray-700 text-white text-xs font-semibold px-4 py-1 rounded-br-xl z-10">
-          Default
-        </div>
-      )}
-
-      {/* Header */}
-      <div className={`px-7 pt-10 pb-5 ${plan.isFeatured ? "bg-violet-50" : accent.highlight}`}>
-        <h2 className="text-xl font-bold text-gray-900">{plan.name}</h2>
-        {plan.description && (
-          <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-            {plan.description}
-          </p>
+      <div className="absolute top-0 right-0 flex">
+        {plan.isFeatured && (
+          <Badge className="bg-primary text-primary-foreground rounded-none rounded-bl-lg px-3 py-1 font-bold">
+            <Star className="mr-1 h-3 w-3 fill-current" />
+            Most Popular
+          </Badge>
         )}
-
-        <div className="mt-5 flex items-end gap-1">
-          <div className="flex flex-col">
-            <span className="text-4xl font-extrabold text-gray-900 leading-none">
-              {formatCurrency(plan.price, plan.currency)}
-            </span>
-          </div>
-          <span className="text-sm text-gray-500 mb-1">
-            / {formatDuration(plan.durationDays)}
-          </span>
-        </div>
-
-        {/* Quick stats */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${accent.tag}`}>
-            <Briefcase className="h-3.5 w-3.5" />
-            {formatJobLimit(plan.jobPostLimit)}
-          </span>
-          <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${accent.tag}`}>
-            {isUnlimited ? <Infinity className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-            {formatDuration(plan.durationDays)} validity
-          </span>
-        </div>
       </div>
 
-      {/* Features List */}
-      <div className="flex-1 px-7 py-6">
+      {plan.isDefault && (
+        <div className="absolute top-0 left-0">
+          <Badge
+            variant="secondary"
+            className="rounded-none rounded-br-lg px-3 py-1 font-semibold"
+          >
+            Current Default
+          </Badge>
+        </div>
+      )}
+
+      <CardHeader
+        className={cn(
+          "px-6 pt-10 pb-6",
+          plan.isFeatured ? "bg-primary/5" : "bg-muted/30",
+        )}
+      >
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight">{plan.name}</h2>
+          <p className="text-muted-foreground line-clamp-2 text-sm">
+            {plan.description || "Tailored hiring solutions for your business."}
+          </p>
+        </div>
+
+        <div className="mt-6 flex items-baseline gap-1">
+          <span className="text-4xl font-black">
+            {formatCurrency(plan.price, plan.currency)}
+          </span>
+          <span className="text-muted-foreground text-sm font-medium">
+            /{formatDuration(plan.durationDays)}
+          </span>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Badge variant="outline" className="bg-background flex gap-1.5 px-2.5 py-1">
+            <Briefcase className="text-primary h-3.5 w-3.5" />
+            {formatJobLimit(plan.jobPostLimit)}
+          </Badge>
+          <Badge variant="outline" className="bg-background flex gap-1.5 px-2.5 py-1">
+            {isUnlimited ? (
+              <Infinity className="text-primary h-3.5 w-3.5" />
+            ) : (
+              <Clock className="text-primary h-3.5 w-3.5" />
+            )}
+            {formatDuration(plan.durationDays)} Validity
+          </Badge>
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex-1 px-6 pt-6">
+        {/* Price Section */}
+        <div className="mb-4">
+          {discountedPrice !== null ? (
+            <div className="flex flex-col">
+              <span className="text-muted-foreground text-sm line-through">
+                {formatCurrency(plan.price, plan.currency)}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-green-600">
+                  {formatCurrency(discountedPrice, plan.currency)}
+                </span>
+                <Badge variant="outline" className="text-green-600 border-green-600 text-[10px] uppercase">
+                   Save {(plan.price - discountedPrice).toFixed(2)} {plan.currency}
+                </Badge>
+              </div>
+            </div>
+          ) : (
+            <span className="text-2xl font-bold">
+              {formatCurrency(plan.price, plan.currency)}
+            </span>
+          )}
+        </div>
+
+        {/* Coupon Input & Applied State */}
+        <div className="mb-6 flex flex-col gap-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Coupon Code"
+              className="border-input flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm uppercase shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              disabled={!!appliedCoupon}
+            />
+            {!appliedCoupon ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleValidateCoupon}
+                disabled={isValidating || !couponCode}
+              >
+                Apply
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={removeCoupon}
+                className="text-destructive hover:bg-destructive/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          {appliedCoupon && (
+            <div className="flex items-center gap-2 text-xs font-medium text-green-600 animate-in fade-in slide-in-from-top-1">
+              <Tag className="h-3 w-3" />
+              <span>Coupon "{appliedCoupon.code}" Applied</span>
+            </div>
+          )}
+        </div>
+
         <ul className="space-y-3">
           {plan.features.length > 0 ? (
             plan.features.map((feature, i) => (
               <li key={i} className="flex items-start gap-3">
-                <Check className={`h-4 w-4 mt-0.5 shrink-0 ${accent.check}`} />
-                <span className="text-sm text-gray-700">{feature}</span>
+                <div className="bg-primary/10 mt-1 rounded-full p-0.5">
+                  <Check className="text-primary h-3.5 w-3.5" strokeWidth={3} />
+                </div>
+                <span className="text-foreground/80 text-sm leading-snug">
+                  {feature}
+                </span>
               </li>
             ))
           ) : (
-            <li className="text-sm text-gray-400 italic">Standard platform features included.</li>
+            <li className="text-muted-foreground flex items-center gap-2 text-sm italic">
+              <AlertCircle className="h-4 w-4" />
+              Standard features included
+            </li>
           )}
         </ul>
-      </div>
+      </CardContent>
 
-      {/* Action Button */}
-      <div className="px-7 pb-7">
-        <button
+      <CardFooter className="px-6 pb-8">
+        <Button
           onClick={handlePayment}
-          className={`w-full cursor-pointer flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-150 active:scale-95 ${
-            plan.isFeatured
-              ? "bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-200"
-              : accent.button
-          }`}
+          size="lg"
+          className={cn(
+            "group w-full cursor-pointer font-bold transition-all active:scale-95",
+            plan.isFeatured ? "shadow-primary/20 shadow-lg" : "",
+          )}
+          variant={plan.isFeatured ? "default" : "outline"}
         >
-          <Zap className="h-4 w-4 fill-current" />
+          <Zap
+            className={cn(
+              "mr-2 h-4 w-4 transition-transform group-hover:scale-110",
+              plan.isFeatured ? "fill-current" : "text-primary",
+            )}
+          />
           Get {plan.name}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

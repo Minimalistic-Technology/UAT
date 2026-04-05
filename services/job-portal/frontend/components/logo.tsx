@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
+import { BriefcaseBusiness } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { Briefcase } from "lucide-react";
+import { useMemo } from "react";
 
-export const Logo = () => {
+const Logo = () => {
   const { data: session, status } = useSession();
 
   const redirectUrl = useMemo(() => {
@@ -16,33 +16,28 @@ export const Logo = () => {
       case "super_admin":
         return "/admin-dashboard";
       case "user":
-        if(session?.user.isEmployee) return "/employer/dashboard"
-        else return "/user-dashboard"
+        if (session?.user.isEmployee) return "/employer-dashboard";
+        else return "/user-dashboard";
       default:
         return "/";
     }
   }, [session, status]);
 
-  if (status === "loading") {
-    return <div className="h-8 w-32 animate-pulse bg-gray-200 rounded-md" />;
-  }
-
   return (
-    <div className="flex items-center">
-      <Link 
-        href={redirectUrl} 
-        className="flex items-center gap-2 transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 rounded-lg p-1"
-        aria-label="Go to Dashboard"
-      >
-        <Briefcase 
-          className="h-8 w-8 text-primary-600" 
-          aria-hidden="true" 
+    <Link
+      href={redirectUrl}
+      className="group flex items-center gap-2 transition-all"
+    >
+      <div className="bg-primary rounded-lg p-1.5">
+        <BriefcaseBusiness
+          className="text-primary-foreground size-6"
+          strokeWidth={2.5}
         />
-        <span className="text-2xl font-bold tracking-tight text-gray-900">
-          Job<span className="text-primary-600">Portal</span>
-        </span>
-      </Link>
-    </div>
+      </div>
+      <span className="text-xl font-bold tracking-tight text-slate-900">
+        Job<span className="text-primary">Portal</span>
+      </span>
+    </Link>
   );
 };
 
