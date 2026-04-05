@@ -20,12 +20,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const userMenuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/user-dashboard" },
-  { label: "Find Jobs", icon: Search, href: "/jobs" },
-  { label: "My Applications", icon: Briefcase, href: "/user-dashboard/applications", badge: "4" },
-  { label: "Saved Jobs", icon: Bookmark, href: "/user-dashboard/saved-jobs" },
+  { label: "Find Jobs", icon: Search, href: "/find-jobs" },
+  { label: "My Applications", icon: Briefcase, href: "/user-dashboard/applications" },
+  // { label: "Saved Jobs", icon: Bookmark, href: "/user-dashboard/saved-jobs" },
   { label: "My Resume", icon: FileText, href: "/user-dashboard/profile/resume" },
-  { label: "Notifications", icon: Bell, href: "/user-dashboard/notifications", badge: "2" },
-  { label: "Settings", icon: Settings, href: "/user-dashboard/settings" },
+  // { label: "Notifications", icon: Bell, href: "/user-dashboard/notifications" },
+  // { label: "Settings", icon: Settings, href: "/user-dashboard/settings" },
 ];
 
 export default function UserSidebar({ className }: { className?: string }) {
@@ -79,14 +79,6 @@ export default function UserSidebar({ className }: { className?: string }) {
                   )} />
                   {item.label}
                 </div>
-                {item.badge && (
-                  <span className={cn(
-                    "rounded-full px-2 py-0.5 text-[10px] font-bold",
-                    isActive ? "bg-primary text-white" : "bg-slate-100 text-slate-600"
-                  )}>
-                    {item.badge}
-                  </span>
-                )}
               </Link>
             );
           })}

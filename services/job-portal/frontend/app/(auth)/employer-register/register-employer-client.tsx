@@ -71,7 +71,7 @@ export default function EmployerRegisterPage() {
   const isLoading = registerMutation.isPending;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50/50 px-4 py-12">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-slate-50/50 px-4 py-12">
       <div className="w-full max-w-lg">
         
         <Card className="shadow-lg border-muted/60">

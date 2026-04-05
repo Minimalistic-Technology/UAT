@@ -20,8 +20,8 @@ const menuItems = [
   { label: "Post a Job", icon: PlusCircle, href: "/employer-dashboard/jobs/create" },
   { label: "Manage Jobs", icon: Briefcase, href: "/employer-dashboard/jobs/manage" },
   { label: "Manage Team", icon: Users, href: "/employer-dashboard/team" },
-  { label: "Company Settings", icon: Building2, href: "/employer-dashboard/settings" },
-  { label: "Account Settings", icon: Settings, href: "/employer-dashboard/account" },
+  // { label: "Company Settings", icon: Building2, href: "/employer-dashboard/settings" },
+  // { label: "Account Settings", icon: Settings, href: "/employer-dashboard/account" },
 ]
 
 export default function EmployerSidebar({ className }: { className?: string }) {

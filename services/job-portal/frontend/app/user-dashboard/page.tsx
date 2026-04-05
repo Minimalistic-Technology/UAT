@@ -100,7 +100,7 @@ export default function JobSeekerDashboard() {
         </div>
         <div className="flex gap-3">
           <Button variant="outline" asChild>
-            <Link href="/profile/resume">
+            <Link href="/user-dashboard/profile/resume">
               <FileText className="mr-2 h-4 w-4" /> My Resume
             </Link>
           </Button>

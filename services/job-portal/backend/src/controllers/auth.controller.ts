@@ -158,10 +158,7 @@ export const requestEmployerRegistration = async (
 
       if (existingCompany) {
         await session.abortTransaction();
-        return res.status(400).json({
-          success: false,
-          message: "You are already registered with this company",
-        });
+        throw new ApiError(400, "You are already registered with this company");
       }
     }
 
@@ -254,6 +251,7 @@ export const confirmRegistrationOTP = async (
     let isNewUser = true;
 
     if (tempUser.isEmployer) {
+      console.log(tempUser.isEmployer)
       let user = await User.findOne({ email }).session(session);
       isNewUser = !user;
 
@@ -306,7 +304,14 @@ export const confirmRegistrationOTP = async (
           { session },
         );
       }
-      userToReturn = user;
+      const membership = await CompanyMember.findOne({ user: user._id }).session(session);
+      
+      userToReturn = {
+        ...user.toObject(),
+        isEmployee: true,
+        companyId: membership?.company || null,
+        companyRole: membership?.role || null,
+      };
     } else {
       const [newUser] = await User.create(
         [
@@ -322,7 +327,12 @@ export const confirmRegistrationOTP = async (
         ],
         { session },
       );
-      userToReturn = newUser;
+      userToReturn = {
+        ...newUser.toObject(),
+        isEmployee: false,
+        companyId: null,
+        companyRole: null,
+      };
     }
 
     await TempUser.deleteOne({ _id: tempUser._id }).session(session);
@@ -504,9 +514,6 @@ export const verifyOTP = async (
   }
 };
 
-// @desc    Google OAuth callback
-// @route   POST /api/auth/google
-// @access  Public
 export const googleAuth = async (
   req: AuthRequest,
   res: Response,
@@ -528,7 +535,29 @@ export const googleAuth = async (
       });
     }
 
-    sendTokenResponse(user, 200, res);
+    let isEmployee = false;
+    let companyId = null;
+    let companyRole = null;
+
+    if (user.role === GlobalRole.USER) {
+      const membership = await CompanyMember.findOne({ user: user._id });
+      if (membership) {
+        isEmployee = true;
+        companyId = membership.company;
+        companyRole = membership.role;
+      }
+    }
+
+    sendTokenResponse(
+      {
+        ...user.toObject(),
+        isEmployee,
+        companyId,
+        companyRole,
+      },
+      200,
+      res
+    );
   } catch (error: any) {
     res.status(500).json({
       success: false,
