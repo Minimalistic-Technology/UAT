@@ -13,19 +13,17 @@ export const applyForJob = async (
   next: NextFunction,
 ) => {
   try {
-    const { jobId, resume, coverLetter } = req.body;
+    const { jobId } = req.body;
 
-    if (!req.user.resume && !resume) {
+    if (!req.user.resume) {
       throw new ApiError(400, "Resume is required to apply for this job");
     }
 
-    // Check if job exists
     const job = await Job.findById(jobId);
     if (!job) {
       throw new ApiError(404, "Job not found");
     }
 
-    // Check if already applied
     const existingApplication = await Application.findOne({
       job: jobId,
       jobSeeker: req.user.id,
@@ -35,19 +33,13 @@ export const applyForJob = async (
       throw new ApiError(400, "You have already applied for this job");
     }
 
-    console.log(req.user._id);
-    console.log(req.user.resume);
-
     // Create application
     const application = await Application.create({
       job: jobId,
       jobSeeker: req.user._id,
-      resume: resume || req.user.resume,
-      coverLetter: coverLetter || null,
+      resume: req.user.resume
     });
-
-    console.log(application);
-
+    
     // Increment applications count
     job.applicationsCount += 1;
     await job.save();

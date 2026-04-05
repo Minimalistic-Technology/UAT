@@ -57,7 +57,7 @@ export default function Navbar() {
               </div>
             ) : isAuthenticated ? (
               <>
-                {isJobSeeker && <NavLink href="/applications">My Applications</NavLink>}
+                {isJobSeeker && <NavLink href="/user-dashboard/applications">My Applications</NavLink>}
                 {isEmployer && (
                   <>
                     <NavLink href="/employer-dashboard/jobs/create">Post Job</NavLink>

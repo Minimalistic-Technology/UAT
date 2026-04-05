@@ -21,8 +21,6 @@ router.post(
   applicationLimiter,
   validate([
     body("jobId").isMongoId().withMessage("Valid jobId is required"),
-    body("resume").isString().notEmpty().withMessage("Resume is required"),
-    body("coverLetter").optional().isString(),
   ]),
   applyForJob,
 );

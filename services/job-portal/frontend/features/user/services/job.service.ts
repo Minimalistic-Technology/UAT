@@ -30,3 +30,8 @@ export const getJobs = async (filters: any = {}) => {
     const response = await apiClient.get<ApiSuccessResponse<GetJobsResponse>>(`/jobs?${queryString}`);
     return response.data;
 }
+
+export const getJobDetailsById = async (jobId: string) => {
+    const response = await apiClient.get<ApiSuccessResponse<any>>(`/jobs/${jobId}`)
+    return response.data
+}
