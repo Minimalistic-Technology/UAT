@@ -45,7 +45,7 @@ export default function JobSeekerDashboard() {
   const stats = [
     {
       label: "Total Applied",
-      value: applications?.data.count || 0,
+      value: applications?.data?.pagination?.totalItems || 0,
       icon: Briefcase,
       color: "text-blue-600",
       bg: "bg-blue-50",

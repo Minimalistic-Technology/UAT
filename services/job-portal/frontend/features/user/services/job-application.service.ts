@@ -24,3 +24,8 @@ export const applyJob = async (data: ApplyJobPayload) => {
     const response = await apiClient.post<ApiSuccessResponse<any>>("/applications", data);
     return response.data;
 }
+
+export const withdrawJobApplication = async(appId: string) => {
+    const response = await apiClient.delete<ApiSuccessResponse<null>>(`/applications/${appId}`);
+    return response.data;
+}
