@@ -4,7 +4,6 @@ import Job from "../models/Job.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 // import { sendEmail } from '../utils/email.js';
-import { isValidParams } from "../lib/validate.js";
 import { ApiError } from "../utils/apiError.js";
 
 export const applyForJob = async (
@@ -83,7 +82,7 @@ export const getMyApplications = async (
       .json(
         new ApiResponse(
           200,
-          { 
+          {
             applications,
             pagination: {
               totalItems: totalApplications,
@@ -107,12 +106,6 @@ export const getJobApplicants = async (
 ) => {
   try {
     const { jobId } = req.params;
-
-    const validJobId = isValidParams(jobId);
-
-    if (!validJobId) {
-      throw new ApiError(400, "Invalid job ID");
-    }
 
     const job = await Job.findById(jobId);
     if (!job) {
@@ -144,9 +137,7 @@ export const getJobApplicants = async (
   }
 };
 
-// @desc    Update application status
-// @route   PUT /api/applications/:id/status
-// @access  Private (Employer)
+
 export const updateApplicationStatus = async (
   req: AuthRequest,
   res: Response,
@@ -160,19 +151,13 @@ export const updateApplicationStatus = async (
       .populate("jobSeeker", "email firstName lastName");
 
     if (!application) {
-      return res.status(404).json({
-        success: false,
-        message: "Application not found",
-      });
+      throw new ApiError(404, "Application not found")
     }
 
     // Verify job belongs to employer
     const job: any = application.job;
     if (job.postedBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this application",
-      });
+      throw new ApiError(403, "Not authorized to update this application")
     }
 
     // Update status
@@ -196,23 +181,13 @@ export const updateApplicationStatus = async (
     //   }`,
     // });
 
-    res.status(200).json({
-      success: true,
-      message: "Application status updated successfully",
-      data: application,
-    });
+    res.status(200).json(
+      new ApiResponse(200, application, "Application status updated successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error updating application status",
-      error: error.message,
-    });
+    next(error)
   }
 };
 
-// @desc    Withdraw application
-// @route   DELETE /api/applications/:id
-// @access  Private (Job Seeker)
 export const withdrawApplication = async (
   req: AuthRequest,
   res: Response,
@@ -222,32 +197,19 @@ export const withdrawApplication = async (
     const application = await Application.findById(req.params.id);
 
     if (!application) {
-      return res.status(404).json({
-        success: false,
-        message: "Application not found",
-      });
+      throw new ApiError(404, "Application not found")
     }
 
     // Verify application belongs to user
     if (application.jobSeeker.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to withdraw this application",
-      });
+      throw new ApiError(403, "Not authorized to withdraw this application");
     }
 
     application.status = ApplicationStatus.WITHDRAWN;
     await application.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Application withdrawn successfully",
-    });
+    res.status(200).json(new ApiResponse(200, null, "Application withdrawn successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error withdrawing application",
-      error: error.message,
-    });
+    next(error)
   }
 };
