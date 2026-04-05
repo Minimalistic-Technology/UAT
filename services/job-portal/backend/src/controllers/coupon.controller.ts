@@ -4,7 +4,11 @@ import Coupon from "../models/Coupon.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 
-export const createCoupon = async (req: Request, res: Response, next: NextFunction) => {
+export const createCoupon = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { code, type, value, isActive, expiryDate, maxUses } = req.body;
 
@@ -19,38 +23,50 @@ export const createCoupon = async (req: Request, res: Response, next: NextFuncti
     }
 
     const coupon = await Coupon.create({
-      code,
+      code: code.toUpperCase(),
       type,
       value,
       isActive,
       expiryDate,
-      maxUses,
+      maxUses: maxUses === -1 ? -1 : maxUses,
     });
 
-    res.status(201).json(
-      new ApiResponse(201, coupon, "Coupon created successfully")
-    );
+    res
+      .status(201)
+      .json(new ApiResponse(201, coupon, "Coupon created successfully"));
   } catch (error: any) {
     next(error);
   }
 };
 
-export const getCoupons = async (req: Request, res: Response, next: NextFunction) => {
+export const getCoupons = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const coupons = await Coupon.find().sort("-createdAt");
 
     res.status(200).json(
-      new ApiResponse(200, {
-        count: coupons.length,
-        data: coupons,
-      }, "Coupons fetched successfully")
+      new ApiResponse(
+        200,
+        {
+          count: coupons.length,
+          data: coupons,
+        },
+        "Coupons fetched successfully",
+      ),
     );
   } catch (error: any) {
     next(error);
   }
 };
 
-export const applyCoupon = async (req: Request, res: Response, next: NextFunction) => {
+export const applyCoupon = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -65,26 +81,24 @@ export const applyCoupon = async (req: Request, res: Response, next: NextFunctio
         $or: [
           { expiryDate: { $gt: new Date() } },
           { expiryDate: null },
-          { expiryDate: { $exists: false } }
+          { expiryDate: { $exists: false } },
+          { maxUses: { $exists: false } },
+          { maxUses: null },
+          { maxUses: -1 },
+          { $expr: { $lt: ["$usageCount", "$maxUses"] } },
         ],
-        $and: [
-          {
-            $or: [
-              { maxUses: { $exists: false } },
-              { maxUses: null },
-              { $expr: { $lt: ["$usageCount", "$maxUses"] } }
-            ]
-          }
-        ]
       },
       {
-        $inc: { usageCount: 1 }
+        $inc: { usageCount: 1 },
       },
-      { new: true, session }
+      { new: true, session },
     );
 
     if (!coupon) {
-      throw new ApiError(400, "Coupon is invalid, expired, or has reached its usage limit");
+      throw new ApiError(
+        400,
+        "Coupon is invalid, expired, or has reached its usage limit",
+      );
     }
 
     // Calculate discounted amount
@@ -105,12 +119,16 @@ export const applyCoupon = async (req: Request, res: Response, next: NextFunctio
     await session.commitTransaction();
 
     res.status(200).json(
-      new ApiResponse(200, {
-        coupon,
-        baseAmount,
-        discountValue,
-        finalPrice
-      }, "Coupon applied successfully")
+      new ApiResponse(
+        200,
+        {
+          coupon,
+          baseAmount,
+          discountValue,
+          finalPrice,
+        },
+        "Coupon applied successfully",
+      ),
     );
   } catch (error: any) {
     await session.abortTransaction();
@@ -120,7 +138,11 @@ export const applyCoupon = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const validateCoupon = async (req: Request, res: Response, next: NextFunction) => {
+export const validateCoupon = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { code, baseAmount } = req.body;
 
@@ -130,21 +152,19 @@ export const validateCoupon = async (req: Request, res: Response, next: NextFunc
       $or: [
         { expiryDate: { $gt: new Date() } },
         { expiryDate: null },
-        { expiryDate: { $exists: false } }
+        { expiryDate: { $exists: false } },
+        { maxUses: { $exists: false } },
+        { maxUses: null },
+        { maxUses: -1 },
+        { $expr: { $lt: ["$usageCount", "$maxUses"] } },
       ],
-      $and: [
-        {
-          $or: [
-            { maxUses: { $exists: false } },
-            { maxUses: null },
-            { $expr: { $lt: ["$usageCount", "$maxUses"] } }
-          ]
-        }
-      ]
     });
 
     if (!coupon) {
-      throw new ApiError(400, "Coupon is invalid, expired, or has reached its usage limit");
+      throw new ApiError(
+        400,
+        "Coupon is invalid, expired, or has reached its usage limit",
+      );
     }
 
     let discountValue = 0;
@@ -161,12 +181,16 @@ export const validateCoupon = async (req: Request, res: Response, next: NextFunc
     const finalPrice = Number((baseAmount - discountValue).toFixed(2));
 
     res.status(200).json(
-      new ApiResponse(200, {
-        coupon,
-        baseAmount,
-        discountValue,
-        finalPrice
-      }, "Coupon is valid")
+      new ApiResponse(
+        200,
+        {
+          coupon,
+          baseAmount,
+          discountValue,
+          finalPrice,
+        },
+        "Coupon is valid",
+      ),
     );
   } catch (error: any) {
     next(error);

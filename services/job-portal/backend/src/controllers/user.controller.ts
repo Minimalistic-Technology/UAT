@@ -6,6 +6,8 @@ import {
   uploadToCloudinary,
   deleteFromCloudinary,
 } from "../utils/cloudinary.js";
+import { ApiResponse } from "../utils/apiResponse.js";
+import { ApiError } from "../utils/apiError.js";
 
 export const getPublicIdFromUrl = (url: string) => {
   const parts = url.split("/");
@@ -57,9 +59,6 @@ export const updateProfile = async (
   }
 };
 
-// @desc    Upload avatar
-// @route   PUT /api/users/avatar
-// @access  Private
 export const uploadAvatar = async (
   req: AuthRequest,
   res: Response,
@@ -67,44 +66,41 @@ export const uploadAvatar = async (
 ) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "Please upload a file",
-      });
+      throw new ApiError(400, "Please upload a file");
     }
 
-    // Upload to Cloudinary
-    const result = await uploadToCloudinary(req.file.buffer, "avatars");
-
-    // Delete old avatar if exists
     if (req.user.avatar) {
-      const publicUrl = getPublicIdFromUrl(req.user.avatar);
-      await deleteFromCloudinary(publicUrl);
+      const publicId = getPublicIdFromUrl(req.user.avatar);
+      await deleteFromCloudinary(publicId, "image");
     }
 
-    // Update user
-    await User.findByIdAndUpdate(
+    const result = await uploadToCloudinary(
+      req.file.buffer,
+      "avatars",
+      "image",
+      `avatar-${req.user.id}-${Date.now()}`,
+    );
+
+    const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
       { avatar: result.secure_url },
       { new: true },
     );
 
-    res.status(200).json({
-      success: true,
-      message: "Avatar uploaded successfully",
-    });
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { avatarUrl: updatedUser?.avatar },
+          "Avatar uploaded successfully",
+        ),
+      );
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error uploading avatar",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-// @desc    Upload resume
-// @route   PUT /api/users/resume
-// @access  Private (Job Seeker)
 export const uploadResume = async (
   req: AuthRequest,
   res: Response,
@@ -112,44 +108,37 @@ export const uploadResume = async (
 ) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "Please upload a file",
-      });
+      throw new ApiError(400, "Please upload a file");
+    }
+    if (req.user.resume) {
+      const publicId = getPublicIdFromUrl(req.user.resume);
+      await deleteFromCloudinary(publicId, "raw");
     }
 
-    // Upload to Cloudinary
     const result = await uploadToCloudinary(
       req.file.buffer,
       "resumes",
-      "image",
+      "raw",
       `resume-${req.user.id}-${Date.now()}`,
-      "pdf",
     );
 
-    // Delete old resume if exists
-    if (req.user.resume) {
-      const publicUrl = getPublicIdFromUrl(req.user.resume);
-      await deleteFromCloudinary(publicUrl);
-    }
-
-    // Update user
-    await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
       { resume: result.secure_url },
       { new: true },
     );
 
-    res.status(200).json({
-      success: true,
-      message: "Resume uploaded successfully",
-    });
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { resumeUrl: updatedUser?.resume },
+          "Resume uploaded successfully",
+        ),
+      );
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error uploading resume",
-      error: error.message,
-    });
+    next(error);
   }
 };
 

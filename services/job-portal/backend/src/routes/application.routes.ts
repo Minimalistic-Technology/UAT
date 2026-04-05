@@ -1,47 +1,58 @@
-import express from 'express';
+import express from "express";
 import {
   applyForJob,
   getMyApplications,
   getJobApplicants,
   updateApplicationStatus,
   withdrawApplication,
-} from '../controllers/application.controller.js';
-import { protect, authorize } from '../middleware/auth.middleware.js';
-import { GlobalRole } from '../models/User.model.js';
-import { applicationLimiter } from '../middleware/rateLimiter.js';
+} from "../controllers/application.controller.js";
+import { protect, authorize } from "../middleware/auth.middleware.js";
+import { GlobalRole } from "../models/User.model.js";
+import { applicationLimiter } from "../middleware/rateLimiter.js";
+import { validate } from "../middleware/validate.middleware.js";
+import { body } from "express-validator";
 
 const router = express.Router();
 
 router.post(
-  '/',
+  "/",
   protect,
   authorize(GlobalRole.USER), // only for job seeker
   applicationLimiter,
-  applyForJob
+  validate([
+    body("jobId").isMongoId().withMessage("Valid jobId is required"),
+    body("resume").isString().notEmpty().withMessage("Resume is required"),
+    body("coverLetter").optional().isString(),
+  ]),
+  applyForJob,
 );
+
 router.get(
-  '/my-applications',
+  "/my-applications",
   protect,
   authorize(GlobalRole.USER), // only for job seeker
-  getMyApplications
+  getMyApplications,
 );
+
 router.get(
-  '/job/:jobId',
+  "/job/:jobId",
   protect,
   authorize(GlobalRole.USER), // only for employer
-  getJobApplicants
+  getJobApplicants,
 );
+
 router.put(
-  '/:id/status',
+  "/:id/status",
   protect,
   authorize(GlobalRole.USER), // only for employer
-  updateApplicationStatus
+  updateApplicationStatus,
 );
+
 router.delete(
-  '/:id',
+  "/:id",
   protect,
   authorize(GlobalRole.USER), // only for job seeker
-  withdrawApplication
+  withdrawApplication,
 );
 
 export default router;

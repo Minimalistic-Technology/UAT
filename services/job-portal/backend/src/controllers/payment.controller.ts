@@ -6,82 +6,99 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import crypto from "crypto";
 import { config } from "../config/env.js";
+import Plan from "../models/Plan.model.js";
+import Coupon from "../models/Coupon.model.js";
 
 export const createOrder = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  const { amount, userId, internalOrderId, currency = "INR" } = req.body;
-
-  if (amount < 1) {
-    return next(new ApiError(400, "Amount must be greater than 0"));
-  }
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
-    const existingPayment = await Payment.findOne({
-      "metadata.internalOrderId": internalOrderId,
-    });
+    const { planId, userId, couponCode, internalOrderId } = req.body;
 
-    if (existingPayment) {
-      return res
-        .status(200)
-        .json(
-          new ApiResponse(
-            200,
-            { orderId: existingPayment.razorpayOrderId },
-            "Order already exists",
-          ),
+    // 1. Fetch the actual Plan from DB
+    const plan = await Plan.findById(planId);
+    if (!plan) throw new ApiError(404, "Plan not found");
+
+    let finalAmount = plan.price;
+    let discountValue = 0;
+    let appliedCoupon = null;
+
+    // 2. If a coupon is provided, validate and apply it
+    if (couponCode) {
+      appliedCoupon = await Coupon.findOneAndUpdate(
+        {
+          code: couponCode.toUpperCase(),
+          isActive: true,
+          $or: [
+            { expiryDate: { $gt: new Date() } },
+            { expiryDate: null },
+            { expiryDate: { $exists: false } },
+            { maxUses: { $exists: false } },
+            { maxUses: null },
+            { maxUses: -1 },
+            { $expr: { $lt: ["$usageCount", "$maxUses"] } },
+          ],
+        },
+        { $inc: { usageCount: 1 } },
+        { new: true, session },
+      );
+
+      if (!appliedCoupon) {
+        throw new ApiError(400, "Coupon is invalid or expired");
+      }
+
+      // Calculate Discount
+      if (appliedCoupon.type === "percentage") {
+        discountValue = Number(
+          ((plan.price * appliedCoupon.value) / 100).toFixed(2),
         );
+      } else {
+        discountValue = appliedCoupon.value;
+      }
+
+      // Cap discount at plan price
+      discountValue = Math.min(discountValue, plan.price);
+      finalAmount = Number((plan.price - discountValue).toFixed(2));
     }
 
+    // 3. Create Razorpay Order
     const options = {
-      amount,
-      currency,
+      amount: Math.round(finalAmount * 100),
+      currency: plan.currency || "INR",
       receipt: internalOrderId,
+      notes: {
+        userId,
+        planId,
+        couponCode: couponCode || "NONE",
+      },
     };
 
-    const rpOrder = await razorpay.orders.create(options);
+    const order = await razorpay.orders.create(options);
 
-    const payment = await Payment.create({
-      userId: new mongoose.Types.ObjectId(userId),
-      amount,
-      currency,
-      razorpayOrderId: rpOrder.id,
-      status: PaymentStatus.CREATED,
-      receipt: internalOrderId,
-      metadata: {
-        internalOrderId,
-      },
-    });
+    await session.commitTransaction();
 
-    return res
-      .status(201)
-      .json(
-        new ApiResponse(
-          201,
-          { order: rpOrder, paymentId: payment._id },
-          "Order created successfully",
-        ),
-      );
+    res.status(201).json(
+      new ApiResponse(
+        201,
+        {
+          order,
+          finalAmount,
+          discountValue,
+          couponApplied: !!appliedCoupon,
+        },
+        "Order created successfully",
+      ),
+    );
   } catch (error: any) {
-    if (error.code === 11000) {
-      const existingPayment = await Payment.findOne({
-        "metadata.internalOrderId": internalOrderId,
-      });
-
-      return res
-        .status(200)
-        .json(
-          new ApiResponse(
-            200,
-            { orderId: existingPayment?.razorpayOrderId },
-            "Order already exists (race condition handled)",
-          ),
-        );
-    }
-
-    return next(new ApiError(500, error.message || "Something went wrong"));
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
   }
 };
 
@@ -104,7 +121,7 @@ export const handleRazorpayWebhook = async (
 
     const isValid = crypto.timingSafeEqual(
       Buffer.from(generatedSignature),
-      Buffer.from(signature)
+      Buffer.from(signature),
     );
 
     if (!isValid) {
@@ -120,7 +137,9 @@ export const handleRazorpayWebhook = async (
     const paymentEntity = data?.payment?.entity;
 
     if (!paymentEntity) {
-      return res.status(200).json(new ApiResponse(200, null, "Webhook ignored"));
+      return res
+        .status(200)
+        .json(new ApiResponse(200, null, "Webhook ignored"));
     }
 
     const razorpayOrderId = paymentEntity.order_id;
@@ -134,7 +153,9 @@ export const handleRazorpayWebhook = async (
     });
 
     if (alreadyProcessed) {
-      return res.status(200).json(new ApiResponse(200, null, "Webhook already processed"));
+      return res
+        .status(200)
+        .json(new ApiResponse(200, null, "Webhook already processed"));
     }
 
     /**
@@ -163,7 +184,7 @@ export const handleRazorpayWebhook = async (
             status: PaymentStatus.CAPTURED,
             capturedAt: new Date(),
             method: paymentEntity.method,
-          }
+          },
         );
         break;
 
@@ -174,7 +195,7 @@ export const handleRazorpayWebhook = async (
             ...baseUpdate,
             status: PaymentStatus.FAILED,
             failureReason: paymentEntity.error_description,
-          }
+          },
         );
         break;
 
@@ -184,7 +205,7 @@ export const handleRazorpayWebhook = async (
           {
             ...baseUpdate,
             status: PaymentStatus.AUTHORIZED,
-          }
+          },
         );
         break;
 
@@ -195,8 +216,9 @@ export const handleRazorpayWebhook = async (
     /**
      * 6. Always respond 200
      */
-    return res.status(200).json(new ApiResponse(200, null, "Webhook processed successfully"));
-
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Webhook processed successfully"));
   } catch (error) {
     console.error("Webhook Error:", error);
 
@@ -204,6 +226,8 @@ export const handleRazorpayWebhook = async (
      * Important:
      * Return 500 → Razorpay retries
      */
-    return res.status(500).json(new ApiResponse(500, null, "Webhook processing failed"));
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, "Webhook processing failed"));
   }
 };

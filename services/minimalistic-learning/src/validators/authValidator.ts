@@ -7,13 +7,13 @@ export const signupSchema = z.object({
     .string()
     .trim()
     .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number"),
-  email: z.string().email(),
+  email: z.string().email().trim().toLowerCase(),
   password: z.string().min(8),
   role: z.enum(['user', 'admin']).optional().default('user'),
 });
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().trim().toLowerCase(),
   password: z.string().min(1),
 });
 

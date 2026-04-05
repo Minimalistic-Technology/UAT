@@ -8,6 +8,7 @@ import {
   getPostById,
   upvotePost,
   downvotePost,
+  listMyPosts,
 } from "../controllers/postController";
 import requireAuth from "../middleware/requireAuth";
 import { uploadCoverImage } from "../middleware/upload";
@@ -15,6 +16,7 @@ import { uploadCoverImage } from "../middleware/upload";
 const router = Router();
 
 router.get("/", listPosts);
+router.get("/my", requireAuth, listMyPosts);
 router.get("/slug/:slug", getPostBySlug);
 router.get("/id/:blogId", getPostById);
 router.post("/", requireAuth, uploadCoverImage, createPost);

@@ -34,13 +34,13 @@ router.post(
       .isBoolean()
       .withMessage("isActive must be a boolean"),
     body("expiryDate")
-      .optional()
+      .optional({ values: "falsy" })
       .isISO8601()
       .withMessage("Invalid expiry date format"),
     body("maxUses")
       .optional()
-      .isInt({ min: 1 })
-      .withMessage("maxUses must be at least 1"),
+      .isInt({ min: -1 })
+      .withMessage("maxUses must be at least -1"),
   ]),
   createCoupon,
 );

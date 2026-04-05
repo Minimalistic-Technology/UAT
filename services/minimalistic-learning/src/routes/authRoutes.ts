@@ -4,14 +4,19 @@ import {
   login,
   refreshToken,
   initiatePasswordReset,
-  completePasswordReset
+  completePasswordReset,
+  getMe,
+  logout
 } from '../controllers/authController';
 import { loginLimiter, signupLimiter } from '../config/rateLimit';
+import requireAuth from '../middleware/requireAuth';
 
 const router = Router();
 
 router.post('/signup', signupLimiter, signup);
 router.post('/login', loginLimiter, login);
+router.get('/me', requireAuth, getMe);
+router.post('/logout', requireAuth, logout);
 router.post('/refresh-token', refreshToken);
 router.post('/password-reset/initiate', initiatePasswordReset);
 router.post('/password-reset/complete', completePasswordReset);

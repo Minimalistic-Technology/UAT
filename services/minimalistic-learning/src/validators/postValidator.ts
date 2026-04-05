@@ -10,6 +10,7 @@ export const createPostSchema = z.object({
   content: z.string().min(1, "Content is required").trim(),
   category: z.string().min(1, "Category is required").max(30).trim(),
   tags: z.union([z.string(), z.array(z.string())]).optional(),
+  coverImageUrl: z.string().url("Must be a valid URL").optional(),
   published: z.union([z.boolean(), z.string().transform((val) => val === "true")]).optional(),
 });
 
