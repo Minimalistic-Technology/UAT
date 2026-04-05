@@ -1,10 +1,16 @@
 import { useMutation } from "@tanstack/react-query";
-import { registerUser, confirmRegistration, ConfirmRegistrationInput } from "../services/auth.service";
-import { RegisterUserInput } from "../validations/auth.schema";
+import { registerUser, registerEmployer, confirmRegistration, ConfirmRegistrationInput } from "../services/auth.service";
+import { RegisterUserInput, EmployerRegisterInput } from "../validations/auth.schema";
 
 export const useRegister = () => {
   return useMutation({
     mutationFn: (data: RegisterUserInput) => registerUser(data),
+  });
+};
+
+export const useRegisterEmployer = () => {
+  return useMutation({
+    mutationFn: (data: EmployerRegisterInput) => registerEmployer(data),
   });
 };
 

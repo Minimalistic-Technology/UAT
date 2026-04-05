@@ -126,6 +126,9 @@ export const authOptions: NextAuthOptions = {
             const payload = response.data.data;
             token.role = payload.role;
             token.accessToken = payload.token;
+            token.isEmployee = payload.isEmployee;
+            token.companyId = payload.companyId;
+            token.companyRole = payload.companyRole;
           }
         } catch (error) {
           console.error("Google auth error:", error);

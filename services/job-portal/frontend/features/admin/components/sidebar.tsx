@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button"
 const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin-dashboard" },
   { label: "User Management", icon: Users, href: "/admin-dashboard/users" },
-  { label: "Pending Jobs", icon: Briefcase, href: "/admin-dashboard/jobs", badge: "43" },
   { label: "KYC Applications", icon: ShieldCheck, href: "/admin-dashboard/kyc" },
   { label: "Analytics", icon: BarChart3, href: "/admin-dashboard/analytics" },
   { label: "System Settings", icon: Settings, href: "/admin-dashboard/settings" },
@@ -54,11 +53,6 @@ export function Sidebar({ className }: { className?: string }) {
                   <item.icon className={cn("h-4 w-4", isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600")} />
                   {item.label}
                 </div>
-                {item.badge && (
-                  <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
-                    {item.badge}
-                  </span>
-                )}
               </Link>
             )
           })}
@@ -66,7 +60,7 @@ export function Sidebar({ className }: { className?: string }) {
       </div>
 
       <div className="border-t p-4 bg-white">
-        <Button variant="ghost" className="w-full justify-start text-slate-500 hover:text-red-600 hover:bg-red-50">
+        <Button variant="ghost" className="w-full justify-start text-slate-500 hover:text-red-600 hover:bg-red-50 cursor-pointer">
           <LogOut className="mr-3 h-4 w-4" />
           Logout
         </Button>
