@@ -83,9 +83,9 @@ router.delete(
   validate([
     param("id")
       .notEmpty()
-      .withMessage("Job ID is required")
+      .withMessage("Application ID is required")
       .isMongoId()
-      .withMessage("Invalid Job ID")
+      .withMessage("Invalid Application ID")
   ]),
   withdrawApplication,
 );

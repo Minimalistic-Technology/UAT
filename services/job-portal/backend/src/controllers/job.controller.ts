@@ -12,7 +12,6 @@ import Company from "../models/Company.model.js";
 import Subscription from "../models/Subscription.model.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
-import { isMongoId, isValidParams } from "../lib/validate.js";
 
 export function isValidJobType(value: any): value is JobType {
   return Object.values(JobType).includes(value);
@@ -159,17 +158,7 @@ export const getJob = async (
   try {
     const id = req.params.id;
 
-    const isValidId = isValidParams(id);
-
-    if (!isValidId) {
-      return next(new ApiError(400, "Invalid job id"));
-    } else {
-      if (!isMongoId(isValidId)) {
-        return next(new ApiError(400, "Invalid job id"));
-      }
-    }
-
-    const job = await Job.findById(isValidId)
+    const job = await Job.findById(id)
       .populate("postedBy", "firstName lastName email")
       .populate(
         "company",

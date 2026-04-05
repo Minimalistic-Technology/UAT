@@ -1,5 +1,5 @@
 import express from "express";
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 import {
   getJobs,
   getJob,
@@ -83,7 +83,17 @@ const jobValidation = [
 
 router.get("/", optionalAuth, getJobs);
 router.get("/my-jobs", protect, authorize(GlobalRole.USER), getMyJobs); // only for employer
-router.get("/:id", getJob);
+router.get(
+  "/:id",
+  validate([
+    param("id")
+      .notEmpty()
+      .withMessage("Job ID is required")
+      .isMongoId()
+      .withMessage("Invalid Job ID"),
+  ]),
+  getJob,
+);
 router.post(
   "/",
   protect,
