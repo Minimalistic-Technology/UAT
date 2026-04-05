@@ -2,11 +2,11 @@ import type { Response, NextFunction } from "express";
 import Application, { ApplicationStatus } from "../models/Application.model.js";
 import Job from "../models/Job.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
+import { ApiResponse } from "../utils/apiResponse.js";
 // import { sendEmail } from '../utils/email.js';
+import { isValidParams } from "../lib/validate.js";
+import { ApiError } from "../utils/apiError.js";
 
-// @desc    Apply for a job
-// @route   POST /api/applications
-// @access  Private (Job Seeker)
 export const applyForJob = async (
   req: AuthRequest,
   res: Response,
@@ -16,19 +16,13 @@ export const applyForJob = async (
     const { jobId, resume, coverLetter } = req.body;
 
     if (!req.user.resume && !resume) {
-      return res.status(400).json({
-        success: false,
-        message: "Resume is required to apply for this job",
-      });
+      throw new ApiError(400, "Resume is required to apply for this job");
     }
 
     // Check if job exists
     const job = await Job.findById(jobId);
     if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
+      throw new ApiError(404, "Job not found");
     }
 
     // Check if already applied
@@ -38,10 +32,7 @@ export const applyForJob = async (
     });
 
     if (existingApplication) {
-      return res.status(400).json({
-        success: false,
-        message: "You have already applied for this job",
-      });
+      throw new ApiError(400, "You have already applied for this job");
     }
 
     console.log(req.user._id);
@@ -54,7 +45,7 @@ export const applyForJob = async (
       resume: resume || req.user.resume,
       coverLetter: coverLetter || null,
     });
-    
+
     console.log(application);
 
     // Increment applications count
@@ -68,17 +59,9 @@ export const applyForJob = async (
     //   message: `Your application for ${job.title} has been submitted successfully.`,
     // });
 
-    res.status(201).json({
-      success: true,
-      message: "Application submitted successfully",
-      data: application,
-    });
+    res.status(201).json(new ApiResponse(201, application, "Application submitted successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error submitting application",
-      error: error.message,
-    });
+    next(error)
   }
 };
 
@@ -95,23 +78,20 @@ export const getMyApplications = async (
       .populate("job")
       .sort("-createdAt");
 
-    res.status(200).json({
-      success: true,
-      count: applications.length,
-      data: applications,
-    });
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { count: applications.length, applications },
+          "Applications fetched successfully",
+        ),
+      );
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching applications",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-// @desc    Get applicants for a job
-// @route   GET /api/applications/job/:jobId
-// @access  Private (Employer)
 export const getJobApplicants = async (
   req: AuthRequest,
   res: Response,
@@ -120,20 +100,19 @@ export const getJobApplicants = async (
   try {
     const { jobId } = req.params;
 
-    // Verify job belongs to employer
+    const validJobId = isValidParams(jobId);
+
+    if (!validJobId) {
+      throw new ApiError(400, "Invalid job ID");
+    }
+
     const job = await Job.findById(jobId);
     if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
+      throw new ApiError(404, "Job not found");
     }
 
     if (job.postedBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to view applicants",
-      });
+      throw new ApiError(403, "Not authorized to view applicants");
     }
 
     const applications = await Application.find({ job: jobId })
@@ -143,17 +122,17 @@ export const getJobApplicants = async (
       )
       .sort("-createdAt");
 
-    res.status(200).json({
-      success: true,
-      count: applications.length,
-      data: applications,
-    });
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { count: applications.length, applications },
+          "Applications fetched successfully",
+        ),
+      );
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching applicants",
-      error: error.message,
-    });
+    next(error);
   }
 };
 

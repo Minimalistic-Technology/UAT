@@ -12,6 +12,7 @@ import Company from "../models/Company.model.js";
 import Subscription from "../models/Subscription.model.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
+import { isMongoId, isValidParams } from "../lib/validate.js";
 
 export function isValidJobType(value: any): value is JobType {
   return Object.values(JobType).includes(value);
@@ -48,7 +49,7 @@ export const getJobs = async (
       query["location.remote"] = remote === "true";
     }
 
-    if (jobType) {
+    if (jobType && jobType !== "all") {
       if (!isValidJobType(jobType)) {
         return next(new ApiError(400, "Invalid job type"));
       }
@@ -78,9 +79,15 @@ export const getJobs = async (
       if (maxSalary) query["salary.max"] = { $lte: Number(maxSalary) };
     }
 
-    if (city) query["location.city"] = new RegExp(city as string, "i");
-    if (state) query["location.state"] = new RegExp(state as string, "i");
-    if (country) query["location.country"] = new RegExp(country as string, "i");
+    if (city) {
+      query["location.city"] = { $regex: city as string, $options: "i" };
+    }
+    if (state) {
+      query["location.state"] = { $regex: state as string, $options: "i" };
+    }
+    if (country) {
+      query["location.country"] = { $regex: country as string, $options: "i" };
+    }
 
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 10;
@@ -125,38 +132,44 @@ export const getJobs = async (
       }));
     }
 
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          {
-            jobs: formattedJobs,
-            totalJobs: total,
-            pagination: {
-              page: pageNumber,
-              totalPages: Math.ceil(total / limitNumber),
-            },
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          jobs: formattedJobs,
+          totalJobs: total,
+          pagination: {
+            page: pageNumber,
+            totalPages: Math.ceil(total / limitNumber),
           },
-          "Jobs fetched successfully",
-        ),
-      );
+        },
+        "Jobs fetched successfully",
+      ),
+    );
   } catch (error: any) {
     next(error);
   }
 };
 
-export const getJob = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getJob = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const rawId = req.params.id;
-    const id = Array.isArray(rawId) ? rawId[0] : rawId;
-    const cleanId = id.trim();
+    const id = req.params.id;
 
-    if (!mongoose.Types.ObjectId.isValid(cleanId)) {
+    const isValidId = isValidParams(id);
+
+    if (!isValidId) {
       return next(new ApiError(400, "Invalid job id"));
+    } else {
+      if (!isMongoId(isValidId)) {
+        return next(new ApiError(400, "Invalid job id"));
+      }
     }
 
-    const job = await Job.findById(cleanId)
+    const job = await Job.findById(isValidId)
       .populate("postedBy", "firstName lastName email")
       .populate(
         "company",
@@ -170,9 +183,9 @@ export const getJob = async (req: AuthRequest, res: Response, next: NextFunction
     job.viewsCount = (job.viewsCount || 0) + 1;
     await job.save();
 
-    return res.status(200).json(
-      new ApiResponse(200, job, "Job fetched successfully")
-    );
+    return res
+      .status(200)
+      .json(new ApiResponse(200, job, "Job fetched successfully"));
   } catch (error: any) {
     next(error);
   }
@@ -235,10 +248,38 @@ export const createJob = async (
       );
     }
 
-    req.body.postedBy = req.user.id;
-    req.body.company = company._id;
+    const jobData = {
+      title: req.body.title,
+      description: req.body.description,
+      jobType: req.body.jobType,
+      experienceLevel: req.body.experienceLevel,
+      openings: req.body.openings,
 
-    const [job] = await Job.create([req.body], { session });
+      location: {
+        city: req.body.location.city,
+        state: req.body.location.state,
+        country: req.body.location.country,
+        remote: req.body.location.remote,
+      },
+
+      salary: {
+        min: req.body.salary?.min,
+        max: req.body.salary?.max,
+        currency: req.body.salary?.currency,
+        period: req.body.salary?.period,
+      },
+
+      skills: req.body.skills,
+      requirements: req.body.requirements,
+      benefits: req.body.benefits,
+
+      applicationDeadline: req.body.applicationDeadline,
+      isFeatured: req.body.isFeatured,
+      postedBy: req.user.id,
+      company: company._id,
+    };
+
+    const [job] = await Job.create([jobData], { session });
 
     // Deduct from plan tally (Update local object and save with session)
     if (subscription.postsRemaining !== -1) {
@@ -276,7 +317,12 @@ export const updateJob = async (
     }).populate("company", "name");
 
     if (!companyMember) {
-      return next(new ApiError(404, `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`));
+      return next(
+        new ApiError(
+          404,
+          `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`,
+        ),
+      );
     }
 
     // Only admin and owner can update job details
@@ -315,7 +361,12 @@ export const deleteJob = async (
     }).populate("company", "name");
 
     if (!companyMember) {
-      return next(new ApiError(404, `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`));
+      return next(
+        new ApiError(
+          404,
+          `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`,
+        ),
+      );
     }
 
     // Only admin and owner can delete the job
@@ -360,11 +411,13 @@ export const getMyJobs = async (
           200,
           {
             count: jobs.length,
-            data: jobs,
+            jobPosts: jobs,
           },
           "Jobs fetched successfully",
         ),
       );
+    } else {
+      return next(new ApiError(403, "Not authorized to fetch jobs"));
     }
   } catch (error: any) {
     next(error);

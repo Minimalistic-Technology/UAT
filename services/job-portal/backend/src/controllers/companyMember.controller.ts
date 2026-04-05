@@ -1,29 +1,29 @@
-import type { Response } from "express";
+import type { NextFunction, Response } from "express";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
 import User, { GlobalRole } from "../models/User.model.js";
 import mongoose from "mongoose";
+import { ApiError } from "../utils/apiError.js";
+import { ApiResponse } from "../utils/apiResponse.js";
 
-export const getAllCompanyMembers = async (req: AuthRequest, res: Response) => {
+export const getAllCompanyMembers = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const currentUser = await CompanyMember.findOne({ user: req.user._id });
 
     if (!currentUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Member record not found." });
+      throw new ApiError(404, "Member record not found.");
     }
 
     if (currentUser.role !== CompanyRole.OWNER) {
-      return res
-        .status(403)
-        .json({ success: false, message: "Access denied: Owners only." });
+      throw new ApiError(403, "Access denied: Owners only.");
     }
 
     if (!currentUser.isActive) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Account deactivated." });
+      throw new ApiError(400, "Account deactivated.");
     }
 
     const members = await CompanyMember.find({
@@ -33,17 +33,17 @@ export const getAllCompanyMembers = async (req: AuthRequest, res: Response) => {
       .populate("user", "firstName lastName email")
       .lean();
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        count: members.length,
-        members,
-      },
-    });
-  } catch (error: any) {
     return res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { count: members.length, members },
+          "Members fetched successfully",
+        ),
+      );
+  } catch (error: any) {
+    next(error);
   }
 };
 
@@ -115,13 +115,15 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
   //
 };
 
-export const removeMember = async (req: AuthRequest, res: Response) => {
+export const removeMember = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   let { memberId } = req.params;
 
   if (!memberId) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Member ID is required." });
+    throw new ApiError(400, "Member ID is required.");
   }
 
   if (Array.isArray(memberId)) {
@@ -129,9 +131,7 @@ export const removeMember = async (req: AuthRequest, res: Response) => {
   }
 
   if (!mongoose.Types.ObjectId.isValid(memberId)) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Invalid member ID format." });
+    throw new ApiError(400, "Invalid member ID format.");
   }
 
   const session = await mongoose.startSession();
@@ -147,7 +147,7 @@ export const removeMember = async (req: AuthRequest, res: Response) => {
       ownerMember.role !== CompanyRole.OWNER ||
       !ownerMember.isActive
     ) {
-      throw new Error("UNAUTHORIZED");
+      throw new ApiError(403, "Unauthorized: Access denied.");
     }
 
     console.log("memberId", memberId);
@@ -158,12 +158,12 @@ export const removeMember = async (req: AuthRequest, res: Response) => {
     console.log("Member to remove: ", memberToRemove);
 
     if (!memberToRemove) {
-      throw new Error("NOT_FOUND");
+      throw new ApiError(404, "Member record not found.");
     }
 
     // 4. Cross-Company Security Check: Ensure member belongs to the owner's company
     if (memberToRemove.company.toString() !== ownerMember.company.toString()) {
-      throw new Error("FORBIDDEN");
+      throw new ApiError(403, "Cannot delete members from other companies.");
     }
 
     // 5. Atomic Deletion: Remove the member link and the user account
@@ -174,33 +174,18 @@ export const removeMember = async (req: AuthRequest, res: Response) => {
 
     await session.commitTransaction();
 
-    return res.status(200).json({
-      success: true,
-      message: "Member and associated account deleted successfully.",
-    });
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          null,
+          "Member and associated account deleted successfully.",
+        ),
+      );
   } catch (error: any) {
     await session.abortTransaction();
-
-    // Handle specific error cases
-    if (error.message === "UNAUTHORIZED")
-      return res
-        .status(403)
-        .json({ success: false, message: "Unauthorized: Access denied." });
-    if (error.message === "NOT_FOUND")
-      return res
-        .status(404)
-        .json({ success: false, message: "Member record not found." });
-    if (error.message === "FORBIDDEN")
-      return res.status(403).json({
-        success: false,
-        message: "Cannot delete members from other companies.",
-      });
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal Server Error",
-      error: error.message,
-    });
+    next(error);
   } finally {
     session.endSession();
   }

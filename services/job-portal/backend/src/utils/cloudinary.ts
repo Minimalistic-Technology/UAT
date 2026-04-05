@@ -1,5 +1,5 @@
-import { v2 as cloudinary } from 'cloudinary';
-import { config } from '../config/env.js';
+import { v2 as cloudinary } from "cloudinary";
+import { config } from "../config/env.js";
 
 cloudinary.config({
   cloud_name: config.cloudinaryName,
@@ -10,23 +10,29 @@ cloudinary.config({
 export const uploadToCloudinary = async (
   fileBuffer: Buffer,
   folder: string,
-  resourceType: 'auto' | 'raw' | 'image' | 'video' = 'auto',
+  resourceType: "auto" | "raw" | "image" | "video" = "auto",
   id?: string,
-  format?: string
+  format?: string,
 ): Promise<any> => {
   const response = new Promise((resolve, reject) => {
+
+    const options: any = {
+      folder,
+      resource_type: resourceType,
+      public_id: id,
+      type: "upload", // Ensure public access (not authenticated/private)
+    };
+
+    if (resourceType !== 'raw' && format) {
+      options.format = format;
+    }
+
     const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: resourceType,
-        public_id: id,
-        format: format,
-        type: 'upload', // Ensure public access (not authenticated/private)
-      },
+      options,
       (error, result) => {
         if (error) reject(error);
         else resolve(result);
-      }
+      },
     );
 
     uploadStream.end(fileBuffer);
@@ -36,23 +42,23 @@ export const uploadToCloudinary = async (
 };
 
 export const deleteFromCloudinary = async (
-  publicId: string
+  publicId: string,
+  resourceType: "image" | "raw" | "video" = "image" 
 ): Promise<boolean> => {
   try {
     if (!publicId) {
       console.warn("Cloudinary delete skipped: publicId is missing");
       return false;
     }
-
-    // resource_type is required if deleting pdf or other non-image files
-    const result = await cloudinary.uploader.destroy(publicId);
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+    });
 
     if (result.result !== "ok" && result.result !== "not found") {
       console.warn("Cloudinary deletion unexpected response:", result);
       return false;
     }
 
-    console.log("Old file deleted successfully:", publicId);
     return true;
   } catch (error) {
     console.error("Error deleting file from Cloudinary:", error);

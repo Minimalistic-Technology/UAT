@@ -4,6 +4,8 @@ import User, { GlobalRole } from "../models/User.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import mongoose from "mongoose";
+import { ApiError } from "../utils/apiError.js";
+import { ApiResponse } from "../utils/apiResponse.js";
 
 // @desc    Create new company
 // @route   POST /api/companies
@@ -175,9 +177,6 @@ export const getCompanies = async (
   }
 };
 
-// @desc    Get single company
-// @route   GET /api/companies/:id
-// @access  Public
 export const getCompany = async (
   req: AuthRequest,
   res: Response,
@@ -190,59 +189,40 @@ export const getCompany = async (
     );
 
     if (!company) {
-      return res.status(404).json({
-        success: false,
-        message: "Company not found",
-      });
+      throw new ApiError(404, "Company not found");
     }
 
-    res.status(200).json({
-      success: true,
-      data: company,
-    });
+    res
+      .status(200)
+      .json(new ApiResponse(200, company, "Company fetched successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching company",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-// @desc    Get current user's company
-// @route   GET /api/companies/me
-// @access  Private (Employer)
 export const getMyCompany = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const company = await Company.findOne({ owner: req.user.id });
+    const company = await Company.findOne({ owner: req.user.id }).populate(
+      "owner",
+      "firstName lastName email",
+    );
 
     if (!company) {
-      return res.status(404).json({
-        success: false,
-        message: "You have not created a company yet",
-      });
+      throw new ApiError(404, "You have not created a company yet");
     }
 
-    res.status(200).json({
-      success: true,
-      data: company,
-    });
+    res
+      .status(200)
+      .json(new ApiResponse(200, company, "Company fetched successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching your company",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-// @desc    Update company
-// @route   PUT /api/companies/me
-// @access  Private (Employer - Owner only)
 export const updateCompany = async (
   req: AuthRequest,
   res: Response,
@@ -299,9 +279,6 @@ export const updateCompany = async (
   }
 };
 
-// @desc    Delete company
-// @route   DELETE /api/companies/:id
-// @access  Private (Employer - Owner only)
 export const deleteCompany = async (
   req: AuthRequest,
   res: Response,

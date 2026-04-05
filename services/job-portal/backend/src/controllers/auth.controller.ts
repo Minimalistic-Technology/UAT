@@ -408,16 +408,11 @@ export const getMe = async (
   try {
     const user = await User.findById(req.user.id);
 
-    res.status(200).json({
-      success: true,
-      data: user,
-    });
+    res
+      .status(200)
+      .json(new ApiResponse(200, user, "User fetched successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching user",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
