@@ -81,6 +81,10 @@ router.put(
     .isString()
     .withMessage("Note must be a string")
     .trim(),
+  body("interviewDate")
+    .optional()
+    .isISO8601()
+    .withMessage("Invalid interview date format"),
   updateApplicationStatus,
 );
 

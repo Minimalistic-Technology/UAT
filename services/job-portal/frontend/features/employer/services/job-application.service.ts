@@ -45,3 +45,22 @@ export const getAllEmployerApplications = async (params?: {
   >("/applications/company/all", { params });
   return response.data;
 };
+
+export const updateApplicationStatus = async ({
+  applicationId,
+  status,
+  note,
+  interviewDate,
+}: {
+  applicationId: string;
+  status: string;
+  note?: string;
+  interviewDate?: string;
+}) => {
+  const response = await apiClient.put(`/applications/${applicationId}/status`, {
+    status,
+    note,
+    interviewDate,
+  });
+  return response.data;
+};

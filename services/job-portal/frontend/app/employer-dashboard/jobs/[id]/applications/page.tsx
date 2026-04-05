@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import {
   MoreHorizontal,
@@ -10,8 +10,9 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 
-import { useGetApplicationsByJobId } from "@/features/employer/hooks/use-applications";
+import { useGetApplicationsByJobId, useUpdateApplicationStatus } from "@/features/employer/hooks/use-applications";
 import {
   Table,
   TableBody,
@@ -32,6 +33,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApplicationDetailModal } from "@/features/employer/components/application-details-model";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const ApplicationsPage = () => {
   const params = useParams();
@@ -40,6 +44,12 @@ const ApplicationsPage = () => {
   const { data: responseData, isLoading } = useGetApplicationsByJobId(
     jobId as string,
   );
+  
+  const { mutateAsync: updateStatus, isPending: isUpdating } = useUpdateApplicationStatus();
+  
+  const [interviewModalOpen, setInterviewModalOpen] = useState(false);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [interviewDate, setInterviewDate] = useState("");
 
   const applications = responseData?.data?.applications || [];
 
@@ -49,10 +59,46 @@ const ApplicationsPage = () => {
         return "bg-green-100 text-green-700 border-green-200";
       case "rejected":
         return "bg-red-100 text-red-700 border-red-200";
+      case "interview":
       case "interviewing":
         return "bg-blue-100 text-blue-700 border-blue-200";
       default:
         return "bg-slate-100 text-slate-700 border-slate-200";
+    }
+  };
+
+  const handleUpdateStatus = async (applicationId: string, status: string) => {
+    try {
+      await updateStatus({ applicationId, status });
+      toast.success(`Candidate marked as ${status.toUpperCase()}`);
+    } catch (error) {
+      toast.error("Failed to update candidate status.");
+    }
+  };
+
+  const handleScheduleInterview = async () => {
+    if (!selectedAppId || !interviewDate) {
+      toast.error("Please select a valid date and time.");
+      return;
+    }
+    
+    if (new Date(interviewDate) <= new Date()) {
+      toast.error("Interview date and time must be in the future.");
+      return;
+    }
+
+    try {
+      await updateStatus({
+        applicationId: selectedAppId,
+        status: "interview",
+        interviewDate: new Date(interviewDate).toISOString(),
+      });
+      toast.success("Interview scheduled successfully!");
+      setInterviewModalOpen(false);
+      setInterviewDate("");
+      setSelectedAppId(null);
+    } catch (error) {
+      toast.error("Failed to schedule interview.");
     }
   };
 
@@ -117,6 +163,11 @@ const ApplicationsPage = () => {
                     >
                       {app.status.toUpperCase()}
                     </Badge>
+                    {app.status === 'interview' && app.interviewDate && (
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        {new Date(app.interviewDate).toLocaleString()}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <span className="text-sm">
@@ -139,15 +190,27 @@ const ApplicationsPage = () => {
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-blue-600">
+                          <DropdownMenuItem 
+                            className="text-blue-600 cursor-pointer"
+                            onClick={() => {
+                              setSelectedAppId(app._id);
+                              setInterviewModalOpen(true);
+                            }}
+                          >
                             <Calendar className="mr-2 h-4 w-4" /> Schedule
                             Interview
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-green-600">
+                          <DropdownMenuItem 
+                            className="text-green-600 cursor-pointer"
+                            onClick={() => handleUpdateStatus(app._id, "accepted")}
+                          >
                             <CheckCircle2 className="mr-2 h-4 w-4" /> Accept
                             Candidate
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem 
+                            className="text-red-600 cursor-pointer"
+                            onClick={() => handleUpdateStatus(app._id, "rejected")}
+                          >
                             <XCircle className="mr-2 h-4 w-4" /> Reject
                             Candidate
                           </DropdownMenuItem>
@@ -161,6 +224,40 @@ const ApplicationsPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog 
+        open={interviewModalOpen} 
+        onOpenChange={(open) => {
+          setInterviewModalOpen(open);
+          if (!open) {
+            setSelectedAppId(null);
+            setInterviewDate("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Schedule Interview</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Interview Date and Time</Label>
+              <Input
+                type="datetime-local"
+                value={interviewDate}
+                onChange={(e) => setInterviewDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+              />
+              <p className="text-xs text-muted-foreground">Select a date and time in the future.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInterviewModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleScheduleInterview} disabled={isUpdating || !interviewDate}>Schedule</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 };

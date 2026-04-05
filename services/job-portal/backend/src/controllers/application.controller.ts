@@ -145,7 +145,7 @@ export const updateApplicationStatus = async (
   next: NextFunction,
 ) => {
   try {
-    const { status, note } = req.body;
+    const { status, note, interviewDate } = req.body;
 
     const application = await Application.findById(req.params.id)
       .populate("job")
@@ -163,6 +163,9 @@ export const updateApplicationStatus = async (
 
     // Update status
     application.status = status;
+    if (interviewDate) {
+      application.interviewDate = new Date(interviewDate);
+    }
     application.statusHistory.push({
       status,
       changedAt: new Date(),
