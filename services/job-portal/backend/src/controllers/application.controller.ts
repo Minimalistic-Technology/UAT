@@ -39,7 +39,7 @@ export const applyForJob = async (
       jobSeeker: req.user._id,
       resume: req.user.resume
     });
-    
+
     // Increment applications count
     job.applicationsCount += 1;
     await job.save();
@@ -57,25 +57,41 @@ export const applyForJob = async (
   }
 };
 
-// @desc    Get user's applications
-// @route   GET /api/applications/my-applications
-// @access  Private (Job Seeker)
 export const getMyApplications = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const applications = await Application.find({ jobSeeker: req.user.id })
-      .populate("job")
-      .sort("-createdAt");
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const [applications, totalApplications] = await Promise.all([
+      Application.find({ jobSeeker: req.user.id })
+        .populate("job")
+        .sort("-createdAt")
+        .skip(skip)
+        .limit(limit),
+      Application.countDocuments({ jobSeeker: req.user.id })
+    ]);
+
+    const totalPages = Math.ceil(totalApplications / limit);
 
     return res
       .status(200)
       .json(
         new ApiResponse(
           200,
-          { count: applications.length, applications },
+          { 
+            applications,
+            pagination: {
+              totalItems: totalApplications,
+              totalPages,
+              currentPage: page,
+              limit
+            }
+          },
           "Applications fetched successfully",
         ),
       );

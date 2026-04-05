@@ -9,7 +9,6 @@ import {
   Calendar,
   CheckCircle2,
   XCircle,
-  FileText,
 } from "lucide-react";
 
 import { useGetApplicationsByJobId } from "@/features/employer/hooks/use-applications";
@@ -75,7 +74,7 @@ const ApplicationsPage = () => {
           </p>
         </div>
         <Badge variant="outline" className="px-3 py-1 text-sm">
-          Total: {responseData?.data?.count || 0}
+          Total: {responseData?.data?.count || applications.length || 0}
         </Badge>
       </div>
 
@@ -121,11 +120,11 @@ const ApplicationsPage = () => {
                   </TableCell>
                   <TableCell>
                     <span className="text-sm">
-                      {app.jobSeeker.experience?.[0]?.title || "N/A"}
+                      {app.jobSeeker.experience?.[0]?.title || "Freshman / No Exp"}
                     </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {new Date(app.appliedAt).toLocaleDateString()}
+                    {new Date(app.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

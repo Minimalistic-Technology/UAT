@@ -3,7 +3,12 @@ import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
 
 interface GetMyApplicationsResponse {
     applications: any[];
-    count: number;
+    pagination: {
+        totalItems: number;
+        totalPages: number;
+        currentPage: number;
+        limit: number;
+    }
 }
 
 export interface ApplyJobPayload {
