@@ -47,7 +47,6 @@ const applicationSchema = new Schema<IApplication>(
       type: String,
       required: true,
     },
-    coverLetter: String,
     status: {
       type: String,
       enum: Object.values(ApplicationStatus),

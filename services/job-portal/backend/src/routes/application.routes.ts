@@ -3,6 +3,7 @@ import {
   applyForJob,
   getMyApplications,
   getJobApplicants,
+  getAllCompanyApplications,
   updateApplicationStatus,
   withdrawApplication,
 } from "../controllers/application.controller.js";
@@ -35,6 +36,13 @@ router.get(
   protect,
   authorize(GlobalRole.USER), // only for job seeker
   getMyApplications,
+);
+
+router.get(
+  "/company/all",
+  protect,
+  authorize(GlobalRole.USER), 
+  getAllCompanyApplications,
 );
 
 router.get(

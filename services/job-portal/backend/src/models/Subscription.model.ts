@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface ISubscription extends Document {
   employerId: mongoose.Types.ObjectId;
   planId: mongoose.Types.ObjectId;
+  companyId: mongoose.Types.ObjectId;
   orderId?: string; // Link to your payment gateway (Stripe/Razorpay)
   postsRemaining: number;
   totalPostsGranted: number; // To track original limit (useful for analytics)
@@ -26,6 +27,12 @@ const subscriptionSchema = new Schema<ISubscription>(
       type: Schema.Types.ObjectId, 
       ref: "Plan", 
       required: true 
+    },
+    companyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+      index: true
     },
     orderId: { 
       type: String, 

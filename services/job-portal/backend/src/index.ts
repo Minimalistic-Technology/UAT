@@ -19,6 +19,7 @@ import companyMemberRoutes from './routes/companyMember.routes.js';
 import planRoutes from './routes/plan.routes.js';
 import couponRoutes from './routes/coupon.routes.js';
 import paymentRoutes from './routes/payment.route.js';
+import subscriptionRoutes from './routes/subscription.route.js';
 import { ApiResponse } from './utils/apiResponse.js';
 import { handleRazorpayWebhook } from './controllers/payment.controller.js';
 
@@ -70,6 +71,7 @@ app.use("/api/company-members", companyMemberRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, null, "Server is running"));

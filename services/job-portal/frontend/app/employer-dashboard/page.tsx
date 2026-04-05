@@ -82,7 +82,7 @@ const Page = () => {
         </CardHeader>
         <CardContent className="flex h-50 items-center justify-center rounded-md border-2 border-dashed">
           <Button variant="ghost" asChild>
-            <Link href="/employer/applications">View All Applications</Link>
+            <Link href="/employer-dashboard/applications">View All Applications</Link>
           </Button>
         </CardContent>
       </Card>
