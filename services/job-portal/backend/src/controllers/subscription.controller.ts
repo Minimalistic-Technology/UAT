@@ -6,6 +6,8 @@ import Plan from "../models/Plan.model.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
+import Payment, { PaymentStatus } from "../models/Payment.model.js";
+import razorpay from "../config/razorpay.js";
 
 export const getMyActiveSubscription = async (
   req: AuthRequest,
@@ -22,8 +24,11 @@ export const getMyActiveSubscription = async (
     }
 
     const isCompanyMember = await CompanyMember.findOne({
-      companyId: company._id,
-      userId: employerId,
+      company: company._id,
+      user: employerId,
+      role: {
+        $in: [CompanyRole.OWNER, CompanyRole.ADMIN],
+      },
     });
 
     if (!isCompanyMember) {
@@ -35,8 +40,6 @@ export const getMyActiveSubscription = async (
       status: "active",
       expiryDate: { $gt: new Date() },
     }).populate("planId");
-
-    console.log(subscription)
 
     // If there's an active one but posts are depleted, isValid will be false, but the doc is returned.
     // We can just return it. The frontend handles showing "Depleted" or similar.
@@ -55,18 +58,13 @@ export const getMyActiveSubscription = async (
   }
 };
 
-/**
- * @desc    Get subscription history for an employer
- * @route   GET /api/subscriptions/history
- * @access  Private (Employer)
- */
 export const getMySubscriptionHistory = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const employerId = req.user?.id;
+    const employerId = req.user.id;
 
     const subscriptions = await Subscription.find({ employerId })
       .populate("planId")
@@ -86,18 +84,13 @@ export const getMySubscriptionHistory = async (
   }
 };
 
-/**
- * @desc    Cancel an active subscription (Employer)
- * @route   PATCH /api/subscriptions/:id/cancel
- * @access  Private (Employer)
- */
 export const cancelMySubscription = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const employerId = req.user?.id;
+    const employerId = req.user.id;
     const { id } = req.params;
 
     const subscription = await Subscription.findOne({ _id: id, employerId });
@@ -113,6 +106,34 @@ export const cancelMySubscription = async (
       );
     }
 
+    const postsUsed = subscription.totalPostsGranted - subscription.postsRemaining;
+
+    let refundProcessed = false;
+    if (postsUsed === 0 && subscription.orderId) {
+      // Find the corresponding payment to get razorpayPaymentId
+      const payment = await Payment.findOne({ razorpayOrderId: subscription.orderId });
+
+      if (payment && payment.razorpayPaymentId) {
+        const refundAmount = Math.round(payment.amount * 0.5);
+        try {
+          await razorpay.payments.refund(payment.razorpayPaymentId, {
+            amount: refundAmount, // Payment amount is in paise
+            speed: "optimum",
+          });
+
+          // Mark payment as refunded locally
+          payment.status = PaymentStatus.REFUNDED;
+          payment.refundAmount = payment.amount;
+          await payment.save();
+
+          refundProcessed = true;
+        } catch (razorpayError) {
+          console.error("Razorpay Refund Error:", razorpayError);
+          throw new ApiError(500, "Failed to process refund from payment gateway");
+        }
+      }
+    }
+
     subscription.status = "cancelled";
     await subscription.save();
 
@@ -122,7 +143,9 @@ export const cancelMySubscription = async (
         new ApiResponse(
           200,
           subscription,
-          "Subscription cancelled successfully",
+          refundProcessed
+            ? "Subscription cancelled and 100% refund initiated successfully"
+            : "Subscription cancelled successfully",
         ),
       );
   } catch (error) {

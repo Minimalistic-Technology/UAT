@@ -8,6 +8,8 @@ import crypto from "crypto";
 import { config } from "../config/env.js";
 import Plan from "../models/Plan.model.js";
 import Coupon from "../models/Coupon.model.js";
+import Subscription from "../models/Subscription.model.js";
+import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 
 export const createOrder = async (
   req: Request,
@@ -186,6 +188,56 @@ export const handleRazorpayWebhook = async (
             method: paymentEntity.method,
           },
         );
+
+        // Provision subscription upon successful payment
+        try {
+          const { userId, planId } = paymentEntity.notes || {};
+
+          if (userId && planId) {
+            const plan = await Plan.findById(planId);
+
+            if (plan) {
+              const companyMember = await CompanyMember.findOne({
+                user: userId,
+                role: { $in: [CompanyRole.OWNER, CompanyRole.ADMIN] },
+              });
+
+              if (companyMember) {
+                const companyId = companyMember.company;
+
+                // Cancel existing active subscriptions for this user
+                await Subscription.updateMany(
+                  { employerId: userId, status: "active" },
+                  { $set: { status: "cancelled" } },
+                );
+
+                const durationMilliseconds = plan.durationDays * 24 * 60 * 60 * 1000;
+                const expiryDate = new Date(Date.now() + durationMilliseconds);
+
+                await Subscription.create({
+                  employerId: userId,
+                  companyId,
+                  planId,
+                  postsRemaining: plan.jobPostLimit,
+                  totalPostsGranted: plan.jobPostLimit,
+                  startDate: new Date(),
+                  expiryDate,
+                  status: "active",
+                  orderId: razorpayOrderId,
+                });
+
+                console.log(`Successfully created subscription for user ${userId} with plan ${planId}`);
+              } else {
+                console.warn(`Webhook: Company not found for user ${userId}`);
+              }
+            } else {
+              console.warn(`Webhook: Plan not found ${planId}`);
+            }
+          }
+        } catch (subErr) {
+          console.error("Webhook processing Subscription error:", subErr);
+          // Catch the error so we still return 200 to Razorpay
+        }
         break;
 
       case "payment.failed":

@@ -20,17 +20,25 @@ router.get(
   authorize(GlobalRole.USER),
   getMyActiveSubscription,
 );
+
 router.get(
   "/history",
   protect,
   authorize(GlobalRole.USER),
   getMySubscriptionHistory,
 );
+
 router.patch(
   "/:id/cancel",
   protect,
   authorize(GlobalRole.USER),
-  validate([param("id")]),
+  validate([
+    param("id")
+      .notEmpty()
+      .withMessage("Subscription ID is required")
+      .isMongoId()
+      .withMessage("Invalid subscription ID"),
+  ]),
   cancelMySubscription,
 );
 
@@ -40,16 +48,25 @@ router.get(
   authorize(GlobalRole.SUPER_ADMIN),
   getAllSubscriptions,
 );
+
 router.post(
   "/admin/assign",
   protect,
   authorize(GlobalRole.SUPER_ADMIN),
   adminAssignSubscription,
 );
+
 router.patch(
   "/:id/status",
   protect,
   authorize(GlobalRole.SUPER_ADMIN),
+  validate([
+    param("id")
+      .notEmpty()
+      .withMessage("Subscription ID is required")
+      .isMongoId()
+      .withMessage("Invalid subscription ID"),
+  ]),
   updateSubscriptionStatus,
 );
 
