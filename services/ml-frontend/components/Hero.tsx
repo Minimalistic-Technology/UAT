@@ -1,8 +1,5 @@
-"use client";
-
-import React from 'react';
-import Link from 'next/link';
-import { ArrowRight, BookOpen, Play } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
+import GetStartedBtn from './get-started';
 
 const BackgroundCloud = ({ className, opacity = 0.8 }: { className?: string, opacity?: number }) => (
   <svg viewBox="0 0 326 211" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} style={{ opacity }}>
@@ -82,13 +79,7 @@ export const Hero = () => {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-          <Link
-            href="/blog/create"
-            className="group flex items-center justify-center gap-2.5 px-8 pt-3 pb-3.5 bg-gradient-to-r from-[#94b3f9] to-[#1877F2] text-white rounded-full font-bold text-base hover:scale-[1.03] active:scale-95 transition-all shadow-[0_8px_20px_rgba(24,119,242,0.3)] shadow-[#1877F2]/30"
-          >
-            Get Started
-            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
+          <GetStartedBtn />
           <button className="flex items-center justify-center gap-3 px-8 pt-3 pb-3.5 bg-white text-gray-900 rounded-full font-bold text-base hover:scale-[1.03] active:scale-95 transition-all shadow-[0_8px_25px_rgba(0,0,0,0.08)]">
             <div className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center">
               <BookOpen size={12} fill="currentColor" className="ml-0.5" />
