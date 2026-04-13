@@ -1,12 +1,12 @@
 import { google } from 'googleapis';
-import path from "path";
 import { ApiError } from '../utils/apiError';
+import { env } from '../config/env';
 
 export async function getDriveFiles(folderId: string) {
-    const jsonFilePath = path.join(process.cwd(), "service-account-credentials.json");
+  const credentials = JSON.parse(env.GOOGLE_CREDENTIALS)
   try {
     const auth = new google.auth.GoogleAuth({
-      keyFilename: jsonFilePath,
+      credentials,
       scopes: ['https://www.googleapis.com/auth/drive.readonly'],
     });
 

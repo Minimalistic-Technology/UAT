@@ -61,6 +61,9 @@ const envSchema = z
 
     // Email Config ( Production )
     RESEND_API_KEY: z.string().optional(),
+
+    // Google Credentials
+    GOOGLE_CREDENTIALS: z.string().nonempty("GOOGLE_CREDENTIALS is required"),
   })
   .superRefine((env, ctx) => {
     // 🔥 Production-specific checks
