@@ -64,9 +64,11 @@ const RegisterForm = () => {
           <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
           <input
             {...register("contactNumber")}
-            type="text"
+            inputMode="tel"
+            autoComplete="tel"
+            pattern="^\+[1-9]\d{1,14}$"
             className="w-full px-4 py-2 text-gray-700 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-            placeholder="9876543210"
+            placeholder="+919876543210"
           />
           {errors.contactNumber && <p className="mt-1 text-sm text-red-500">{errors.contactNumber.message}</p>}
         </div>

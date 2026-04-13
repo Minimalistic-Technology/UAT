@@ -1,15 +1,15 @@
 import { z } from "zod";
+import { isValidPhoneNumber } from "libphonenumber-js";
 
 export const signupSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  contactNumber: z
-    .string()
-    .trim()
-    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian phone number"),
+  contactNumber: z.string().refine((val) => isValidPhoneNumber(val), {
+    message: "Invalid phone number",
+  }),
   email: z.string().email().trim().toLowerCase(),
   password: z.string().min(8),
-  role: z.enum(['user', 'admin']).optional().default('user'),
+  role: z.enum(["user", "admin"]).optional().default("user"),
 });
 
 export const loginSchema = z.object({
