@@ -25,6 +25,7 @@ export interface IApplication extends Document {
     note?: string;
   }>;
   
+  interviewDate?: Date;
   employerNotes?: string;
   
   createdAt: Date;
@@ -47,7 +48,6 @@ const applicationSchema = new Schema<IApplication>(
       type: String,
       required: true,
     },
-    coverLetter: String,
     status: {
       type: String,
       enum: Object.values(ApplicationStatus),
@@ -70,6 +70,7 @@ const applicationSchema = new Schema<IApplication>(
         note: String,
       },
     ],
+    interviewDate: Date,
     employerNotes: String,
   },
   {

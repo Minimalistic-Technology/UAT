@@ -6,6 +6,7 @@ const config = {
   mongoUri: process.env.MONGO_URI || '',
   jwtSecret: process.env.JWT_SECRET || '',
   jwtExpire: process.env.JWT_EXPIRE || '7d',
+  otpSecret: process.env.OTP_SECRET || 'fallback_secret',
 
   // OAuth
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -33,6 +34,11 @@ const config = {
 
   // Environment
   nodeEnv: process.env.NODE_ENV || 'development',
+
+  // Razorpay
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
+  razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
 };
 
 export { config };

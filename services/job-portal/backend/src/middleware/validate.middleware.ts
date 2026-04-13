@@ -1,6 +1,7 @@
-import type { Request, Response, NextFunction } from 'express';
-import { validationResult } from 'express-validator';
-import type { ValidationChain } from 'express-validator';
+import type { Request, Response, NextFunction } from "express";
+import { validationResult } from "express-validator";
+import type { ValidationChain } from "express-validator";
+import { ApiError } from "../utils/apiError.js";
 
 export const validate = (validations: ValidationChain[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -13,14 +14,12 @@ export const validate = (validations: ValidationChain[]) => {
     }
 
     const extractedErrors: any[] = [];
-    errors.array().map((err: any) =>
-      extractedErrors.push({ [err.param]: err.msg })
-    );
+    errors
+      .array()
+      .map((err: any) => extractedErrors.push({ [err.param]: err.msg }));
 
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: extractedErrors,
-    });
+    return res
+      .status(400)
+      .json(new ApiError(400, "Validation failed", extractedErrors));
   };
 };

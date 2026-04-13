@@ -53,11 +53,11 @@ const kycSchema = new Schema<IKYC>(
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
-    }
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model<IKYC>("KYC", kycSchema);

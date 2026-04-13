@@ -2,60 +2,43 @@ import type { Response, NextFunction } from "express";
 import Application, { ApplicationStatus } from "../models/Application.model.js";
 import Job from "../models/Job.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
+import { ApiResponse } from "../utils/apiResponse.js";
 // import { sendEmail } from '../utils/email.js';
+import { ApiError } from "../utils/apiError.js";
+import CompanyMember from "../models/CompanyMember.model.js";
 
-// @desc    Apply for a job
-// @route   POST /api/applications
-// @access  Private (Job Seeker)
 export const applyForJob = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { jobId, resume, coverLetter } = req.body;
+    const { jobId } = req.body;
 
-    if (!req.user.resume && !resume) {
-      return res.status(400).json({
-        success: false,
-        message: "Resume is required to apply for this job",
-      });
+    if (!req.user.resume) {
+      throw new ApiError(400, "Resume is required to apply for this job");
     }
 
-    // Check if job exists
     const job = await Job.findById(jobId);
     if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
+      throw new ApiError(404, "Job not found");
     }
 
-    // Check if already applied
     const existingApplication = await Application.findOne({
       job: jobId,
       jobSeeker: req.user.id,
     });
 
     if (existingApplication) {
-      return res.status(400).json({
-        success: false,
-        message: "You have already applied for this job",
-      });
+      throw new ApiError(400, "You have already applied for this job");
     }
-
-    console.log(req.user._id);
-    console.log(req.user.resume);
 
     // Create application
     const application = await Application.create({
       job: jobId,
       jobSeeker: req.user._id,
-      resume: resume || req.user.resume,
-      coverLetter: coverLetter || null,
+      resume: req.user.resume
     });
-    
-    console.log(application);
 
     // Increment applications count
     job.applicationsCount += 1;
@@ -68,50 +51,55 @@ export const applyForJob = async (
     //   message: `Your application for ${job.title} has been submitted successfully.`,
     // });
 
-    res.status(201).json({
-      success: true,
-      message: "Application submitted successfully",
-      data: application,
-    });
+    res.status(201).json(new ApiResponse(201, application, "Application submitted successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error submitting application",
-      error: error.message,
-    });
+    next(error)
   }
 };
 
-// @desc    Get user's applications
-// @route   GET /api/applications/my-applications
-// @access  Private (Job Seeker)
 export const getMyApplications = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const applications = await Application.find({ jobSeeker: req.user.id })
-      .populate("job")
-      .sort("-createdAt");
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
 
-    res.status(200).json({
-      success: true,
-      count: applications.length,
-      data: applications,
-    });
+    const [applications, totalApplications] = await Promise.all([
+      Application.find({ jobSeeker: req.user.id })
+        .populate("job")
+        .sort("-createdAt")
+        .skip(skip)
+        .limit(limit),
+      Application.countDocuments({ jobSeeker: req.user.id })
+    ]);
+
+    const totalPages = Math.ceil(totalApplications / limit);
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            applications,
+            pagination: {
+              totalItems: totalApplications,
+              totalPages,
+              currentPage: page,
+              limit
+            }
+          },
+          "Applications fetched successfully",
+        ),
+      );
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching applications",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-// @desc    Get applicants for a job
-// @route   GET /api/applications/job/:jobId
-// @access  Private (Employer)
 export const getJobApplicants = async (
   req: AuthRequest,
   res: Response,
@@ -120,20 +108,13 @@ export const getJobApplicants = async (
   try {
     const { jobId } = req.params;
 
-    // Verify job belongs to employer
     const job = await Job.findById(jobId);
     if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
+      throw new ApiError(404, "Job not found");
     }
 
     if (job.postedBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to view applicants",
-      });
+      throw new ApiError(403, "Not authorized to view applicants");
     }
 
     const applications = await Application.find({ job: jobId })
@@ -143,53 +124,48 @@ export const getJobApplicants = async (
       )
       .sort("-createdAt");
 
-    res.status(200).json({
-      success: true,
-      count: applications.length,
-      data: applications,
-    });
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { count: applications.length, applications },
+          "Applications fetched successfully",
+        ),
+      );
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching applicants",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-// @desc    Update application status
-// @route   PUT /api/applications/:id/status
-// @access  Private (Employer)
+
 export const updateApplicationStatus = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { status, note } = req.body;
+    const { status, note, interviewDate } = req.body;
 
     const application = await Application.findById(req.params.id)
       .populate("job")
       .populate("jobSeeker", "email firstName lastName");
 
     if (!application) {
-      return res.status(404).json({
-        success: false,
-        message: "Application not found",
-      });
+      throw new ApiError(404, "Application not found")
     }
 
     // Verify job belongs to employer
     const job: any = application.job;
     if (job.postedBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this application",
-      });
+      throw new ApiError(403, "Not authorized to update this application")
     }
 
     // Update status
     application.status = status;
+    if (interviewDate) {
+      application.interviewDate = new Date(interviewDate);
+    }
     application.statusHistory.push({
       status,
       changedAt: new Date(),
@@ -209,23 +185,13 @@ export const updateApplicationStatus = async (
     //   }`,
     // });
 
-    res.status(200).json({
-      success: true,
-      message: "Application status updated successfully",
-      data: application,
-    });
+    res.status(200).json(
+      new ApiResponse(200, application, "Application status updated successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error updating application status",
-      error: error.message,
-    });
+    next(error)
   }
 };
 
-// @desc    Withdraw application
-// @route   DELETE /api/applications/:id
-// @access  Private (Job Seeker)
 export const withdrawApplication = async (
   req: AuthRequest,
   res: Response,
@@ -235,32 +201,80 @@ export const withdrawApplication = async (
     const application = await Application.findById(req.params.id);
 
     if (!application) {
-      return res.status(404).json({
-        success: false,
-        message: "Application not found",
-      });
+      throw new ApiError(404, "Application not found")
     }
 
     // Verify application belongs to user
     if (application.jobSeeker.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to withdraw this application",
-      });
+      throw new ApiError(403, "Not authorized to withdraw this application");
     }
 
     application.status = ApplicationStatus.WITHDRAWN;
     await application.save();
 
-    res.status(200).json({
-      success: true,
-      message: "Application withdrawn successfully",
-    });
+    res.status(200).json(new ApiResponse(200, null, "Application withdrawn successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error withdrawing application",
-      error: error.message,
+    next(error)
+  }
+};
+
+export const getAllCompanyApplications = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const { status } = req.query;
+
+    const companyMember = await CompanyMember.findOne({
+      user: req.user.id,
     });
+
+    if (!companyMember) {
+      throw new ApiError(403, "You are not associated with any company.");
+    }
+
+    // Find all jobs belonging to the company
+    const jobs = await Job.find({ company: companyMember.company }).select("_id");
+    const jobIds = jobs.map((job) => job._id);
+
+    const query: any = { job: { $in: jobIds } };
+    if (status) {
+      query.status = status;
+    }
+
+    const [applications, totalApplications] = await Promise.all([
+      Application.find(query)
+        .populate("job", "title location jobType")
+        .populate("jobSeeker", "firstName lastName email phone")
+        .sort("-createdAt")
+        .skip(skip)
+        .limit(limit),
+      Application.countDocuments(query),
+    ]);
+
+    const totalPages = Math.ceil(totalApplications / limit);
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          applications,
+          pagination: {
+            totalItems: totalApplications,
+            totalPages,
+            currentPage: page,
+            limit,
+          },
+        },
+        "Company applications fetched successfully",
+      ),
+    );
+  } catch (error: any) {
+    next(error);
   }
 };

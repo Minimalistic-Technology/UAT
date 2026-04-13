@@ -1,264 +1,218 @@
 "use client";
+
 import { useParams } from "next/navigation";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { jobService } from "@/lib/services/job.service";
-import { applicationService } from "@/lib/services/application.service";
-import { Button } from "../../../components/ui/Button";
-import { Card } from "../../../components/ui/Card";
-import { toast } from "sonner";
-import { GlobalRole, UserRole } from "@/types";
+import { useGetJobDetailsById } from "@/features/user/hooks/use-job";
+import { useApplyJob } from "@/features/user/hooks/use-job-application";
 import {
-  MapPin,
-  Briefcase,
-  DollarSign,
-  Clock,
-  Building,
-  Users,
-  Calendar,
-  CheckCircle,
-  Loader2,
+  BriefcaseIcon,
+  MapPinIcon,
+  WalletIcon,
+  CalendarIcon,
+  Building2Icon,
+  UsersIcon,
 } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
 
-export default function JobDetailPage() {
-  const params = useParams<{ id: string }>();
-  const id = params?.id;
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
-  if (!id) {
-    return <div>Invalid ID</div>;
-  }
-
+const Page = () => {
+  const params = useParams();
+  const jobId = Array.isArray(params.id) ? params.id[0] : params.id;
   const { data: session } = useSession();
-  const router = useRouter();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["job", id],
-    queryFn: () => jobService.getJob(id),
-  });
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+  } = useGetJobDetailsById(jobId as string);
+  const job = responseData?.data;
 
-  const applyMutation = useMutation({
-    mutationFn: (jobId: string) => applicationService.applyForJob({ jobId }),
-    onSuccess: () => {
-      toast.success("Application submitted successfully!");
-      router.push("/applications");
-    },
-    onError: (error: any) => {
-      toast.error(
-        error.response?.data?.message || "Failed to submit application",
-      );
-    },
-  });
+  const { mutate: applyJob, isPending: isApplying } = useApplyJob();
 
   const handleApply = () => {
-    if (!session) {
-      router.push(`/login?callbackUrl=/jobs/${id}`);
-      return;
-    }
-
-    console.log(session);
-    if (session.user.role !== GlobalRole.USER && !session.user.isEmployee) {
-      toast.error("Only job seekers can apply for jobs");
-      return;
-    }
-
-    applyMutation.mutate(id);
+    applyJob({
+      jobId: jobId as string,
+    });
   };
 
-  if (isLoading) {
+  if (isLoading) return <JobSkeleton />;
+  
+  if (isError || !job)
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      <div className="p-10 text-center text-red-500">
+        Error loading job details.
       </div>
     );
-  }
 
-  const job = data?.data;
-
-  if (!job) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="text-center py-12">
-          <p className="text-gray-600">Job not found</p>
-        </Card>
-      </div>
-    );
-  }
+  const canApply =
+    session?.user?.role === "user" && session?.user?.isEmployee === false;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                {job.company.logo && (
-                  <img
-                    src={job.company.logo}
-                    alt={job.company.name}
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
-                )}
+    <div className="container mx-auto max-w-5xl px-4 py-10">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {/* Left Column: Main Details */}
+        <div className="space-y-6 lg:col-span-2">
+          <Card className="border-none shadow-sm">
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">
+                  <CardTitle className="text-primary text-3xl font-bold">
                     {job.title}
-                  </h1>
-                  <p className="text-xl text-gray-600">{job.company.name}</p>
+                  </CardTitle>
+                  <p className="text-muted-foreground mt-1 flex items-center text-lg">
+                    <Building2Icon className="mr-2 h-4 w-4" />
+                    {job.company.name}
+                  </p>
+                </div>
+                {job.isFeatured && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-yellow-100 text-yellow-700"
+                  >
+                    Featured
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="mt-4 flex flex-wrap gap-4">
+                <div className="text-muted-foreground flex items-center text-sm">
+                  <MapPinIcon className="mr-1 h-4 w-4" />
+                  {job.location.city}, {job.location.country}{" "}
+                  {job.location.remote && "(Remote)"}
+                </div>
+                <div className="text-muted-foreground flex items-center text-sm">
+                  <WalletIcon className="mr-1 h-4 w-4" />₹
+                  {job.salary.min.toLocaleString()} - ₹
+                  {job.salary.max.toLocaleString()} / {job.salary.period}
+                </div>
+                <div className="text-muted-foreground flex items-center text-sm">
+                  <BriefcaseIcon className="mr-1 h-4 w-4" />
+                  {job.jobType.replace("_", " ")}
                 </div>
               </div>
-              {job.isFeatured && (
-                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-semibold rounded-full">
-                  Featured
-                </span>
-              )}
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="grid md:grid-cols-2 gap-4 mb-6">
-              <div className="flex items-center text-gray-600">
-                <MapPin className="w-5 h-5 mr-2" />
-                {job.location.remote
-                  ? "Remote"
-                  : `${job.location.city}, ${job.location.country}`}
+          <Card className="border-none shadow-sm">
+            <CardContent className="space-y-6 pt-6">
+              <div>
+                <h3 className="mb-3 text-lg font-semibold">Description</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {job.description}
+                </p>
               </div>
-              <div className="flex items-center text-gray-600">
-                <Briefcase className="w-5 h-5 mr-2" />
-                {job.jobType.replace("_", " ")}
+
+              <Separator />
+
+              <div>
+                <h3 className="mb-3 text-lg font-semibold">Requirements</h3>
+                <ul className="text-muted-foreground list-disc space-y-2 pl-5">
+                  {job.requirements.map((req: string, index: number) => (
+                    <li key={index}>{req}</li>
+                  ))}
+                </ul>
               </div>
-              <div className="flex items-center text-gray-600">
-                <Users className="w-5 h-5 mr-2" />
-                {job.experienceLevel.charAt(0).toUpperCase() +
-                  job.experienceLevel.slice(1)}{" "}
-                Level
-              </div>
-              {job.salary.min && (
-                <div className="flex items-center text-gray-600">
-                  <DollarSign className="w-5 h-5 mr-2" />
-                  {job.salary.min.toLocaleString()} -{" "}
-                  {job.salary.max?.toLocaleString()} / {job.salary.period}
+
+              <Separator />
+
+              <div>
+                <h3 className="mb-3 text-lg font-semibold">Skills Required</h3>
+                <div className="flex flex-wrap gap-2">
+                  {job.skills.map((skill: string) => (
+                    <Badge key={skill} variant="outline" className="px-3 py-1">
+                      {skill}
+                    </Badge>
+                  ))}
                 </div>
-              )}
-              <div className="flex items-center text-gray-600">
-                <Clock className="w-5 h-5 mr-2" />
-                Posted{" "}
-                {formatDistanceToNow(new Date(job.createdAt), {
-                  addSuffix: true,
-                })}
               </div>
-              {job.applicationDeadline && (
-                <div className="flex items-center text-gray-600">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Deadline:{" "}
-                  {format(new Date(job.applicationDeadline), "MMM dd, yyyy")}
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-6">
-              {job.skills.map((skill, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
+            </CardContent>
           </Card>
-
-          <Card>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Job Description
-            </h2>
-            <div className="prose max-w-none text-gray-700">
-              <p className="whitespace-pre-line">{job.description}</p>
-            </div>
-          </Card>
-
-          <Card>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Requirements
-            </h2>
-            <ul className="space-y-2">
-              {job.requirements.map((req, index) => (
-                <li key={index} className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5 shrink-0" />
-                  <span className="text-gray-700">{req}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-
-          {job.benefits && job.benefits.length > 0 && (
-            <Card>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Benefits
-              </h2>
-              <ul className="space-y-2">
-                {job.benefits.map((benefit, index) => (
-                  <li key={index} className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-primary-500 mr-2 mt-0.5 shrink-0" />
-                    <span className="text-gray-700">{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
         </div>
 
-        {/* Sidebar */}
+        {/* Right Column: Sidebar Actions */}
         <div className="space-y-6">
-          <Card>
-            <Button
-              onClick={handleApply}
-              className="w-full mb-4"
-              size="lg"
-              loading={applyMutation.isPending}
-              disabled={applyMutation.isPending}
-            >
-              Apply Now
-            </Button>
-            <div className="text-center text-sm text-gray-600">
-              <p>{job.applicationsCount} applicants</p>
-            </div>
+          <Card className="border-none shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">Job Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground flex items-center">
+                  <CalendarIcon className="mr-2 h-4 w-4" /> Posted On
+                </span>
+                <span className="font-medium">
+                  {new Date(job.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground flex items-center">
+                  <UsersIcon className="mr-2 h-4 w-4" /> Openings
+                </span>
+                <span className="font-medium">{job.openings}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground flex items-center">
+                  <BriefcaseIcon className="mr-2 h-4 w-4" /> Experience
+                </span>
+                <span className="font-medium capitalize">
+                  {job.experienceLevel}
+                </span>
+              </div>
+
+              <Separator className="my-4" />
+
+              {canApply ? (
+                <Button
+                  className="h-12 w-full cursor-pointer text-lg font-semibold"
+                  disabled={isApplying}
+                  onClick={handleApply}
+                >
+                  {isApplying ? "Applying..." : "Apply Now"}
+                </Button>
+              ) : (
+                <div className="bg-muted text-muted-foreground rounded-md p-3 text-center text-sm">
+                  {!session
+                    ? "Please login to apply for this job."
+                    : "You are not eligible to apply for this role."}
+                </div>
+              )}
+            </CardContent>
           </Card>
 
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              About {job.company.name}
-            </h3>
-            {job.company.logo && (
-              <img
-                src={job.company.logo}
-                alt={job.company.name}
-                className="w-full h-32 object-cover rounded-lg mb-4"
-              />
-            )}
-            <p className="text-gray-700 mb-4">{job.company.description}</p>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-center">
-                <Building className="w-4 h-4 mr-2" />
-                {job.company.industry}
-              </div>
-              <div className="flex items-center">
-                <Users className="w-4 h-4 mr-2" />
-                {job.company.companySize} employees
-              </div>
-              {job.company.website && (
-                <a
-                  href={job.company.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary-600 hover:text-primary-700 flex items-center"
-                >
-                  Visit Website →
-                </a>
-              )}
-            </div>
+          <Card className="bg-primary/5 border-none shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">
+                About the Company
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm font-bold">{job.company.name}</p>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {job.company.description ||
+                  "Leading the industry in IT solutions and innovation."}
+              </p>
+            </CardContent>
           </Card>
         </div>
       </div>
     </div>
   );
-}
+};
+
+// Simple Skeleton Loader
+const JobSkeleton = () => (
+  <div className="container mx-auto max-w-5xl space-y-6 px-4 py-10">
+    <Skeleton className="h-40 w-full" />
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <Skeleton className="h-96 lg:col-span-2" />
+      <Skeleton className="h-64" />
+    </div>
+  </div>
+);
+
+export default Page;

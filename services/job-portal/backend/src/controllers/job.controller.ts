@@ -8,8 +8,10 @@ import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
 import mongoose from "mongoose";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
-import User from "../models/User.model.js";
 import Company from "../models/Company.model.js";
+import Subscription from "../models/Subscription.model.js";
+import { ApiResponse } from "../utils/apiResponse.js";
+import { ApiError } from "../utils/apiError.js";
 
 export function isValidJobType(value: any): value is JobType {
   return Object.values(JobType).includes(value);
@@ -19,10 +21,11 @@ export function isValidExperienceType(value: any): value is ExperienceLevel {
   return Object.values(ExperienceLevel).includes(value);
 }
 
-// @desc    Get all jobs with filters
-// @route   GET /api/jobs
-// @access  Public
-export const getJobs = async (req: AuthRequest, res: Response) => {
+export const getJobs = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const {
       search,
@@ -45,20 +48,16 @@ export const getJobs = async (req: AuthRequest, res: Response) => {
       query["location.remote"] = remote === "true";
     }
 
-    if (jobType) {
+    if (jobType && jobType !== "all") {
       if (!isValidJobType(jobType)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid job type" });
+        return next(new ApiError(400, "Invalid job type"));
       }
       query.jobType = jobType;
     }
 
     if (experienceLevel) {
       if (!isValidExperienceType(experienceLevel)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid experience type" });
+        return next(new ApiError(400, "Invalid experience type"));
       }
       query.experienceLevel = experienceLevel;
     }
@@ -79,9 +78,15 @@ export const getJobs = async (req: AuthRequest, res: Response) => {
       if (maxSalary) query["salary.max"] = { $lte: Number(maxSalary) };
     }
 
-    if (city) query["location.city"] = new RegExp(city as string, "i");
-    if (state) query["location.state"] = new RegExp(state as string, "i");
-    if (country) query["location.country"] = new RegExp(country as string, "i");
+    if (city) {
+      query["location.city"] = { $regex: city as string, $options: "i" };
+    }
+    if (state) {
+      query["location.state"] = { $regex: state as string, $options: "i" };
+    }
+    if (country) {
+      query["location.country"] = { $regex: country as string, $options: "i" };
+    }
 
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 10;
@@ -126,36 +131,34 @@ export const getJobs = async (req: AuthRequest, res: Response) => {
       }));
     }
 
-    return res.status(200).json({
-      success: true,
-      data: { jobs: formattedJobs, totalJobs: total },
-      page: pageNumber,
-      totalPages: Math.ceil(total / limitNumber),
-    });
-  } catch (error) {
-    console.error("Jobs fetch error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          jobs: formattedJobs,
+          totalJobs: total,
+          pagination: {
+            page: pageNumber,
+            totalPages: Math.ceil(total / limitNumber),
+          },
+        },
+        "Jobs fetched successfully",
+      ),
+    );
+  } catch (error: any) {
+    next(error);
   }
 };
 
-// @desc    Get single job
-// @route   GET /api/jobs/:id
-// @access  Public
-
-export const getJob = async (req: AuthRequest, res: Response) => {
+export const getJob = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const rawId = req.params.id;
-    const id = Array.isArray(rawId) ? rawId[0] : rawId;
-    const cleanId = id.trim();
+    const id = req.params.id;
 
-    if (!mongoose.Types.ObjectId.isValid(cleanId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid job id",
-      });
-    }
-
-    const job = await Job.findById(cleanId)
+    const job = await Job.findById(id)
       .populate("postedBy", "firstName lastName email")
       .populate(
         "company",
@@ -163,88 +166,129 @@ export const getJob = async (req: AuthRequest, res: Response) => {
       );
 
     if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
+      return next(new ApiError(404, "Job not found"));
     }
 
     job.viewsCount = (job.viewsCount || 0) + 1;
     await job.save();
 
-    return res.status(200).json({
-      success: true,
-      data: job,
-    });
-  } catch (error) {
-    console.error("Get Job Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error fetching job",
-    });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, job, "Job fetched successfully"));
+  } catch (error: any) {
+    next(error);
   }
 };
 
-// @desc    Create new job
-// @route   POST /api/jobs
-// @access  Private (Owner)
 export const createJob = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
+  // 1. Start a Session for the Transaction
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const userId = req.user.id;
 
-    const companyMember = await CompanyMember.findOne({ user: userId });
+    const companyMember = await CompanyMember.findOne({ user: userId }).session(
+      session,
+    );
 
     if (!companyMember) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Company member doesn't exists." });
+      throw new ApiError(400, "Company member doesn't exist.");
     }
 
-    const company = await Company.findById(companyMember.company);
+    const company = await Company.findById(companyMember.company).session(
+      session,
+    );
 
     if (!company) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No such company exists" });
+      throw new ApiError(404, "No such company exists");
+    }
+
+    if (!company.isVerified) {
+      throw new ApiError(
+        403,
+        "Your company must be verified before you can post jobs.",
+      );
     }
 
     if (
       companyMember.role !== CompanyRole.OWNER &&
       companyMember.role !== CompanyRole.ADMIN
     ) {
-      return res.status(403).json({
-        success: false,
-        message: "You're not not authorized to create a job",
-      });
+      throw new ApiError(403, "You're not authorized to create a job");
     }
 
-    // Add user and company to req.body
-    req.body.postedBy = req.user.id;
-    req.body.company = company._id;
+    // Validate active subscription within the session
+    const subscription = await Subscription.findOne({
+      employerId: company.owner,
+      status: "active",
+      expiryDate: { $gt: new Date() },
+      $or: [{ postsRemaining: { $gt: 0 } }, { postsRemaining: -1 }],
+    }).session(session);
 
-    console.log("Creating job:", req.user);
-    const job = await Job.create(req.body);
+    if (!subscription) {
+      throw new ApiError(
+        402,
+        "You must have an active subscription with remaining job posts. Please upgrade your plan.",
+      );
+    }
 
-    res.status(201).json({
-      success: true,
-      data: job,
-    });
+    const jobData = {
+      title: req.body.title,
+      description: req.body.description,
+      jobType: req.body.jobType,
+      experienceLevel: req.body.experienceLevel,
+      openings: req.body.openings,
+
+      location: {
+        city: req.body.location.city,
+        state: req.body.location.state,
+        country: req.body.location.country,
+        remote: req.body.location.remote,
+      },
+
+      salary: {
+        min: req.body.salary?.min,
+        max: req.body.salary?.max,
+        currency: req.body.salary?.currency,
+        period: req.body.salary?.period,
+      },
+
+      skills: req.body.skills,
+      requirements: req.body.requirements,
+      benefits: req.body.benefits,
+
+      applicationDeadline: req.body.applicationDeadline,
+      isFeatured: req.body.isFeatured,
+      postedBy: req.user.id,
+      company: company._id,
+    };
+
+    const [job] = await Job.create([jobData], { session });
+
+    // Deduct from plan tally (Update local object and save with session)
+    if (subscription.postsRemaining !== -1) {
+      subscription.postsRemaining -= 1;
+      // The pre-save hook we wrote earlier will handle status: "depleted" automatically
+      await subscription.save({ session });
+    }
+
+    await session.commitTransaction();
+
+    res.status(201).json(new ApiResponse(201, job, "Job created successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error creating job",
-      error: error.message,
-    });
+    await session.abortTransaction();
+
+    next(error);
+  } finally {
+    await session.endSession();
   }
 };
 
-// @desc    Update job
-// @route   PUT /api/jobs/:id
-// @access  Private (Employer - owner only)
 export const updateJob = async (
   req: AuthRequest,
   res: Response,
@@ -254,10 +298,7 @@ export const updateJob = async (
     let job = await Job.findById(req.params.id);
 
     if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
+      return next(new ApiError(404, "Job not found"));
     }
 
     const companyMember = await CompanyMember.findOne({
@@ -265,10 +306,12 @@ export const updateJob = async (
     }).populate("company", "name");
 
     if (!companyMember) {
-      return res.status(404).json({
-        success: false,
-        message: `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`,
-      });
+      return next(
+        new ApiError(
+          404,
+          `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`,
+        ),
+      );
     }
 
     // Only admin and owner can update job details
@@ -276,10 +319,7 @@ export const updateJob = async (
       companyMember.role !== CompanyRole.ADMIN &&
       companyMember.role !== CompanyRole.OWNER
     ) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this job",
-      });
+      return next(new ApiError(403, "Not authorized to update this job"));
     }
 
     job = await Job.findByIdAndUpdate(req.params.id, req.body, {
@@ -287,22 +327,12 @@ export const updateJob = async (
       runValidators: true,
     });
 
-    res.status(200).json({
-      success: true,
-      data: job,
-    });
+    res.status(200).json(new ApiResponse(200, job, "Job updated successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error updating job",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-// @desc    Delete job
-// @route   DELETE /api/jobs/:id
-// @access  Private (Employer - owner only)
 export const deleteJob = async (
   req: AuthRequest,
   res: Response,
@@ -312,10 +342,7 @@ export const deleteJob = async (
     const job = await Job.findById(req.params.id);
 
     if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
+      return next(new ApiError(404, "Job not found"));
     }
 
     const companyMember = await CompanyMember.findOne({
@@ -323,10 +350,12 @@ export const deleteJob = async (
     }).populate("company", "name");
 
     if (!companyMember) {
-      return res.status(404).json({
-        success: false,
-        message: `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`,
-      });
+      return next(
+        new ApiError(
+          404,
+          `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`,
+        ),
+      );
     }
 
     // Only admin and owner can delete the job
@@ -334,38 +363,27 @@ export const deleteJob = async (
       companyMember.role !== CompanyRole.ADMIN &&
       companyMember.role !== CompanyRole.OWNER
     ) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this job",
-      });
+      return next(new ApiError(403, "Not authorized to update this job"));
     }
 
     await job.deleteOne();
 
-    res.status(200).json({
-      success: true,
-      message: "Job deleted successfully",
-    });
+    res.status(200).json(new ApiResponse(200, {}, "Job deleted successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error deleting job",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-// @desc    Get jobs posted by logged in employer
-// @route   GET /api/jobs/my-jobs
-// @access  Private (Owner and admin)
-export const getMyJobs = async (req: AuthRequest, res: Response) => {
+export const getMyJobs = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const companyMember = await CompanyMember.findOne({ user: req.user.id });
 
     if (!companyMember) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Company member not found" });
+      return next(new ApiError(400, "Company member not found"));
     }
 
     if (
@@ -377,17 +395,20 @@ export const getMyJobs = async (req: AuthRequest, res: Response) => {
         "name logo",
       );
 
-      res.status(200).json({
-        success: true,
-        count: jobs.length,
-        data: jobs,
-      });
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            count: jobs.length,
+            jobPosts: jobs,
+          },
+          "Jobs fetched successfully",
+        ),
+      );
+    } else {
+      return next(new ApiError(403, "Not authorized to fetch jobs"));
     }
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching jobs",
-      error: error.message,
-    });
+    next(error);
   }
 };
