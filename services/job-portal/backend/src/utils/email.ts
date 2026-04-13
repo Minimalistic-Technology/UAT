@@ -9,26 +9,19 @@ interface EmailOptions {
 }
 
 const isDev = config.nodeEnv === "development";
-const useSendGridAPI =
-  config.emailHost === "smtp.sendgrid.net" && config.emailUser === "apikey";
+const useSendGridAPI = !isDev && config.emailHost === "smtp.sendgrid.net" && config.emailUser === "apikey";
 
 if (useSendGridAPI && config.emailPass) {
   sgMail.setApiKey(config.emailPass);
-  console.log("✅ SendGrid API initialized (using HTTP API instead of SMTP)");
 }
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
-const getTransporter = async (): Promise<
-  ReturnType<typeof nodemailer.createTransport>
-> => {
+const getTransporter = async (): Promise<ReturnType<typeof nodemailer.createTransport>> => {
   if (transporter) return transporter;
 
-  // DEVELOPMENT: Use Ethereal (EmailJS/Nodemailer Test Account)
   if (isDev) {
-    console.log("🧪 Creating Ethereal Test Account for Development...");
     const testAccount = await nodemailer.createTestAccount();
-
     transporter = nodemailer.createTransport({
       host: "smtp.ethereal.email",
       port: 587,
@@ -38,16 +31,13 @@ const getTransporter = async (): Promise<
         pass: testAccount.pass,
       },
     });
-
-    console.log("✅ Dev Email Ready. View emails at: https://ethereal.email");
     return transporter;
   }
 
-  // PRODUCTION: Standard SMTP Fallback
   transporter = nodemailer.createTransport({
     host: config.emailHost,
-    port: config.emailPort,
-    secure: config.emailPort === 465,
+    port: Number(config.emailPort),
+    secure: Number(config.emailPort) === 465,
     auth: {
       user: config.emailUser,
       pass: config.emailPass,
@@ -60,26 +50,25 @@ const getTransporter = async (): Promise<
 
 export const sendEmail = async (options: EmailOptions): Promise<void> => {
   try {
-    // Use SendGrid API (Prod only)
+    const fromAddress = config.emailFrom || "noreply@yourdomain.com";
+
     if (useSendGridAPI) {
-      const msg = {
+      if (!config.emailPass) throw new Error("SendGrid API key missing");
+      
+      sgMail.setApiKey(config.emailPass);
+      await sgMail.send({
         to: options.email,
-        from: {
-          email: config.emailFrom || "noreply@yourdomain.com",
-          name: "Job Portal",
-        },
+        from: fromAddress,
         subject: options.subject,
         text: options.message,
         html: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`,
-      };
-      await sgMail.send(msg);
+      });
       return;
     }
 
-    // Use Transporter ( Development )
     const emailTransporter = await getTransporter();
     const mailOptions = {
-      from: `"Job Portal" <${isDev ? "dev@jobportal.com" : config.emailUser}>`,
+      from: `"Job Portal" <${isDev ? "dev@jobportal.com" : fromAddress}>`,
       to: options.email,
       subject: options.subject,
       text: options.message,
@@ -88,21 +77,17 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
 
     const info = await emailTransporter.sendMail(mailOptions);
 
-    // In Dev, provide the preview URL
     if (isDev) {
-      console.log("✉️  Preview URL:", nodemailer.getTestMessageUrl(info));
+      console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
     }
   } catch (error: any) {
-    console.error("❌ Email sending failed:", error.message);
     throw new Error(`Email Error: ${error.message}`);
   }
 };
 
-// Graceful shutdown - close connection pool when app terminates
 export const closeEmailConnection = async (): Promise<void> => {
   if (transporter) {
     transporter.close();
     transporter = null;
-    console.log("📧 Email connection pool closed");
   }
 };
