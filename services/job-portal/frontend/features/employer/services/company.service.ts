@@ -15,6 +15,17 @@ interface GetAllEmployeesResponse {
     employees: any[]
 }
 
+interface SubmitKycResponse {
+    companyName: string;
+    aadharNo: string;
+    gstNo: string;
+    cinNo: string;
+    documents: {
+        photoUrl: string;
+        lightbillUrl: string
+    }
+}
+
 // Changes needed in the response types (backend has some issues, fix that and then update these types accordingly)
 export const getMyCompany = async () => {
     const response = await apiClient.get<ApiSuccessResponse<GetMyCompanyResponse>>("/companies/me");
@@ -30,3 +41,10 @@ export const deleteEmployee = async (id: string) => {
     const response = await apiClient.delete<ApiSuccessResponse<null>>(`/company-members/${id}`);
     return response.data;
 }
+
+export const submitKycData = async (formData: FormData) => {
+  const response = await apiClient.post<ApiSuccessResponse<SubmitKycResponse>>("/users/kyc", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};

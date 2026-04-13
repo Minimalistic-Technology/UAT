@@ -8,6 +8,8 @@ import {
   submitKyc,
 } from '../controllers/user.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
+import { validate } from '../middleware/validate.middleware.js';
+import { body } from 'express-validator';
 
 const router = express.Router();
 
@@ -61,11 +63,43 @@ const kycUpload = multer({
   },
 });
 
+export const kycValidation = [
+  body("companyName")
+    .trim()
+    .notEmpty()
+    .withMessage("Company name is required")
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Company name must be between 2 and 100 characters"),
+
+  body("aadharNo")
+    .trim()
+    .notEmpty()
+    .withMessage("Aadhaar number is required")
+    .matches(/^\d{12}$/)
+    .withMessage("Aadhaar must be exactly 12 digits"),
+
+  body("gstNo")
+    .trim()
+    .notEmpty()
+    .withMessage("GST number is required")
+    .matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/)
+    .withMessage("Invalid GST number")
+    .toUpperCase(),
+
+  body("cinNo")
+    .trim()
+    .notEmpty()
+    .withMessage("CIN number is required")
+    .matches(/^[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/)
+    .withMessage("Invalid CIN number")
+    .toUpperCase(),
+];
+
 router.put('/profile', protect, updateProfile);
 router.put('/avatar', protect, avatarUpload.single('avatar'), uploadAvatar);
 router.put('/resume', protect, resumeUpload.single('resume'), uploadResume);
 router.get('/:id', protect, getUserById);
-router.post('/kyc', protect, kycUpload.fields([
+router.post('/kyc', protect, kycValidation, kycUpload.fields([
   { name: 'photo', maxCount: 1 },
   { name: 'lightbill', maxCount: 1 }
 ]), submitKyc);

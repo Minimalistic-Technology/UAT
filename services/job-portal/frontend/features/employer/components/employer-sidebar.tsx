@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   PlusCircle,
+  Settings2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -20,6 +21,7 @@ const menuItems = [
   { label: "Post a Job", icon: PlusCircle, href: "/employer-dashboard/jobs/create" },
   { label: "Manage Jobs", icon: Briefcase, href: "/employer-dashboard/jobs/manage" },
   { label: "Manage Team", icon: Users, href: "/employer-dashboard/team" },
+  { label: "Settings", icon: Settings2, href: "/employer-dashboard/settings" },
   // { label: "Company Settings", icon: Building2, href: "/employer-dashboard/settings" },
   // { label: "Account Settings", icon: Settings, href: "/employer-dashboard/account" },
 ]

@@ -142,9 +142,6 @@ export const uploadResume = async (
   }
 };
 
-// @desc    Submit KYC details (Employer)
-// @route   POST /api/users/kyc
-// @access  Private (Employer)
 export const submitKyc = async (
   req: AuthRequest,
   res: Response,
@@ -156,10 +153,10 @@ export const submitKyc = async (
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     if (!files?.photo?.[0] || !files?.lightbill?.[0]) {
-      return res.status(400).json({
-        success: false,
-        message: "Both photo and lightbill documents are required.",
-      });
+      throw new ApiError(
+        400,
+        "Both photo and lightbill documents are required.",
+      );
     }
 
     let existingKyc = await KYC.findOne({
@@ -173,17 +170,11 @@ export const submitKyc = async (
     });
 
     if (existingKyc && existingKyc.status === "approved") {
-      return res.status(400).json({
-        success: false,
-        message: "Your KYC is already approved.",
-      });
+      throw new ApiError(400, "Your KYC is already approved.");
     }
 
     if (existingKyc && existingKyc.status === "pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Your KYC is already submitted.",
-      });
+      throw new ApiError(400, "Your KYC is already submitted.");
     }
 
     const photoResult = await uploadToCloudinary(
@@ -217,32 +208,34 @@ export const submitKyc = async (
 
     if (!kyc) {
       // optionally delete the uploaded images
-      return res.status(500).json({
-        success: false,
-        message: "Failed to submit KYC details. Please try again later.",
-      });
+      throw new ApiError(
+        500,
+        "Failed to submit KYC details. Please try again later.",
+      );
     }
 
-    res.status(200).json({
-      success: true,
-      message: "KYC Details Submitted Successfully!",
-      data: {
-        companyName: kyc?.companyName,
-        aadharNo: kyc?.aadharNo,
-        gstNo: kyc?.gstNo,
-        cinNo: kyc?.cinNo,
-        documents: {
-          photoUrl: kyc?.photoUrl,
-          lightbillUrl: kyc?.lightbillUrl,
-        },
+    const responseToSend = {
+      companyName: kyc?.companyName,
+      aadharNo: kyc?.aadharNo,
+      gstNo: kyc?.gstNo,
+      cinNo: kyc?.cinNo,
+      documents: {
+        photoUrl: kyc?.photoUrl,
+        lightbillUrl: kyc?.lightbillUrl,
       },
-    });
+    };
+    
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          responseToSend,
+          "KYC Details Submitted Successfully!",
+        ),
+      );
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error submitting KYC documents",
-      error: error.message,
-    });
+    next(error);
   }
 };
 

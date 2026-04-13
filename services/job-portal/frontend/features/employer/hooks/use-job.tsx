@@ -27,9 +27,10 @@ export const useCreateMyJobPosting = () => {
       toast.success("Job posted successfully!");
       router.push("/employer-dashboard")
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error posting job:", error);
-      toast.error("Failed to post job. Please try again.");
+      const errorMsg = error?.response?.data?.message || "Failed to post job. Please try again.";
+      toast.error(errorMsg);
     },
   });
 };
