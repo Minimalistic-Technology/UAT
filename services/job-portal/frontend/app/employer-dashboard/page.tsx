@@ -27,7 +27,6 @@ const Page = () => {
   const { data: responseData, isLoading, isError, isFetching } = useGetMyCompanyDetails();
 
   const companyDetails = responseData?.data;
-  console.log("companyDetails: ", companyDetails);
   const isUnverified = companyDetails?.isVerified === false;
 
   if ((isLoading || !companyDetails) && !isError) {
@@ -54,6 +53,11 @@ const Page = () => {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
             Employer Dashboard
           </h1>
+          <div className="mt-1 flex items-center gap-2 text-sm font-medium">
+            <span className="text-slate-700">{companyDetails?.name}</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-muted-foreground">{companyDetails?.industry}</span>
+          </div>
           <p className="text-muted-foreground mt-1">
             Overview of your active listings and candidate pipeline.
           </p>

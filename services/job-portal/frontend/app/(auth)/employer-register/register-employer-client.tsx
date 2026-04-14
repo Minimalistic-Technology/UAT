@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,15 +33,18 @@ const industries = [
 export default function EmployerRegisterPage() {
   const registerMutation = useRegisterEmployer();
   const router = useRouter();
+  const [dropdownIndustry, setDropdownIndustry] = useState<string>("");
 
   const {
     register,
     handleSubmit,
     setValue,
     setError,
+    clearErrors,
     formState: { errors },
   } = useForm<EmployerRegisterFormValues>({
     resolver: zodResolver(registerEmployerSchema),
+    mode: "onChange",
   });
 
   const onSubmit = async (data: EmployerRegisterFormValues) => {
@@ -133,7 +137,17 @@ export default function EmployerRegisterPage() {
                 <div className="grid gap-2">
                   <Label>Industry</Label>
                   <Select 
-                    onValueChange={(value) => setValue("industry", value)}
+                    value={dropdownIndustry}
+                    onValueChange={(value) => {
+                      setDropdownIndustry(value);
+                      if (value !== "Other") {
+                        setValue("industry", value, { shouldValidate: true });
+                        clearErrors("industry");
+                      } else {
+                        setValue("industry", "");
+                        clearErrors("industry");
+                      }
+                    }}
                     disabled={isLoading}
                   >
                     <SelectTrigger className={errors.industry ? "border-destructive" : ""}>
@@ -145,6 +159,15 @@ export default function EmployerRegisterPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  
+                  {dropdownIndustry === "Other" && (
+                    <Input
+                      placeholder="Please specify your industry"
+                      disabled={isLoading}
+                      className={`mt-2 ${errors.industry ? "border-destructive" : ""}`}
+                      {...register("industry")}
+                    />
+                  )}
                   {errors.industry && <p className="text-xs text-destructive">{errors.industry.message}</p>}
                 </div>
               </div>
