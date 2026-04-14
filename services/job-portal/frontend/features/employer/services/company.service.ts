@@ -1,7 +1,15 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client"
 import { Company } from "@/types"
 
-interface GetMyCompanyResponse extends Omit<Company, "owner"> {
+export interface CompanyMetrics {
+  totalJobs: number;
+  activeJobs: number;
+  totalMembers: number;
+  currentPlan: string | null;
+  subscription: any | null;
+}
+
+interface GetMyCompanyResponse extends Omit<Company, "owner">, CompanyMetrics {
     owner: {
         _id: string;
         firstName: string;

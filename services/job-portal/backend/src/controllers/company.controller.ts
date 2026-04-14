@@ -6,6 +6,8 @@ import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import Job, { JobStatus } from "../models/Job.model.js";
+import Subscription from "../models/Subscription.model.js";
 
 // @desc    Create new company
 // @route   POST /api/companies
@@ -192,9 +194,32 @@ export const getCompany = async (
       throw new ApiError(404, "Company not found");
     }
 
+    const totalJobs = await Job.countDocuments({ company: company._id });
+    const activeJobs = await Job.countDocuments({ 
+      company: company._id, 
+      status: JobStatus.ACTIVE 
+    });
+    const totalMembers = await CompanyMember.countDocuments({
+      company: company._id,
+      isActive: true,
+    });
+    const currentSubscription = await Subscription.findOne({
+      companyId: company._id,
+      status: "active"
+    }).populate("planId");
+
+    const companyData = {
+      ...company.toObject(),
+      totalJobs,
+      activeJobs,
+      totalMembers,
+      currentPlan: currentSubscription ? currentSubscription.planId : null,
+      subscription: currentSubscription
+    };
+
     res
       .status(200)
-      .json(new ApiResponse(200, company, "Company fetched successfully"));
+      .json(new ApiResponse(200, companyData, "Company fetched successfully"));
   } catch (error: any) {
     next(error);
   }
@@ -215,9 +240,32 @@ export const getMyCompany = async (
       throw new ApiError(404, "You have not created a company yet");
     }
 
+    const totalJobs = await Job.countDocuments({ company: company._id });
+    const activeJobs = await Job.countDocuments({ 
+      company: company._id, 
+      status: JobStatus.ACTIVE 
+    });
+    const totalMembers = await CompanyMember.countDocuments({
+      company: company._id,
+      isActive: true,
+    });
+    const currentSubscription = await Subscription.findOne({
+      companyId: company._id,
+      status: "active"
+    }).populate("planId");
+
+    const companyData = {
+      ...company.toObject(),
+      totalJobs,
+      activeJobs,
+      totalMembers,
+      currentPlan: currentSubscription ? currentSubscription.planId : null,
+      subscription: currentSubscription
+    };
+
     res
       .status(200)
-      .json(new ApiResponse(200, company, "Company fetched successfully"));
+      .json(new ApiResponse(200, companyData, "Company fetched successfully"));
   } catch (error: any) {
     next(error);
   }
