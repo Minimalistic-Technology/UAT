@@ -5,7 +5,7 @@ import type { CorsOptions } from "cors";
 export const baseCookieOptions: CookieOptions = {
   httpOnly: true, // prevents JS access (XSS protection)
   secure: env.NODE_ENV === "production", // HTTPS only in production
-  sameSite: "none", // protects against CSRF (adjust if needed)
+  sameSite: env.NODE_ENV === "production" ? "none" : "lax", // protects against CSRF (adjust if needed)
   path: "/", // available across entire app
 };
 
