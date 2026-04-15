@@ -12,6 +12,7 @@ export const getDriveFilesController = async (
 ) => {
     try {
         const result = folderIdSchema.safeParse(req);
+        console.log("result of the drive controller", result)
 
         if (!result.success) {
             const errorMessage = result.error.issues[0]?.message || "Invalid request parameters";
@@ -19,8 +20,10 @@ export const getDriveFilesController = async (
         }
 
         const { folderId } = result.data.query;
+        console.log("folderId", folderId);
 
         const files = await getDriveFiles(folderId);
+        console.log("files", files)
 
         if (!files || files.length === 0) {
             return res.status(200).json(

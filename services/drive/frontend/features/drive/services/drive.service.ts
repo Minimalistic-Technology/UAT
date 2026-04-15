@@ -20,6 +20,7 @@ export async function fetchDriveFiles(folderId: string, signal?: AbortSignal) {
 
     return response;
   } catch (error: any) {
+    console.log("error while fetching drive files", error);
     if (error.name === "CanceledError" || error.code === "ERR_CANCELED") {
       return; // silently ignore
     }

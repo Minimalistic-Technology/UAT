@@ -37,7 +37,6 @@ export const authService = {
       "/auth/login",
       data,
     );
-    console.log("Login response received", res);
     return res;
   },
 

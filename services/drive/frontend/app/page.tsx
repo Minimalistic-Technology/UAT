@@ -32,8 +32,9 @@ import { ShareEmailDialog } from "@/features/drive/components/share-csv";
 export default function DriveDashboard() {
   // Manage navigation state
   const [currentFolderId, setCurrentFolderId] = useState<string>(
-    process.env.NEXT_PUBLIC_DRIVE_FOLDER_ID || "",
+    process.env.NEXT_PUBLIC_DRIVE_FOLDER_ID ?? "",
   );
+  console.log("currentFolderId", currentFolderId)
   const [pathStack, setPathStack] = useState<{ id: string; name: string }[]>([
     { id: currentFolderId, name: "Root" },
   ]);
