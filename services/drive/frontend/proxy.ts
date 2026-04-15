@@ -11,7 +11,8 @@ export async function proxy(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
   const refreshToken = request.cookies.get("refreshToken")?.value;
   console.log("accessToken", accessToken);
-  console.log("refreshToken", refreshToken)
+  console.log("refreshToken", refreshToken);
+  console.log("pathname", pathname);
 
   let isValid = false;
 
