@@ -10,10 +10,13 @@ export async function proxy(request: NextRequest) {
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
   const accessToken = request.cookies.get("accessToken")?.value;
   const refreshToken = request.cookies.get("refreshToken")?.value;
+  console.log("accessToken", accessToken);
+  console.log("refreshToken", refreshToken)
 
   let isValid = false;
 
   if (accessToken) {
+    console.log("Inside accessToken if block")
     try {
       // This checks if the token is tampered with and if it has expired
       await jwtVerify(
@@ -28,6 +31,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!isValid && refreshToken && !isPublicRoute) {
+    console.log("Inside refreshToken if block")
     try {
       const res = await authService.refreshAccessToken(refreshToken);
 
@@ -52,6 +56,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (!isValid && !isPublicRoute) {
+    console.log("Inside !isValid && !isPublicRoute if block")
     const response = NextResponse.redirect(new URL("/auth/login", request.url));
     response.cookies.delete("accessToken");
     response.cookies.delete("refreshToken");
@@ -59,7 +64,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (accessToken && isPublicRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

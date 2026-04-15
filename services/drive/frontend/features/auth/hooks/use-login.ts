@@ -12,6 +12,7 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: (data: LoginInput) => authService.login(data),
     onSuccess: (data) => {
+      console.log("On success function started")
       useAuthStore.getState().setUser({
         _id: data.user._id,
         email: data.user.email,
@@ -23,7 +24,9 @@ export const useLogin = () => {
         description: `Logged in as ${data.user.email}` 
       });
       
+      console.log("Before router push")
       router.push("/");
+      console.log("After router push")
     },
     onError: (error: Error) => {
       console.error("Login failed: ", error);

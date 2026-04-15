@@ -45,6 +45,7 @@ export default function DriveDashboard() {
     refetch,
     isFetching,
   } = useGetAllDriveFiles(currentFolderId);
+  console.log("Drive page");
 
   const files = responseData?.files;
   const count = responseData?.count;
