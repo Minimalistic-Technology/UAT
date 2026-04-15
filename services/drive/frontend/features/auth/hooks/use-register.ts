@@ -44,6 +44,12 @@ export const useVerifyOtp = ({
         email: data.user.email,
         isVerified: data.user.isVerified,
       });
+      
+      if (typeof window !== "undefined") {
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("refreshToken", data.refreshToken);
+      }
+
       onSuccess?.(data);
       router.push("/");
     },

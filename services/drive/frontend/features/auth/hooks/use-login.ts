@@ -20,6 +20,11 @@ export const useLogin = () => {
       });
       queryClient.setQueryData(["auth-user"], data.user);
 
+      if (typeof window !== "undefined") {
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("refreshToken", data.refreshToken);
+      }
+
       toast.success("Welcome back!", { 
         description: `Logged in as ${data.user.email}` 
       });

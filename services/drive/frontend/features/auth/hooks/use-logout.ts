@@ -13,8 +13,14 @@ export const useLogout = () => {
     onSuccess: () => {
       useAuthStore.getState().logout();
       queryClient.clear();
+      
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+      }
+
       toast.success("Logged out successfully");
-      router.push("/login");
+      router.push("/auth/login");
     },
     onError: (error: Error) => {
       console.error("Logout failed: ", error);

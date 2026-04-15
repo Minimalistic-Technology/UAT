@@ -7,6 +7,7 @@ export const baseCookieOptions: CookieOptions = {
   secure: env.NODE_ENV === "production", // HTTPS only in production
   sameSite: "lax", // protects against CSRF (adjust if needed)
   path: "/", // available across entire app
+  domain: env.NODE_ENV === "production" ? "rajmane.dev" : "localhost"
 };
 
 export const corsOptions: CorsOptions = {
