@@ -5,7 +5,7 @@ import { signIn, useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Mail, Loader2 } from "lucide-react";
+import { Mail, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,8 +23,11 @@ import {
 } from "@/features/auth/validations/auth.schema";
 import { useLogin } from "@/features/auth/hooks/use-login";
 import { useRedirectAsPerRole } from "@/hooks/use-redirect";
+import { useState } from "react";
 
 export default function LoginClient() {
+  const [showPassword, setShowPassword] = useState(false);
+
   // 1. Centralized redirection logic
   useRedirectAsPerRole();
 
@@ -105,14 +108,27 @@ export default function LoginClient() {
                     Forgot password?
                   </Link>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  {...register("password")}
-                  disabled={isLoading}
-                  className={errors.password ? "border-destructive" : ""}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    {...register("password")}
+                    disabled={isLoading}
+                    className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className="text-destructive text-xs font-medium">
                     {errors.password.message}

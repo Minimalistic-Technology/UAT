@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 
 // Individual Shadcn UI components
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,9 @@ import { useRegister } from "@/features/auth/hooks/use-register";
 type RegisterFormValues = Omit<RegisterUserInput, "role">;
 
 export default function RegisterClient() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const router = useRouter();
   const registerMutation = useRegister();
 
@@ -136,13 +141,26 @@ export default function RegisterClient() {
             {/* Password */}
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                {...register("password")}
-                className={errors.password ? "border-destructive" : ""}
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  {...register("password")}
+                  className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-xs font-medium text-destructive">{errors.password.message}</p>
               )}
@@ -151,13 +169,26 @@ export default function RegisterClient() {
             {/* Confirm Password */}
             <div className="grid gap-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                {...register("confirmPassword")}
-                className={errors.confirmPassword ? "border-destructive" : ""}
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  {...register("confirmPassword")}
+                  className={errors.confirmPassword ? "border-destructive pr-10" : "pr-10"}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               {errors.confirmPassword && (
                 <p className="text-xs font-medium text-destructive">{errors.confirmPassword.message}</p>
               )}

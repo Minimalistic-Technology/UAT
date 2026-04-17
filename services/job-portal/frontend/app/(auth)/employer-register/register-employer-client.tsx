@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,8 @@ export default function EmployerRegisterPage() {
   const registerMutation = useRegisterEmployer();
   const router = useRouter();
   const [dropdownIndustry, setDropdownIndustry] = useState<string>("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -189,22 +192,50 @@ export default function EmployerRegisterPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input 
-                      id="password" 
-                      type="password" 
-                      disabled={isLoading}
-                      {...register("password")} 
-                    />
+                    <div className="relative">
+                      <Input 
+                        id="password" 
+                        type={showPassword ? "text" : "password"} 
+                        disabled={isLoading}
+                        className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                        {...register("password")} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                     {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="confirmPassword">Confirm</Label>
-                    <Input 
-                      id="confirmPassword" 
-                      type="password" 
-                      disabled={isLoading}
-                      {...register("confirmPassword")} 
-                    />
+                    <div className="relative">
+                      <Input 
+                        id="confirmPassword" 
+                        type={showConfirmPassword ? "text" : "password"} 
+                        disabled={isLoading}
+                        className={errors.confirmPassword ? "border-destructive pr-10" : "pr-10"}
+                        {...register("confirmPassword")} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                     {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
                   </div>
                 </div>
