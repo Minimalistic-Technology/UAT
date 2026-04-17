@@ -6,6 +6,8 @@ import {
   createCoupon,
   getCoupons,
   validateCoupon,
+  updateCoupon,
+  deleteCoupon,
 } from "../controllers/coupon.controller.js";
 import { authorize, protect } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
@@ -46,6 +48,40 @@ router.post(
 );
 
 router.get("/", getCoupons);
+
+router.put(
+  "/:id",
+  authorize(GlobalRole.SUPER_ADMIN),
+  validate([
+    body("code").optional().notEmpty().withMessage("Coupon code cannot be empty").trim(),
+    body("type")
+      .optional()
+      .toLowerCase()
+      .isIn(["percentage", "amount"])
+      .withMessage("Coupon type must be 'percentage' or 'amount'"),
+    body("value")
+      .optional()
+      .isNumeric()
+      .withMessage("Coupon value must be a number")
+      .custom((value) => value >= 0)
+      .withMessage("Coupon value cannot be negative"),
+    body("isActive")
+      .optional()
+      .isBoolean()
+      .withMessage("isActive must be a boolean"),
+    body("expiryDate")
+      .optional({ values: "falsy" })
+      .isISO8601()
+      .withMessage("Invalid expiry date format"),
+    body("maxUses")
+      .optional()
+      .isInt({ min: -1 })
+      .withMessage("maxUses must be at least -1"),
+  ]),
+  updateCoupon,
+);
+
+router.delete("/:id", authorize(GlobalRole.SUPER_ADMIN), deleteCoupon);
 
 router.post(
   "/apply",

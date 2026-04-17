@@ -45,14 +45,27 @@ export const getCoupons = async (
   next: NextFunction,
 ) => {
   try {
-    const coupons = await Coupon.find().sort("-createdAt");
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalCoupons = await Coupon.countDocuments();
+    const coupons = await Coupon.find().sort("-createdAt").skip(skip).limit(limit);
+
+    const totalPages = Math.ceil(totalCoupons / limit);
 
     res.status(200).json(
       new ApiResponse(
         200,
         {
-          count: coupons.length,
-          data: coupons,
+          coupons,
+          pagination: {
+            currentPage: page,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            totalItems: totalCoupons,
+          },
         },
         "Coupons fetched successfully",
       ),
@@ -192,6 +205,70 @@ export const validateCoupon = async (
         "Coupon is valid",
       ),
     );
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const updateCoupon = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = req.params;
+    const { code, type, value, isActive, expiryDate, maxUses } = req.body;
+
+    const coupon = await Coupon.findById(id);
+
+    if (!coupon) {
+      return next(new ApiError(404, "Coupon not found"));
+    }
+
+    if (code) {
+      //@ts-ignore
+      const existingCoupon = await Coupon.findOne({ code: code.toUpperCase(), _id: { $ne: id } });
+      if (existingCoupon) {
+        return next(new ApiError(400, "Coupon code already exists"));
+      }
+      coupon.code = code.toUpperCase();
+    }
+
+    if (type) coupon.type = type;
+    if (value !== undefined) {
+      if (coupon.type === "percentage" && value > 100) {
+        return next(new ApiError(400, "Percentage value cannot exceed 100"));
+      }
+      coupon.value = value;
+    }
+    
+    if (isActive !== undefined) coupon.isActive = isActive;
+    if (expiryDate !== undefined) coupon.expiryDate = expiryDate;
+    if (maxUses !== undefined) coupon.maxUses = maxUses === -1 ? -1 : maxUses;
+
+    await coupon.save();
+
+    res.status(200).json(new ApiResponse(200, coupon, "Coupon updated successfully"));
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const deleteCoupon = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = req.params;
+
+    const coupon = await Coupon.findByIdAndDelete(id);
+
+    if (!coupon) {
+      return next(new ApiError(404, "Coupon not found"));
+    }
+
+    res.status(200).json(new ApiResponse(200, null, "Coupon deleted successfully"));
   } catch (error: any) {
     next(error);
   }
