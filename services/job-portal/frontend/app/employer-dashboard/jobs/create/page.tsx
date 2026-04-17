@@ -34,9 +34,21 @@ import {
 import { ExperienceLevel, JobType } from "@/types";
 import { useCreateMyJobPosting } from "@/features/employer/hooks/use-job";
 
+const PREDEFINED_SKILLS = [
+  "JavaScript", "TypeScript", "React", "Next.js", "Node.js", 
+  "Express", "Python", "Django", "Flask", "Java", "Spring Boot", 
+  "C++", "C#", ".NET", "Ruby", "Ruby on Rails", "PHP", "Laravel", 
+  "Go", "Rust", "Swift", "Kotlin", "React Native", "Flutter",
+  "SQL", "PostgreSQL", "MySQL", "MongoDB", "Redis", "AWS", 
+  "Azure", "Google Cloud", "Docker", "Kubernetes", "Git", "CI/CD",
+  "GraphQL", "REST API", "Tailwind CSS", "SASS", "HTML", "CSS",
+  "Machine Learning", "Data Science", "UI/UX Design", "Figma"
+];
+
 function PostJobPage() {
   const router = useRouter();
   const [skillInput, setSkillInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const { mutate: createJob, isPending } = useCreateMyJobPosting();
 
   const {
@@ -68,18 +80,28 @@ function PostJobPage() {
   // Watch skills for the badge list
   const currentSkills = watch("skills") || [];
 
+  const filteredSkills = PREDEFINED_SKILLS.filter(
+    (skill) =>
+      skill.toLowerCase().includes(skillInput.toLowerCase()) &&
+      !currentSkills.includes(skill)
+  );
+
   const onSubmit: SubmitHandler<CreateJobFormData> = async (data) => {
     createJob(data);
   };
 
+  const addSkill = (val: string) => {
+    const trimmed = val.trim();
+    if (trimmed && !currentSkills.includes(trimmed)) {
+      setValue("skills", [...currentSkills, trimmed], { shouldValidate: true });
+    }
+    setSkillInput("");
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      const val = skillInput.trim();
-      if (val && !currentSkills.includes(val)) {
-        setValue("skills", [...currentSkills, val], { shouldValidate: true });
-        setSkillInput("");
-      }
+      addSkill(skillInput);
     } else if (
       e.key === "Backspace" &&
       !skillInput &&
@@ -88,6 +110,25 @@ function PostJobPage() {
       const newSkills = [...currentSkills];
       newSkills.pop();
       setValue("skills", newSkills, { shouldValidate: true });
+    }
+  };
+
+  const handleSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val.includes(",")) {
+      const skillsToAdd = val.split(",").map((s) => s.trim()).filter(Boolean);
+      let newSkillsList = [...currentSkills];
+      skillsToAdd.forEach((s) => {
+        if (!newSkillsList.includes(s)) {
+          newSkillsList.push(s);
+        }
+      });
+      setValue("skills", newSkillsList, { shouldValidate: true });
+      setSkillInput("");
+      setShowSuggestions(false);
+    } else {
+      setSkillInput(val);
+      setShowSuggestions(true);
     }
   };
 
@@ -306,35 +347,61 @@ function PostJobPage() {
             {/* Tag Input for Skills */}
             <div className="space-y-2">
               <Label>Skills</Label>
-              <div className="focus-within:ring-ring flex flex-wrap gap-2 rounded-md border p-2 focus-within:ring-2">
-                {currentSkills.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant="secondary"
-                    className="bg-secondary/50 hover:bg-secondary rounded-sm border-none px-2 py-1 transition-colors"
-                  >
-                    {skill}
-                    <button
-                      type="button"
-                      className="ring-offset-background focus:ring-ring ml-1 rounded-full outline-none focus:ring-2 focus:ring-offset-2"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                      onClick={() => removeSkill(skill)}
+              <div className="relative">
+                <div className="focus-within:ring-ring flex flex-wrap gap-2 rounded-md border p-2 focus-within:ring-2 bg-background">
+                  {currentSkills.map((skill) => (
+                    <Badge
+                      key={skill}
+                      variant="secondary"
+                      className="bg-secondary/50 hover:bg-secondary rounded-sm border-none px-2 py-1 transition-colors"
                     >
-                      <X className="text-muted-foreground hover:text-destructive h-3 w-3" />
-                      <span className="sr-only">Remove {skill}</span>
-                    </button>
-                  </Badge>
-                ))}
-                <input
-                  value={skillInput}
-                  onChange={(e) => setSkillInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Add skill..."
-                  className="flex-1 bg-transparent outline-none"
-                />
+                      {skill}
+                      <button
+                        type="button"
+                        className="ring-offset-background focus:ring-ring ml-1 rounded-full outline-none focus:ring-2 focus:ring-offset-2"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        onClick={() => removeSkill(skill)}
+                      >
+                        <X className="text-muted-foreground hover:text-destructive h-3 w-3" />
+                        <span className="sr-only">Remove {skill}</span>
+                      </button>
+                    </Badge>
+                  ))}
+                  <input
+                    value={skillInput}
+                    onChange={handleSkillChange}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => {
+                      if (skillInput.trim()) {
+                        addSkill(skillInput);
+                      }
+                      setShowSuggestions(false);
+                    }}
+                    placeholder="Add skill... (comma or enter to add)"
+                    className="flex-1 bg-transparent outline-none min-w-[150px]"
+                  />
+                </div>
+                {showSuggestions && skillInput && filteredSkills.length > 0 && (
+                  <div className="absolute top-full left-0 z-50 w-full mt-1 bg-popover text-popover-foreground border rounded-md shadow-md max-h-48 overflow-y-auto">
+                    {filteredSkills.map((skill) => (
+                      <div
+                        key={skill}
+                        className="px-4 py-2 cursor-pointer hover:bg-muted text-sm"
+                        onMouseDown={(e) => {
+                          e.preventDefault(); // Prevents input from losing focus
+                          addSkill(skill);
+                          setShowSuggestions(false);
+                        }}
+                      >
+                        {skill}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               {errors.skills && (
                 <p className="text-destructive text-xs">
