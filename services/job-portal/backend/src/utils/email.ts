@@ -1,4 +1,3 @@
-import sgMail from "@sendgrid/mail";
 import nodemailer from "nodemailer";
 import { config } from "../config/env.js";
 
@@ -9,13 +8,18 @@ interface EmailOptions {
 }
 
 const isDev = config.nodeEnv === "development";
-const useSendGridAPI = !isDev && config.emailHost === "smtp.sendgrid.net" && config.emailUser === "apikey";
-
-if (useSendGridAPI && config.emailPass) {
-  sgMail.setApiKey(config.emailPass);
-}
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+let resendInstance: any = null;
+
+const getResendInstance = async () => {
+  if (!resendInstance) {
+    const { Resend } = await import("resend");
+    if (!config.resendApiKey) throw new Error("Resend API key missing");
+    resendInstance = new Resend(config.resendApiKey);
+  }
+  return resendInstance;
+};
 
 const getTransporter = async (): Promise<ReturnType<typeof nodemailer.createTransport>> => {
   if (transporter) return transporter;
@@ -52,17 +56,19 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
   try {
     const fromAddress = config.emailFrom || "noreply@yourdomain.com";
 
-    if (useSendGridAPI) {
-      if (!config.emailPass) throw new Error("SendGrid API key missing");
-      
-      sgMail.setApiKey(config.emailPass);
-      await sgMail.send({
+    if (!isDev) {
+      const resend = await getResendInstance();
+      const { error } = await resend.emails.send({
         to: options.email,
         from: fromAddress,
         subject: options.subject,
         text: options.message,
         html: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`,
       });
+      
+      if (error) {
+         throw new Error(`Resend Error: ${error.message}`);
+      }
       return;
     }
 
