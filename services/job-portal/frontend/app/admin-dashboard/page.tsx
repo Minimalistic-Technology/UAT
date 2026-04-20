@@ -1,9 +1,41 @@
+"use client";
+
 import { AdminStatusCard as StatusCard  } from "@/features/admin/components/stats-card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Plus, Users, Briefcase, ShieldCheck } from "lucide-react";
+import { DollarSign, Plus, Users, Briefcase, ShieldCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useAdminAnalytics } from "@/features/admin/hooks/use-analytics";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+
+const chartConfig = {
+  revenue: {
+    label: "Revenue",
+    color: "hsl(var(--primary))",
+  },
+};
 
 const AdminDashboard = () => {
+  const { data, isLoading, error } = useAdminAnalytics();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
+    );
+  }
+
+  if (error || !data?.success) {
+    return (
+      <div className="flex h-96 items-center justify-center text-red-500">
+        Failed to load analytics data.
+      </div>
+    );
+  }
+
+  const { summary, graphs } = data.data;
+
   return (
     <>
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -34,27 +66,27 @@ const AdminDashboard = () => {
       <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatusCard
           label="Total Revenue"
-          value="$45,231.89"
+          value={`$${summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           variant="admin"
           icon={<DollarSign />}
-          description="+20% vs last month"
+          description={`${summary.revenueGrowth >= 0 ? '+' : ''}${summary.revenueGrowth}% vs last month`}
         />
         <StatusCard
           label="Active Users"
-          value="2,405"
+          value={summary.activeUsers.toLocaleString()}
           variant="admin"
           icon={<Users className="text-slate-400" />}
           className="bg-linear-to-tr from-blue-800 to-blue-600"
         />
         <StatusCard
           label="Job Listings"
-          value="156"
+          value={summary.jobListings.toLocaleString()}
           variant="admin"
           icon={<Briefcase className="text-slate-400" />}
         />
         <StatusCard
           label="KYC Pending"
-          value="12"
+          value={summary.kycPending.toLocaleString()}
           variant="admin"
           icon={<ShieldCheck className="text-slate-400" />}
         />
@@ -63,11 +95,29 @@ const AdminDashboard = () => {
       {/* Main Content Area */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="min-h-100 rounded-xl border bg-white p-6 shadow-sm lg:col-span-2">
-          <h3 className="mb-4 font-semibold text-slate-800">Recent Activity</h3>
-          {/* Table or Chart goes here */}
-          <div className="flex h-64 items-center justify-center rounded-lg border border-dashed text-slate-400">
-            Activity Graph Placeholder
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-semibold text-slate-800">Revenue Overview</h3>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/admin-dashboard/analytics">View All Analytics</Link>
+            </Button>
           </div>
+          
+          <ChartContainer config={chartConfig} className="h-64 w-full">
+            <BarChart accessibilityLayer data={graphs.revenue}>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <XAxis
+                dataKey="name"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent hideLabel />}
+              />
+              <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
+            </BarChart>
+          </ChartContainer>
         </div>
       </div>
     </>

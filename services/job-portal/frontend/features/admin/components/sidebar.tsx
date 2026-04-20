@@ -30,7 +30,7 @@ export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()
 
   return (
-    <div className={cn("h-[calc(100vh-4rem)] w-64 flex-col border-r bg-slate-50/50 hidden lg:flex", className)}>
+    <div className={cn("min-h-[calc(100vh-4rem)] w-64 flex-col border-r bg-slate-50/50 hidden lg:flex", className)}>
       <div className="flex h-16 items-center px-6 border-b bg-white">
         <div className="size-10 rounded-lg bg-indigo-600 flex items-center justify-center">
           <span className="text-white font-bold text-xl">SA</span>
