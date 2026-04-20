@@ -325,3 +325,135 @@ export const updateKycStatus = async (
     next(error);
   }
 };
+
+export const getAdminAnalytics = async (req: Request, res: Response) => {
+  try {
+    const KYC = (await import("../models/KYC.model.js")).default;
+    const Payment = (await import("../models/Payment.model.js")).default;
+    const { PaymentStatus } = await import("../models/Payment.model.js");
+    const Application = (await import("../models/Application.model.js")).default;
+
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const [
+      currentMonthPayments, 
+      lastMonthPayments, 
+      totalRevenueAggr,
+      activeUsers,
+      jobListings,
+      kycPending,
+      totalCompanies,
+      totalApplications
+    ] = await Promise.all([
+      Payment.aggregate([
+        { $match: { status: PaymentStatus.CAPTURED, createdAt: { $gte: currentMonthStart } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+      ]),
+      Payment.aggregate([
+        { $match: { status: PaymentStatus.CAPTURED, createdAt: { $gte: lastMonthStart, $lt: currentMonthStart } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+      ]),
+      Payment.aggregate([
+        { $match: { status: PaymentStatus.CAPTURED } },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+      ]),
+      User.countDocuments({ isActive: true, role: GlobalRole.USER }),
+      Job.countDocuments({ status: JobStatus.ACTIVE }),
+      KYC.countDocuments({ status: "pending" }),
+      Company.countDocuments({}),
+      Application.countDocuments({})
+    ]);
+
+    const currentRevenue = (currentMonthPayments[0]?.total || 0) / 100;
+    const lastRevenue = (lastMonthPayments[0]?.total || 0) / 100;
+    const totalRevenue = (totalRevenueAggr[0]?.total || 0) / 100;
+
+    let revenueGrowth = 0;
+    if (lastRevenue > 0) {
+      revenueGrowth = ((currentRevenue - lastRevenue) / lastRevenue) * 100;
+    } else if (currentRevenue > 0) {
+      revenueGrowth = 100;
+    }
+
+    // Graph Data for the last 6 months
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+    const [revenueGraphData, usersGraphData, jobsGraphData] = await Promise.all([
+      Payment.aggregate([
+        { $match: { status: PaymentStatus.CAPTURED, createdAt: { $gte: sixMonthsAgo } } },
+        { 
+          $group: {
+            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+            total: { $sum: "$amount" }
+          }
+        }
+      ]),
+      User.aggregate([
+        { $match: { createdAt: { $gte: sixMonthsAgo }, role: GlobalRole.USER } },
+        { 
+          $group: {
+            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+      Job.aggregate([
+        { $match: { createdAt: { $gte: sixMonthsAgo } } },
+        { 
+          $group: {
+            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+            count: { $sum: 1 }
+          }
+        }
+      ])
+    ]);
+
+    const formatGraphData = (data: any[], valueKey: string) => {
+      const formatted = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const month = d.getMonth() + 1;
+        const year = d.getFullYear();
+        const found = data.find((item: any) => item._id.month === month && item._id.year === year);
+        formatted.push({
+          name: d.toLocaleString('default', { month: 'short' }),
+          [valueKey]: found ? (valueKey === 'revenue' ? found.total / 100 : found.count) : 0
+        });
+      }
+      return formatted;
+    };
+
+    const revenueChart = formatGraphData(revenueGraphData, "revenue");
+    const usersChart = formatGraphData(usersGraphData, "users");
+    const jobsChart = formatGraphData(jobsGraphData, "jobs");
+
+    return res.status(200).json({
+      success: true,
+      message: "Admin analytics fetched successfully",
+      data: {
+        summary: {
+          totalRevenue,
+          revenueGrowth: parseFloat(revenueGrowth.toFixed(2)),
+          activeUsers,
+          jobListings,
+          kycPending,
+          totalCompanies,
+          totalApplications
+        },
+        graphs: {
+          revenue: revenueChart,
+          users: usersChart,
+          jobs: jobsChart
+        }
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch admin analytics",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};

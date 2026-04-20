@@ -7,6 +7,7 @@ import {
   getStats,
   updateUserStatus,
   getKycApplications,
+  getAdminAnalytics,
   updateKycStatus
 } from "../controllers/admin.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
@@ -45,6 +46,8 @@ router.put(
   ]),
   updateKycStatus
 );
+
+router.get("/analytics", getAdminAnalytics);
 
 
 export default router;
