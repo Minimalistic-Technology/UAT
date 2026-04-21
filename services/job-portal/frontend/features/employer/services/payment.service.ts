@@ -19,3 +19,16 @@ export const createOrder = async (orderPayload: {
 
   return response.data;
 };
+
+export const verifyPayment = async (verificationPayload: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}) => {
+  const response = await apiClient.post<ApiSuccessResponse<{ success: boolean }>>(
+    "/payments/verify-payment",
+    verificationPayload
+  );
+
+  return response.data;
+};

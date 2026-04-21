@@ -29,7 +29,7 @@ import {
   formatDuration,
 } from "@/features/employer/helper/plan.helper";
 import { loadRazorpayScript } from "@/lib/razorpay-script";
-import { createOrder } from "@/features/employer/services/payment.service";
+import { createOrder, verifyPayment } from "@/features/employer/services/payment.service";
 import type { Plan } from "../types";
 import { useState } from "react";
 import { useValidateCoupon } from "../hooks/use-coupons";
@@ -112,8 +112,19 @@ export function PlanCard({ plan }: { plan: Plan }) {
         name: "Job Portal",
         description: `Upgrade to ${plan.name} Plan`,
         order_id: orderData.data.order.id,
-        handler: function (response: any) {
-          window.location.href = `/employer/dashboard?payment=success&orderId=${orderData.data.order.id}`;
+        handler: async function (response: any) {
+          try {
+            await verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+            toast.success("Payment successful!");
+            window.location.href = `/employer/dashboard?payment=success&orderId=${orderData.data.order.id}`;
+          } catch (error) {
+            console.error("Payment verification failed", error);
+            toast.error("Payment verification failed. Please contact support if amount was deducted.");
+          }
         },
         prefill: {
           name: session?.user?.name || "Employer",

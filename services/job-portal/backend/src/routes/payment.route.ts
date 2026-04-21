@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createOrder } from "../controllers/payment.controller.js";
+import { createOrder, verifyPayment } from "../controllers/payment.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
 import { body } from "express-validator";
 
@@ -14,6 +14,16 @@ router.post(
     body("couponCode").optional().isString(),
   ]),
   createOrder,
+);
+
+router.post(
+  "/verify-payment",
+  validate([
+    body("razorpay_order_id").notEmpty().withMessage("Order ID is required"),
+    body("razorpay_payment_id").notEmpty().withMessage("Payment ID is required"),
+    body("razorpay_signature").notEmpty().withMessage("Signature is required"),
+  ]),
+  verifyPayment,
 );
 
 export default router;

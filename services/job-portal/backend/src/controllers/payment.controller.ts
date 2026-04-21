@@ -11,6 +11,50 @@ import Coupon from "../models/Coupon.model.js";
 import Subscription from "../models/Subscription.model.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 
+// Helper to provision subscription
+const provisionSubscription = async (userId: string, planId: string, razorpayOrderId: string) => {
+  const plan = await Plan.findById(planId);
+  if (!plan) {
+    console.warn(`Provisioning: Plan not found ${planId}`);
+    return;
+  }
+
+  const companyMember = await CompanyMember.findOne({
+    user: userId,
+    role: { $in: [CompanyRole.OWNER, CompanyRole.ADMIN] },
+  });
+
+  if (!companyMember) {
+    console.warn(`Provisioning: Company not found for user ${userId}`);
+    return;
+  }
+
+  const companyId = companyMember.company;
+
+  // Cancel existing active subscriptions for this user
+  await Subscription.updateMany(
+    { employerId: userId, status: "active" },
+    { $set: { status: "cancelled" } },
+  );
+
+  const durationMilliseconds = plan.durationDays * 24 * 60 * 60 * 1000;
+  const expiryDate = new Date(Date.now() + durationMilliseconds);
+
+  await Subscription.create({
+    employerId: userId,
+    companyId,
+    planId,
+    postsRemaining: plan.jobPostLimit,
+    totalPostsGranted: plan.jobPostLimit,
+    startDate: new Date(),
+    expiryDate,
+    status: "active",
+    orderId: razorpayOrderId,
+  });
+
+  console.log(`Successfully created subscription for user ${userId} with plan ${planId}`);
+};
+
 export const createOrder = async (
   req: Request,
   res: Response,
@@ -82,6 +126,21 @@ export const createOrder = async (
 
     const order = await razorpay.orders.create(options);
 
+    // 4. Create Payment Document
+    await Payment.create(
+      [
+        {
+          userId,
+          amount: Math.round(finalAmount * 100),
+          currency: plan.currency || "INR",
+          razorpayOrderId: order.id,
+          metadata: { planId, couponCode: appliedCoupon?.code, internalOrderId },
+          status: PaymentStatus.CREATED,
+        },
+      ],
+      { session }
+    );
+
     await session.commitTransaction();
 
     res.status(201).json(
@@ -109,6 +168,7 @@ export const handleRazorpayWebhook = async (
   res: Response,
   next: NextFunction,
 ) => {
+  console.log("Hook started")
   const secret = config.razorpayWebhookSecret;
   const signature = req.headers["x-razorpay-signature"] as string;
   const eventId = req.headers["x-razorpay-event-id"] as string;
@@ -193,46 +253,10 @@ export const handleRazorpayWebhook = async (
         try {
           const { userId, planId } = paymentEntity.notes || {};
 
-          if (userId && planId) {
-            const plan = await Plan.findById(planId);
-
-            if (plan) {
-              const companyMember = await CompanyMember.findOne({
-                user: userId,
-                role: { $in: [CompanyRole.OWNER, CompanyRole.ADMIN] },
-              });
-
-              if (companyMember) {
-                const companyId = companyMember.company;
-
-                // Cancel existing active subscriptions for this user
-                await Subscription.updateMany(
-                  { employerId: userId, status: "active" },
-                  { $set: { status: "cancelled" } },
-                );
-
-                const durationMilliseconds = plan.durationDays * 24 * 60 * 60 * 1000;
-                const expiryDate = new Date(Date.now() + durationMilliseconds);
-
-                await Subscription.create({
-                  employerId: userId,
-                  companyId,
-                  planId,
-                  postsRemaining: plan.jobPostLimit,
-                  totalPostsGranted: plan.jobPostLimit,
-                  startDate: new Date(),
-                  expiryDate,
-                  status: "active",
-                  orderId: razorpayOrderId,
-                });
-
-                console.log(`Successfully created subscription for user ${userId} with plan ${planId}`);
-              } else {
-                console.warn(`Webhook: Company not found for user ${userId}`);
-              }
-            } else {
-              console.warn(`Webhook: Plan not found ${planId}`);
-            }
+          // Check if subscription already exists for this order to prevent duplicate provisioning
+          const existingSub = await Subscription.findOne({ orderId: razorpayOrderId });
+          if (!existingSub && userId && planId) {
+            await provisionSubscription(userId, planId, razorpayOrderId);
           }
         } catch (subErr) {
           console.error("Webhook processing Subscription error:", subErr);
@@ -281,5 +305,53 @@ export const handleRazorpayWebhook = async (
     return res
       .status(500)
       .json(new ApiResponse(500, null, "Webhook processing failed"));
+  }
+};
+
+export const verifyPayment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    const secret = config.razorpayKeySecret;
+    const hmac = crypto.createHmac("sha256", secret);
+    hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
+    const generatedSignature = hmac.digest("hex");
+
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(generatedSignature),
+      Buffer.from(razorpay_signature),
+    );
+
+    if (!isValid) {
+      return next(new ApiError(400, "Invalid payment signature"));
+    }
+
+    const payment = await Payment.findOne({ razorpayOrderId: razorpay_order_id });
+    
+    if (!payment) {
+      return next(new ApiError(404, "Payment record not found"));
+    }
+
+    if (payment.status !== PaymentStatus.CAPTURED) {
+      payment.status = PaymentStatus.CAPTURED;
+      payment.razorpayPaymentId = razorpay_payment_id;
+      payment.razorpaySignature = razorpay_signature;
+      payment.capturedAt = new Date();
+      await payment.save();
+
+      // Provision subscription
+      if (payment.metadata && payment.metadata.get("planId")) {
+        const planId = payment.metadata.get("planId");
+        await provisionSubscription(payment.userId.toString(), planId, razorpay_order_id);
+      }
+    }
+
+    res.status(200).json(new ApiResponse(200, { success: true }, "Payment verified successfully"));
+  } catch (error) {
+    next(error);
   }
 };
