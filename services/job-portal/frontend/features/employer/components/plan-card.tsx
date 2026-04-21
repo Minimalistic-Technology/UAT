@@ -33,11 +33,13 @@ import { createOrder, verifyPayment } from "@/features/employer/services/payment
 import type { Plan } from "../types";
 import { useState } from "react";
 import { useValidateCoupon } from "../hooks/use-coupons";
+import { useRouter } from "next/navigation";
 
 export function PlanCard({ plan }: { plan: Plan }) {
   const { data: session } = useSession();
   const userId = session?.user.id;
   const isUnlimited = plan.jobPostLimit === -1;
+  const router = useRouter();
 
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -120,7 +122,8 @@ export function PlanCard({ plan }: { plan: Plan }) {
               razorpay_signature: response.razorpay_signature,
             });
             toast.success("Payment successful!");
-            window.location.href = `/employer/dashboard?payment=success&orderId=${orderData.data.order.id}`;
+            // window.location.href = `/employer/dashboard?payment=success&orderId=${orderData.data.order.id}`;
+            router.push("/employer-dashboard")
           } catch (error) {
             console.error("Payment verification failed", error);
             toast.error("Payment verification failed. Please contact support if amount was deducted.");
