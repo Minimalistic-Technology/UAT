@@ -252,7 +252,7 @@ export const getMyCompany = async (
     const currentSubscription = await Subscription.findOne({
       companyId: company._id,
       status: "active"
-    }).populate("planId");
+    }).populate("planId", "name");
 
     const companyData = {
       ...company.toObject(),

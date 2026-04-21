@@ -130,7 +130,7 @@ const Page = () => {
         <StatCard
           isPrimary
           title="Current Plan"
-          value={companyDetails?.currentPlan || "Free Tier"}
+          value={(companyDetails?.currentPlan?.name as string) || "Free Tier"}
           icon={ArrowUpRight}
           description={
             <Link href="/employer-dashboard/plans" className="hover:underline">

@@ -5,7 +5,7 @@ export interface CompanyMetrics {
   totalJobs: number;
   activeJobs: number;
   totalMembers: number;
-  currentPlan: string | null;
+  currentPlan: { _id: string; name: string; } | null;
   subscription: any | null;
 }
 
