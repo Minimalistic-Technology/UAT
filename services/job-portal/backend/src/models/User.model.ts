@@ -18,6 +18,7 @@ export interface IUser extends Document {
 
   // Job Seeker Specific
   resume?: string;
+  resumeOriginalName?: string;
   skills?: string[];
   languages?: string[];
   experience?: Array<{
@@ -106,6 +107,7 @@ const userSchema = new Schema<IUser>(
 
     // Job Seeker Fields
     resume: String,
+    resumeOriginalName: String,
     skills: [String],
     languages: [String],
     experience: [

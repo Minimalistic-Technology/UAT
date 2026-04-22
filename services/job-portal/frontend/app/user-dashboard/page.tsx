@@ -246,7 +246,7 @@ export default function JobSeekerDashboard() {
                 />
               </div>
               <Button
-                className="w-full bg-white text-slate-900 hover:bg-slate-100"
+                className="w-full bg-white text-slate-900"
                 asChild
               >
                 <Link href="/profile">Edit Profile</Link>

@@ -289,8 +289,8 @@ const Page = () => {
                       Resume
                     </label>
                     <div className="bg-muted/20 flex min-h-[58px] items-center justify-between rounded-md border p-3">
-                      <span className="max-w-[150px] truncate text-sm font-medium">
-                        {user?.resume ? "My_Resume.pdf" : "No resume found"}
+                      <span className="max-w-[150px] truncate text-sm font-medium" title={user?.resumeOriginalName || "My_Resume.pdf"}>
+                        {user?.resume ? (user?.resumeOriginalName || "My_Resume.pdf") : "No resume found"}
                       </span>
                       {user?.resume ? (
                         <div className="flex items-center gap-2">

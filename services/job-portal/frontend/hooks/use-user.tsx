@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 
 export const useGetUserDetails = () => {
     const response = useQuery({
-        queryKey: ["userDetails"],
+        queryKey: ["user-details"],
         queryFn: async () => {
             const response = await apiClient.get<ApiSuccessResponse<any>>("/auth/me");
             return response.data;

@@ -112,19 +112,24 @@ export const uploadResume = async (
     }
     if (req.user.resume) {
       const publicId = getPublicIdFromUrl(req.user.resume);
-      await deleteFromCloudinary(publicId, "raw");
+      const isRaw = req.user.resume.includes("/raw/upload/");
+      await deleteFromCloudinary(publicId, isRaw ? "raw" : "image");
     }
 
     const result = await uploadToCloudinary(
       req.file.buffer,
       "resumes",
-      "raw",
+      "image",
       `resume-${req.user.id}-${Date.now()}`,
+      "pdf"
     );
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      { resume: result.secure_url },
+      { 
+        resume: result.secure_url,
+        resumeOriginalName: req.file.originalname 
+      },
       { new: true },
     );
 
@@ -133,7 +138,10 @@ export const uploadResume = async (
       .json(
         new ApiResponse(
           200,
-          { resumeUrl: updatedUser?.resume },
+          { 
+            resumeUrl: updatedUser?.resume, 
+            resumeOriginalName: updatedUser?.resumeOriginalName 
+          },
           "Resume uploaded successfully",
         ),
       );
