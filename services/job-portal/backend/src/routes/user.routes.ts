@@ -95,11 +95,31 @@ export const kycValidation = [
     .toUpperCase(),
 ];
 
-router.put('/profile', protect, updateProfile);
+export const profileValidation = [
+  body('firstName').optional().trim().notEmpty().withMessage('First name cannot be empty'),
+  body('lastName').optional().trim().notEmpty().withMessage('Last name cannot be empty'),
+  body('phone').optional().trim().notEmpty().withMessage('Phone number cannot be empty'),
+  body('location').optional().isObject().withMessage('Location must be an object'),
+  body('location.city').optional().trim(),
+  body('location.state').optional().trim(),
+  body('location.country').optional().trim(),
+  body('skills').optional().isArray().withMessage('Skills must be an array'),
+  body('skills.*').optional().trim().notEmpty().withMessage('Skill cannot be empty'),
+  body('languages').optional().isArray().withMessage('Languages must be an array'),
+  body('languages.*').optional().trim().notEmpty().withMessage('Language cannot be empty'),
+  body('experience').optional().isArray().withMessage('Experience must be an array'),
+  body('experience.*.title').optional().trim().notEmpty().withMessage('Experience title is required'),
+  body('experience.*.company').optional().trim().notEmpty().withMessage('Experience company is required'),
+  body('education').optional().isArray().withMessage('Education must be an array'),
+  body('education.*.degree').optional().trim().notEmpty().withMessage('Education degree is required'),
+  body('education.*.institution').optional().trim().notEmpty().withMessage('Education institution is required'),
+];
+
+router.put('/profile', protect, validate(profileValidation), updateProfile);
 router.put('/avatar', protect, avatarUpload.single('avatar'), uploadAvatar);
 router.put('/resume', protect, resumeUpload.single('resume'), uploadResume);
 router.get('/:id', protect, getUserById);
-router.post('/kyc', protect, kycValidation, kycUpload.fields([
+router.post('/kyc', protect, validate(kycValidation), kycUpload.fields([
   { name: 'photo', maxCount: 1 },
   { name: 'lightbill', maxCount: 1 }
 ]), submitKyc);

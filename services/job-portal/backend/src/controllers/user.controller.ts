@@ -16,27 +16,34 @@ export const getPublicIdFromUrl = (url: string) => {
   return publicId;
 };
 
-// @desc    Update user profile
-// @route   PUT /api/users/profile
-// @access  Private
 export const updateProfile = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
+    const {
+      firstName,
+      lastName,
+      phone,
+      skills,
+      languages,
+      experience,
+      education,
+      location,
+    } = req.body;
+
     const fieldsToUpdate: any = {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      phone: req.body.phone,
-      skills: req.body.skills,
-      languages: req.body.languages,
-      experience: req.body.experience,
-      education: req.body.education,
-      location: req.body.location,
+      firstName,
+      lastName,
+      phone,
+      skills,
+      languages,
+      experience,
+      education,
+      location,
     };
 
-    // Remove undefined fields
     Object.keys(fieldsToUpdate).forEach(
       (key) => fieldsToUpdate[key] === undefined && delete fieldsToUpdate[key],
     );
@@ -46,16 +53,15 @@ export const updateProfile = async (
       runValidators: true,
     });
 
-    res.status(200).json({
-      success: true,
-      data: user,
-    });
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "Profile updated successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error updating profile",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
@@ -259,21 +265,13 @@ export const getUserById = async (
     const user = await User.findById(req.params.id);
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      throw new ApiError(404, "User not found");
     }
 
-    res.status(200).json({
-      success: true,
-      data: user,
-    });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "User fetched successfully"));
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching user",
-      error: error.message,
-    });
+    next(error);
   }
 };
