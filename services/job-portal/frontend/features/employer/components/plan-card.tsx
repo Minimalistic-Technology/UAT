@@ -34,6 +34,7 @@ import type { Plan } from "../types";
 import { useState } from "react";
 import { useValidateCoupon } from "../hooks/use-coupons";
 import { useRouter } from "next/navigation";
+import { APP_NAME } from "@/constants";
 
 export function PlanCard({ plan }: { plan: Plan }) {
   const { data: session } = useSession();
@@ -111,7 +112,7 @@ export function PlanCard({ plan }: { plan: Plan }) {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: orderData.data.order.amount,
         currency: orderData.data.order.currency,
-        name: "Job Portal",
+        name: APP_NAME,
         description: `Upgrade to ${plan.name} Plan`,
         order_id: orderData.data.order.id,
         handler: async function (response: any) {
