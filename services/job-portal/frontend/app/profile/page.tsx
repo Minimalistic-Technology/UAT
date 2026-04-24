@@ -29,6 +29,7 @@ import { useSession } from "next-auth/react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRef } from "react";
 import { useUploadAvatar, useUploadResume } from "@/hooks/use-upload";
+import { EditProfileDialog } from "./edit-profile-dialog";
 
 const Page = () => {
   const {
@@ -100,9 +101,11 @@ const Page = () => {
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2 shadow-sm">
-            <Edit2 className="h-4 w-4" /> Edit Profile
-          </Button>
+          <EditProfileDialog user={user}>
+            <Button variant="outline" className="gap-2 shadow-sm">
+              <Edit2 className="h-4 w-4" /> Edit Profile
+            </Button>
+          </EditProfileDialog>
         </div>
       </div>
 
@@ -173,7 +176,9 @@ const Page = () => {
                   Location
                 </span>
                 <span className="text-foreground ml-auto text-right font-semibold">
-                  {user?.location ?? "Not Specified"}
+                  {user?.location 
+                    ? [user.location.city, user.location.state, user.location.country].filter(Boolean).join(", ") || "Not Specified"
+                    : "Not Specified"}
                 </span>
               </div>
               <Separator />
