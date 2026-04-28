@@ -24,6 +24,7 @@ import {
 import { useLogin } from "@/features/auth/hooks/use-login";
 import { useRedirectAsPerRole } from "@/hooks/use-redirect";
 import { useState } from "react";
+import Image from "next/image";
 
 export default function LoginClient() {
   const [showPassword, setShowPassword] = useState(false);
@@ -66,9 +67,12 @@ export default function LoginClient() {
   const isLoading = isMutationLoading || isAuthChecking;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full items-center justify-center bg-slate-50/50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-sm">
-        <Card className="border-none shadow-lg sm:border space-y-3">
+    <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
+      <div className="hidden lg:block h-full w-1/2 bg-red-300">
+        <Image src="/login-page-img.png" alt="login-image" height={1000} width={1000} className="h-full w-full object-cover" />
+      </div>
+      <div className="flex-1 flex items-center justify-center h-full px-4 py-12 sm:px-6 lg:px-8">
+        <Card className="border-none shadow-lg sm:border space-y-3 w-full max-w-sm">
           <CardHeader className="space-y-0.5 text-center">
             <CardTitle className="text-3xl font-bold tracking-tight">
               Welcome Back
