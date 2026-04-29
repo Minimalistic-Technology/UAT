@@ -25,7 +25,7 @@ export const EmployerCTA = () => {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8, ease: EASE }}
+          transition={{ duration: 0.8, ease: "easeIn" }}
           className="relative rounded-[2.5rem] overflow-hidden border border-slate-200 bg-white shadow-2xl shadow-slate-200/50"
         >
           {/* Decorative Background Layers */}

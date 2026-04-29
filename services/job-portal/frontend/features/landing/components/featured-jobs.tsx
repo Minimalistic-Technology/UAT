@@ -141,7 +141,7 @@ export const FeaturedJobs = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.4, ease: EASE }}
+                  transition={{ duration: 0.4, ease: "easeIn" }}
                   href={`/job/${job.id}`}
                   key={job.id}
                   className="group relative flex flex-col md:flex-row md:items-center gap-6 px-6 md:px-10 py-8 hover:bg-indigo-50/30 transition-colors cursor-pointer"

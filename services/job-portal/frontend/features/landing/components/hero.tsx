@@ -42,7 +42,7 @@ export const Hero = () => {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: EASE }}
+              transition={{ duration: 0.6, ease: "easeIn" }}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-bold tracking-wider uppercase"
               data-testid="hero-eyebrow"
             >
@@ -56,7 +56,7 @@ export const Hero = () => {
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: EASE, delay: 0.05 }}
+              transition={{ duration: 0.7, ease: "easeIn", delay: 0.05 }}
               className="text-5xl md:text-6xl lg:text-[5rem] font-bold leading-[1.1] text-slate-900 mt-6 tracking-tight"
               data-testid="hero-headline"
             >
@@ -77,7 +77,7 @@ export const Hero = () => {
                     strokeLinecap="round"
                     initial={{ pathLength: 0 }}
                     animate={{ pathLength: 1 }}
-                    transition={{ duration: 1.1, delay: 0.8, ease: EASE }}
+                    transition={{ duration: 1.1, delay: 0.8, ease: "easeIn" }}
                   />
                 </svg>
               </span>
@@ -87,7 +87,7 @@ export const Hero = () => {
             <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: EASE, delay: 0.2 }}
+              transition={{ duration: 0.6, ease: "easeIn", delay: 0.2 }}
               className="mt-8 text-lg md:text-xl text-slate-600 max-w-xl leading-relaxed"
               data-testid="hero-subheadline"
             >
@@ -100,7 +100,7 @@ export const Hero = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: EASE, delay: 0.3 }}
+              transition={{ duration: 0.7, ease: "easeIn", delay: 0.3 }}
               className="mt-10"
             >
               <form 
@@ -145,7 +145,7 @@ export const Hero = () => {
                     key={chip}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.5 + i * 0.06, ease: EASE }}
+                    transition={{ duration: 0.4, delay: 0.5 + i * 0.06, ease: "easeIn" }}
                     className="px-3 py-1.5 text-sm rounded-full bg-white border border-slate-200 text-slate-600 hover:border-indigo-600 hover:text-indigo-600 hover:-translate-y-0.5 transition-all duration-200 shadow-sm"
                   >
                     {chip}
@@ -159,7 +159,7 @@ export const Hero = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, ease: EASE, delay: 0.25 }}
+            transition={{ duration: 0.8, ease: "easeIn", delay: 0.25 }}
             className="lg:col-span-5 relative"
           >
             <div className="relative aspect-[4/5] w-full max-w-md mx-auto lg:max-w-none">
@@ -174,7 +174,7 @@ export const Hero = () => {
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.7, ease: EASE }}
+                transition={{ duration: 0.7, delay: 0.7, ease: "easeIn" }}
                 className="absolute -left-4 md:-left-10 top-10 bg-white/90 backdrop-blur-md border border-slate-200 rounded-2xl p-5 shadow-2xl w-56"
               >
                 <div className="flex items-center gap-2 text-indigo-600 text-[10px] font-bold tracking-widest uppercase">
@@ -190,7 +190,7 @@ export const Hero = () => {
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.9, ease: EASE }}
+                transition={{ duration: 0.7, delay: 0.9, ease: "easeIn" }}
                 className="absolute -right-4 md:-right-6 bottom-8 bg-white border border-slate-200 rounded-2xl p-5 shadow-2xl w-64"
               >
                 <div className="flex items-center gap-3">

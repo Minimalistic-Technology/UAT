@@ -65,7 +65,7 @@ export const HowItWorks = () => {
                   show: {
                     opacity: 1,
                     y: 0,
-                    transition: { duration: 0.8, ease: EASE },
+                    transition: { duration: 0.8, ease: "easeIn" },
                   },
                 }}
                 className="group relative"

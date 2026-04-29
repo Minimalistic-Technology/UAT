@@ -77,7 +77,7 @@ export const Categories = () => {
                   show: {
                     opacity: 1,
                     y: 0,
-                    transition: { duration: 0.5, ease: EASE },
+                    transition: { duration: 0.5, ease: "easeInOut" },
                   },
                 }}
                 className="group relative p-8 md:p-10 bg-white hover:bg-slate-50 border-r border-b border-slate-200 transition-all duration-300"

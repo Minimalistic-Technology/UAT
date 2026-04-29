@@ -83,7 +83,7 @@ export const Testimonials = () => {
               key={t.name}
               variants={{
                 hidden: { opacity: 0, y: 20 },
-                show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } },
+                show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeIn" } },
               }}
               className="group relative flex flex-col p-8 md:p-10 bg-white border border-slate-200 rounded-[2rem] hover:border-indigo-600 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-300"
               data-testid={`testimonial-${i}`}
