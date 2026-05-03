@@ -28,7 +28,7 @@ export interface IUser extends Document {
     startDate: Date;
     endDate?: Date;
     current: boolean;
-    description: string;
+    description?: string;
   }>;
   education?: Array<{
     degree: string;
