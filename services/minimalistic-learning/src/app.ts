@@ -24,7 +24,7 @@ const app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(cookieParser());
 app.use(cors({
-    origin: env.NODE_ENV === "development" ? "http://localhost:3000" : "https://minimalistic-learning.onrender.com",
+    origin: env.NODE_ENV === "development" ? "http://localhost:3000" : env.corsOrigins,
     credentials: true,                
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
   }));
