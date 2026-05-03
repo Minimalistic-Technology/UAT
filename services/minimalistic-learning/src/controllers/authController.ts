@@ -21,6 +21,7 @@ import {
   createTokenString
 } from '../services/tokenService';
 import { env } from '../config/env';
+import { getCookieConfig } from '../config/cookieConfig';
 import { durationToMs } from '../utils/time';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
@@ -55,11 +56,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
 
   await replaceRefreshToken(user._id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
 
-  const cookieBase = {
-    httpOnly: true,
-    secure: env.isProduction,
-    sameSite: 'lax' as const
-  };
+  const cookieBase = getCookieConfig();
 
   return res
     .cookie('access_token', accessToken, {
@@ -100,11 +97,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   await replaceRefreshToken(user._id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
 
-  const cookieBase = {
-    httpOnly: true,
-    secure: env.isProduction,
-    sameSite: 'lax' as const
-  };
+  const cookieBase = getCookieConfig();
 
   return res
     .cookie('access_token', accessToken, {
@@ -161,11 +154,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
 
   await replaceRefreshToken(user.id, newRefreshToken, env.REFRESH_TOKEN_EXPIRE);
 
-  const cookieBase = {
-    httpOnly: true,
-    secure: env.isProduction,
-    sameSite: 'lax' as const
-  };
+  const cookieBase = getCookieConfig();
 
   return res
     .cookie('access_token', accessToken, {
@@ -237,11 +226,7 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
-  const cookieBase = {
-    httpOnly: true,
-    secure: env.isProduction,
-    sameSite: 'lax' as const
-  };
+  const cookieBase = getCookieConfig();
 
   return res
     .clearCookie('access_token', cookieBase)
