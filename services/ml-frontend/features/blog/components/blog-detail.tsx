@@ -181,7 +181,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
                       <textarea
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-6 text-sm focus:outline-none focus:border-[#1877F2] transition-colors resize-none placeholder:text-gray-400"
+                        className="w-full bg-gray-50 border border-gray-100 text-black rounded-2xl p-6 text-sm focus:outline-none focus:border-[#1877F2] transition-colors resize-none placeholder:text-gray-400"
                         placeholder="What are your thoughts on this story?"
                         rows={3}
                       />

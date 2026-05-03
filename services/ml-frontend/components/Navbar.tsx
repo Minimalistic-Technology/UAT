@@ -8,6 +8,7 @@ import { useAuth } from '@/features/auth/context/auth-context';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  console.log("user: ", user);
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = React.useState(false);
 
