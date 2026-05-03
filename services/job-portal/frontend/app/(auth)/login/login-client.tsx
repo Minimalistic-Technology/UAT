@@ -68,11 +68,15 @@ export default function LoginClient() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
-      <div className="hidden lg:block h-full w-1/2 bg-red-300">
-        <Image src="/login-page-img.png" alt="login-image" height={1000} width={1000} className="h-full w-full object-cover" />
-      </div>
-      <div className="flex-1 flex items-center justify-center h-full px-4 py-12 sm:px-6 lg:px-8">
-        <Card className="border-none shadow-lg sm:border space-y-3 w-full max-w-sm">
+      <Image
+        src="/login-page-img.png"
+        alt="login-image"
+        height={1000}
+        width={1000}
+        className="hidden h-full w-1/2 object-cover lg:block"
+      />
+      <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-sm space-y-3 border-none shadow-lg sm:border">
           <CardHeader className="space-y-0.5 text-center">
             <CardTitle className="text-3xl font-bold tracking-tight">
               Welcome Back
@@ -119,12 +123,14 @@ export default function LoginClient() {
                     placeholder="••••••••"
                     {...register("password")}
                     disabled={isLoading}
-                    className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                    className={
+                      errors.password ? "border-destructive pr-10" : "pr-10"
+                    }
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
