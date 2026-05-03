@@ -58,7 +58,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   const cookieBase = {
     httpOnly: true,
     secure: env.isProduction,
-    sameSite: 'lax' as const
+    sameSite: 'none' as const
   };
 
   return res
