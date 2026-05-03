@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "./providers";
 import { Toaster } from "sonner";
 import Navbar from "@/components/navbar";
+import { APP_NAME } from "@/constants";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,7 +19,7 @@ const geistMono = Geist_Mono({
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Job Portal - Find Your Dream Job",
+  title: `${APP_NAME} - Find Your Dream Job`,
   description:
     "Connect with top employers and find your perfect career opportunity",
 };

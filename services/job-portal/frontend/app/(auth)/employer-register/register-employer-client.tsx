@@ -22,6 +22,7 @@ import {
 import { registerEmployerSchema, type EmployerRegisterInput } from "@/features/auth/validations/auth.schema";
 import { useRegisterEmployer } from "@/features/auth/hooks/use-register";
 import { CompanyRole } from "@/types";
+import Image from "next/image";
 
 type EmployerRegisterFormValues = Omit<EmployerRegisterInput, "role">;
 
@@ -78,11 +79,13 @@ export default function EmployerRegisterPage() {
   const isLoading = registerMutation.isPending;
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-slate-50/50 px-4 py-12">
-      <div className="w-full max-w-lg">
-        
-        <Card className="shadow-lg border-muted/60">
-          <CardHeader className="space-y-1 text-center">
+    <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
+      <div className="hidden lg:block h-full w-1/2">
+        <Image src="/employer-signup-page-img.png" alt="employer-signup-image" height={1000} width={1000} className="h-full w-full object-cover object-right" />
+      </div>
+      <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <Card className="border-none shadow-lg sm:border space-y-3 w-full max-w-sm">
+        <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-3xl font-bold">Create Employer Account</CardTitle>
             <CardDescription>
               Hire top talent and grow your company

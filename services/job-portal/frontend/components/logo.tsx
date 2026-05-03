@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BriefcaseBusiness } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useMemo } from "react";
+import { APP_NAME } from "@/constants";
 
 const Logo = () => {
   const { data: session, status } = useSession();
@@ -35,7 +36,7 @@ const Logo = () => {
         />
       </div>
       <span className="text-xl font-bold tracking-tight text-slate-900">
-        Job<span className="text-primary">Portal</span>
+        {APP_NAME}
       </span>
     </Link>
   );

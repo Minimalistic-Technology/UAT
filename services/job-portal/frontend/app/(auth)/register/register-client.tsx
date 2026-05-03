@@ -23,6 +23,7 @@ import {
 
 import { registerUserSchema, RegisterUserInput } from "@/features/auth/validations/auth.schema";
 import { useRegister } from "@/features/auth/hooks/use-register";
+import Image from "next/image";
 
 type RegisterFormValues = Omit<RegisterUserInput, "role">;
 
@@ -65,8 +66,12 @@ export default function RegisterClient() {
   const isLoading = registerMutation.isPending;
 
   return (
-    <div className="h-[calc(100vh-4rem)] w-full flex items-center justify-center py-12 px-4">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
+      <div className="hidden lg:block h-full w-1/2">
+        <Image src="/signup-page-img.png" alt="signup-image" height={1000} width={1000} className="h-full w-full object-cover object-right" />
+      </div>
+      <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <Card className="border-none shadow-lg sm:border space-y-3 w-full max-w-sm">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
           <CardDescription>
@@ -221,6 +226,7 @@ export default function RegisterClient() {
           </div>
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 }
