@@ -11,6 +11,19 @@ export const api = axios.create({
   },
 });
 
+// Request interceptor to add Authorization header
+api.interceptors.request.use((config) => {
+  // Cookies are sent automatically with withCredentials: true
+  // This is a backup mechanism in case cookies fail
+  if (typeof window !== "undefined") {
+    const token = getCookieValue("access_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 // Response interceptor for consistent error handling
 api.interceptors.response.use(
   (response) => response,
@@ -27,5 +40,14 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Helper function to read cookie value
+function getCookieValue(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+}
 
 export default api;
