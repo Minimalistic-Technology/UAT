@@ -22,12 +22,14 @@ const app = express();
 })();
 
 app.use(express.json({ limit: "50mb" }));
-app.use(cookieParser());
 app.use(cors({
     origin: env.NODE_ENV === "development" ? "http://localhost:3000" : env.corsOrigins,
     credentials: true,                
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400 // 24 hours for preflight cache
   }));
+app.use(cookieParser());
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });

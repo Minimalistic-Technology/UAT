@@ -106,7 +106,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     sameSite: 'lax' as const
   };
 
-  res
+  return res
     .cookie('access_token', accessToken, {
       ...cookieBase,
       maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
@@ -167,7 +167,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     sameSite: 'lax' as const
   };
 
-  res
+  return res
     .cookie('access_token', accessToken, {
       ...cookieBase,
       maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
@@ -243,7 +243,7 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
     sameSite: 'lax' as const
   };
 
-  res
+  return res
     .clearCookie('access_token', cookieBase)
     .clearCookie('refresh_token', cookieBase)
     .status(StatusCodes.OK)
