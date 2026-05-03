@@ -12,6 +12,9 @@ import {
   Upload,
   UserPlus,
   Loader2,
+  GraduationCap,
+  Briefcase,
+  Wrench,
 } from "lucide-react";
 import {
   Card,
@@ -24,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useGetUserDetails } from "@/hooks/use-user";
 import { useSession } from "next-auth/react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,6 +72,7 @@ const Page = () => {
 
   // Logic for Job Seeker specific documents (Role is 'user' and not an employee)
   const isJobSeeker = user?.role === "user" && !session?.user?.isEmployee;
+  console.log("Is Job Seeker: ", isJobSeeker);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
@@ -276,43 +281,59 @@ const Page = () => {
 
           {/* New Resume & Cover Letter Section */}
           {isJobSeeker && (
-            <Card className="border shadow-sm">
-              <CardHeader className="bg-muted/20 border-b pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg font-bold">
-                  <FileText className="text-primary h-5 w-5" />
-                  Application Documents
-                </CardTitle>
-                <CardDescription>
-                  Manage the documents you use for job applications.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 pt-8">
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  {/* Resume Section */}
-                  <div className="space-y-3">
-                    <label className="text-muted-foreground text-sm font-bold tracking-tight uppercase">
-                      Resume
-                    </label>
-                    <div className="bg-muted/20 flex min-h-[58px] items-center justify-between rounded-md border p-3">
-                      <span className="max-w-[150px] truncate text-sm font-medium" title={user?.resumeOriginalName || "My_Resume.pdf"}>
-                        {user?.resume ? (user?.resumeOriginalName || "My_Resume.pdf") : "No resume found"}
-                      </span>
-                      {user?.resume ? (
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm" asChild>
-                            <a
-                              href={user.resume}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary flex items-center gap-1.5"
+            <>
+              <Card className="border shadow-sm">
+                <CardHeader className="bg-muted/20 border-b pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <FileText className="text-primary h-5 w-5" />
+                    Application Documents
+                  </CardTitle>
+                  <CardDescription>
+                    Manage the documents you use for job applications.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-8">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    {/* Resume Section */}
+                    <div className="space-y-3">
+                      <label className="text-muted-foreground text-sm font-bold tracking-tight uppercase">
+                        Resume
+                      </label>
+                      <div className="bg-muted/20 flex min-h-[58px] items-center justify-between rounded-md border p-3">
+                        <span className="max-w-[150px] truncate text-sm font-medium" title={user?.resumeOriginalName || "My_Resume.pdf"}>
+                          {user?.resume ? (user?.resumeOriginalName || "My_Resume.pdf") : "No resume found"}
+                        </span>
+                        {user?.resume ? (
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" asChild>
+                              <a
+                                href={user.resume}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary flex items-center gap-1.5"
+                              >
+                                <ExternalLink className="h-4 w-4" /> View
+                              </a>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => resumeInputRef.current?.click()}
+                              disabled={isResumeUploading}
                             >
-                              <ExternalLink className="h-4 w-4" /> View
-                            </a>
-                          </Button>
+                              {isResumeUploading ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Upload className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          </div>
+                        ) : (
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="h-8 gap-1.5"
                             onClick={() => resumeInputRef.current?.click()}
                             disabled={isResumeUploading}
                           >
@@ -321,29 +342,106 @@ const Page = () => {
                             ) : (
                               <Upload className="h-3.5 w-3.5" />
                             )}
+                            Upload
                           </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 gap-1.5"
-                          onClick={() => resumeInputRef.current?.click()}
-                          disabled={isResumeUploading}
-                        >
-                          {isResumeUploading ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Upload className="h-3.5 w-3.5" />
-                          )}
-                          Upload
-                        </Button>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Skills Section */}
+              <Card className="border shadow-sm">
+                <CardHeader className="bg-muted/20 border-b pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <Wrench className="text-primary h-5 w-5" />
+                    Skills
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {user?.skills && user.skills.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {user.skills.map((skill: string, index: number) => (
+                        <Badge key={index} variant="secondary" className="px-3 py-1 text-sm">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No skills added yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Experience Section */}
+              <Card className="border shadow-sm">
+                <CardHeader className="bg-muted/20 border-b pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <Briefcase className="text-primary h-5 w-5" />
+                    Experience
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {user?.experience && user.experience.length > 0 ? (
+                    <div className="space-y-6">
+                      {user.experience.map((exp: any, index: number) => (
+                        <div key={index} className="border-b last:border-0 pb-6 last:pb-0">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="space-y-3">
+                              <div className="space-y-0.5`">
+                                <h4 className="text-xl font-semibold">{exp.title}</h4>
+                                <p className="text-sm font-medium">{exp.company}</p>
+                              </div>
+                              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                                <MapPin className="h-3.5 w-3.5" /> {exp.location}
+                              </p>
+                            </div>
+                            <div className="text-right text-sm text-muted-foreground whitespace-nowrap">
+                              {new Date(exp.startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} - {exp.current ? 'Present' : exp.endDate ? new Date(exp.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : ''}
+                            </div>
+                          </div>
+                          {exp.description && <p className="text-sm mt-3 text-foreground/80 leading-relaxed">{exp.description}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No experience added yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Education Section */}
+              <Card className="border shadow-sm">
+                <CardHeader className="bg-muted/20 border-b pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <GraduationCap className="text-primary h-5 w-5" />
+                    Education
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {user?.education && user.education.length > 0 ? (
+                    <div className="space-y-6">
+                      {user.education.map((edu: any, index: number) => (
+                        <div key={index} className="border-b last:border-0 pb-6 last:pb-0">
+                          <div className="flex justify-between items-start gap-4">
+                            <div>
+                              <h4 className="font-bold text-base">{edu.degree} in {edu.fieldOfStudy}</h4>
+                              <p className="text-sm font-medium">{edu.institution}</p>
+                            </div>
+                            <div className="text-right text-sm text-muted-foreground whitespace-nowrap">
+                              Class of {edu.graduationYear}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No education added yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </>
           )}
         </div>
       </div>
