@@ -4,6 +4,7 @@ export * from "./hooks/use-create-blog";
 export * from "./hooks/use-update-blog";
 export * from "./hooks/use-delete-blog";
 export * from "./hooks/use-get-blog";
+export * from "./hooks/use-like-comment";
 export * from "./schema/blog-schema";
 export * from "./services/blog-service";
 export * from "./types/blog-type";

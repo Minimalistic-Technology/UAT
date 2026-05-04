@@ -44,5 +44,9 @@ export const blogService = {
   createComment: async (postId: string, content: string): Promise<any> => {
     const response = await api.post(`/comments/post/${postId}`, { content });
     return response.data;
+  },
+  likeComment: async (commentId: string): Promise<any> => {
+    const response = await api.post(`/comments/${commentId}/like`);
+    return response.data;
   }
 };

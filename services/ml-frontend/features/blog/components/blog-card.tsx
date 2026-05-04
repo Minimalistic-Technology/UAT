@@ -1,35 +1,49 @@
-import React from 'react';
-import Link from 'next/link';
-import { Calendar, User, ArrowRight, Tag, Clock } from 'lucide-react';
-import { BlogResponse } from '../types/blog-type';
+import React from "react";
+import Link from "next/link";
+import { Calendar, User, ArrowRight, Tag, Clock } from "lucide-react";
+import { BlogResponse } from "../types/blog-type";
 
 interface BlogCardProps {
-  blog: BlogResponse['data'];
+  blog: BlogResponse["data"];
 }
 
 export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
-  const { title, excerpt, content, coverImage, coverImageUrl, tags, authorId, createdAt, category } = blog;
+  const {
+    title,
+    excerpt,
+    content,
+    coverImage,
+    coverImageUrl,
+    tags,
+    authorId,
+    createdAt,
+    category,
+  } = blog;
   const imageUrl = coverImage?.url || coverImageUrl;
 
   // Format the date
-  const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  const formattedDate = new Date(createdAt).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 
   // Handle author info safely
   const author = authorId as any;
   const authorName = author?.firstName
-    ? `${author.firstName} ${author.lastName || ''}`
-    : 'John Doe';
+    ? `${author.firstName} ${author.lastName || ""}`
+    : "John Doe";
 
   // Estimate reading time
   const wordCount = content?.split(/\s+/).length || 0;
   const readingTime = Math.ceil(wordCount / 200) || 5;
 
   return (
-    <div className="group flex flex-col bg-white rounded-[1.5rem] border border-gray-100 overflow-hidden transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,0,0,0.04)] hover:-translate-y-1">
+    <Link
+      href={`/blog/${blog.slug}`}
+      prefetch
+      className="group flex flex-col bg-white rounded-[1.5rem] border border-gray-100 overflow-hidden transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,0,0,0.04)] hover:-translate-y-1"
+    >
       {/* Cover Image Section */}
       <div className="relative aspect-[16/10] overflow-hidden m-3 rounded-[1rem]">
         {imageUrl ? (
@@ -47,7 +61,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
         {/* Category Overlay */}
         <div className="absolute top-3 left-3">
           <span className="px-3 py-1 bg-[#1877F2] text-white text-[9px] font-bold uppercase tracking-wider rounded-full shadow-lg">
-            {category || (tags[0] || 'Insights')}
+            {category || tags[0] || "Insights"}
           </span>
         </div>
 
@@ -63,15 +77,16 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
       {/* Content Section */}
       <div className="flex-1 px-6 pb-6 flex flex-col">
         {/* Title */}
-        <Link href={`/blog/${blog.slug}`}>
+        <div>
           <h3 className="text-lg font-black text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-[#1877F2] transition-colors cursor-pointer">
             {title}
           </h3>
-        </Link>
+        </div>
 
         {/* Excerpt */}
         <p className="text-gray-400 text-xs line-clamp-2 mb-6 leading-relaxed">
-          {excerpt || 'Learn how to tackle challenges with expert guidance and insights.'}
+          {excerpt ||
+            "Learn how to tackle challenges with expert guidance and insights."}
         </p>
 
         {/* Footer Metadata (Compact) */}
@@ -83,6 +98,6 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };

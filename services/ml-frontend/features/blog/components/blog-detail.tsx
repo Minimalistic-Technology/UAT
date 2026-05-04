@@ -6,6 +6,7 @@ import { BlogCard } from './blog-card';
 import { useUpvoteBlog } from '../hooks/use-upvote-blog';
 import { useComments } from '../hooks/use-comments';
 import { useCreateComment } from '../hooks/use-create-comment';
+import { useLikeComment } from '../hooks/use-like-comment';
 
 interface BlogDetailProps {
   blog: BlogResponse['data'];
@@ -50,6 +51,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
   const { mutate: upvote } = useUpvoteBlog();
   const { data: commentsData, isLoading: isLoadingComments } = useComments(blog._id);
   const { mutate: createComment, isPending: isPosting } = useCreateComment();
+  const { mutate: likeComment } = useLikeComment(blog._id);
 
   const handleShare = () => {
     const url = window.location.href;
@@ -99,6 +101,10 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
         setCommentText("");
       }
     });
+  };
+
+  const handleLikeComment = (commentId: string) => {
+    likeComment(commentId);
   };
 
   const comments = commentsData?.data || [];
@@ -222,7 +228,12 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
                             </div>
                             <p className="text-gray-500 text-sm leading-relaxed max-w-2xl">{cmt.content}</p>
                             <div className="flex gap-4 mt-4">
-                              <button className="text-[10px] font-bold text-gray-400 hover:text-[#1877F2] transition-colors uppercase tracking-widest">Like ({cmt.likesCount})</button>
+                              <button 
+                                onClick={() => handleLikeComment(cmt._id)}
+                                className={`text-[10px] font-bold transition-colors uppercase tracking-widest ${cmt.hasLiked ? 'text-[#1877F2]' : 'text-gray-400 hover:text-[#1877F2]'}`}
+                              >
+                                Like ({cmt.likesCount})
+                              </button>
                             </div>
                           </div>
                         </div>
