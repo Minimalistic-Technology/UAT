@@ -79,6 +79,7 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
                   <div className="space-y-1 font-mono text-[11px]">
                     <div className="flex gap-2"><span className="text-muted-foreground w-12">GST:</span>{app.gstNo}</div>
                     <div className="flex gap-2"><span className="text-muted-foreground w-12">AADHAR:</span>{app.aadharNo}</div>
+                    <div className="flex gap-2"><span className="text-muted-foreground w-12">CIN No:</span>{app.cinNo}</div>
                   </div>
                 </TableCell>
                 <TableCell>
