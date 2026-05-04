@@ -7,6 +7,7 @@ import Company from "../models/Company.model.js";
 import { Types } from "mongoose";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
+import { deleteFromCloudinary } from "../utils/cloudinary.js";
 
 type IUserWithCompany = IUser & {
   isEmployee?: boolean;
@@ -279,6 +280,9 @@ export const updateKycStatus = async (
     kycApplication.status = status;
     if (status === "rejected" && note) {
       kycApplication.rejectionReason = note;
+      // Also delete the assests attached to this kycApplication
+      await deleteFromCloudinary(kycApplication.photoUrl)
+      await deleteFromCloudinary(kycApplication.lightbillUrl)
     }
     await kycApplication.save();
 

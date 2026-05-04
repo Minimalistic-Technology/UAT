@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import { useForm, UseFormRegisterReturn } from "react-hook-form";
 import { useSubmitKyc } from "@/features/employer/hooks/use-company";
-import { Upload, CheckCircle, Building2, CreditCard, ReceiptText } from "lucide-react";
+import { Upload, CheckCircle, Building2, CreditCard, ReceiptText, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,28 +15,40 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+interface KycFormValues {
+  companyName: string;
+  aadharNo: string;
+  gstNo: string;
+  cinNo: string;
+  photo: FileList;
+  lightbill: FileList;
+}
+
 const VerifyPage = () => {
   const { mutate: submitKyc, isPending } = useSubmitKyc();
-  const [files, setFiles] = useState<{ photo: File | null; lightbill: File | null }>({
-    photo: null,
-    lightbill: null,
-  });
+  
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<KycFormValues>();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+  const onSubmit = (data: KycFormValues) => {
+    const formData = new FormData();
+    formData.append("companyName", data.companyName);
+    formData.append("aadharNo", data.aadharNo);
+    formData.append("gstNo", data.gstNo || "");
+    formData.append("cinNo", data.cinNo || "");
     
-    if (files.photo) formData.append("photo", files.photo);
-    if (files.lightbill) formData.append("lightbill", files.lightbill);
+    if (data.photo?.[0]) formData.append("photo", data.photo[0]);
+    if (data.lightbill?.[0]) formData.append("lightbill", data.lightbill[0]);
 
     submitKyc(formData);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'photo' | 'lightbill') => {
-    if (e.target.files?.[0]) {
-      setFiles(prev => ({ ...prev, [type]: e.target.files![0] }));
-    }
-  };
+  const photoFile = watch("photo")?.[0];
+  const lightbillFile = watch("lightbill")?.[0];
 
   return (
     <div className="bg-background text-foreground flex flex-col items-center justify-center p-6">
@@ -51,61 +63,72 @@ const VerifyPage = () => {
         </CardHeader>
         
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Text Inputs */}
               <div className="space-y-2">
-                <Label htmlFor="companyName" className="text-muted-foreground">Company Name</Label>
+                <Label htmlFor="companyName" className={errors.companyName ? "text-destructive" : "text-muted-foreground"}>Company Name</Label>
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                   <Input 
                     id="companyName"
-                    name="companyName" 
                     placeholder="Acme Corp" 
-                    className="pl-10 bg-background border-input focus-visible:ring-ring"
-                    required 
+                    className={cn("pl-10 bg-background focus-visible:ring-ring", errors.companyName ? "border-destructive focus-visible:ring-destructive" : "border-input")}
+                    {...register("companyName", { required: "Company Name is required" })}
                   />
                 </div>
+                {errors.companyName && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {errors.companyName.message}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="aadharNo" className="text-muted-foreground">Aadhar Number</Label>
+                <Label htmlFor="aadharNo" className={errors.aadharNo ? "text-destructive" : "text-muted-foreground"}>Aadhar Number</Label>
                 <div className="relative">
                   <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                   <Input 
                     id="aadharNo"
-                    name="aadharNo" 
-                    placeholder="[Aadhaar Redacted]" 
-                    className="pl-10 bg-background border-input focus-visible:ring-ring"
-                    required 
+                    placeholder="123456789012" 
+                    className={cn("pl-10 bg-background focus-visible:ring-ring", errors.aadharNo ? "border-destructive focus-visible:ring-destructive" : "border-input")}
+                    {...register("aadharNo", { 
+                      required: "Aadhar Number is required",
+                      pattern: { value: /^\d{12}$/, message: "Must be exactly 12 digits" }
+                    })}
                   />
                 </div>
+                {errors.aadharNo && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {errors.aadharNo.message}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gstNo" className="text-muted-foreground">GST Number</Label>
+                <Label htmlFor="gstNo" className={errors.gstNo ? "text-destructive" : "text-muted-foreground"}>GST Number</Label>
                 <div className="relative">
                   <ReceiptText className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                   <Input 
                     id="gstNo"
-                    name="gstNo" 
                     placeholder="22AAAAA0000A1Z5" 
-                    className="pl-10 bg-background border-input focus-visible:ring-ring"
+                    className={cn("pl-10 bg-background focus-visible:ring-ring", errors.gstNo ? "border-destructive focus-visible:ring-destructive" : "border-input")}
+                    {...register("gstNo", {
+                      required: "GST Number is required",
+                      pattern: { value: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i, message: "Invalid GST format" }
+                    })}
                   />
                 </div>
+                {errors.gstNo && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {errors.gstNo.message}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cinNo" className="text-muted-foreground">CIN Number</Label>
+                <Label htmlFor="cinNo" className={errors.cinNo ? "text-destructive" : "text-muted-foreground"}>CIN Number</Label>
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                   <Input 
                     id="cinNo"
-                    name="cinNo" 
                     placeholder="U12345MH2023PTC123456" 
-                    className="pl-10 bg-background border-input focus-visible:ring-ring"
+                    className={cn("pl-10 bg-background focus-visible:ring-ring", errors.cinNo ? "border-destructive focus-visible:ring-destructive" : "border-input")}
+                    {...register("cinNo", {
+                      required: "CIN Number is required",
+                      pattern: { value: /^[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/i, message: "Invalid CIN format" }
+                    })}
                   />
                 </div>
+                {errors.cinNo && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {errors.cinNo.message}</p>}
               </div>
             </div>
 
@@ -113,13 +136,17 @@ const VerifyPage = () => {
               {/* File Uploads */}
               <FileUploadField 
                 label="Passport Photo" 
-                onChange={(e) => handleFileChange(e, 'photo')} 
-                file={files.photo} 
+                registration={register("photo", { required: "Passport Photo is required" })}
+                file={photoFile} 
+                error={errors.photo?.message}
+                accept="image/*"
               />
               <FileUploadField 
                 label="Electricity Bill (PDF/Img)" 
-                onChange={(e) => handleFileChange(e, 'lightbill')} 
-                file={files.lightbill} 
+                registration={register("lightbill", { required: "Electricity Bill is required" })}
+                file={lightbillFile} 
+                error={errors.lightbill?.message}
+                accept="image/*,.pdf"
               />
             </div>
 
@@ -138,12 +165,25 @@ const VerifyPage = () => {
   );
 };
 
-const FileUploadField = ({ label, onChange, file }: { label: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void, file: File | null }) => (
+const FileUploadField = ({ 
+  label, 
+  registration, 
+  file, 
+  error,
+  accept 
+}: { 
+  label: string;
+  registration: UseFormRegisterReturn;
+  file?: File;
+  error?: string;
+  accept?: string;
+}) => (
   <div className="space-y-2">
-    <Label className="text-muted-foreground">{label}</Label>
+    <Label className={error ? "text-destructive" : "text-muted-foreground"}>{label}</Label>
     <label className="cursor-pointer group block">
       <div className={cn(
         "border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-2 transition-all",
+        error ? "border-destructive/50 bg-destructive/5 group-hover:border-destructive group-hover:bg-destructive/10" :
         file 
           ? "border-primary/50 bg-primary/5" 
           : "border-input bg-background group-hover:border-accent-foreground/20 group-hover:bg-accent/50"
@@ -151,10 +191,11 @@ const FileUploadField = ({ label, onChange, file }: { label: string, onChange: (
         {file ? (
           <CheckCircle className="text-primary" size={24} />
         ) : (
-          <Upload className="text-muted-foreground group-hover:text-foreground transition-colors" size={24} />
+          <Upload className={error ? "text-destructive/70 group-hover:text-destructive" : "text-muted-foreground group-hover:text-foreground transition-colors"} size={24} />
         )}
         <span className={cn(
           "text-xs text-center truncate max-w-[180px]",
+          error ? "text-destructive" :
           file ? "text-primary font-medium" : "text-muted-foreground"
         )}>
           {file ? file.name : "Click to upload"}
@@ -163,10 +204,11 @@ const FileUploadField = ({ label, onChange, file }: { label: string, onChange: (
       <input 
         type="file" 
         className="hidden" 
-        onChange={onChange} 
-        accept="image/*,.pdf" 
+        {...registration}
+        accept={accept} 
       />
     </label>
+    {error && <p className="text-xs text-destructive flex items-center gap-1 mt-1"><AlertCircle size={12} /> {error}</p>}
   </div>
 );
 

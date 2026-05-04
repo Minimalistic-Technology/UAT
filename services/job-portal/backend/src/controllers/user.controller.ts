@@ -218,7 +218,19 @@ export const submitKyc = async (
       status: "pending" as const,
     };
 
-    const kyc = await KYC.create(kycData);
+    let kyc;
+    if (existingKyc) {
+      kyc = await KYC.findOneAndUpdate(
+        { _id: existingKyc._id },
+        { 
+          $set: kycData,
+          $unset: { rejectionReason: 1 }
+        },
+        { new: true }
+      );
+    } else {
+      kyc = await KYC.create(kycData);
+    }
 
     if (!kyc) {
       // optionally delete the uploaded images
