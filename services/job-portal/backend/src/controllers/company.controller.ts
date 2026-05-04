@@ -8,6 +8,7 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import Job, { JobStatus } from "../models/Job.model.js";
 import Subscription from "../models/Subscription.model.js";
+import KYC from "../models/KYC.model.js";
 
 // @desc    Create new company
 // @route   POST /api/companies
@@ -253,6 +254,7 @@ export const getMyCompany = async (
       companyId: company._id,
       status: "active"
     }).populate("planId", "name");
+    const kyc = await KYC.findOne({ user: req.user.id });
 
     const companyData = {
       ...company.toObject(),
@@ -260,7 +262,8 @@ export const getMyCompany = async (
       activeJobs,
       totalMembers,
       currentPlan: currentSubscription ? currentSubscription.planId : null,
-      subscription: currentSubscription
+      subscription: currentSubscription,
+      kycStatus: kyc ? kyc.status : null,
     };
 
     res

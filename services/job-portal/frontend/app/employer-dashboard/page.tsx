@@ -28,6 +28,7 @@ const Page = () => {
 
   const companyDetails = responseData?.data;
   const isUnverified = companyDetails?.isVerified === false;
+  const kycStatus = companyDetails?.kycStatus;
 
   if ((isLoading || !companyDetails) && !isError) {
     return <DashboardSkeleton />;
@@ -80,7 +81,7 @@ const Page = () => {
         </div>
       </div>
 
-      {isUnverified && (
+      {isUnverified && !kycStatus && (
         <Alert
           variant="destructive"
           className="border-amber-200 bg-amber-50 text-amber-900 shadow-sm"
@@ -104,6 +105,52 @@ const Page = () => {
             >
               <Link href="/employer-dashboard/settings/verify">
                 Complete KYC
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {isUnverified && kycStatus === "pending" && (
+        <Alert className="border-blue-200 bg-blue-50 text-blue-900 shadow-sm">
+          <AlertCircle className="h-5 w-5 !text-blue-600" />
+          <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <AlertTitle className="font-bold text-blue-800">
+                KYC Verification Pending
+              </AlertTitle>
+              <AlertDescription className="text-blue-700">
+                Your KYC documents are currently under review. We will notify you once your account is verified.
+              </AlertDescription>
+            </div>
+          </div>
+        </Alert>
+      )}
+
+      {isUnverified && kycStatus === "rejected" && (
+        <Alert
+          variant="destructive"
+          className="border-red-200 bg-red-50 text-red-900 shadow-sm"
+        >
+          <AlertCircle className="h-5 w-5 !text-red-600" />
+          <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <AlertTitle className="font-bold text-red-800">
+                KYC Verification Rejected
+              </AlertTitle>
+              <AlertDescription className="text-red-700">
+                Your recent KYC submission was rejected. Please review the requirements and submit again.
+              </AlertDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 border-red-300 bg-red-100 text-red-900 hover:bg-red-200"
+              asChild
+            >
+              <Link href="/employer-dashboard/settings/verify">
+                Re-submit KYC
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
