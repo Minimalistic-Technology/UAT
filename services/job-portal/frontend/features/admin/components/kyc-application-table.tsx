@@ -1,15 +1,25 @@
+import { useState } from "react";
 import { Eye, ExternalLink, CheckCircle, XCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface KycTableProps {
   applications: any[];
   isLoading: boolean;
   isUpdating: boolean;
-  onUpdateStatus: (id: string, status: "approved" | "rejected" | "pending") => void;
+  onUpdateStatus: (id: string, status: "approved" | "rejected" | "pending", note?: string) => void;
 }
 
 const KYC_COLUMNS = [
@@ -21,6 +31,17 @@ const KYC_COLUMNS = [
 ];
 
 export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }: KycTableProps) => {
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
+  const handleRejectConfirm = () => {
+    if (rejectingId) {
+      onUpdateStatus(rejectingId, "rejected", rejectReason);
+      setRejectingId(null);
+      setRejectReason("");
+    }
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -99,7 +120,7 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
                             <Button 
                               variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-red-50"
                               disabled={isUpdating}
-                              onClick={() => onUpdateStatus(app._id, "rejected")}
+                              onClick={() => setRejectingId(app._id)}
                             >
                               <XCircle className="h-4 w-4" />
                             </Button>
@@ -123,6 +144,29 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
           )}
         </TableBody>
       </Table>
+
+      <Dialog open={!!rejectingId} onOpenChange={(open) => !open && setRejectingId(null)}>
+        <DialogContent className="px-4">
+          <DialogHeader className="px-0">
+            <DialogTitle>Reject KYC Application</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this KYC application. The employer will see this reason on their dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="e.g. The document uploaded is blurry and illegible."
+            rows={4}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRejectingId(null); setRejectReason(""); }}>Cancel</Button>
+            <Button variant="destructive" onClick={handleRejectConfirm} disabled={!rejectReason.trim()}>
+              Confirm Rejection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

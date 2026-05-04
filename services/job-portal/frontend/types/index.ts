@@ -233,6 +233,7 @@ export interface KycDocument {
   photoUrl: string;
   lightbillUrl: string;
   status: "pending" | "approved" | "rejected";
+  rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
 }

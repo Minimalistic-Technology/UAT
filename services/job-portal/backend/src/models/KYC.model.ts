@@ -9,6 +9,7 @@ export interface IKYC extends Document {
   photoUrl: string;
   lightbillUrl: string;
   status: "pending" | "approved" | "rejected";
+  rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +54,9 @@ const kycSchema = new Schema<IKYC>(
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
+    },
+    rejectionReason: {
+      type: String,
     },
   },
   {

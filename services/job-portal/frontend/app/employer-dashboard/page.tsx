@@ -25,7 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const Page = () => {
   const { data: responseData, isLoading, isError, isFetching } = useGetMyCompanyDetails();
-
+  
   const companyDetails = responseData?.data;
   const isUnverified = companyDetails?.isVerified === false;
   const kycStatus = companyDetails?.kycStatus;
@@ -139,8 +139,16 @@ const Page = () => {
               <AlertTitle className="font-bold text-red-800">
                 KYC Verification Rejected
               </AlertTitle>
-              <AlertDescription className="text-red-700">
+              <AlertDescription className="text-red-700 mt-1">
                 Your recent KYC submission was rejected. Please review the requirements and submit again.
+                {companyDetails?.kycRejectionReason && (
+                  <div className="mt-3 rounded-md bg-red-100 p-3 text-sm text-red-900 shadow-inner">
+                    <span className="block font-bold">Reason for Rejection:</span>
+                    <span className="mt-1 block text-base leading-relaxed">
+                      {companyDetails.kycRejectionReason}
+                    </span>
+                  </div>
+                )}
               </AlertDescription>
             </div>
             <Button

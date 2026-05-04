@@ -116,8 +116,8 @@ export default function KycManagementPage() {
             applications={filteredApps}
             isLoading={isLoading}
             isUpdating={isUpdating}
-            onUpdateStatus={(applicationId, status) =>
-              updateStatus({ applicationId, status })
+            onUpdateStatus={(applicationId, status, note) =>
+              updateStatus({ applicationId, status, note })
             }
           />
 

@@ -48,7 +48,7 @@ export const useSubmitKyc = () => {
     mutationFn: (formData: FormData) => submitKycData(formData),
     onSuccess: (data) => {
       toast.success(data.message || "KYC submitted successfully!");
-      queryClient.invalidateQueries({ queryKey: ["user-details"] });
+      queryClient.invalidateQueries({ queryKey: ["user-details", "my-company-details"] });
       router.push("/employer-dashboard");
     },
     onError: (error: any) => {

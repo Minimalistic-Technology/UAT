@@ -258,7 +258,7 @@ export const updateKycStatus = async (
   next: NextFunction,
 ) => {
   const { applicationId } = req.params;
-  const { status } = req.body;
+  const { status, note } = req.body;
 
   try {
     if (!["approved", "rejected"].includes(status)) {
@@ -277,6 +277,9 @@ export const updateKycStatus = async (
     }
 
     kycApplication.status = status;
+    if (status === "rejected" && note) {
+      kycApplication.rejectionReason = note;
+    }
     await kycApplication.save();
 
     if (status === "approved") {

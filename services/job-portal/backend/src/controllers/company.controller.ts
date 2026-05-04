@@ -264,6 +264,7 @@ export const getMyCompany = async (
       currentPlan: currentSubscription ? currentSubscription.planId : null,
       subscription: currentSubscription,
       kycStatus: kyc ? kyc.status : null,
+      kycRejectionReason: kyc?.rejectionReason || null,
     };
 
     res

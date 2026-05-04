@@ -17,6 +17,7 @@ interface GetMyCompanyResponse extends Omit<Company, "owner">, CompanyMetrics {
     email: string;
   };
   kycStatus: "pending" | "approved" | "rejected" | null;
+  kycRejectionReason: string | null;
 }
 
 interface GetAllEmployeesResponse {
