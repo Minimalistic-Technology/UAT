@@ -1,58 +1,69 @@
-import apiClient, { ApiSuccessResponse } from "@/lib/api-client"
-import { Company } from "@/types"
+import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
+import { Company } from "@/types";
 
 export interface CompanyMetrics {
   totalJobs: number;
   activeJobs: number;
   totalMembers: number;
-  currentPlan: { _id: string; name: string; } | null;
+  currentPlan: { _id: string; name: string } | null;
   subscription: any | null;
 }
 
 interface GetMyCompanyResponse extends Omit<Company, "owner">, CompanyMetrics {
-    owner: {
-        _id: string;
-        firstName: string;
-        lastName: string;
-        email: string;
-    };
+  owner: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
 }
 
 interface GetAllEmployeesResponse {
-    count: number;
-    employees: any[]
+  count: number;
+  employees: any[];
 }
 
 interface SubmitKycResponse {
-    companyName: string;
-    aadharNo: string;
-    gstNo: string;
-    cinNo: string;
-    documents: {
-        photoUrl: string;
-        lightbillUrl: string
-    }
+  companyName: string;
+  aadharNo: string;
+  gstNo: string;
+  cinNo: string;
+  documents: {
+    photoUrl: string;
+    lightbillUrl: string;
+  };
 }
 
 // Changes needed in the response types (backend has some issues, fix that and then update these types accordingly)
 export const getMyCompany = async () => {
-    const response = await apiClient.get<ApiSuccessResponse<GetMyCompanyResponse>>("/companies/me");
-    return response.data;
-}
+  const response =
+    await apiClient.get<ApiSuccessResponse<GetMyCompanyResponse>>(
+      "/companies/me",
+    );
+  return response.data;
+};
 
 export const getAllEmployees = async () => {
-    const response = await apiClient.get<ApiSuccessResponse<GetAllEmployeesResponse>>("/company-members/all");
-    return response.data;
-}
+  const response = await apiClient.get<
+    ApiSuccessResponse<GetAllEmployeesResponse>
+  >("/company-members/all");
+  return response.data;
+};
 
 export const deleteEmployee = async (id: string) => {
-    const response = await apiClient.delete<ApiSuccessResponse<null>>(`/company-members/${id}`);
-    return response.data;
-}
+  const response = await apiClient.delete<ApiSuccessResponse<null>>(
+    `/company-members/${id}`,
+  );
+  return response.data;
+};
 
 export const submitKycData = async (formData: FormData) => {
-  const response = await apiClient.post<ApiSuccessResponse<SubmitKycResponse>>("/users/kyc", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const response = await apiClient.post<ApiSuccessResponse<SubmitKycResponse>>(
+    "/users/kyc",
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    },
+  );
   return response.data;
 };

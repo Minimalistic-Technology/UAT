@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteEmployee, getAllEmployees, getMyCompany, submitKycData } from "../services/company.service";
 import { toast } from "sonner";
 import {useRouter} from "next/navigation"
+import { getValidationErrorMessage } from "@/lib/validation-error";
 
 export const useGetAllEmployees = () => {
   return useQuery({
@@ -51,7 +52,15 @@ export const useSubmitKyc = () => {
       router.push("/employer-dashboard");
     },
     onError: (error: any) => {
+      console.log("error", error?.response?.data?.errors);
       const errorMsg = error?.response?.data?.message || "Failed to submit KYC";
+
+      if(errorMsg === 'Validation failed'){
+        const firstErrorMessage = getValidationErrorMessage(error)
+        toast.error(firstErrorMessage);
+        return;
+
+      }
       toast.error(errorMsg);
     },
   });
