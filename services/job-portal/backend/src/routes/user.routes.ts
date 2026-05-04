@@ -126,9 +126,9 @@ router.put('/profile', protect, validate(profileValidation), updateProfile);
 router.put('/avatar', protect, avatarUpload.single('avatar'), uploadAvatar);
 router.put('/resume', protect, resumeUpload.single('resume'), uploadResume);
 router.get('/:id', protect, getUserById);
-router.post('/kyc', protect, validate(kycValidation), kycUpload.fields([
+router.post('/kyc', protect, kycUpload.fields([
   { name: 'photo', maxCount: 1 },
   { name: 'lightbill', maxCount: 1 }
-]), submitKyc);
+]), validate(kycValidation), submitKyc);
 
 export default router;
