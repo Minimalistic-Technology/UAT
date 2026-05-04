@@ -6,7 +6,7 @@ export const getCookieConfig = () => {
   return {
     httpOnly: true,
     secure: isDev ? false : true, // Allow HTTP in development, require HTTPS in production
-    sameSite: "none" as const,
+    sameSite: isDev ? "lax" as const :"none" as const,
     domain: undefined // Don't set domain explicitly - let the browser handle it
   };
 };
