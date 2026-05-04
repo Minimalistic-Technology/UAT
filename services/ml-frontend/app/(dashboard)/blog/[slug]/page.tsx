@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { blogService } from '@/features/blog/services/blog-service';
 import { BlogResponse } from '@/features/blog/types/blog-type';
@@ -52,14 +52,14 @@ const BlogDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0a0a0a] flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
         <div className="relative">
           <div className="w-24 h-24 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
           <div className="absolute inset-0 flex items-center justify-center">
              <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl animate-pulse" />
           </div>
         </div>
-        <p className="mt-8 text-gray-500 dark:text-gray-400 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">
+        <p className="mt-8 text-gray-500 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">
            Opening Story
         </p>
       </div>
@@ -68,14 +68,14 @@ const BlogDetailPage = () => {
 
   if (error || !blog) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0a0a0a] flex flex-col items-center justify-center px-6">
-        <div className="w-24 h-24 rounded-[2.5rem] bg-red-50 dark:bg-red-950/20 flex items-center justify-center text-red-500 mb-8 border border-red-100 dark:border-red-900/30">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6">
+        <div className="w-24 h-24 rounded-[2.5rem] bg-red-50 flex items-center justify-center text-red-500 mb-8 border border-red-100">
           <AlertCircle size={40} />
         </div>
-        <h1 className="text-4xl sm:text-6xl font-black text-gray-900 dark:text-white mb-6 italic uppercase tracking-tighter text-center">
+        <h1 className="text-4xl sm:text-6xl font-black text-gray-900 mb-6 italic uppercase tracking-tighter text-center">
           Story Not Found
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-center max-w-sm mb-12 leading-relaxed">
+        <p className="text-gray-500 text-center max-w-sm mb-12 leading-relaxed">
           {error || "The blog post you're looking for might have been removed or the URL is incorrect."}
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
@@ -88,7 +88,7 @@ const BlogDetailPage = () => {
           </Link>
           <button 
             onClick={() => window.location.reload()}
-            className="px-8 py-4 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 dark:hover:bg-white/10 transition-all flex items-center gap-2"
+            className="px-8 py-4 bg-gray-100 text-gray-600 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 transition-all flex items-center gap-2"
           >
             Try Refreshing
           </button>
@@ -98,7 +98,7 @@ const BlogDetailPage = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#0a0a0a] min-h-screen">
+    <div className="bg-white min-h-screen">
       <Navbar />
       <main>
         <BlogDetail blog={blog} latestBlogs={latestBlogs} />

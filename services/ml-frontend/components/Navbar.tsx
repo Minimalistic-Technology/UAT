@@ -56,7 +56,7 @@ export const Navbar: React.FC = () => {
           <div className="hidden lg:flex flex-1 items-center justify-center h-full px-4">
             <div className="flex items-center gap-1">
               {/* Circular menu icon from the design */}
-              {/* <button className="w-10 h-10 mr-4 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-400 transition-colors">
+              {/* <button className="w-10 h-10 mr-4 bg-gray-50 hover:bg-gray-100 rounded-full flex items-center justify-center text-gray-600 transition-colors">
                  <AlignJustify size={18} />
               </button> */}
 
@@ -71,7 +71,7 @@ export const Navbar: React.FC = () => {
                       relative px-2 py-1 mx-4 text-sm font-bold transition-colors whitespace-nowrap group
                       ${isActive
                         ? 'text-[#1877F2]'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                        : 'text-gray-600 hover:text-gray-900'
                       }
                     `}
                   >
@@ -79,7 +79,7 @@ export const Navbar: React.FC = () => {
                     <span
                       className={`
                         absolute left-0 -bottom-1 h-[2px] rounded-full transition-all duration-300
-                        ${isActive ? 'w-full bg-[#1877F2]' : 'w-0 bg-gray-900 group-hover:w-full dark:bg-gray-200'}
+                        ${isActive ? 'w-full bg-[#1877F2]' : 'w-0 bg-gray-900 group-hover:w-full'}
                       `}
                     />
                   </Link>

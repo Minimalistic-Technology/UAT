@@ -45,7 +45,7 @@ const resourceCategories = [
 
 const ResourcesHub = () => {
   return (
-    <main className="flex-1 pt-32 pb-24 px-[5%]">
+    <main className="flex-1 pt-16 pb-24 px-[5%]">
       {/* Header Section */}
       <section className="max-w-4xl mx-auto text-center mb-24 mt-12">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-[#1877F2] text-xs font-bold mb-8 uppercase tracking-widest">
