@@ -6,6 +6,7 @@ import {
   getAllCompanyApplications,
   updateApplicationStatus,
   withdrawApplication,
+  getApplicationById
 } from "../controllers/application.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
@@ -26,7 +27,7 @@ router.post(
       .notEmpty()
       .withMessage("Job ID is required")
       .isMongoId()
-      .withMessage("Invalid Job ID")
+      .withMessage("Invalid Job ID"),
   ]),
   applyForJob,
 );
@@ -41,7 +42,7 @@ router.get(
 router.get(
   "/company/all",
   protect,
-  authorize(GlobalRole.USER), 
+  authorize(GlobalRole.USER),
   getAllCompanyApplications,
 );
 
@@ -54,10 +55,19 @@ router.get(
       .notEmpty()
       .withMessage("Job ID is required")
       .isMongoId()
-      .withMessage("Invalid Job ID")
+      .withMessage("Invalid Job ID"),
   ]),
   getJobApplicants,
 );
+
+router.get(
+  "/:id",
+  protect,
+  authorize(GlobalRole.USER),
+  validate([param("id").isMongoId().withMessage("Invalid Application ID")]),
+  getApplicationById,
+);
+
 
 router.put(
   "/:id/status",
@@ -68,7 +78,7 @@ router.put(
       .notEmpty()
       .withMessage("Job ID is required")
       .isMongoId()
-      .withMessage("Invalid Job ID")
+      .withMessage("Invalid Job ID"),
   ]),
   body("status")
     .exists()
@@ -97,7 +107,7 @@ router.delete(
       .notEmpty()
       .withMessage("Application ID is required")
       .isMongoId()
-      .withMessage("Invalid Application ID")
+      .withMessage("Invalid Application ID"),
   ]),
   withdrawApplication,
 );

@@ -51,10 +51,6 @@ const MyApplicationsPage = () => {
   const { mutate: withdrawApplication, isPending } =
     useWithdrawJobApplication();
 
-  const handleWithdraw = (applicationId: string) => {
-    withdrawApplication(applicationId);
-  };
-
   if (isLoading) {
     return <ApplicationsSkeleton />;
   }
@@ -87,6 +83,7 @@ const MyApplicationsPage = () => {
   }
 
   const applications = responseData?.data.applications || [];
+  console.log("My applications", applications);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
@@ -171,12 +168,14 @@ const MyApplicationsPage = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 cursor-pointer"
+                            disabled={app.status === "withdrawn"}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 cursor-pointer disabled:cursor-not-allowed"
                           >
                             <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                             Withdraw
                           </Button>
                         </AlertDialogTrigger>
+
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>
@@ -220,27 +219,6 @@ const MyApplicationsPage = () => {
   );
 };
 
-const StatusBadge = ({ status }: { status: string }) => {
-  const variants: Record<string, string> = {
-    pending: "bg-amber-50 text-amber-700 border-amber-200",
-    accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    rejected: "bg-rose-50 text-rose-700 border-rose-200",
-    withdrawn: "bg-slate-100 text-slate-600 border-slate-300",
-  };
-
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "border px-2 py-0 text-[11px] font-semibold capitalize shadow-none",
-        variants[status] || variants.pending,
-      )}
-    >
-      {status}
-    </Badge>
-  );
-};
-
 export default MyApplicationsPage;
 
 const ApplicationsSkeleton = () => {
@@ -280,5 +258,26 @@ const ApplicationsSkeleton = () => {
         </Table>
       </div>
     </div>
+  );
+};
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const variants: Record<string, string> = {
+    pending: "bg-amber-50 text-amber-700 border-amber-200",
+    accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    rejected: "bg-rose-50 text-rose-700 border-rose-200",
+    withdrawn: "bg-slate-100 text-slate-600 border-slate-300",
+  };
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "border px-2 py-0 text-[11px] font-semibold capitalize shadow-none",
+        variants[status] || variants.pending,
+      )}
+    >
+      {status}
+    </Badge>
   );
 };

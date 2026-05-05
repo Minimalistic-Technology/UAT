@@ -7,6 +7,61 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import CompanyMember from "../models/CompanyMember.model.js";
 
+export const getApplicationById = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = req.params;
+
+    const application = await Application.findById(id)
+      .populate({
+        path: "job",
+        select: "title location jobType company postedBy status",
+      })
+      .populate({
+        path: "jobSeeker",
+        select:
+          "firstName lastName email phone skills experience education resume",
+      });
+
+    if (!application) {
+      throw new ApiError(404, "Application not found");
+    }
+
+    const job: any = application.job;
+    const jobSeeker: any = application.jobSeeker;
+
+    // Authorization checks
+    const isJobSeeker = jobSeeker._id.toString() === req.user.id;
+    const isEmployer = job.postedBy.toString() === req.user.id;
+
+    let isCompanyMember = false;
+    if (!isJobSeeker && !isEmployer) {
+      const companyMember = await CompanyMember.findOne({
+        user: req.user.id,
+        company: job.company,
+      });
+      if (companyMember) {
+        isCompanyMember = true;
+      }
+    }
+
+    if (!isJobSeeker && !isEmployer && !isCompanyMember) {
+      throw new ApiError(403, "Not authorized to view this application");
+    }
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, application, "Application fetched successfully"),
+      );
+  } catch (error: any) {
+    next(error);
+  }
+};
+
 export const applyForJob = async (
   req: AuthRequest,
   res: Response,
@@ -29,16 +84,26 @@ export const applyForJob = async (
       jobSeeker: req.user.id,
     });
 
-    if (existingApplication) {
+    if (
+      existingApplication &&
+      existingApplication.status !== ApplicationStatus.WITHDRAWN
+    ) {
       throw new ApiError(400, "You have already applied for this job");
     }
 
-    // Create application
-    const application = await Application.create({
-      job: jobId,
-      jobSeeker: req.user._id,
-      resume: req.user.resume
-    });
+    let application;
+
+    if (existingApplication?.status === ApplicationStatus.WITHDRAWN) {
+      existingApplication.status = ApplicationStatus.PENDING;
+      existingApplication.resume = req.user.resume;
+      application = await existingApplication.save();
+    } else {
+      application = await Application.create({
+        job: jobId,
+        jobSeeker: req.user._id,
+        resume: req.user.resume,
+      });
+    }
 
     // Increment applications count
     job.applicationsCount += 1;
@@ -51,9 +116,13 @@ export const applyForJob = async (
     //   message: `Your application for ${job.title} has been submitted successfully.`,
     // });
 
-    res.status(201).json(new ApiResponse(201, application, "Application submitted successfully"));
+    res
+      .status(201)
+      .json(
+        new ApiResponse(201, application, "Application submitted successfully"),
+      );
   } catch (error: any) {
-    next(error)
+    next(error);
   }
 };
 
@@ -73,28 +142,26 @@ export const getMyApplications = async (
         .sort("-createdAt")
         .skip(skip)
         .limit(limit),
-      Application.countDocuments({ jobSeeker: req.user.id })
+      Application.countDocuments({ jobSeeker: req.user.id }),
     ]);
 
     const totalPages = Math.ceil(totalApplications / limit);
 
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          {
-            applications,
-            pagination: {
-              totalItems: totalApplications,
-              totalPages,
-              currentPage: page,
-              limit
-            }
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          applications,
+          pagination: {
+            totalItems: totalApplications,
+            totalPages,
+            currentPage: page,
+            limit,
           },
-          "Applications fetched successfully",
-        ),
-      );
+        },
+        "Applications fetched successfully",
+      ),
+    );
   } catch (error: any) {
     next(error);
   }
@@ -138,7 +205,6 @@ export const getJobApplicants = async (
   }
 };
 
-
 export const updateApplicationStatus = async (
   req: AuthRequest,
   res: Response,
@@ -152,13 +218,13 @@ export const updateApplicationStatus = async (
       .populate("jobSeeker", "email firstName lastName");
 
     if (!application) {
-      throw new ApiError(404, "Application not found")
+      throw new ApiError(404, "Application not found");
     }
 
     // Verify job belongs to employer
     const job: any = application.job;
     if (job.postedBy.toString() !== req.user.id) {
-      throw new ApiError(403, "Not authorized to update this application")
+      throw new ApiError(403, "Not authorized to update this application");
     }
 
     // Update status
@@ -185,10 +251,17 @@ export const updateApplicationStatus = async (
     //   }`,
     // });
 
-    res.status(200).json(
-      new ApiResponse(200, application, "Application status updated successfully"));
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          application,
+          "Application status updated successfully",
+        ),
+      );
   } catch (error: any) {
-    next(error)
+    next(error);
   }
 };
 
@@ -201,7 +274,7 @@ export const withdrawApplication = async (
     const application = await Application.findById(req.params.id);
 
     if (!application) {
-      throw new ApiError(404, "Application not found")
+      throw new ApiError(404, "Application not found");
     }
 
     // Verify application belongs to user
@@ -209,12 +282,24 @@ export const withdrawApplication = async (
       throw new ApiError(403, "Not authorized to withdraw this application");
     }
 
+    if (application.status === ApplicationStatus.WITHDRAWN) {
+      throw new ApiError(400, "Application is already withdrawn");
+    }
+
     application.status = ApplicationStatus.WITHDRAWN;
     await application.save();
 
-    res.status(200).json(new ApiResponse(200, null, "Application withdrawn successfully"));
+    const job = await Job.findById(application.job);
+    if (job) {
+      job.applicationsCount -= 1;
+      await job.save();
+    }
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, null, "Application withdrawn successfully"));
   } catch (error: any) {
-    next(error)
+    next(error);
   }
 };
 
@@ -239,7 +324,9 @@ export const getAllCompanyApplications = async (
     }
 
     // Find all jobs belonging to the company
-    const jobs = await Job.find({ company: companyMember.company }).select("_id");
+    const jobs = await Job.find({ company: companyMember.company }).select(
+      "_id",
+    );
     const jobIds = jobs.map((job) => job._id);
 
     const query: any = { job: { $in: jobIds } };
