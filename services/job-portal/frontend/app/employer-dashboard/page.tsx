@@ -9,6 +9,8 @@ import {
   ArrowUpRight,
   AlertCircle,
   ChevronRight,
+  Settings,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -203,18 +205,29 @@ const Page = () => {
         />
 
         <StatCard
-          isPrimary
-          title="Current Plan"
-          value={(companyDetails?.currentPlan?.name as string) || "Free Tier"}
-          icon={ArrowUpRight}
-          description={
-            <Link href="/employer-dashboard/plans" className="hover:underline">
-              {companyDetails?.subscription
-                ? "Manage subscription"
-                : "Upgrade now"}
-            </Link>
-          }
-        />
+  isPrimary
+  title="Subscription Plan"
+  value={companyDetails?.currentPlan?.name || "No Active Plan"}
+  icon={ArrowUpRight}
+  description={
+    <Link
+      href="/employer-dashboard/plans"
+      className="flex items-center gap-1 hover:underline text-sm font-medium"
+    >
+      {companyDetails?.subscription ? (
+        <>
+          <Settings className="w-3 h-3" />
+          Manage Subscription
+        </>
+      ) : (
+        <>
+          <Sparkles className="w-3 h-3" />
+          Explore & Choose a Plan
+        </>
+      )}
+    </Link>
+  }
+/>
       </div>
 
       {/* Placeholder for Recent Activity or Tables */}
