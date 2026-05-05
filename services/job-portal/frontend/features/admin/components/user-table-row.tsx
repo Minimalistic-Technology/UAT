@@ -50,6 +50,11 @@ const UserTableRow = ({ user }: { user: any }) => {
             <div className="text-muted-foreground text-xs md:hidden">
               {user.email}
             </div>
+            {user.companyRole === CompanyRole.OWNER && user.companyName && (
+              <div className="text-muted-foreground text-xs">
+                {user.companyName}
+              </div>
+            )}
           </div>
         </div>
       </TableCell>

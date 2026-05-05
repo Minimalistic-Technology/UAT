@@ -1,7 +1,9 @@
 "use client";
 
-import * as React from "react"; // Added useState
+import * as React from "react";
 import { Search } from "lucide-react";
+
+// Components
 import {
   Table,
   TableBody,
@@ -24,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Features / Hooks
 import { useFetchAllUsers } from "@/features/admin/hooks/use-user";
 import UserTableRow from "@/features/admin/components/user-table-row";
+import { cn } from "@/lib/utils";
 
 const COLUMNS = [
   { key: "name", label: "User" },
@@ -45,73 +48,9 @@ const Page = () => {
     refetch: refetchUsers,
   } = useFetchAllUsers(page, 10);
 
-  if (isError) {
-    return (
-      <Card className="border-destructive/20 bg-destructive/5">
-        <CardContent className="p-12 text-center">
-          <p className="text-destructive mb-4 font-medium">
-            Failed to load user management data.
-          </p>
-          <Button variant="outline" onClick={() => refetchUsers()}>
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  if (isError) return <ErrorState onRetry={() => refetchUsers()} />;
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <Skeleton className="h-10 w-full max-w-sm" />
-          <Skeleton className="h-10 w-24" />
-        </div>
-        <Card>
-          <CardHeader className="pb-3">
-            <Skeleton className="mb-2 h-6 w-48" />
-            <Skeleton className="h-4 w-64" />
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/30">
-                    {COLUMNS.map((column) => (
-                      <TableHead
-                        key={column.key}
-                        className={column.key === "actions" ? "text-right" : ""}
-                      >
-                        {column.label}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {COLUMNS.map((col) => (
-                        <TableCell key={col.key}>
-                          <Skeleton
-                            className={`h-5 ${col.key === "actions" ? "ml-auto w-20" : "w-full"}`}
-                          />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="flex items-center justify-end space-x-2 py-4">
-              <Skeleton className="h-8 w-20" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-8 w-20" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingState />;
 
   const users = responseData?.data?.users || [];
   const pagination = responseData?.data?.pagination;
@@ -193,7 +132,10 @@ const Page = () => {
                   {COLUMNS.map((column) => (
                     <TableHead
                       key={column.key}
-                      className={column.key === "actions" ? "text-right" : ""}
+                      className={cn(
+                        column.key === "actions" && "text-right",
+                        column.key === "email" && "hidden md:table-cell",
+                      )}
                     >
                       {column.label}
                     </TableHead>
@@ -264,3 +206,71 @@ const Page = () => {
 };
 
 export default Page;
+
+const ErrorState = ({ onRetry }: { onRetry: () => void }) => {
+  return (
+    <Card className="border-destructive/20 bg-destructive/5">
+      <CardContent className="p-12 text-center">
+        <p className="text-destructive mb-4 font-medium">
+          Failed to load user management data.
+        </p>
+        <Button variant="outline" onClick={onRetry}>
+          Retry
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+const LoadingState = () => {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <Skeleton className="h-10 w-full max-w-sm" />
+        <Skeleton className="h-10 w-24" />
+      </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <Skeleton className="mb-2 h-6 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  {COLUMNS.map((column) => (
+                    <TableHead
+                      key={column.key}
+                      className={column.key === "actions" ? "text-right" : ""}
+                    >
+                      {column.label}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {COLUMNS.map((col) => (
+                      <TableCell key={col.key}>
+                        <Skeleton
+                          className={`h-5 ${col.key === "actions" ? "ml-auto w-20" : "w-full"}`}
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-20" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};

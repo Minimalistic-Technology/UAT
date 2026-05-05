@@ -1,12 +1,12 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { 
-  MapPin, 
-  Briefcase, 
-  Clock, 
-  Users, 
-  IndianRupee, 
+import {
+  MapPin,
+  Briefcase,
+  Clock,
+  Users,
+  IndianRupee,
   ChevronLeft,
   Pencil,
   Trash2,
@@ -18,7 +18,13 @@ import { format } from "date-fns";
 import { useGetJobPostById } from "@/features/employer/hooks/use-job";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -38,62 +44,87 @@ const Page = () => {
   const router = useRouter();
   const jobId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const { data: responseData, isLoading, isError } = useGetJobPostById(jobId as string);
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+  } = useGetJobPostById(jobId as string);
   const job = responseData?.data;
 
   if (isLoading) return <JobSkeleton />;
-  if (isError || !job) return <div className="p-10 text-center">Job not found.</div>;
+  if (isError || !job)
+    return <div className="p-10 text-center">Job not found.</div>;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
       {/* Top Navigation & Actions */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.back()} className="gap-2 -ml-2">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="-ml-2 gap-2"
+        >
           <ChevronLeft className="h-4 w-4" /> Back
         </Button>
         <div className="flex gap-2">
-          <Button variant="outline"  className="cursor-pointer" size="sm" onClick={() => router.push(`/employer/jobs/${jobId}/edit`)}>
-            <Pencil className="h-4 w-4 mr-2" /> Edit Details
+          <Button
+            variant="outline"
+            className="cursor-pointer"
+            size="sm"
+            onClick={() => router.push(`/employer/jobs/${jobId}/edit`)}
+          >
+            <Pencil className="mr-2 h-4 w-4" /> Edit Details
           </Button>
-          
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" className="cursor-pointer">
-                <Trash2 className="h-4 w-4 mr-2" /> Delete
+              <Button
+                variant="destructive"
+                size="sm"
+                className="cursor-pointer"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Job Posting?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently remove <strong>{job.title}</strong>. This action cannot be undone.
+                  This will permanently remove <strong>{job.title}</strong>.
+                  This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column: Job Info */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary" className="capitalize">{job.status}</Badge>
+              <div className="mb-2 flex items-center gap-2">
+                <Badge variant="secondary" className="capitalize">
+                  {job.status}
+                </Badge>
                 {job.isFeatured && <Badge>Featured</Badge>}
               </div>
               <CardTitle className="text-3xl font-bold">{job.title}</CardTitle>
-              <CardDescription>Posted on {format(new Date(job.createdAt), "PPP")}</CardDescription>
+              <CardDescription>
+                Posted on {format(new Date(job.createdAt), "PPP")}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <h4 className="font-semibold mb-2">Description</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                <h4 className="mb-2 font-semibold">Description</h4>
+                <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
                   {job.description}
                 </p>
               </div>
@@ -101,8 +132,8 @@ const Page = () => {
               <Separator />
 
               <div>
-                <h4 className="font-semibold mb-3">Requirements</h4>
-                <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
+                <h4 className="mb-3 font-semibold">Requirements</h4>
+                <ul className="text-muted-foreground list-disc space-y-2 pl-5 text-sm">
                   {job.requirements.map((req: string, i: number) => (
                     <li key={i}>{req}</li>
                   ))}
@@ -112,7 +143,7 @@ const Page = () => {
               <Separator />
 
               <div>
-                <h4 className="font-semibold mb-3">Skills</h4>
+                <h4 className="mb-3 font-semibold">Skills</h4>
                 <div className="flex flex-wrap gap-2">
                   {job.skills.map((skill: string) => (
                     <Badge key={skill} variant="outline" className="px-3 py-1">
@@ -130,13 +161,19 @@ const Page = () => {
           {/* Quick Stats Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Post Performance</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Post Performance
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4">
-              <div className="flex flex-col items-center justify-center p-3 border rounded-lg bg-muted/50">
-                <FileUser className="h-4 w-4 mb-1 text-primary" />
-                <span className="text-xl font-bold">{job.applicationsCount}</span>
-                <span className="text-[10px] uppercase text-muted-foreground">Applicants</span>
+              <div className="bg-muted/50 flex flex-col items-center justify-center rounded-lg border p-3">
+                <FileUser className="text-primary mb-1 h-4 w-4" />
+                <span className="text-xl font-bold">
+                  {job.applicationsCount}
+                </span>
+                <span className="text-muted-foreground text-[10px] uppercase">
+                  Applicants
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -144,35 +181,51 @@ const Page = () => {
           {/* Job Details Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Listing Details</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Listing Details
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
-                <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                <IndianRupee className="text-muted-foreground h-4 w-4" />
                 <span className="font-medium">
-                  ₹{job.salary.min.toLocaleString()} - ₹{job.salary.max.toLocaleString()}
+                  ₹{job.salary.min.toLocaleString()} - ₹
+                  {job.salary.max.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Briefcase className="h-4 w-4 text-muted-foreground" />
-                <span className="capitalize">{job.jobType.replace("_", " ")}</span>
+                <Briefcase className="text-muted-foreground h-4 w-4" />
+                <span className="capitalize">
+                  {job.jobType.replace("_", " ")}
+                </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Clock className="text-muted-foreground h-4 w-4" />
                 <span className="capitalize">{job.experienceLevel}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{job.location.city}, {job.location.state} {job.location.remote && "(Remote)"}</span>
+                <MapPin className="text-muted-foreground h-4 w-4" />
+                <span>
+                  {job.location.city}, {job.location.state}{" "}
+                  {job.location.remote && "(Remote)"}
+                </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="text-muted-foreground h-4 w-4" />
                 <span>{job.openings} Openings</span>
               </div>
             </CardContent>
             <Separator />
             <div className="p-4">
-              <Button className="w-full" variant="outline">Manage Applicants</Button>
+              <Button
+                onClick={() =>
+                  router.push(`/employer-dashboard/jobs/${jobId}/applications`)
+                }
+                className="w-full cursor-pointer"
+                variant="outline"
+              >
+                Manage Applicants
+              </Button>
             </div>
           </Card>
         </div>
@@ -185,10 +238,15 @@ export default Page;
 
 function JobSkeleton() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 space-y-6">
-      <div className="flex justify-between"><Skeleton className="h-9 w-24" /><Skeleton className="h-9 w-40" /></div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2"><Skeleton className="h-[600px] w-full" /></div>
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
+      <div className="flex justify-between">
+        <Skeleton className="h-9 w-24" />
+        <Skeleton className="h-9 w-40" />
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Skeleton className="h-[600px] w-full" />
+        </div>
         <div className="space-y-6">
           <Skeleton className="h-[200px] w-full" />
           <Skeleton className="h-[300px] w-full" />
