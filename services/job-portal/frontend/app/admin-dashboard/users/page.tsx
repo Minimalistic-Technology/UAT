@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFetchAllUsers } from "@/features/admin/hooks/use-user";
 import UserTableRow from "@/features/admin/components/user-table-row";
 import { cn } from "@/lib/utils";
+import { CompanyRole } from "@/types";
 
 const COLUMNS = [
   { key: "name", label: "User" },
@@ -77,7 +78,7 @@ const Page = () => {
       [
         `"${user.firstName} ${user.lastName}"`,
         `"${user.email}"`,
-        `"${user.companyRole}"`,
+        `"${user.companyRole === CompanyRole.OWNER ? "Owner" : user.companyRole === CompanyRole.ADMIN ? "Admin" : user.companyRole === CompanyRole.RECRUITER ? "Recruiter" : "Job Seeker"}"`,
         `"${user.isActive ? "Active" : "Inactive"}"`,
         `"${new Date(user.createdAt).toLocaleDateString()}"`,
       ].join(","),

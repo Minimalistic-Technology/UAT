@@ -96,45 +96,45 @@ const AnalyticsPage = () => {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Revenue Graph */}
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h3 className="mb-4 font-semibold text-slate-800">Revenue (Last 6 Months)</h3>
-          <ChartContainer config={{ revenue: chartConfig.revenue }} className="h-72 w-full">
-            <AreaChart accessibilityLayer data={graphs.revenue}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-              <Area type="monotone" dataKey="revenue" fill="var(--color-revenue)" stroke="var(--color-revenue)" fillOpacity={0.3} />
-            </AreaChart>
-          </ChartContainer>
-        </div>
+  {/* Revenue Graph */}
+  <div className="rounded-xl border bg-white p-6 shadow-sm">
+    <h3 className="mb-4 font-semibold text-slate-800">Revenue (Last 6 Months)</h3>
+    <ChartContainer config={{ revenue: chartConfig.revenue }} className="h-48 w-full sm:h-64 lg:h-72">
+      <AreaChart accessibilityLayer data={graphs.revenue}>
+        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+        <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+        <Area type="monotone" dataKey="revenue" fill="var(--color-revenue)" stroke="var(--color-revenue)" fillOpacity={0.3} />
+      </AreaChart>
+    </ChartContainer>
+  </div>
 
-        {/* Users Graph */}
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h3 className="mb-4 font-semibold text-slate-800">New Users (Last 6 Months)</h3>
-          <ChartContainer config={{ users: chartConfig.users }} className="h-72 w-full">
-            <BarChart accessibilityLayer data={graphs.users}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-              <Bar dataKey="users" fill="var(--color-users)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ChartContainer>
-        </div>
+  {/* Users Graph */}
+  <div className="rounded-xl border bg-white p-6 shadow-sm">
+    <h3 className="mb-4 font-semibold text-slate-800">New Users (Last 6 Months)</h3>
+    <ChartContainer config={{ users: chartConfig.users }} className="h-48 w-full sm:h-64 lg:h-72">
+      <BarChart accessibilityLayer data={graphs.users}>
+        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+        <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+        <Bar dataKey="users" fill="var(--color-users)" radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ChartContainer>
+  </div>
 
-        {/* Jobs Graph */}
-        <div className="rounded-xl border bg-white p-6 shadow-sm lg:col-span-2">
-          <h3 className="mb-4 font-semibold text-slate-800">New Jobs (Last 6 Months)</h3>
-          <ChartContainer config={{ jobs: chartConfig.jobs }} className="h-72 w-full">
-            <LineChart accessibilityLayer data={graphs.jobs}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
-              <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-              <Line type="monotone" dataKey="jobs" stroke="var(--color-jobs)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-            </LineChart>
-          </ChartContainer>
-        </div>
-      </div>
+  {/* Jobs Graph */}
+  <div className="rounded-xl border bg-white p-6 shadow-sm lg:col-span-2">
+    <h3 className="mb-4 font-semibold text-slate-800">New Jobs (Last 6 Months)</h3>
+    <ChartContainer config={{ jobs: chartConfig.jobs }} className="h-48 w-full sm:h-64 lg:h-72">
+      <LineChart accessibilityLayer data={graphs.jobs}>
+        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+        <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+        <Line type="monotone" dataKey="jobs" stroke="var(--color-jobs)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+      </LineChart>
+    </ChartContainer>
+  </div>
+</div>
     </div>
   );
 };

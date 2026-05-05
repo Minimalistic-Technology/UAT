@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { GlobalRole } from "@/types";
 import { Menu, User, LogOut, Briefcase, FileText, Building2 } from "lucide-react";
 import { useState } from "react";
+import { menuItems as adminMenuItems } from "@/features/admin/components/sidebar";
 
 // Shadcn UI Components
 import { Button } from "@/components/ui/button";
@@ -25,10 +26,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Logo from "./logo";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export default function Navbar() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
+  const pathname = usePathname()
 
   const handleLogout = () => signOut({ callbackUrl: "/login" });
 
@@ -38,6 +42,7 @@ export default function Navbar() {
   const isEmployer = isAuthenticated && session?.user?.role === GlobalRole.USER && session?.user?.isEmployee;
   const isJobSeeker = isAuthenticated && session?.user?.role === GlobalRole.USER && !session?.user?.isEmployee;
   const showFindJobs = isLoading || !isEmployer;
+  const isAdmin = session?.user?.role === GlobalRole.SUPER_ADMIN;
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b absolute top-0 z-50 h-16 w-full">
@@ -46,7 +51,7 @@ export default function Navbar() {
           <Logo />
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2">
             {showFindJobs && <NavLink href="/find-jobs">Find Jobs</NavLink>}
 
             {isLoading ? (
@@ -109,11 +114,11 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Navigation */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
+                  <Menu className="size-6" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-72">
@@ -121,7 +126,7 @@ export default function Navbar() {
                   <SheetTitle><Logo /></SheetTitle>
                 </SheetHeader>
                 
-                <div className="flex flex-col gap-1 mt-6">
+                <div className="flex flex-col gap-1">
                   {isLoading ? (
                     <div className="space-y-4">
                       <Skeleton className="h-10 w-full" />
@@ -129,9 +134,10 @@ export default function Navbar() {
                     </div>
                   ) : (
                     <>
-                      {showFindJobs && (
+                      {showFindJobs && !isAdmin  && (
                         <MobileNavLink href="/find-jobs" onClick={() => setOpen(false)}>
-                          <Briefcase className="h-4 w-4" /> Find Jobs
+                          <Briefcase className="size-4 text-black" />
+                          <span className="font-semibold text-black">Find Jobs</span>
                         </MobileNavLink>
                       )}
                       
@@ -152,13 +158,23 @@ export default function Navbar() {
                               </MobileNavLink>
                             </>
                           )}
-                          <div className="my-2 border-t" />
+                          {isAdmin && adminMenuItems.map(({ label, href, icon: Icon }) => (
+                            <MobileNavLink
+                              key={href}
+                              href={href}
+                              onClick={() => setOpen(false)}
+                              className={pathname === href ? "bg-blue-500/80 text-white hover:text-white hover:bg-blue-500" : ""}
+                            >
+                              <Icon className="size-4" /> {label}
+                            </MobileNavLink>
+                          ))}
+                          <div className="border-t" />
                           <MobileNavLink href="/profile" onClick={() => setOpen(false)}>
                             <User className="h-4 w-4" /> Profile
                           </MobileNavLink>
-                          <Button variant="destructive" onClick={handleLogout} className="justify-start mt-4">
-                            <LogOut className="mr-2 h-4 w-4" /> Logout
-                          </Button>
+                          <div onClick={handleLogout} className="flex items-center justify-start mx-4 text-red-500 hover:bg-red-300 cursor-pointer">
+                            <LogOut className="mr-2 size-4" /> Logout
+                          </div>
                         </>
                       ) : (
                         <div className="flex flex-col gap-2 mt-4">
@@ -191,19 +207,19 @@ const NavLink = ({ href, children }: { href: string; children: React.ReactNode }
   </Link>
 );
 
-const MobileNavLink = ({ 
-  href, 
-  children, 
-  onClick 
-}: { 
-  href: string; 
-  children: React.ReactNode; 
-  onClick: () => void 
+const MobileNavLink = ({ href, onClick, className, children }: {
+  href: string;
+  onClick: () => void;
+  className?: string;
+  children: React.ReactNode;
 }) => (
   <Link
     href={href}
     onClick={onClick}
-    className="flex items-center gap-3 px-3 py-2 text-md font-medium text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-slate-50"
+    className={cn(
+      "flex items-center gap-3 px-3 py-2 text-md font-medium text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-slate-50",
+      className,
+    )}
   >
     {children}
   </Link>

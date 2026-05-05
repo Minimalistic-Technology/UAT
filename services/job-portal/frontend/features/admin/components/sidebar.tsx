@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
-const menuItems = [
+export const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin-dashboard" },
   { label: "User Management", icon: Users, href: "/admin-dashboard/users" },
   { label: "KYC Applications", icon: ShieldCheck, href: "/admin-dashboard/kyc" },

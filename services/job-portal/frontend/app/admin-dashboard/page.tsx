@@ -102,7 +102,7 @@ const AdminDashboard = () => {
             </Button>
           </div>
           
-          <ChartContainer config={chartConfig} className="h-64 w-full">
+          <ChartContainer config={chartConfig} className="h-48 w-full md:h-64">
             <BarChart accessibilityLayer data={graphs.revenue}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis
