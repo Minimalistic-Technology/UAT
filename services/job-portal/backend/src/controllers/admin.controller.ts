@@ -13,6 +13,7 @@ type IUserWithCompany = IUser & {
   isEmployee?: boolean;
   companyId?: Types.ObjectId | null;
   companyRole?: string | null;
+  companyName?: string | null;
 };
 
 export const getAllUsers = async (req: Request, res: Response) => {
@@ -42,7 +43,9 @@ export const getAllUsers = async (req: Request, res: Response) => {
     // Fetch memberships in ONE query
     const memberships = await CompanyMember.find({
       user: { $in: userIds },
-    }).lean();
+    })
+      .populate({ path: "company", select: "name" })
+      .lean();
 
     // Create lookup map: userId -> membership
     const membershipMap = new Map(
@@ -55,8 +58,10 @@ export const getAllUsers = async (req: Request, res: Response) => {
         const membership = membershipMap.get(user._id.toString());
 
         user.isEmployee = !!membership;
-        user.companyId = membership?.company ?? null;
+        user.companyId = membership?.company?._id ?? null;
         user.companyRole = membership?.role ?? null;
+        // @ts-ignore
+        user.companyName = membership?.company?.name ?? null;
       }
 
       return user;
@@ -281,8 +286,8 @@ export const updateKycStatus = async (
     if (status === "rejected" && note) {
       kycApplication.rejectionReason = note;
       // Also delete the assests attached to this kycApplication
-      await deleteFromCloudinary(kycApplication.photoUrl)
-      await deleteFromCloudinary(kycApplication.lightbillUrl)
+      await deleteFromCloudinary(kycApplication.photoUrl);
+      await deleteFromCloudinary(kycApplication.lightbillUrl);
     }
     await kycApplication.save();
 
@@ -338,39 +343,50 @@ export const getAdminAnalytics = async (req: Request, res: Response) => {
     const KYC = (await import("../models/KYC.model.js")).default;
     const Payment = (await import("../models/Payment.model.js")).default;
     const { PaymentStatus } = await import("../models/Payment.model.js");
-    const Application = (await import("../models/Application.model.js")).default;
+    const Application = (await import("../models/Application.model.js"))
+      .default;
 
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
     const [
-      currentMonthPayments, 
-      lastMonthPayments, 
+      currentMonthPayments,
+      lastMonthPayments,
       totalRevenueAggr,
       activeUsers,
       jobListings,
       kycPending,
       totalCompanies,
-      totalApplications
+      totalApplications,
     ] = await Promise.all([
       Payment.aggregate([
-        { $match: { status: PaymentStatus.CAPTURED, createdAt: { $gte: currentMonthStart } } },
-        { $group: { _id: null, total: { $sum: "$amount" } } }
+        {
+          $match: {
+            status: PaymentStatus.CAPTURED,
+            createdAt: { $gte: currentMonthStart },
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       Payment.aggregate([
-        { $match: { status: PaymentStatus.CAPTURED, createdAt: { $gte: lastMonthStart, $lt: currentMonthStart } } },
-        { $group: { _id: null, total: { $sum: "$amount" } } }
+        {
+          $match: {
+            status: PaymentStatus.CAPTURED,
+            createdAt: { $gte: lastMonthStart, $lt: currentMonthStart },
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       Payment.aggregate([
         { $match: { status: PaymentStatus.CAPTURED } },
-        { $group: { _id: null, total: { $sum: "$amount" } } }
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]),
       User.countDocuments({ isActive: true, role: GlobalRole.USER }),
       Job.countDocuments({ status: JobStatus.ACTIVE }),
       KYC.countDocuments({ status: "pending" }),
       Company.countDocuments({}),
-      Application.countDocuments({})
+      Application.countDocuments({}),
     ]);
 
     const currentRevenue = (currentMonthPayments[0]?.total || 0) / 100;
@@ -387,35 +403,56 @@ export const getAdminAnalytics = async (req: Request, res: Response) => {
     // Graph Data for the last 6 months
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    const [revenueGraphData, usersGraphData, jobsGraphData] = await Promise.all([
-      Payment.aggregate([
-        { $match: { status: PaymentStatus.CAPTURED, createdAt: { $gte: sixMonthsAgo } } },
-        { 
-          $group: {
-            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
-            total: { $sum: "$amount" }
-          }
-        }
-      ]),
-      User.aggregate([
-        { $match: { createdAt: { $gte: sixMonthsAgo }, role: GlobalRole.USER } },
-        { 
-          $group: {
-            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
-            count: { $sum: 1 }
-          }
-        }
-      ]),
-      Job.aggregate([
-        { $match: { createdAt: { $gte: sixMonthsAgo } } },
-        { 
-          $group: {
-            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
-            count: { $sum: 1 }
-          }
-        }
-      ])
-    ]);
+    const [revenueGraphData, usersGraphData, jobsGraphData] = await Promise.all(
+      [
+        Payment.aggregate([
+          {
+            $match: {
+              status: PaymentStatus.CAPTURED,
+              createdAt: { $gte: sixMonthsAgo },
+            },
+          },
+          {
+            $group: {
+              _id: {
+                month: { $month: "$createdAt" },
+                year: { $year: "$createdAt" },
+              },
+              total: { $sum: "$amount" },
+            },
+          },
+        ]),
+        User.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: sixMonthsAgo },
+              role: GlobalRole.USER,
+            },
+          },
+          {
+            $group: {
+              _id: {
+                month: { $month: "$createdAt" },
+                year: { $year: "$createdAt" },
+              },
+              count: { $sum: 1 },
+            },
+          },
+        ]),
+        Job.aggregate([
+          { $match: { createdAt: { $gte: sixMonthsAgo } } },
+          {
+            $group: {
+              _id: {
+                month: { $month: "$createdAt" },
+                year: { $year: "$createdAt" },
+              },
+              count: { $sum: 1 },
+            },
+          },
+        ]),
+      ],
+    );
 
     const formatGraphData = (data: any[], valueKey: string) => {
       const formatted = [];
@@ -423,10 +460,16 @@ export const getAdminAnalytics = async (req: Request, res: Response) => {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const month = d.getMonth() + 1;
         const year = d.getFullYear();
-        const found = data.find((item: any) => item._id.month === month && item._id.year === year);
+        const found = data.find(
+          (item: any) => item._id.month === month && item._id.year === year,
+        );
         formatted.push({
-          name: d.toLocaleString('default', { month: 'short' }),
-          [valueKey]: found ? (valueKey === 'revenue' ? found.total / 100 : found.count) : 0
+          name: d.toLocaleString("default", { month: "short" }),
+          [valueKey]: found
+            ? valueKey === "revenue"
+              ? found.total / 100
+              : found.count
+            : 0,
         });
       }
       return formatted;
@@ -447,20 +490,20 @@ export const getAdminAnalytics = async (req: Request, res: Response) => {
           jobListings,
           kycPending,
           totalCompanies,
-          totalApplications
+          totalApplications,
         },
         graphs: {
           revenue: revenueChart,
           users: usersChart,
-          jobs: jobsChart
-        }
-      }
+          jobs: jobsChart,
+        },
+      },
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch admin analytics",
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
