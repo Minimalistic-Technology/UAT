@@ -36,7 +36,7 @@ import { useValidateCoupon } from "../hooks/use-coupons";
 import { useRouter } from "next/navigation";
 import { APP_NAME } from "@/constants";
 
-export function PlanCard({ plan }: { plan: Plan }) {
+export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boolean }) {
   const { data: session } = useSession();
   const userId = session?.user.id;
   const isUnlimited = plan.jobPostLimit === -1;
@@ -308,7 +308,9 @@ export function PlanCard({ plan }: { plan: Plan }) {
           className={cn(
             "group w-full cursor-pointer font-bold transition-all active:scale-95",
             plan.isFeatured ? "shadow-primary/20 shadow-lg" : "",
+            isUnverified ? "cursor-not-allowed opacity-50" : "",
           )}
+          disabled={isUnverified}
           variant={plan.isFeatured ? "default" : "outline"}
         >
           <Zap

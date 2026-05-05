@@ -22,10 +22,19 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StatCard } from "@/features/employer/components/employer-stats-card";
 import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
-  const { data: responseData, isLoading, isError, isFetching } = useGetMyCompanyDetails();
-  
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+    isFetching,
+  } = useGetMyCompanyDetails();
+
+  const router = useRouter();
+
   const companyDetails = responseData?.data;
   const isUnverified = companyDetails?.isVerified === false;
   const kycStatus = companyDetails?.kycStatus;
@@ -57,7 +66,9 @@ const Page = () => {
           <div className="mt-1 flex items-center gap-2 text-sm font-medium">
             <span className="text-slate-700">{companyDetails?.name}</span>
             <span className="text-slate-300">•</span>
-            <span className="text-muted-foreground">{companyDetails?.industry}</span>
+            <span className="text-muted-foreground">
+              {companyDetails?.industry}
+            </span>
           </div>
           <p className="text-muted-foreground mt-1">
             Overview of your active listings and candidate pipeline.
@@ -72,11 +83,16 @@ const Page = () => {
             </Link>
           </Button>
 
-          <Button variant="default" asChild>
-            <Link href="/employer-dashboard/jobs/create">
-              <Plus className="mr-2 h-4 w-4" />
-              Post New Job
-            </Link>
+          <Button
+            variant="default"
+           disabled={isUnverified}
+            className={isUnverified ? "cursor-not-allowed opacity-50" : ""}
+            onClick={() => {
+              router.push("/employer-dashboard/jobs/create");
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Post New Job
           </Button>
         </div>
       </div>
@@ -121,7 +137,8 @@ const Page = () => {
                 KYC Verification Pending
               </AlertTitle>
               <AlertDescription className="text-blue-700">
-                Your KYC documents are currently under review. We will notify you once your account is verified.
+                Your KYC documents are currently under review. We will notify
+                you once your account is verified.
               </AlertDescription>
             </div>
           </div>
@@ -139,11 +156,14 @@ const Page = () => {
               <AlertTitle className="font-bold text-red-800">
                 KYC Verification Rejected
               </AlertTitle>
-              <AlertDescription className="text-red-700 mt-1">
-                Your recent KYC submission was rejected. Please review the requirements and submit again.
+              <AlertDescription className="mt-1 text-red-700">
+                Your recent KYC submission was rejected. Please review the
+                requirements and submit again.
                 {companyDetails?.kycRejectionReason && (
                   <div className="mt-3 rounded-md bg-red-100 p-3 text-sm text-red-900 shadow-inner">
-                    <span className="block font-bold">Reason for Rejection:</span>
+                    <span className="block font-bold">
+                      Reason for Rejection:
+                    </span>
                     <span className="mt-1 block text-base leading-relaxed">
                       {companyDetails.kycRejectionReason}
                     </span>

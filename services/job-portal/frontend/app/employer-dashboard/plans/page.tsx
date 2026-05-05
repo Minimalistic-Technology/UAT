@@ -14,9 +14,18 @@ import { Plan } from "@/features/employer/types";
 import { cn } from "@/lib/utils";
 import { useGetPlans } from "@/features/employer/hooks/use-plans";
 import { PlanCard } from "@/features/employer/components/plan-card";
+import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
 
 export default function PlansPage() {
   const { data: plansResponse, isLoading, isError } = useGetPlans();
+  const {
+    data: companyResponse,
+    isLoading: companyIsLoading,
+    isError: companyIsError
+  } = useGetMyCompanyDetails();
+
+  const companyDetails = companyResponse?.data;
+  const isUnverified = companyDetails?.isVerified === false;
 
   const plans: Plan[] = plansResponse?.data.plans ?? [];
 
@@ -36,7 +45,7 @@ export default function PlansPage() {
       </div>
 
       {/* Error State */}
-      {isError && (
+      {isError || companyIsError && (
         <Alert variant="destructive" className="mx-auto max-w-2xl py-2">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
@@ -57,7 +66,7 @@ export default function PlansPage() {
               : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
         )}
       >
-        {isLoading ? (
+        {isLoading || companyIsLoading ? (
           Array.from({ length: 3 }).map((_, i) => <PlanSkeleton key={i} />)
         ) : sortedPlans.length === 0 && !isError ? (
           <EmptyState />
@@ -67,7 +76,7 @@ export default function PlansPage() {
               key={plan._id}
               className="transition-all duration-300 hover:scale-[1.02]"
             >
-              <PlanCard plan={plan} />
+              <PlanCard plan={plan} isUnverified={isUnverified} />
             </div>
           ))
         )}
