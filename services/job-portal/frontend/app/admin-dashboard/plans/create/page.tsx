@@ -104,6 +104,7 @@ export default function CreatePlanForm() {
                 <Input
                   id="displayOrder"
                   type="number"
+                  min={0}
                   {...register("displayOrder", { valueAsNumber: true })}
                 />
                 {errors.displayOrder && (
@@ -121,7 +122,8 @@ export default function CreatePlanForm() {
                 <Input
                   id="price"
                   type="number"
-                  step="0.01"
+                  step="1"
+                   min={0}    
                   {...register("price", { valueAsNumber: true })}
                 />
                 {errors.price && (
@@ -152,13 +154,14 @@ export default function CreatePlanForm() {
               </div>
             </div>
 
-            {/* Limits */}
+            {/* Duration ( Days ) */}
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration (Days)</Label>
                 <Input
                   id="duration"
                   type="number"
+                  min={0}
                   {...register("durationDays", { valueAsNumber: true })}
                 />
                 {errors.durationDays && (
@@ -175,6 +178,7 @@ export default function CreatePlanForm() {
                 <Input
                   id="jobLimit"
                   type="number"
+                  min={-1}
                   {...register("jobPostLimit", { valueAsNumber: true })}
                 />
                 {errors.jobPostLimit && (

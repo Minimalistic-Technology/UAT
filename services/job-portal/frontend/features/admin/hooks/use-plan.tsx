@@ -2,15 +2,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createPlan, getAdminPlans, updatePlan, deletePlan } from "../services/plan.service";
 import { CreatePlanFormValues } from "../validations/plan.schema";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export const useCreatePlan = () => {
     const queryClient = useQueryClient();
+    const router = useRouter();
 
     return useMutation({
         mutationFn: (data: CreatePlanFormValues) => createPlan(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["plans"] });
             toast.success("Plan created successfully");
+            router.push("/admin-dashboard/plans");
         },
         onError: (error) => {
             console.error("Failed to create plan", error);
