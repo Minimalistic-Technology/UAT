@@ -103,7 +103,8 @@ export default function CreateCouponForm() {
                 id="value"
                 {...register("value", { valueAsNumber: true })}
                 type="number"
-                min="0"
+                min={0}
+                max={selectedType === "percentage" ? 100 : undefined}  
                 step={selectedType === "percentage" ? "1" : "0.01"}
                 placeholder="0"
               />
@@ -140,7 +141,7 @@ export default function CreateCouponForm() {
                     v === "" || v === null ? undefined : Number(v),
                 })}
                 type="number"
-                // Removed min="1" to allow -1
+                min={-1}
                 placeholder="Enter -1 for unlimited"
               />
               {errors.maxUses && (

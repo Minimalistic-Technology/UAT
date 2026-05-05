@@ -16,7 +16,7 @@ export const useCreateCoupon = () => {
       toast.success("Coupon created successfully!");
       // If we ever add a coupons list hook, invalidate it here
       queryClient.invalidateQueries({ queryKey: ["admin-coupons"] });
-      router.push("/admin-dashboard");
+      router.push("/admin-dashboard/coupons");
     },
     onError: (error: any) => {
       toast.error(
