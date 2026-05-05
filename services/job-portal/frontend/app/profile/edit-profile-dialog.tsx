@@ -13,6 +13,7 @@ import { BasicInfoTab } from "./_components/basic-info-tab";
 import { SkillsLanguagesTab } from "./_components/skills-languages-tab";
 import { ExperienceTab } from "./_components/experience-tab";
 import { EducationTab } from "./_components/education-tab";
+import { cn } from "@/lib/utils";
 
 interface EditProfileDialogProps {
   user: User | null;
@@ -93,7 +94,7 @@ export const EditProfileDialog = ({ user, children }: EditProfileDialogProps) =>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-3">
+      <DialogContent className={cn("max-w-4xl max-h-[90vh] overflow-y-auto p-3")}>
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
         </DialogHeader>
