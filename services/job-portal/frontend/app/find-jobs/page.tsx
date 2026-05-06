@@ -56,7 +56,7 @@ function JobsPageContent() {
 
             {Object.values(JobType).map((t) => (
               <SelectItem key={t} value={t}>
-                {t.replace("_", " ")}
+                {t.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ")}
               </SelectItem>
             ))}
           </SelectContent>

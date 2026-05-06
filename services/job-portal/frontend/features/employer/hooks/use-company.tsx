@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteEmployee, getAllEmployees, getMyCompany, submitKycData } from "../services/company.service";
+import { deleteEmployee, getAllEmployees, getMyCompany, submitKycData, updateCompanyDetails, uploadCompanyLogo } from "../services/company.service";
 import { toast } from "sonner";
 import {useRouter} from "next/navigation"
 import { getValidationErrorMessage } from "@/lib/validation-error";
@@ -61,6 +61,38 @@ export const useSubmitKyc = () => {
         return;
 
       }
+      toast.error(errorMsg);
+    },
+  });
+};
+
+export const useUpdateCompany = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateCompanyDetails,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-company-details"] });
+      toast.success("Company profile updated successfully");
+    },
+    onError: (error: any) => {
+      const errorMsg = error?.response?.data?.message || "Failed to update company profile";
+      toast.error(errorMsg);
+    },
+  });
+};
+
+export const useUploadCompanyLogo = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: uploadCompanyLogo,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-company-details"] });
+      toast.success("Company logo updated successfully");
+    },
+    onError: (error: any) => {
+      const errorMsg = error?.response?.data?.message || "Failed to upload company logo";
       toast.error(errorMsg);
     },
   });

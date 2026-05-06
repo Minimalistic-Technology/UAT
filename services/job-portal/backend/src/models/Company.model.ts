@@ -1,9 +1,10 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { ICloudinaryAsset, cloudinaryAssetSchema } from './KYC.model.js';
 
 export interface ICompany extends Document {
   name: string;
   description: string;
-  logo?: string;
+  logo?: ICloudinaryAsset;
   website?: string;
   industry: string;
   companySize: string;
@@ -36,7 +37,7 @@ const companySchema = new Schema<ICompany>(
       type: String,
       default: ""
     },
-    logo: String,
+    logo: cloudinaryAssetSchema,
     website: String,
     industry: {
       type: String,

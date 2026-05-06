@@ -69,3 +69,22 @@ export const submitKycData = async (formData: FormData) => {
   );
   return response.data;
 };
+
+export const updateCompanyDetails = async (data: Partial<Company>) => {
+  const response = await apiClient.put<ApiSuccessResponse<Company>>(
+    "/companies/me",
+    data
+  );
+  return response.data;
+};
+
+export const uploadCompanyLogo = async (formData: FormData) => {
+  const response = await apiClient.put<ApiSuccessResponse<{ logoUrl: string }>>(
+    "/companies/logo",
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    }
+  );
+  return response.data;
+};

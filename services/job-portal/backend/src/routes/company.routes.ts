@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import { body } from 'express-validator';
 import {
     createCompany,
@@ -7,12 +8,27 @@ import {
     getMyCompany,
     updateCompany,
     deleteCompany,
+    uploadCompanyLogo,
 } from '../controllers/company.controller.js';
 import { protect, authorize } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { GlobalRole } from '../models/User.model.js';
 
 const router = express.Router();
+
+const logoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Not an image! Please upload an image.'));
+    }
+  },
+});
 
 export const createCompanyValidation = [
     // --- User/Owner Validation ---
@@ -63,6 +79,7 @@ router.post(
 );
 
 router.put('/me', protect, authorize(GlobalRole.USER), updateCompany); // only for employer
+router.put('/logo', protect, authorize(GlobalRole.USER), logoUpload.single('logo'), uploadCompanyLogo); // only for employer
 router.delete('/:id', protect, authorize(GlobalRole.USER), deleteCompany); // only for employer
 
 export default router;

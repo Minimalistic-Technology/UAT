@@ -9,6 +9,8 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import Job, { JobStatus } from "../models/Job.model.js";
 import Subscription from "../models/Subscription.model.js";
 import KYC from "../models/KYC.model.js";
+import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
+import { ALLOWED_MIME_TYPES_FOR_AVATAR } from "../constants/index.js";
 
 // @desc    Create new company
 // @route   POST /api/companies
@@ -385,5 +387,53 @@ export const deleteCompany = async (
       message: "Error deleting company",
       error: error.message,
     });
+  }
+};
+
+export const uploadCompanyLogo = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (!req.file) {
+      throw new ApiError(400, "Please upload a file");
+    }
+
+    if (!ALLOWED_MIME_TYPES_FOR_AVATAR.includes(req.file.mimetype)) {
+      throw new ApiError(400, "Only images are allowed");
+    }
+
+    let company = await Company.findOne({ owner: req.user.id });
+
+    if (!company) {
+      throw new ApiError(404, "Company not found");
+    }
+
+    if(company?.logo?.publicId){
+      await deleteFromCloudinary(company.logo?.publicId);
+    }
+    
+    const result = await uploadToCloudinary(
+      req.file.buffer,
+      "job_portal/company_logos",
+      "image",
+      `logo-${company._id}-${Date.now()}`
+    );
+
+    company = await Company.findByIdAndUpdate(
+      company._id,
+      { logo: {
+        url: result.secure_url,
+        publicId: result.public_id,
+      } },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json(
+      new ApiResponse(200, { logoUrl: company?.logo }, "Company logo uploaded successfully")
+    );
+  } catch (error: any) {
+    next(error);
   }
 };
