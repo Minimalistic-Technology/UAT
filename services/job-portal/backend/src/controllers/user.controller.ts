@@ -191,20 +191,25 @@ export const submitKyc = async (
       throw new ApiError(400, "Your KYC is already submitted.");
     }
 
+    if(existingKyc && existingKyc.status === "rejected"){
+      existingKyc.isLatest = false;
+      await existingKyc.save();
+    }
+
     const photoResult = await uploadToCloudinary(
       files.photo[0].buffer,
-      "kyc_photos",
+      "job_portal/kyc_photos",
       "image",
       `kyc-photo-${req.user.id}-${Date.now()}`,
     );
 
     const isLightbillPdf = files.lightbill[0].mimetype === "application/pdf";
+
     const lightbillResult = await uploadToCloudinary(
       files.lightbill[0].buffer,
-      "kyc_lightbills",
+      "job_portal/kyc_lightbills",
       isLightbillPdf ? "raw" : "image",
       `kyc-lightbill-${req.user.id}-${Date.now()}`,
-      isLightbillPdf ? "pdf" : undefined,
     );
 
     const kycData = {
@@ -213,27 +218,26 @@ export const submitKyc = async (
       aadharNo,
       gstNo,
       cinNo,
-      photoUrl: photoResult.secure_url,
-      lightbillUrl: lightbillResult.secure_url,
+      photo: {
+        url: photoResult.secure_url,
+        publicId: photoResult.public_id
+      },
+      lightbill: {
+        url: lightbillResult.secure_url,
+        publicId: lightbillResult.public_id,
+      },
       status: "pending" as const,
     };
 
-    let kyc;
-    if (existingKyc) {
-      kyc = await KYC.findOneAndUpdate(
-        { _id: existingKyc._id },
-        { 
-          $set: kycData,
-          $unset: { rejectionReason: 1 }
-        },
-        { new: true }
-      );
-    } else {
-      kyc = await KYC.create(kycData);
-    }
+    const kyc = await KYC.create(kycData);
 
     if (!kyc) {
       // optionally delete the uploaded images
+      await Promise.allSettled([
+        deleteFromCloudinary(photoResult.public_id),
+        deleteFromCloudinary(lightbillResult.public_id)
+      ])
+
       throw new ApiError(
         500,
         "Failed to submit KYC details. Please try again later.",
@@ -246,8 +250,8 @@ export const submitKyc = async (
       gstNo: kyc?.gstNo,
       cinNo: kyc?.cinNo,
       documents: {
-        photoUrl: kyc?.photoUrl,
-        lightbillUrl: kyc?.lightbillUrl,
+        photoUrl: kyc?.photo.url,
+        lightbillUrl: kyc?.lightbill.url,
       },
     };
     
@@ -265,9 +269,6 @@ export const submitKyc = async (
   }
 };
 
-// @desc    Get user by ID
-// @route   GET /api/users/:id
-// @access  Private
 export const getUserById = async (
   req: AuthRequest,
   res: Response,

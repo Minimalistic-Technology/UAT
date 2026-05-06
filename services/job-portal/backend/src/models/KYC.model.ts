@@ -1,18 +1,38 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+interface ICloudinaryAsset {
+  url: string;
+  publicId: string;
+}
+
 export interface IKYC extends Document {
   user: mongoose.Types.ObjectId;
   companyName: string;
   aadharNo: string;
   gstNo: string;
   cinNo: string;
-  photoUrl: string;
-  lightbillUrl: string;
+  photo: ICloudinaryAsset;
+  lightbill: ICloudinaryAsset;
   status: "pending" | "approved" | "rejected";
   rejectionReason?: string;
+  isLatest: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
+
+const cloudinaryAssetSchema = new Schema<ICloudinaryAsset>(
+  {
+    url: {
+      type: String,
+      required: true,
+    },
+    publicId: {
+      type: String,
+      required: true,
+    },
+  },
+  { _id: false },
+);
 
 const kycSchema = new Schema<IKYC>(
   {
@@ -20,7 +40,7 @@ const kycSchema = new Schema<IKYC>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
+      // unique: true,
     },
     companyName: {
       type: String,
@@ -42,13 +62,14 @@ const kycSchema = new Schema<IKYC>(
       required: [true, "CIN number is required"],
       trim: true,
     },
-    photoUrl: {
-      type: String,
-      required: [true, "Photo URL is required"],
+    photo: {
+      type: cloudinaryAssetSchema,
+      required: true,
     },
-    lightbillUrl: {
-      type: String,
-      required: [true, "Lightbill URL is required"],
+
+    lightbill: {
+      type: cloudinaryAssetSchema,
+      required: true,
     },
     status: {
       type: String,
@@ -57,6 +78,10 @@ const kycSchema = new Schema<IKYC>(
     },
     rejectionReason: {
       type: String,
+    },
+    isLatest: {
+      type: Boolean,
+      default: true,
     },
   },
   {

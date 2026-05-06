@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 import {
   useGetKycApplications,
@@ -40,7 +39,8 @@ export default function KycManagementPage() {
     limit: 10,
     status: statusFilter === "all" ? undefined : statusFilter,
   });
-
+  console.log("Kyc applications", responseData);
+  
   const { mutate: updateStatus, isPending: isUpdating } =
     useUpdateKycApplicationStatus();
 

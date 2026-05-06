@@ -265,6 +265,7 @@ export const updateKycStatus = async (
 ) => {
   const { applicationId } = req.params;
   const { status, note } = req.body;
+  console.log("Note", note);
 
   try {
     if (!["approved", "rejected"].includes(status)) {
@@ -284,10 +285,11 @@ export const updateKycStatus = async (
 
     kycApplication.status = status;
     if (status === "rejected" && note) {
+      console.log("Inside the block")
       kycApplication.rejectionReason = note;
       // Also delete the assests attached to this kycApplication
-      await deleteFromCloudinary(kycApplication.photoUrl);
-      await deleteFromCloudinary(kycApplication.lightbillUrl);
+      // await deleteFromCloudinary(kycApplication.photo.publicId);
+      // await deleteFromCloudinary(kycApplication.lightbill.publicId);
     }
     await kycApplication.save();
 

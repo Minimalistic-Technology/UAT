@@ -33,6 +33,7 @@ const KYC_COLUMNS = [
 export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }: KycTableProps) => {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [viewingReason, setViewingReason] = useState<string | null>(null);
 
   const handleRejectConfirm = () => {
     if (rejectingId) {
@@ -85,10 +86,10 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     <Button variant="link" size="sm" className="h-auto p-0 text-xs justify-start text-blue-600" asChild>
-                      <a href={app.photoUrl} target="_blank" rel="noreferrer"><Eye className="mr-1 h-3 w-3"/> Photo</a>
+                      <a href={app.photo.url} target="_blank" rel="noreferrer"><Eye className="mr-1 h-3 w-3"/> Photo</a>
                     </Button>
                     <Button variant="link" size="sm" className="h-auto p-0 text-xs justify-start text-blue-600" asChild>
-                      <a href={app.lightbillUrl} target="_blank" rel="noreferrer"><ExternalLink className="mr-1 h-3 w-3"/> Utility Bill</a>
+                      <a href={app.lightbill.url} target="_blank" rel="noreferrer"><ExternalLink className="mr-1 h-3 w-3"/> Utility Bill</a>
                     </Button>
                   </div>
                 </TableCell>
@@ -131,7 +132,26 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
                       </TooltipProvider>
                     </div>
                   ) : (
-                    <span className="text-muted-foreground text-[11px] font-medium italic">Processed</span>
+                    <div className="flex items-center justify-end gap-2">
+                      {app.status === "rejected" && app.rejectionReason && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                onClick={() => setViewingReason(app.rejectionReason)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>View Rejection Reason</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                      <span className="text-muted-foreground text-[11px] font-medium italic">Processed</span>
+                    </div>
                   )}
                 </TableCell>
               </TableRow>
@@ -165,6 +185,20 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
             <Button variant="destructive" onClick={handleRejectConfirm} disabled={!rejectReason.trim()}>
               Confirm Rejection
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!viewingReason} onOpenChange={(open) => !open && setViewingReason(null)}>
+        <DialogContent className="px-4">
+          <DialogHeader className="px-0">
+            <DialogTitle>Rejection Reason</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm bg-muted/50 p-4 rounded-md whitespace-pre-wrap">
+            {viewingReason}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setViewingReason(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

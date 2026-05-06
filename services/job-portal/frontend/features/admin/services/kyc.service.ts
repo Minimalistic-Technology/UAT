@@ -41,7 +41,7 @@ export const getKycApplications = async ({ page, limit, status }: GetKycApplicat
 export const updateKycApplicationStatus = async ({ applicationId, status, note }: UpdateKycApplicationStatusParams) => {
     const response = await apiClient.put<ApiSuccessResponse<UpdateKycApplicationStatusResponse>>(
         `/admin/kyc-applications/${applicationId}/status`,
-        { status }
+        { status, note }
     );
     return response.data;
 }

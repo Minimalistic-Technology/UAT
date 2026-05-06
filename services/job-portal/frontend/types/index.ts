@@ -230,8 +230,8 @@ export interface KycDocument {
   aadharNo: string;
   gstNo: string;
   cinNo: string;
-  photoUrl: string;
-  lightbillUrl: string;
+  photo: {publicId: string, url: string};
+  lightbill: {publicId: string, url: string};
   status: "pending" | "approved" | "rejected";
   rejectionReason?: string;
   createdAt: string;
