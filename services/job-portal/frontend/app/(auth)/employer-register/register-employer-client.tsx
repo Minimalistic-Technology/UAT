@@ -10,7 +10,13 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -19,17 +25,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { registerEmployerSchema, type EmployerRegisterInput } from "@/features/auth/validations/auth.schema";
+import {
+  registerEmployerSchema,
+  type EmployerRegisterInput,
+} from "@/features/auth/validations/auth.schema";
 import { useRegisterEmployer } from "@/features/auth/hooks/use-register";
 import { CompanyRole } from "@/types";
 import Image from "next/image";
+import { getValidationErrorMessage } from "@/lib/validation-error";
 
 type EmployerRegisterFormValues = Omit<EmployerRegisterInput, "role">;
 
 const industries = [
-  "Technology", "Finance", "Healthcare", "Education", 
-  "E-commerce", "Manufacturing", "Consulting", 
-  "Marketing", "Real Estate", "Other",
+  "Technology",
+  "Finance",
+  "Healthcare",
+  "Education",
+  "E-commerce",
+  "Manufacturing",
+  "Consulting",
+  "Marketing",
+  "Real Estate",
+  "Other",
 ];
 
 export default function EmployerRegisterPage() {
@@ -71,6 +88,11 @@ export default function EmployerRegisterPage() {
         router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
       },
       onError: (error: any) => {
+        if (error.message === "Validation failed") {
+          const firstErrorMessage = getValidationErrorMessage(error);
+          toast.error(firstErrorMessage);
+          return;
+        }
         toast.error(error.message || "Registration failed");
       },
     });
@@ -80,69 +102,88 @@ export default function EmployerRegisterPage() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
-      <div className="hidden lg:block h-full w-1/2">
-        <Image src="/employer-signup-page-img.png" alt="employer-signup-image" height={1000} width={1000} className="h-full w-full object-cover object-right" />
+      <div className="hidden h-full w-1/2 lg:block">
+        <Image
+          src="/employer-signup-page-img.png"
+          alt="employer-signup-image"
+          height={1000}
+          width={1000}
+          className="h-full w-full object-cover object-right"
+        />
       </div>
       <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <Card className="border-none shadow-lg sm:border space-y-3 w-full max-w-sm">
-        <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-3xl font-bold">Create Employer Account</CardTitle>
+        <Card className="w-full max-w-sm space-y-3 border-none shadow-lg sm:border">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-3xl font-bold">
+              Create Employer Account
+            </CardTitle>
             <CardDescription>
               Hire top talent and grow your company
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              
               {/* Personal Info */}
               <div className="space-y-4">
-                <div className="text-xs font-bold uppercase text-muted-foreground tracking-widest">
+                <div className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
                   Personal Information
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="firstName">First Name</Label>
-                    <Input 
-                      id="firstName" 
-                      placeholder="John" 
+                    <Input
+                      id="firstName"
+                      placeholder="John"
                       disabled={isLoading}
-                      {...register("firstName")} 
+                      {...register("firstName")}
                     />
-                    {errors.firstName && <p className="text-xs text-destructive">{errors.firstName.message}</p>}
+                    {errors.firstName && (
+                      <p className="text-destructive text-xs">
+                        {errors.firstName.message}
+                      </p>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="lastName">Last Name</Label>
-                    <Input 
-                      id="lastName" 
-                      placeholder="Doe" 
+                    <Input
+                      id="lastName"
+                      placeholder="Doe"
                       disabled={isLoading}
-                      {...register("lastName")} 
+                      {...register("lastName")}
                     />
-                    {errors.lastName && <p className="text-xs text-destructive">{errors.lastName.message}</p>}
+                    {errors.lastName && (
+                      <p className="text-destructive text-xs">
+                        {errors.lastName.message}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Company Info */}
               <div className="space-y-4">
-                <div className="text-xs font-bold uppercase text-muted-foreground tracking-widest">
+                <div className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
                   Company Details
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="companyName">Company Name</Label>
-                  <Input 
-                    id="companyName" 
-                    placeholder="Acme Inc." 
+                  <Input
+                    id="companyName"
+                    placeholder="Acme Inc."
                     disabled={isLoading}
-                    {...register("companyName")} 
+                    {...register("companyName")}
                   />
-                  {errors.companyName && <p className="text-xs text-destructive">{errors.companyName.message}</p>}
+                  {errors.companyName && (
+                    <p className="text-destructive text-xs">
+                      {errors.companyName.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid gap-2">
                   <Label>Industry</Label>
-                  <Select 
+                  <Select
                     value={dropdownIndustry}
                     onValueChange={(value) => {
                       setDropdownIndustry(value);
@@ -156,16 +197,20 @@ export default function EmployerRegisterPage() {
                     }}
                     disabled={isLoading}
                   >
-                    <SelectTrigger className={errors.industry ? "border-destructive" : ""}>
+                    <SelectTrigger
+                      className={errors.industry ? "border-destructive" : ""}
+                    >
                       <SelectValue placeholder="Select an industry" />
                     </SelectTrigger>
                     <SelectContent>
                       {industries.map((item) => (
-                        <SelectItem key={item} value={item}>{item}</SelectItem>
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  
+
                   {dropdownIndustry === "Other" && (
                     <Input
                       placeholder="Please specify your industry"
@@ -174,7 +219,11 @@ export default function EmployerRegisterPage() {
                       {...register("industry")}
                     />
                   )}
-                  {errors.industry && <p className="text-xs text-destructive">{errors.industry.message}</p>}
+                  {errors.industry && (
+                    <p className="text-destructive text-xs">
+                      {errors.industry.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -182,31 +231,37 @@ export default function EmployerRegisterPage() {
               <div className="space-y-4">
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="m@example.com" 
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="m@example.com"
                     disabled={isLoading}
-                    {...register("email")} 
+                    {...register("email")}
                   />
-                  {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+                  {errors.email && (
+                    <p className="text-destructive text-xs">
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
-                      <Input 
-                        id="password" 
-                        type={showPassword ? "text" : "password"} 
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
                         disabled={isLoading}
-                        className={errors.password ? "border-destructive pr-10" : "pr-10"}
-                        {...register("password")} 
+                        className={
+                          errors.password ? "border-destructive pr-10" : "pr-10"
+                        }
+                        {...register("password")}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                       >
                         {showPassword ? (
                           <EyeOff className="h-4 w-4" />
@@ -215,22 +270,32 @@ export default function EmployerRegisterPage() {
                         )}
                       </button>
                     </div>
-                    {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+                    {errors.password && (
+                      <p className="text-destructive text-xs">
+                        {errors.password.message}
+                      </p>
+                    )}
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="confirmPassword">Confirm</Label>
                     <div className="relative">
-                      <Input 
-                        id="confirmPassword" 
-                        type={showConfirmPassword ? "text" : "password"} 
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
                         disabled={isLoading}
-                        className={errors.confirmPassword ? "border-destructive pr-10" : "pr-10"}
-                        {...register("confirmPassword")} 
+                        className={
+                          errors.confirmPassword
+                            ? "border-destructive pr-10"
+                            : "pr-10"
+                        }
+                        {...register("confirmPassword")}
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                       >
                         {showConfirmPassword ? (
                           <EyeOff className="h-4 w-4" />
@@ -239,7 +304,11 @@ export default function EmployerRegisterPage() {
                         )}
                       </button>
                     </div>
-                    {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
+                    {errors.confirmPassword && (
+                      <p className="text-destructive text-xs">
+                        {errors.confirmPassword.message}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -250,8 +319,13 @@ export default function EmployerRegisterPage() {
             </form>
 
             <div className="mt-4 text-center text-sm">
-              <span className="text-muted-foreground">Already have an account? </span>
-              <Link href="/login" className="underline underline-offset-4 hover:text-primary">
+              <span className="text-muted-foreground">
+                Already have an account?{" "}
+              </span>
+              <Link
+                href="/login"
+                className="hover:text-primary underline underline-offset-4"
+              >
                 Login
               </Link>
             </div>

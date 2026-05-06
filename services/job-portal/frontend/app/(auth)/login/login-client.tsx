@@ -25,6 +25,7 @@ import { useLogin } from "@/features/auth/hooks/use-login";
 import { useRedirectAsPerRole } from "@/hooks/use-redirect";
 import { useState } from "react";
 import Image from "next/image";
+import { getValidationErrorMessage } from "@/lib/validation-error";
 
 export default function LoginClient() {
   const [showPassword, setShowPassword] = useState(false);
@@ -49,6 +50,11 @@ export default function LoginClient() {
         toast.success("Login successful!");
       },
       onError: (error: any) => {
+        if (error.message === "Validation failed") {
+          const firstErrorMessage = getValidationErrorMessage(error);
+          toast.error(firstErrorMessage);
+          return;
+        }
         toast.error(error.message || "Login failed");
       },
     });

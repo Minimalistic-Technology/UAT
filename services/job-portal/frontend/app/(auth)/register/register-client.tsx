@@ -13,17 +13,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 
-import { registerUserSchema, RegisterUserInput } from "@/features/auth/validations/auth.schema";
+import {
+  registerUserSchema,
+  RegisterUserInput,
+} from "@/features/auth/validations/auth.schema";
 import { useRegister } from "@/features/auth/hooks/use-register";
 import Image from "next/image";
+import { getValidationErrorMessage } from "@/lib/validation-error";
 
 type RegisterFormValues = Omit<RegisterUserInput, "role">;
 
@@ -58,6 +62,11 @@ export default function RegisterClient() {
         router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
       },
       onError: (error: any) => {
+        if (error.message === "Validation failed") {
+          const firstErrorMessage = getValidationErrorMessage(error);
+          toast.error(firstErrorMessage);
+          return;
+        }
         toast.error(error.message || "Registration failed");
       },
     });
@@ -67,166 +76,197 @@ export default function RegisterClient() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
-      <div className="hidden lg:block h-full w-1/2">
-        <Image src="/signup-page-img.png" alt="signup-image" height={1000} width={1000} className="h-full w-full object-cover object-right" />
+      <div className="hidden h-full w-1/2 lg:block">
+        <Image
+          src="/signup-page-img.png"
+          alt="signup-image"
+          height={1000}
+          width={1000}
+          className="h-full w-full object-cover object-right"
+        />
       </div>
       <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <Card className="border-none shadow-lg sm:border space-y-3 w-full max-w-sm">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>
-            Enter your details below to create your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
-            
-            {/* Name Row */}
-            <div className="grid grid-cols-2 gap-4">
+        <Card className="w-full max-w-sm space-y-3 border-none shadow-lg sm:border">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">
+              Create an account
+            </CardTitle>
+            <CardDescription>
+              Enter your details below to create your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+              {/* Name Row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    placeholder="Max"
+                    {...register("firstName")}
+                    className={errors.firstName ? "border-destructive" : ""}
+                    disabled={isLoading}
+                  />
+                  {errors.firstName && (
+                    <p className="text-destructive text-xs font-medium">
+                      {errors.firstName.message}
+                    </p>
+                  )}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    placeholder="Robinson"
+                    {...register("lastName")}
+                    className={errors.lastName ? "border-destructive" : ""}
+                    disabled={isLoading}
+                  />
+                  {errors.lastName && (
+                    <p className="text-destructive text-xs font-medium">
+                      {errors.lastName.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Email */}
               <div className="grid gap-2">
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="firstName"
-                  placeholder="Max"
-                  {...register("firstName")}
-                  className={errors.firstName ? "border-destructive" : ""}
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  {...register("email")}
+                  className={errors.email ? "border-destructive" : ""}
                   disabled={isLoading}
                 />
-                {errors.firstName && (
-                  <p className="text-xs font-medium text-destructive">{errors.firstName.message}</p>
+                {errors.email && (
+                  <p className="text-destructive text-xs font-medium">
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
+
+              {/* Phone */}
               <div className="grid gap-2">
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="phone">Phone Number</Label>
                 <Input
-                  id="lastName"
-                  placeholder="Robinson"
-                  {...register("lastName")}
-                  className={errors.lastName ? "border-destructive" : ""}
+                  id="phone"
+                  type="tel"
+                  placeholder="+123456789"
+                  {...register("phone")}
+                  className={errors.phone ? "border-destructive" : ""}
                   disabled={isLoading}
                 />
-                {errors.lastName && (
-                  <p className="text-xs font-medium text-destructive">{errors.lastName.message}</p>
+                {errors.phone && (
+                  <p className="text-destructive text-xs font-medium">
+                    {errors.phone.message}
+                  </p>
                 )}
               </div>
-            </div>
 
-            {/* Email */}
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                {...register("email")}
-                className={errors.email ? "border-destructive" : ""}
-                disabled={isLoading}
-              />
-              {errors.email && (
-                <p className="text-xs font-medium text-destructive">{errors.email.message}</p>
-              )}
-            </div>
-
-            {/* Phone */}
-            <div className="grid gap-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+123456789"
-                {...register("phone")}
-                className={errors.phone ? "border-destructive" : ""}
-                disabled={isLoading}
-              />
-              {errors.phone && (
-                <p className="text-xs font-medium text-destructive">{errors.phone.message}</p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  {...register("password")}
-                  className={errors.password ? "border-destructive pr-10" : "pr-10"}
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+              {/* Password */}
+              <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    {...register("password")}
+                    className={
+                      errors.password ? "border-destructive pr-10" : "pr-10"
+                    }
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-destructive text-xs font-medium">
+                    {errors.password.message}
+                  </p>
+                )}
               </div>
-              {errors.password && (
-                <p className="text-xs font-medium text-destructive">{errors.password.message}</p>
-              )}
-            </div>
 
-            {/* Confirm Password */}
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  {...register("confirmPassword")}
-                  className={errors.confirmPassword ? "border-destructive pr-10" : "pr-10"}
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+              {/* Confirm Password */}
+              <div className="grid gap-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    {...register("confirmPassword")}
+                    className={
+                      errors.confirmPassword
+                        ? "border-destructive pr-10"
+                        : "pr-10"
+                    }
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-destructive text-xs font-medium">
+                    {errors.confirmPassword.message}
+                  </p>
+                )}
               </div>
-              {errors.confirmPassword && (
-                <p className="text-xs font-medium text-destructive">{errors.confirmPassword.message}</p>
-              )}
-            </div>
 
-            {/* Terms */}
-            <div className="flex items-center space-x-2 py-2">
-              <Checkbox id="terms" required />
-              <label
-                htmlFor="terms"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              {/* Terms */}
+              <div className="flex items-center space-x-2 py-2">
+                <Checkbox id="terms" required />
+                <label
+                  htmlFor="terms"
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  I agree to the{" "}
+                  <Link
+                    href="/terms"
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    Terms
+                  </Link>
+                </label>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Please wait..." : "Create Account"}
+              </Button>
+            </form>
+
+            <div className="mt-4 text-center text-sm">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="text-primary underline-offset-4 hover:underline"
               >
-                I agree to the{" "}
-                <Link href="/terms" className="text-primary underline-offset-4 hover:underline">
-                  Terms
-                </Link>
-              </label>
+                Sign in
+              </Link>
             </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Please wait..." : "Create Account"}
-            </Button>
-          </form>
-
-          <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
-            <Link href="/login" className="text-primary underline-offset-4 hover:underline">
-              Sign in
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
