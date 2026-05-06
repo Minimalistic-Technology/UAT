@@ -8,13 +8,7 @@ import {
 } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
-
-export const getPublicIdFromUrl = (url: string) => {
-  const parts = url.split("/");
-  const file = parts.slice(-2).join("/"); // resumes/filename.pdf
-  const publicId = file.replace(/\.[^/.]+$/, ""); // remove extension
-  return publicId;
-};
+import {ALLOWED_MIME_TYPES_FOR_AVATAR, ALLOWED_MIME_TYPES_FOR_RESUME} from "../constants/index.js";
 
 export const updateProfile = async (
   req: AuthRequest,
@@ -75,21 +69,28 @@ export const uploadAvatar = async (
       throw new ApiError(400, "Please upload a file");
     }
 
-    if (req.user.avatar) {
-      const publicId = getPublicIdFromUrl(req.user.avatar);
-      await deleteFromCloudinary(publicId, "image");
+    if (!ALLOWED_MIME_TYPES_FOR_AVATAR.includes(req.file.mimetype)) {
+      throw new ApiError(400, "Only images are allowed");
+    }
+    if (req.user.avatar?.publicId) {
+      await deleteFromCloudinary(req.user.avatar.publicId, "image");
     }
 
     const result = await uploadToCloudinary(
       req.file.buffer,
-      "avatars",
+      "job-portal/avatars",
       "image",
       `avatar-${req.user.id}-${Date.now()}`,
     );
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      { avatar: result.secure_url },
+      {
+        avatar: {
+          url: result.secure_url,
+          publicId: result.public_id,
+        },
+      },
       { new: true },
     );
 
@@ -98,7 +99,7 @@ export const uploadAvatar = async (
       .json(
         new ApiResponse(
           200,
-          { avatarUrl: updatedUser?.avatar },
+          { avatarUrl: updatedUser?.avatar?.url },
           "Avatar uploaded successfully",
         ),
       );
@@ -116,41 +117,49 @@ export const uploadResume = async (
     if (!req.file) {
       throw new ApiError(400, "Please upload a file");
     }
-    if (req.user.resume) {
-      const publicId = getPublicIdFromUrl(req.user.resume);
-      const isRaw = req.user.resume.includes("/raw/upload/");
-      await deleteFromCloudinary(publicId, isRaw ? "raw" : "image");
+
+    if (!ALLOWED_MIME_TYPES_FOR_RESUME.includes(req.file.mimetype)) {
+      throw new ApiError(400, "Only PDF files are allowed");
+    }
+
+    if (req.user.resume?.publicId) {
+      const isRaw = req.user.resume?.url.includes("/raw/upload/");
+      await deleteFromCloudinary(
+        req.user.resume?.publicId,
+        isRaw ? "raw" : "image",
+      );
     }
 
     const result = await uploadToCloudinary(
       req.file.buffer,
-      "resumes",
-      "image",
+      "job-portal/resumes",
+      "raw",
       `resume-${req.user.id}-${Date.now()}`,
-      "pdf"
+      "pdf",
     );
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      { 
-        resume: result.secure_url,
-        resumeOriginalName: req.file.originalname 
+      {
+        resume: {
+          url: result.secure_url,
+          publicId: result.public_id,
+        },
+        resumeOriginalName: req.file.originalname,
       },
       { new: true },
     );
 
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          { 
-            resumeUrl: updatedUser?.resume, 
-            resumeOriginalName: updatedUser?.resumeOriginalName 
-          },
-          "Resume uploaded successfully",
-        ),
-      );
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          resumeUrl: updatedUser?.resume?.url,
+          resumeOriginalName: updatedUser?.resumeOriginalName,
+        },
+        "Resume uploaded successfully",
+      ),
+    );
   } catch (error: any) {
     next(error);
   }
@@ -191,7 +200,7 @@ export const submitKyc = async (
       throw new ApiError(400, "Your KYC is already submitted.");
     }
 
-    if(existingKyc && existingKyc.status === "rejected"){
+    if (existingKyc && existingKyc.status === "rejected") {
       existingKyc.isLatest = false;
       await existingKyc.save();
     }
@@ -220,7 +229,7 @@ export const submitKyc = async (
       cinNo,
       photo: {
         url: photoResult.secure_url,
-        publicId: photoResult.public_id
+        publicId: photoResult.public_id,
       },
       lightbill: {
         url: lightbillResult.secure_url,
@@ -235,8 +244,8 @@ export const submitKyc = async (
       // optionally delete the uploaded images
       await Promise.allSettled([
         deleteFromCloudinary(photoResult.public_id),
-        deleteFromCloudinary(lightbillResult.public_id)
-      ])
+        deleteFromCloudinary(lightbillResult.public_id),
+      ]);
 
       throw new ApiError(
         500,
@@ -254,7 +263,7 @@ export const submitKyc = async (
         lightbillUrl: kyc?.lightbill.url,
       },
     };
-    
+
     return res
       .status(200)
       .json(

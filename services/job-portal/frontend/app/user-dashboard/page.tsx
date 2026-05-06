@@ -98,18 +98,11 @@ export default function JobSeekerDashboard() {
             so far.
           </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" asChild>
-            <Link href="/user-dashboard/profile/resume">
-              <FileText className="mr-2 h-4 w-4" /> My Resume
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/find-jobs">
-              <Search className="mr-2 h-4 w-4" /> Browse Jobs
-            </Link>
-          </Button>
-        </div>
+        <Button asChild>
+          <Link href="/find-jobs">
+            <Search className="mr-2 h-4 w-4" /> Browse Jobs
+          </Link>
+        </Button>
       </div>
 
       {/* Stats Grid */}
@@ -168,7 +161,7 @@ export default function JobSeekerDashboard() {
                       You haven't applied to any jobs yet.
                     </p>
                     <Button variant="link" asChild>
-                      <Link href="/jobs">Start searching</Link>
+                      <Link href="/find-jobs">Start searching</Link>
                     </Button>
                   </div>
                 ) : (
@@ -245,10 +238,7 @@ export default function JobSeekerDashboard() {
                   //   indicatorClassName="bg-primary"
                 />
               </div>
-              <Button
-                className="w-full bg-white text-slate-900"
-                asChild
-              >
+              <Button className="w-full bg-white text-slate-900" asChild>
                 <Link href="/profile">Edit Profile</Link>
               </Button>
             </CardContent>

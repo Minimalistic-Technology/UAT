@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
+import { cloudinaryAssetSchema, ICloudinaryAsset } from "./KYC.model.js";
 
 export enum GlobalRole {
   USER = "user",
@@ -14,10 +15,10 @@ export interface IUser extends Document {
   phone?: string;
   phoneVerified: boolean;
   role: GlobalRole;
-  avatar?: string;
+  avatar?: ICloudinaryAsset;
 
   // Job Seeker Specific
-  resume?: string;
+  resume?: ICloudinaryAsset;
   resumeOriginalName?: string;
   skills?: string[];
   languages?: string[];
@@ -103,10 +104,10 @@ const userSchema = new Schema<IUser>(
       enum: Object.values(GlobalRole),
       default: GlobalRole.USER,
     },
-    avatar: String,
+    avatar: cloudinaryAssetSchema,
 
     // Job Seeker Fields
-    resume: String,
+    resume: cloudinaryAssetSchema,
     resumeOriginalName: String,
     skills: [String],
     languages: [String],

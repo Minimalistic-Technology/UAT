@@ -29,17 +29,17 @@ export const ApplicationDocuments = ({
           <div className="bg-muted/20 flex min-h-[58px] items-center justify-between rounded-md border p-3">
             <span
               className="max-w-[150px] truncate text-sm font-medium"
-              title={user?.resume || "My_Resume.pdf"}
+              title={user?.resumeOriginalName || "My_Resume.pdf"}
             >
-              {user?.resume
-                ? user?.resume || "My_Resume.pdf"
+              {user?.resume?.url
+                ? user?.resumeOriginalName || "My_Resume.pdf"
                 : "No resume found"}
             </span>
-            {user?.resume ? (
+            {user?.resume?.url ? (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild>
                   <a
-                    href={user.resume}
+                    href={user.resume.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary flex items-center gap-1.5"

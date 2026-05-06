@@ -27,10 +27,12 @@ export const ProfileOverview = ({
         <CardContent className="pt-8 pb-6 text-center">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
+
+              {/* Avatar */}
               <Avatar className="border-background h-28 w-28 border-4 shadow-xl">
-                {user?.avatar ? (
+                {user?.avatar?.url ? (
                   <AvatarImage
-                    src={user.avatar}
+                    src={user.avatar?.url}
                     alt={`${user?.firstName} ${user?.lastName}`}
                   />
                 ) : null}

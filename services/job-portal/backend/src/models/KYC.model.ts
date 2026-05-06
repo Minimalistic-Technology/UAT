@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-interface ICloudinaryAsset {
+export interface ICloudinaryAsset {
   url: string;
   publicId: string;
 }
@@ -20,7 +20,7 @@ export interface IKYC extends Document {
   updatedAt: Date;
 }
 
-const cloudinaryAssetSchema = new Schema<ICloudinaryAsset>(
+export const cloudinaryAssetSchema = new Schema<ICloudinaryAsset>(
   {
     url: {
       type: String,

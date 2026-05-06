@@ -49,10 +49,17 @@ export interface User {
   email: string;
   phone?: string;
   role: GlobalRole;
-  avatar?: string;
+  avatar?: {
+    url: string;
+    publicId: string;
+  };
 
   // Job Seeker Specific
-  resume?: string;
+  resume?: {
+    url: string;
+    publicId: string;
+  };
+  resumeOriginalName?: string;
   skills?: string[];
   languages?: string[];
   experience?: Array<{
@@ -111,7 +118,7 @@ export interface Job {
     min?: number;
     max?: number;
     currency: string;
-    period: 'hourly' | 'monthly' | 'yearly';
+    period: "hourly" | "monthly" | "yearly";
   };
 
   skills: string[];
@@ -182,7 +189,6 @@ export interface Payment {
   updatedAt: string;
 }
 
-
 export interface Coupon {
   code: string;
   type: "percentage" | "amount";
@@ -230,8 +236,8 @@ export interface KycDocument {
   aadharNo: string;
   gstNo: string;
   cinNo: string;
-  photo: {publicId: string, url: string};
-  lightbill: {publicId: string, url: string};
+  photo: { publicId: string; url: string };
+  lightbill: { publicId: string; url: string };
   status: "pending" | "approved" | "rejected";
   rejectionReason?: string;
   createdAt: string;
