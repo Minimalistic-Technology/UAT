@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SidebarNavItem } from "@/components/sidebar-nav-item";
 
 const userMenuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/user-dashboard" },
@@ -39,6 +40,7 @@ const userMenuItems = [
 export default function UserSidebar({ className }: { className?: string }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const handleLogout = () => signOut({ callbackUrl: "/login" });
 
   // Get initials for avatar fallback
   const initials =
@@ -71,28 +73,13 @@ export default function UserSidebar({ className }: { className?: string }) {
           {userMenuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <Link
+              <SidebarNavItem
                 key={item.href}
                 href={item.href}
-                className={cn(
-                  "group flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon
-                    className={cn(
-                      "h-4 w-4 transition-colors",
-                      isActive
-                        ? "text-primary"
-                        : "text-slate-400 group-hover:text-slate-600",
-                    )}
-                  />
-                  {item.label}
-                </div>
-              </Link>
+                label={item.label}
+                icon={item.icon}
+                isActive={isActive}
+              />
             );
           })}
         </nav>
@@ -119,8 +106,8 @@ export default function UserSidebar({ className }: { className?: string }) {
 
         <Button
           variant="ghost"
-          onClick={() => signOut()}
-          className="hover:text-destructive hover:bg-destructive/10 h-9 w-full justify-start text-slate-500"
+          onClick={handleLogout}
+          className="hover:text-destructive hover:bg-destructive/10 h-9 w-full justify-start text-slate-500 cursor-pointer"
         >
           <LogOut className="mr-3 h-4 w-4" />
           <span className="text-sm font-medium">Logout</span>

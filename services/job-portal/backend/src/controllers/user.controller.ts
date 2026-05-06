@@ -78,7 +78,7 @@ export const uploadAvatar = async (
 
     const result = await uploadToCloudinary(
       req.file.buffer,
-      "job-portal/avatars",
+      "job_portal/avatars",
       "image",
       `avatar-${req.user.id}-${Date.now()}`,
     );
@@ -132,7 +132,7 @@ export const uploadResume = async (
 
     const result = await uploadToCloudinary(
       req.file.buffer,
-      "job-portal/resumes",
+      "job_portal/resumes",
       "raw",
       `resume-${req.user.id}-${Date.now()}`,
       "pdf",

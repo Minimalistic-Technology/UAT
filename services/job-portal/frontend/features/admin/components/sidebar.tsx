@@ -15,6 +15,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { signOut } from "next-auth/react"
+import { SidebarNavItem } from "@/components/sidebar-nav-item"
 
 export const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin-dashboard" },
@@ -27,7 +29,8 @@ export const menuItems = [
 ]
 
 export function Sidebar({ className }: { className?: string }) {
-  const pathname = usePathname()
+  const pathname = usePathname();
+  const handleLogout = () => signOut({ callbackUrl: "/login" });
 
   return (
     <div className={cn("min-h-[calc(100vh-4rem)] w-64 flex-col border-r bg-slate-50/50 hidden lg:flex", className)}>
@@ -43,28 +46,22 @@ export function Sidebar({ className }: { className?: string }) {
           {menuItems.map((item) => {
             const isActive = pathname === item.href
             return (
-              <Link
+              <SidebarNavItem
                 key={item.href}
                 href={item.href}
-                className={cn(
-                  "group flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  isActive 
-                    ? "bg-white text-indigo-600 shadow-sm border border-slate-200" 
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className={cn("h-4 w-4", isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600")} />
-                  {item.label}
-                </div>
-              </Link>
+                label={item.label}
+                icon={item.icon}
+                isActive={isActive}
+              />
             )
           })}
         </nav>
       </div>
 
       <div className="border-t p-4 bg-white">
-        <Button variant="ghost" className="w-full justify-start text-slate-500 hover:text-red-600 hover:bg-red-50 cursor-pointer">
+        <Button 
+        onClick={handleLogout}
+        variant="ghost" className="w-full justify-start text-slate-500 hover:text-red-600 hover:bg-red-50 cursor-pointer">
           <LogOut className="mr-3 h-4 w-4" />
           Logout
         </Button>

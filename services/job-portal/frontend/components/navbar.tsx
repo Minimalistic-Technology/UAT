@@ -65,7 +65,6 @@ export default function Navbar() {
                 {isJobSeeker && <NavLink href="/user-dashboard/applications">My Applications</NavLink>}
                 {isEmployer && (
                   <>
-                    <NavLink href="/employer-dashboard/jobs/create">Post Job</NavLink>
                     <NavLink href="/company-profile">Company</NavLink>
                   </>
                 )}
@@ -150,9 +149,6 @@ export default function Navbar() {
                           )}
                           {isEmployer && (
                             <>
-                              <MobileNavLink href="/post-job" onClick={() => setOpen(false)}>
-                                <Briefcase className="h-4 w-4" /> Post Job
-                              </MobileNavLink>
                               <MobileNavLink href="/company-profile" onClick={() => setOpen(false)}>
                                 <Building2 className="h-4 w-4" /> Company
                               </MobileNavLink>
