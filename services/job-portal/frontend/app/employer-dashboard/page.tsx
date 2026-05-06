@@ -23,9 +23,20 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StatCard } from "@/features/employer/components/employer-stats-card";
 import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
+import { useAllEmployerApplications } from "@/features/employer/hooks/use-applications";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
 const Page = () => {
   const {
@@ -35,11 +46,32 @@ const Page = () => {
     isFetching,
   } = useGetMyCompanyDetails();
 
+  const { data: applicationsData, isLoading: isLoadingApps } = useAllEmployerApplications({ page: 1, limit: 5 });
+
   const router = useRouter();
 
   const companyDetails = responseData?.data;
   const isUnverified = companyDetails?.isVerified === false;
   const kycStatus = companyDetails?.kycStatus;
+
+  const recentApplications = applicationsData?.data?.applications || [];
+  const totalApplications = applicationsData?.data?.pagination?.totalItems || 0;
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "applied":
+      case "under_review":
+        return "secondary";
+      case "shortlisted":
+      case "selected":
+        return "default";
+      case "rejected":
+      case "withdrawn":
+        return "destructive";
+      default:
+        return "outline";
+    }
+  };
 
   if ((isLoading || !companyDetails) && !isError) {
     return <DashboardSkeleton />;
@@ -230,20 +262,71 @@ const Page = () => {
 />
       </div>
 
-      {/* Placeholder for Recent Activity or Tables */}
+      {/* Recent Applications Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Applications</CardTitle>
-          <CardDescription>
-            You have 12 unreviewed applications across all jobs.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex h-50 items-center justify-center rounded-md border-2 border-dashed">
-          <Button variant="ghost" asChild>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Recent Applications</CardTitle>
+            <CardDescription>
+              You have {totalApplications} applications across all jobs.
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" asChild>
             <Link href="/employer-dashboard/applications">
               View All Applications
             </Link>
           </Button>
+        </CardHeader>
+        <CardContent>
+          {isLoadingApps ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : recentApplications.length === 0 ? (
+            <div className="py-10 text-center text-muted-foreground flex h-32 items-center justify-center rounded-md border-2 border-dashed">
+              No recent applications found.
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Applicant</TableHead>
+                    <TableHead>Job Title</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Applied At</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentApplications.map((app: any) => (
+                    <TableRow key={app._id}>
+                      <TableCell>
+                        <div className="font-medium">
+                          {app.jobSeeker?.firstName} {app.jobSeeker?.lastName}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {app.jobSeeker?.email}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {app.job?.title || "Unknown Job"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(app.status)}>
+                          {app.status.replace("_", " ").toUpperCase()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {format(new Date(app.createdAt), "MMM d, yyyy")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

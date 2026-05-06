@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
-import { useAllEmployerApplications } from "@/features/employer/hooks/use-applications";
+import { useAllEmployerApplications, useUpdateApplicationStatus } from "@/features/employer/hooks/use-applications";
 import {
   Table,
   TableBody,
@@ -16,11 +16,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal, Calendar, CheckCircle2, XCircle } from "lucide-react";
 import { ApplicationDetailModal } from "@/features/employer/components/application-details-model";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 const EmployerApplicationsPage = () => {
   const [page, setPage] = useState(1);
+  const [interviewModalOpen, setInterviewModalOpen] = useState(false);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [interviewDate, setInterviewDate] = useState("");
+  const { mutateAsync: updateStatus, isPending: isUpdating } = useUpdateApplicationStatus();
   const [limit] = useState(10);
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -41,6 +57,41 @@ const EmployerApplicationsPage = () => {
 
   const applications = responseData?.data?.applications || [];
   const pagination = responseData?.data?.pagination;
+
+  const handleUpdateStatus = async (applicationId: string, status: string) => {
+    try {
+      await updateStatus({ applicationId, status });
+      toast.success(`Candidate marked as ${status.toUpperCase()}`);
+    } catch (error) {
+      toast.error("Failed to update candidate status.");
+    }
+  };
+
+  const handleScheduleInterview = async () => {
+    if (!selectedAppId || !interviewDate) {
+      toast.error("Please select a valid date and time.");
+      return;
+    }
+    
+    if (new Date(interviewDate) <= new Date()) {
+      toast.error("Interview date and time must be in the future.");
+      return;
+    }
+
+    try {
+      await updateStatus({
+        applicationId: selectedAppId,
+        status: "interview",
+        interviewDate: new Date(interviewDate).toISOString(),
+      });
+      toast.success("Interview scheduled successfully!");
+      setInterviewModalOpen(false);
+      setInterviewDate("");
+      setSelectedAppId(null);
+    } catch (error) {
+      toast.error("Failed to schedule interview.");
+    }
+  };
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status.toLowerCase()) {
@@ -142,7 +193,45 @@ const EmployerApplicationsPage = () => {
                         {format(new Date(app.createdAt), "MMM d, yyyy")}
                       </TableCell>
                       <TableCell className="text-right">
-                        <ApplicationDetailModal application={app} />
+                        <div className="flex justify-end gap-2">
+                          <ApplicationDetailModal application={app} />
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="text-blue-600 cursor-pointer"
+                                onClick={() => {
+                                  setSelectedAppId(app._id);
+                                  setInterviewModalOpen(true);
+                                }}
+                              >
+                                <Calendar className="mr-2 h-4 w-4" /> Schedule
+                                Interview
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-green-600 cursor-pointer"
+                                onClick={() => handleUpdateStatus(app._id, "accepted")}
+                              >
+                                <CheckCircle2 className="mr-2 h-4 w-4" /> Accept
+                                Candidate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-red-600 cursor-pointer"
+                                onClick={() => handleUpdateStatus(app._id, "rejected")}
+                              >
+                                <XCircle className="mr-2 h-4 w-4" /> Reject
+                                Candidate
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -181,6 +270,39 @@ const EmployerApplicationsPage = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog 
+        open={interviewModalOpen} 
+        onOpenChange={(open) => {
+          setInterviewModalOpen(open);
+          if (!open) {
+            setSelectedAppId(null);
+            setInterviewDate("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Schedule Interview</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Interview Date and Time</Label>
+              <Input
+                type="datetime-local"
+                value={interviewDate}
+                onChange={(e) => setInterviewDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+              />
+              <p className="text-xs text-muted-foreground">Select a date and time in the future.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInterviewModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleScheduleInterview} disabled={isUpdating || !interviewDate}>Schedule</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
