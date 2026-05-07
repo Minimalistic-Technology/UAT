@@ -53,7 +53,7 @@ const PaymentSchema: Schema<IPayment> = new Schema(
     amount: {
       type: Number,
       required: true,
-      min: [1, "Amount must be greater than 0"],
+      min: [0, "Amount cannot be negative"],
     },
 
     currency: {

@@ -4,6 +4,8 @@ import { RazorpayOrder } from "../types";
 export interface CreateOrderResponse {
   order: RazorpayOrder;
   paymentId: string;
+  isFree?: boolean;
+  finalAmount?: number;
 }
 
 export const createOrder = async (orderPayload: {

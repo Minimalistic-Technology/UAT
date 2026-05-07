@@ -157,7 +157,7 @@ export default function CreatePlanForm() {
             {/* Duration ( Days ) */}
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration (Days)</Label>
+                <Label htmlFor="duration">Expiry Period (In Days)</Label>
                 <Input
                   id="duration"
                   type="number"

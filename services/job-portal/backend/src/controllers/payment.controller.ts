@@ -70,6 +70,18 @@ export const createOrder = async (
     const plan = await Plan.findById(planId);
     if (!plan) throw new ApiError(404, "Plan not found");
 
+    // Prevent claiming the free plan multiple times
+    if (plan.price === 0) {
+      const existingFreeSub = await Subscription.findOne({
+        employerId: userId,
+        planId: plan._id,
+      });
+
+      if (existingFreeSub) {
+        throw new ApiError(400, "You have already claimed this free plan.");
+      }
+    }
+
     let finalAmount = plan.price;
     let discountValue = 0;
     let appliedCoupon = null;
@@ -112,7 +124,46 @@ export const createOrder = async (
       finalAmount = Number((plan.price - discountValue).toFixed(2));
     }
 
-    // 3. Create Razorpay Order
+    // 3. Handle free plan or 100% discount
+    if (finalAmount === 0) {
+      const internalOrderIdString = internalOrderId || `FREE_${Date.now()}`;
+      
+      await Payment.create(
+        [
+          {
+            userId,
+            amount: 0,
+            currency: plan.currency || "INR",
+            razorpayOrderId: internalOrderIdString,
+            metadata: { planId, couponCode: appliedCoupon?.code, internalOrderId },
+            status: PaymentStatus.CAPTURED,
+            capturedAt: new Date(),
+          },
+        ],
+        { session }
+      );
+      
+      await session.commitTransaction();
+
+      // Provision Subscription for free plan
+      await provisionSubscription(userId, planId, internalOrderIdString);
+
+      return res.status(201).json(
+        new ApiResponse(
+          201,
+          {
+            order: { id: internalOrderIdString, amount: 0, currency: plan.currency || "INR" },
+            finalAmount,
+            discountValue,
+            couponApplied: !!appliedCoupon,
+            isFree: true
+          },
+          "Free order processed successfully",
+        ),
+      );
+    }
+
+    // 4. Create Razorpay Order
     const options = {
       amount: Math.round(finalAmount * 100),
       currency: plan.currency || "INR",
@@ -126,7 +177,7 @@ export const createOrder = async (
 
     const order = await razorpay.orders.create(options);
 
-    // 4. Create Payment Document
+    // 5. Create Payment Document
     await Payment.create(
       [
         {

@@ -108,6 +108,12 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
 
       const orderData = await createOrder(payload);
       
+      if (orderData.data.isFree) {
+        toast.success("Plan activated successfully!");
+        router.push("/employer-dashboard");
+        return;
+      }
+      
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: orderData.data.order.amount,
@@ -141,9 +147,9 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
 
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment error:", error);
-      toast.error("Failed to initialize payment.");
+      toast.error(error?.response?.data?.message || "Failed to initialize payment.");
     }
   };
 
@@ -166,10 +172,10 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
       </div>
 
       {plan.isDefault && (
-        <div className="absolute top-0 left-0">
+        <div className="absolute -top-1 left-0">
           <Badge
             variant="secondary"
-            className="rounded-none rounded-br-lg px-3 py-1 font-semibold"
+            className="rounded-none rounded-br-lg px-3 py-1 font-semibold bg-primary/10"
           >
             Current Default
           </Badge>
@@ -214,7 +220,7 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 px-6 pt-6">
+      <CardContent className="flex-1 px-6">
         {/* Price Section */}
         <div className="mb-4">
           {discountedPrice !== null ? (
