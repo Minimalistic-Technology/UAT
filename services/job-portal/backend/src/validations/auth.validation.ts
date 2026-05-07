@@ -30,7 +30,7 @@ export const confirmRegistrationSchema = [
 
 export const loginSchema = [
   body("email").isEmail().withMessage("Valid email is required"),
-  body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digits"),
+  body('password').notEmpty().withMessage('Password is required')
 ];
 
 export const resetPasswordSchema = [
