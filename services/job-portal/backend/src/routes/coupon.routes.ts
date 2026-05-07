@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { body } from "express-validator";
 import { validate } from "../middleware/validate.middleware.js";
 import {
   applyCoupon,
@@ -11,107 +10,41 @@ import {
 } from "../controllers/coupon.controller.js";
 import { authorize, protect } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
+import { applyCouponSchema, createCouponSchema, updateCouponSchema, validateCouponSchema } from "../validations/coupon.validation.js";
 
 const router = Router();
 
-// Protected routes for super admins
 router.use(protect);
-
-router.post(
-  "/",
-  authorize(GlobalRole.SUPER_ADMIN),
-  validate([
-    body("code").notEmpty().withMessage("Coupon code is required").trim(),
-    body("type")
-      .toLowerCase()
-      .isIn(["percentage", "amount"])
-      .withMessage("Coupon type must be 'percentage' or 'amount'"),
-    body("value")
-      .isNumeric()
-      .withMessage("Coupon value must be a number")
-      .custom((value) => value >= 0)
-      .withMessage("Coupon value cannot be negative"),
-    body("isActive")
-      .optional()
-      .isBoolean()
-      .withMessage("isActive must be a boolean"),
-    body("expiryDate")
-      .optional({ values: "falsy" })
-      .isISO8601()
-      .withMessage("Invalid expiry date format"),
-    body("maxUses")
-      .optional()
-      .isInt({ min: -1 })
-      .withMessage("maxUses must be at least -1"),
-  ]),
-  createCoupon,
-);
 
 router.get("/", getCoupons);
 
-router.put(
-  "/:id",
-  authorize(GlobalRole.SUPER_ADMIN),
-  validate([
-    body("code").optional().notEmpty().withMessage("Coupon code cannot be empty").trim(),
-    body("type")
-      .optional()
-      .toLowerCase()
-      .isIn(["percentage", "amount"])
-      .withMessage("Coupon type must be 'percentage' or 'amount'"),
-    body("value")
-      .optional()
-      .isNumeric()
-      .withMessage("Coupon value must be a number")
-      .custom((value) => value >= 0)
-      .withMessage("Coupon value cannot be negative"),
-    body("isActive")
-      .optional()
-      .isBoolean()
-      .withMessage("isActive must be a boolean"),
-    body("expiryDate")
-      .optional({ values: "falsy" })
-      .isISO8601()
-      .withMessage("Invalid expiry date format"),
-    body("maxUses")
-      .optional()
-      .isInt({ min: -1 })
-      .withMessage("maxUses must be at least -1"),
-  ]),
-  updateCoupon,
-);
-
-router.delete("/:id", authorize(GlobalRole.SUPER_ADMIN), deleteCoupon);
-
 router.post(
   "/apply",
-  validate([
-    body("code").notEmpty().withMessage("Coupon code is required").trim(),
-    body("baseAmount")
-      .isNumeric()
-      .withMessage(
-        "A valid baseAmount must be provided to calculate the discount",
-      )
-      .custom((value) => value >= 0)
-      .withMessage("baseAmount cannot be negative"),
-  ]),
+  validate(applyCouponSchema),
   applyCoupon,
 );
 
 // validate coupon (without applying)
 router.post(
   "/validate",
-  validate([
-    body("code").notEmpty().withMessage("Coupon code is required").trim(),
-    body("baseAmount")
-      .isNumeric()
-      .withMessage(
-        "A valid baseAmount must be provided to calculate the discount",
-      )
-      .custom((value) => value >= 0)
-      .withMessage("baseAmount cannot be negative"),
-  ]),
+  validate(validateCouponSchema),
   validateCoupon,
 );
+
+router.use(authorize(GlobalRole.SUPER_ADMIN));
+
+router.post(
+  "/",
+  validate(createCouponSchema),
+  createCoupon,
+);
+
+router.put(
+  "/:id",
+  validate(updateCouponSchema),
+  updateCoupon,
+);
+
+router.delete("/:id", deleteCoupon);
 
 export default router;

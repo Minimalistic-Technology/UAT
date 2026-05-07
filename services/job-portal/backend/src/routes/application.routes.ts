@@ -6,14 +6,19 @@ import {
   getAllCompanyApplications,
   updateApplicationStatus,
   withdrawApplication,
-  getApplicationById
+  getApplicationById,
 } from "../controllers/application.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
 import { applicationLimiter } from "../middleware/rateLimiter.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { body, param } from "express-validator";
-import { ApplicationStatus } from "../models/Application.model.js";
+import {
+  applyForJobSchema,
+  getJobApplicantsSchema,
+  getJobApplicationByIdSchema,
+  updateApplicationStatusSchema,
+  withdrawApplicationSchema,
+} from "../validations/application.validation.js";
 
 const router = express.Router();
 
@@ -22,13 +27,7 @@ router.post(
   protect,
   authorize(GlobalRole.USER), // only for job seeker
   applicationLimiter,
-  validate([
-    body("jobId")
-      .notEmpty()
-      .withMessage("Job ID is required")
-      .isMongoId()
-      .withMessage("Invalid Job ID"),
-  ]),
+  validate(applyForJobSchema),
   applyForJob,
 );
 
@@ -50,13 +49,7 @@ router.get(
   "/job/:jobId",
   protect,
   authorize(GlobalRole.USER), // only for employer
-  validate([
-    param("jobId")
-      .notEmpty()
-      .withMessage("Job ID is required")
-      .isMongoId()
-      .withMessage("Invalid Job ID"),
-  ]),
+  validate(getJobApplicantsSchema),
   getJobApplicants,
 );
 
@@ -64,37 +57,15 @@ router.get(
   "/:id",
   protect,
   authorize(GlobalRole.USER),
-  validate([param("id").isMongoId().withMessage("Invalid Application ID")]),
+  validate(getJobApplicationByIdSchema),
   getApplicationById,
 );
-
 
 router.put(
   "/:id/status",
   protect,
   authorize(GlobalRole.USER), // only for employer
-  validate([
-    param("id")
-      .notEmpty()
-      .withMessage("Job ID is required")
-      .isMongoId()
-      .withMessage("Invalid Job ID"),
-  ]),
-  body("status")
-    .exists()
-    .withMessage("Status is required")
-    .bail()
-    .isIn(Object.values(ApplicationStatus))
-    .withMessage("Invalid application status"),
-  body("note")
-    .optional()
-    .isString()
-    .withMessage("Note must be a string")
-    .trim(),
-  body("interviewDate")
-    .optional()
-    .isISO8601()
-    .withMessage("Invalid interview date format"),
+  validate(updateApplicationStatusSchema),
   updateApplicationStatus,
 );
 
@@ -102,13 +73,7 @@ router.delete(
   "/:id",
   protect,
   authorize(GlobalRole.USER), // only for job seeker
-  validate([
-    param("id")
-      .notEmpty()
-      .withMessage("Application ID is required")
-      .isMongoId()
-      .withMessage("Invalid Application ID"),
-  ]),
+  validate(withdrawApplicationSchema),
   withdrawApplication,
 );
 

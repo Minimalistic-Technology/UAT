@@ -2,7 +2,6 @@ import { Router } from "express";
 import { authorize, protect } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { param } from "express-validator";
 import {
   getMyActiveSubscription,
   getMySubscriptionHistory,
@@ -11,6 +10,7 @@ import {
   adminAssignSubscription,
   updateSubscriptionStatus,
 } from "../controllers/subscription.controller.js";
+import { cancelMySubscriptionSchema, updateMySubscriptionStatusSchema } from "../validations/subscription.validation.js";
 
 const router = Router();
 
@@ -32,13 +32,7 @@ router.patch(
   "/:id/cancel",
   protect,
   authorize(GlobalRole.USER),
-  validate([
-    param("id")
-      .notEmpty()
-      .withMessage("Subscription ID is required")
-      .isMongoId()
-      .withMessage("Invalid subscription ID"),
-  ]),
+  validate(cancelMySubscriptionSchema),
   cancelMySubscription,
 );
 
@@ -60,13 +54,7 @@ router.patch(
   "/:id/status",
   protect,
   authorize(GlobalRole.SUPER_ADMIN),
-  validate([
-    param("id")
-      .notEmpty()
-      .withMessage("Subscription ID is required")
-      .isMongoId()
-      .withMessage("Invalid subscription ID"),
-  ]),
+  validate(updateMySubscriptionStatusSchema),
   updateSubscriptionStatus,
 );
 

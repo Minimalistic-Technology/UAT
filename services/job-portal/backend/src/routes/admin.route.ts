@@ -11,7 +11,7 @@ import {
   updateKycStatus
 } from "../controllers/admin.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { body } from "express-validator";
+import { updateKycStatusSchema, updateUserStatusSchema } from "../validations/admin.validation.js";
 
 const router = Router();
 
@@ -22,14 +22,7 @@ router.get("/users", getAllUsers);
 router.get("/jobs", getJobsByStatus);
 router.put(
   "/users/:userId/toggle-status",
-  validate([
-    body("isActive")
-      .exists({ checkNull: true })
-      .withMessage("isActive is required")
-      .isBoolean()
-      .withMessage("isActive must be a boolean")
-      .toBoolean(), // converts "true"/"false" → true/false
-  ]),
+  validate(updateUserStatusSchema),
   updateUserStatus,
 );
 router.get("/stats", getStats)
@@ -37,13 +30,7 @@ router.get("/stats", getStats)
 router.get("/kyc-applications", getKycApplications);
 router.put(
   "/kyc-applications/:applicationId/status",
-  validate([
-    body("status")
-      .exists({ checkNull: true })
-      .withMessage("Status is required")
-      .isIn(["approved", "rejected"])
-      .withMessage("Status must be either 'approved' or 'rejected'"),
-  ]),
+  validate(updateKycStatusSchema),
   updateKycStatus
 );
 
