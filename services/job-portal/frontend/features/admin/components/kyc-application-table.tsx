@@ -30,6 +30,15 @@ const KYC_COLUMNS = [
   { key: "actions", label: "Actions" },
 ];
 
+const isPdf = (url: string) => url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('/raw/upload/');
+
+const getViewUrl = (url: string) => {
+  if (isPdf(url)) {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=false`;
+  }
+  return url; // images open natively in a new tab
+};
+
 export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }: KycTableProps) => {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -89,7 +98,7 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
                       <a href={app.photo.url} target="_blank" rel="noreferrer"><Eye className="mr-1 h-3 w-3"/> Photo</a>
                     </Button>
                     <Button variant="link" size="sm" className="h-auto p-0 text-xs justify-start text-blue-600" asChild>
-                      <a href={app.lightbill.url} target="_blank" rel="noreferrer"><ExternalLink className="mr-1 h-3 w-3"/> Utility Bill</a>
+                      <a href={getViewUrl(app.lightbill.url)} target="_blank" rel="noreferrer"><ExternalLink className="mr-1 h-3 w-3"/> Utility Bill</a>
                     </Button>
                   </div>
                 </TableCell>
