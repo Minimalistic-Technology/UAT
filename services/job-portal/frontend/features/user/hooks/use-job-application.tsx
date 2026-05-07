@@ -4,6 +4,7 @@ import {
   getMyApplications,
   ApplyJobPayload,
   withdrawJobApplication,
+  getApplicationById,
 } from "../services/job-application.service";
 import { ApiError, ApiSuccessResponse } from "@/lib/api-client";
 import { AxiosError } from "axios";
@@ -15,6 +16,14 @@ export const useGetMyApplications = () => {
   return useQuery({
     queryKey: ["my-applications"],
     queryFn: () => getMyApplications(),
+  });
+};
+
+export const useGetApplicationById = (id: string) => {
+  return useQuery({
+    queryKey: ["application", id],
+    queryFn: () => getApplicationById(id),
+    enabled: !!id,
   });
 };
 

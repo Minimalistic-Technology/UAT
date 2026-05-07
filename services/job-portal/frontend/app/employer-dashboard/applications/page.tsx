@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { useAllEmployerApplications, useUpdateApplicationStatus } from "@/features/employer/hooks/use-applications";
+import {
+  useAllEmployerApplications,
+  useUpdateApplicationStatus,
+} from "@/features/employer/hooks/use-applications";
 import {
   Table,
   TableBody,
@@ -13,10 +16,29 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight, MoreHorizontal, Calendar, CheckCircle2, XCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  Calendar,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import { ApplicationDetailModal } from "@/features/employer/components/application-details-model";
 import {
   DropdownMenu,
@@ -26,7 +48,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -36,7 +64,8 @@ const EmployerApplicationsPage = () => {
   const [interviewModalOpen, setInterviewModalOpen] = useState(false);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [interviewDate, setInterviewDate] = useState("");
-  const { mutateAsync: updateStatus, isPending: isUpdating } = useUpdateApplicationStatus();
+  const { mutateAsync: updateStatus, isPending: isUpdating } =
+    useUpdateApplicationStatus();
   const [limit] = useState(10);
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -46,11 +75,18 @@ const EmployerApplicationsPage = () => {
     ...(statusFilter !== "all" && { status: statusFilter }),
   };
 
-  const { data: responseData, isLoading, isError } = useAllEmployerApplications(queryParams);
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+  } = useAllEmployerApplications(queryParams);
 
   const handlePrevious = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => {
-    if (responseData?.data.pagination.totalPages && page < responseData.data.pagination.totalPages) {
+    if (
+      responseData?.data.pagination.totalPages &&
+      page < responseData.data.pagination.totalPages
+    ) {
       setPage((p) => p + 1);
     }
   };
@@ -72,7 +108,7 @@ const EmployerApplicationsPage = () => {
       toast.error("Please select a valid date and time.");
       return;
     }
-    
+
     if (new Date(interviewDate) <= new Date()) {
       toast.error("Interview date and time must be in the future.");
       return;
@@ -129,7 +165,13 @@ const EmployerApplicationsPage = () => {
             </CardDescription>
           </div>
           <div className="w-48">
-            <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setPage(1); }}>
+            <Select
+              value={statusFilter}
+              onValueChange={(val) => {
+                setStatusFilter(val);
+                setPage(1);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -151,11 +193,11 @@ const EmployerApplicationsPage = () => {
               ))}
             </div>
           ) : isError ? (
-            <div className="py-10 text-center text-destructive">
+            <div className="text-destructive py-10 text-center">
               Failed to load applications. Please try again.
             </div>
           ) : applications.length === 0 ? (
-            <div className="py-20 text-center text-muted-foreground">
+            <div className="text-muted-foreground py-20 text-center">
               No applications found matching your criteria.
             </div>
           ) : (
@@ -177,13 +219,11 @@ const EmployerApplicationsPage = () => {
                         <div className="font-medium">
                           {app.jobSeeker?.firstName} {app.jobSeeker?.lastName}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           {app.jobSeeker?.email}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {app.job?.title || "Unknown Job"}
-                      </TableCell>
+                      <TableCell>{app.job?.title || "Unknown Job"}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(app.status)}>
                           {app.status.replace("_", " ").toUpperCase()}
@@ -203,10 +243,12 @@ const EmployerApplicationsPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
+                              <DropdownMenuLabel>
+                                Quick Actions
+                              </DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                className="text-blue-600 cursor-pointer"
+                              <DropdownMenuItem
+                                className="cursor-pointer text-blue-600"
                                 onClick={() => {
                                   setSelectedAppId(app._id);
                                   setInterviewModalOpen(true);
@@ -215,16 +257,20 @@ const EmployerApplicationsPage = () => {
                                 <Calendar className="mr-2 h-4 w-4" /> Schedule
                                 Interview
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-green-600 cursor-pointer"
-                                onClick={() => handleUpdateStatus(app._id, "accepted")}
+                              <DropdownMenuItem
+                                className="cursor-pointer text-green-600"
+                                onClick={() =>
+                                  handleUpdateStatus(app._id, "accepted")
+                                }
                               >
                                 <CheckCircle2 className="mr-2 h-4 w-4" /> Accept
                                 Candidate
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-red-600 cursor-pointer"
-                                onClick={() => handleUpdateStatus(app._id, "rejected")}
+                              <DropdownMenuItem
+                                className="cursor-pointer text-red-600"
+                                onClick={() =>
+                                  handleUpdateStatus(app._id, "rejected")
+                                }
                               >
                                 <XCircle className="mr-2 h-4 w-4" /> Reject
                                 Candidate
@@ -243,7 +289,7 @@ const EmployerApplicationsPage = () => {
           {/* Server Side Pagination Controls */}
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between pt-4">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 Showing page {pagination.currentPage} of {pagination.totalPages}
               </div>
               <div className="flex items-center space-x-2">
@@ -271,8 +317,8 @@ const EmployerApplicationsPage = () => {
         </CardContent>
       </Card>
 
-      <Dialog 
-        open={interviewModalOpen} 
+      <Dialog
+        open={interviewModalOpen}
         onOpenChange={(open) => {
           setInterviewModalOpen(open);
           if (!open) {
@@ -294,12 +340,24 @@ const EmployerApplicationsPage = () => {
                 onChange={(e) => setInterviewDate(e.target.value)}
                 min={new Date().toISOString().slice(0, 16)}
               />
-              <p className="text-xs text-muted-foreground">Select a date and time in the future.</p>
+              <p className="text-muted-foreground text-xs">
+                Select a date and time in the future.
+              </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setInterviewModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleScheduleInterview} disabled={isUpdating || !interviewDate}>Schedule</Button>
+            <Button
+              variant="outline"
+              onClick={() => setInterviewModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleScheduleInterview}
+              disabled={isUpdating || !interviewDate}
+            >
+              Schedule
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

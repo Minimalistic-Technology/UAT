@@ -24,9 +24,11 @@ import {
   ChevronRight,
   RefreshCcw,
   AlertCircle,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -163,20 +165,26 @@ const MyApplicationsPage = () => {
                       <StatusBadge status={app.status} />
                     </TableCell>
                     <TableCell className="text-right">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            disabled={app.status === "withdrawn"}
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 cursor-pointer disabled:cursor-not-allowed"
-                          >
-                            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                            Withdraw
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/user-dashboard/applications/${app._id}`}>
+                          <Button variant="outline" size="icon" className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-primary">
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        </AlertDialogTrigger>
+                        </Link>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={app.status === "withdrawn"}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 cursor-pointer disabled:cursor-not-allowed"
+                            >
+                              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                              Withdraw
+                            </Button>
+                          </AlertDialogTrigger>
 
-                        <AlertDialogContent>
+                          <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>
                               Are you absolutely sure?
@@ -198,6 +206,7 @@ const MyApplicationsPage = () => {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

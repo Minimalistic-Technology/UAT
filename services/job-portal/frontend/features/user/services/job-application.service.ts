@@ -20,6 +20,11 @@ export const getMyApplications = async () => {
     return response.data;
 }
 
+export const getApplicationById = async (id: string) => {
+    const response = await apiClient.get<ApiSuccessResponse<any>>(`/applications/${id}`);
+    return response.data;
+}
+
 export const applyJob = async (data: ApplyJobPayload) => {
     const response = await apiClient.post<ApiSuccessResponse<any>>("/applications", data);
     return response.data;

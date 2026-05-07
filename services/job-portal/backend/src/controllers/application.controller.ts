@@ -101,7 +101,7 @@ export const applyForJob = async (
       application = await Application.create({
         job: jobId,
         jobSeeker: req.user._id,
-        resume: req.user.resume,
+        resume: req.user.resume.url,
       });
     }
 
