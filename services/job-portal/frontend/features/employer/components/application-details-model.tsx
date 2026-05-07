@@ -19,9 +19,11 @@ import {
   User, 
   Wrench 
 } from "lucide-react";
+import { getInlineUrl } from "@/app/user-dashboard/applications/[applicationId]/page";
 
 export const ApplicationDetailModal = ({ application }: { application: any }) => {
   const { jobSeeker, resume } = application;
+  const resumeLinkToShow = getInlineUrl(resume);
 
   return (
     <Dialog>
@@ -44,9 +46,9 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
             </div>
             {resume && (
               <Button size="sm" variant="secondary" asChild className="gap-2">
-                <a href={resume} target="_blank" rel="noopener noreferrer">
+                <a href={resumeLinkToShow} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" /> 
-                  View Full Resume
+                  View Resume
                 </a>
               </Button>
             )}

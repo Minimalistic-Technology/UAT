@@ -50,7 +50,7 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const getInlineUrl = (url: string) =>
+export const getInlineUrl = (url: string) =>
   `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=false`;
 
 const formatLocation = (location: any) => {
