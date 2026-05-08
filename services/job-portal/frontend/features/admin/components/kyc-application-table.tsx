@@ -1,10 +1,22 @@
 import { useState } from "react";
 import { Eye, ExternalLink, CheckCircle, XCircle } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +31,11 @@ interface KycTableProps {
   applications: any[];
   isLoading: boolean;
   isUpdating: boolean;
-  onUpdateStatus: (id: string, status: "approved" | "rejected" | "pending", note?: string) => void;
+  onUpdateStatus: (
+    id: string,
+    status: "approved" | "rejected" | "pending",
+    note?: string,
+  ) => void;
 }
 
 const KYC_COLUMNS = [
@@ -30,7 +46,9 @@ const KYC_COLUMNS = [
   { key: "actions", label: "Actions" },
 ];
 
-const isPdf = (url: string) => url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('/raw/upload/');
+const isPdf = (url: string) =>
+  url.toLowerCase().includes(".pdf") ||
+  url.toLowerCase().includes("/raw/upload/");
 
 const getViewUrl = (url: string) => {
   if (isPdf(url)) {
@@ -39,7 +57,12 @@ const getViewUrl = (url: string) => {
   return url; // images open natively in a new tab
 };
 
-export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }: KycTableProps) => {
+export const KycTable = ({
+  applications,
+  isLoading,
+  isUpdating,
+  onUpdateStatus,
+}: KycTableProps) => {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [viewingReason, setViewingReason] = useState<string | null>(null);
@@ -58,7 +81,10 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
         <TableHeader>
           <TableRow className="bg-muted/30">
             {KYC_COLUMNS.map((column) => (
-              <TableHead key={column.key} className={column.key === "actions" ? "text-right" : ""}>
+              <TableHead
+                key={column.key}
+                className={column.key === "actions" ? "text-right" : ""}
+              >
                 {column.label}
               </TableHead>
             ))}
@@ -70,42 +96,105 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
               <TableRow key={i}>
                 {KYC_COLUMNS.map((col) => (
                   <TableCell key={col.key}>
-                    <Skeleton className={`h-6 ${col.key === 'actions' ? 'ml-auto w-20' : 'w-full'}`} />
+                    <Skeleton
+                      className={`h-6 ${col.key === "actions" ? "ml-auto w-20" : "w-full"}`}
+                    />
                   </TableCell>
                 ))}
               </TableRow>
             ))
           ) : applications.length > 0 ? (
             applications.map((app) => (
-              <TableRow key={app._id} className="group transition-colors hover:bg-muted/20">
+              <TableRow
+                key={app._id}
+                className="group hover:bg-muted/20 transition-colors"
+              >
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-bold text-sm">{app.companyName}</span>
-                    <span className="text-muted-foreground text-xs">{app.user?.firstName} {app.user?.lastName}</span>
-                    <span className="text-muted-foreground/70 text-[11px] font-mono">{app.user?.email}</span>
+                    <span className="text-sm font-bold">{app.companyName}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {app.user?.firstName} {app.user?.lastName}
+                    </span>
+                    <span className="text-muted-foreground/70 font-mono text-[11px]">
+                      {app.user?.email}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1 font-mono text-[11px]">
-                    <div className="flex gap-2"><span className="text-muted-foreground w-12">GST:</span>{app.gstNo}</div>
-                    <div className="flex gap-2"><span className="text-muted-foreground w-12">AADHAR:</span>{app.aadharNo}</div>
-                    <div className="flex gap-2"><span className="text-muted-foreground w-12">CIN No:</span>{app.cinNo}</div>
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground w-12">GST:</span>
+                      {app.gstNo}
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground w-12">
+                        AADHAR:
+                      </span>
+                      {app.aadharNo}
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground w-12">
+                        CIN No:
+                      </span>
+                      {app.cinNo}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
-                    <Button variant="link" size="sm" className="h-auto p-0 text-xs justify-start text-blue-600" asChild>
-                      <a href={app.photo.url} target="_blank" rel="noreferrer"><Eye className="mr-1 h-3 w-3"/> Photo</a>
-                    </Button>
-                    <Button variant="link" size="sm" className="h-auto p-0 text-xs justify-start text-blue-600" asChild>
-                      <a href={getViewUrl(app.lightbill.url)} target="_blank" rel="noreferrer"><ExternalLink className="mr-1 h-3 w-3"/> Utility Bill</a>
-                    </Button>
+                    {app.photo?.url && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto justify-start p-0 text-xs text-blue-600"
+                        asChild
+                      >
+                        <a
+                          href={app.photo.url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <Eye className="mr-1 h-3 w-3" /> Photo
+                        </a>
+                      </Button>
+                    )}
+                    {app.lightbill?.url && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto justify-start p-0 text-xs text-blue-600"
+                        asChild
+                      >
+                        <a
+                          href={getViewUrl(app.lightbill.url)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <ExternalLink className="mr-1 h-3 w-3" /> Utility Bill
+                        </a>
+                      </Button>
+                    )}
+                    {!app.photo?.url && !app.lightbill?.url && (
+                      <span className="text-muted-foreground text-xs">
+                        No documents
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
                   <Badge
-                    variant={app.status === "approved" ? "default" : app.status === "rejected" ? "destructive" : "outline"}
-                    className={app.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-200" : ""}
+                    variant={
+                      app.status === "approved"
+                        ? "default"
+                        : app.status === "rejected"
+                          ? "destructive"
+                          : "outline"
+                    }
+                    className={
+                      app.status === "pending"
+                        ? "border-amber-200 bg-amber-50 text-amber-700"
+                        : ""
+                    }
                   >
                     {app.status}
                   </Badge>
@@ -116,10 +205,14 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
                               disabled={isUpdating}
-                              onClick={() => onUpdateStatus(app._id, "approved")}
+                              onClick={() =>
+                                onUpdateStatus(app._id, "approved")
+                              }
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -128,8 +221,10 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-red-50"
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive h-8 w-8 hover:bg-red-50"
                               disabled={isUpdating}
                               onClick={() => setRejectingId(app._id)}
                             >
@@ -146,20 +241,26 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                                onClick={() => setViewingReason(app.rejectionReason)}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:bg-destructive/10 h-8 w-8"
+                                onClick={() =>
+                                  setViewingReason(app.rejectionReason)
+                                }
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>View Rejection Reason</TooltipContent>
+                            <TooltipContent>
+                              View Rejection Reason
+                            </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                      <span className="text-muted-foreground text-[11px] font-medium italic">Processed</span>
+                      <span className="text-muted-foreground text-[11px] font-medium italic">
+                        Processed
+                      </span>
                     </div>
                   )}
                 </TableCell>
@@ -167,7 +268,10 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={KYC_COLUMNS.length} className="text-muted-foreground h-24 text-center">
+              <TableCell
+                colSpan={KYC_COLUMNS.length}
+                className="text-muted-foreground h-24 text-center"
+              >
                 No applications found.
               </TableCell>
             </TableRow>
@@ -175,12 +279,16 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
         </TableBody>
       </Table>
 
-      <Dialog open={!!rejectingId} onOpenChange={(open) => !open && setRejectingId(null)}>
+      <Dialog
+        open={!!rejectingId}
+        onOpenChange={(open) => !open && setRejectingId(null)}
+      >
         <DialogContent className="px-4">
           <DialogHeader className="px-0">
             <DialogTitle>Reject KYC Application</DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting this KYC application. The employer will see this reason on their dashboard.
+              Please provide a reason for rejecting this KYC application. The
+              employer will see this reason on their dashboard.
             </DialogDescription>
           </DialogHeader>
           <Textarea
@@ -190,20 +298,35 @@ export const KycTable = ({ applications, isLoading, isUpdating, onUpdateStatus }
             rows={4}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setRejectingId(null); setRejectReason(""); }}>Cancel</Button>
-            <Button variant="destructive" onClick={handleRejectConfirm} disabled={!rejectReason.trim()}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRejectingId(null);
+                setRejectReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRejectConfirm}
+              disabled={!rejectReason.trim()}
+            >
               Confirm Rejection
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!viewingReason} onOpenChange={(open) => !open && setViewingReason(null)}>
+      <Dialog
+        open={!!viewingReason}
+        onOpenChange={(open) => !open && setViewingReason(null)}
+      >
         <DialogContent className="px-4">
           <DialogHeader className="px-0">
             <DialogTitle>Rejection Reason</DialogTitle>
           </DialogHeader>
-          <div className="text-sm bg-muted/50 p-4 rounded-md whitespace-pre-wrap">
+          <div className="bg-muted/50 rounded-md p-4 text-sm whitespace-pre-wrap">
             {viewingReason}
           </div>
           <DialogFooter>
