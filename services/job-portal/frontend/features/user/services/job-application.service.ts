@@ -11,12 +11,24 @@ interface GetMyApplicationsResponse {
     }
 }
 
+export interface GetMyApplicationStatsResponse {
+    total: number;
+    pending: number;
+    shortlisted: number;
+    rejected: number;
+}
+
 export interface ApplyJobPayload {
     jobId: string;
 }
 
 export const getMyApplications = async () => {
     const response = await apiClient.get<ApiSuccessResponse<GetMyApplicationsResponse>>('/applications/my-applications');
+    return response.data;
+}
+
+export const getMyApplicationStats = async () => {
+    const response = await apiClient.get<ApiSuccessResponse<GetMyApplicationStatsResponse>>('/applications/my-stats');
     return response.data;
 }
 

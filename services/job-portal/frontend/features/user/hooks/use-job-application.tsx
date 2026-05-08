@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   applyJob,
   getMyApplications,
+  getMyApplicationStats,
   ApplyJobPayload,
   withdrawJobApplication,
   getApplicationById,
@@ -16,6 +17,13 @@ export const useGetMyApplications = () => {
   return useQuery({
     queryKey: ["my-applications"],
     queryFn: () => getMyApplications(),
+  });
+};
+
+export const useGetMyApplicationStats = () => {
+  return useQuery({
+    queryKey: ["my-application-stats"],
+    queryFn: () => getMyApplicationStats(),
   });
 };
 

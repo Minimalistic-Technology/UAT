@@ -26,54 +26,13 @@ import {
   Eye,
 } from "lucide-react";
 import { format } from "date-fns";
-
-const getStatusColor = (status: string) => {
-  switch (status?.toLowerCase()) {
-    case "pending":
-      return "bg-yellow-100 text-yellow-800";
-    case "reviewed":
-      return "bg-blue-100 text-blue-800";
-    case "shortlisted":
-      return "bg-indigo-100 text-indigo-800";
-    case "interview":
-      return "bg-purple-100 text-purple-800";
-    case "offered":
-      return "bg-green-100 text-green-800";
-    case "accepted":
-      return "bg-emerald-100 text-emerald-800";
-    case "rejected":
-      return "bg-red-100 text-red-800";
-    case "withdrawn":
-      return "bg-gray-100 text-gray-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
-
-export const getInlineUrl = (url: string) =>
-  `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=false`;
-
-const formatLocation = (location: any) => {
-  if (!location) return "Location Not Specified";
-  if (typeof location === "string") return location;
-
-  const parts = [];
-  if (location.city) parts.push(location.city);
-  if (location.state) parts.push(location.state);
-  if (location.country) parts.push(location.country);
-
-  let locationStr = parts.join(", ");
-  if (location.remote) {
-    locationStr = locationStr ? `${locationStr} (Remote)` : "Remote";
-  }
-
-  return locationStr || "Location Not Specified";
-};
+import { getInlineUrl, getApplicationStatusColor, formatLocation } from "@/utils";
 
 const ViewApplicationPage = () => {
   const params = useParams();
   const router = useRouter();
   const applicationId = params.applicationId as string;
+
   const {
     data: response,
     isLoading,
@@ -84,46 +43,14 @@ const ViewApplicationPage = () => {
   const { mutate: withdrawApplication, isPending: isWithdrawing } =
     useWithdrawJobApplication();
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-4xl space-y-6 p-6">
-        <Skeleton className="h-8 w-1/4" />
-        <Card>
-          <CardHeader>
-            <Skeleton className="mb-2 h-6 w-1/2" />
-            <Skeleton className="h-4 w-1/3" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-            <Skeleton className="h-4 w-4/6" />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingSkeleton />;
 
-  if (isError || !application) {
-    return (
-      <div className="flex h-[60vh] flex-col items-center justify-center space-y-4">
-        <AlertCircle className="text-destructive h-12 w-12" />
-        <h2 className="text-2xl font-bold">Application Not Found</h2>
-        <p className="text-muted-foreground">
-          The application you are looking for does not exist or has been
-          removed.
-        </p>
-        <Button
-          variant="outline"
-          onClick={() => router.push("/user-dashboard/applications")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Applications
-        </Button>
-      </div>
-    );
-  }
+  if (isError || !application) return <ErrorState />;
 
   const { job, status, createdAt, resume, interviewDate, statusHistory } =
     application;
+
+    console.log(application)
 
   const handleWithdraw = () => {
     if (window.confirm("Are you sure you want to withdraw this application?")) {
@@ -137,27 +64,11 @@ const ViewApplicationPage = () => {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="-ml-4 cursor-pointer"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
-        </Button>
-        {status !== "withdrawn" &&
-          status !== "rejected" &&
-          status !== "accepted" && (
-            <Button
-              variant="destructive"
-              onClick={handleWithdraw}
-              disabled={isWithdrawing}
-              className="cursor-pointer"
-            >
-              {isWithdrawing ? "Withdrawing..." : "Withdraw Application"}
-            </Button>
-          )}
-      </div>
+      <TopActions
+        status={status}
+        isWithdrawing={isWithdrawing}
+        handleWithdraw={handleWithdraw}
+      />
 
       <Card>
         <CardHeader>
@@ -176,7 +87,7 @@ const ViewApplicationPage = () => {
               </CardDescription>
             </div>
             <Badge
-              className={`rounded-full px-3 py-1 ${getStatusColor(status)} border-none capitalize`}
+              className={`rounded-full px-3 py-1 ${getApplicationStatusColor(status)} border-none capitalize`}
             >
               {status}
             </Badge>
@@ -260,7 +171,7 @@ const ViewApplicationPage = () => {
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white bg-slate-200 text-slate-500 shadow md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
                       <div
-                        className={`h-3 w-3 rounded-full ${getStatusColor(historyItem.status).split(" ")[0]}`}
+                        className={`h-3 w-3 rounded-full ${getApplicationStatusColor(historyItem.status).split(" ")[0]}`}
                       />
                     </div>
                     <div className="bg-card w-[calc(100%-4rem)] rounded border border-slate-200 p-4 shadow-sm md:w-[calc(50%-2.5rem)]">
@@ -290,3 +201,78 @@ const ViewApplicationPage = () => {
 };
 
 export default ViewApplicationPage;
+
+function TopActions({
+  status,
+  isWithdrawing,
+  handleWithdraw,
+}: {
+  status: string;
+  isWithdrawing: boolean;
+  handleWithdraw: () => void;
+}) {
+  const router = useRouter();
+
+  return (
+    <div className="flex items-center justify-between">
+      <Button
+        variant="ghost"
+        onClick={() => router.back()}
+        className="-ml-4 cursor-pointer"
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" /> Back
+      </Button>
+      {status !== "withdrawn" &&
+        status !== "rejected" &&
+        status !== "accepted" && (
+          <Button
+            variant="destructive"
+            onClick={handleWithdraw}
+            disabled={isWithdrawing}
+            className="cursor-pointer"
+          >
+            {isWithdrawing ? "Withdrawing..." : "Withdraw Application"}
+          </Button>
+        )}
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
+      <Skeleton className="h-8 w-1/4" />
+      <Card>
+        <CardHeader>
+          <Skeleton className="mb-2 h-6 w-1/2" />
+          <Skeleton className="h-4 w-1/3" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-4/6" />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ErrorState() {
+  const router = useRouter();
+
+  return (
+    <div className="flex h-[60vh] flex-col items-center justify-center space-y-4">
+      <AlertCircle className="text-destructive h-12 w-12" />
+      <h2 className="text-2xl font-bold">Application Not Found</h2>
+      <p className="text-muted-foreground">
+        The application you are looking for does not exist or has been removed.
+      </p>
+      <Button
+        variant="outline"
+        onClick={() => router.push("/user-dashboard/applications")}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Applications
+      </Button>
+    </div>
+  );
+}

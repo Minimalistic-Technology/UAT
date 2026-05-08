@@ -19,6 +19,10 @@ export const getApplicationById = async (
       .populate({
         path: "job",
         select: "title location jobType company postedBy status",
+        populate: {
+          path: "company",
+          select: "name logo industry",
+        },
       })
       .populate({
         path: "jobSeeker",
@@ -161,6 +165,48 @@ export const getMyApplications = async (
         },
         "Applications fetched successfully",
       ),
+    );
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const getMyApplicationStats = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const stats = await Application.aggregate([
+      { $match: { jobSeeker: req.user._id } },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const formattedStats = {
+      total: 0,
+      pending: 0,
+      shortlisted: 0,
+      rejected: 0,
+    };
+
+    stats.forEach((stat) => {
+      formattedStats.total += stat.count;
+      if (stat._id === ApplicationStatus.PENDING) formattedStats.pending = stat.count;
+      if (stat._id === ApplicationStatus.SHORTLISTED) formattedStats.shortlisted = stat.count;
+      if (stat._id === ApplicationStatus.REJECTED) formattedStats.rejected = stat.count;
+    });
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        formattedStats,
+        "Application stats fetched successfully"
+      )
     );
   } catch (error: any) {
     next(error);

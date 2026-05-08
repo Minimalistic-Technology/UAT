@@ -28,54 +28,47 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // hooks
 import { useGetJobs } from "@/features/user/hooks/use-job";
-import { useGetMyApplications } from "@/features/user/hooks/use-job-application";
+import { useGetMyApplications, useGetMyApplicationStats } from "@/features/user/hooks/use-job-application";
 import { StatCard } from "@/features/employer/components/employer-stats-card";
+import { getApplicationStatusColor } from "@/utils";
 
 export default function JobSeekerDashboard() {
   const { data: session, status: authStatus } = useSession();
   const { data: applications, isLoading: applicationLoading } =
     useGetMyApplications();
+  const { data: statsData, isLoading: statsLoading } = useGetMyApplicationStats();
   const { data: recommendedJobs, isLoading: jobsLoading } = useGetJobs({
     limit: 5,
   });
 
-  if (authStatus === "loading" || applicationLoading)
+  if (authStatus === "loading" || applicationLoading || statsLoading)
     return <DashboardSkeleton />;
 
   const stats = [
     {
       label: "Total Applied",
-      value: applications?.data?.pagination?.totalItems || 0,
+      value: statsData?.data?.total || 0,
       icon: Briefcase,
       color: "text-blue-600",
       bg: "bg-blue-50",
     },
     {
       label: "Pending",
-      value:
-        applications?.data.applications.filter(
-          (app) => app.status === ApplicationStatus.PENDING,
-        ).length || 0,
+      value: statsData?.data?.pending || 0,
       icon: Clock,
       color: "text-amber-600",
       bg: "bg-amber-50",
     },
     {
       label: "Shortlisted",
-      value:
-        applications?.data.applications.filter(
-          (app) => app.status === ApplicationStatus.SHORTLISTED,
-        ).length || 0,
+      value: statsData?.data?.shortlisted || 0,
       icon: CheckCircle,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
     },
     {
       label: "Rejected",
-      value:
-        applications?.data.applications.filter(
-          (app) => app.status === ApplicationStatus.REJECTED,
-        ).length || 0,
+      value: statsData?.data?.rejected || 0,
       icon: XCircle,
       color: "text-rose-600",
       bg: "bg-rose-50",
@@ -185,12 +178,8 @@ export default function JobSeekerDashboard() {
                       </div>
                       <div className="flex items-center gap-4">
                         <Badge
-                          variant={
-                            app.status === "REJECTED"
-                              ? "destructive"
-                              : "secondary"
-                          }
-                          className="px-3 py-1 font-medium capitalize"
+                          variant="outline"
+                          className={`px-3 py-1 font-medium capitalize border-none ${getApplicationStatusColor(app.status)}`}
                         >
                           {app.status.toLowerCase().replace("_", " ")}
                         </Badge>
@@ -216,7 +205,7 @@ export default function JobSeekerDashboard() {
         {/* Sidebar Components */}
         <div className="space-y-6 lg:col-span-4">
           {/* Profile Card */}
-          <Card className="relative overflow-hidden border-none bg-slate-900 text-white">
+          {/* <Card className="relative overflow-hidden border-none bg-slate-900 text-white">
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <TrendingUp className="h-24 w-24" />
             </div>
@@ -242,7 +231,7 @@ export default function JobSeekerDashboard() {
                 <Link href="/profile">Edit Profile</Link>
               </Button>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Recommended Jobs */}
           {/* <Card>
@@ -285,6 +274,7 @@ export default function JobSeekerDashboard() {
             </CardContent>
           </Card> */}
         </div>
+        
       </div>
     </div>
   );

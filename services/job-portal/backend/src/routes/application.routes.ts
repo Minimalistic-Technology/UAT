@@ -7,6 +7,7 @@ import {
   updateApplicationStatus,
   withdrawApplication,
   getApplicationById,
+  getMyApplicationStats,
 } from "../controllers/application.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
@@ -36,6 +37,13 @@ router.get(
   protect,
   authorize(GlobalRole.USER), // only for job seeker
   getMyApplications,
+);
+
+router.get(
+  "/my-stats",
+  protect,
+  authorize(GlobalRole.USER), // only for job seeker
+  getMyApplicationStats,
 );
 
 router.get(

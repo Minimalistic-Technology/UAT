@@ -19,7 +19,7 @@ import {
   User, 
   Wrench 
 } from "lucide-react";
-import { getInlineUrl } from "@/app/user-dashboard/applications/[applicationId]/page";
+import { getInlineUrl } from "@/utils";
 
 export const ApplicationDetailModal = ({ application }: { application: any }) => {
   const { jobSeeker, resume } = application;

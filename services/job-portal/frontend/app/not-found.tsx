@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { FileQuestion, Home, ChevronLeft } from "lucide-react";
+import { Home, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "react-resizable-panels";
 
 export default function NotFound() {
   return (
