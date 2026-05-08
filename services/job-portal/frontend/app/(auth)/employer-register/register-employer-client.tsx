@@ -88,12 +88,8 @@ export default function EmployerRegisterPage() {
         router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
       },
       onError: (error: any) => {
-        if (error.message === "Validation failed") {
-          const firstErrorMessage = getValidationErrorMessage(error);
-          toast.error(firstErrorMessage);
-          return;
-        }
-        toast.error(error.message || "Registration failed");
+        const errorMessage = error?.response?.data?.message || error.message;
+        toast.error(errorMessage || "Employer Registration failed");
       },
     });
   };

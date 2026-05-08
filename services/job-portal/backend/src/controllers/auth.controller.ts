@@ -157,8 +157,7 @@ export const requestEmployerRegistration = async (
       }).session(session);
 
       if (existingCompany) {
-        await session.abortTransaction();
-        throw new ApiError(400, "You are already registered with this company");
+        throw new ApiError(400, "You are already registered with this company or email");
       }
     }
 
