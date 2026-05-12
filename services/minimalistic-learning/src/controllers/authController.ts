@@ -29,7 +29,6 @@ import { sendOTP } from "../utils/email";
 import crypto from 'crypto';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
-import { ApiResponse } from '../utils/ApiResponse';
 import type {
   LoginResponseData,
   SignupResponseData,
