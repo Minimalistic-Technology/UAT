@@ -29,12 +29,8 @@ export const blogService = {
     const response = await api.get("/posts/my", { params });
     return response.data;
   },
-  upvotePost: async (id: string): Promise<any> => {
-    const response = await api.post(`/posts/${id}/upvote`);
-    return response.data;
-  },
-  downvotePost: async (id: string): Promise<any> => {
-    const response = await api.post(`/posts/${id}/downvote`);
+  likePost: async (id: string): Promise<any> => {
+    const response = await api.post(`/posts/${id}/like`);
     return response.data;
   },
   getComments: async (postId: string): Promise<CommentListResponse> => {
@@ -48,5 +44,15 @@ export const blogService = {
   likeComment: async (commentId: string): Promise<any> => {
     const response = await api.post(`/comments/${commentId}/like`);
     return response.data;
+  },
+  uploadMedia: async (file: File): Promise<{ url: string; format: string }> => {
+    const formData = new FormData();
+    formData.append("media", file);
+    const response = await api.post("/posts/media/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data.data;
   }
 };

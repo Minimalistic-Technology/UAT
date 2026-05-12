@@ -27,7 +27,10 @@ export const Navbar: React.FC = () => {
     { id: 'Blogs', label: 'Blogs', icon: BookOpen, href: '/blog' },
     { id: 'Resources', label: 'Resources', icon: BookOpen, href: '/resources' },
     { id: 'About', label: 'About', icon: UserCheck, href: '/about' },
-    ...(isAuthenticated ? [{ id: 'My Blogs', label: 'My Blogs', icon: Newspaper, href: '/my-blogs' }] : [])
+    ...(isAuthenticated ? [
+      { id: 'Dashboard', label: 'Dashboard', icon: BookOpen, href: '/dashboard' },
+      { id: 'My Blogs', label: 'My Blogs', icon: Newspaper, href: '/my-blogs' }
+    ] : [])
   ];
 
   const isHome = pathname === '/';

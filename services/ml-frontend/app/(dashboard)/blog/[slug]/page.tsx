@@ -5,14 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { blogService } from '@/features/blog/services/blog-service';
 import { BlogResponse } from '@/features/blog/types/blog-type';
 import { BlogDetail } from '@/features/blog/components/blog-detail';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { Loader2, AlertCircle, ArrowLeft, Home } from 'lucide-react';
+import { AlertCircle, Home } from 'lucide-react';
 import Link from 'next/link';
 
 const BlogDetailPage = () => {
   const { slug } = useParams();
-  const router = useRouter();
   const [blog, setBlog] = useState<BlogResponse['data'] | null>(null);
   const [latestBlogs, setLatestBlogs] = useState<BlogResponse['data'][]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,14 +95,9 @@ const BlogDetailPage = () => {
   }
 
   return (
-    <div className="bg-white min-h-screen">
-      <Navbar />
-      <main>
-        <BlogDetail blog={blog} latestBlogs={latestBlogs} />
-      </main>
-
-      <Footer />
-    </div>
+    <main className="bg-white min-h-screen">
+      <BlogDetail blog={blog} latestBlogs={latestBlogs} />
+    </main>
   );
 };
 

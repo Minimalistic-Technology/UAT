@@ -1,14 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { Edit2, Trash2, Plus } from "lucide-react";
+import { Edit2, Trash2, Plus, Sparkles, Loader2, Heart } from "lucide-react";
 import { useGetMyBlogs } from "../hooks/use-get-my-blogs";
 import { useDeleteBlog } from "../hooks/use-delete-blog";
+import { useUpdateBlog } from "../hooks/use-update-blog";
 import { isAxiosError } from "@/lib/api";
 
 export const BlogManagement = () => {
   const { data, isLoading, error, refetch } = useGetMyBlogs();
   const { mutate: deleteBlog, isPending: isDeleting } = useDeleteBlog();
+  const { mutate: updateBlog, isPending: isUpdating } = useUpdateBlog();
+
+  const handleQuickPublish = async (id: string) => {
+    updateBlog(
+      { id, data: { published: true } as any },
+      {
+        onSuccess: () => {
+          alert("Story published successfully!");
+          refetch();
+        },
+        onError: (err) => {
+          alert(
+            isAxiosError(err)
+              ? err.response?.data?.message || err.message
+              : "Failed to publish blog",
+          );
+        },
+      }
+    );
+  };
 
   const handleDelete = async (id: string, title: string) => {
     if (confirm(`Are you sure you want to delete "${title}"?`)) {
@@ -138,13 +159,30 @@ export const BlogManagement = () => {
                 <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">
                   Last updated {new Date(blog.updatedAt).toLocaleDateString()}
                 </p>
+                <div className="flex items-center gap-3 mt-1.5 justify-center md:justify-start">
+                  <div className="flex items-center gap-1 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <Heart size={10} className="text-red-500 fill-red-500" />
+                    {blog.likesCount || 0} Likes
+                  </div>
+                </div>
               </div>
 
               {/* Actions */}
               <div className="flex items-center gap-2 p-1 bg-gray-50 rounded-2xl">
+                {!blog.published && (
+                  <button
+                    onClick={() => handleQuickPublish(blog._id)}
+                    disabled={isUpdating}
+                    className="p-3 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105 flex items-center gap-2 cursor-pointer"
+                    title="Publish Now"
+                  >
+                    {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                    <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">Publish</span>
+                  </button>
+                )}
                 <Link
                   href={`/blog/edit/${blog._id}`}
-                  className="p-3 text-gray-600 hover:text-[#1877F2] hover:bg-white rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105"
+                  className="p-3 text-gray-600 hover:text-[#1877F2] hover:bg-white rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105 cursor-pointer"
                   title="Edit post"
                 >
                   <Edit2 size={18} />
@@ -152,7 +190,7 @@ export const BlogManagement = () => {
                 <button
                   onClick={() => handleDelete(blog._id, blog.title)}
                   disabled={isDeleting}
-                  className="p-3 text-gray-600 hover:text-red-500 hover:bg-white rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105"
+                  className="p-3 text-gray-600 hover:text-red-500 hover:bg-white rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105 cursor-pointer"
                   title="Delete post"
                 >
                   <Trash2 size={18} />

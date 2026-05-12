@@ -2,7 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { StatusCodes, getReasonPhrase } from 'http-status-codes';
 
-export const errorHandler = (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+export const errorHandler = (err: any, _req: Request, res: Response, _next: NextFunction) => {
+  // Log the error for debugging
+  console.error('[Error Handler]', {
+    message: err.message,
+    stack: err.stack,
+    details: err.errors || err.issues || null
+  });
+
   if (err instanceof z.ZodError) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       message: 'Validation failed',
@@ -23,5 +30,3 @@ export const errorHandler = (err: unknown, _req: Request, res: Response, _next: 
 };
 
 export default errorHandler;
-
-

@@ -6,7 +6,8 @@ import {
   initiatePasswordReset,
   completePasswordReset,
   getMe,
-  logout
+  logout,
+  verifyOTP
 } from '../controllers/authController';
 import { loginLimiter, signupLimiter } from '../config/rateLimit';
 import requireAuth from '../middleware/requireAuth';
@@ -15,6 +16,7 @@ const router = Router();
 
 router.post('/signup', signupLimiter, signup);
 router.post('/login', loginLimiter, login);
+router.post('/verify-otp', verifyOTP);
 router.get('/me', requireAuth, getMe);
 router.post('/logout', requireAuth, logout);
 router.post('/refresh-token', refreshToken);

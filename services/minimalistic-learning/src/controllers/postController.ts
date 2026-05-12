@@ -35,15 +35,42 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
     Post.countDocuments(query),
   ]);
 
+  const bearer = req.headers.authorization;
+  const tokenFromCookie = req.cookies?.access_token as string | undefined;
+  const token = tokenFromCookie || (bearer && bearer.startsWith('Bearer ') ? bearer.split(" ")[1] : undefined);
+
+  let currentUserId: string | null = null;
+  if (token) {
+    try {
+      const payload = verifyAccessToken(token) as { sub: string };
+      currentUserId = payload.sub;
+    } catch (e) {
+      // Ignored for public route
+    }
+  }
+
   const totalPages = Math.ceil(total / limit);
   const hasNextPage = page < totalPages;
   const hasPrevPage = page > 1;
+
+  const itemsResponse = items.map((post: any) => {
+    const likesCount = post.likes?.length || 0;
+    const hasLiked = currentUserId ? post.likes?.some((id: any) => id.toString() === currentUserId) : false;
+
+    const mappedPost = {
+      ...post,
+      likesCount,
+      hasLiked,
+    };
+    delete mappedPost.likes;
+    return mappedPost;
+  });
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(
       StatusCodes.OK,
       {
-        items,
+        items: itemsResponse,
         pagination: {
           total,
           totalPages,
@@ -77,16 +104,34 @@ export const listMyPosts = asyncHandler(async (req: Request, res: Response) => {
 
   const totalPages = Math.ceil(total / limit);
 
+  const itemsResponse = items.map((post: any) => {
+    const likesCount = post.likes?.length || 0;
+    const hasLiked = post.likes?.some((id: any) => id.toString() === userId.toString()) || false;
+
+    const mappedPost = {
+      ...post,
+      likesCount,
+      hasLiked,
+    };
+    delete mappedPost.likes;
+    return mappedPost;
+  });
+
+  const hasNextPage = page < totalPages;
+  const hasPrevPage = page > 1;
+
   return res.status(StatusCodes.OK).json(
     new ApiResponse(
       StatusCodes.OK,
       {
-        items,
+        items: itemsResponse,
         pagination: {
           total,
           totalPages,
           currentPage: page,
           limit,
+          hasNextPage,
+          hasPrevPage
         },
       },
       "My posts fetched successfully",
@@ -134,27 +179,21 @@ export const getPostBySlug = asyncHandler(
       }
     }
 
-    const upvotesCount = post.upvotes?.length || 0;
-    const downvotesCount = post.downvotes?.length || 0;
+    const likesCount = post.likes?.length || 0;
     
-    let hasUpvoted = false;
-    let hasDownvoted = false;
+    let hasLiked = false;
 
     if (currentUserId) {
-      hasUpvoted = post.upvotes?.some((id: any) => id.toString() === currentUserId) || false;
-      hasDownvoted = post.downvotes?.some((id: any) => id.toString() === currentUserId) || false;
+      hasLiked = post.likes?.some((id: any) => id.toString() === currentUserId) || false;
     }
 
     const postResponse: any = {
       ...post,
-      upvotesCount,
-      downvotesCount,
-      hasUpvoted,
-      hasDownvoted,
+      likesCount,
+      hasLiked,
     };
 
-    delete postResponse.upvotes;
-    delete postResponse.downvotes;
+    delete postResponse.likes;
 
     return res
       .status(StatusCodes.OK)
@@ -191,27 +230,21 @@ export const getPostById = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  const upvotesCount = post.upvotes?.length || 0;
-  const downvotesCount = post.downvotes?.length || 0;
+  const likesCount = post.likes?.length || 0;
   
-  let hasUpvoted = false;
-  let hasDownvoted = false;
+  let hasLiked = false;
 
   if (currentUserId) {
-    hasUpvoted = post.upvotes?.some((id: any) => id.toString() === currentUserId) || false;
-    hasDownvoted = post.downvotes?.some((id: any) => id.toString() === currentUserId) || false;
+    hasLiked = post.likes?.some((id: any) => id.toString() === currentUserId) || false;
   }
 
   const postResponse: any = {
     ...post,
-    upvotesCount,
-    downvotesCount,
-    hasUpvoted,
-    hasDownvoted,
+    likesCount,
+    hasLiked,
   };
 
-  delete postResponse.upvotes;
-  delete postResponse.downvotes;
+  delete postResponse.likes;
 
   return res
     .status(StatusCodes.OK)
@@ -224,14 +257,15 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
   const parsedBody = createPostSchema.parse(req.body);
   const { title, content, tags, published, category, coverImageUrl } = parsedBody;
 
-  const baseSlug = title
+  const baseSlug = (title || "untitled-draft")
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-  let slug = baseSlug;
-  if (await Post.findOne({ slug })) slug = `${baseSlug}-${Date.now()}`;
+  let slug = baseSlug || `draft-${Date.now()}`;
+  const existingPost = await Post.findOne({ slug });
+  if (existingPost) slug = `${slug}-${Date.now()}`;
 
   const sanitizedTags: string[] = Array.isArray(tags)
     ? [...new Set(tags.map((t: string) => t.trim()).filter(Boolean))]
@@ -246,7 +280,7 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
         ]
       : [];
 
-  let coverImage = { url: coverImageUrl || "", alt: title.trim(), publicId: "" };
+  let coverImage = { url: coverImageUrl || "", alt: (title || "Story").trim(), publicId: "" };
   if (req.file) {
     const uploaded = await uploadToCloudinary(
       req.file.buffer,
@@ -254,16 +288,18 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
     );
     coverImage = {
       url: uploaded.url,
-      alt: title.trim(),
+      alt: (title || "Story").trim(),
       publicId: uploaded.publicId,
     };
   }
 
+  const safeTitle = (title || "Untitled Story").trim() || "Untitled Story";
+
   const post = await Post.create({
-    title: title.trim(),
+    title: safeTitle,
     slug,
-    content: content.trim(),
-    category: category.trim(),
+    content: (content || "").trim(),
+    category: (category || "Uncategorized").trim(),
     coverImage,
     tags: sanitizedTags,
     published: published === true ? true : false,
@@ -275,6 +311,23 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
     .json(
       new ApiResponse(StatusCodes.CREATED, post, "Post created successfully"),
     );
+});
+
+export const uploadMedia = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.file) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "No file uploaded");
+  }
+
+  const uploaded = await uploadToCloudinary(
+    req.file.buffer,
+    req.file.mimetype,
+    'blog-media',
+    false // isCoverImage = false to prevent strict cropping
+  );
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, { url: uploaded.url, format: uploaded.format }, "Media uploaded successfully")
+  );
 });
 
 export const updatePost = asyncHandler(async (req: Request, res: Response) => {
@@ -332,7 +385,7 @@ export const updatePost = asyncHandler(async (req: Request, res: Response) => {
   const post = await Post.findOneAndUpdate(
     { _id: blogId, authorId: userId },
     updatePayload,
-    { new: true },
+    { returnDocument: 'after' },
   );
 
   if (!post)
@@ -366,27 +419,21 @@ export const deletePost = asyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(StatusCodes.OK, null, "Post deleted successfully"));
 });
 
-export const upvotePost = asyncHandler(async (req: Request, res: Response) => {
+export const likePost = asyncHandler(async (req: Request, res: Response) => {
   const { blogId } = postParamsSchema.parse(req.params);
   const userId = req.user!._id;
 
   const post = await Post.findById(blogId);
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
 
-  const hasUpvoted = post.upvotes.includes(userId);
-  const hasDownvoted = post.downvotes.includes(userId);
+  const hasLiked = post.likes.includes(userId);
 
-  if (hasUpvoted) {
-    post.upvotes = post.upvotes.filter(
+  if (hasLiked) {
+    post.likes = post.likes.filter(
       (id) => id.toString() !== userId.toString(),
     );
   } else {
-    post.upvotes.push(userId);
-    if (hasDownvoted) {
-      post.downvotes = post.downvotes.filter(
-        (id) => id.toString() !== userId.toString(),
-      );
-    }
+    post.likes.push(userId);
   }
 
   await post.save();
@@ -394,52 +441,10 @@ export const upvotePost = asyncHandler(async (req: Request, res: Response) => {
     new ApiResponse(
       StatusCodes.OK,
       {
-        upvotes: post.upvotes.length,
-        downvotes: post.downvotes.length,
-        hasUpvoted: !hasUpvoted,
-        hasDownvoted: hasDownvoted && !hasUpvoted ? false : hasDownvoted,
+        likes: post.likes.length,
+        hasLiked: !hasLiked,
       },
-      "Post upvoted toggled effectively",
+      hasLiked ? "Post unliked" : "Post liked",
     ),
   );
 });
-
-export const downvotePost = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { blogId } = postParamsSchema.parse(req.params);
-    const userId = req.user!._id;
-
-    const post = await Post.findById(blogId);
-    if (!post) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
-
-    const hasUpvoted = post.upvotes.includes(userId);
-    const hasDownvoted = post.downvotes.includes(userId);
-
-    if (hasDownvoted) {
-      post.downvotes = post.downvotes.filter(
-        (id) => id.toString() !== userId.toString(),
-      );
-    } else {
-      post.downvotes.push(userId);
-      if (hasUpvoted) {
-        post.upvotes = post.upvotes.filter(
-          (id) => id.toString() !== userId.toString(),
-        );
-      }
-    }
-
-    await post.save();
-    return res.status(StatusCodes.OK).json(
-      new ApiResponse(
-        StatusCodes.OK,
-        {
-          upvotes: post.upvotes.length,
-          downvotes: post.downvotes.length,
-          hasUpvoted: hasUpvoted && !hasDownvoted ? false : hasUpvoted,
-          hasDownvoted: !hasDownvoted,
-        },
-        "Post downvote toggled effectively",
-      ),
-    );
-  },
-);

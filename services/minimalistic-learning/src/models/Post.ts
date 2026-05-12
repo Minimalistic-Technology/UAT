@@ -2,7 +2,7 @@ import { Schema, model, Types } from "mongoose";
 
 const PostSchema = new Schema(
   {
-    title: { type: String, required: true, trim: true },
+    title: { type: String, required: true, trim: true, default: "Untitled Story" },
     slug: {
       type: String,
       required: true,
@@ -10,57 +10,46 @@ const PostSchema = new Schema(
       lowercase: true,
       trim: true,
     },
-    content: { type: String, required: true },
+    content: { type: String, default: "" }, // Not required for initial drafts
     description: { type: String, trim: true, maxlength: 300 },
     coverImage: {
-      url: { type: String },
+      url: { type: String, default: "" },
       alt: { type: String, default: "" },
-      publicId: { type: String, default: '' },
+      publicId: { type: String, default: "" },
     },
-    readTime: { type: Number, default: 0 }, // in minutes
+    readTime: { type: Number, default: 0 },
     tags: [{ type: String, index: true }],
     authorId: { type: Types.ObjectId, ref: "User", required: true },
     published: { type: Boolean, default: false },
-    category: { type: String, required: true, trim: true, maxLength: 30 },
-    upvotes: [{ type: Types.ObjectId, ref: "User" }],
-    downvotes: [{ type: Types.ObjectId, ref: "User" }],
+    category: { type: String, trim: true, maxLength: 30, default: "Uncategorized" },
+    likes: [{ type: Types.ObjectId, ref: "User" }],
   },
   { timestamps: true },
 );
 
-PostSchema.pre("save", function (next) {
-  if (this.isModified("content")) {
-    const wordCount = this.content.trim().split(/\s+/).length;
-    this.readTime = Math.ceil(wordCount / 200);
-  }
-  next;
-});
-
 function stripToPlainText(content: string): string {
+  if (!content) return "";
   return content
-    .replace(/```[\s\S]*?```/g, "") // remove code blocks
-    .replace(/`[^`]*`/g, "") // remove inline code
-    .replace(/!\[.*?\]\(.*?\)/g, "") // remove images
-    .replace(/\[.*?\]\(.*?\)/g, "") // remove links
-    .replace(/#{1,6}\s+/g, "") // remove headings
-    .replace(/(\*\*|__)(.*?)\1/g, "$2") // remove bold
-    .replace(/(\*|_)(.*?)\1/g, "$2") // remove italic
-    .replace(/<[^>]+>/g, "") // remove HTML tags
-    .replace(/\n+/g, " ") // collapse newlines
+    .replace(/<[^>]+>/g, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`]*`/g, "")
+    .replace(/!\[.*?\]\(.*?\)/g, "")
+    .replace(/\[.*?\]\(.*?\)/g, "")
+    .replace(/#{1,6}\s+/g, "")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/\n+/g, " ")
     .trim();
 }
 
-PostSchema.pre("save", function (next) {
-  if (this.isModified("content")) {
-    // Auto read time
+PostSchema.pre("save", function () {
+  if (this.isModified("content") && this.content) {
     const wordCount = this.content.trim().split(/\s+/).length;
     this.readTime = Math.ceil(wordCount / 200);
 
-    // Auto description
     const plain = stripToPlainText(this.content);
     this.description = plain.length > 300 ? plain.slice(0, 297) + "..." : plain;
   }
-  next;
 });
 
 PostSchema.index({ title: "text", content: "text", description: "text" });

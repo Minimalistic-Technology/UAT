@@ -4,7 +4,8 @@ import {
   signupSchema,
   loginSchema,
   passwordResetInitSchema,
-  passwordResetCompleteSchema
+  passwordResetCompleteSchema,
+  verifyOTPSchema
 } from '../validators/authValidator';
 import * as userService from '../services/userService';
 import {
@@ -23,6 +24,9 @@ import {
 import { env } from '../config/env';
 import { getCookieConfig } from '../config/cookieConfig';
 import { durationToMs } from '../utils/time';
+import { ApiResponse } from "../utils/ApiResponse";
+import { sendOTP } from "../utils/email";
+import crypto from 'crypto';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
@@ -44,39 +48,27 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   let user;
   try {
     user = await userService.createUser(payload);
+
+    // Generate OTP for signup verification
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    // Send verification email
+    await sendOTP(user.email, otp);
+
+    return res.status(StatusCodes.CREATED).json(
+      new ApiResponse(StatusCodes.CREATED, { email: user.email }, "Account created! Please verify your email with the OTP sent.")
+    );
   } catch (err: any) {
     if (err.code === 11000) {
       throw new ApiError(StatusCodes.CONFLICT, 'Email already in use');
     }
     throw err;
   }
-
-  const accessToken = signAccessToken(user._id);
-  const refreshToken = signRefreshToken(user._id);
-
-  await replaceRefreshToken(user._id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
-
-  const cookieBase = getCookieConfig();
-
-  return res
-    .cookie('access_token', accessToken, {
-      ...cookieBase,
-      maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
-    })
-    .cookie('refresh_token', refreshToken, {
-      ...cookieBase,
-      maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
-    })
-    .status(StatusCodes.CREATED)
-    .json(
-      new ApiResponse<SignupResponseData>(StatusCodes.CREATED, {
-        user: userService.toPublicUser(user),
-        tokens: {
-          accessToken,
-          refreshToken
-        }
-      }, "User signed up successfully and logged in")
-    );
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
@@ -91,6 +83,46 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   if (!isPasswordValid) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
   }
+
+  // Generate 6-digit OTP
+  const otp = crypto.randomInt(100000, 999999).toString();
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  // Save to user
+  user.otp = otp;
+  user.otpExpires = otpExpires;
+  await user.save();
+
+  // Send Email
+  await sendOTP(user.email, otp);
+
+  const message = user.isVerified 
+    ? "OTP sent to your email. Please verify." 
+    : "Please verify your account. OTP sent to your email.";
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, { email: user.email, isVerified: user.isVerified }, message)
+  );
+});
+
+export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
+  const { email, otp } = verifyOTPSchema.parse(req.body);
+
+  const user = await userService.findByEmail(email);
+  if (!user || !user.otp || !user.otpExpires) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid request or OTP expired');
+  }
+
+  // Check if OTP matches and not expired
+  if (user.otp !== otp || new Date() > user.otpExpires) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired OTP');
+  }
+
+  // Clear OTP fields
+  user.otp = undefined;
+  user.otpExpires = undefined;
+  user.isVerified = true; // Mark as verified
+  await user.save();
 
   const accessToken = signAccessToken(user._id);
   const refreshToken = signRefreshToken(user._id);
@@ -138,15 +170,18 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
 
   const tokenDoc = await verifyStoredToken(payload.sub, refreshTokenValue, 'refresh');
   if (!tokenDoc) {
+    console.log(`[auth] Refresh token not found in DB for user ${payload.sub}`);
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Refresh token invalid or expired');
   }
 
   const user = await userService.findById(payload.sub);
   if (!user) {
+    console.log(`[auth] User ${payload.sub} not found for refresh token`);
     await deleteToken(tokenDoc);
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User no longer exists');
   }
 
+  console.log(`[auth] Successfully refreshing tokens for user: ${user.email}`);
   await deleteToken(tokenDoc);
 
   const accessToken = signAccessToken(user.id);

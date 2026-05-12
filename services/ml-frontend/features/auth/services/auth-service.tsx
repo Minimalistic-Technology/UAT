@@ -7,6 +7,10 @@ export const authService = {
     const response = await api.post("/auth/login", data);
     return response.data;
   },
+  verifyOTP: async (data: { email: string; otp: string }): Promise<LoginResponse> => {
+    const response = await api.post("/auth/verify-otp", data);
+    return response.data;
+  },
   register: async (data: RegisterValues): Promise<SignupResponse> => {
     const response = await api.post("/auth/signup", data);
     return response.data;

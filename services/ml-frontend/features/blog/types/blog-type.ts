@@ -24,10 +24,8 @@ export interface BlogResponse {
     category: string;
     published: boolean;
     authorId: string | { _id: string; firstName: string; lastName: string };
-    upvotesCount?: number;
-    downvotesCount?: number;
-    hasUpvoted?: boolean;
-    hasDownvoted?: boolean;
+    likesCount?: number;
+    hasLiked?: boolean;
     createdAt: string;
     updatedAt: string;
   };

@@ -16,18 +16,39 @@ if (!cached) {
   };
 }
 
-export const connectDatabase = async () => {
+export const connectDatabase = async (retries = 5) => {
   if (cached.conn) {
     return cached.conn;
   }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGO_URI).then((mongoose) => {
-      console.log('[db] Connected to MongoDB');
+    const opts = {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 15000, // Increase timeout to 15s for slow DNS
+      connectTimeoutMS: 15000,
+      family: 4, // Force IPv4 to avoid some DNS resolution issues
+    };
+
+    cached.promise = mongoose.connect(MONGO_URI, opts).then((mongoose) => {
+      console.log('[db] Connected to MongoDB Successfully');
       return mongoose;
+    }).catch(async (err) => {
+      if (retries > 0) {
+        console.warn(`[db] Connection failed, retrying... (${retries} left). Error: ${err.message}`);
+        cached.promise = null;
+        await new Promise(res => setTimeout(res, 3000)); // Wait 3s before retry
+        return connectDatabase(retries - 1);
+      }
+      throw err;
     });
   }
 
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+  
   return cached.conn;
 };

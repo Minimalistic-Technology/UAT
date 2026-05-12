@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, User, ArrowLeft, Clock, Share2, MessageCircle, ThumbsUp, ThumbsDown, Tag, ChevronRight, Send } from 'lucide-react';
+import { Calendar, User, ArrowLeft, Clock, Share2, MessageCircle, Heart, Tag, ChevronRight, Send } from 'lucide-react';
 import Link from 'next/link';
 import { BlogResponse } from '../types/blog-type';
 import { BlogCard } from './blog-card';
-import { useUpvoteBlog } from '../hooks/use-upvote-blog';
+import { useLikeBlog } from '../hooks/use-like-blog';
 import { useComments } from '../hooks/use-comments';
 import { useCreateComment } from '../hooks/use-create-comment';
 import { useLikeComment } from '../hooks/use-like-comment';
@@ -27,12 +27,6 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
 
   const imageUrl = coverImage?.url || coverImageUrl;
 
-  const formattedDate = new Date(createdAt).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-
   const author = authorId as any;
   const authorName = author?.firstName
     ? `${author.firstName} ${author.lastName || ''}`
@@ -40,15 +34,15 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
   const authorRole = author?.role || 'Technical Content Creator';
 
   const [commentText, setCommentText] = useState("");
-  const [hasUpvoted, setHasUpvoted] = useState(blog.hasUpvoted || false);
-  const [upvotesCount, setUpvotesCount] = useState(blog.upvotesCount || 0);
+  const [hasLiked, setHasLiked] = useState(blog.hasLiked || false);
+  const [likesCount, setLikesCount] = useState(blog.likesCount || 0);
 
   useEffect(() => {
-    setHasUpvoted(blog.hasUpvoted || false);
-    setUpvotesCount(blog.upvotesCount || 0);
-  }, [blog.hasUpvoted, blog.upvotesCount]);
+    setHasLiked(blog.hasLiked || false);
+    setLikesCount(blog.likesCount || 0);
+  }, [blog.hasLiked, blog.likesCount]);
 
-  const { mutate: upvote } = useUpvoteBlog();
+  const { mutate: likeBlog } = useLikeBlog();
   const { data: commentsData, isLoading: isLoadingComments } = useComments(blog._id);
   const { mutate: createComment, isPending: isPosting } = useCreateComment();
   const { mutate: likeComment } = useLikeComment(blog._id);
@@ -67,22 +61,22 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
   };
 
   const handleLike = () => {
-    const previousHasUpvoted = hasUpvoted;
-    const previousCount = upvotesCount;
+    const previousHasLiked = hasLiked;
+    const previousCount = likesCount;
 
-    setHasUpvoted(!previousHasUpvoted);
-    setUpvotesCount(prev => previousHasUpvoted ? Math.max(0, prev - 1) : prev + 1);
+    setHasLiked(!previousHasLiked);
+    setLikesCount(prev => previousHasLiked ? Math.max(0, prev - 1) : prev + 1);
 
-    upvote(blog._id, {
+    likeBlog(blog._id, {
       onSuccess: (res: any) => {
         if (res?.data) {
-          setHasUpvoted(res.data.hasUpvoted);
-          setUpvotesCount(res.data.upvotes);
+          setHasLiked(res.data.hasLiked);
+          setLikesCount(res.data.likes);
         }
       },
       onError: () => {
-        setHasUpvoted(previousHasUpvoted);
-        setUpvotesCount(previousCount);
+        setHasLiked(previousHasLiked);
+        setLikesCount(previousCount);
       }
     });
   };
@@ -142,9 +136,41 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
               </div>
             )}
 
-            {/* Tags (Moved below image) */}
+            {/* Interactions Bar (Instagram Style) */}
+            <div className="flex items-center gap-6 mb-8 py-4 border-b border-gray-50">
+              <button
+                onClick={handleLike}
+                className="flex items-center gap-2 group transition-all"
+              >
+                <Heart 
+                  size={24} 
+                  fill={hasLiked ? "#FF3040" : "none"} 
+                  className={hasLiked ? "text-[#FF3040] scale-110" : "text-gray-900 group-hover:text-[#FF3040] group-hover:scale-110"} 
+                />
+                <span className={`text-sm font-black ${hasLiked ? "text-gray-900" : "text-gray-400"}`}>
+                  {likesCount.toLocaleString()}
+                </span>
+              </button>
+
+              <button
+                onClick={scrollToComments}
+                className="flex items-center gap-2 group transition-all"
+              >
+                <MessageCircle size={24} className="text-gray-900 group-hover:text-[#1877F2] group-hover:scale-110" />
+                <span className="text-sm font-black text-gray-400">{comments.length}</span>
+              </button>
+
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 group transition-all"
+              >
+                <Share2 size={24} className="text-gray-900 group-hover:text-green-500 group-hover:scale-110" />
+              </button>
+            </div>
+
+            {/* Tags */}
             {tags && tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-16">
+              <div className="flex flex-wrap gap-2 mb-12">
                 {tags.map((tag, idx) => (
                   <span key={idx} className="px-4 py-2 bg-gray-50 text-gray-500 rounded-full text-xs font-bold border border-gray-100 hover:border-[#1877F2] hover:text-[#1877F2] transition-colors cursor-pointer">
                     #{tag}
@@ -174,37 +200,37 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
               <div id="comments-section" className="mt-24 pt-20 border-t border-gray-100">
                 <div className="flex items-center gap-3 mb-10">
                   <div className="w-2 h-2 rounded-full bg-[#1877F2]" />
-                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Join the discussion</h4>
+                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Discussion ({comments.length})</h4>
                 </div>
 
                 <div className="space-y-12">
                   {/* Comment Input */}
                   <div className="flex gap-6">
-                    <div className="w-12 h-12 rounded-full bg-gray-100 shrink-0 flex items-center justify-center text-gray-400">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 shrink-0 flex items-center justify-center text-gray-400 overflow-hidden">
                       <User size={20} />
                     </div>
                     <div className="flex-1">
                       <textarea
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-100 text-black rounded-2xl p-6 text-sm focus:outline-none focus:border-[#1877F2] transition-colors resize-none placeholder:text-gray-400"
-                        placeholder="What are your thoughts on this story?"
+                        className="w-full bg-gray-50 border border-gray-100 text-black rounded-2xl p-6 text-sm focus:outline-none focus:border-[#1877F2] transition-colors resize-none placeholder:text-gray-400 font-bold"
+                        placeholder="Add a comment..."
                         rows={3}
                       />
                       <div className="flex justify-end mt-4">
                         <button
                           onClick={handlePostComment}
                           disabled={isPosting || !commentText.trim()}
-                          className="px-8 py-3 bg-black text-white rounded-full text-xs font-bold hover:scale-105 transition-all shadow-xl shadow-gray-200 disabled:opacity-50 disabled:hover:scale-100"
+                          className="px-8 py-3 bg-black text-white rounded-full text-xs font-black hover:scale-105 transition-all shadow-xl shadow-gray-200 disabled:opacity-50 disabled:hover:scale-100"
                         >
-                          {isPosting ? 'Posting...' : 'Post Comment'}
+                          {isPosting ? 'Posting...' : 'Post'}
                         </button>
                       </div>
                     </div>
                   </div>
 
                   {/* Comments List */}
-                  <div className="space-y-10 pl-6 sm:pl-12">
+                  <div className="space-y-10 pl-2 sm:pl-4">
                     {isLoadingComments ? (
                       <div className="flex items-center gap-2 text-gray-400 text-xs font-medium italic">
                         <div className="w-4 h-4 border-2 border-gray-200 border-t-[#1877F2] rounded-full animate-spin" />
@@ -212,34 +238,39 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
                       </div>
                     ) : comments.length > 0 ? (
                       comments.map((cmt: any, i: number) => (
-                        <div key={cmt._id || i} className="flex gap-6 relative">
-                          {/* Connecting line */}
-                          <div className="absolute top-0 -left-6 sm:-left-12 bottom-0 w-[1px] bg-gray-100" />
-
-                          <div className="w-12 h-12 rounded-full bg-gray-100 shrink-0 flex items-center justify-center font-bold text-[#1877F2] text-sm border border-gray-50">
+                        <div key={cmt._id || i} className="flex gap-6 relative group">
+                          <div className="w-12 h-12 rounded-full bg-blue-50 shrink-0 flex items-center justify-center font-black text-[#1877F2] text-sm border border-blue-100">
                             {cmt.authorId?.firstName?.charAt(0) || 'U'}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="font-bold text-gray-900 text-sm">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-black text-gray-900 text-sm">
                                 {cmt.authorId?.firstName} {cmt.authorId?.lastName}
                               </span>
-                              <span className="text-[10px] text-gray-400 font-medium uppercase tracking-tight">• {new Date(cmt.createdAt).toLocaleDateString()}</span>
+                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">• {new Date(cmt.createdAt).toLocaleDateString()}</span>
                             </div>
-                            <p className="text-gray-500 text-sm leading-relaxed max-w-2xl">{cmt.content}</p>
-                            <div className="flex gap-4 mt-4">
+                            <p className="text-gray-600 text-sm leading-relaxed font-medium">{cmt.content}</p>
+                            <div className="flex gap-6 mt-3">
                               <button 
                                 onClick={() => handleLikeComment(cmt._id)}
-                                className={`text-[10px] font-bold transition-colors uppercase tracking-widest ${cmt.hasLiked ? 'text-[#1877F2]' : 'text-gray-400 hover:text-[#1877F2]'}`}
+                                className="flex items-center gap-1.5 group/like"
                               >
-                                Like ({cmt.likesCount})
+                                <Heart 
+                                  size={14} 
+                                  fill={cmt.hasLiked ? "#FF3040" : "none"} 
+                                  className={cmt.hasLiked ? "text-[#FF3040]" : "text-gray-400 group-hover/like:text-[#FF3040]"} 
+                                />
+                                <span className={`text-[10px] font-black tracking-widest uppercase ${cmt.hasLiked ? "text-gray-900" : "text-gray-400"}`}>
+                                  {cmt.likesCount || 0}
+                                </span>
                               </button>
+                              <button className="text-[10px] font-black text-gray-400 hover:text-gray-900 tracking-widest uppercase">Reply</button>
                             </div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-gray-400 text-sm italic">No comments yet. Be the first to share your thoughts!</p>
+                      <p className="text-gray-400 text-sm italic font-medium">No comments yet. Start the conversation!</p>
                     )}
                   </div>
                 </div>
@@ -251,79 +282,50 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
           <aside className="relative min-w-0">
             <div className="sticky top-32 space-y-12 flex flex-col w-full">
 
-              {/* Category Section */}
-              <div className="space-y-4 w-full">
-                <h4 className="text-[11px] font-bold uppercase tracking-[0.1em] text-gray-500">Category</h4>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 bg-gray-50 text-gray-600 text-[11px] font-medium border border-gray-100 rounded-md">
-                    {category || 'News'}
-                  </span>
-                  <span className="px-3 py-1 bg-gray-50 text-gray-600 text-[11px] font-medium border border-gray-100 rounded-md">
-                    Insights
-                  </span>
-                </div>
-              </div>
-
               {/* Author Section */}
               <div className="space-y-4 w-full">
-                <h4 className="text-[11px] font-bold uppercase tracking-[0.1em] text-gray-500">Written by</h4>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 overflow-hidden border border-gray-100 shadow-sm shrink-0">
-                    {author?.avatar ? (
-                      <img src={author.avatar} alt={authorName} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-lg">
-                        {authorName.charAt(0)}
-                      </div>
-                    )}
+                <h4 className="text-[11px] font-bold uppercase tracking-[0.1em] text-gray-500">Author</h4>
+                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-[#1877F2] font-black text-lg shrink-0">
+                    {authorName.charAt(0)}
                   </div>
                   <div className="text-left">
-                    <p className="text-gray-900 font-bold text-sm leading-tight mb-0.5">{authorName}</p>
-                    <p className="text-gray-400 text-[11px] font-medium leading-tight">{authorRole}</p>
+                    <p className="text-gray-900 font-black text-sm leading-tight mb-0.5">{authorName}</p>
+                    <p className="text-gray-400 text-[11px] font-bold leading-tight uppercase tracking-wider">{authorRole}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Share Card */}
-              <div className="p-8 bg-gray-50 rounded-[2rem] border border-gray-100 w-full">
-                <h4 className="text-sm font-black text-gray-900 mb-4">Share this story</h4>
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleShare}
-                    className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-[#1877F2] hover:border-[#1877F2] transition-colors"
-                  >
-                    <Share2 size={18} />
-                  </button>
-                  <button
-                    onClick={scrollToComments}
-                    className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-[#1877F2] hover:border-[#1877F2] transition-colors"
-                  >
-                    <MessageCircle size={18} />
-                  </button>
-                  <button
-                    onClick={handleLike}
-                    className={`h-10 px-3 min-w-[40px] rounded-full border flex items-center justify-center gap-1.5 transition-colors ${hasUpvoted ? 'bg-blue-50 border-[#1877F2] text-[#1877F2]' : 'bg-white border-gray-100 text-gray-400 hover:text-[#1877F2] hover:border-[#1877F2]'}`}
-                  >
-                    <ThumbsUp size={18} fill={hasUpvoted ? 'currentColor' : 'none'} />
-                    {upvotesCount > 0 && <span className="text-xs font-bold">{upvotesCount}</span>}
-                  </button>
+              {/* Stats Card */}
+              <div className="p-8 bg-gray-900 rounded-[2rem] text-white w-full shadow-2xl shadow-gray-200">
+                <h4 className="text-sm font-black mb-6 uppercase tracking-widest text-gray-400">Activity</h4>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Likes</span>
+                    <span className="text-lg font-black">{likesCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Comments</span>
+                    <span className="text-lg font-black">{comments.length}</span>
+                  </div>
                 </div>
+                <button
+                  onClick={handleLike}
+                  className={`w-full mt-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${hasLiked ? "bg-[#FF3040] text-white" : "bg-white text-black hover:bg-[#FF3040] hover:text-white"}`}
+                >
+                  {hasLiked ? "Liked Story" : "Like Story"}
+                </button>
               </div>
 
             </div>
           </aside>
         </div>
 
-        {/* Latest Insights Section */}
+        {/* Recommended Blogs */}
         {latestBlogs.length > 0 && (
           <div className="mt-32 pt-20 border-t border-gray-100">
-            {/* <div className="flex items-center gap-3 mb-12">
-              <div className="w-2 h-2 rounded-full bg-[#1877F2]" />
-              <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Blog and articles</h4>
-            </div> */}
-
             <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-12">
-              Recommended for you
+              Recommended stories
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">

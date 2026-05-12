@@ -24,19 +24,86 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor for consistent error handling
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+// Response interceptor for consistent error handling and automatic token refresh
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
     // Silently handle expected 401 for /me (guest mode)
-    if (error.response?.status === 401 && error.config.url?.endsWith("/auth/me")) {
+    if (error.response?.status === 401 && originalRequest.url?.endsWith("/auth/me")) {
       return Promise.resolve({ data: { data: { user: null } } });
     }
 
-    // You can add global error handling here (e.g., logging out on 401)
-    if (error.response?.status === 401 && typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
-      // Optional: Redirect to login or clear auth state if 401 occurs unexpectedly
+    // If 401 and not a retry yet, and not the refresh token endpoint itself
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.endsWith("/auth/refresh-token") &&
+      !originalRequest.url?.endsWith("/auth/login")
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (token) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshResponse = await axios.post(
+          `${originalRequest.baseURL || "http://localhost:5001/api/v1"}/auth/refresh-token`,
+          {},
+          { withCredentials: true }
+        );
+
+        const newAccessToken = refreshResponse.data?.data?.accessToken;
+        
+        processQueue(null, newAccessToken);
+
+        if (newAccessToken) {
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        }
+        
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        // If refresh fails, user is fully logged out. Clear auth state if possible or redirect to login
+        if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+          // You could optionally redirect to login here
+          // window.location.href = "/login";
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
     return Promise.reject(error);
   }
 );

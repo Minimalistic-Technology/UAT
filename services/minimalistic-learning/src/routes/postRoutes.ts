@@ -6,12 +6,12 @@ import {
   updatePost,
   deletePost,
   getPostById,
-  upvotePost,
-  downvotePost,
+  likePost,
   listMyPosts,
+  uploadMedia,
 } from "../controllers/postController";
 import requireAuth from "../middleware/requireAuth";
-import { uploadCoverImage } from "../middleware/upload";
+import { uploadCoverImage, uploadMedia as uploadMediaMiddleware } from "../middleware/upload";
 
 const router = Router();
 
@@ -22,7 +22,7 @@ router.get("/id/:blogId", getPostById);
 router.post("/", requireAuth, uploadCoverImage, createPost);
 router.put("/:blogId", requireAuth, updatePost);
 router.delete("/:blogId", requireAuth, deletePost);
-router.post("/:blogId/upvote", requireAuth, upvotePost);
-router.post("/:blogId/downvote", requireAuth, downvotePost);
+router.post("/:blogId/like", requireAuth, likePost);
+router.post("/media/upload", requireAuth, uploadMediaMiddleware, uploadMedia);
 
 export default router;

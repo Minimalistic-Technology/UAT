@@ -9,6 +9,9 @@ export interface IUser {
   email: string;
   password: string;
   role: string;
+  isVerified: boolean;
+  otp?: string;
+  otpExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +39,9 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     email: { type: String, required: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["user", "admin"], default: "user" },
+    isVerified: { type: Boolean, default: false },
+    otp: { type: String },
+    otpExpires: { type: Date },
   },
   {
     timestamps: { createdAt: true, updatedAt: true },
@@ -46,7 +52,7 @@ userSchema.index({ email: 1 }, { unique: true });
 
 userSchema.set("toJSON", {
   transform(_doc, ret) {
-    const { password, __v, ...safe } = ret;
+    const { password, otp, otpExpires, __v, ...safe } = ret;
     return safe;
   },
 });
