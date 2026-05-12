@@ -6,9 +6,7 @@ export const blogSchema = z.object({
   excerpt: z.string().max(300, "Excerpt must not exceed 300 characters").optional().or(z.literal("")),
   coverImageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   tags: z.array(z.string().min(2, "Tag must be at least 2 characters").max(30, "Tag must not exceed 30 characters"))
-    .max(5, "Maximum 5 tags allowed")
-    .optional()
-    .default([]),
+    .max(5, "Maximum 5 tags allowed"), // Removed .default([]) to avoid input/output type mismatch in Resolver
   category: z.string().min(2, "Category is required").max(30, "Category must not exceed 30 characters"),
   status: z.enum(["draft", "published"]),
 });
