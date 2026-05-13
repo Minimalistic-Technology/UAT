@@ -1,66 +1,75 @@
-"use client";
-
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import { blogService } from '@/features/blog/services/blog-service';
-import { BlogResponse } from '@/features/blog/types/blog-type';
 import { BlogDetail } from '@/features/blog/components/blog-detail';
 import { AlertCircle, Home } from 'lucide-react';
 import Link from 'next/link';
+import { Metadata } from 'next';
 
-const BlogDetailPage = () => {
-  const { slug } = useParams();
-  const [blog, setBlog] = useState<BlogResponse['data'] | null>(null);
-  const [latestBlogs, setLatestBlogs] = useState<BlogResponse['data'][]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface Props {
+  params: Promise<{ slug: string }>;
+}
 
-  useEffect(() => {
-    if (!slug) return;
-
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch the main blog and latest blogs in parallel
-        const [blogRes, latestRes] = await Promise.all([
-          blogService.getBlogBySlug(slug as string),
-          blogService.getBlogs({ page: 1, limit: 3 })
-        ]);
-
-        if (blogRes.success && blogRes.data) {
-          setBlog(blogRes.data);
-        } else {
-          setError(blogRes.message || 'Blog not found.');
+// Dynamic Metadata for SEO
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const res = await blogService.getBlogBySlug(slug);
+    if (res.success && res.data) {
+      const blog = res.data;
+      return {
+        title: `${blog.title} | Minimalistic Learning`,
+        description: blog.excerpt || blog.content.substring(0, 160).replace(/<[^>]*>/g, ''),
+        openGraph: {
+          title: blog.title,
+          description: blog.excerpt,
+          images: [blog.coverImage?.url || blog.coverImageUrl || ""],
+          type: 'article',
+          publishedTime: blog.createdAt,
+          authors: [(blog.authorId as any)?.firstName || 'Author'],
+        },
+        twitter: {
+          card: 'summary_large_image',
+          title: blog.title,
+          description: blog.excerpt,
+          images: [blog.coverImage?.url || blog.coverImageUrl || ""],
         }
+      };
+    }
+  } catch (error) {
+    console.error('Metadata generation error:', error);
+  }
 
-        if (latestRes.success && latestRes.data) {
-          setLatestBlogs(latestRes.data.items);
-        }
-      } catch (err: any) {
-        console.error('Error fetching blog data:', err);
-        setError('We couldn\'t fetch the blog details or an error occurred.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  return {
+    title: 'Story | Minimalistic Learning',
+    description: 'Read interesting stories on Minimalistic Learning',
+  };
+}
 
-    fetchData();
-  }, [slug]);
+const BlogDetailPage = async ({ params }: Props) => {
+  const { slug } = await params;
+  
+  let blog: any = null;
+  let latestBlogs: any[] = [];
+  let error: string | null = null;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
-        <div className="relative">
-          <div className="w-24 h-24 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center">
-             <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl animate-pulse" />
-          </div>
-        </div>
-        <p className="mt-8 text-gray-500 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">
-           Opening Story
-        </p>
-      </div>
-    );
+  try {
+    // Fetch data on the server for speed and SEO
+    const [blogRes, latestRes] = await Promise.all([
+      blogService.getBlogBySlug(slug),
+      blogService.getBlogs({ page: 1, limit: 3 })
+    ]);
+
+    if (blogRes.success && blogRes.data) {
+      blog = blogRes.data;
+    } else {
+      error = blogRes.message || 'Blog not found.';
+    }
+
+    if (latestRes.success && latestRes.data) {
+      latestBlogs = latestRes.data.items;
+    }
+  } catch (err: any) {
+    console.error('Error fetching blog data on server:', err);
+    error = 'We couldn\'t fetch the blog details.';
   }
 
   if (error || !blog) {
@@ -83,12 +92,6 @@ const BlogDetailPage = () => {
             <Home size={16} />
             Back Home
           </Link>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-8 py-4 bg-gray-100 text-gray-600 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 transition-all flex items-center gap-2"
-          >
-            Try Refreshing
-          </button>
         </div>
       </div>
     );

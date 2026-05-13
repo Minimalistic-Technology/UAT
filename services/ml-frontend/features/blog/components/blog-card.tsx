@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Tag, Clock, Heart, MessageCircle } from "lucide-react";
 import { BlogResponse } from "../types/blog-type";
 
@@ -48,9 +49,11 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
       {/* Cover Image Section */}
       <div className="relative aspect-[16/10] overflow-hidden m-4 rounded-[2rem]">
         {imageUrl ? (
-          <img
+          <Image
             src={imageUrl}
             alt={title}
+            width={600}
+            height={400}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
         ) : (

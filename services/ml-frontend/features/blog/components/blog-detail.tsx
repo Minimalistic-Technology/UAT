@@ -1,4 +1,6 @@
+"use client";
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Calendar, User, ArrowLeft, Clock, Share2, MessageCircle, Heart, Tag, ChevronRight, Send } from 'lucide-react';
 import Link from 'next/link';
 import { BlogResponse } from '../types/blog-type';
@@ -128,9 +130,12 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
             {/* Featured Image */}
             {imageUrl && (
               <div className="w-[85%] aspect-[16/9] max-h-[400px] rounded-[2rem] overflow-hidden mb-8 shadow-2xl shadow-gray-50 border border-gray-100">
-                <img
+                <Image
                   src={imageUrl}
                   alt={title}
+                  width={1200}
+                  height={675}
+                  priority
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                 />
               </div>

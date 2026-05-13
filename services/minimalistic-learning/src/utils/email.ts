@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { env } from '../config/env';
 
-// 1. Setup Nodemailer (For Development)
+// 1. Setup Nodemailer (Fallback/Development)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 2. Setup Resend (For Production)
+// 2. Setup Resend
 const resend = new Resend(env.RESEND_API_KEY);
 
 export const sendOTP = async (to: string, otp: string) => {
@@ -36,10 +36,13 @@ export const sendOTP = async (to: string, otp: string) => {
     </div>
   `;
 
-  // HYBRID LOGIC: Check environment
-  if (env.isProduction && env.RESEND_API_KEY && !env.RESEND_API_KEY.includes('example')) {
+  // HYBRID LOGIC: 
+  // Priority 1: Resend (if API key is provided and not a placeholder)
+  const isResendConfigured = env.RESEND_API_KEY && !env.RESEND_API_KEY.includes('example');
+
+  if (isResendConfigured) {
     try {
-      console.log('[email] Attempting to send via Resend (Production)...');
+      console.log(`[email] Attempting to send via Resend (${env.NODE_ENV})...`);
       const { data, error } = await resend.emails.send({
         from: `Minimalistic Learning <${env.RESEND_FROM_EMAIL}>`,
         to,
@@ -53,14 +56,17 @@ export const sendOTP = async (to: string, otp: string) => {
 
       console.log('[email] OTP sent via Resend successfully:', data?.id);
       return data;
-    } catch (error) {
-      console.error('[email] Resend failed, falling back to Nodemailer:', error);
-      // Fallback to nodemailer if Resend fails in production
+    } catch (error: any) {
+      console.error('[email] Resend failed:', error.message || error);
+      
+      // If we are in development, fallback to Nodemailer
+      // In production, we still fallback but log a warning
+      console.log('[email] Falling back to Nodemailer...');
       return await sendViaNodemailer(to, subject, html);
     }
   } else {
-    // Default to Nodemailer for Development or if Resend key is missing/placeholder
-    console.log('[email] Using Nodemailer (Development/Fallback)...');
+    // Default to Nodemailer if Resend is not configured
+    console.log('[email] Resend not configured. Using Nodemailer...');
     return await sendViaNodemailer(to, subject, html);
   }
 };

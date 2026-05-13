@@ -3,6 +3,17 @@ import { BlogList } from "@/features/blog/components/blog-list";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Hero } from "@/components/Hero";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Minimalistic Learning | Share Knowledge, Stay Minimal",
+  description: "A premium social blogging platform for developers and enthusiasts to share stories and learn in a minimalistic way.",
+  openGraph: {
+    title: "Minimalistic Learning",
+    description: "Share your knowledge with the world.",
+    type: "website",
+  }
+};
 
 const Home: React.FC = () => {
   return (
@@ -11,9 +22,9 @@ const Home: React.FC = () => {
       {/* Content Section (Blog List) */}
       <section id="blog-list" className="w-full px-[5%] py-12">
         <div className="flex items-center justify-between gap-8 mb-16">
-          <h1 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter uppercase italic">
+          <h2 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter uppercase italic">
             <span className="text-[#1877F2]">Blogs</span> and articles
-          </h1>
+          </h2>
           <Link
             href="/blog"
             className="group flex items-center gap-2.5 px-6 py-3 bg-gray-900 text-white rounded-full font-bold text-xs sm:text-sm hover:bg-gray-800 transition-all shadow-xl shadow-gray-200"
