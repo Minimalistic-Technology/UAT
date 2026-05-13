@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { env } from '../config/env';
 
-// 1. Setup Nodemailer (Fallback/Development)
+// 1. Setup Nodemailer (The Reliable Backup)
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 2. Setup Resend
+// 2. Setup Resend (The Professional Choice)
 const resend = new Resend(env.RESEND_API_KEY);
 
 export const sendOTP = async (to: string, otp: string) => {
@@ -36,13 +36,12 @@ export const sendOTP = async (to: string, otp: string) => {
     </div>
   `;
 
-  // HYBRID LOGIC: 
-  // Priority 1: Resend (if API key is provided and not a placeholder)
-  const isResendConfigured = env.RESEND_API_KEY && !env.RESEND_API_KEY.includes('example');
+  // Use Resend if API key is present and not a placeholder
+  const canAttemptResend = env.RESEND_API_KEY && !env.RESEND_API_KEY.includes('example');
 
-  if (isResendConfigured) {
+  if (canAttemptResend) {
     try {
-      console.log(`[email] Attempting to send via Resend (${env.NODE_ENV})...`);
+      console.log(`[email] Attempting Resend delivery to ${to}...`);
       const { data, error } = await resend.emails.send({
         from: `Minimalistic Learning <${env.RESEND_FROM_EMAIL}>`,
         to,
@@ -51,22 +50,20 @@ export const sendOTP = async (to: string, otp: string) => {
       });
 
       if (error) {
-        throw error;
+        // If it's a domain verification error, we log it and move to fallback
+        console.warn('[email] Resend rejected delivery (likely unverified domain). Falling back to Nodemailer...');
+        return await sendViaNodemailer(to, subject, html);
       }
 
-      console.log('[email] OTP sent via Resend successfully:', data?.id);
+      console.log('[email] OTP sent via Resend successfully. ID:', data?.id);
       return data;
     } catch (error: any) {
-      console.error('[email] Resend failed:', error.message || error);
-      
-      // If we are in development, fallback to Nodemailer
-      // In production, we still fallback but log a warning
-      console.log('[email] Falling back to Nodemailer...');
+      console.error('[email] Resend exception. Falling back to Nodemailer:', error.message);
       return await sendViaNodemailer(to, subject, html);
     }
   } else {
-    // Default to Nodemailer if Resend is not configured
-    console.log('[email] Resend not configured. Using Nodemailer...');
+    // No Resend config, use Nodemailer directly
+    console.log('[email] Resend not configured. Using Nodemailer directly...');
     return await sendViaNodemailer(to, subject, html);
   }
 };
@@ -84,7 +81,7 @@ async function sendViaNodemailer(to: string, subject: string, html: string) {
     console.log('[email] Nodemailer OTP sent successfully to:', to, info.messageId);
     return info;
   } catch (error) {
-    console.error('[email] Nodemailer error:', error);
+    console.error('[email] All email delivery methods failed:', error);
     throw error;
   }
 }
