@@ -59,6 +59,11 @@ userSchema.set("toJSON", {
 
 userSchema.pre<UserDocument>("save", async function () {
   if (!this.isModified("password")) return;
+  
+  // Prevent double-hashing if the password is already a bcrypt hash
+  // (e.g., when transferred from PendingUser)
+  if (this.password && this.password.startsWith('$2b$')) return;
+
   this.password = await bcrypt.hash(this.password, 10);
 });
 

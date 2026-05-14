@@ -28,6 +28,7 @@ import { durationToMs } from '../utils/time';
 import { ApiResponse } from "../utils/ApiResponse";
 import { sendOTP } from "../utils/email";
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import type {
@@ -53,10 +54,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   // 3. Hash password before storing in Temp (if provided)
   let hashedPassword = payload.password;
   if (payload.password) {
-    const User = require('../models/User').default;
-    const tempUser = new User({ password: payload.password });
-    await tempUser.hashPassword(); // Reuse hashing logic from User model
-    hashedPassword = tempUser.password;
+    hashedPassword = await bcrypt.hash(payload.password, 10);
   }
 
   // 4. Save to PendingUser (Temporary)
@@ -66,8 +64,10 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     { upsert: true, new: true }
   );
 
-  // 5. Send verification email
-  await sendOTP(payload.email, otp);
+  // 5. Send verification email (Fire and Forget to prevent UI hang and 500 errors on slow networks)
+  sendOTP(payload.email, otp).catch((err) => {
+    console.error('[Background] Failed to send signup OTP email:', err);
+  });
 
   return res.status(StatusCodes.CREATED).json(
     new ApiResponse(StatusCodes.CREATED, { email: payload.email }, "Verification code sent! Please verify your email to complete registration.")
@@ -96,8 +96,10 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   user.otpExpires = otpExpires;
   await user.save();
 
-  // Send Email
-  await sendOTP(user.email, otp);
+  // Send Email (Fire and Forget)
+  sendOTP(user.email, otp).catch((err) => {
+    console.error('[Background] Failed to send login OTP email:', err);
+  });
 
   const message = user.isVerified 
     ? "OTP sent to your email. Please verify." 
