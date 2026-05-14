@@ -48,7 +48,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
 
   // 2. Generate OTP
   const otp = crypto.randomInt(100000, 999999).toString();
-  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+  const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // Exact 5 mins
 
   // 3. Hash password before storing in Temp (if provided)
   let hashedPassword = payload.password;
@@ -89,7 +89,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   // Generate 6-digit OTP
   const otp = crypto.randomInt(100000, 999999).toString();
-  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // Exact 5 minutes
 
   // Save to user
   user.otp = otp;
@@ -116,7 +116,9 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
   user = await userService.findByEmail(email);
 
   if (user) {
-    if (user.otp !== otp || new Date() > (user.otpExpires || 0)) {
+    // Add 60s buffer for server time sync issues
+    const isExpired = new Date(Date.now() - 60000) > (user.otpExpires || 0);
+    if (user.otp !== otp || isExpired) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired OTP');
     }
     user.otp = undefined;
@@ -126,7 +128,10 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
   } else {
     // 2. Check if it's a Signup verification (User in PendingUser DB)
     const pending = await PendingUser.findOne({ email });
-    if (!pending || pending.otp !== otp || new Date() > pending.otpExpires) {
+    // Add 60s buffer for server time sync issues
+    const isExpired = pending && new Date(Date.now() - 60000) > pending.otpExpires;
+    
+    if (!pending || pending.otp !== otp || isExpired) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired OTP');
     }
 

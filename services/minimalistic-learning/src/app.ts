@@ -3,6 +3,7 @@ import { connectDatabase } from './config/db';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import mongoSanitize from 'express-mongo-sanitize';
 import { env } from './config/env';
 import { defaultLimiter } from './config/rateLimit';
 import errorHandler from './middleware/errorHandler';
@@ -40,15 +41,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// 4. Database Connection
-(async () => {
-  try {
-    await connectDatabase();
-  } catch (err) {
-    console.error(' MongoDB connection failed', err);
-    process.exit(1);
-  }
-})();
+// 4. Database Connection is now handled in server.ts to ensure it's ready before listening
+
 
 // 5. Rate Limiting (Security)
 app.use('/api/', defaultLimiter);
@@ -56,6 +50,9 @@ app.use('/api/', defaultLimiter);
 // 6. Body Parsers
 app.use(express.json({ limit: "10mb" })); // Reduced from 50mb for security
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// 7. Sanitize Data (Security - Against NoSQL Injection)
+app.use(mongoSanitize());
 
 app.use(cookieParser());
 
