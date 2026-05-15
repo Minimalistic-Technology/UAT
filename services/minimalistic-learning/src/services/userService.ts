@@ -2,7 +2,7 @@ import User, { IUser, UserDocument } from '../models/User';
 
 export type CreateUserPayload = Omit<IUser, 'createdAt' | 'updatedAt'>;
 
-export const findByEmail = (email: string) => User.findOne({ email });
+export const findByEmail = (email: string) => User.findOne({ email: new RegExp(`^${email}$`, 'i') });
 
 export const findById = (id: string) => User.findById(id);
 

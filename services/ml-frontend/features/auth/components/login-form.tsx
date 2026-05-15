@@ -38,7 +38,7 @@ const LoginForm = () => {
         // Backend auto-detects role from DB:
         // If admin → tokens returned directly → login complete
         // If user  → OTP sent → show OTP screen
-        const userRole = res?.data?.user?.role;
+        const userRole = res?.data?.user?.role?.toLowerCase();
 
         if (userRole === 'admin') {
           toast.success("Welcome, Admin!");
@@ -98,7 +98,7 @@ const LoginForm = () => {
               onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
               type="text"
               maxLength={6}
-              className="w-full pl-5 pr-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-2xl font-black tracking-[1em] text-center text-gray-900 focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-200"
+              className="w-full pl-5 pr-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-2xl font-black tracking-[0.5em] sm:tracking-[1em] text-center text-gray-900 focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-200"
               placeholder="000000"
               required
             />

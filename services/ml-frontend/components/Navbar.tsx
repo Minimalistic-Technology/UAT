@@ -41,7 +41,7 @@ export const Navbar: React.FC = () => {
     { id: 'Resources', label: 'Resources', icon: BookOpen, href: '/resources' },
     { id: 'About', label: 'About', icon: UserCheck, href: '/about' },
     ...(isAuthenticated ? (
-      user?.role === 'admin'
+      user?.role?.toLowerCase() === 'admin'
         ? [{ id: 'Dashboard', label: 'Dashboard', icon: BookOpen, href: '/dashboard' }]
         : [{ id: 'My Blogs', label: 'My Blogs', icon: Newspaper, href: '/my-blogs' }]
     ) : [])
@@ -108,7 +108,7 @@ export const Navbar: React.FC = () => {
                 </div>
 
                 {/* User Avatar with Dropdown — only for regular users */}
-                {user?.role !== 'admin' ? (
+                {user?.role?.toLowerCase() !== 'admin' ? (
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
