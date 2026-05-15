@@ -15,19 +15,23 @@ import adminRoutes from './routes/adminRoutes';
 const app = express();
 
 // 1. CORS (Must be first for production)
+const allowedOrigins = env.corsOrigins;
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    if (env.corsOrigins.includes(origin) || env.NODE_ENV === "development") {
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || env.NODE_ENV === "development") {
       callback(null, true);
     } else {
-      console.warn(`[cors] Blocked origin: ${origin}`);
+      console.warn(`[CORS] Blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,                
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'set-cookie'],
+  exposedHeaders: ['set-cookie'],
   maxAge: 86400 
 }));
 

@@ -87,9 +87,11 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
   }
 
-  // Role is auto-detected from the database — no frontend role field needed
+  // Ultra-safe role detection
+  const detectedRole = user.role?.toString().trim().toLowerCase();
+  console.log(`[auth] Login attempt: ${user.email}, Detected Role: ${detectedRole}`);
 
-  if (user.role === 'admin') {
+  if (detectedRole === 'admin') {
     // Admin Flow: Direct login (No OTP)
     const accessToken = signAccessToken(user._id);
     const refreshToken = signRefreshToken(user._id);
