@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Post from "../models/Post";
+import SiteSetting from "../models/SiteSetting";
 import { uploadToCloudinary } from "../utils/cloudinary";
 import { StatusCodes } from "http-status-codes";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -17,7 +18,7 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
   const limit = Math.min(Number(req.query.limit) || 10, 50);
   const { tag, q, category } = req.query;
 
-  const query: Record<string, unknown> = { published: true };
+  const query: Record<string, unknown> = { published: true, status: 'published' };
 
   if (tag) query.tags = tag;
   if (category) query.category = category;
@@ -153,6 +154,7 @@ export const getPostBySlug = asyncHandler(
     const post = await Post.findOne({
       slug: slug,
       published: true,
+      status: 'published',
     })
       .populate("authorId", "firstName lastName")
       .select("-__v")
@@ -295,6 +297,14 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
 
   const safeTitle = (title || "Untitled Story").trim() || "Untitled Story";
 
+  // Check auto-approve setting
+  let setting = await SiteSetting.findOne({ key: 'global' });
+  if (!setting) setting = await SiteSetting.create({ key: 'global', autoApprovePost: true });
+  const autoApprove = setting.autoApprovePost;
+
+  const postStatus = autoApprove ? 'published' : 'pending';
+  const postPublished = autoApprove ? (published === true) : false;
+
   const post = await Post.create({
     title: safeTitle,
     slug,
@@ -302,14 +312,19 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
     category: (category || "Uncategorized").trim(),
     coverImage,
     tags: sanitizedTags,
-    published: published === true ? true : false,
+    published: postPublished,
+    status: postStatus,
     authorId: userId,
   });
+
+  const message = autoApprove
+    ? 'Post created successfully'
+    : 'Post submitted for review. It will be live once approved by admin.';
 
   return res
     .status(StatusCodes.CREATED)
     .json(
-      new ApiResponse(StatusCodes.CREATED, post, "Post created successfully"),
+      new ApiResponse(StatusCodes.CREATED, post, message),
     );
 });
 

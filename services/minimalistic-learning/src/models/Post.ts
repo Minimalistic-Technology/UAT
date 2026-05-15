@@ -21,6 +21,12 @@ const PostSchema = new Schema(
     tags: [{ type: String, index: true }],
     authorId: { type: Types.ObjectId, ref: "User", required: true },
     published: { type: Boolean, default: false },
+    status: {
+      type: String,
+      enum: ['pending', 'published', 'rejected'],
+      default: 'pending',
+      index: true,
+    },
     category: { type: String, trim: true, maxLength: 30, default: "Uncategorized" },
     likes: [{ type: Types.ObjectId, ref: "User" }],
   },

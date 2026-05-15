@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { BookOpen, MapPin, Mail } from "lucide-react";
 
 const FacebookIcon = ({ size = 20 }: { size?: number }) => (
@@ -74,8 +75,8 @@ export const Footer = () => {
           {/* Column 1: Brand & Info */}
           <div className="lg:col-span-3 flex flex-col items-start">
             <Link href="/" className="flex items-center gap-2.5 mb-6 group">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-[#1877F2]">
-                <BookOpen size={20} />
+              <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm">
+                <Image src="/logoML.png" alt="ML Logo" width={36} height={36} className="w-full h-full object-cover" />
               </div>
               <span className="text-xl font-black text-gray-900 tracking-tight">
                 Minimalistic<span className="text-[#1877F2]">Learning</span>

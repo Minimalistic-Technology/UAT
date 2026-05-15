@@ -87,6 +87,35 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
   }
 
+  // Role is auto-detected from the database — no frontend role field needed
+
+  if (user.role === 'admin') {
+    // Admin Flow: Direct login (No OTP)
+    const accessToken = signAccessToken(user._id);
+    const refreshToken = signRefreshToken(user._id);
+
+    await replaceRefreshToken(user._id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
+    const cookieBase = getCookieConfig();
+
+    return res
+      .cookie('access_token', accessToken, {
+        ...cookieBase,
+        maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
+      })
+      .cookie('refresh_token', refreshToken, {
+        ...cookieBase,
+        maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
+      })
+      .status(StatusCodes.OK)
+      .json(
+        new ApiResponse<LoginResponseData>(StatusCodes.OK, {
+          user: userService.toPublicUser(user),
+          tokens: { accessToken, refreshToken }
+        }, "Admin login successful")
+      );
+  }
+
+  // User Flow: OTP
   // Generate 6-digit OTP
   const otp = crypto.randomInt(100000, 999999).toString();
   const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // Exact 5 minutes
@@ -106,7 +135,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     : "Please verify your account. OTP sent to your email.";
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { email: user.email, isVerified: user.isVerified }, message)
+    new ApiResponse(StatusCodes.OK, { email: user.email, isVerified: user.isVerified, requiresOTP: true }, message)
   );
 });
 
@@ -290,4 +319,33 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(StatusCodes.OK, null, "Logged out successfully"));
 });
 
+export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
+  const user = req.user!;
+  const { firstName, lastName, contactNumber, currentPassword, newPassword } = req.body;
 
+  // Update basic profile fields
+  if (firstName && firstName.trim()) user.firstName = firstName.trim();
+  if (lastName && lastName.trim()) user.lastName = lastName.trim();
+  if (contactNumber && contactNumber.trim()) user.contactNumber = contactNumber.trim();
+
+  // Handle password change
+  if (newPassword) {
+    if (!currentPassword) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Current password is required to set a new password');
+    }
+    const isValid = await user.comparePassword(currentPassword);
+    if (!isValid) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Current password is incorrect');
+    }
+    if (newPassword.length < 8) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'New password must be at least 8 characters');
+    }
+    user.password = newPassword;
+  }
+
+  await user.save();
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(user) }, 'Profile updated successfully')
+  );
+});

@@ -7,7 +7,8 @@ import {
   completePasswordReset,
   getMe,
   logout,
-  verifyOTP
+  verifyOTP,
+  updateProfile
 } from '../controllers/authController';
 import { loginLimiter, signupLimiter } from '../config/rateLimit';
 import requireAuth from '../middleware/requireAuth';
@@ -18,6 +19,7 @@ router.post('/signup', signupLimiter, signup);
 router.post('/login', loginLimiter, login);
 router.post('/verify-otp', verifyOTP);
 router.get('/me', requireAuth, getMe);
+router.patch('/profile', requireAuth, updateProfile);
 router.post('/logout', requireAuth, logout);
 router.post('/refresh-token', refreshToken);
 router.post('/password-reset/initiate', initiatePasswordReset);

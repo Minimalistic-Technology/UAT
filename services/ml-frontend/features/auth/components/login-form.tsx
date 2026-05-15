@@ -21,8 +21,8 @@ const LoginForm = () => {
   const [userEmail, setUserEmail] = useState("");
   const [otpValue, setOtpValue] = useState("");
 
-  const { mutate: loginMutate, isPending: isLoginPending, error: loginError } = useLogin();
-  const { mutate: verifyMutate, isPending: isVerifyPending, error: verifyError } = useVerifyOTP();
+  const { mutate: loginMutate, isPending: isLoginPending } = useLogin();
+  const { mutate: verifyMutate, isPending: isVerifyPending } = useVerifyOTP();
 
   const {
     register,
@@ -34,10 +34,21 @@ const LoginForm = () => {
 
   const onSubmit = (data: LoginValues) => {
     loginMutate(data, {
-      onSuccess: () => {
-        toast.success("OTP sent to your email!");
-        setUserEmail(data.email);
-        setShowOTP(true);
+      onSuccess: (res: any) => {
+        // Backend auto-detects role from DB:
+        // If admin → tokens returned directly → login complete
+        // If user  → OTP sent → show OTP screen
+        const userRole = res?.data?.user?.role;
+
+        if (userRole === 'admin') {
+          toast.success("Welcome, Admin!");
+          refreshUser();
+          router.push("/dashboard");
+        } else {
+          toast.success("OTP sent to your email!");
+          setUserEmail(data.email);
+          setShowOTP(true);
+        }
       },
       onError: (err) => {
         toast.error(isAxiosError(err) ? err.response?.data?.message : "Login failed");
@@ -56,7 +67,7 @@ const LoginForm = () => {
       onSuccess: () => {
         toast.success("Login successful! Welcome back.");
         refreshUser();
-        router.push("/dashboard");
+        router.push("/my-blogs");
       },
       onError: (err) => {
         toast.error(isAxiosError(err) ? err.response?.data?.message : "Verification failed");
@@ -64,6 +75,7 @@ const LoginForm = () => {
     });
   };
 
+  // ── OTP Screen ──────────────────────────────────────────────────────────────
   if (showOTP) {
     return (
       <div className="max-w-md w-full mx-auto p-10 bg-white rounded-[2.5rem] shadow-2xl shadow-blue-500/10 border border-gray-50 animate-in fade-in zoom-in duration-300">
@@ -81,17 +93,15 @@ const LoginForm = () => {
         <form onSubmit={onVerifyOTP} className="space-y-6">
           <div>
             <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 px-1">Verification Code</label>
-            <div className="relative group">
-              <input
-                value={otpValue}
-                onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                type="text"
-                maxLength={6}
-                className="w-full pl-5 pr-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-2xl font-black tracking-[1em] text-center text-gray-900 focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-200"
-                placeholder="000000"
-                required
-              />
-            </div>
+            <input
+              value={otpValue}
+              onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              type="text"
+              maxLength={6}
+              className="w-full pl-5 pr-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-2xl font-black tracking-[1em] text-center text-gray-900 focus:bg-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-200"
+              placeholder="000000"
+              required
+            />
           </div>
 
           <button
@@ -121,13 +131,16 @@ const LoginForm = () => {
     );
   }
 
+  // ── Login Form ──────────────────────────────────────────────────────────────
   return (
     <div className="max-w-md w-full mx-auto p-10 bg-white rounded-[2.5rem] shadow-2xl shadow-blue-500/10 border border-gray-50">
       <div className="flex flex-col items-center mb-8">
         <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mb-4">
           <Lock size={32} />
         </div>
-        <h2 className="text-3xl font-black text-gray-900 tracking-tight text-center">Login to <span className="text-blue-600">Portal</span></h2>
+        <h2 className="text-3xl font-black text-gray-900 tracking-tight text-center">
+          Login to <span className="text-blue-600">Portal</span>
+        </h2>
         <p className="text-gray-400 mt-1 font-medium">Access your personal workspace</p>
       </div>
 

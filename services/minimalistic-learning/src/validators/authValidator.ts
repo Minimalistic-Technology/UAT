@@ -15,6 +15,7 @@ export const signupSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().email().trim().toLowerCase(),
   password: z.string().min(1),
+  role: z.enum(["user", "admin"]).optional().default("user"),
 });
 
 export const refreshSchema = z.object({

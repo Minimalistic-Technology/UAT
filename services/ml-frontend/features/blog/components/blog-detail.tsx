@@ -8,6 +8,7 @@ import { BlogCard } from './blog-card';
 import { useLikeBlog } from '../hooks/use-like-blog';
 import { useComments } from '../hooks/use-comments';
 import { useCreateComment } from '../hooks/use-create-comment';
+import { toast } from 'sonner';
 import { useLikeComment } from '../hooks/use-like-comment';
 
 interface BlogDetailProps {
@@ -58,7 +59,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
       }).catch(console.error);
     } else {
       navigator.clipboard.writeText(url);
-      alert("Link copied to clipboard!");
+      toast.success("Link copied to clipboard!");
     }
   };
 

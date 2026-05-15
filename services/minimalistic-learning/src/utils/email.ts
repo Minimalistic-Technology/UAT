@@ -15,25 +15,76 @@ const transporter = nodemailer.createTransport({
 const resend = new Resend(env.RESEND_API_KEY);
 
 export const sendOTP = async (to: string, otp: string) => {
-  const subject = 'Your Login OTP - Minimalistic Learning';
+  const subject = 'Your Verification Code — Minimalistic Learning';
+  const year = new Date().getFullYear();
   const html = `
-    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #1877F2; margin: 0; font-size: 28px; font-weight: 800;">Minimalistic Learning</h1>
-        <p style="color: #64748b; margin-top: 5px; font-size: 14px;">Your journey to knowledge continues</p>
-      </div>
-      
-      <div style="padding: 30px; background-color: #f8fafc; border-radius: 12px; text-align: center;">
-        <p style="color: #1e293b; font-size: 18px; margin-bottom: 10px;">Your One-Time Password (OTP)</p>
-        <div style="font-size: 42px; font-weight: 900; color: #1877F2; letter-spacing: 8px; margin: 20px 0;">${otp}</div>
-        <p style="color: #64748b; font-size: 14px;">This OTP is valid for 10 minutes. Please do not share it with anyone.</p>
-      </div>
-      
-      <div style="margin-top: 30px; text-align: center; color: #94a3b8; font-size: 12px;">
-        <p>If you did not request this OTP, please ignore this email or contact support if you have concerns.</p>
-        <p>&copy; ${new Date().getFullYear()} Minimalistic Learning. All rights reserved.</p>
-      </div>
-    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,0.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);padding:40px 40px 36px;text-align:center;">
+            <div style="display:inline-block;background:rgba(255,255,255,0.12);border-radius:16px;padding:10px 20px;margin-bottom:20px;">
+              <span style="color:#ffffff;font-size:13px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;">Minimalistic Learning</span>
+            </div>
+            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Verify Your Identity</h1>
+            <p style="margin:10px 0 0;color:rgba(255,255,255,0.6);font-size:14px;">Your one-time verification code is ready</p>
+          </td>
+        </tr>
+
+        <!-- OTP Box -->
+        <tr>
+          <td style="padding:40px 40px 20px;text-align:center;">
+            <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+              Enter the code below to complete your login. This code expires in <strong style="color:#1e293b;">5 minutes</strong>.
+            </p>
+            <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:20px;padding:32px;margin:0 auto;display:inline-block;width:100%;box-sizing:border-box;">
+              <p style="margin:0 0 8px;color:#1877F2;font-size:11px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;">Your verification code</p>
+              <div style="font-size:52px;font-weight:900;color:#1877F2;letter-spacing:16px;font-variant-numeric:tabular-nums;margin:8px 0 4px;">${otp}</div>
+              <p style="margin:8px 0 0;color:#64748b;font-size:12px;">Do not share this code with anyone</p>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Security Note -->
+        <tr>
+          <td style="padding:20px 40px 36px;">
+            <div style="background:#fef9ee;border:1px solid #fde68a;border-radius:16px;padding:16px 20px;display:flex;align-items:flex-start;gap:12px;">
+              <span style="font-size:20px;line-height:1;">⚠️</span>
+              <div>
+                <p style="margin:0;color:#92400e;font-size:13px;font-weight:700;">Security Notice</p>
+                <p style="margin:4px 0 0;color:#a16207;font-size:12px;line-height:1.5;">
+                  Minimalistic Learning will never ask for your OTP via phone or chat. If you didn't request this code, please ignore this email — your account is safe.
+                </p>
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Divider -->
+        <tr><td style="padding:0 40px;"><div style="height:1px;background:#f1f5f9;"></div></td></tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:28px 40px;text-align:center;">
+            <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.7;">
+              This is an automated message from <strong style="color:#64748b;">Minimalistic Learning</strong>.<br>
+              Please do not reply to this email.<br>
+              &copy; ${year} Minimalistic Learning. All rights reserved.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
   `;
 
   // Use Resend if API key is present and not a placeholder

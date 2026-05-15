@@ -193,5 +193,39 @@ hr {
   height: auto;
 }
 
+/* Single Blog Form — Clean Editor Styling */
+.quill-single-form .ql-toolbar.ql-snow {
+  border: 1px solid #e2e8f0;
+  border-bottom: none;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+  background-color: #f8fafc;
+  padding: 10px 14px;
+}
+/* Quill SVG Fix for Huge Icons */
+.ql-snow .ql-picker.ql-header .ql-picker-label svg,
+.ql-snow .ql-picker.ql-header .ql-picker-item svg,
+.ql-toolbar .ql-formats svg {
+  width: 18px !important;
+  height: 18px !important;
+}
 
-
+.quill-single-form .ql-container.ql-snow {
+  border: 1px solid #e2e8f0;
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+  background-color: #ffffff;
+  font-family: inherit;
+  font-size: 1.05rem;
+  min-height: 400px;
+}
+.quill-single-form .ql-editor {
+  min-height: 400px;
+  padding: 24px;
+  line-height: 1.8;
+  color: #1e293b;
+}
+.quill-single-form .ql-editor.ql-blank::before {
+  color: #94a3b8;
+  font-style: normal;
+}

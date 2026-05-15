@@ -6,6 +6,7 @@ import { useGetMyBlogs } from "../hooks/use-get-my-blogs";
 import { useDeleteBlog } from "../hooks/use-delete-blog";
 import { useUpdateBlog } from "../hooks/use-update-blog";
 import { isAxiosError } from "@/lib/api";
+import { toast } from "sonner";
 
 export const BlogManagement = () => {
   const { data, isLoading, error, refetch } = useGetMyBlogs();
@@ -17,36 +18,34 @@ export const BlogManagement = () => {
       { id, data: { published: true } as any },
       {
         onSuccess: () => {
-          alert("Story published successfully!");
+          toast.success("Story published successfully!");
           refetch();
         },
         onError: (err) => {
-          alert(
-            isAxiosError(err)
-              ? err.response?.data?.message || err.message
-              : "Failed to publish blog",
-          );
+          toast.error(isAxiosError(err) ? err.response?.data?.message || err.message : "Failed to publish blog");
         },
       }
     );
   };
 
   const handleDelete = async (id: string, title: string) => {
-    if (confirm(`Are you sure you want to delete "${title}"?`)) {
-      deleteBlog(id, {
-        onSuccess: () => {
-          alert("Blog deleted successfully!");
-          refetch();
+    toast("Delete this post?", {
+      description: `"${title}" will be permanently removed.`,
+      action: {
+        label: "Delete",
+        onClick: () => {
+          deleteBlog(id, {
+            onSuccess: () => {
+              toast.success("Blog deleted successfully!");
+              refetch();
+            },
+            onError: (err) => {
+              toast.error(isAxiosError(err) ? err.response?.data?.message || err.message : "Failed to delete blog");
+            },
+          });
         },
-        onError: (err) => {
-          alert(
-            isAxiosError(err)
-              ? err.response?.data?.message || err.message
-              : "Failed to delete blog",
-          );
-        },
-      });
-    }
+      },
+    });
   };
 
   if (isLoading) {
@@ -144,11 +143,25 @@ export const BlogManagement = () => {
               {/* Info */}
               <div className="flex-1 min-w-0 text-center md:text-left">
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
-                  <span
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${blog.published ? "bg-white text-[#1877F2]" : "bg-amber-50 text-amber-600"}`}
-                  >
-                    {blog.published ? "Published" : "Draft"}
-                  </span>
+                  {/* Status Badge based on new 'status' field */}
+                  {(() => {
+                    const s = blog.status || (blog.published ? 'published' : 'pending');
+                    if (s === 'published') return (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-700">
+                        ✓ Live
+                      </span>
+                    );
+                    if (s === 'rejected') return (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-600">
+                        ✗ Rejected
+                      </span>
+                    );
+                    return (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600">
+                        ⏳ Pending Review
+                      </span>
+                    );
+                  })()}
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-1.5 py-0.5 rounded">
                     {blog.category}
                   </span>
@@ -167,9 +180,9 @@ export const BlogManagement = () => {
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Actions: hide Publish button if post is pending (awaiting admin approval) */}
               <div className="flex items-center gap-2 p-1 bg-gray-50 rounded-2xl">
-                {!blog.published && (
+                {!blog.published && blog.status !== 'pending' && (
                   <button
                     onClick={() => handleQuickPublish(blog._id)}
                     disabled={isUpdating}

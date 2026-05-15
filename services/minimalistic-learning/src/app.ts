@@ -10,6 +10,7 @@ import errorHandler from './middleware/errorHandler';
 import authRoutes from './routes/authRoutes';
 import postRoutes from './routes/postRoutes';
 import commentRoutes from './routes/commentRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 const app = express();
 
@@ -25,7 +26,7 @@ app.use(cors({
     }
   },
   credentials: true,                
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   maxAge: 86400 
 }));
@@ -64,6 +65,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/posts', postRoutes);
 app.use('/api/v1/comments', commentRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // 8. Error Handling
 app.use(errorHandler);
