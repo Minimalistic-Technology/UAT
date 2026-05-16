@@ -4,9 +4,8 @@ export { isAxiosError };
 export type { AxiosError };
 
 export const api = axios.create({
-  // In production, we use the Next.js rewrite /api/v1
-  // In local dev, it falls back to localhost
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1",
+  // Use relative path for all requests - handled by Next.js rewrites
+  baseURL: "/api/v1",
   withCredentials: true, 
   headers: {
     "Content-Type": "application/json",
