@@ -6,16 +6,10 @@ import { ApiResponse } from '../utils/ApiResponse';
 import SiteSetting from '../models/SiteSetting';
 import Post from '../models/Post';
 
-// ─── Helper: Ensure admin access ────────────────────────────────────────────
-const requireAdmin = (req: Request) => {
-  if (!req.user || req.user.role !== 'admin') {
-    throw new ApiError(StatusCodes.FORBIDDEN, 'Admin access required');
-  }
-};
+// Logic below assumes requireAuth and isAdmin middlewares have already passed
 
 // ─── GET /admin/settings ─────────────────────────────────────────────────────
 export const getSettings = asyncHandler(async (req: Request, res: Response) => {
-  requireAdmin(req);
 
   // Find or create the singleton settings document
   let setting = await SiteSetting.findOne({ key: 'global' });
@@ -30,7 +24,6 @@ export const getSettings = asyncHandler(async (req: Request, res: Response) => {
 
 // ─── PATCH /admin/settings ───────────────────────────────────────────────────
 export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
-  requireAdmin(req);
 
   const { autoApprovePost } = req.body;
   if (typeof autoApprovePost !== 'boolean') {
@@ -50,7 +43,6 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
 
 // ─── GET /admin/posts/pending ────────────────────────────────────────────────
 export const getPendingPosts = asyncHandler(async (req: Request, res: Response) => {
-  requireAdmin(req);
 
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 20, 50);
@@ -81,7 +73,6 @@ export const getPendingPosts = asyncHandler(async (req: Request, res: Response) 
 
 // ─── GET /admin/posts/all ────────────────────────────────────────────────────
 export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response) => {
-  requireAdmin(req);
 
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 20, 50);
@@ -118,7 +109,6 @@ export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response)
 
 // ─── PATCH /admin/posts/:postId/approve ──────────────────────────────────────
 export const approvePost = asyncHandler(async (req: Request, res: Response) => {
-  requireAdmin(req);
 
   const { postId } = req.params;
   const post = await Post.findByIdAndUpdate(
@@ -136,7 +126,6 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
 
 // ─── PATCH /admin/posts/:postId/reject ───────────────────────────────────────
 export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
-  requireAdmin(req);
 
   const { postId } = req.params;
   const post = await Post.findByIdAndUpdate(

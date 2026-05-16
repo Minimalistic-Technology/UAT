@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import requireAuth from '../middleware/requireAuth';
+import isAdmin from '../middleware/isAdmin';
 import {
   getSettings,
   updateSettings,
@@ -11,8 +12,9 @@ import {
 
 const router = Router();
 
-// All admin routes require authentication (admin check is done inside each controller)
+// All admin routes require both authentication and admin role
 router.use(requireAuth);
+router.use(isAdmin);
 
 router.get('/settings', getSettings);
 router.patch('/settings', updateSettings);

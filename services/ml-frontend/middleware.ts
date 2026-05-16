@@ -1,31 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Routes that require login
-const PROTECTED_ROUTES = ['/dashboard', '/my-blogs', '/blog/create', '/blog/edit', '/dashboard/settings'];
+/**
+ * PRODUCTION-READY MIDDLEWARE
+ * Handles route protection and authentication redirects.
+ */
+
+const PROTECTED_ROUTES = [
+  '/dashboard', 
+  '/my-blogs', 
+  '/blog/create', 
+  '/blog/edit', 
+  '/dashboard/settings'
+];
+
+const AUTH_ROUTES = ['/login', '/register', '/verify-otp'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Check for access_token cookie
+  // Note: Since we use Next.js Rewrites, the cookie is set on the frontend domain
+  const accessToken = request.cookies.get('access_token')?.value;
 
-  // Check if the current path starts with any protected route
-  const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
+  const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
 
-  if (!isProtected) {
-    return NextResponse.next();
+  // 1. Redirect to login if accessing protected route without token
+  if (isProtectedRoute && !accessToken) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // Check for access_token cookie (set by the backend on login)
-  const accessToken = request.cookies.get('access_token');
-
-  if (!accessToken) {
-    // Redirect to login if not authenticated
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname); // So we can redirect back after login
-    return NextResponse.redirect(loginUrl);
+  // 2. Redirect to dashboard if accessing auth routes while already logged in
+  if (isAuthRoute && accessToken) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/my-blogs/:path*', '/blog/create/:path*', '/blog/edit/:path*'],
+  matcher: [
+    '/dashboard/:path*', 
+    '/my-blogs/:path*', 
+    '/blog/create/:path*', 
+    '/blog/edit/:path*',
+    '/login',
+    '/register',
+    '/verify-otp'
+  ],
 };

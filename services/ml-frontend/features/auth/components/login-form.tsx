@@ -43,7 +43,11 @@ const LoginForm = () => {
         if (userRole === 'admin') {
           toast.success("Welcome, Admin!");
           refreshUser();
-          router.push("/dashboard");
+          setTimeout(() => {
+            router.push("/dashboard");
+            // Fallback for production stutters
+            setTimeout(() => { window.location.href = "/dashboard"; }, 1000);
+          }, 500);
         } else {
           toast.success("OTP sent to your email!");
           setUserEmail(data.email);
@@ -67,7 +71,11 @@ const LoginForm = () => {
       onSuccess: () => {
         toast.success("Login successful! Welcome back.");
         refreshUser();
-        router.push("/my-blogs");
+        setTimeout(() => {
+          router.push("/my-blogs");
+          // Fallback for production stutters
+          setTimeout(() => { window.location.href = "/my-blogs"; }, 1000);
+        }, 500);
       },
       onError: (err) => {
         toast.error(isAxiosError(err) ? err.response?.data?.message : "Verification failed");

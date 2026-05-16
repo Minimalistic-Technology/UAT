@@ -312,11 +312,16 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const logout = asyncHandler(async (req: Request, res: Response) => {
-  const cookieBase = getCookieConfig();
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none' as const,
+    path: '/'
+  };
 
   return res
-    .clearCookie('access_token', cookieBase)
-    .clearCookie('refresh_token', cookieBase)
+    .clearCookie('access_token', cookieOptions)
+    .clearCookie('refresh_token', cookieOptions)
     .status(StatusCodes.OK)
     .json(new ApiResponse(StatusCodes.OK, null, "Logged out successfully"));
 });

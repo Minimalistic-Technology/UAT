@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     queryKey: ["auth-me"],
     queryFn: () => authService.getMe(),
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always re-verify on mount to prevent auth bypass via stale cache
   });
 
   const user = data?.data?.user || null;
@@ -36,10 +36,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await authService.logout();
     } catch (error) {
-      console.error("Failed to logout securely on backend:", error);
+      console.warn("Backend logout failed, but clearing local session anyway:", error);
     } finally {
+      // ALWAYS clear local state even if server is unreachable
       queryClient.setQueryData(["auth-me"], null);
-      router.push("/");
+      queryClient.clear();
+      router.push("/login");
       router.refresh();
     }
   };

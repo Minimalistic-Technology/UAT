@@ -14,7 +14,10 @@ import adminRoutes from './routes/adminRoutes';
 
 const app = express();
 
-// 1. CORS (Must be first for production)
+// 1. Trust Proxy (REQUIRED for Render/Vercel to handle HTTPS/Secure cookies correctly)
+app.set('trust proxy', 1);
+
+// 2. CORS (Must be first for production)
 const allowedOrigins = env.corsOrigins;
 app.use(cors({
   origin: (origin, callback) => {
@@ -30,8 +33,7 @@ app.use(cors({
   },
   credentials: true,                
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'set-cookie'],
-  exposedHeaders: ['set-cookie'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   maxAge: 86400 
 }));
 

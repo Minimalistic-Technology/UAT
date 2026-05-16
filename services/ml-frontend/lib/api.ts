@@ -4,19 +4,20 @@ export { isAxiosError };
 export type { AxiosError };
 
 export const api = axios.create({
+  // In production, we use the Next.js rewrite /api/v1
+  // In local dev, it falls back to localhost
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api/v1",
-  withCredentials: true, // Send cookies by default
+  withCredentials: true, 
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor to add Authorization header
+// Request interceptor
 api.interceptors.request.use((config) => {
-  // Cookies are sent automatically with withCredentials: true
-  // This is a backup mechanism in case cookies fail
+  // If we have a token in localStorage, use it as a fallback
   if (typeof window !== "undefined") {
-    const token = getCookieValue("access_token");
+    const token = localStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
