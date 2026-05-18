@@ -26,7 +26,7 @@ export const CompanyOverview = ({
         <div className="flex flex-col items-center justify-center space-y-4">
           <div className="relative">
             <Avatar className="h-32 w-32 border-4 border-white shadow-lg rounded-xl">
-              <AvatarImage src={company.logo.url || ""} className="object-cover rounded-xl" />
+              <AvatarImage src={company?.logo?.url || ""} className="object-cover rounded-xl" />
               <AvatarFallback className="bg-indigo-50 text-indigo-600 text-3xl font-bold rounded-xl">
                 {company.name?.charAt(0).toUpperCase()}
               </AvatarFallback>
