@@ -64,10 +64,10 @@ export const Footer = () => {
             <div className="flex flex-col gap-2.5">
               {[
                 { name: 'About Us', href: '/about' },
-                { name: 'Our Services', href: '/services' },
-                { name: 'Testimonials', href: '/testimonials' },
-                { name: 'Our Team', href: '/team' },
-                { name: 'Careers', href: '/careers' },
+                { name: 'Our Services', href: '#' },
+                { name: 'Testimonials', href: '#' },
+                { name: 'Our Team', href: '#' },
+                { name: 'Careers', href: '#' },
               ].map(link => (
                 <Link key={link.name} href={link.href} className="group flex items-center gap-2 text-gray-400 hover:text-white text-[13px] font-medium transition-colors w-fit">
                   <span className="w-0 h-px bg-white group-hover:w-2.5 transition-all duration-300" />
