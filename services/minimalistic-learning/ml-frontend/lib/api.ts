@@ -7,9 +7,13 @@ export type { AxiosError };
 // needs an absolute URL. In the browser, we keep the relative path so
 // Next.js rewrites can proxy it to the backend (solves CORS/cookie issues).
 const isServer = typeof window === "undefined";
-const baseURL = isServer
-  ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/v1`
-  : "/api/v1";
+const getBaseURL = () => {
+  if (!isServer) return "/api/v1";
+
+  const rawURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+  return rawURL.endsWith("/api/v1") ? rawURL : `${rawURL}/api/v1`;
+};
+const baseURL = getBaseURL();
 
 export const api = axios.create({
   baseURL,
@@ -90,13 +94,13 @@ api.interceptors.response.use(
         );
 
         const newAccessToken = refreshResponse.data?.data?.accessToken;
-        
+
         processQueue(null, newAccessToken);
 
         if (newAccessToken) {
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         }
-        
+
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
