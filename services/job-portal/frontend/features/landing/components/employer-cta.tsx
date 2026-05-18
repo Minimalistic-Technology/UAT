@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
@@ -14,6 +15,7 @@ const PERKS = [
 const EASE = [0.22, 1, 0.36, 1];
 
 export const EmployerCTA = () => {
+  const router = useRouter();
   return (
     <section
       id="employers"
@@ -71,14 +73,16 @@ export const EmployerCTA = () => {
               <div className="mt-12 flex flex-wrap gap-4">
                 <button
                   type="button"
+                  onClick={() => router.push("/employer-dashboard/jobs/create")}
                   className="group px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all duration-300 shadow-xl shadow-indigo-200 hover:shadow-indigo-300 hover:-translate-y-0.5 flex items-center gap-2"
                   data-testid="post-job-cta-button"
                 >
-                  Post a job — free 
+                  Post a job — free
                   <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button
                   type="button"
+                  onClick={() => router.push("/employer-register")}
                   className="px-8 py-4 bg-white text-slate-900 border-2 border-slate-200 hover:border-indigo-600 hover:text-indigo-600 font-bold rounded-2xl transition-all duration-300"
                   data-testid="talk-to-sales-button"
                 >
@@ -89,7 +93,7 @@ export const EmployerCTA = () => {
 
             {/* Right Card / Social Proof */}
             <div className="lg:col-span-5">
-              <motion.div 
+              <motion.div
                 animate={{ y: [0, -12, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                 className="bg-slate-950 rounded-[2rem] p-10 text-white shadow-2xl shadow-slate-900/40 relative"
@@ -123,7 +127,7 @@ export const EmployerCTA = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Decorative corner element */}
                 <div className="absolute top-0 right-0 p-8 opacity-10">
                   <CheckCircle2 size={120} />

@@ -1,7 +1,9 @@
 "use client"
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, MapPin, Bookmark, Flame } from "lucide-react";
+import { useGetJobs } from "@/features/user/hooks/use-job";
 
 const JOBS = [
   {
@@ -79,10 +81,17 @@ const FILTERS = ["All", "Engineering", "Design", "Data & AI", "Marketing"];
 const EASE = [0.22, 1, 0.36, 1];
 
 export const FeaturedJobs = () => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("All");
-  const [savedJobs, setSavedJobs] = useState(new Set());
+  const [savedJobs, setSavedJobs] = useState<Set<any>>(new Set());
 
-  const toggleSave = (e: any, id: number) => {
+  // Dynamic Query from Database
+  const { data: responseData, isLoading } = useGetJobs({
+    limit: 6,
+    search: activeTab === "All" ? undefined : activeTab,
+  });
+
+  const toggleSave = (e: any, id: string | number) => {
     e.preventDefault(); // Stop navigation
     e.stopPropagation();
     const newSaved = new Set(savedJobs);
@@ -91,9 +100,12 @@ export const FeaturedJobs = () => {
     setSavedJobs(newSaved);
   };
 
-  const filteredJobs = JOBS.filter(
+  const dbJobs = responseData?.data?.jobs || [];
+  const filteredMockJobs = JOBS.filter(
     (job) => activeTab === "All" || job.category === activeTab
   );
+
+  const displayJobs = dbJobs.length > 0 ? dbJobs.slice(0, 6) : filteredMockJobs;
 
   return (
     <section
@@ -119,11 +131,10 @@ export const FeaturedJobs = () => {
               <button
                 key={f}
                 onClick={() => setActiveTab(f)}
-                className={`px-5 py-2 text-sm font-bold rounded-xl transition-all duration-300 ${
-                  activeTab === f
-                    ? "bg-slate-900 text-white shadow-md shadow-slate-200"
-                    : "text-slate-500 hover:text-slate-900"
-                }`}
+                className={`px-5 py-2 text-sm font-bold rounded-xl transition-all duration-300 ${activeTab === f
+                  ? "bg-slate-900 text-white shadow-md shadow-slate-200"
+                  : "text-slate-500 hover:text-slate-900"
+                  }`}
               >
                 {f}
               </button>
@@ -135,81 +146,131 @@ export const FeaturedJobs = () => {
         <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
           <motion.div layout className="divide-y divide-slate-100">
             <AnimatePresence mode="popLayout">
-              {filteredJobs.map((job) => (
-                <motion.a
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.4, ease: "easeIn" }}
-                  href={`/job/${job.id}`}
-                  key={job.id}
-                  className="group relative flex flex-col md:flex-row md:items-center gap-6 px-6 md:px-10 py-8 hover:bg-indigo-50/30 transition-colors cursor-pointer"
-                >
-                  {/* Left: Brand */}
-                  <div className="flex items-center gap-5 flex-1">
-                    <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center font-bold text-2xl text-indigo-600 group-hover:scale-110 group-hover:bg-white transition-all duration-300">
-                      {job.logo}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-bold text-slate-400 uppercase tracking-tight">
-                          {job.company}
-                        </span>
-                        {job.hot && (
-                          <span className="flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 tracking-wider uppercase">
-                            <Flame size={10} fill="currentColor" /> Hot
+              {isLoading ? (
+                <div className="p-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+                  <p className="font-bold text-sm tracking-wide">Loading featured roles...</p>
+                </div>
+              ) : displayJobs.length === 0 ? (
+                <div className="p-16 text-center text-slate-400">
+                  <p className="font-bold text-lg">No active jobs found</p>
+                  <p className="text-sm mt-1">Check back later or post your first job vacancy!</p>
+                </div>
+              ) : (
+                displayJobs.map((job: any) => {
+                  const jobId = job._id || job.id;
+                  const companyName = typeof job.company === 'object' ? job.company?.name : job.company;
+                  const roleName = job.role || job.title;
+                  const isHot = job.hot || job.isFeatured;
+                  const jobTags = job.tags || job.skills || [];
+
+                  // Location formatting
+                  let locStr = "Remote";
+                  if (typeof job.location === 'object' && job.location !== null) {
+                    const cityStr = job.location.city || "";
+                    const isRemote = job.location.remote === true;
+                    if (cityStr && isRemote) locStr = `${cityStr} / Remote`;
+                    else if (isRemote) locStr = "Remote";
+                    else if (cityStr) locStr = cityStr;
+                  } else if (job.location) {
+                    locStr = job.location;
+                  }
+
+                  const jobTypeStr = job.type || (job.jobType ? job.jobType.replace("_", " ") : "Full-time");
+
+                  // Salary formatting
+                  let salaryStr = typeof job.salary === 'object' && job.salary !== null
+                    ? `₹${job.salary.min ? job.salary.min.toLocaleString() : "0"} - ₹${job.salary.max ? job.salary.max.toLocaleString() : "0"}`
+                    : (job.salary || "N/A");
+
+                  // Logo logic
+                  let logoEl = <span className="font-bold text-2xl text-indigo-600">{companyName?.charAt(0) || "J"}</span>;
+                  if (job.logo) {
+                    logoEl = <span className="font-bold text-2xl text-indigo-600">{job.logo}</span>;
+                  } else if (typeof job.company === 'object' && job.company?.logo) {
+                    if (job.company.logo.startsWith("http")) {
+                      logoEl = <img src={job.company.logo} alt={companyName} className="w-full h-full object-cover rounded-2xl" />;
+                    } else {
+                      logoEl = <span className="font-bold text-2xl text-indigo-600">{job.company.logo}</span>;
+                    }
+                  }
+
+                  return (
+                    <motion.a
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.98 }}
+                      transition={{ duration: 0.4, ease: "easeIn" }}
+                      href={`/jobs/${jobId}`}
+                      key={String(jobId)}
+                      className="group relative flex flex-col md:flex-row md:items-center gap-6 px-6 md:px-10 py-8 hover:bg-indigo-50/30 transition-colors cursor-pointer"
+                    >
+                      {/* Left: Brand */}
+                      <div className="flex items-center gap-5 flex-1">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center font-bold text-2xl text-indigo-600 group-hover:scale-110 group-hover:bg-white transition-all duration-300 overflow-hidden">
+                          {logoEl}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-bold text-slate-400 uppercase tracking-tight">
+                              {companyName}
+                            </span>
+                            {isHot && (
+                              <span className="flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 tracking-wider uppercase">
+                                <Flame size={10} fill="currentColor" /> Hot
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                            {roleName}
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Middle: Tags (Visible on Tablet/Desktop) */}
+                      <div className="hidden lg:flex flex-wrap gap-2 flex-1">
+                        {jobTags.slice(0, 3).map((t: string) => (
+                          <span
+                            key={t}
+                            className="px-3 py-1 bg-slate-50 text-slate-500 text-xs font-semibold rounded-lg border border-slate-100 group-hover:bg-white group-hover:border-indigo-100 transition-colors"
+                          >
+                            {t}
                           </span>
-                        )}
+                        ))}
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                        {job.role}
-                      </h3>
-                    </div>
-                  </div>
 
-                  {/* Middle: Tags (Visible on Tablet/Desktop) */}
-                  <div className="hidden lg:flex flex-wrap gap-2 flex-1">
-                    {job.tags.map((t) => (
-                      <span
-                        key={t}
-                        className="px-3 py-1 bg-slate-50 text-slate-500 text-xs font-semibold rounded-lg border border-slate-100 group-hover:bg-white group-hover:border-indigo-100 transition-colors"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
+                      {/* Right: Meta & Actions */}
+                      <div className="flex items-center justify-between md:justify-end gap-8">
+                        <div className="text-left md:text-right">
+                          <div className="flex items-center md:justify-end gap-1.5 text-sm font-medium text-slate-500 mb-1">
+                            <MapPin size={14} /> {locStr} · {jobTypeStr}
+                          </div>
+                          <div className="text-sm font-black text-slate-900 tracking-tight">
+                            {salaryStr}
+                          </div>
+                        </div>
 
-                  {/* Right: Meta & Actions */}
-                  <div className="flex items-center justify-between md:justify-end gap-8">
-                    <div className="text-left md:text-right">
-                      <div className="flex items-center md:justify-end gap-1.5 text-sm font-medium text-slate-500 mb-1">
-                        <MapPin size={14} /> {job.location} · {job.type}
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={(e) => toggleSave(e, jobId)}
+                            className={`p-2.5 rounded-full border transition-all duration-300 ${savedJobs.has(jobId)
+                              ? "bg-indigo-600 border-indigo-600 text-white"
+                              : "bg-white border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200"
+                              }`}
+                            aria-label="Save job"
+                          >
+                            <Bookmark size={18} fill={savedJobs.has(jobId) ? "currentColor" : "none"} />
+                          </button>
+                          <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:bg-indigo-600 transition-colors group-hover:translate-x-1 duration-300">
+                            <ArrowRight size={18} />
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm font-black text-slate-900 tracking-tight">
-                        {job.salary}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={(e) => toggleSave(e, job.id)}
-                        className={`p-2.5 rounded-full border transition-all duration-300 ${
-                          savedJobs.has(job.id)
-                            ? "bg-indigo-600 border-indigo-600 text-white"
-                            : "bg-white border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200"
-                        }`}
-                        aria-label="Save job"
-                      >
-                        <Bookmark size={18} fill={savedJobs.has(job.id) ? "currentColor" : "none"} />
-                      </button>
-                      <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:bg-indigo-600 transition-colors group-hover:translate-x-1 duration-300">
-                        <ArrowRight size={18} />
-                      </div>
-                    </div>
-                  </div>
-                </motion.a>
-              ))}
+                    </motion.a>
+                  );
+                })
+              )}
             </AnimatePresence>
           </motion.div>
         </div>
@@ -217,9 +278,10 @@ export const FeaturedJobs = () => {
         {/* Footer CTA */}
         <div className="mt-12 flex justify-center">
           <button
+            onClick={() => router.push("/find-jobs")}
             className="group px-8 py-4 bg-white border-2 border-slate-200 hover:border-indigo-600 text-slate-900 hover:text-indigo-600 rounded-2xl font-bold transition-all duration-300 flex items-center gap-3 shadow-sm hover:shadow-xl hover:shadow-indigo-100"
           >
-            Browse all 12,804 jobs 
+            Browse all 12,804 jobs
             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
           </button>
         </div>

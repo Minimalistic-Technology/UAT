@@ -44,8 +44,8 @@ export const getJobs = async (
 
     let query: any = { status: JobStatus.ACTIVE };
 
-    if (remote && typeof remote === "string") {
-      query["location.remote"] = remote === "true";
+    if (remote === "true") {
+      query["location.remote"] = true;
     }
 
     if (jobType && jobType !== "all") {

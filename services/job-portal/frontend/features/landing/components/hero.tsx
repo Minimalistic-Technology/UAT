@@ -1,4 +1,6 @@
 "use client"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Search, MapPin, ArrowRight, Sparkles } from "lucide-react";
 
@@ -16,6 +18,32 @@ const CHIPS = [
 const EASE = [0.22, 1, 0.36, 1];
 
 export const Hero = () => {
+  const router = useRouter();
+  const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() && !location.trim()) {
+      router.push("/find-jobs");
+      return;
+    }
+    const params = new URLSearchParams();
+    if (title.trim()) params.set("search", title.trim());
+    if (location.trim()) {
+      if (location.trim().toLowerCase() === "remote") {
+        params.set("remote", "true");
+      } else {
+        params.set("city", location.trim());
+      }
+    }
+    router.push(`/find-jobs?${params.toString()}`);
+  };
+
+  const handleChipClick = (chip: string) => {
+    router.push(`/find-jobs?search=${encodeURIComponent(chip)}`);
+  };
+
   return (
     <section
       id="top"
@@ -31,7 +59,7 @@ export const Hero = () => {
         className="absolute rounded-full blur-[100px] opacity-50 bg-[#DBEAFE] w-[460px] h-[460px] top-40 right-[-100px] -z-10"
         aria-hidden="true"
       />
-      
+
       {/* Grid Overlay - Assuming a simple CSS pattern */}
       <div className="absolute inset-0 opacity-20 pointer-events-none [background-image:linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] [background-size:40px_40px]" />
 
@@ -103,8 +131,8 @@ export const Hero = () => {
               transition={{ duration: 0.7, ease: "easeIn", delay: 0.3 }}
               className="mt-10"
             >
-              <form 
-                onSubmit={(e) => e.preventDefault()}
+              <form
+                onSubmit={handleSearchSubmit}
                 className="flex flex-col md:flex-row items-stretch bg-white border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-50 rounded-2xl overflow-hidden transition-all duration-300 shadow-xl"
                 data-testid="hero-search"
               >
@@ -115,6 +143,8 @@ export const Hero = () => {
                     placeholder="Job title, skill, or company"
                     className="w-full bg-transparent outline-none text-slate-900 placeholder:text-slate-400 text-base"
                     data-testid="search-title-input"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                   />
                 </div>
                 <div className="flex items-center gap-3 flex-1 px-5 py-4">
@@ -124,6 +154,8 @@ export const Hero = () => {
                     placeholder="Remote, or city"
                     className="w-full bg-transparent outline-none text-slate-900 placeholder:text-slate-400 text-base"
                     data-testid="search-location-input"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
                   />
                 </div>
                 <button
@@ -146,6 +178,7 @@ export const Hero = () => {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.5 + i * 0.06, ease: "easeIn" }}
+                    onClick={() => handleChipClick(chip)}
                     className="px-3 py-1.5 text-sm rounded-full bg-white border border-slate-200 text-slate-600 hover:border-indigo-600 hover:text-indigo-600 hover:-translate-y-0.5 transition-all duration-200 shadow-sm"
                   >
                     {chip}

@@ -1,4 +1,5 @@
 "use client"
+import Link from "next/link";
 import { motion } from "motion/react";
 import { UserRound, Sparkles, Handshake, ArrowRight } from "lucide-react";
 
@@ -8,18 +9,21 @@ const STEPS = [
     title: "Build a profile that works for you.",
     desc: "Spend 3 minutes. Our AI extracts skills from your resume, auto-fills roles, and writes a crisp summary.",
     icon: UserRound,
+    link: "/register",
   },
   {
     n: "02",
     title: "Get matched to roles that actually fit.",
     desc: "A fit score ranks every opening by your skills, goals, comp expectations and working style.",
     icon: Sparkles,
+    link: "/find-jobs",
   },
   {
     n: "03",
     title: "Apply once. Hear back fast.",
     desc: "Employers on Hireloop commit to a 72-hour response SLA. No ghosting, guaranteed.",
     icon: Handshake,
+    link: "/find-jobs",
   },
 ];
 
@@ -74,11 +78,11 @@ export const HowItWorks = () => {
                 {/* Connector line for desktop */}
                 {i < STEPS.length - 1 && (
                   <div className="hidden md:block absolute top-12 left-full w-full h-[2px] bg-slate-100 -z-10">
-                    <motion.div 
+                    <motion.div
                       initial={{ width: 0 }}
                       whileInView={{ width: "100%" }}
                       transition={{ duration: 1, delay: 0.5 }}
-                      className="h-full bg-indigo-100" 
+                      className="h-full bg-indigo-100"
                     />
                   </div>
                 )}
@@ -102,10 +106,13 @@ export const HowItWorks = () => {
                     {step.desc}
                   </p>
                 </div>
-                
-                <div className="mt-6 flex items-center gap-2 text-indigo-600 font-bold text-sm opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300">
+
+                <Link
+                  href={step.link}
+                  className="mt-6 flex items-center gap-2 text-indigo-600 font-bold text-sm opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300 cursor-pointer hover:underline"
+                >
                   Learn more <ArrowRight size={16} />
-                </div>
+                </Link>
               </motion.div>
             );
           })}

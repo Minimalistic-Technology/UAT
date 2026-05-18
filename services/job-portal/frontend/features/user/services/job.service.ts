@@ -18,8 +18,11 @@ export const getJobs = async (filters: any = {}) => {
     const queryString = new URLSearchParams(
         Object.entries(filters).reduce(
             (acc, [key, value]) => {
-                if (value !== undefined && value !== null) {
-                    acc[key] = String(value);
+                const isValidValue = value !== undefined && value !== null && value !== '';
+                const isNonEmptyArray = Array.isArray(value) ? value.length > 0 : true;
+
+                if (isValidValue && isNonEmptyArray && (key !== "remote" || value === true)) {
+                    acc[key] = Array.isArray(value) ? value.join(',') : String(value);
                 }
                 return acc;
             },

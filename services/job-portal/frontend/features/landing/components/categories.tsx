@@ -43,11 +43,11 @@ export const Categories = () => {
             </h2>
           </div>
           <a
-            href="/categories"
+            href="/find-jobs"
             className="group inline-flex items-center gap-2 text-sm font-bold text-slate-900 transition-colors hover:text-indigo-600"
             data-testid="view-all-categories"
           >
-            View all categories 
+            View all categories
             <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </a>
         </div>
@@ -67,11 +67,11 @@ export const Categories = () => {
           {CATEGORIES.map((category) => {
             const Icon = category.icon;
             const isPurple = category.accent === "purple";
-            
+
             return (
               <motion.a
                 key={category.label}
-                href={`/jobs/${category.label.toLowerCase()}`}
+                href={`/find-jobs?search=${encodeURIComponent(category.label)}`}
                 variants={{
                   hidden: { opacity: 0, y: 20 },
                   show: {
@@ -85,11 +85,10 @@ export const Categories = () => {
               >
                 {/* Icon Container */}
                 <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                    isPurple
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${isPurple
                       ? "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white"
                       : "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white"
-                  }`}
+                    }`}
                 >
                   <Icon size={24} strokeWidth={2} />
                 </div>
