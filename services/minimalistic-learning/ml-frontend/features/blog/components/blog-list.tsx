@@ -13,11 +13,11 @@ interface BlogListProps {
 
 export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
   const [blogs, setBlogs] = useState<BlogResponse['data'][]>([]);
-  const [pagination, setPagination] = useState<BlogResponse['data'][]>([]); // This will hold the items for the current page
   const [paginationInfo, setPaginationInfo] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = limit || 8;
   const [activeFilter, setActiveFilter] = useState('View all');
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('Newest');
   const [loading, setLoading] = useState(true);
@@ -25,12 +25,18 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
 
   const filters = ['View all', 'Technology', 'Lifestyle', 'Business', 'Education', 'AI & Future'];
 
+  // Debounce search query changes to prevent API spam and unnecessary re-fetches
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         setLoading(true);
-        // If we have a limit (Home page), we fetch 4 latest
-        // Otherwise (Blog page), we use pagination and filters
         const params: any = {
           page: limit ? 1 : currentPage,
           limit: itemsPerPage,
@@ -39,7 +45,6 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
         if (!hideControls) {
           if (activeFilter !== 'View all') params.category = activeFilter;
           if (searchQuery.trim()) params.q = searchQuery.trim();
-          // Assuming backend handles sorting or we sort locally after fetching
         }
 
         const response = await blogService.getBlogs(params);
@@ -68,7 +73,6 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
   const processedBlogs = React.useMemo(() => {
     let result = [...blogs];
 
-    // Sorting (if backend doesn't handle it)
     if (sortBy === 'Newest') {
       result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } else if (sortBy === 'Oldest') {
@@ -79,24 +83,6 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
 
     return result;
   }, [blogs, sortBy]);
-
-  if (loading) {
-    return (
-      <div className="space-y-12">
-        {/* Skeleton Filters */}
-        <div className="flex flex-wrap gap-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="w-24 h-10 bg-gray-100 rounded-full animate-pulse" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 sm:gap-8">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="bg-gray-50 rounded-[1.5rem] aspect-[16/10] animate-pulse border border-gray-100" />
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -137,10 +123,10 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input
                 type="text"
-                placeholder="Search stories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-5 py-2.5 bg-white border border-gray-100 rounded-full text-sm font-medium focus:outline-none focus:border-blue-300 transition-all placeholder:text-gray-400"
+                placeholder="Search blogs..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-11 pr-5 py-2.5 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-900 focus:outline-none focus:border-blue-300 transition-all placeholder:text-gray-400 shadow-sm"
               />
             </div>
 
@@ -157,7 +143,13 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
         </div>
       )}
 
-      {processedBlogs.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 sm:gap-8">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="bg-gray-50 rounded-[1.5rem] aspect-[16/10] animate-pulse border border-gray-100 bg-gray-100" />
+          ))}
+        </div>
+      ) : processedBlogs.length === 0 ? (
         <div className="text-center py-32 px-6 bg-gray-50/50 rounded-[3rem] border border-dashed border-gray-200">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-8">
             <Newspaper className="w-10 h-10 text-gray-300" />
