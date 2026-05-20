@@ -1,7 +1,13 @@
 "use client"
-import Link from "next/link";
 import { motion } from "motion/react";
 import { UserRound, Sparkles, Handshake, ArrowRight } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const STEPS = [
   {
@@ -9,21 +15,21 @@ const STEPS = [
     title: "Build a profile that works for you.",
     desc: "Spend 3 minutes. Our AI extracts skills from your resume, auto-fills roles, and writes a crisp summary.",
     icon: UserRound,
-    link: "/register",
+    details: "Your profile is your digital resume. With our AI, you don't need to manually type everything. Just upload your existing resume, and our system will accurately extract your past experiences, summarize your strengths, and highlight your top skills. By setting up a complete profile, you increase your visibility to top employers looking for exactly what you offer.",
   },
   {
     n: "02",
     title: "Get matched to roles that actually fit.",
     desc: "A fit score ranks every opening by your skills, goals, comp expectations and working style.",
     icon: Sparkles,
-    link: "/find-jobs",
+    details: "Stop scrolling through thousands of irrelevant jobs. We use an advanced matching algorithm that compares your skills, salary expectations, and preferred working style with every open role on the platform. You'll receive a personalized 'Fit Score' for each job, ensuring you only spend time on opportunities where you're highly likely to succeed.",
   },
   {
     n: "03",
     title: "Apply once. Hear back fast.",
     desc: "Employers on Hireloop commit to a 72-hour response SLA. No ghosting, guaranteed.",
     icon: Handshake,
-    link: "/find-jobs",
+    details: "The hiring process shouldn't be a black hole. When you apply through our platform, employers are committed to a Service Level Agreement (SLA) to respond within 72 hours. Whether it's an interview request or a polite rejection, you will always know where you stand. Say goodbye to the anxiety of ghosting.",
   },
 ];
 
@@ -107,12 +113,37 @@ export const HowItWorks = () => {
                   </p>
                 </div>
 
-                <Link
-                  href={step.link}
-                  className="mt-6 flex items-center gap-2 text-indigo-600 font-bold text-sm opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300 cursor-pointer hover:underline"
-                >
-                  Learn more <ArrowRight size={16} />
-                </Link>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="mt-6 flex items-center gap-2 text-indigo-600 font-bold text-sm opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300 cursor-pointer hover:underline focus:outline-none">
+                      Learn more <ArrowRight size={16} />
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md md:max-w-lg p-0 overflow-hidden">
+                    <DialogHeader className="bg-slate-50 border-b border-slate-100 p-6">
+                      <DialogTitle className="flex items-center gap-3 text-2xl font-bold tracking-tight text-slate-900">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                          <Icon size={24} />
+                        </div>
+                        <span>
+                          <span className="text-indigo-600 mr-2 text-lg">Step {step.n}</span>
+                          <br />
+                          {step.title}
+                        </span>
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="p-6 md:p-8">
+                      <p className="text-slate-600 leading-relaxed text-lg font-medium mb-4">
+                        {step.desc}
+                      </p>
+                      <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100/50">
+                        <p className="text-slate-700 leading-relaxed text-base">
+                          {step.details}
+                        </p>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </motion.div>
             );
           })}
