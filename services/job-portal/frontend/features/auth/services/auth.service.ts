@@ -1,5 +1,5 @@
 import apiClient, { type ApiSuccessResponse } from "@/lib/api-client";
-import { RegisterUserInput, EmployerRegisterInput, ForgotPasswordInput } from "../validations/auth.schema";
+import { RegisterUserInput, EmployerRegisterInput, ForgotPasswordInput, ResetPasswordInput } from "../validations/auth.schema";
 import { AuthUser } from "../types";
 
 export interface ConfirmRegistrationInput {
@@ -42,6 +42,17 @@ export const forgotPassword = async (
 ): Promise<ApiSuccessResponse<null>> => {
   const response = await apiClient.post<ApiSuccessResponse<null>>(
     "/auth/forgot-password",
+    data,
+  );
+  return response.data;
+};
+
+export const resetPassword = async (
+  token: string,
+  data: ResetPasswordInput,
+): Promise<ApiSuccessResponse<AuthUser>> => {
+  const response = await apiClient.post<ApiSuccessResponse<AuthUser>>(
+    `/auth/reset-password/${token}`,
     data,
   );
   return response.data;

@@ -61,3 +61,19 @@ export const forgotPasswordSchema = z.object({
 });
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .max(30, "Password at max can have 30 characters"),
+  confirmPassword: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .max(30, "Password at max can have 30 characters"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

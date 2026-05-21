@@ -665,7 +665,8 @@ export const resetPassword = async (
       return next(new ApiError(400, "Invalid or expired reset token"));
     }
 
-    user.password = password;
+    const hashedPassword = await bcrypt.hash(password, 12);
+    user.password = hashedPassword;
     user.resetPasswordOtp = undefined;
     user.resetPasswordExpires = undefined;
 
