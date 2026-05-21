@@ -59,6 +59,21 @@ export const deleteEmployee = async (id: string) => {
   return response.data;
 };
 
+export const getEmployeeById = async (id: string) => {
+  const response = await apiClient.get<ApiSuccessResponse<any>>(
+    `/company-members/${id}`
+  );
+  return response.data;
+};
+
+export const updateEmployee = async ({ id, data }: { id: string; data: any }) => {
+  const response = await apiClient.patch<ApiSuccessResponse<any>>(
+    `/company-members/${id}`,
+    data
+  );
+  return response.data;
+};
+
 export const addEmployee = async (data: any) => {
   const response = await apiClient.post<ApiSuccessResponse<any>>(
     "/company-members",

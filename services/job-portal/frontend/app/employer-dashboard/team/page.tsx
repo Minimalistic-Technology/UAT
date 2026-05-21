@@ -176,6 +176,7 @@ const Page = () => {
                                   variant="ghost"
                                   size="icon"
                                   className="text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                                  onClick={() => router.push(`/employer-dashboard/team/update/${emp._id}`)}
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>

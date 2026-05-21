@@ -111,8 +111,117 @@ export const addMember = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const updateMember = async (req: AuthRequest, res: Response) => {
-  //
+export const updateMember = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  let memberId = Array.isArray(req.params.memberId) 
+  ? req.params.memberId[0] 
+  : req.params.memberId;
+
+  const { firstName, lastName, isActive } = req.body;
+
+  if (!memberId || !mongoose.Types.ObjectId.isValid(memberId)) {
+    return next(new ApiError(400, "Invalid member ID."));
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const ownerMember = await CompanyMember.findOne({
+      user: req.user._id,
+    }).session(session);
+
+    if (
+      !ownerMember ||
+      ownerMember.role !== CompanyRole.OWNER ||
+      !ownerMember.isActive
+    ) {
+      throw new ApiError(403, "Unauthorized: Access denied.");
+    }
+
+    const memberToUpdate = await CompanyMember.findById(memberId).session(
+      session,
+    );
+
+    if (!memberToUpdate) {
+      throw new ApiError(404, "Member record not found.");
+    }
+
+    if (memberToUpdate.company.toString() !== ownerMember.company.toString()) {
+      throw new ApiError(403, "Cannot update members from other companies.");
+    }
+
+    if (isActive !== undefined) {
+      memberToUpdate.isActive = isActive;
+      await memberToUpdate.save({ session });
+    }
+
+    if (firstName || lastName) {
+      const user = await User.findById(memberToUpdate.user).session(session);
+      if (user) {
+        if (firstName) user.firstName = firstName;
+        if (lastName) user.lastName = lastName;
+        await user.save({ session });
+      }
+    }
+
+    await session.commitTransaction();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, null, "Member updated successfully."));
+  } catch (error: any) {
+    await session.abortTransaction();
+    next(error);
+  } finally {
+    session.endSession();
+  }
+};
+
+export const getCompanyMemberById = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const memberId = Array.isArray(req.params.memberId) 
+  ? req.params.memberId[0] 
+  : req.params.memberId;
+
+    if (!memberId || !mongoose.Types.ObjectId.isValid(memberId)) {
+      throw new ApiError(400, "Invalid member ID.");
+    }
+
+    const currentUser = await CompanyMember.findOne({ user: req.user._id });
+
+    if (!currentUser || !currentUser.isActive) {
+      throw new ApiError(403, "Unauthorized or inactive account.");
+    }
+
+    if (currentUser.role !== CompanyRole.OWNER) {
+      throw new ApiError(403, "Access denied: Owners only.");
+    }
+
+    const member = await CompanyMember.findOne({
+      _id: memberId,
+      company: currentUser.company,
+    })
+      .populate("user", "firstName lastName email")
+      .lean();
+
+    if (!member) {
+      throw new ApiError(404, "Member not found.");
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { member }, "Member fetched successfully"));
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const removeMember = async (

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addEmployee, deleteEmployee, getAllEmployees, getMyCompany, submitKycData, updateCompanyDetails, uploadCompanyLogo } from "../services/company.service";
+import { addEmployee, deleteEmployee, getAllEmployees, getMyCompany, submitKycData, updateCompanyDetails, uploadCompanyLogo, getEmployeeById, updateEmployee } from "../services/company.service";
 import { toast } from "sonner";
 import {useRouter} from "next/navigation"
 import { getValidationErrorMessage } from "@/lib/validation-error";
@@ -47,6 +47,38 @@ export const useDeleteEmployee = () => {
     onError: (error) => {
       console.error("Error deleting employee:", error);
       toast.error("Failed to delete employee");
+    },
+  });
+};
+
+export const useGetEmployeeById = (id: string) => {
+  return useQuery({
+    queryKey: ["employee", id],
+    queryFn: () => getEmployeeById(id),
+    enabled: !!id,
+  });
+};
+
+export const useUpdateEmployee = () => {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateEmployee({ id, data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-employees"] });
+      toast.success("Employee updated successfully");
+      router.push("/employer-dashboard/team");
+    },
+    onError: (error: any) => {
+      console.error("Error updating employee:", error);
+      const errorMsg = error?.response?.data?.message || "Failed to update employee";
+      if (errorMsg === "Validation failed") {
+        const firstErrorMessage = getValidationErrorMessage(error);
+        toast.error(firstErrorMessage);
+        return;
+      }
+      toast.error(errorMsg);
     },
   });
 };
