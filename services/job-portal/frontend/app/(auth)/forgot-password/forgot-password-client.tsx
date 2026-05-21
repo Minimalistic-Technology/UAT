@@ -59,6 +59,7 @@ export default function ForgotPasswordClient() {
         alt="forgot-password-image"
         height={1000}
         width={1000}
+        priority
         className="hidden h-full w-1/2 object-cover lg:block"
       />
       <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">

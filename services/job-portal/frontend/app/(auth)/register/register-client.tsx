@@ -78,6 +78,7 @@ export default function RegisterClient() {
           alt="signup-image"
           height={1000}
           width={1000}
+          priority
           className="h-full w-full object-cover object-right"
         />
       </div>
