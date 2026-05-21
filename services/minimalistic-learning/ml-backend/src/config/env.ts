@@ -17,8 +17,8 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(1, 'CLOUDINARY_API_SECRET is required'),
   EMAIL_USER: z.string().min(1, 'EMAIL_USER is required'),
   EMAIL_PASS: z.string().min(1, 'EMAIL_PASS is required'),
-  RESEND_API_KEY: z.string().optional().default('re_example_12345'),
-  RESEND_FROM_EMAIL: z.string().optional().default('onboarding@resend.dev'),
+  BREVO_API_KEY: z.string().optional().default('xkeysib-example-key'),
+  BREVO_FROM_EMAIL: z.string().optional().default('onboarding@minimalistic.com'),
 });
 
 const parsed = envSchema.parse(process.env);

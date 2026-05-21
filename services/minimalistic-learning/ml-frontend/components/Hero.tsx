@@ -7,18 +7,18 @@ import GetStartedBtn from "./get-started";
 
 /* ─── Deterministic particles (no Math.random — avoids SSR mismatch) ─── */
 const PARTICLES = [
-  { id:0,  size:10, left:8,  top:18, dur:8,  delay:0   },
-  { id:1,  size:6,  left:18, top:72, dur:11, delay:1.5 },
-  { id:2,  size:14, left:30, top:35, dur:7,  delay:0.8 },
-  { id:3,  size:8,  left:48, top:82, dur:10, delay:2   },
-  { id:4,  size:5,  left:62, top:15, dur:9,  delay:0.3 },
-  { id:5,  size:12, left:75, top:58, dur:6,  delay:3   },
-  { id:6,  size:7,  left:88, top:30, dur:12, delay:1   },
-  { id:7,  size:9,  left:92, top:78, dur:8,  delay:2.5 },
-  { id:8,  size:5,  left:55, top:48, dur:11, delay:0.6 },
-  { id:9,  size:11, left:22, top:90, dur:7,  delay:4   },
-  { id:10, size:6,  left:70, top:92, dur:9,  delay:1.2 },
-  { id:11, size:8,  left:40, top:10, dur:10, delay:3.5 },
+  { id: 0, size: 10, left: 8, top: 18, dur: 8, delay: 0 },
+  { id: 1, size: 6, left: 18, top: 72, dur: 11, delay: 1.5 },
+  { id: 2, size: 14, left: 30, top: 35, dur: 7, delay: 0.8 },
+  { id: 3, size: 8, left: 48, top: 82, dur: 10, delay: 2 },
+  { id: 4, size: 5, left: 62, top: 15, dur: 9, delay: 0.3 },
+  { id: 5, size: 12, left: 75, top: 58, dur: 6, delay: 3 },
+  { id: 6, size: 7, left: 88, top: 30, dur: 12, delay: 1 },
+  { id: 7, size: 9, left: 92, top: 78, dur: 8, delay: 2.5 },
+  { id: 8, size: 5, left: 55, top: 48, dur: 11, delay: 0.6 },
+  { id: 9, size: 11, left: 22, top: 90, dur: 7, delay: 4 },
+  { id: 10, size: 6, left: 70, top: 92, dur: 9, delay: 1.2 },
+  { id: 11, size: 8, left: 40, top: 10, dur: 10, delay: 3.5 },
 ];
 
 /* ─── Why-choose features ─────────────────────────────────────────────── */
@@ -29,9 +29,9 @@ const FEATURES = [
     desc: "We cut the noise so you can focus on what truly matters. Every article is hand-curated for depth, accuracy, and real-world value.",
     stat: "100%",
     statLabel: "Ad-free",
-    color: "text-[#1877F2]",
-    bg: "bg-blue-50",
-    border: "border-blue-100",
+    color: "text-theme-action",
+    bg: "bg-theme-element",
+    border: "border-theme-accent/20",
   },
   {
     icon: Zap,
@@ -40,8 +40,8 @@ const FEATURES = [
     stat: "4.9★",
     statLabel: "Avg rating",
     color: "text-amber-500",
-    bg: "bg-amber-50",
-    border: "border-amber-100",
+    bg: "bg-theme-element",
+    border: "border-theme-accent/20",
   },
   {
     icon: Users,
@@ -49,9 +49,9 @@ const FEATURES = [
     desc: "Authors and readers build knowledge together. Get insightful feedback, discover collaborators, and grow alongside peers.",
     stat: "12k+",
     statLabel: "Members",
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-    border: "border-emerald-100",
+    color: "text-emerald-500",
+    bg: "bg-theme-element",
+    border: "border-theme-accent/20",
   },
 ];
 
@@ -73,10 +73,6 @@ const KF = `
     from { transform: rotate(0deg); }
     to   { transform: rotate(360deg); }
   }
-  @keyframes fadeInLeft {
-    from { opacity:0; transform: translateX(-30px); }
-    to   { opacity:1; transform: translateX(0); }
-  }
 `;
 
 /* ─── 3-D Tilt wrapper ───────────────────────────────────────────────── */
@@ -85,9 +81,9 @@ function Tilt({ children, className = "" }: { children: React.ReactNode; classNa
   const move = (e: React.MouseEvent) => {
     if (!el.current) return;
     const { left, top, width, height } = el.current.getBoundingClientRect();
-    const x = (e.clientX - left) / width  - 0.5;
-    const y = (e.clientY - top)  / height - 0.5;
-    el.current.style.transform = `perspective(700px) rotateY(${x*12}deg) rotateX(${-y*12}deg) scale3d(1.04,1.04,1.04)`;
+    const x = (e.clientX - left) / width - 0.5;
+    const y = (e.clientY - top) / height - 0.5;
+    el.current.style.transform = `perspective(700px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg) scale3d(1.04,1.04,1.04)`;
   };
   const leave = () => { if (el.current) el.current.style.transform = "perspective(700px) rotateY(0) rotateX(0) scale3d(1,1,1)"; };
   return (
@@ -99,8 +95,8 @@ function Tilt({ children, className = "" }: { children: React.ReactNode; classNa
 }
 
 /* ─── Scroll-reveal ──────────────────────────────────────────────────── */
-function Reveal({ children, delay=0, dir="up" }:
-  { children: React.ReactNode; delay?: number; dir?: "up"|"left"|"right"|"fade" }) {
+function Reveal({ children, delay = 0, dir = "up" }:
+  { children: React.ReactNode; delay?: number; dir?: "up" | "left" | "right" | "fade" }) {
   const ref = useRef<HTMLDivElement>(null);
   const [vis, setVis] = useState(false);
   useEffect(() => {
@@ -110,7 +106,7 @@ function Reveal({ children, delay=0, dir="up" }:
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
-  const t: Record<string,string> = { up:"translateY(36px)", left:"translateX(-36px)", right:"translateX(36px)", fade:"scale(0.95)" };
+  const t: Record<string, string> = { up: "translateY(36px)", left: "translateX(-36px)", right: "translateX(36px)", fade: "scale(0.95)" };
   return (
     <div ref={ref} style={{
       opacity: vis ? 1 : 0,
@@ -120,13 +116,13 @@ function Reveal({ children, delay=0, dir="up" }:
   );
 }
 
-/* ─── BackgroundCloud SVG ────────────────────────────────────────────── */
-const Cloud = ({ className, opacity=0.7 }:{ className?: string; opacity?: number }) => (
+/* ─── BackgroundCloud SVG (Light Mode) ─────────────────────────────── */
+const Cloud = ({ className, opacity = 0.7 }: { className?: string; opacity?: number }) => (
   <svg viewBox="0 0 326 211" fill="none" xmlns="http://www.w3.org/2000/svg"
-    className={className} style={{ opacity }} aria-hidden>
+    className={`dark:hidden ${className}`} style={{ opacity }} aria-hidden>
     <path fillRule="evenodd" clipRule="evenodd"
       d="M124.629 0.4076C90.2868 -3.12596 58.1132 17.5192 45.4526 49.0305C19.0494 54.0628 0 77.0654 0 104.996C0 135.534 24.757 160.291 55.2954 160.291H284.187C307.29 160.291 326.018 141.564 326.018 118.461C326.018 97.433 310.493 80.0152 290.311 77.1062C281.821 34.6298 244.593 3.39867 200.75 3.39867C184.6 3.39867 169.524 8.01633 156.402 16.035C148.047 6.44297 137.054 1.68536 124.629 0.4076Z"
-      fill="white"/>
+      fill="white" />
   </svg>
 );
 
@@ -144,23 +140,27 @@ export const Hero = () => {
     <>
       {/* ── HERO ──────────────────────────────────────────────────────── */}
       <section
-        className="relative w-full pt-32 md:pt-48 pb-24 overflow-hidden"
-        style={{
-          background: `
-            radial-gradient(circle at 15% 25%, rgba(255,255,255,0.7) 0%, transparent 40%),
-            radial-gradient(circle at 85% 20%, rgba(255,255,255,0.65) 0%, transparent 45%),
-            linear-gradient(180deg, #A8CFFB 0%, #DCE9FB 40%, #ffffff 80%)
-          `,
-        }}
+        className={`relative w-full pt-32 md:pt-48 pb-24 overflow-hidden 
+          bg-background
+          transition-colors duration-500 min-h-[90vh] flex flex-col justify-center`}
       >
-        {/* Clouds */}
-        <Cloud className="absolute -top-10 -left-20 w-[400px] sm:w-[600px] pointer-events-none z-0" opacity={0.65}/>
-        <Cloud className="absolute top-10 -right-32 w-[500px] sm:w-[700px] pointer-events-none z-0" opacity={0.7}/>
+        {/* Soft elegant gradient overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,var(--color-element)_80%)] opacity-80 mix-blend-normal pointer-events-none" />
+
+        {/* Border line to cleanly separate from Navbar in dark mode */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-transparent dark:bg-white/[0.03]" />
+
+        {/* Clouds (Light mode only) */}
+        <Cloud className="absolute -top-10 -left-20 w-[400px] sm:w-[600px] pointer-events-none z-0" opacity={0.65} />
+        <Cloud className="absolute top-10 -right-32 w-[500px] sm:w-[700px] pointer-events-none z-0" opacity={0.7} />
+
+        {/* Ambient Highlight */}
+        <div className="absolute top-[-20%] left-[20%] w-[60%] h-[50%] bg-theme-accent/20 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
 
         {/* Floating particles */}
         {PARTICLES.map(p => (
           <span key={p.id}
-            className="absolute rounded-full bg-[#1877F2]/15 pointer-events-none"
+            className="absolute rounded-full bg-theme-action/20 pointer-events-none"
             style={{
               width: `${p.size}px`, height: `${p.size}px`,
               left: `${p.left}%`, top: `${p.top}%`,
@@ -171,13 +171,13 @@ export const Hero = () => {
 
         {/* Floating topic pills */}
         {[
-          { label:"#Technology", cls:"top-48 left-[5%] -rotate-[8deg]",  delay:"0s" },
-          { label:"#Software",   cls:"top-[290px] left-[3%] rotate-[5deg]",  delay:"0.4s" },
-          { label:"#Productivity",cls:"top-44 right-[6%] rotate-[10deg]", delay:"0.2s" },
-          { label:"#Design",     cls:"top-[270px] right-[3%] -rotate-[5deg]",delay:"0.6s" },
+          { label: "#Technology", cls: "top-48 left-[5%] -rotate-[8deg]", delay: "0s" },
+          { label: "#Software", cls: "top-[290px] left-[3%] rotate-[5deg]", delay: "0.4s" },
+          { label: "#Productivity", cls: "top-44 right-[6%] rotate-[10deg]", delay: "0.2s" },
+          { label: "#Design", cls: "top-[270px] right-[3%] -rotate-[5deg]", delay: "0.6s" },
         ].map(p => (
           <div key={p.label}
-            className={`absolute hidden sm:flex bg-white/85 backdrop-blur-md border border-white/60 shadow-lg px-4 py-2 rounded-full text-xs font-bold text-gray-600 ${p.cls}`}
+            className={`absolute hidden sm:flex bg-theme-element/80 backdrop-blur-md border border-theme-accent/20 shadow-sm px-4 py-2 rounded-full text-xs font-bold text-foreground ${p.cls}`}
             style={{ animation: `floatUp 7s ${p.delay} ease-in-out infinite alternate` }}>
             {p.label}
           </div>
@@ -186,22 +186,22 @@ export const Hero = () => {
         {/* Center Content */}
         <div className="relative z-20 max-w-5xl mx-auto px-[5%] flex flex-col items-center text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/70 backdrop-blur-md border border-white/60 shadow-sm text-[#1877F2] text-xs font-bold uppercase tracking-widest mb-8"
+          <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-theme-element/70 backdrop-blur-md border border-theme-accent/20 shadow-sm text-theme-action text-xs font-bold uppercase tracking-widest mb-8"
             style={{ animation: "slideUp 0.6s ease both" }}>
-            <BookOpen size={13}/> Premium Distraction-Free Learning
+            <BookOpen size={13} /> Premium Distraction-Free Learning
           </div>
 
           <h1
-            className="text-5xl sm:text-6xl md:text-7xl lg:text-[6rem] font-black text-gray-900 tracking-tighter leading-[1.05] mb-6"
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-[6.5rem] font-black text-foreground tracking-tighter leading-[1.05] mb-6 drop-shadow-sm dark:drop-shadow-none"
             style={{ animation: "slideUp 0.7s 0.1s ease both" }}
           >
             Minimalistic<br />
-            <span className="text-[#1877F2]" style={{ animation: "pulse3d 5s ease-in-out infinite" }}>
+            <span className="text-theme-action" style={{ animation: "pulse3d 5s ease-in-out infinite" }}>
               Learning
             </span>
           </h1>
 
-          <p className="text-gray-600 font-medium text-base sm:text-lg md:text-xl max-w-2xl mb-10 leading-relaxed"
+          <p className="text-foreground/80 font-medium text-base sm:text-lg md:text-xl max-w-2xl mb-10 leading-relaxed"
             style={{ animation: "slideUp 0.7s 0.2s ease both" }}>
             A distraction-free platform where curious minds can flourish —
             master new skills with total clarity and zero noise.
@@ -211,32 +211,31 @@ export const Hero = () => {
             style={{ animation: "slideUp 0.7s 0.3s ease both" }}>
             <GetStartedBtn />
             <Link href="/resources"
-              className="group flex items-center gap-3 px-8 py-3.5 bg-white text-gray-900 rounded-full font-bold text-base hover:scale-105 active:scale-95 transition-all shadow-lg shadow-gray-100">
-              <div className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center">
-                <BookOpen size={11} fill="currentColor"/>
+              className="group flex items-center gap-3 px-8 py-3.5 bg-theme-element text-foreground border border-theme-accent/20 rounded-full font-bold text-base hover:scale-105 active:scale-95 transition-all shadow-sm">
+              <div className="w-6 h-6 rounded-full bg-theme-element-sec text-foreground flex items-center justify-center">
+                <BookOpen size={11} fill="currentColor" />
               </div>
               Resources
-              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform"/>
+              <ArrowRight size={14} className="text-foreground/50 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
             </Link>
           </div>
         </div>
       </section>
 
       {/* ── WHY CHOOSE ────────────────────────────────────────────────── */}
-      <section className="w-full px-[5%] py-28 bg-white">
+      <section className="w-full px-[5%] py-28 bg-theme-element border-t border-theme-accent/10 transition-colors duration-500">
         <div className="max-w-[1200px] mx-auto">
-
           {/* Section header */}
           <Reveal dir="up">
             <div className="text-center mb-20">
-              <p className="text-xs font-black text-[#1877F2] uppercase tracking-widest mb-4">
+              <p className="text-xs font-black text-theme-action uppercase tracking-widest mb-4">
                 Why Us
               </p>
-              <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 tracking-tighter leading-tight">
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground tracking-tighter leading-tight">
                 Why choose<br />
-                <span className="text-[#1877F2]">Minimalistic?</span>
+                <span className="text-theme-action">Minimalistic?</span>
               </h2>
-              <p className="text-gray-500 text-lg mt-6 max-w-xl mx-auto leading-relaxed">
+              <p className="text-foreground/80 text-lg mt-6 max-w-xl mx-auto leading-relaxed">
                 Our readers choose us for the highest-quality, distraction-free curation of education — nothing more, nothing less.
               </p>
             </div>
@@ -247,30 +246,20 @@ export const Hero = () => {
             {FEATURES.map((f, i) => (
               <Reveal key={f.title} delay={i * 100} dir="up">
                 <Tilt className="h-full">
-                  <div className={`h-full bg-white rounded-3xl border ${f.border} p-8 shadow-sm hover:shadow-xl transition-all cursor-default`}>
+                  <div className={`h-full bg-theme-element-sec rounded-3xl border border-theme-accent/20 p-8 shadow-sm hover:shadow-lg hover:border-theme-action/50 transition-all cursor-default`}>
                     {/* Icon + stat row */}
                     <div className="flex items-start justify-between mb-6">
-                      <div className={`w-14 h-14 rounded-2xl ${f.bg} flex items-center justify-center ${f.color}`}>
-                        <f.icon size={26}/>
+                      <div className={`w-14 h-14 rounded-2xl bg-theme-element flex items-center justify-center ${f.color} shadow-sm border border-theme-accent/10`}>
+                        <f.icon size={26} />
                       </div>
                       <div className="text-right">
                         <p className={`text-2xl font-black ${f.color}`}>{f.stat}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{f.statLabel}</p>
+                        <p className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest">{f.statLabel}</p>
                       </div>
                     </div>
 
-                    {/* Animated SVG orb */}
-                    <div className="w-10 h-10 mb-5">
-                      <svg viewBox="0 0 100 100" className="w-full h-full" fill="none">
-                        <circle cx="50" cy="50" r="40" stroke="#E5E7EB" strokeWidth="8"/>
-                        <path d="M50 10 A40 40 0 0 1 90 50" stroke="#1877F2" strokeWidth="8"
-                          strokeLinecap="round"
-                          style={{ animation:"spinSlow 4s linear infinite", transformOrigin:"50px 50px" }}/>
-                      </svg>
-                    </div>
-
-                    <h3 className="text-xl font-black text-gray-900 mb-3">{f.title}</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
+                    <h3 className="text-xl font-black text-foreground mb-3">{f.title}</h3>
+                    <p className="text-foreground/80 text-sm leading-relaxed">{f.desc}</p>
                   </div>
                 </Tilt>
               </Reveal>
@@ -279,15 +268,15 @@ export const Hero = () => {
 
           {/* Bottom CTA strip */}
           <Reveal dir="up" delay={300}>
-            <div className="mt-16 rounded-3xl bg-gray-950 px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="mt-16 rounded-3xl bg-theme-element-sec border border-theme-accent/20 px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
               <div>
-                <p className="text-white font-black text-xl mb-1">Ready to dive deep?</p>
-                <p className="text-gray-400 text-sm">Join 12,000+ learners on the minimal path.</p>
+                <p className="text-foreground font-black text-xl mb-1">Ready to dive deep?</p>
+                <p className="text-foreground/80 text-sm font-medium">Join 12,000+ learners on the minimal path.</p>
               </div>
               <Link href="/register"
-                className="group flex items-center gap-2 px-8 py-3.5 bg-[#1877F2] text-white rounded-full font-bold text-sm hover:shadow-xl hover:shadow-blue-900 hover:scale-105 active:scale-95 transition-all shrink-0">
+                className="group flex items-center gap-2 px-8 py-3.5 bg-theme-action text-white rounded-full font-bold text-sm hover:opacity-90 hover:scale-105 active:scale-95 transition-all shadow-md shrink-0">
                 Get Started Free
-                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform"/>
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
           </Reveal>

@@ -86,12 +86,12 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
 
   if (error) {
     return (
-      <div className="text-center py-20 px-6 bg-red-50/50 rounded-3xl border border-red-100">
-        <h3 className="text-lg font-bold text-red-600 mb-2">Oops! Something went wrong</h3>
-        <p className="text-gray-600 max-w-md mx-auto">{error}</p>
+      <div className="text-center py-20 px-6 bg-red-50/50 dark:bg-red-900/10 rounded-3xl border border-red-100 dark:border-red-900/30">
+        <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">Oops! Something went wrong</h3>
+        <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">{error}</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-6 px-6 py-2 bg-red-600 text-white rounded-full font-bold text-sm hover:bg-red-700 transition-colors shadow-lg shadow-red-200"
+          className="mt-6 px-6 py-2 bg-red-600 text-white rounded-full font-bold text-sm hover:bg-red-700 transition-colors shadow-sm"
         >
           Try Again
         </button>
@@ -109,8 +109,8 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
                 className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${activeFilter === filter
-                  ? 'bg-[#1877F2] text-white shadow-lg shadow-blue-200'
-                  : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-200'
+                  ? 'bg-blue-600 text-white shadow-sm dark:shadow-none'
+                  : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
                   }`}
               >
                 {filter}
@@ -126,14 +126,14 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
                 placeholder="Search blogs..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-11 pr-5 py-2.5 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-900 focus:outline-none focus:border-blue-300 transition-all placeholder:text-gray-400 shadow-sm"
+                className="w-full pl-11 pr-5 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:border-blue-300 dark:focus:border-blue-500/50 transition-all placeholder:text-gray-400 shadow-[0_2px_10px_rgb(0,0,0,0.02)] dark:shadow-none"
               />
             </div>
 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="pl-4 pr-10 py-2.5 bg-white border border-gray-100 rounded-full text-sm font-bold text-gray-600 focus:outline-none focus:border-blue-300 transition-all cursor-pointer appearance-none bg-no-repeat bg-[right_1rem_center] bg-[length:1rem] shadow-sm"
+              className="pl-4 pr-10 py-2.5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-full text-sm font-bold text-gray-600 dark:text-gray-300 focus:outline-none focus:border-blue-300 dark:focus:border-blue-500/50 transition-all cursor-pointer appearance-none shadow-[0_2px_10px_rgb(0,0,0,0.02)] dark:shadow-none"
             >
               <option>Newest</option>
               <option>Oldest</option>
@@ -146,21 +146,21 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 sm:gap-8">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="bg-gray-50 rounded-[1.5rem] aspect-[16/10] animate-pulse border border-gray-100 bg-gray-100" />
+            <div key={i} className="rounded-[1.5rem] aspect-[16/10] animate-pulse border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50" />
           ))}
         </div>
       ) : processedBlogs.length === 0 ? (
-        <div className="text-center py-32 px-6 bg-gray-50/50 rounded-[3rem] border border-dashed border-gray-200">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-8">
-            <Newspaper className="w-10 h-10 text-gray-300" />
+        <div className="text-center py-32 px-6 bg-gray-50/50 dark:bg-gray-900/20 rounded-[3rem] border border-dashed border-gray-200 dark:border-gray-800">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 mb-8 border border-white dark:border-gray-700 shadow-sm">
+            <Newspaper className="w-10 h-10 text-gray-400 dark:text-gray-500" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">No stories found</h3>
-          <p className="text-gray-500 max-w-sm mx-auto mb-8">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">No stories found</h3>
+          <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-8">
             We couldn't find any stories in the "{activeFilter}" category. Try exploring other topics!
           </p>
           <button
             onClick={() => setActiveFilter('View all')}
-            className="px-8 py-3.5 bg-gray-900 text-white rounded-full font-bold text-sm hover:scale-105 transition-all"
+            className="px-8 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full font-bold text-sm hover:scale-105 transition-transform shadow-md"
           >
             View All Stories
           </button>
@@ -179,7 +179,7 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={!paginationInfo.hasPrevPage}
-                className="p-2 w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                className="p-2 w-10 h-10 rounded-full border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               >
                 <ArrowRight className="rotate-180" size={18} />
               </button>
@@ -190,8 +190,8 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
                     key={page}
                     onClick={() => setCurrentPage(page)}
                     className={`w-10 h-10 rounded-full text-sm font-bold transition-all ${currentPage === page
-                      ? 'bg-gray-900 text-white shadow-lg shadow-gray-200'
-                      : 'text-gray-500 hover:bg-gray-50'
+                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                   >
                     {page}
@@ -202,7 +202,7 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
               <button
                 onClick={() => setCurrentPage(prev => Math.min(paginationInfo.totalPages, prev + 1))}
                 disabled={!paginationInfo.hasNextPage}
-                className="p-2 w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                className="p-2 w-10 h-10 rounded-full border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               >
                 <ArrowRight size={18} />
               </button>

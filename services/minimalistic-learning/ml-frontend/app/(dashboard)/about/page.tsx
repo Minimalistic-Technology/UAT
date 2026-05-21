@@ -117,41 +117,41 @@ function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
 /* ─── Fixed particle config — generated once, never random ─────────────── */
 // Deterministic values avoid any SSR/client mismatch.
 const PARTICLES = [
-  { id: 0,  size: 8,  left: 10,  top: 15,  delay: 0,   dur: 7  },
-  { id: 1,  size: 5,  left: 25,  top: 70,  delay: 1,   dur: 9  },
-  { id: 2,  size: 10, left: 40,  top: 30,  delay: 2,   dur: 8  },
-  { id: 3,  size: 6,  left: 55,  top: 85,  delay: 0.5, dur: 11 },
-  { id: 4,  size: 9,  left: 70,  top: 20,  delay: 3,   dur: 7  },
-  { id: 5,  size: 4,  left: 82,  top: 60,  delay: 1.5, dur: 10 },
-  { id: 6,  size: 7,  left: 90,  top: 40,  delay: 2.5, dur: 6  },
-  { id: 7,  size: 5,  left: 15,  top: 90,  delay: 4,   dur: 9  },
-  { id: 8,  size: 8,  left: 60,  top: 10,  delay: 0.8, dur: 12 },
-  { id: 9,  size: 6,  left: 35,  top: 55,  delay: 3.5, dur: 8  },
-  { id: 10, size: 9,  left: 75,  top: 78,  delay: 1.2, dur: 7  },
-  { id: 11, size: 5,  left: 5,   top: 45,  delay: 2,   dur: 11 },
-  { id: 12, size: 7,  left: 48,  top: 65,  delay: 0.3, dur: 9  },
-  { id: 13, size: 10, left: 92,  top: 88,  delay: 4.5, dur: 6  },
-  { id: 14, size: 4,  left: 20,  top: 35,  delay: 1.8, dur: 10 },
-  { id: 15, size: 8,  left: 65,  top: 50,  delay: 2.7, dur: 8  },
-  { id: 16, size: 6,  left: 30,  top: 20,  delay: 0.6, dur: 12 },
-  { id: 17, size: 9,  left: 80,  top: 95,  delay: 3.2, dur: 7  },
+  { id: 0, size: 8, left: 10, top: 15, delay: 0, dur: 7 },
+  { id: 1, size: 5, left: 25, top: 70, delay: 1, dur: 9 },
+  { id: 2, size: 10, left: 40, top: 30, delay: 2, dur: 8 },
+  { id: 3, size: 6, left: 55, top: 85, delay: 0.5, dur: 11 },
+  { id: 4, size: 9, left: 70, top: 20, delay: 3, dur: 7 },
+  { id: 5, size: 4, left: 82, top: 60, delay: 1.5, dur: 10 },
+  { id: 6, size: 7, left: 90, top: 40, delay: 2.5, dur: 6 },
+  { id: 7, size: 5, left: 15, top: 90, delay: 4, dur: 9 },
+  { id: 8, size: 8, left: 60, top: 10, delay: 0.8, dur: 12 },
+  { id: 9, size: 6, left: 35, top: 55, delay: 3.5, dur: 8 },
+  { id: 10, size: 9, left: 75, top: 78, delay: 1.2, dur: 7 },
+  { id: 11, size: 5, left: 5, top: 45, delay: 2, dur: 11 },
+  { id: 12, size: 7, left: 48, top: 65, delay: 0.3, dur: 9 },
+  { id: 13, size: 10, left: 92, top: 88, delay: 4.5, dur: 6 },
+  { id: 14, size: 4, left: 20, top: 35, delay: 1.8, dur: 10 },
+  { id: 15, size: 8, left: 65, top: 50, delay: 2.7, dur: 8 },
+  { id: 16, size: 6, left: 30, top: 20, delay: 0.6, dur: 12 },
+  { id: 17, size: 9, left: 80, top: 95, delay: 3.2, dur: 7 },
 ];
 
 /* ─── Page data ─────────────────────────────────────────────────────────── */
 const STATS = [
   { value: 12000, suffix: "+", label: "Active Learners" },
-  { value: 350,   suffix: "+", label: "Published Articles" },
-  { value: 98,    suffix: "%", label: "Satisfaction Rate" },
-  { value: 40,    suffix: "+", label: "Expert Authors" },
+  { value: 350, suffix: "+", label: "Published Articles" },
+  { value: 98, suffix: "%", label: "Satisfaction Rate" },
+  { value: 40, suffix: "+", label: "Expert Authors" },
 ];
 
 const VALUES = [
-  { icon: Shield, title: "Distraction-Free", bg: "bg-blue-50",    text: "text-blue-600",    desc: "Curated content with zero ads, pop-ups, or irrelevant noise. Just pure knowledge." },
-  { icon: Zap,    title: "Lightning Fast",   bg: "bg-amber-50",   text: "text-amber-600",   desc: "Optimized for speed so you spend time learning, not waiting." },
-  { icon: Globe,  title: "Global Community", bg: "bg-emerald-50", text: "text-emerald-600", desc: "Connect with focused learners and expert educators from across the world." },
-  { icon: Target, title: "Goal Oriented",    bg: "bg-purple-50",  text: "text-purple-600",  desc: "Every piece of content is structured to help you achieve measurable results." },
-  { icon: Users,  title: "Expert-Led",       bg: "bg-pink-50",    text: "text-pink-600",    desc: "Content authored by practitioners who have mastered their domains." },
-  { icon: Star,   title: "Quality First",    bg: "bg-indigo-50",  text: "text-indigo-600",  desc: "Every article is reviewed and curated for accuracy, depth, and clarity." },
+  { icon: Shield, title: "Distraction-Free", bg: "bg-blue-50", text: "text-blue-600", desc: "Curated content with zero ads, pop-ups, or irrelevant noise. Just pure knowledge." },
+  { icon: Zap, title: "Lightning Fast", bg: "bg-amber-50", text: "text-amber-600", desc: "Optimized for speed so you spend time learning, not waiting." },
+  { icon: Globe, title: "Global Community", bg: "bg-emerald-50", text: "text-emerald-600", desc: "Connect with focused learners and expert educators from across the world." },
+  { icon: Target, title: "Goal Oriented", bg: "bg-purple-50", text: "text-purple-600", desc: "Every piece of content is structured to help you achieve measurable results." },
+  { icon: Users, title: "Expert-Led", bg: "bg-pink-50", text: "text-pink-600", desc: "Content authored by practitioners who have mastered their domains." },
+  { icon: Star, title: "Quality First", bg: "bg-indigo-50", text: "text-indigo-600", desc: "Every article is reviewed and curated for accuracy, depth, and clarity." },
 ];
 
 const PRINCIPLES = [
@@ -184,7 +184,8 @@ export default function AboutPage() {
           className="absolute inset-0 -z-10"
           style={{
             background:
-              "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(24,119,242,0.11) 0%, transparent 70%), #fff",
+              "radial-gradient(ellipse 80% 60% at 50% -10%, var(--color-theme-action) 0%, transparent 70%), var(--color-background)",
+            opacity: 0.1,
           }}
         />
 
@@ -205,7 +206,7 @@ export default function AboutPage() {
 
         {/* Badge */}
         <div
-          className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-blue-50 border border-blue-100 text-[#1877F2] text-xs font-bold uppercase tracking-widest mb-8"
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-theme-action/10 border border-theme-action/20 text-theme-action text-xs font-bold uppercase tracking-widest mb-8"
           style={{ animation: "heroSlideUp 0.6s ease both" }}
         >
           <BookOpen size={13} />
@@ -213,12 +214,12 @@ export default function AboutPage() {
         </div>
 
         <h1
-          className="text-5xl sm:text-7xl md:text-8xl font-black text-gray-900 tracking-tighter leading-[1.05] mb-8 max-w-5xl"
+          className="text-5xl sm:text-7xl md:text-8xl font-black text-foreground tracking-tighter leading-[1.05] mb-8 max-w-5xl"
           style={{ animation: "heroSlideUp 0.7s 0.1s ease both" }}
         >
           Pure Education.{" "}
           <span
-            className="text-[#1877F2] inline-block"
+            className="text-theme-action inline-block"
             style={{ animation: "heroPulse 4s ease-in-out infinite" }}
           >
             Zero Noise.
@@ -226,7 +227,7 @@ export default function AboutPage() {
         </h1>
 
         <p
-          className="text-gray-500 text-lg md:text-xl font-medium leading-relaxed max-w-2xl mx-auto mb-12"
+          className="text-foreground/70 text-lg md:text-xl font-medium leading-relaxed max-w-2xl mx-auto mb-12"
           style={{ animation: "heroSlideUp 0.7s 0.2s ease both" }}
         >
           We believe the fastest path to mastery is radical simplicity —
@@ -239,14 +240,14 @@ export default function AboutPage() {
         >
           <Link
             href="/blog"
-            className="group flex items-center gap-2 px-8 py-4 bg-[#1877F2] text-white rounded-full font-bold text-sm hover:shadow-xl hover:shadow-blue-200 hover:scale-105 active:scale-95 transition-all"
+            className="group flex items-center gap-2 px-8 py-4 bg-theme-action text-white rounded-full font-bold text-sm hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
           >
             Start Learning
             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link
             href="/register"
-            className="px-8 py-4 bg-white text-gray-800 border border-gray-200 rounded-full font-bold text-sm hover:border-blue-200 hover:shadow-md transition-all"
+            className="px-8 py-4 bg-theme-element-sec text-foreground border border-theme-accent/20 rounded-full font-bold text-sm hover:border-theme-action/50 hover:shadow-md transition-all"
           >
             Join Free
           </Link>
@@ -272,18 +273,18 @@ export default function AboutPage() {
       </section>
 
       {/* ── FOCUS ZONE — Clean Image ───────────────────────────────────── */}
-      <section className="px-[5%] py-28 bg-white">
+      <section className="px-[5%] py-28 bg-background">
         <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <Reveal direction="left">
-              <p className="text-xs font-black text-[#1877F2] uppercase tracking-widest mb-4">
+              <p className="text-xs font-black text-theme-action uppercase tracking-widest mb-4">
                 The Philosophy
               </p>
-              <h2 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight tracking-tighter mb-6">
+              <h2 className="text-4xl md:text-5xl font-black text-foreground leading-tight tracking-tighter mb-6">
                 The Minimalist<br />
-                <span className="text-[#1877F2]">Learning Edge</span>
+                <span className="text-theme-action">Learning Edge</span>
               </h2>
-              <p className="text-gray-500 text-lg leading-relaxed mb-8">
+              <p className="text-foreground/70 text-lg leading-relaxed mb-8">
                 Modern platforms drown learners in noise. Notifications, ads, and
                 irrelevant content create mental fatigue that kills deep understanding.
                 We built the antidote — a space engineered for depth.
@@ -293,8 +294,8 @@ export default function AboutPage() {
               {PRINCIPLES.map((p, i) => (
                 <Reveal key={p} delay={i * 80} direction="left">
                   <div className="flex items-center gap-3">
-                    <CheckCircle size={18} className="text-[#1877F2] shrink-0" />
-                    <span className="text-gray-700 font-semibold">{p}</span>
+                    <CheckCircle size={18} className="text-theme-action shrink-0" />
+                    <span className="text-foreground/80 font-semibold">{p}</span>
                   </div>
                 </Reveal>
               ))}
@@ -304,7 +305,7 @@ export default function AboutPage() {
           {/* Clean image — no overlay, no blur, no text */}
           <Reveal direction="right">
             <TiltCard>
-              <div className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl shadow-blue-100 border border-gray-100">
+              <div className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl dark:shadow-none border border-theme-accent/20">
                 <Image
                   src="/focus_zone_about.png"
                   alt="Minimalistic Learning — Focus Zone workspace"
@@ -320,14 +321,14 @@ export default function AboutPage() {
       </section>
 
       {/* ── VALUES GRID ───────────────────────────────────────────────── */}
-      <section className="px-[5%] py-28 bg-gray-50">
+      <section className="px-[5%] py-28 bg-theme-element-sec">
         <div className="max-w-[1200px] mx-auto">
           <Reveal direction="up">
             <div className="text-center mb-16">
-              <p className="text-xs font-black text-[#1877F2] uppercase tracking-widest mb-3">
+              <p className="text-xs font-black text-theme-action uppercase tracking-widest mb-3">
                 What We Stand For
               </p>
-              <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter">
+              <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter">
                 Our Core Values
               </h2>
             </div>
@@ -336,12 +337,12 @@ export default function AboutPage() {
             {VALUES.map((v, i) => (
               <Reveal key={v.title} delay={i * 70} direction="up">
                 <TiltCard>
-                  <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all h-full cursor-default">
+                  <div className="bg-theme-element rounded-3xl p-8 border border-theme-accent/20 shadow-sm hover:shadow-lg hover:border-theme-action/50 transition-all h-full cursor-default">
                     <div className={`w-12 h-12 rounded-2xl ${v.bg} flex items-center justify-center ${v.text} mb-5`}>
                       <v.icon size={22} />
                     </div>
-                    <h3 className="text-lg font-black text-gray-900 mb-2">{v.title}</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed">{v.desc}</p>
+                    <h3 className="text-lg font-black text-foreground mb-2">{v.title}</h3>
+                    <p className="text-foreground/70 text-sm leading-relaxed">{v.desc}</p>
                   </div>
                 </TiltCard>
               </Reveal>
@@ -356,30 +357,31 @@ export default function AboutPage() {
           className="absolute inset-0 -z-10"
           style={{
             background:
-              "radial-gradient(ellipse 70% 80% at 50% 50%, rgba(24,119,242,0.06) 0%, transparent 70%), #fff",
+              "radial-gradient(ellipse 70% 80% at 50% 50%, var(--color-theme-action) 0%, transparent 70%), var(--color-background)",
+            opacity: 0.08, // Keep it subtle so it blends into the background nicely
           }}
         />
         <Reveal direction="fade">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-5xl sm:text-6xl font-black text-gray-900 tracking-tighter mb-6">
+            <h2 className="text-5xl sm:text-6xl font-black text-foreground tracking-tighter mb-6">
               Ready to learn<br />
-              <span className="text-[#1877F2]">the smarter way?</span>
+              <span className="text-theme-action">the smarter way?</span>
             </h2>
-            <p className="text-gray-500 text-lg mb-12 leading-relaxed">
+            <p className="text-foreground/70 text-lg mb-12 leading-relaxed">
               Join thousands of learners who chose clarity over clutter
               and depth over distraction.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/register"
-                className="group flex items-center gap-2 px-10 py-4 bg-[#1877F2] text-white rounded-full font-bold text-base hover:shadow-2xl hover:shadow-blue-200 hover:scale-105 active:scale-95 transition-all"
+                className="group flex items-center gap-2 px-10 py-4 bg-theme-action text-white rounded-full font-bold text-base hover:shadow-2xl hover:scale-105 active:scale-95 transition-all"
               >
                 Get Started Free
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/blog"
-                className="px-10 py-4 bg-white text-gray-800 border border-gray-200 rounded-full font-bold text-base hover:border-blue-200 hover:shadow-md transition-all"
+                className="px-10 py-4 bg-theme-element-sec text-foreground border border-theme-accent/20 rounded-full font-bold text-base hover:border-theme-action/50 hover:shadow-md transition-all"
               >
                 Explore Articles
               </Link>

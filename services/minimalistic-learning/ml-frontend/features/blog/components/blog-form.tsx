@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   X, ArrowLeft, Eye, Loader2, Sparkles,
   UploadCloud, Layout, Tags, FileText,
-  Bold, Italic, Underline, List, ListOrdered, 
+  Bold, Italic, Underline, List, ListOrdered,
   Image as ImageIcon, Quote, Calendar, User as UserIcon,
   Plus
 } from "lucide-react";
@@ -25,9 +25,9 @@ import dynamic from "next/dynamic";
 // IMPORT QUILL CSS TO FIX THE HUGE TRIANGLE GLITCH
 import "react-quill-new/dist/quill.snow.css";
 
-const ReactQuill = dynamic(() => import("react-quill-new"), { 
-  ssr: false, 
-  loading: () => <div className="h-[400px] bg-gray-50 rounded-2xl animate-pulse border border-gray-100" /> 
+const ReactQuill = dynamic(() => import("react-quill-new"), {
+  ssr: false,
+  loading: () => <div className="h-[400px] bg-theme-element rounded-2xl animate-pulse border border-theme-accent/10" />
 });
 
 const CATEGORIES = ["Technology", "Lifestyle", "Business", "Education", "AI & Future"];
@@ -192,65 +192,65 @@ export const BlogForm = ({ id }: { id?: string }) => {
   };
 
   if (!isMounted || (isEdit && isLoadingBlog)) {
-    return <div className="flex items-center justify-center h-screen bg-gray-50"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+    return <div className="flex items-center justify-center h-screen bg-background"><Loader2 className="w-8 h-8 animate-spin text-theme-action" /></div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] py-12 px-[5%]">
+    <div className="min-h-screen bg-background pt-32 pb-16 px-[5%] transition-colors duration-500">
       <div className="max-w-4xl mx-auto">
-        
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
           <div>
             <div className="flex items-center gap-4 mb-2">
-              <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl transition-all"><ArrowLeft size={20}/></button>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tight">{isEdit ? "Edit Post" : "Create New Post"}</h1>
+              <button onClick={() => router.back()} className="p-2 hover:bg-theme-element-sec border border-transparent hover:border-theme-accent/10 rounded-xl transition-all text-foreground"><ArrowLeft size={20} /></button>
+              <h1 className="text-3xl font-black text-foreground tracking-tight">{isEdit ? "Edit Post" : "Create New Post"}</h1>
             </div>
-            <p className="text-gray-500 text-sm font-medium ml-12">Fill in the details below to publish your blog.</p>
+            <p className="text-foreground/50 text-sm font-medium ml-12">Fill in the details below to publish your blog.</p>
           </div>
           <div className="flex items-center gap-3 ml-12 sm:ml-0">
-             <button type="button" onClick={() => setIsPreviewOpen(true)} className="flex items-center gap-2 px-4 py-2 text-gray-600 font-bold text-sm bg-white border border-gray-100 rounded-xl hover:bg-gray-50 transition-all shadow-sm"><Eye size={18} /> Preview</button>
-             {isAutoSaving && <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest animate-pulse">Saving...</span>}
+            <button type="button" onClick={() => setIsPreviewOpen(true)} className="flex items-center gap-2 px-5 py-2.5 text-foreground/80 font-bold text-sm bg-theme-element-sec border border-theme-accent/20 rounded-xl hover:bg-theme-element hover:translate-y-[-1px] transition-all shadow-sm"><Eye size={18} /> Preview</button>
+            {isAutoSaving && <span className="text-[10px] font-black text-theme-action uppercase tracking-widest animate-pulse">Saving...</span>}
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+
           {/* STEP 1: BASICS */}
-          <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-50">
-              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black">1</div>
-              <h2 className="text-xl font-black text-gray-900">Basic Information</h2>
+          <div className="bg-theme-element rounded-[2rem] border border-theme-accent/20 p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-theme-accent/10">
+              <div className="w-10 h-10 bg-theme-action/10 text-theme-action rounded-xl flex items-center justify-center font-black">1</div>
+              <h2 className="text-xl font-black text-foreground">Basic Information</h2>
             </div>
-            
-            <div className="space-y-6">
+
+            <div className="space-y-8">
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Blog Title</label>
-                <input 
+                <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-3 ml-1">Blog Title</label>
+                <input
                   {...register("title")}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-bold focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+                  className="w-full bg-theme-element-sec border border-theme-accent/20 rounded-2xl px-5 py-4 text-foreground font-bold focus:bg-theme-element focus:border-theme-action focus:ring-4 focus:ring-theme-action/10 outline-none transition-all placeholder:text-foreground/30"
                   placeholder="Enter a catchy title..."
                 />
                 {errors.title && <p className="text-xs font-bold text-red-500 mt-2 ml-1">{errors.title.message}</p>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Category</label>
-                  <select {...register("category")} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-bold focus:bg-white focus:border-blue-400 outline-none transition-all appearance-none cursor-pointer">
+                  <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-3 ml-1">Category</label>
+                  <select {...register("category")} className="w-full bg-theme-element-sec border border-theme-accent/20 rounded-2xl px-5 py-4 text-foreground font-bold focus:bg-theme-element focus:border-theme-action focus:ring-4 focus:ring-theme-action/10 outline-none transition-all appearance-none cursor-pointer">
                     <option value="" disabled>Select category</option>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cover Image</label>
-                  <div onClick={() => coverFileInputRef.current?.click()} className="group relative w-full h-[58px] bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between px-5 cursor-pointer hover:bg-gray-100 transition-all">
+                  <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-3 ml-1">Cover Image</label>
+                  <div onClick={() => coverFileInputRef.current?.click()} className="group relative w-full h-[58px] bg-theme-element-sec border border-theme-accent/20 rounded-2xl flex items-center justify-between px-5 cursor-pointer hover:bg-theme-element hover:border-theme-action/50 transition-all">
                     {coverImageUrl ? (
-                      <span className="text-xs font-bold text-blue-600 truncate max-w-[200px]">Image Uploaded!</span>
+                      <span className="text-xs font-bold text-theme-action truncate max-w-[200px]">Image Uploaded!</span>
                     ) : (
-                      <span className="text-xs font-bold text-gray-400">Select Image...</span>
+                      <span className="text-xs font-bold text-foreground/40 group-hover:text-foreground/60 transition-colors">Select Image...</span>
                     )}
-                    {isUploadingCover ? <Loader2 size={18} className="animate-spin text-blue-600" /> : <UploadCloud size={18} className="text-gray-400" />}
+                    {isUploadingCover ? <Loader2 size={18} className="animate-spin text-theme-action" /> : <UploadCloud size={18} className="text-foreground/40 group-hover:text-theme-action transition-colors" />}
                   </div>
                   <input type="file" ref={coverFileInputRef} onChange={handleCoverUpload} accept="image/*" className="hidden" />
                 </div>
@@ -259,96 +259,96 @@ export const BlogForm = ({ id }: { id?: string }) => {
           </div>
 
           {/* STEP 2: CONTEXT */}
-          <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-50">
-              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black">2</div>
-              <h2 className="text-xl font-black text-gray-900">Context & Tags</h2>
+          <div className="bg-theme-element rounded-[2rem] border border-theme-accent/20 p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-theme-accent/10">
+              <div className="w-10 h-10 bg-theme-action/10 text-theme-action rounded-xl flex items-center justify-center font-black">2</div>
+              <h2 className="text-xl font-black text-foreground">Context & Tags</h2>
             </div>
-            
-            <div className="space-y-6">
+
+            <div className="space-y-8">
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Short Excerpt</label>
-                <textarea 
+                <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-3 ml-1">Short Excerpt</label>
+                <textarea
                   {...register("excerpt")}
                   rows={3}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-bold focus:bg-white focus:border-blue-400 outline-none transition-all resize-none"
+                  className="w-full bg-theme-element-sec border border-theme-accent/20 rounded-2xl px-5 py-4 text-foreground font-bold focus:bg-theme-element focus:border-theme-action focus:ring-4 focus:ring-theme-action/10 outline-none transition-all resize-none placeholder:text-foreground/30"
                   placeholder="Write a brief summary to hook your readers..."
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tags (Max 5)</label>
-                <div className="flex flex-wrap gap-2 mb-3">
+                <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-3 ml-1">Tags (Max 5)</label>
+                <div className="flex flex-wrap gap-2.5 mb-4">
                   {currentTags.map(tag => (
-                    <span key={tag} className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-black rounded-xl border border-blue-100">
-                      #{tag} <button type="button" onClick={() => setValue("tags", currentTags.filter(t => t !== tag))}><X size={12}/></button>
+                    <span key={tag} className="flex items-center gap-2 px-4 py-2 bg-theme-action/10 text-theme-action text-xs font-black rounded-xl border border-theme-action/20 hover:bg-theme-action/20 transition-colors">
+                      #{tag} <button type="button" onClick={() => setValue("tags", currentTags.filter(t => t !== tag))}><X size={12} /></button>
                     </span>
                   ))}
                 </div>
                 <div className="relative">
-                  <input 
-                    type="text" 
-                    value={tagInput} 
-                    onChange={e => setTagInput(e.target.value)} 
-                    onKeyDown={handleAddTag} 
-                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-gray-900 font-bold focus:bg-white focus:border-blue-400 outline-none transition-all"
-                    placeholder="Type and press Enter to add tags..." 
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={handleAddTag}
+                    className="w-full bg-theme-element-sec border border-theme-accent/20 rounded-2xl px-5 py-4 text-foreground font-bold focus:bg-theme-element focus:border-theme-action focus:ring-4 focus:ring-theme-action/10 outline-none transition-all placeholder:text-foreground/30"
+                    placeholder="Type and press Enter to add tags..."
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white rounded-lg border border-gray-100 text-gray-400"><Plus size={16}/></div>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-theme-element rounded-lg border border-theme-accent/20 text-foreground/50"><Plus size={16} /></div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* STEP 3: EDITOR */}
-          <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-50">
-              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black">3</div>
-              <h2 className="text-xl font-black text-gray-900">Post Content</h2>
+          <div className="bg-theme-element rounded-[2rem] border border-theme-accent/20 p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-theme-accent/10">
+              <div className="w-10 h-10 bg-theme-action/10 text-theme-action rounded-xl flex items-center justify-center font-black">3</div>
+              <h2 className="text-xl font-black text-foreground">Post Content</h2>
             </div>
-            
-            <div className="quill-single-form">
-               {isMounted && (() => {
-                   const QuillEditor = ReactQuill as any;
-                   return (
-                     <QuillEditor
-                       ref={quillRef}
-                       theme="snow"
-                       value={content || ""}
-                       onChange={(val: string) => setValue("content", val, { shouldDirty: true, shouldValidate: true })}
-                       modules={modules}
-                       formats={formats}
-                       placeholder="Start writing your story here..."
-                     />
-                   );
-                 })()}
-               {isUploadingMedia && (
-                 <div className="flex items-center gap-2 text-xs font-bold text-blue-600 mt-4 animate-pulse">
-                   <Loader2 size={14} className="animate-spin" /> Uploading image to content...
-                 </div>
-               )}
+
+            <div className="quill-single-form text-foreground [&_.ql-toolbar]:bg-theme-element [&_.ql-toolbar]:border-theme-accent/20 [&_.ql-container]:border-theme-accent/20 [&_.ql-toolbar_stroke]:stroke-foreground [&_.ql-toolbar_fill]:fill-foreground [&_.ql-snow_.ql-picker]:text-foreground [&_.ql-editor]:text-foreground [&_.ql-snow_.ql-picker-options]:bg-theme-element [&_.ql-snow_.ql-picker-options]:border-theme-accent/20">
+              {isMounted && (() => {
+                const QuillEditor = ReactQuill as any;
+                return (
+                  <QuillEditor
+                    ref={quillRef}
+                    theme="snow"
+                    value={content || ""}
+                    onChange={(val: string) => setValue("content", val, { shouldDirty: true, shouldValidate: true })}
+                    modules={modules}
+                    formats={formats}
+                    placeholder="Start writing your story here..."
+                  />
+                );
+              })()}
+              {isUploadingMedia && (
+                <div className="flex items-center gap-2 text-xs font-bold text-theme-action mt-4 animate-pulse">
+                  <Loader2 size={14} className="animate-spin" /> Uploading image to content...
+                </div>
+              )}
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
-             <button 
-                type="button" 
-                onClick={() => { setValue("status", "draft"); handleSubmit(onSubmit)(); }}
-                disabled={isPending}
-                className="w-full sm:w-auto px-10 py-4 bg-white border border-gray-200 text-gray-600 font-black rounded-2xl hover:bg-gray-50 transition-all disabled:opacity-50"
-             >
-                Save as Draft
-             </button>
-             <button 
-                type="submit" 
-                onClick={() => setValue("status", "published")}
-                disabled={isPending}
-                className="w-full sm:flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]"
-             >
-                {isPending ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
-                {isEdit ? "Update Post Now" : "Publish Post Now"}
-             </button>
+          <div className="flex flex-col sm:flex-row items-center gap-5 pt-6">
+            <button
+              type="button"
+              onClick={() => { setValue("status", "draft"); handleSubmit(onSubmit)(); }}
+              disabled={isPending}
+              className="w-full sm:w-auto px-10 py-4 bg-theme-element-sec border border-theme-accent/20 text-foreground/80 font-black rounded-2xl hover:bg-theme-element transition-all disabled:opacity-50 hover:translate-y-[-1px] shadow-sm"
+            >
+              Save as Draft
+            </button>
+            <button
+              type="submit"
+              onClick={() => setValue("status", "published")}
+              disabled={isPending}
+              className="w-full sm:flex-1 py-4 bg-foreground text-background font-black rounded-2xl shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95"
+            >
+              {isPending ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
+              {isEdit ? "Update Post Now" : "Publish Post Now"}
+            </button>
           </div>
 
         </form>
@@ -356,13 +356,13 @@ export const BlogForm = ({ id }: { id?: string }) => {
 
       {/* Preview Modal */}
       {isPreviewOpen && (
-        <div className="fixed inset-0 z-[100] bg-white flex flex-col">
-          <div className="flex items-center justify-between px-8 py-4 border-b border-gray-100 bg-white">
-            <h2 className="text-xl font-black text-gray-900">Live Preview</h2>
-            <button onClick={() => setIsPreviewOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-all"><X size={24} /></button>
+        <div className="fixed inset-0 z-[100] bg-background flex flex-col animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-center justify-between px-8 py-5 border-b border-theme-accent/10 bg-theme-element shadow-sm">
+            <h2 className="text-xl font-black text-foreground">Live Preview</h2>
+            <button onClick={() => setIsPreviewOpen(false)} className="p-2 hover:bg-theme-element-sec border border-transparent hover:border-theme-accent/20 rounded-xl transition-all text-foreground"><X size={24} /></button>
           </div>
           <div className="flex-1 overflow-y-auto">
-             <BlogPreview title={currentValues.title} content={currentValues.content} excerpt={currentValues.excerpt} coverImageUrl={currentValues.coverImageUrl} tags={currentValues.tags || []} />
+            <BlogPreview title={currentValues.title} content={currentValues.content} excerpt={currentValues.excerpt} coverImageUrl={currentValues.coverImageUrl} tags={currentValues.tags || []} />
           </div>
         </div>
       )}

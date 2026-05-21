@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Calendar, User, ArrowLeft, Clock, Share2, MessageCircle, Heart, Tag, ChevronRight, Send } from 'lucide-react';
+import { Calendar, User, ArrowLeft, Clock, Share2, MessageCircle, Heart, Tag, ChevronRight, Send, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { BlogResponse } from '../types/blog-type';
 import { BlogCard } from './blog-card';
@@ -107,178 +107,180 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
   const comments = commentsData?.data || [];
 
   return (
-    <article className="bg-white min-h-screen pt-32 pb-32">
-      <div className="w-full px-[5%] max-w-[1920px] mx-auto">
+    <article className="bg-background transition-colors duration-500 min-h-screen py-24 md:py-32">
+      <div className="w-full px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto">
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-24 lg:gap-20 min-w-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12 lg:gap-16 min-w-0 items-start">
 
           {/* Article Pillar (Left) */}
           <div className="w-full min-w-0">
             {/* Header Section */}
-            <div className="mb-12">
-              <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-widest mb-6">
-                <Link href="/" className="hover:text-[#1877F2] transition-colors">Home</Link>
-                <ChevronRight size={12} />
-                <span className="text-[#1877F2]">{category || 'Blog'}</span>
+            <div className="mb-10">
+              <div className="flex items-center gap-2 text-foreground/50 text-xs font-bold uppercase tracking-wider mb-6">
+                <Link href="/" className="hover:text-theme-action transition-colors">Home</Link>
+                <ChevronRight size={14} className="text-foreground/30" />
+                <span className="text-theme-action">{category || 'Blog'}</span>
               </div>
 
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-gray-900 tracking-tight leading-[1.1] mb-8">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl lg:text-[3.5rem] font-black text-foreground tracking-tight leading-[1.1] mb-6">
                 {title}
               </h1>
             </div>
 
             {/* Featured Image */}
             {imageUrl && (
-              <div className="w-[85%] aspect-[16/9] max-h-[400px] rounded-[2rem] overflow-hidden mb-8 shadow-2xl shadow-gray-50 border border-gray-100">
+              <div className="w-full aspect-[16/9] md:aspect-[21/9] max-h-[600px] rounded-[2rem] overflow-hidden mb-12 shadow-sm border border-theme-accent/10 transition-transform duration-500 hover:scale-[1.01]">
                 <Image
                   src={imageUrl}
                   alt={title}
                   width={1200}
                   height={675}
                   priority
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}
 
-            {/* Interactions Bar (Instagram Style) */}
-            <div className="flex items-center gap-6 mb-8 py-4 border-b border-gray-50">
-              <button
-                onClick={handleLike}
-                className="flex items-center gap-2 group transition-all"
-              >
-                <Heart 
-                  size={24} 
-                  fill={hasLiked ? "#FF3040" : "none"} 
-                  className={hasLiked ? "text-[#FF3040] scale-110" : "text-gray-900 group-hover:text-[#FF3040] group-hover:scale-110"} 
-                />
-                <span className={`text-sm font-black ${hasLiked ? "text-gray-900" : "text-gray-400"}`}>
-                  {likesCount.toLocaleString()}
-                </span>
-              </button>
+            {/* Interactions Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-6 mb-12 py-5 border-y border-theme-accent/10">
 
-              <button
-                onClick={scrollToComments}
-                className="flex items-center gap-2 group transition-all"
-              >
-                <MessageCircle size={24} className="text-gray-900 group-hover:text-[#1877F2] group-hover:scale-110" />
-                <span className="text-sm font-black text-gray-400">{comments.length}</span>
-              </button>
+              <div className="flex items-center gap-8">
+                <button
+                  onClick={handleLike}
+                  className="flex items-center gap-2.5 group transition-all"
+                >
+                  <Heart
+                    size={22}
+                    fill={hasLiked ? "#ef4444" : "none"}
+                    className={hasLiked ? "text-red-500 scale-110" : "text-foreground/50 group-hover:text-red-500 group-hover:scale-110 transition-transform"}
+                  />
+                  <span className={`text-sm font-black ${hasLiked ? "text-foreground" : "text-foreground/50"}`}>
+                    {likesCount.toLocaleString()}
+                  </span>
+                </button>
+
+                <button
+                  onClick={scrollToComments}
+                  className="flex items-center gap-2.5 group transition-all"
+                >
+                  <MessageCircle size={22} className="text-foreground/50 group-hover:text-theme-action group-hover:scale-110 transition-transform" />
+                  <span className="text-sm font-black text-foreground/50">{comments.length}</span>
+                </button>
+              </div>
 
               <button
                 onClick={handleShare}
-                className="flex items-center gap-2 group transition-all"
+                className="flex items-center gap-2 group transition-all p-2 rounded-full hover:bg-theme-element-sec border border-transparent hover:border-theme-accent/20"
               >
-                <Share2 size={24} className="text-gray-900 group-hover:text-green-500 group-hover:scale-110" />
+                <Share2 size={20} className="text-foreground/50 group-hover:text-foreground transition-colors" />
+                <span className="text-xs font-black text-foreground/50 uppercase tracking-widest hidden sm:block">Share</span>
               </button>
             </div>
 
             {/* Tags */}
             {tags && tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-12">
+              <div className="flex flex-wrap gap-2.5 mb-14">
                 {tags.map((tag, idx) => (
-                  <span key={idx} className="px-4 py-2 bg-gray-50 text-gray-500 rounded-full text-xs font-bold border border-gray-100 hover:border-[#1877F2] hover:text-[#1877F2] transition-colors cursor-pointer">
+                  <span key={idx} className="px-4 py-2 bg-theme-element-sec text-foreground/70 rounded-xl text-xs font-black uppercase tracking-widest border border-theme-accent/10 hover:border-theme-action/30 hover:text-theme-action transition-all cursor-pointer">
                     #{tag}
                   </span>
                 ))}
               </div>
             )}
 
-            {/* Article Body */}
-            <div className="max-w-none">
+            {/* Article Body Content */}
+            <div className="max-w-none bg-theme-element md:p-12 md:rounded-[3rem] border-transparent md:border-theme-accent/10 md:border md:shadow-[0_8px_40px_rgba(0,0,0,0.02)] dark:md:shadow-none">
               <div
-                className="ql-editor prose prose-lg max-w-none break-words overflow-hidden
-                  prose-headings:font-black prose-headings:tracking-tight prose-headings:text-gray-900
-                  prose-p:text-gray-600 prose-p:leading-relaxed prose-p:text-[1.05rem] prose-p:mt-0 prose-p:mb-10
-                  prose-headings:mt-16 prose-headings:mb-6
-                  prose-img:block prose-img:rounded-3xl prose-img:shadow-xl prose-img:max-w-full prose-img:h-auto prose-img:ml-0 prose-img:mr-auto [&_img]:!ml-0 [&_img]:!mr-auto [&_p:has(img)]:!text-left
-                  prose-blockquote:border-l-4 prose-blockquote:border-[#1877F2] prose-blockquote:bg-gray-50 prose-blockquote:py-4 prose-blockquote:rounded-r-2xl prose-blockquote:italic
-                  prose-strong:text-gray-900 prose-strong:font-black
-                  prose-a:text-[#1877F2] prose-a:no-underline hover:prose-a:underline
-                  prose-pre:overflow-x-auto prose-pre:max-w-full prose-pre:rounded-2xl
-                  prose-code:break-all prose-code:whitespace-pre-wrap"
+                className="ql-editor prose prose-lg md:prose-xl max-w-none break-words overflow-hidden text-foreground/80
+                  prose-headings:font-black prose-headings:tracking-tight prose-headings:text-foreground
+                  prose-p:leading-relaxed prose-p:mb-8 prose-p:font-medium
+                  prose-a:text-theme-action prose-a:no-underline hover:prose-a:underline hover:prose-a:underline-offset-4
+                  prose-strong:text-foreground prose-strong:font-black
+                  prose-img:rounded-3xl prose-img:shadow-sm prose-img:max-w-full prose-img:border prose-img:border-theme-accent/10
+                  prose-blockquote:border-l-4 prose-blockquote:border-theme-action prose-blockquote:bg-theme-action/5 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-2xl prose-blockquote:italic prose-blockquote:text-foreground/90 font-medium
+                  prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:bg-theme-element-sec prose-pre:border prose-pre:border-theme-accent/20 prose-pre:shadow-sm
+                  prose-code:text-theme-action prose-code:bg-theme-action/10 prose-code:rounded-lg prose-code:px-2 prose-code:py-0.5 prose-code:font-bold"
                 dangerouslySetInnerHTML={{ __html: content }}
               />
+            </div>
 
+            {/* Comment Section (Redesigned) */}
+            <div id="comments-section" className="mt-20 pt-16 border-t border-theme-accent/10">
+              <div className="flex items-center gap-3 mb-10">
+                <div className="w-1.5 h-8 rounded-full bg-theme-action" />
+                <h4 className="text-2xl font-black text-foreground tracking-tight">Discussion ({comments.length})</h4>
+              </div>
 
-              {/* Comment Section */}
-              <div id="comments-section" className="mt-24 pt-20 border-t border-gray-100">
-                <div className="flex items-center gap-3 mb-10">
-                  <div className="w-2 h-2 rounded-full bg-[#1877F2]" />
-                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Discussion ({comments.length})</h4>
+              <div className="space-y-12">
+                {/* Comment Input */}
+                <div className="flex gap-4">
+                  <div className="hidden sm:flex w-12 h-12 rounded-full bg-theme-element shrink-0 items-center justify-center text-foreground/50 border border-theme-accent/20">
+                    <User size={20} />
+                  </div>
+                  <div className="flex-1">
+                    <textarea
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      className="w-full bg-theme-element border border-theme-accent/20 text-foreground rounded-2xl p-5 text-base focus:outline-none focus:ring-2 focus:ring-theme-action/20 focus:border-theme-action transition-all resize-none shadow-sm placeholder:text-foreground/30 font-medium"
+                      placeholder="What are your thoughts?"
+                      rows={3}
+                    />
+                    <div className="flex justify-end mt-4">
+                      <button
+                        onClick={handlePostComment}
+                        disabled={isPosting || !commentText.trim()}
+                        className="px-8 py-3 bg-foreground text-background rounded-xl text-sm font-black hover:scale-105 transition-all shadow-md disabled:opacity-50 active:scale-95"
+                      >
+                        {isPosting ? 'Posting...' : 'Post Comment'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-12">
-                  {/* Comment Input */}
-                  <div className="flex gap-6">
-                    <div className="w-12 h-12 rounded-full bg-gray-100 shrink-0 flex items-center justify-center text-gray-400 overflow-hidden">
-                      <User size={20} />
+                {/* Comments List */}
+                <div className="space-y-6 mt-8">
+                  {isLoadingComments ? (
+                    <div className="flex items-center gap-3 text-foreground/50 font-black uppercase tracking-widest text-xs">
+                      <Loader2 className="animate-spin text-theme-action" size={16} />
+                      Loading thoughts...
                     </div>
-                    <div className="flex-1">
-                      <textarea
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-100 text-black rounded-2xl p-6 text-sm focus:outline-none focus:border-[#1877F2] transition-colors resize-none placeholder:text-gray-400 font-bold"
-                        placeholder="Add a comment..."
-                        rows={3}
-                      />
-                      <div className="flex justify-end mt-4">
-                        <button
-                          onClick={handlePostComment}
-                          disabled={isPosting || !commentText.trim()}
-                          className="px-8 py-3 bg-black text-white rounded-full text-xs font-black hover:scale-105 transition-all shadow-xl shadow-gray-200 disabled:opacity-50 disabled:hover:scale-100"
-                        >
-                          {isPosting ? 'Posting...' : 'Post'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Comments List */}
-                  <div className="space-y-10 pl-2 sm:pl-4">
-                    {isLoadingComments ? (
-                      <div className="flex items-center gap-2 text-gray-400 text-xs font-medium italic">
-                        <div className="w-4 h-4 border-2 border-gray-200 border-t-[#1877F2] rounded-full animate-spin" />
-                        Loading thoughts...
-                      </div>
-                    ) : comments.length > 0 ? (
-                      comments.map((cmt: any, i: number) => (
-                        <div key={cmt._id || i} className="flex gap-6 relative group">
-                          <div className="w-12 h-12 rounded-full bg-blue-50 shrink-0 flex items-center justify-center font-black text-[#1877F2] text-sm border border-blue-100">
-                            {cmt.authorId?.firstName?.charAt(0) || 'U'}
+                  ) : comments.length > 0 ? (
+                    comments.map((cmt: any, i: number) => (
+                      <div key={cmt._id || i} className="flex gap-4 p-6 rounded-[2rem] bg-theme-element border border-theme-accent/10 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="w-12 h-12 rounded-full bg-theme-action/10 shrink-0 flex items-center justify-center font-black text-theme-action text-base border border-theme-action/20">
+                          {cmt.authorId?.firstName?.charAt(0) || 'U'}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="font-black text-foreground text-base">
+                              {cmt.authorId?.firstName} {cmt.authorId?.lastName}
+                            </span>
+                            <span className="w-1 h-1 rounded-full bg-theme-accent/20 hidden sm:block" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-foreground/40">{new Date(cmt.createdAt).toLocaleDateString()}</span>
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-black text-gray-900 text-sm">
-                                {cmt.authorId?.firstName} {cmt.authorId?.lastName}
+                          <p className="text-foreground/80 text-base leading-relaxed font-medium mb-3">{cmt.content}</p>
+                          <div className="flex gap-4">
+                            <button
+                              onClick={() => handleLikeComment(cmt._id)}
+                              className="flex items-center gap-2 group transition-colors px-3 py-1.5 rounded-lg bg-theme-element-sec border border-transparent hover:border-theme-accent/20"
+                            >
+                              <Heart
+                                size={14}
+                                fill={cmt.hasLiked ? "#ef4444" : "none"}
+                                className={cmt.hasLiked ? "text-red-500" : "text-foreground/40 group-hover:text-red-500"}
+                              />
+                              <span className={`text-xs font-black ${cmt.hasLiked ? "text-foreground" : "text-foreground/50"}`}>
+                                {cmt.likesCount || 0}
                               </span>
-                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">• {new Date(cmt.createdAt).toLocaleDateString()}</span>
-                            </div>
-                            <p className="text-gray-600 text-sm leading-relaxed font-medium">{cmt.content}</p>
-                            <div className="flex gap-6 mt-3">
-                              <button 
-                                onClick={() => handleLikeComment(cmt._id)}
-                                className="flex items-center gap-1.5 group/like"
-                              >
-                                <Heart 
-                                  size={14} 
-                                  fill={cmt.hasLiked ? "#FF3040" : "none"} 
-                                  className={cmt.hasLiked ? "text-[#FF3040]" : "text-gray-400 group-hover/like:text-[#FF3040]"} 
-                                />
-                                <span className={`text-[10px] font-black tracking-widest uppercase ${cmt.hasLiked ? "text-gray-900" : "text-gray-400"}`}>
-                                  {cmt.likesCount || 0}
-                                </span>
-                              </button>
-                              <button className="text-[10px] font-black text-gray-400 hover:text-gray-900 tracking-widest uppercase">Reply</button>
-                            </div>
+                            </button>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-400 text-sm italic font-medium">No comments yet. Start the conversation!</p>
-                    )}
-                  </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-foreground/40 text-sm font-black uppercase tracking-widest italic pt-4 pl-4 border-l-2 border-theme-accent/10">No comments yet. Start the conversation!</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -286,40 +288,55 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
 
           {/* Sidebar (Right) */}
           <aside className="relative min-w-0">
-            <div className="sticky top-32 space-y-12 flex flex-col w-full">
+            <div className="sticky top-32 space-y-8 flex flex-col w-full">
 
-              {/* Author Section */}
-              <div className="space-y-4 w-full">
-                <h4 className="text-[11px] font-bold uppercase tracking-[0.1em] text-gray-500">Author</h4>
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-[#1877F2] font-black text-lg shrink-0">
+              {/* Author Card Profile */}
+              <div className="p-8 bg-theme-element rounded-[2rem] border border-theme-accent/20 shadow-sm hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-6 h-6 rounded-md bg-theme-action/10 text-theme-action flex items-center justify-center">
+                    <User size={14} />
+                  </div>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/50">About The Author</h4>
+                </div>
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 rounded-2xl bg-theme-action text-white flex items-center justify-center font-black text-2xl shrink-0 shadow-md">
                     {authorName.charAt(0)}
                   </div>
-                  <div className="text-left">
-                    <p className="text-gray-900 font-black text-sm leading-tight mb-0.5">{authorName}</p>
-                    <p className="text-gray-400 text-[11px] font-bold leading-tight uppercase tracking-wider">{authorRole}</p>
+                  <div>
+                    <h3 className="text-foreground font-black text-lg mb-1">{authorName}</h3>
+                    <p className="text-foreground/60 text-xs font-bold uppercase tracking-widest">{authorRole}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Stats Card */}
-              <div className="p-8 bg-gray-900 rounded-[2rem] text-white w-full shadow-2xl shadow-gray-200">
-                <h4 className="text-sm font-black mb-6 uppercase tracking-widest text-gray-400">Activity</h4>
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Likes</span>
-                    <span className="text-lg font-black">{likesCount}</span>
+              {/* Stats & Actions Card */}
+              <div className="p-8 bg-theme-element rounded-[2rem] border border-theme-accent/20 shadow-sm hover:shadow-lg transition-shadow">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-6 h-6 rounded-md bg-orange-500/10 text-orange-500 flex items-center justify-center">
+                    <Heart size={14} />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Comments</span>
-                    <span className="text-lg font-black">{comments.length}</span>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/50">Post Activity</h4>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between pb-5 border-b border-theme-accent/10">
+                    <span className="text-xs font-black uppercase tracking-widest text-foreground/50">Total Likes</span>
+                    <span className="text-xl font-black text-foreground">{likesCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-5 border-b border-theme-accent/10">
+                    <span className="text-xs font-black uppercase tracking-widest text-foreground/50">Comments</span>
+                    <span className="text-xl font-black text-foreground">{comments.length}</span>
                   </div>
                 </div>
+
                 <button
                   onClick={handleLike}
-                  className={`w-full mt-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${hasLiked ? "bg-[#FF3040] text-white" : "bg-white text-black hover:bg-[#FF3040] hover:text-white"}`}
+                  className={`w-full mt-8 py-4 rounded-xl font-black text-sm transition-all focus:outline-none flex justify-center hover:scale-105 active:scale-95 shadow-md ${hasLiked
+                    ? "bg-red-500 text-white shadow-red-500/20"
+                    : "bg-theme-element-sec text-foreground border border-theme-accent/20 hover:border-foreground/30 hover:shadow-foreground/5"
+                    }`}
                 >
-                  {hasLiked ? "Liked Story" : "Like Story"}
+                  {hasLiked ? "♥ Liked Story" : "Like Story"}
                 </button>
               </div>
 
@@ -329,10 +346,13 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
 
         {/* Recommended Blogs */}
         {latestBlogs.length > 0 && (
-          <div className="mt-32 pt-20 border-t border-gray-100">
-            <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-12">
-              Recommended stories
-            </h2>
+          <div className="mt-32 pt-20 border-t border-theme-accent/10">
+            <div className="flex items-center gap-3 mb-10">
+              <div className="w-1.5 h-8 rounded-full bg-theme-action" />
+              <h2 className="text-3xl font-black text-foreground tracking-tight">
+                More to read
+              </h2>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {latestBlogs.map((item) => (
@@ -345,3 +365,4 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
     </article>
   );
 };
+

@@ -1,10 +1,24 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light Mode Palette */
+  --background: #E1F5FE;
+  /* Soft Sky Blue */
+  --foreground: #333333;
+  /* Medium Gray/Black Accents */
+
+  --color-element: #FFFFFF;
+  /* White Elements */
+  --color-element-sec: #F7F9FB;
+  /* Light Gray Secondary */
+  --color-accent: #81D4FA;
+  /* Mid Blue Accent */
+  --color-action: #039BE5;
+  /* Normal Blue Action */
 }
 
 @theme inline {
@@ -12,12 +26,50 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Built-in Theme Variable overrides */
+  --color-theme-element: var(--color-element);
+  --color-theme-element-sec: var(--color-element-sec);
+  --color-theme-accent: var(--color-accent);
+  --color-theme-action: var(--color-action);
+
+  /* GLOBAL OVERRIDES: Automatically syncs user's custom palette across the entire site */
+  --color-gray-950: #121212;
+  /* Sync deep black backgrounds */
+  --color-gray-900: #212121;
+  /* Sync dark grey elements */
+  --color-gray-50: #E1F5FE;
+  /* Sync light soft blue backgrounds */
+
+  --color-blue-500: var(--color-theme-action);
+  --color-blue-600: var(--color-theme-action);
+}
+
+.dark {
+  /* Dark Mode Palette */
+  --background: #121212;
+  /* Soft Deep Blue/Black */
+  --foreground: #E0E0E0;
+  /* Accent Light Gray */
+
+  --color-element: #212121;
+  /* Mid Dark Gray Elements */
+  --color-element-sec: #1a1a1a;
+  --color-accent: #81D4FA;
+  /* Muted Sky Blue */
+  --color-action: #29B6F6;
+  /* Soft Normal Blue */
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not(.light) {
+    --background: #121212;
+    --foreground: #E0E0E0;
+
+    --color-element: #212121;
+    --color-element-sec: #1a1a1a;
+    --color-accent: #81D4FA;
+    --color-action: #29B6F6;
   }
 }
 
@@ -32,13 +84,16 @@ body {
   width: 8px;
   height: 8px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(161, 161, 170, 0.4);
   border-radius: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(161, 161, 170, 0.6);
 }
@@ -48,6 +103,7 @@ body {
   border-color: #27272a;
   background-color: #09090b;
 }
+
 .dark .quill-dark-theme-wrapper .ql-container.ql-snow {
   border-color: #27272a;
   background-color: #09090b;
@@ -55,12 +111,14 @@ body {
   font-family: inherit;
   font-size: 1.125rem;
 }
+
 .quill-dark-theme-wrapper .ql-toolbar.ql-snow {
   border-color: #e4e4e7;
   background-color: #fafafa;
   border-top-left-radius: 0.75rem;
   border-top-right-radius: 0.75rem;
 }
+
 .quill-dark-theme-wrapper .ql-container.ql-snow {
   border-color: #e4e4e7;
   background-color: #ffffff;
@@ -70,13 +128,16 @@ body {
   font-size: 1.125rem;
   min-height: 400px;
 }
+
 .dark .quill-dark-theme-wrapper .ql-snow .ql-stroke {
   stroke: #a1a1aa;
 }
-.dark .quill-dark-theme-wrapper .ql-snow .ql-fill, 
+
+.dark .quill-dark-theme-wrapper .ql-snow .ql-fill,
 .dark .quill-dark-theme-wrapper .ql-snow .ql-stroke.ql-fill {
   fill: #a1a1aa;
 }
+
 .dark .quill-dark-theme-wrapper .ql-snow .ql-picker {
   color: #a1a1aa;
 }
@@ -85,50 +146,97 @@ body {
 .ql-align-center {
   text-align: center;
 }
+
 .ql-align-right {
   text-align: right;
 }
+
 .ql-align-justify {
   text-align: justify;
 }
 
 /* Quill Indentation Support */
-.ql-indent-1 { padding-left: 3em; }
-.ql-indent-2 { padding-left: 6em; }
-.ql-indent-3 { padding-left: 9em; }
-.ql-indent-4 { padding-left: 12em; }
-.ql-indent-5 { padding-left: 15em; }
-.ql-indent-6 { padding-left: 18em; }
-.ql-indent-7 { padding-left: 21em; }
-.ql-indent-8 { padding-left: 24em; }
+.ql-indent-1 {
+  padding-left: 3em;
+}
+
+.ql-indent-2 {
+  padding-left: 6em;
+}
+
+.ql-indent-3 {
+  padding-left: 9em;
+}
+
+.ql-indent-4 {
+  padding-left: 12em;
+}
+
+.ql-indent-5 {
+  padding-left: 15em;
+}
+
+.ql-indent-6 {
+  padding-left: 18em;
+}
+
+.ql-indent-7 {
+  padding-left: 21em;
+}
+
+.ql-indent-8 {
+  padding-left: 24em;
+}
 
 /* Quill Font Family Support */
 .ql-font-serif {
   font-family: Georgia, Times New Roman, serif;
 }
+
 .ql-font-monospace {
   font-family: Courier New, Courier, monospace;
 }
+
 .ql-font-roboto {
   font-family: 'Roboto', sans-serif;
 }
+
 .ql-font-playfair {
   font-family: 'Playfair Display', serif;
 }
+
 .ql-font-montserrat {
   font-family: 'Montserrat', sans-serif;
 }
+
 .ql-font-lora {
   font-family: 'Lora', serif;
 }
 
 /* Ensure Quill editor content respects font selection in all contexts */
-.ql-editor .ql-font-serif { font-family: Georgia, Times New Roman, serif; }
-.ql-editor .ql-font-monospace { font-family: Courier New, Courier, monospace; }
-.ql-editor .ql-font-roboto { font-family: 'Roboto', sans-serif; }
-.ql-editor .ql-font-playfair { font-family: 'Playfair Display', serif; }
-.ql-editor .ql-font-montserrat { font-family: 'Montserrat', sans-serif; }
-.ql-editor .ql-font-lora { font-family: 'Lora', serif; }
+.ql-editor .ql-font-serif {
+  font-family: Georgia, Times New Roman, serif;
+}
+
+.ql-editor .ql-font-monospace {
+  font-family: Courier New, Courier, monospace;
+}
+
+.ql-editor .ql-font-roboto {
+  font-family: 'Roboto', sans-serif;
+}
+
+.ql-editor .ql-font-playfair {
+  font-family: 'Playfair Display', serif;
+}
+
+.ql-editor .ql-font-montserrat {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.ql-editor .ql-font-lora {
+  font-family: 'Lora', serif;
+}
 
 /* Quill Toolbar Font Picker Labels */
 .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="roboto"]::before,
@@ -136,16 +244,19 @@ body {
   content: "Roboto";
   font-family: 'Roboto', sans-serif;
 }
+
 .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="playfair"]::before,
 .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="playfair"]::before {
   content: "Playfair Display";
   font-family: 'Playfair Display', serif;
 }
+
 .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="montserrat"]::before,
 .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="montserrat"]::before {
   content: "Montserrat";
   font-family: 'Montserrat', sans-serif;
 }
+
 .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="lora"]::before,
 .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="lora"]::before {
   content: "Lora";
@@ -158,13 +269,14 @@ hr {
   border-top: 1px solid #e5e7eb;
   margin: 1.5rem 0;
 }
+
 .dark hr {
   border-top-color: #27272a;
 }
 
 /* Ensure empty paragraphs (enters) occupied space */
 .prose p:empty,
-.prose p > br:only-child {
+.prose p>br:only-child {
   min-height: 1.5em;
   display: block;
   content: "";
@@ -202,6 +314,7 @@ hr {
   background-color: #f8fafc;
   padding: 10px 14px;
 }
+
 /* Quill SVG Fix for Huge Icons */
 .ql-snow .ql-picker.ql-header .ql-picker-label svg,
 .ql-snow .ql-picker.ql-header .ql-picker-item svg,
@@ -219,12 +332,14 @@ hr {
   font-size: 1.05rem;
   min-height: 400px;
 }
+
 .quill-single-form .ql-editor {
   min-height: 400px;
   padding: 24px;
   line-height: 1.8;
   color: #1e293b;
 }
+
 .quill-single-form .ql-editor.ql-blank::before {
   color: #94a3b8;
   font-style: normal;

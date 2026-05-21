@@ -24,44 +24,44 @@ const LinkedinIcon = ({ size = 16 }: { size?: number }) => (
 
 export const Footer = () => {
   return (
-    <footer className="w-full bg-gray-950 mt-auto border-t border-gray-900 relative overflow-hidden">
+    <footer className="w-full bg-theme-element-sec mt-auto border-t border-theme-accent/20 relative overflow-hidden transition-colors duration-500 shadow-sm">
 
-      {/* Ambient Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[800px] h-[150px] bg-[#1877F2]/5 blur-[80px] rounded-full pointer-events-none" />
-
-      <div className="w-full max-w-[1400px] mx-auto px-5 lg:px-8 pt-12 pb-6 relative z-10 text-left">
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8 relative z-10 text-left">
 
         {/* Main Grid Layout — 12 Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-y-10 lg:gap-x-6 xl:gap-x-10 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-y-12 lg:gap-x-6 xl:gap-x-12 mb-12">
 
           {/* Col 1: Brand (Span 3) */}
           <div className="lg:col-span-3 flex flex-col items-start">
-            <Link href="/" className="flex items-center gap-3 mb-4 group">
-              <div className="w-8 h-8 rounded-lg overflow-hidden border border-gray-800 shadow-lg group-hover:scale-105 transition-transform">
-                <Image src="/logoML.png" alt="ML Logo" width={32} height={32} className="w-full h-full object-cover" />
+            <Link href="/" className="flex items-center gap-3 mb-5 group">
+              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-theme-accent/20 flex items-center justify-center bg-white group-hover:scale-105 transition-transform">
+                <Image src="/logoML.png" alt="ML Logo" width={40} height={40} className="object-contain" />
               </div>
               <div className="flex flex-col">
-                <span className="text-lg font-black tracking-tight text-white leading-none mt-1">
-                  Minimalistic<span className="text-[#1877F2]">Learning</span>
+                <span className="text-xl font-extrabold tracking-tight text-foreground leading-none">
+                  Minimalistic<span className="text-theme-action">Learning</span>
+                </span>
+                <span className="text-[10px] font-semibold text-foreground/50 tracking-widest uppercase mt-0.5 ml-0.5">
+                  Platform
                 </span>
               </div>
             </Link>
 
-            <p className="text-gray-400 text-[13px] leading-relaxed mb-6 font-medium">
+            <p className="text-foreground/70 text-sm leading-relaxed mb-6 font-medium">
               Empowering curious minds with high-quality, distraction-free educational resources since 2024.
             </p>
 
-            <div className="flex items-center gap-3 text-gray-500">
-              <Link href="#" className="hover:text-white hover:scale-110 active:scale-95 transition-all"><FacebookIcon /></Link>
-              <Link href="#" className="hover:text-white hover:scale-110 active:scale-95 transition-all"><TwitterIcon /></Link>
-              <Link href="#" className="hover:text-white hover:scale-110 active:scale-95 transition-all"><LinkedinIcon /></Link>
+            <div className="flex items-center gap-4 text-foreground/60">
+              <Link href="#" className="hover:text-theme-action hover:scale-110 active:scale-95 transition-all"><FacebookIcon size={18} /></Link>
+              <Link href="#" className="hover:text-theme-action hover:scale-110 active:scale-95 transition-all"><TwitterIcon size={18} /></Link>
+              <Link href="#" className="hover:text-theme-action hover:scale-110 active:scale-95 transition-all"><LinkedinIcon size={18} /></Link>
             </div>
           </div>
 
           {/* Col 2: Quick Links (Span 2) */}
-          <div className="lg:col-span-2 flex flex-col lg:pl-2">
-            <h4 className="text-white font-black uppercase tracking-widest text-xs mb-5">Quick Links</h4>
-            <div className="flex flex-col gap-2.5">
+          <div className="lg:col-span-2 flex flex-col lg:pl-4">
+            <h4 className="text-foreground font-bold uppercase tracking-wider text-xs mb-5">Quick Links</h4>
+            <div className="flex flex-col gap-3">
               {[
                 { name: 'About Us', href: '/about' },
                 { name: 'Our Services', href: '#' },
@@ -69,8 +69,8 @@ export const Footer = () => {
                 { name: 'Our Team', href: '#' },
                 { name: 'Careers', href: '#' },
               ].map(link => (
-                <Link key={link.name} href={link.href} className="group flex items-center gap-2 text-gray-400 hover:text-white text-[13px] font-medium transition-colors w-fit">
-                  <span className="w-0 h-px bg-white group-hover:w-2.5 transition-all duration-300" />
+                <Link key={link.name} href={link.href} className="group flex items-center gap-2 text-foreground/70 hover:text-foreground text-sm font-medium transition-colors w-fit">
+                  <span className="w-0 h-px bg-foreground group-hover:w-2 transition-all duration-300" />
                   {link.name}
                 </Link>
               ))}
@@ -79,8 +79,8 @@ export const Footer = () => {
 
           {/* Col 3: Categories (Span 2) */}
           <div className="lg:col-span-2 flex flex-col">
-            <h4 className="text-white font-black uppercase tracking-widest text-xs mb-5">Categories</h4>
-            <div className="flex flex-col gap-2.5">
+            <h4 className="text-foreground font-bold uppercase tracking-wider text-xs mb-5">Categories</h4>
+            <div className="flex flex-col gap-3">
               {[
                 { name: 'Technology', href: '/blog?category=Technology' },
                 { name: 'Software Dev', href: '/blog?category=Software+Dev' },
@@ -88,8 +88,8 @@ export const Footer = () => {
                 { name: 'Design', href: '/blog?category=Design' },
                 { name: 'Productivity', href: '/blog?category=Productivity' },
               ].map(link => (
-                <Link key={link.name} href={link.href} className="group flex items-center gap-2 text-gray-400 hover:text-[#1877F2] text-[13px] font-medium transition-colors w-fit">
-                  <span className="w-0 h-px bg-[#1877F2] group-hover:w-2.5 transition-all duration-300" />
+                <Link key={link.name} href={link.href} className="group flex items-center gap-2 text-foreground/70 hover:text-theme-action text-sm font-medium transition-colors w-fit">
+                  <span className="w-0 h-px bg-theme-action group-hover:w-2 transition-all duration-300" />
                   {link.name}
                 </Link>
               ))}
@@ -98,14 +98,14 @@ export const Footer = () => {
 
           {/* Col 4: Contact Us (Span 2) */}
           <div className="lg:col-span-2 flex flex-col">
-            <h4 className="text-white font-black uppercase tracking-widest text-xs mb-5">Contact Us</h4>
+            <h4 className="text-foreground font-bold uppercase tracking-wider text-xs mb-5">Contact Us</h4>
             <div className="flex flex-col gap-4">
-              <div className="flex items-start gap-3 text-gray-400 text-[13px] font-medium">
-                <MapPin size={16} className="text-[#1877F2] shrink-0 mt-0.5" />
-                <span className="leading-snug">123 Learning Avenue<br />Mumbai, MH 400001</span>
+              <div className="flex items-start gap-3 text-foreground/70 text-sm font-medium">
+                <MapPin size={16} className="text-theme-action shrink-0 mt-0.5" />
+                <span className="leading-relaxed">123 Learning Avenue<br />Mumbai, MH 400001</span>
               </div>
-              <div className="flex items-center gap-3 text-gray-400 text-[13px] font-medium">
-                <Mail size={16} className="text-[#1877F2] shrink-0" />
+              <div className="flex items-center gap-3 text-foreground/70 text-sm font-medium">
+                <Mail size={16} className="text-theme-action shrink-0" />
                 <span>info@minimalistic.edu</span>
               </div>
             </div>
@@ -113,10 +113,9 @@ export const Footer = () => {
 
           {/* Col 5: Stay Updated (Span 3) */}
           <div className="lg:col-span-3 flex flex-col">
-            <h4 className="text-white font-black uppercase tracking-widest text-xs mb-5">Stay Updated</h4>
-            {/* Interactive newsletter form — client component */}
+            <h4 className="text-foreground font-bold uppercase tracking-wider text-xs mb-5">Stay Updated</h4>
             <NewsletterForm />
-            <p className="text-gray-500 text-[11px] font-medium leading-relaxed mt-3">
+            <p className="text-foreground/50 text-xs font-medium mt-4">
               Subscribe for the latest educational resources.
             </p>
           </div>
@@ -124,13 +123,13 @@ export const Footer = () => {
         </div>
 
         {/* Bottom Copyright Bar */}
-        <div className="pt-6 border-t border-gray-900 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-gray-500 text-[12px] font-bold tracking-wide">
+        <div className="pt-8 border-t border-theme-accent/10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-foreground/60 text-xs font-semibold tracking-wide">
             © {new Date().getFullYear()} Minimalistic Learning. All rights reserved.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             {['Terms of Service', 'Privacy Policy', 'Cookie Policy', 'Sitemap'].map((legal) => (
-              <Link key={legal} href="#" className="text-gray-500 hover:text-white text-[11px] font-bold uppercase tracking-widest transition-colors">
+              <Link key={legal} href="#" className="text-foreground/60 hover:text-foreground text-xs font-semibold uppercase tracking-wider transition-colors">
                 {legal}
               </Link>
             ))}

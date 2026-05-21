@@ -34,7 +34,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <Providers>
           <Navbar />
-          <div className="flex flex-col min-h-screen bg-[#FDFDFF]">
+          <div className="flex flex-col min-h-screen bg-transparent transition-colors duration-500 text-gray-900 dark:text-gray-100">
             {children}
           </div>
           <Footer />

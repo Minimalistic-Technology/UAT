@@ -36,8 +36,8 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
     const el = card.current;
     if (!el) return;
     const { left, top, width, height } = el.getBoundingClientRect();
-    const x = (e.clientX - left) / width  - 0.5;
-    const y = (e.clientY - top)  / height - 0.5;
+    const x = (e.clientX - left) / width - 0.5;
+    const y = (e.clientY - top) / height - 0.5;
     el.style.transform = `perspective(700px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg) translateZ(8px)`;
   };
 
@@ -55,11 +55,11 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
       prefetch
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
-      className="group flex flex-col bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-gray-200/80 transition-all duration-300 ease-out will-change-transform"
+      className="group flex flex-col bg-white dark:bg-gray-950 rounded-3xl border border-gray-100 dark:border-gray-800/60 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-gray-200/80 dark:hover:shadow-gray-900/50 transition-all duration-300 ease-out will-change-transform"
       style={{ transition: "box-shadow 0.3s ease, transform 0.2s ease" }}
     >
       {/* ── Cover Image ─────────────────────────────────────────────── */}
-      <div className="relative aspect-[16/10] overflow-hidden m-3 rounded-2xl bg-gray-50">
+      <div className="relative aspect-[16/10] overflow-hidden m-3 rounded-2xl bg-gray-50 dark:bg-gray-900/50">
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -75,11 +75,11 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
         )}
 
         {/* Gradient overlay on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"/>
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
 
         {/* Category badge */}
         <div className="absolute top-3 left-3">
-          <span className="px-3 py-1.5 bg-white/95 backdrop-blur-sm text-gray-800 text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm border border-white/40">
+          <span className="px-3 py-1.5 bg-white/95 dark:bg-gray-900/90 backdrop-blur-sm text-gray-800 dark:text-gray-200 text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm border border-white/40 dark:border-gray-700/50">
             {displayCategory}
           </span>
         </div>
@@ -87,15 +87,15 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
         {/* Likes badge */}
         <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0">
           <div className="px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-full flex items-center gap-1.5 border border-white/10">
-            <Heart size={11} className="text-rose-400 fill-rose-400"/>
+            <Heart size={11} className="text-rose-400 fill-rose-400" />
             <span className="text-white text-[10px] font-black">{likesCount || 0}</span>
           </div>
         </div>
 
         {/* Arrow icon — appears on hover */}
         <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-y-1 group-hover:translate-y-0">
-          <div className="w-8 h-8 rounded-full bg-white/95 backdrop-blur-sm shadow-md flex items-center justify-center">
-            <ArrowUpRight size={15} className="text-gray-800"/>
+          <div className="w-8 h-8 rounded-full bg-white/95 dark:bg-gray-900/90 backdrop-blur-sm shadow-md flex items-center justify-center">
+            <ArrowUpRight size={15} className="text-gray-800 dark:text-gray-200" />
           </div>
         </div>
       </div>
@@ -113,7 +113,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-black text-gray-900 mb-2.5 line-clamp-2 leading-snug group-hover:text-[#1877F2] transition-colors duration-200">
+        <h3 className="text-lg font-black text-gray-900 dark:text-gray-100 mb-2.5 line-clamp-2 leading-snug group-hover:text-[#1877F2] transition-colors duration-200">
           {title}
         </h3>
 
@@ -123,12 +123,12 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
         </p>
 
         {/* Footer */}
-        <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+        <div className="pt-4 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between">
           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
             {formattedDate}
           </span>
           <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-            <Clock size={11} className="text-gray-300"/>
+            <Clock size={11} className="text-gray-300" />
             {readingTime} min read
           </div>
         </div>

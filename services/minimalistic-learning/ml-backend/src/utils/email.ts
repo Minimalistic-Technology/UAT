@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { Resend } from 'resend';
+import { BrevoClient } from '@getbrevo/brevo';
 import crypto from 'crypto';
 import { env } from '../config/env';
 
@@ -12,8 +12,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 2. Setup Resend (The Professional Choice)
-const resend = new Resend(env.RESEND_API_KEY);
+// 2. Setup Brevo (The Professional Choice)
+const brevo = new BrevoClient({ apiKey: env.BREVO_API_KEY });
 
 /* ─── Shared Nodemailer fallback ──────────────────────────────────────── */
 async function sendViaNodemailer(to: string, subject: string, html: string) {
@@ -33,33 +33,36 @@ async function sendViaNodemailer(to: string, subject: string, html: string) {
   }
 }
 
-/* ─── Shared Resend dispatcher ───────────────────────────────────────── */
-async function sendViaResend(to: string, subject: string, html: string) {
-  const { data, error } = await resend.emails.send({
-    from: 'Minimalistic Learning <' + env.RESEND_FROM_EMAIL + '>',
-    to,
-    subject,
-    html,
-  });
-  if (error) throw new Error('Resend rejected: ' + JSON.stringify(error));
-  return data;
+/* ─── Shared Brevo dispatcher ───────────────────────────────────────── */
+async function sendViaBrevo(to: string, subject: string, html: string) {
+  try {
+    const result = await brevo.transactionalEmails.sendTransacEmail({
+      subject: subject,
+      htmlContent: html,
+      sender: { name: 'Minimalistic Learning', email: env.BREVO_FROM_EMAIL },
+      to: [{ email: to }],
+    });
+    return result;
+  } catch (error: any) {
+    throw new Error('Brevo rejected: ' + JSON.stringify(error));
+  }
 }
 
-/* ─── Smart send: Resend first, Nodemailer fallback ─────────────────── */
+/* ─── Smart send: Brevo first, Nodemailer fallback ─────────────────── */
 async function smartSend(to: string, subject: string, html: string) {
-  const canUseResend = env.RESEND_API_KEY && !env.RESEND_API_KEY.includes('example');
-  if (canUseResend) {
+  const canUseBrevo = env.BREVO_API_KEY && !env.BREVO_API_KEY.includes('example');
+  if (canUseBrevo) {
     try {
-      console.log('[email] Attempting Resend delivery to ' + to + '...');
-      const result = await sendViaResend(to, subject, html);
-      console.log('[email] Sent via Resend successfully.');
+      console.log('[email] Attempting Brevo delivery to ' + to + '...');
+      const result = await sendViaBrevo(to, subject, html);
+      console.log('[email] Sent via Brevo successfully.');
       return result;
     } catch (err: any) {
-      console.warn('[email] Resend failed, falling back to Nodemailer:', err.message);
+      console.warn('[email] Brevo failed, falling back to Nodemailer:', err.message);
       return sendViaNodemailer(to, subject, html);
     }
   }
-  console.log('[email] Resend not configured. Using Nodemailer...');
+  console.log('[email] Brevo not configured. Using Nodemailer...');
   return sendViaNodemailer(to, subject, html);
 }
 
