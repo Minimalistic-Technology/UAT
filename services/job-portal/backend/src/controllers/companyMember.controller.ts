@@ -30,7 +30,7 @@ export const getAllCompanyMembers = async (
       company: currentUser.company,
       _id: { $ne: currentUser._id },
     })
-      .populate("user", "firstName lastName email")
+      .populate("user", "firstName lastName email avatar")
       .lean();
 
     return res
@@ -92,7 +92,7 @@ export const addMember = async (req: AuthRequest, res: Response) => {
         {
           user: newUser._id,
           company: ownerMember.company,
-          role: CompanyRole.ADMIN,
+          role: CompanyRole.HR,
           isActive: true,
         },
       ],

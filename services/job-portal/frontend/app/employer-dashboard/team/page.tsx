@@ -5,7 +5,7 @@ import {
   useDeleteEmployee,
   useGetAllEmployees,
 } from "@/features/employer/hooks/use-company";
-import { Loader2, Trash2, Users } from "lucide-react";
+import { Loader2, Trash2, UserPlus, Users, Pencil } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,13 +24,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const { data: responseData, isLoading, isError } = useGetAllEmployees();
   const deleteMutation = useDeleteEmployee();
+  const router = useRouter();
 
-  const employees = responseData?.data.employees || [];
+  const employees = responseData?.data?.members || [];
   const getInitials = (first: string, last: string) => `${first[0]}${last[0]}`;
 
   if (isLoading) {
@@ -52,11 +54,20 @@ const Page = () => {
 
   return (
     <div className="p-6 md:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Team Management</h1>
-        <p className="text-muted-foreground">
-          Manage your employees and their access levels.
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">Team Management</h1>
+          <p className="text-muted-foreground">
+            Manage your employees and their access levels.
+          </p>
+        </div>
+        <Button
+          onClick={() => router.push("/employer-dashboard/team/add")}
+          className="cursor-pointer flex items-center gap-2"
+        >
+          <UserPlus className="size-4" strokeWidth={2} />
+          Add New Employee
+        </Button>
       </div>
 
       <div className="bg-card overflow-hidden rounded-xl border shadow-sm">
@@ -95,6 +106,7 @@ const Page = () => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9 border">
+                          <AvatarImage src={emp.user.avatar} alt={`${emp.user.firstName} ${emp.user.lastName}`} />
                           <AvatarFallback className="bg-indigo-50 text-xs font-bold text-indigo-700">
                             {getInitials(emp.user.firstName, emp.user.lastName)}
                           </AvatarFallback>
@@ -157,19 +169,34 @@ const Page = () => {
                         </div>
                       ) : (
                         <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                onClick={() => setConfirmId(emp._id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Remove member</TooltipContent>
-                          </Tooltip>
+                          <div className="flex items-center justify-end gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Update member</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                  onClick={() => setConfirmId(emp._id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Remove member</TooltipContent>
+                            </Tooltip>
+                          </div>
                         </TooltipProvider>
                       )}
                     </TableCell>

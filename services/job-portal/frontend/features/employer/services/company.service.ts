@@ -22,7 +22,7 @@ interface GetMyCompanyResponse extends Omit<Company, "owner">, CompanyMetrics {
 
 interface GetAllEmployeesResponse {
   count: number;
-  employees: any[];
+  members: any[];
 }
 
 interface SubmitKycResponse {
@@ -55,6 +55,14 @@ export const getAllEmployees = async () => {
 export const deleteEmployee = async (id: string) => {
   const response = await apiClient.delete<ApiSuccessResponse<null>>(
     `/company-members/${id}`,
+  );
+  return response.data;
+};
+
+export const addEmployee = async (data: any) => {
+  const response = await apiClient.post<ApiSuccessResponse<any>>(
+    "/company-members",
+    data
   );
   return response.data;
 };

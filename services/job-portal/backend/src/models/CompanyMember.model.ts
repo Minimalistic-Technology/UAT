@@ -4,6 +4,7 @@ export enum CompanyRole {
   OWNER = 'owner',
   ADMIN = 'admin',
   RECRUITER = 'recruiter',
+  HR = 'hr'
 }
 
 interface ICompanyMember extends Document {

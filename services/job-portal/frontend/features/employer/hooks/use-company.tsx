@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteEmployee, getAllEmployees, getMyCompany, submitKycData, updateCompanyDetails, uploadCompanyLogo } from "../services/company.service";
+import { addEmployee, deleteEmployee, getAllEmployees, getMyCompany, submitKycData, updateCompanyDetails, uploadCompanyLogo } from "../services/company.service";
 import { toast } from "sonner";
 import {useRouter} from "next/navigation"
 import { getValidationErrorMessage } from "@/lib/validation-error";
@@ -13,8 +13,26 @@ export const useGetAllEmployees = () => {
 
 export const useCreateEmployee = () => {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
-  //
+  return useMutation({
+    mutationFn: (data: any) => addEmployee(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-employees"] });
+      toast.success("Employee added successfully");
+      router.push("/employer-dashboard/team");
+    },
+    onError: (error: any) => {
+      console.error("Error adding employee:", error);
+      const errorMsg = error?.response?.data?.message || "Failed to add employee";
+      if (errorMsg === "Validation failed") {
+        const firstErrorMessage = getValidationErrorMessage(error);
+        toast.error(firstErrorMessage);
+        return;
+      }
+      toast.error(errorMsg);
+    },
+  });
 };
 
 export const useDeleteEmployee = () => {
