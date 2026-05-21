@@ -188,11 +188,7 @@ export const FeaturedJobs = () => {
                   if (job.logo) {
                     logoEl = <span className="font-bold text-2xl text-indigo-600">{job.logo}</span>;
                   } else if (typeof job.company === 'object' && job.company?.logo) {
-                    if (job.company.logo.startsWith("http")) {
-                      logoEl = <img src={job.company.logo} alt={companyName} className="w-full h-full object-cover rounded-2xl" />;
-                    } else {
-                      logoEl = <span className="font-bold text-2xl text-indigo-600">{job.company.logo}</span>;
-                    }
+                    logoEl = <img src={job.company.logo.url} alt={companyName} className="w-full h-full object-cover rounded-2xl" />;
                   }
 
                   return (
