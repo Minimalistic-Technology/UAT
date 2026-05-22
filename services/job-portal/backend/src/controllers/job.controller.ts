@@ -346,7 +346,7 @@ export const deleteJob = async (
     }
 
     const companyMember = await CompanyMember.findOne({
-      user: req.user.id,
+      user: req.user._id,
     }).populate("company", "name");
 
     if (!companyMember) {
@@ -358,12 +358,12 @@ export const deleteJob = async (
       );
     }
 
-    // Only admin and owner can delete the job
+    // Only hr and owner can delete the job
     if (
-      companyMember.role !== CompanyRole.ADMIN &&
+      companyMember.role !== CompanyRole.HR &&
       companyMember.role !== CompanyRole.OWNER
     ) {
-      return next(new ApiError(403, "Not authorized to update this job"));
+      return next(new ApiError(403, "You're not authorized to delete the job"));
     }
 
     await job.deleteOne();
