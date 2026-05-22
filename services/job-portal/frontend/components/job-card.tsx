@@ -58,7 +58,7 @@ export default function JobCard({ job }: JobCardProps) {
             <div className="flex gap-4 items-start">
               <Avatar className="h-12 w-12 rounded-lg border bg-muted/50">
                 <AvatarImage
-                  src={job.company?.logo}
+                  src={job.company?.logo?.url}
                   alt={job.company?.name}
                   className="object-cover"
                 />
