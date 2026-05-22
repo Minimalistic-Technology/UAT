@@ -190,7 +190,7 @@ export const createJob = async (
   session.startTransaction();
 
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     const companyMember = await CompanyMember.findOne({ user: userId }).session(
       session,
