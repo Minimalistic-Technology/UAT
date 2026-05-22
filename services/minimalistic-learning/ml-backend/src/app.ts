@@ -39,13 +39,18 @@ app.use(cors({
 }));
 
 // 2. Security Headers
+import compression from 'compression';
+// 4. Compression for responses
+app.use(compression());
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 // 3. Logging
+import logger from './utils/logger';
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  logger.debug(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
@@ -55,9 +60,9 @@ app.use((req, res, next) => {
 // 5. Rate Limiting (Security)
 app.use('/api/', defaultLimiter);
 
-// 6. Body Parsers
-app.use(express.json({ limit: "10mb" })); // Reduced from 50mb for security
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// 6. Body Parsers (reduced limits for security)
+app.use(express.json({ limit: "2mb" })); // Reduced from 10mb
+app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
 app.use(cookieParser());
 

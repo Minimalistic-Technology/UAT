@@ -8,6 +8,8 @@ datasource db {
 }
 
 model User {
+  @@index([email])
+  @@index([role])
   id            String         @id @default(cuid())
   firstName     String
   lastName      String
@@ -27,6 +29,11 @@ model User {
 }
 
 model Post {
+  @@index([slug])
+  @@index([authorId])
+  @@index([published])
+  @@index([status])
+  @@index([createdAt])
   id          String     @id @default(cuid())
   title       String     @default("Untitled Story")
   slug        String     @unique
