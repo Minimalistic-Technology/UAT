@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { config } from "../config/env.js";
 import User, { GlobalRole } from "../models/User.model.js";
 import { ApiError } from "../utils/apiError.js";
+import CompanyMember from "../models/CompanyMember.model.js";
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -44,9 +45,31 @@ export const protect = async (
       return next(new ApiError(403, "User account is deactivated"));
     }
 
+    if (req.user.role === GlobalRole.USER) {
+      const companyMember = await CompanyMember.findOne({
+        user: req.user._id,
+        isActive: true,
+      });
+
+      req.user = req.user.toObject();
+
+      if (!companyMember) {
+        req.user.isEmployee = false;
+        req.user.companyId = null;
+        req.user.companyRole = null;
+        return next();
+      }
+
+      req.user.isEmployee = true;
+      req.user.companyId = companyMember.company;
+      req.user.companyRole = companyMember.role;
+    }
+
     next();
   } catch (error: any) {
-    return next(new ApiError(401, error.message ?? "Not authorized to access this route"));
+    return next(
+      new ApiError(401, error.message ?? "Not authorized to access this route"),
+    );
   }
 };
 

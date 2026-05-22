@@ -234,10 +234,31 @@ export const getMyCompany = async (
   next: NextFunction,
 ) => {
   try {
-    const company = await Company.findOne({ owner: req.user.id }).populate(
-      "owner",
-      "firstName lastName email",
-    );
+    const isEmployee = req.user.isEmployee;
+
+    if(!isEmployee) {
+      return next(new ApiError(403, "You are not authorized to perform this action"));
+    }
+
+    const role = req.user.companyRole;
+
+    if(role !== CompanyRole.OWNER && role !== CompanyRole.HR) {
+      return next(new ApiError(403, "You are not authorized to perform this action"));
+    }
+
+    let company;
+
+    if(role === CompanyRole.OWNER) {
+       company = await Company.findOne({ owner: req.user.id }).populate(
+        "owner",
+        "firstName lastName email",
+      );
+    } else {
+      company = await Company.findById(req.user.companyId).populate(
+        "owner",
+        "firstName lastName email",
+      );
+    }
 
     if (!company) {
       throw new ApiError(404, "You have not created a company yet");
