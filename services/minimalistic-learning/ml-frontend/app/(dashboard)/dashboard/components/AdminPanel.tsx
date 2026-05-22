@@ -89,7 +89,7 @@ const AdminPanel = () => {
     try {
       await api.patch(`/admin/posts/${postId}/approve`);
       toast.success('Post approved and published!');
-      setPendingPosts(prev => prev.filter(p => p._id !== postId));
+      setPendingPosts(prev => prev.filter(p => (p.id || p._id) !== postId));
     } catch {
       toast.error('Failed to approve post');
     } finally {
@@ -102,7 +102,7 @@ const AdminPanel = () => {
     try {
       await api.patch(`/admin/posts/${postId}/reject`);
       toast.success('Post rejected');
-      setPendingPosts(prev => prev.filter(p => p._id !== postId));
+      setPendingPosts(prev => prev.filter(p => (p.id || p._id) !== postId));
     } catch {
       toast.error('Failed to reject post');
     } finally {
@@ -223,48 +223,51 @@ const AdminPanel = () => {
             </div>
           ) : (
             <div className="grid gap-3">
-              {pendingPosts.map((post: any) => (
-                <div key={post._id} className="group relative bg-theme-element-sec border border-theme-accent/10 rounded-2xl p-5 hover:border-theme-action/50 hover:shadow-md transition-all duration-300">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+              {pendingPosts.map((post: any) => {
+                const postId = post.id || post._id;
+                return (
+                  <div key={postId} className="group relative bg-theme-element-sec border border-theme-accent/10 rounded-2xl p-5 hover:border-theme-action/50 hover:shadow-md transition-all duration-300">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
 
-                    <div className="flex items-start gap-4 flex-1 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-theme-element flex items-center justify-center text-foreground/50 shrink-0 border border-theme-accent/20 group-hover:bg-theme-action/10 group-hover:text-theme-action group-hover:border-theme-action/30 transition-colors">
-                        <FileText size={18} />
-                      </div>
-                      <div className="min-w-0">
-                        <Link href={`/blog/${post.slug}`} target="_blank" className="text-lg font-black text-foreground truncate block hover:text-theme-action transition-colors leading-tight mb-1.5 pr-4">
-                          {post.title}
-                        </Link>
-                        <div className="flex items-center gap-3 text-xs font-bold text-foreground/50 uppercase tracking-widest">
-                          <span className="flex items-center gap-1.5"><UserIcon size={12} /> {post.authorId?.firstName} {post.authorId?.lastName}</span>
-                          <span className="w-1 h-1 rounded-full bg-foreground/20" />
-                          <span>{post.createdAt ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true }) : 'Recently'}</span>
+                      <div className="flex items-start gap-4 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-theme-element flex items-center justify-center text-foreground/50 shrink-0 border border-theme-accent/20 group-hover:bg-theme-action/10 group-hover:text-theme-action group-hover:border-theme-action/30 transition-colors">
+                          <FileText size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <Link href={`/blog/${post.slug}`} target="_blank" className="text-lg font-black text-foreground truncate block hover:text-theme-action transition-colors leading-tight mb-1.5 pr-4">
+                            {post.title}
+                          </Link>
+                          <div className="flex items-center gap-3 text-xs font-bold text-foreground/50 uppercase tracking-widest">
+                            <span className="flex items-center gap-1.5"><UserIcon size={12} /> {post.authorId?.firstName} {post.authorId?.lastName}</span>
+                            <span className="w-1 h-1 rounded-full bg-foreground/20" />
+                            <span>{post.createdAt ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true }) : 'Recently'}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2.5 md:ml-auto shrink-0 pt-3 md:pt-0 border-t border-theme-accent/10 md:border-none">
-                      <button
-                        onClick={() => handleApprove(post._id)}
-                        disabled={!!actionLoading}
-                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-foreground hover:bg-theme-action text-background text-xs font-black rounded-xl transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed group/btn"
-                      >
-                        {actionLoading === post._id + '-approve' ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} className="group-hover/btn:scale-110 transition-transform" />}
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleReject(post._id)}
-                        disabled={!!actionLoading}
-                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-theme-element hover:bg-red-500/10 text-foreground/70 hover:text-red-500 text-xs font-black rounded-xl border border-theme-accent/20 hover:border-red-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed group/btn"
-                      >
-                        {actionLoading === post._id + '-reject' ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} className="group-hover/btn:scale-110 transition-transform" />}
-                        Reject
-                      </button>
-                    </div>
+                      <div className="flex items-center gap-2.5 md:ml-auto shrink-0 pt-3 md:pt-0 border-t border-theme-accent/10 md:border-none">
+                        <button
+                          onClick={() => handleApprove(postId)}
+                          disabled={!!actionLoading}
+                          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-foreground hover:bg-theme-action text-background text-xs font-black rounded-xl transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed group/btn"
+                        >
+                          {actionLoading === postId + '-approve' ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} className="group-hover/btn:scale-110 transition-transform" />}
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleReject(postId)}
+                          disabled={!!actionLoading}
+                          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-theme-element hover:bg-red-500/10 text-foreground/70 hover:text-red-500 text-xs font-black rounded-xl border border-theme-accent/20 hover:border-red-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed group/btn"
+                        >
+                          {actionLoading === postId + '-reject' ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} className="group-hover/btn:scale-110 transition-transform" />}
+                          Reject
+                        </button>
+                      </div>
 
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

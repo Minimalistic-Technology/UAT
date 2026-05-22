@@ -120,97 +120,100 @@ export const BlogManagement = () => {
         </div>
       ) : (
         <div className="grid gap-4">
-          {blogs.map((blog: any) => (
-            <div
-              key={blog._id}
-              className="group flex flex-col md:flex-row items-center gap-6 p-4 bg-theme-element border border-theme-accent/20 rounded-3xl hover:border-theme-action/50 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-none"
-            >
-              {/* Image Thumbnail */}
-              <div className="w-full md:w-32 h-24 rounded-2xl overflow-hidden bg-theme-element-sec shrink-0 border border-theme-accent/10">
-                {blog.coverImage?.url ? (
-                  <img
-                    src={blog.coverImage.url}
-                    alt={blog.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-foreground/30">
-                    <ImageIcon size={24} />
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0 text-center md:text-left">
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
-                  {/* Status Badge based on new 'status' field */}
-                  {(() => {
-                    const s = blog.status || (blog.published ? 'published' : 'pending');
-                    if (s === 'published') return (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-green-500/10 text-green-600 border border-green-500/20">
-                        ✓ Live
-                      </span>
-                    );
-                    if (s === 'rejected') return (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-600 border border-red-500/20">
-                        ✗ Rejected
-                      </span>
-                    );
-                    return (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                        ⏳ Pending Review
-                      </span>
-                    );
-                  })()}
-                  <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest bg-theme-element-sec px-1.5 py-0.5 rounded border border-theme-accent/10">
-                    {blog.category}
-                  </span>
+          {blogs.map((blog: any) => {
+            const blogId = blog.id || blog._id;
+            return (
+              <div
+                key={blogId}
+                className="group flex flex-col md:flex-row items-center gap-6 p-4 bg-theme-element border border-theme-accent/20 rounded-3xl hover:border-theme-action/50 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-none"
+              >
+                {/* Image Thumbnail */}
+                <div className="w-full md:w-32 h-24 rounded-2xl overflow-hidden bg-theme-element-sec shrink-0 border border-theme-accent/10">
+                  {blog.coverImage?.url ? (
+                    <img
+                      src={blog.coverImage.url}
+                      alt={blog.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-foreground/30">
+                      <ImageIcon size={24} />
+                    </div>
+                  )}
                 </div>
-                <h4 className="text-lg font-bold text-foreground truncate mt-1">
-                  {blog.title}
-                </h4>
-                <p className="text-sm text-foreground/60 line-clamp-1 mt-0.5">
-                  Last updated {new Date(blog.updatedAt).toLocaleDateString()}
-                </p>
-                <div className="flex items-center gap-3 mt-1.5 justify-center md:justify-start">
-                  <div className="flex items-center gap-1 text-[10px] font-black text-foreground/50 uppercase tracking-widest">
-                    <Heart size={10} className="text-red-500 fill-red-500" />
-                    {blog.likesCount || 0} Likes
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 text-center md:text-left">
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
+                    {/* Status Badge based on new 'status' field */}
+                    {(() => {
+                      const s = blog.status || (blog.published ? 'published' : 'pending');
+                      if (s === 'published') return (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-green-500/10 text-green-600 border border-green-500/20">
+                          ✓ Live
+                        </span>
+                      );
+                      if (s === 'rejected') return (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-600 border border-red-500/20">
+                          ✗ Rejected
+                        </span>
+                      );
+                      return (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                          ⏳ Pending Review
+                        </span>
+                      );
+                    })()}
+                    <span className="text-[10px] font-bold text-foreground/50 uppercase tracking-widest bg-theme-element-sec px-1.5 py-0.5 rounded border border-theme-accent/10">
+                      {blog.category}
+                    </span>
+                  </div>
+                  <h4 className="text-lg font-bold text-foreground truncate mt-1">
+                    {blog.title}
+                  </h4>
+                  <p className="text-sm text-foreground/60 line-clamp-1 mt-0.5">
+                    Last updated {new Date(blog.updatedAt).toLocaleDateString()}
+                  </p>
+                  <div className="flex items-center gap-3 mt-1.5 justify-center md:justify-start">
+                    <div className="flex items-center gap-1 text-[10px] font-black text-foreground/50 uppercase tracking-widest">
+                      <Heart size={10} className="text-red-500 fill-red-500" />
+                      {blog.likesCount || 0} Likes
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Actions: hide Publish button if post is pending (awaiting admin approval) */}
-              <div className="flex items-center gap-2 p-1 bg-theme-element-sec border border-theme-accent/10 rounded-2xl md:ml-auto">
-                {!blog.published && blog.status !== 'pending' && (
-                  <button
-                    onClick={() => handleQuickPublish(blog._id)}
-                    disabled={isUpdating}
-                    className="p-3 text-theme-action hover:bg-theme-action hover:text-white rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105 flex items-center gap-2 cursor-pointer"
-                    title="Publish Now"
+                {/* Actions: hide Publish button if post is pending (awaiting admin approval) */}
+                <div className="flex items-center gap-2 p-1 bg-theme-element-sec border border-theme-accent/10 rounded-2xl md:ml-auto">
+                  {!blog.published && blog.status !== 'pending' && (
+                    <button
+                      onClick={() => handleQuickPublish(blogId)}
+                      disabled={isUpdating}
+                      className="p-3 text-theme-action hover:bg-theme-action hover:text-white rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105 flex items-center gap-2 cursor-pointer"
+                      title="Publish Now"
+                    >
+                      {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+                      <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">Publish</span>
+                    </button>
+                  )}
+                  <Link
+                    href={`/blog/edit/${blogId}`}
+                    className="p-3 text-foreground/70 hover:text-theme-action hover:bg-theme-element rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105 cursor-pointer"
+                    title="Edit post"
                   >
-                    {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-                    <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">Publish</span>
+                    <Edit2 size={18} />
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(blogId, blog.title)}
+                    disabled={isDeleting}
+                    className="p-3 text-foreground/70 hover:text-red-500 hover:bg-theme-element rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105 cursor-pointer"
+                    title="Delete post"
+                  >
+                    <Trash2 size={18} />
                   </button>
-                )}
-                <Link
-                  href={`/blog/edit/${blog._id}`}
-                  className="p-3 text-foreground/70 hover:text-theme-action hover:bg-theme-element rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105 cursor-pointer"
-                  title="Edit post"
-                >
-                  <Edit2 size={18} />
-                </Link>
-                <button
-                  onClick={() => handleDelete(blog._id, blog.title)}
-                  disabled={isDeleting}
-                  className="p-3 text-foreground/70 hover:text-red-500 hover:bg-theme-element rounded-xl transition-all shadow-sm group-hover:shadow hover:scale-105 cursor-pointer"
-                  title="Delete post"
-                >
-                  <Trash2 size={18} />
-                </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

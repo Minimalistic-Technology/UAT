@@ -111,7 +111,9 @@ export const BlogForm = ({ id }: { id?: string }) => {
         if (activeDraftId) await blogService.updateBlog({ id: activeDraftId, data: payload });
         else {
           const res = await blogService.createBlog(payload as any);
-          if (res.success && res.data._id) setActiveDraftId(res.data._id);
+          if (res.success && (res.data.id || res.data._id)) {
+            setActiveDraftId(res.data.id || res.data._id);
+          }
         }
       } catch { } finally { setIsAutoSaving(false); }
     }, 2500);

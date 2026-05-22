@@ -48,3 +48,15 @@ export const markAllAsRead = asyncHandler(async (req: Request, res: Response) =>
     new ApiResponse(StatusCodes.OK, null, 'All notifications marked as read')
   );
 });
+
+export const clearAllNotifications = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.id || (req.user as any)._id.toString();
+
+  await prisma.notification.deleteMany({
+    where: { recipientId: userId }
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, null, 'All notifications deleted successfully')
+  );
+});

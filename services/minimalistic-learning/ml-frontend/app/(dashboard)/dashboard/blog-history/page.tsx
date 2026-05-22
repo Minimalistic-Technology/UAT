@@ -52,7 +52,7 @@ const BlogHistoryPage = () => {
     try {
       await api.delete(`/admin/posts/${postId}`);
       toast.success("Post deleted and author notified");
-      setPosts(prev => prev.filter(p => p._id !== postId));
+      setPosts(prev => prev.filter(p => (p.id || p._id) !== postId));
     } catch (e) {
       toast.error("Failed to delete post");
     } finally {
@@ -219,62 +219,65 @@ const BlogHistoryPage = () => {
                   </td>
                 </tr>
               ) : (
-                processedPosts.map((post) => (
-                  <tr key={post._id} className="group hover:bg-theme-element-sec/50 transition-colors">
-                    <td className="px-8 py-6">
-                      <div className="max-w-[300px]">
-                        <p className="text-sm font-black text-foreground line-clamp-1 group-hover:text-theme-action transition-colors">{post.title}</p>
-                        <p className="text-[10px] font-bold text-foreground/50 mt-1 uppercase tracking-widest">{post.category || 'Uncategorized'}</p>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-theme-element-sec rounded-xl flex items-center justify-center text-foreground/50">
-                          <UserIcon size={16} />
+                processedPosts.map((post) => {
+                  const postId = post.id || post._id;
+                  return (
+                    <tr key={postId} className="group hover:bg-theme-element-sec/50 transition-colors">
+                      <td className="px-8 py-6">
+                        <div className="max-w-[300px]">
+                          <p className="text-sm font-black text-foreground line-clamp-1 group-hover:text-theme-action transition-colors">{post.title}</p>
+                          <p className="text-[10px] font-bold text-foreground/50 mt-1 uppercase tracking-widest">{post.category || 'Uncategorized'}</p>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-black text-foreground">
-                            {post.authorId?.firstName} {post.authorId?.lastName}
-                          </span>
-                          <span className="text-[10px] font-bold text-foreground/50 lowercase">{post.authorId?.email}</span>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-theme-element-sec rounded-xl flex items-center justify-center text-foreground/50">
+                            <UserIcon size={16} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-foreground">
+                              {post.authorId?.firstName} {post.authorId?.lastName}
+                            </span>
+                            <span className="text-[10px] font-bold text-foreground/50 lowercase">{post.authorId?.email}</span>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 text-xs font-black text-foreground/70">
-                          <Calendar size={14} className="text-foreground/50" />
-                          {format(new Date(post.createdAt), 'MMM dd, yyyy')}
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2 text-xs font-black text-foreground/70">
+                            <Calendar size={14} className="text-foreground/50" />
+                            {format(new Date(post.createdAt), 'MMM dd, yyyy')}
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-foreground/50">
+                            <Clock size={14} className="text-foreground/50" />
+                            {format(new Date(post.createdAt), 'hh:mm a')}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-foreground/50">
-                          <Clock size={14} className="text-foreground/50" />
-                          {format(new Date(post.createdAt), 'hh:mm a')}
+                      </td>
+                      <td className="px-8 py-6">
+                        {getStatusBadge(post.status)}
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/blog/${post.slug}`}
+                            target="_blank"
+                            className="inline-flex items-center justify-center w-9 h-9 bg-theme-element border border-theme-accent/20 rounded-xl text-foreground/50 hover:text-theme-action hover:border-theme-action/30 hover:bg-theme-action/5 transition-all active:scale-95 shadow-sm"
+                          >
+                            <ExternalLink size={16} />
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(postId)}
+                            disabled={actionLoading === postId}
+                            className="inline-flex items-center justify-center w-9 h-9 bg-theme-element border border-theme-accent/20 rounded-xl text-foreground/50 hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                          >
+                            {actionLoading === postId ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      {getStatusBadge(post.status)}
-                    </td>
-                    <td className="px-8 py-6 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/blog/${post.slug}`}
-                          target="_blank"
-                          className="inline-flex items-center justify-center w-9 h-9 bg-theme-element border border-theme-accent/20 rounded-xl text-foreground/50 hover:text-theme-action hover:border-theme-action/30 hover:bg-theme-action/5 transition-all active:scale-95 shadow-sm"
-                        >
-                          <ExternalLink size={16} />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(post._id)}
-                          disabled={actionLoading === post._id}
-                          className="inline-flex items-center justify-center w-9 h-9 bg-theme-element border border-theme-accent/20 rounded-xl text-foreground/50 hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-all active:scale-95 shadow-sm disabled:opacity-50"
-                        >
-                          {actionLoading === post._id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

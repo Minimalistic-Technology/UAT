@@ -54,10 +54,22 @@ const NotificationDropdown = () => {
     }
   };
 
+  const clearAllNotifications = async () => {
+    if (!window.confirm("Are you sure you want to clear your notification history?")) return;
+    try {
+      await api.delete("/notifications/clear-all");
+      setNotifications([]);
+      setUnreadCount(0);
+      toast.success("Notification history cleared");
+    } catch (error) {
+      toast.error("Failed to clear notifications");
+    }
+  };
+
   const markAsRead = async (id: string) => {
     try {
       await api.patch(`/notifications/${id}/read`);
-      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      setNotifications(prev => prev.map(n => (n.id || n._id) === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error("Failed to mark as read", error);
@@ -92,14 +104,24 @@ const NotificationDropdown = () => {
           {/* Header */}
           <div className="px-5 py-4 border-b border-theme-accent/10 flex items-center justify-between bg-theme-element-sec">
             <h3 className="text-sm font-black text-foreground uppercase tracking-wider">Notifications</h3>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="text-[10px] font-black text-theme-action hover:underline uppercase tracking-widest"
-              >
-                Mark all as read
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-[10px] font-black text-theme-action hover:underline uppercase tracking-widest"
+                >
+                  Mark all read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={clearAllNotifications}
+                  className="text-[10px] font-black text-red-500 hover:underline uppercase tracking-widest"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
 
           {/* List */}
@@ -112,32 +134,35 @@ const NotificationDropdown = () => {
                 <p className="text-sm font-bold text-foreground/50">No notifications yet</p>
               </div>
             ) : (
-              notifications.map((n) => (
-                <div
-                  key={n._id}
-                  onClick={() => !n.isRead && markAsRead(n._id)}
-                  className={`px-5 py-4 flex gap-4 transition-colors cursor-pointer border-b border-theme-accent/10 last:border-0 ${n.isRead ? 'opacity-60 bg-theme-element' : 'bg-theme-action/5 hover:bg-theme-action/10'}`}
-                >
-                  <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border border-theme-accent/10 ${n.isRead ? 'bg-theme-element-sec' : 'bg-theme-element'}`}>
-                    {getIcon(n.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className={`text-sm font-black text-foreground truncate ${n.isRead ? 'font-bold' : ''}`}>
-                        {n.title}
+              notifications.map((n) => {
+                const notifId = n.id || n._id;
+                return (
+                  <div
+                    key={notifId}
+                    onClick={() => !n.isRead && markAsRead(notifId)}
+                    className={`px-5 py-4 flex gap-4 transition-colors cursor-pointer border-b border-theme-accent/10 last:border-0 ${n.isRead ? 'opacity-60 bg-theme-element' : 'bg-theme-action/5 hover:bg-theme-action/10'}`}
+                  >
+                    <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border border-theme-accent/10 ${n.isRead ? 'bg-theme-element-sec' : 'bg-theme-element'}`}>
+                      {getIcon(n.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className={`text-sm font-black text-foreground truncate ${n.isRead ? 'font-bold' : ''}`}>
+                          {n.title}
+                        </p>
+                        {!n.isRead && <div className="w-2 h-2 bg-theme-action rounded-full shrink-0" />}
+                      </div>
+                      <p className="text-xs text-foreground/70 mt-0.5 line-clamp-2 leading-relaxed font-medium">
+                        {n.message}
                       </p>
-                      {!n.isRead && <div className="w-2 h-2 bg-theme-action rounded-full shrink-0" />}
-                    </div>
-                    <p className="text-xs text-foreground/70 mt-0.5 line-clamp-2 leading-relaxed font-medium">
-                      {n.message}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2 text-[10px] font-bold text-foreground/50 uppercase tracking-tight">
-                      <Clock size={12} />
-                      {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                      <div className="flex items-center gap-2 mt-2 text-[10px] font-bold text-foreground/50 uppercase tracking-tight">
+                        <Clock size={12} />
+                        {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
