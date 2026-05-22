@@ -5,7 +5,7 @@ import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 // import { sendEmail } from '../utils/email.js';
 import { ApiError } from "../utils/apiError.js";
-import CompanyMember from "../models/CompanyMember.model.js";
+import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 
 export const getApplicationById = async (
   req: AuthRequest,
@@ -355,22 +355,22 @@ export const getAllCompanyApplications = async (
   next: NextFunction,
 ) => {
   try {
+    const isEmployee = req.user.isEmployee;
+    const companyId = req.user.companyId;
+    const companyRole = req.user.companyRole;
+    
+    if(!isEmployee || !companyId) {
+      throw new ApiError(403, "Not authorized to view applications");
+    }
+
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
     const { status } = req.query;
 
-    const companyMember = await CompanyMember.findOne({
-      user: req.user.id,
-    });
-
-    if (!companyMember) {
-      throw new ApiError(403, "You are not associated with any company.");
-    }
-
     // Find all jobs belonging to the company
-    const jobs = await Job.find({ company: companyMember.company }).select(
+    const jobs = await Job.find({ company: companyId }).select(
       "_id",
     );
     const jobIds = jobs.map((job) => job._id);
