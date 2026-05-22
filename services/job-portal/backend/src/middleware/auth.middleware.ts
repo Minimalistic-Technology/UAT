@@ -45,26 +45,6 @@ export const protect = async (
       return next(new ApiError(403, "User account is deactivated"));
     }
 
-    if (req.user.role === GlobalRole.USER) {
-      const companyMember = await CompanyMember.findOne({
-        user: req.user._id,
-        isActive: true,
-      });
-
-      req.user = req.user.toObject();
-
-      if (!companyMember) {
-        req.user.isEmployee = false;
-        req.user.companyId = null;
-        req.user.companyRole = null;
-        return next();
-      }
-
-      req.user.isEmployee = true;
-      req.user.companyId = companyMember.company;
-      req.user.companyRole = companyMember.role;
-    }
-
     next();
   } catch (error: any) {
     return next(

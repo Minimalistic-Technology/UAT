@@ -19,7 +19,7 @@ import { createJobSchema, getJobByIdSchema } from "../validations/job.validation
 const router = express.Router();
 
 router.get("/", optionalAuth, getJobs);
-router.get("/my-jobs", protect, authorize(GlobalRole.USER), getMyJobs); // only for employer
+router.get("/my-jobs", protect, authorize(GlobalRole.USER), getMyJobs); // only for owner / hr
 router.get(
   "/:id",
   validate(getJobByIdSchema),

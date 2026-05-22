@@ -9,7 +9,10 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import Job, { JobStatus } from "../models/Job.model.js";
 import Subscription from "../models/Subscription.model.js";
 import KYC from "../models/KYC.model.js";
-import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
+import {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} from "../utils/cloudinary.js";
 import { ALLOWED_MIME_TYPES_FOR_AVATAR } from "../constants/index.js";
 
 // @desc    Create new company
@@ -198,9 +201,9 @@ export const getCompany = async (
     }
 
     const totalJobs = await Job.countDocuments({ company: company._id });
-    const activeJobs = await Job.countDocuments({ 
-      company: company._id, 
-      status: JobStatus.ACTIVE 
+    const activeJobs = await Job.countDocuments({
+      company: company._id,
+      status: JobStatus.ACTIVE,
     });
     const totalMembers = await CompanyMember.countDocuments({
       company: company._id,
@@ -208,7 +211,7 @@ export const getCompany = async (
     });
     const currentSubscription = await Subscription.findOne({
       companyId: company._id,
-      status: "active"
+      status: "active",
     }).populate("planId");
 
     const companyData = {
@@ -217,7 +220,7 @@ export const getCompany = async (
       activeJobs,
       totalMembers,
       currentPlan: currentSubscription ? currentSubscription.planId : null,
-      subscription: currentSubscription
+      subscription: currentSubscription,
     };
 
     res
@@ -234,40 +237,25 @@ export const getMyCompany = async (
   next: NextFunction,
 ) => {
   try {
-    const isEmployee = req.user.isEmployee;
+    const companyMember = await CompanyMember.findOne({ user: req.user._id });
 
-    if(!isEmployee) {
-      return next(new ApiError(403, "You are not authorized to perform this action"));
+    if (!companyMember) {
+      return next(new ApiError(400, "Company member not found"));
     }
 
-    const role = req.user.companyRole;
-
-    if(role !== CompanyRole.OWNER && role !== CompanyRole.HR) {
-      return next(new ApiError(403, "You are not authorized to perform this action"));
-    }
-
-    let company;
-
-    if(role === CompanyRole.OWNER) {
-       company = await Company.findOne({ owner: req.user.id }).populate(
-        "owner",
-        "firstName lastName email",
-      );
-    } else {
-      company = await Company.findById(req.user.companyId).populate(
-        "owner",
-        "firstName lastName email",
-      );
-    }
+    const company = await Company.findById(companyMember.company).populate(
+      "owner",
+      "firstName lastName email",
+    );
 
     if (!company) {
       throw new ApiError(404, "You have not created a company yet");
     }
 
     const totalJobs = await Job.countDocuments({ company: company._id });
-    const activeJobs = await Job.countDocuments({ 
-      company: company._id, 
-      status: JobStatus.ACTIVE 
+    const activeJobs = await Job.countDocuments({
+      company: company._id,
+      status: JobStatus.ACTIVE,
     });
     const totalMembers = await CompanyMember.countDocuments({
       company: company._id,
@@ -275,7 +263,7 @@ export const getMyCompany = async (
     });
     const currentSubscription = await Subscription.findOne({
       companyId: company._id,
-      status: "active"
+      status: "active",
     }).populate("planId", "name");
     const kyc = await KYC.findOne({ user: req.user.id });
 
@@ -431,29 +419,37 @@ export const uploadCompanyLogo = async (
       throw new ApiError(404, "Company not found");
     }
 
-    if(company?.logo?.publicId){
+    if (company?.logo?.publicId) {
       await deleteFromCloudinary(company.logo?.publicId);
     }
-    
+
     const result = await uploadToCloudinary(
       req.file.buffer,
       "job_portal/company_logos",
       "image",
-      `logo-${company._id}-${Date.now()}`
+      `logo-${company._id}-${Date.now()}`,
     );
 
     company = await Company.findByIdAndUpdate(
       company._id,
-      { logo: {
-        url: result.secure_url,
-        publicId: result.public_id,
-      } },
-      { new: true, runValidators: true }
+      {
+        logo: {
+          url: result.secure_url,
+          publicId: result.public_id,
+        },
+      },
+      { new: true, runValidators: true },
     );
 
-    res.status(200).json(
-      new ApiResponse(200, { logoUrl: company?.logo }, "Company logo uploaded successfully")
-    );
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { logoUrl: company?.logo },
+          "Company logo uploaded successfully",
+        ),
+      );
   } catch (error: any) {
     next(error);
   }

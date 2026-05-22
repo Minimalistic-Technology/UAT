@@ -380,14 +380,14 @@ export const getMyJobs = async (
   next: NextFunction,
 ) => {
   try {
-    const companyMember = await CompanyMember.findOne({ user: req.user.id });
+    const companyMember = await CompanyMember.findOne({ user: req.user._id });
 
     if (!companyMember) {
       return next(new ApiError(400, "Company member not found"));
     }
 
     if (
-      companyMember.role === CompanyRole.ADMIN ||
+      companyMember.role === CompanyRole.HR ||
       companyMember.role === CompanyRole.OWNER
     ) {
       const jobs = await Job.find({ company: companyMember.company }).populate(

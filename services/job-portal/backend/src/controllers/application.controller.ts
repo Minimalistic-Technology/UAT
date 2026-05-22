@@ -196,18 +196,23 @@ export const getMyApplicationStats = async (
 
     stats.forEach((stat) => {
       formattedStats.total += stat.count;
-      if (stat._id === ApplicationStatus.PENDING) formattedStats.pending = stat.count;
-      if (stat._id === ApplicationStatus.SHORTLISTED) formattedStats.shortlisted = stat.count;
-      if (stat._id === ApplicationStatus.REJECTED) formattedStats.rejected = stat.count;
+      if (stat._id === ApplicationStatus.PENDING)
+        formattedStats.pending = stat.count;
+      if (stat._id === ApplicationStatus.SHORTLISTED)
+        formattedStats.shortlisted = stat.count;
+      if (stat._id === ApplicationStatus.REJECTED)
+        formattedStats.rejected = stat.count;
     });
 
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        formattedStats,
-        "Application stats fetched successfully"
-      )
-    );
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          formattedStats,
+          "Application stats fetched successfully",
+        ),
+      );
   } catch (error: any) {
     next(error);
   }
@@ -226,7 +231,19 @@ export const getJobApplicants = async (
       throw new ApiError(404, "Job not found");
     }
 
-    if (job.postedBy.toString() !== req.user.id) {
+    const companyMember = await CompanyMember.findOne({
+      company: job.company,
+      user: req.user._id,
+    });
+
+    if (!companyMember) {
+      throw new ApiError(403, "Not authorized to view applicants");
+    }
+
+    if (
+      companyMember.role != CompanyRole.OWNER &&
+      companyMember.role != CompanyRole.HR
+    ) {
       throw new ApiError(403, "Not authorized to view applicants");
     }
 
@@ -355,13 +372,13 @@ export const getAllCompanyApplications = async (
   next: NextFunction,
 ) => {
   try {
-    const isEmployee = req.user.isEmployee;
-    const companyId = req.user.companyId;
-    const companyRole = req.user.companyRole;
-    
-    if(!isEmployee || !companyId) {
-      throw new ApiError(403, "Not authorized to view applications");
+    const companyMember = await CompanyMember.findOne({ user: req.user._id });
+
+    if (!companyMember) {
+      return next(new ApiError(400, "Company member not found"));
     }
+
+    const companyId = companyMember.company;
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -370,9 +387,7 @@ export const getAllCompanyApplications = async (
     const { status } = req.query;
 
     // Find all jobs belonging to the company
-    const jobs = await Job.find({ company: companyId }).select(
-      "_id",
-    );
+    const jobs = await Job.find({ company: companyId }).select("_id");
     const jobIds = jobs.map((job) => job._id);
 
     const query: any = { job: { $in: jobIds } };
