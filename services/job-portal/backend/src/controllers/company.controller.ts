@@ -9,6 +9,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import Job, { JobStatus } from "../models/Job.model.js";
 import Subscription from "../models/Subscription.model.js";
 import KYC from "../models/KYC.model.js";
+import Application from "../models/Application.model.js";
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
@@ -292,34 +293,22 @@ export const updateCompany = async (
   next: NextFunction,
 ) => {
   try {
-    let company = await Company.findOne({ owner: req.user.id });
+    const isCompanyOwner = await CompanyMember.findOne({
+      user: req.user._id,
+      role: CompanyRole.OWNER,
+      isActive: true,
+    });
+
+    if (!isCompanyOwner) {
+      return next(new ApiError(403, "You are not authorized to update this company"));
+    }
+
+    let company = await Company.findById(isCompanyOwner.company);
 
     if (!company) {
       return res.status(404).json({
         success: false,
         message: "Company not found",
-      });
-    }
-
-    const companyMember = await CompanyMember.findOne({
-      user: req.user.id,
-    });
-
-    if (!companyMember) {
-      return res.status(404).json({
-        success: false,
-        message: `${req.user.firstName} ${req.user.lastName} is not a memeber of the company ${company.name}`,
-      });
-    }
-
-    // Make sure user is company owner
-    if (
-      company.owner.toString() !== req.user.id &&
-      companyMember.role !== CompanyRole.OWNER
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this company",
       });
     }
 
@@ -347,50 +336,71 @@ export const deleteCompany = async (
   res: Response,
   next: NextFunction,
 ) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const company = await Company.findById(req.params.id);
+    const isCompanyOwner = await CompanyMember.findOne({
+      user: req.user._id,
+      role: CompanyRole.OWNER,
+      isActive: true,
+    }).session(session);
+
+    if (!isCompanyOwner) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new ApiError(403, "You are not authorized to delete this company"));
+    }
+
+    const company = await Company.findById(req.params.id).session(session);
 
     if (!company) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({
         success: false,
         message: "Company not found",
       });
     }
 
-    const companyMember = await CompanyMember.findOne({
-      user: req.user.id,
-    });
+    // Find all members
+    const members = await CompanyMember.find({ company: company._id }).session(session);
+    const userIds = members.map(m => m.user);
 
-    if (!companyMember) {
-      return res.status(404).json({
-        success: false,
-        message: `${req.user.firstName} ${req.user.lastName} is not a memeber of the company ${company.name}`,
-      });
+    // Unset company from all members' users
+    await User.updateMany(
+      { _id: { $in: userIds } },
+      { $unset: { company: 1 } }
+    ).session(session);
+
+    // Find all jobs for the company
+    const jobs = await Job.find({ company: company._id }).session(session);
+    const jobIds = jobs.map(j => j._id);
+
+    // Delete all applications for these jobs
+    if (jobIds.length > 0) {
+      await Application.deleteMany({ job: { $in: jobIds } }).session(session);
     }
 
-    // Make sure user is company owner
-    if (
-      company.owner.toString() !== req.user.id &&
-      companyMember.role !== CompanyRole.OWNER
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this company",
-      });
-    }
+    // Delete all jobs
+    await Job.deleteMany({ company: company._id }).session(session);
 
-    await company.deleteOne();
+    // Delete all members
+    await CompanyMember.deleteMany({ company: company._id }).session(session);
 
-    // Remove company from user
-    await User.findByIdAndUpdate(req.user.id, {
-      $unset: { company: 1 },
-    });
+    // Delete company
+    await Company.deleteOne({ _id: company._id }).session(session);
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       success: true,
       message: "Company deleted successfully",
     });
   } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
     res.status(500).json({
       success: false,
       message: "Error deleting company",
@@ -405,6 +415,16 @@ export const uploadCompanyLogo = async (
   next: NextFunction,
 ) => {
   try {
+    const isCompanyOwner = await CompanyMember.findOne({
+      user: req.user._id,
+      role: CompanyRole.OWNER,
+      isActive: true,
+    });
+
+    if (!isCompanyOwner) {
+      return next(new ApiError(403, "You are not authorized to update the logo of this company"));
+    }
+
     if (!req.file) {
       throw new ApiError(400, "Please upload a file");
     }
@@ -413,7 +433,7 @@ export const uploadCompanyLogo = async (
       throw new ApiError(400, "Only images are allowed");
     }
 
-    let company = await Company.findOne({ owner: req.user.id });
+    let company = await Company.findById(isCompanyOwner.company);
 
     if (!company) {
       throw new ApiError(404, "Company not found");

@@ -17,7 +17,7 @@ import { logoUpload } from '../constants/index.js';
 const router = express.Router();
 
 router.get('/', getCompanies);
-router.get('/me', protect, authorize(GlobalRole.USER), getMyCompany); // only for employer
+router.get('/me', protect, authorize(GlobalRole.USER), getMyCompany); // only for employer / hr
 router.get('/:id', getCompany);
 
 router.post(
@@ -28,8 +28,8 @@ router.post(
     createCompany
 );
 
-router.put('/me', protect, authorize(GlobalRole.USER), updateCompany); // only for employer
-router.put('/logo', protect, authorize(GlobalRole.USER), logoUpload.single('logo'), uploadCompanyLogo); // only for employer
-router.delete('/:id', protect, authorize(GlobalRole.USER), deleteCompany); // only for employer
+router.put('/me', protect, authorize(GlobalRole.USER), updateCompany); // only for company owner
+router.put('/logo', protect, authorize(GlobalRole.USER), logoUpload.single('logo'), uploadCompanyLogo); // only for companyowner
+router.delete('/:id', protect, authorize(GlobalRole.USER), deleteCompany); // only for company owner
 
 export default router;
