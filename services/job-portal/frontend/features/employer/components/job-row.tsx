@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
+import { useDeleteMyJobPosting } from "../hooks/use-job";
 
 export function JobRow({ job }: { job: any }) {
   // Logic to determine badge color based on status
@@ -30,6 +31,7 @@ export function JobRow({ job }: { job: any }) {
   };
 
   const router = useRouter();
+  const { mutate: deleteJob, isPending: isDeleting } = useDeleteMyJobPosting();
 
   return (
     <TableRow className="group">
@@ -84,16 +86,20 @@ export function JobRow({ job }: { job: any }) {
                 </Badge>
               )}
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+            onClick={() => {
+              alert("Edit button clicked")
+            }}
+            >
               <Edit className="mr-2 size-4" /> Edit Job
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-red-600 focus:text-red-600"
-              // disabled={isPending}
-              // onClick={() => onStatusChange(job._id, "deleted")}
+              disabled={isDeleting}
+              onClick={() => deleteJob(job._id)}
             >
-              <Trash2 className="mr-2 size-4 hover:stroke-red-200" /> Delete
+              <Trash2 className="mr-2 size-4 hover:stroke-red-200" /> {isDeleting ? "Deleting..." : "Delete"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

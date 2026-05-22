@@ -16,7 +16,8 @@ const router = Router();
 router.use(protect);
 router.use(authorize(GlobalRole.USER));
 
-router.get("/all", getAllCompanyMembers);
+// Only company owners can access this routes
+router.get("/all", getAllCompanyMembers); 
 router.get("/:memberId", getCompanyMemberById);
 router.post("/", validate(addMemberToCompanySchema), addMember);
 router.patch("/:memberId", validate(updateMemberSchema), updateMember);

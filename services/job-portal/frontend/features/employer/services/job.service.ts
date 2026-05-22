@@ -20,7 +20,8 @@ export const updateJobPostStatus = async (jobId: string, newStatus: string) => {
 }
 
 export const deleteJobPost = async (jobId: string) => {
-    //
+    const response = await apiClient.delete<ApiSuccessResponse<any>>(`/jobs/${jobId}`);
+    return response.data;
 }
 
 export const updateJobPostDetails = async (jobId: string, jobData: any) => {

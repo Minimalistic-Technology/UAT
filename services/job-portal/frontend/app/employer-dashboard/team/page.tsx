@@ -28,7 +28,7 @@ import { useRouter } from "next/navigation";
 
 const Page = () => {
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const { data: responseData, isLoading, isError } = useGetAllEmployees();
+  const { data: responseData, isLoading, isError, error } = useGetAllEmployees();
   const deleteMutation = useDeleteEmployee();
   const router = useRouter();
 
@@ -47,7 +47,8 @@ const Page = () => {
   if (isError) {
     return (
       <div className="text-destructive p-20 text-center">
-        <p>Failed to load team members. Please try again later.</p>
+        {/* @ts-ignore */}
+        <p>{error?.response?.data?.message ?? "Failed to load team members. Please try again later."}</p>
       </div>
     );
   }

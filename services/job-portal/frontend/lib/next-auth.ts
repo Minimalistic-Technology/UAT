@@ -13,8 +13,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
         otp: { label: "OTP", type: "text" },
       },
+      // This function executes immediately after a user submits the form
       async authorize(credentials) {
         try {
+          console.log("Credentials", credentials);
           let response;
           if (credentials?.otp) {
             response = await axios.post(`${API_URL}/auth/register/confirm`, {
@@ -28,6 +30,8 @@ export const authOptions: NextAuthOptions = {
             });
           }
 
+          console.log("Response", response);
+
           if (response.data.success) {
             const user = response.data.data;
 
@@ -37,8 +41,6 @@ export const authOptions: NextAuthOptions = {
               name: `${user.firstName} ${user.lastName}`,
               role: user.role,
               token: user.token,
-              image: user.avatar,
-
               isEmployee: user.isEmployee ?? false,
               companyId: user.companyId ? user.companyId.toString() :  null,
               companyRole: user.companyRole ?? null,
@@ -101,7 +103,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    // jwt runs immediately after a successful sign-in
     async jwt({ token, user, account }: any) {
+      console.log("jwt callback started", token, user, account);
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
@@ -137,6 +141,8 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
+
+   // session runs immediately after the jwt callback during sign-in
     async session({ session, token }: any) {
       if (session.user) {
         session.user.id = token.id as string;
@@ -148,6 +154,7 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+
     async redirect({ url, baseUrl }: any) {
       // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`;

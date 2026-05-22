@@ -3,6 +3,7 @@ import {
   createJobPost,
   getJobPostById,
   getMyJobPostings,
+  deleteJobPost,
   GetMyJobPostingsResponse,
 } from "../services/job.service";
 import { ApiSuccessResponse } from "@/lib/api-client";
@@ -42,3 +43,20 @@ export const useGetJobPostById = (jobId: string) => {
     enabled: !!jobId, // Only run the query if jobId is provided
   });
 }
+
+export const useDeleteMyJobPosting = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (jobId: string) => deleteJobPost(jobId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-job-postings"] });
+      toast.success("Job deleted successfully!");
+    },
+    onError: (error: any) => {
+      console.error("Error deleting job:", error);
+      const errorMsg = error?.response?.data?.message || "Failed to delete job. Please try again.";
+      toast.error(errorMsg);
+    },
+  });
+};

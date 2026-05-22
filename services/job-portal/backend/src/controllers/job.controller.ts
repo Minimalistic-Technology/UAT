@@ -190,7 +190,7 @@ export const createJob = async (
   session.startTransaction();
 
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     const companyMember = await CompanyMember.findOne({ user: userId }).session(
       session,
@@ -346,7 +346,7 @@ export const deleteJob = async (
     }
 
     const companyMember = await CompanyMember.findOne({
-      user: req.user.id,
+      user: req.user._id,
     }).populate("company", "name");
 
     if (!companyMember) {
@@ -358,12 +358,12 @@ export const deleteJob = async (
       );
     }
 
-    // Only admin and owner can delete the job
+    // Only hr and owner can delete the job
     if (
-      companyMember.role !== CompanyRole.ADMIN &&
+      companyMember.role !== CompanyRole.HR &&
       companyMember.role !== CompanyRole.OWNER
     ) {
-      return next(new ApiError(403, "Not authorized to update this job"));
+      return next(new ApiError(403, "You're not authorized to delete the job"));
     }
 
     await job.deleteOne();
@@ -380,14 +380,14 @@ export const getMyJobs = async (
   next: NextFunction,
 ) => {
   try {
-    const companyMember = await CompanyMember.findOne({ user: req.user.id });
+    const companyMember = await CompanyMember.findOne({ user: req.user._id });
 
     if (!companyMember) {
       return next(new ApiError(400, "Company member not found"));
     }
 
     if (
-      companyMember.role === CompanyRole.ADMIN ||
+      companyMember.role === CompanyRole.HR ||
       companyMember.role === CompanyRole.OWNER
     ) {
       const jobs = await Job.find({ company: companyMember.company }).populate(

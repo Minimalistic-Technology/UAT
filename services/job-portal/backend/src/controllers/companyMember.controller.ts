@@ -5,6 +5,7 @@ import User, { GlobalRole } from "../models/User.model.js";
 import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import bcrypt from "bcryptjs";
 
 export const getAllCompanyMembers = async (
   req: AuthRequest,
@@ -74,13 +75,15 @@ export const addMember = async (req: AuthRequest, res: Response) => {
         .json({ success: false, message: "Email already registered." });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     const [newUser] = await User.create(
       [
         {
           firstName,
           lastName,
           email,
-          password,
+          password: hashedPassword,
           role: GlobalRole.USER,
         },
       ],

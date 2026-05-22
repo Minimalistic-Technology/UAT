@@ -19,7 +19,7 @@ import { createJobSchema, getJobByIdSchema } from "../validations/job.validation
 const router = express.Router();
 
 router.get("/", optionalAuth, getJobs);
-router.get("/my-jobs", protect, authorize(GlobalRole.USER), getMyJobs); // only for employer
+router.get("/my-jobs", protect, authorize(GlobalRole.USER), getMyJobs); // only for owner / hr
 router.get(
   "/:id",
   validate(getJobByIdSchema),
@@ -32,7 +32,7 @@ router.post(
   validate(createJobSchema),
   createJob,
 );
-router.patch("/:id", protect, authorize(GlobalRole.USER), updateJob); // only for employer
-router.delete("/:id", protect, authorize(GlobalRole.USER), deleteJob); // only for employer
+router.patch("/:id", protect, authorize(GlobalRole.USER), updateJob); // only for employer / hr
+router.delete("/:id", protect, authorize(GlobalRole.USER), deleteJob); // only for employer / hr
 
 export default router;

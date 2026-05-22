@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { config } from "../config/env.js";
 import User, { GlobalRole } from "../models/User.model.js";
 import { ApiError } from "../utils/apiError.js";
+import CompanyMember from "../models/CompanyMember.model.js";
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -46,7 +47,9 @@ export const protect = async (
 
     next();
   } catch (error: any) {
-    return next(new ApiError(401, error.message ?? "Not authorized to access this route"));
+    return next(
+      new ApiError(401, error.message ?? "Not authorized to access this route"),
+    );
   }
 };
 
