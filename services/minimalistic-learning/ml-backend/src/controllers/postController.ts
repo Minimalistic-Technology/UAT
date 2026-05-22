@@ -133,38 +133,61 @@ export const getPostBySlug = asyncHandler(async (req: Request, res: Response) =>
 
   if (!slug) throw new ApiError(StatusCodes.BAD_REQUEST, "Slug parameter is required.");
 
-  let post: any = await prisma.post.findFirst({
-    where: { slug, published: true, status: PostStatus.published },
-    include: { author: { select: { firstName: true, lastName: true } } }
-  });
+  try {
+    let post: any = await prisma.post.findFirst({
+      where: { slug, published: true, status: PostStatus.published },
+      include: { author: { select: { firstName: true, lastName: true } } }
+    });
 
-  if (!post) throw new ApiError(StatusCodes.NOT_FOUND, `Post with slug '${slug}' not found.`);
+    if (!post) throw new ApiError(StatusCodes.NOT_FOUND, `Post with slug '${slug}' not found.`);
 
-  post = { ...post, authorId: post.author };
+    // Workaround for potential database null arrays
+    const likes = Array.isArray(post.likes) ? post.likes : [];
+    const viewedBy = Array.isArray(post.viewedBy) ? post.viewedBy : [];
+    const tags = Array.isArray(post.tags) ? post.tags : [];
 
-  const bearer = req.headers.authorization;
-  const tokenFromCookie = req.cookies?.access_token as string | undefined;
-  const token = tokenFromCookie || (bearer && bearer.startsWith('Bearer ') ? bearer.split(" ")[1] : undefined);
+    const bearer = req.headers.authorization;
+    const tokenFromCookie = req.cookies?.access_token as string | undefined;
+    const token = tokenFromCookie || (bearer && bearer.startsWith('Bearer ') ? bearer.split(" ")[1] : undefined);
 
-  let currentUserId: string | null = null;
-  if (token) {
-    try {
-      const payload = verifyAccessToken(token) as { sub: string };
-      currentUserId = payload.sub;
-    } catch { }
+    let currentUserId: string | null = null;
+    if (token) {
+      try {
+        const payload = verifyAccessToken(token) as { sub: string };
+        currentUserId = payload.sub;
+      } catch { }
+    }
+
+    const likesCount = likes.length;
+    let hasLiked = false;
+
+    if (currentUserId) {
+      hasLiked = likes.some((id: string) => id === currentUserId);
+    }
+
+    // Ensure authorId fallback to empty object if author is null
+    const authorData = post.author || { firstName: "Unknown", lastName: "Author" };
+
+    const postResponse = {
+      ...post,
+      likesCount,
+      hasLiked,
+      likes,
+      viewedBy,
+      tags,
+      authorId: authorData
+    };
+
+    delete postResponse.likes;
+
+    return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, postResponse, "Post fetched successfully"));
+  } catch (error: any) {
+    console.error("Error in getPostBySlug:", error);
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, error?.message || "Internal Server Error during post retrieval");
   }
-
-  const likesCount = post.likes?.length || 0;
-  let hasLiked = false;
-
-  if (currentUserId) {
-    hasLiked = post.likes?.some((id: string) => id === currentUserId) || false;
-  }
-
-  const postResponse = { ...post, likesCount, hasLiked };
-  delete postResponse.likes;
-
-  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, postResponse, "Post fetched successfully"));
 });
 
 export const getPostById = asyncHandler(async (req: Request, res: Response) => {
@@ -304,8 +327,35 @@ export const updatePost = asyncHandler(async (req: Request, res: Response) => {
   let updatePayload: any = { ...parsedBody };
   if (sanitizedTags) updatePayload.tags = sanitizedTags;
 
+  let setting = await prisma.siteSetting.findUnique({ where: { key: 'global' } });
+  if (!setting) {
+    setting = await prisma.siteSetting.create({ data: { key: 'global', autoApprovePost: true } });
+  }
+  const autoApprove = setting?.autoApprovePost ?? true;
+
   if (updatePayload.published !== undefined) {
     updatePayload.published = updatePayload.published === true || updatePayload.published === "true";
+    if (updatePayload.published) {
+      if (!autoApprove) {
+        updatePayload.status = PostStatus.pending;
+        updatePayload.published = false;
+
+        // Notify admins of submission
+        const admins = await prisma.user.findMany({ where: { role: 'admin' } });
+        for (const admin of admins) {
+          await prisma.notification.create({
+            data: {
+              recipientId: admin.id,
+              title: 'Updated Post Pending Approval',
+              message: `The post "${parsedBody.title || 'Untitled Post'}" has been updated and requires review.`,
+              type: NotificationType.general
+            }
+          });
+        }
+      } else {
+        updatePayload.status = PostStatus.published;
+      }
+    }
   }
 
   if (req.file) {
@@ -314,6 +364,8 @@ export const updatePost = asyncHandler(async (req: Request, res: Response) => {
   } else if (parsedBody.coverImageUrl) {
     updatePayload.coverImage = { url: parsedBody.coverImageUrl, alt: parsedBody.title?.trim() || "", publicId: "" };
   }
+
+  delete updatePayload.coverImageUrl;
 
   const post = await prisma.post.updateMany({
     where: { id: blogId, authorId: userId },

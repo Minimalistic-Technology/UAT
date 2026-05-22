@@ -45,10 +45,12 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
     setLikesCount(blog.likesCount || 0);
   }, [blog.hasLiked, blog.likesCount]);
 
+  const blogId = blog.id || blog._id;
+
   const { mutate: likeBlog } = useLikeBlog();
-  const { data: commentsData, isLoading: isLoadingComments } = useComments(blog._id);
+  const { data: commentsData, isLoading: isLoadingComments } = useComments(blogId);
   const { mutate: createComment, isPending: isPosting } = useCreateComment();
-  const { mutate: likeComment } = useLikeComment(blog._id);
+  const { mutate: likeComment } = useLikeComment(blogId);
 
   const handleShare = () => {
     const url = window.location.href;
@@ -70,7 +72,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
     setHasLiked(!previousHasLiked);
     setLikesCount(prev => previousHasLiked ? Math.max(0, prev - 1) : prev + 1);
 
-    likeBlog(blog._id, {
+    likeBlog(blogId, {
       onSuccess: (res: any) => {
         if (res?.data) {
           setHasLiked(res.data.hasLiked);
@@ -93,7 +95,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
 
   const handlePostComment = () => {
     if (!commentText.trim()) return;
-    createComment({ postId: blog._id, content: commentText }, {
+    createComment({ postId: blogId, content: commentText }, {
       onSuccess: () => {
         setCommentText("");
       }
