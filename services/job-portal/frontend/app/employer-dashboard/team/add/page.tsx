@@ -10,15 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { createTeamMemberSchema, type CreateTeamMemberSchema } from "@/features/employer/validations/team.schema";
 
 export default function AddTeamMemberPage() {
   const router = useRouter();
@@ -28,8 +20,8 @@ export default function AddTeamMemberPage() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  } = useForm<CreateTeamMemberSchema>({
+    resolver: zodResolver(createTeamMemberSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -38,7 +30,7 @@ export default function AddTeamMemberPage() {
     },
   });
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = (data: CreateTeamMemberSchema) => {
     createEmployeeMutation.mutate(data);
   };
 

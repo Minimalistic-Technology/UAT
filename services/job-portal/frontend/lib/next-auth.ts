@@ -15,6 +15,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
+          console.log("Credentials", credentials);
           let response;
           if (credentials?.otp) {
             response = await axios.post(`${API_URL}/auth/register/confirm`, {
@@ -27,6 +28,8 @@ export const authOptions: NextAuthOptions = {
               password: credentials?.password,
             });
           }
+
+          console.log("Response", response);
 
           if (response.data.success) {
             const user = response.data.data;
