@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { FormattedDescription } from "@/features/employer/components/formatted-description";
 
 const Page = () => {
   const params = useParams();
@@ -124,9 +125,7 @@ const Page = () => {
             <CardContent className="space-y-6">
               <div>
                 <h4 className="mb-2 font-semibold">Description</h4>
-                <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
-                  {job.description}
-                </p>
+                <FormattedDescription text={job.description} />
               </div>
 
               <Separator />

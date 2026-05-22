@@ -39,6 +39,7 @@ function JobsPageContent() {
   const pagination = responseData?.data.pagination;
   const totalJobs = responseData?.data.totalJobs;
   const jobs = responseData?.data.jobs;
+  console.log("jobs", jobs);
 
   const FilterSidebar = () => (
     <div className="space-y-6">
