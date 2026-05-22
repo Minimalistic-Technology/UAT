@@ -300,7 +300,7 @@ export const updateCompany = async (
     });
 
     if (!isCompanyOwner) {
-      return next(new ApiError(403, "You are not authorized to update this company"));
+      return next(new ApiError(403, "You are not authorized to update the company profile"));
     }
 
     let company = await Company.findById(isCompanyOwner.company);

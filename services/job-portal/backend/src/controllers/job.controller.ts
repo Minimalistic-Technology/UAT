@@ -217,7 +217,7 @@ export const createJob = async (
 
     if (
       companyMember.role !== CompanyRole.OWNER &&
-      companyMember.role !== CompanyRole.ADMIN
+      companyMember.role !== CompanyRole.HR
     ) {
       throw new ApiError(403, "You're not authorized to create a job");
     }
