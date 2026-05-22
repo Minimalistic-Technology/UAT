@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
-import Token, { TokenType, TokenDocument } from '../models/Token';
+import { prisma } from '../config/db';
+import { TokenType, Token } from '@prisma/client';
 import { durationToMs } from '../utils/time';
 
 const SALT_ROUNDS = 10;
@@ -10,29 +11,31 @@ export const createTokenString = (bytes = 32) => crypto.randomBytes(bytes).toStr
 const createExpiryDate = (duration: string) => new Date(Date.now() + durationToMs(duration));
 
 export const replaceRefreshToken = async (userId: string, tokenValue: string, expiresIn: string) => {
-  await Token.deleteMany({ user: userId, type: 'refresh' });
-  return storeToken(userId, tokenValue, 'refresh', expiresIn);
+  await prisma.token.deleteMany({ where: { userId, type: TokenType.refresh } });
+  return storeToken(userId, tokenValue, TokenType.refresh, expiresIn);
 };
 
 export const storeResetToken = async (userId: string, tokenValue: string, expiresIn: string) => {
-  await Token.deleteMany({ user: userId, type: 'reset' });
-  return storeToken(userId, tokenValue, 'reset', expiresIn);
+  await prisma.token.deleteMany({ where: { userId, type: TokenType.reset } });
+  return storeToken(userId, tokenValue, TokenType.reset, expiresIn);
 };
 
 export const invalidateTokens = (userId: string, type?: TokenType) => {
   if (type) {
-    return Token.deleteMany({ user: userId, type });
+    return prisma.token.deleteMany({ where: { userId, type } });
   }
-  return Token.deleteMany({ user: userId });
+  return prisma.token.deleteMany({ where: { userId } });
 };
 
 const storeToken = async (userId: string, tokenValue: string, type: TokenType, expiresIn: string) => {
   const tokenHash = await bcrypt.hash(tokenValue, SALT_ROUNDS);
-  return Token.create({
-    user: userId,
-    tokenHash,
-    type,
-    expiresAt: createExpiryDate(expiresIn)
+  return prisma.token.create({
+    data: {
+      userId,
+      tokenHash,
+      type,
+      expiresAt: createExpiryDate(expiresIn)
+    }
   });
 };
 
@@ -40,8 +43,12 @@ export const verifyStoredToken = async (
   userId: string,
   tokenValue: string,
   type: TokenType
-): Promise<TokenDocument | null> => {
-  const tokenDoc = await Token.findOne({ user: userId, type }).sort({ createdAt: -1 });
+): Promise<Token | null> => {
+  const tokenDoc = await prisma.token.findFirst({
+    where: { userId, type },
+    orderBy: { createdAt: 'desc' }
+  });
+
   if (!tokenDoc) {
     return null;
   }
@@ -52,13 +59,11 @@ export const verifyStoredToken = async (
   }
 
   if (tokenDoc.expiresAt.getTime() < Date.now()) {
-    await tokenDoc.deleteOne();
+    await prisma.token.delete({ where: { id: tokenDoc.id } });
     return null;
   }
 
   return tokenDoc;
 };
 
-export const deleteToken = (tokenDoc: TokenDocument) => tokenDoc.deleteOne();
-
-
+export const deleteToken = (tokenDoc: Token) => prisma.token.delete({ where: { id: tokenDoc.id } });

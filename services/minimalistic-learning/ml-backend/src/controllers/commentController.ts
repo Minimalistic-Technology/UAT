@@ -1,22 +1,20 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import mongoose from 'mongoose';
-import Comment from '../models/Comment';
-import Post from '../models/Post';
+import { prisma } from '../config/db';
 import { commentRateLimit } from '../config/rateLimit';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
-import { 
-  createCommentSchema, 
-  updateCommentSchema, 
-  commentParamsSchema, 
-  postCommentsParamsSchema 
+import {
+  createCommentSchema,
+  updateCommentSchema,
+  commentParamsSchema,
+  postCommentsParamsSchema
 } from '../validators/commentValidator';
 import { verifyAccessToken } from '../utils/jwt';
 
 export const createComment = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user!._id.toString();
+  const userId = req.user!.id || (req.user as any)._id.toString();
 
   if (!commentRateLimit(userId)) {
     throw new ApiError(StatusCodes.TOO_MANY_REQUESTS, 'Too many comments');
@@ -25,31 +23,25 @@ export const createComment = asyncHandler(async (req: Request, res: Response) =>
   const { postId } = postCommentsParamsSchema.parse(req.params);
   const { content, parentId } = createCommentSchema.parse(req.body);
 
-  if(!mongoose.Types.ObjectId.isValid(postId)){
-    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid post ID");
-  }
-
-  if(parentId && !mongoose.Types.ObjectId.isValid(parentId)){
-    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid parent comment ID");
-  }
-
-  const post = await Post.findById(postId);
-  if (!post) {  
+  const post = await prisma.post.findUnique({ where: { id: postId } });
+  if (!post) {
     throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
   }
 
   if (parentId) {
-    const parentComment = await Comment.findById(parentId);
+    const parentComment = await prisma.comment.findUnique({ where: { id: parentId } });
     if (!parentComment) {
       throw new ApiError(StatusCodes.NOT_FOUND, "Parent comment not found");
     }
   }
 
-  const comment = await Comment.create({
-    postId,
-    authorId: userId,
-    content,
-    parentId: parentId || null
+  const comment = await prisma.comment.create({
+    data: {
+      postId,
+      authorId: userId,
+      content,
+      parentId: parentId || null
+    }
   });
 
   return res.status(StatusCodes.CREATED).json(
@@ -60,11 +52,7 @@ export const createComment = asyncHandler(async (req: Request, res: Response) =>
 export const getPostComments = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = postCommentsParamsSchema.parse(req.params);
 
-  if(!mongoose.Types.ObjectId.isValid(postId)){
-    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid post ID");
-  }
-
-  const post = await Post.findById(postId);
+  const post = await prisma.post.findUnique({ where: { id: postId } });
   if (!post || !post.published) {
     throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
   }
@@ -78,27 +66,27 @@ export const getPostComments = asyncHandler(async (req: Request, res: Response) 
     try {
       const payload = verifyAccessToken(token) as { sub: string };
       currentUserId = payload.sub;
-    } catch (e) {
-      // Ignored for public route
-    }
+    } catch (e) { }
   }
 
-  const comments = await Comment.find({ postId: postId })
-    .populate("authorId", "firstName lastName")
-    .select("content createdAt updatedAt authorId likes parentId")
-    .sort({ createdAt: 1 })
-    .lean();
+  const commentsRaw = await prisma.comment.findMany({
+    where: { postId },
+    include: { author: { select: { firstName: true, lastName: true } } },
+    orderBy: { createdAt: 'asc' }
+  });
+
+  const comments = commentsRaw.map(comment => ({ ...comment, authorId: comment.author }));
 
   const commentsResponse = comments.map(comment => {
     const likesCount = comment.likes?.length || 0;
-    const hasLiked = currentUserId ? comment.likes?.some((id: any) => id.toString() === currentUserId) : false;
+    const hasLiked = currentUserId ? comment.likes?.some((id: string) => id === currentUserId) : false;
 
     const mappedComment: any = {
       ...comment,
       likesCount,
       hasLiked,
     };
-    
+
     delete mappedComment.likes;
 
     return mappedComment;
@@ -113,47 +101,40 @@ export const updateComment = asyncHandler(async (req: Request, res: Response) =>
   const { id } = commentParamsSchema.parse(req.params);
   const { content } = updateCommentSchema.parse(req.body);
 
-  if(!mongoose.Types.ObjectId.isValid(id)){
-    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid comment ID");
-  }
-
-  const comment = await Comment.findById(id);
+  const comment = await prisma.comment.findUnique({ where: { id } });
   if (!comment) throw new ApiError(StatusCodes.NOT_FOUND, "Comment not found");
 
-  if (comment.authorId.toString() !== req.user!._id.toString()) {
+  const userId = req.user!.id || (req.user as any)._id.toString();
+
+  if (comment.authorId !== userId) {
     throw new ApiError(StatusCodes.FORBIDDEN, "You do not have permission to update this comment");
   }
 
-  comment.content = content;
-  await comment.save();
+  const updatedComment = await prisma.comment.update({
+    where: { id },
+    data: { content }
+  });
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, comment, "Comment updated successfully")
+    new ApiResponse(StatusCodes.OK, updatedComment, "Comment updated successfully")
   );
 });
 
 export const deleteComment = asyncHandler(async (req: Request, res: Response) => {
   const { id } = commentParamsSchema.parse(req.params);
 
-  if(!mongoose.Types.ObjectId.isValid(id)){
-    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid comment ID");
-  }
+  const userId = req.user!.id || (req.user as any)._id.toString();
 
-  const userId =  req.user!._id.toString();
-
-  const comment = await Comment.findById(id);
+  const comment = await prisma.comment.findUnique({ where: { id } });
   if (!comment) throw new ApiError(StatusCodes.NOT_FOUND, "Comment not found");
 
-  const post = await Post.findById(comment.postId);
+  const post = await prisma.post.findUnique({ where: { id: comment.postId } });
 
-  if (
-    comment.authorId.toString() !== userId &&
-    post?.authorId.toString() !== userId
-  ) {
+  if (comment.authorId !== userId && post?.authorId !== userId) {
     throw new ApiError(StatusCodes.FORBIDDEN, "You do not have permission to delete this comment");
   }
 
-  await comment.deleteOne();
+  await prisma.comment.delete({ where: { id } });
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, null, "Comment deleted successfully")
@@ -163,29 +144,26 @@ export const deleteComment = asyncHandler(async (req: Request, res: Response) =>
 export const likeComment = asyncHandler(async (req: Request, res: Response) => {
   const { id } = commentParamsSchema.parse(req.params);
 
-  if(!mongoose.Types.ObjectId.isValid(id)){
-    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid comment ID");
-  }
+  const userId = req.user!.id || (req.user as any)._id.toString();
 
-  const userId = req.user!._id.toString();
-
-  const comment = await Comment.findById(id);
+  const comment = await prisma.comment.findUnique({ where: { id } });
   if (!comment) throw new ApiError(StatusCodes.NOT_FOUND, "Comment not found");
 
-  const hasLiked = comment.likes.some(likeId => likeId.toString() === userId);
+  const hasLiked = comment.likes.some(likeId => likeId === userId);
 
-  if (hasLiked) {
-    comment.likes = comment.likes.filter((likeId) => likeId.toString() !== userId);
-  } else {
-    comment.likes.push(new mongoose.Types.ObjectId(userId));
-  }
+  const updatedLikes = hasLiked
+    ? comment.likes.filter((likeId) => likeId !== userId)
+    : [...comment.likes, userId];
 
-  await comment.save();
+  const updatedComment = await prisma.comment.update({
+    where: { id },
+    data: { likes: updatedLikes }
+  });
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { 
-      likesCount: comment.likes.length, 
-      hasLiked: !hasLiked 
+    new ApiResponse(StatusCodes.OK, {
+      likesCount: updatedComment.likes.length,
+      hasLiked: !hasLiked
     }, "Comment like toggled")
   );
 });

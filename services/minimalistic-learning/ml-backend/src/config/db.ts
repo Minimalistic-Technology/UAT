@@ -1,54 +1,25 @@
-import mongoose from 'mongoose';
+import { PrismaClient } from '@prisma/client';
 import { env } from './env';
 
-const MONGO_URI = env.MONGO_URI;
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-if (!MONGO_URI) {
-  throw new Error('Please define MONGO_URI in env');
-}
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  });
 
-let cached = (global as any).mongoose;
+if (env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-if (!cached) {
-  cached = (global as any).mongoose = {
-    conn: null,
-    promise: null,
-  };
-}
-
-export const connectDatabase = async (retries = 5) => {
-  if (cached.conn) {
-    return cached.conn;
-  }
-
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 15000, // Increase timeout to 15s for slow DNS
-      connectTimeoutMS: 15000,
-      family: 4, // Force IPv4 to avoid some DNS resolution issues
-    };
-
-    cached.promise = mongoose.connect(MONGO_URI, opts).then((mongoose) => {
-      console.log('[db] Connected to MongoDB Successfully');
-      return mongoose;
-    }).catch(async (err) => {
-      if (retries > 0) {
-        console.warn(`[db] Connection failed, retrying... (${retries} left). Error: ${err.message}`);
-        cached.promise = null;
-        await new Promise(res => setTimeout(res, 3000)); // Wait 3s before retry
-        return connectDatabase(retries - 1);
-      }
-      throw err;
-    });
-  }
-
+export const connectDatabase = async () => {
   try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null;
-    throw e;
+    await prisma.$connect();
+    console.log('[db] Connected to PostgreSQL (Neon) Successfully');
+  } catch (error) {
+    console.error('[db] Connection failed', error);
+    process.exit(1);
   }
-  
-  return cached.conn;
 };
+
+
+

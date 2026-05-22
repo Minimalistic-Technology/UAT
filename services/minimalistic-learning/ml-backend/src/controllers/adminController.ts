@@ -1,33 +1,31 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
+import { prisma } from '../config/db';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
-import SiteSetting from '../models/SiteSetting';
-import Post from '../models/Post';
-import Notification from '../models/Notification';
-
-// ... (keep previous functions)
+import { PostStatus, NotificationType } from '@prisma/client';
 
 // ─── DELETE /admin/posts/:postId ──────────────────────────────────────────────
 export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = req.params;
-  const { reason } = req.body; // Optional reason for deletion
+  const { reason } = req.body;
 
-  const post = await Post.findById(postId);
+  const post = await prisma.post.findUnique({ where: { id: postId } });
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
 
   const authorId = post.authorId;
   const postTitle = post.title;
 
-  await post.deleteOne();
+  await prisma.post.delete({ where: { id: postId } });
 
-  // Create notification for the author
-  await Notification.create({
-    recipientId: authorId,
-    title: 'Post Deleted by Admin',
-    message: `Your post "${postTitle}" was deleted by an admin.${reason ? ` Reason: ${reason}` : ''}`,
-    type: 'post_deleted'
+  await prisma.notification.create({
+    data: {
+      recipientId: authorId,
+      title: 'Post Deleted by Admin',
+      message: `Your post "${postTitle}" was deleted by an admin.${reason ? ` Reason: ${reason}` : ''}`,
+      type: NotificationType.post_deleted
+    }
   });
 
   return res.status(StatusCodes.OK).json(
@@ -35,15 +33,13 @@ export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) 
   );
 });
 
-// Logic below assumes requireAuth and isAdmin middlewares have already passed
-
 // ─── GET /admin/settings ─────────────────────────────────────────────────────
 export const getSettings = asyncHandler(async (req: Request, res: Response) => {
-
-  // Find or create the singleton settings document
-  let setting = await SiteSetting.findOne({ key: 'global' });
+  let setting = await prisma.siteSetting.findUnique({ where: { key: 'global' } });
   if (!setting) {
-    setting = await SiteSetting.create({ key: 'global', autoApprovePost: true, resourceHubEnabled: true });
+    setting = await prisma.siteSetting.create({
+      data: { key: 'global', autoApprovePost: true, resourceHubEnabled: true }
+    });
   }
 
   return res.status(StatusCodes.OK).json(
@@ -56,7 +52,6 @@ export const getSettings = asyncHandler(async (req: Request, res: Response) => {
 
 // ─── PATCH /admin/settings ───────────────────────────────────────────────────
 export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
-
   const { autoApprovePost, resourceHubEnabled } = req.body;
 
   const updateData: Record<string, any> = {};
@@ -67,36 +62,42 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
     throw new ApiError(StatusCodes.BAD_REQUEST, 'No valid settings provided');
   }
 
-  const setting = await SiteSetting.findOneAndUpdate(
-    { key: 'global' },
-    updateData,
-    { upsert: true, returnDocument: 'after' }
-  );
+  const setting = await prisma.siteSetting.upsert({
+    where: { key: 'global' },
+    update: updateData,
+    create: {
+      key: 'global',
+      autoApprovePost: typeof autoApprovePost === 'boolean' ? autoApprovePost : true,
+      resourceHubEnabled: typeof resourceHubEnabled === 'boolean' ? resourceHubEnabled : true
+    }
+  });
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, {
-      autoApprovePost: setting!.autoApprovePost,
-      resourceHubEnabled: setting!.resourceHubEnabled ?? true,
+      autoApprovePost: setting.autoApprovePost,
+      resourceHubEnabled: setting.resourceHubEnabled ?? true,
     }, 'Settings updated')
   );
 });
 
 // ─── GET /admin/posts/pending ────────────────────────────────────────────────
 export const getPendingPosts = asyncHandler(async (req: Request, res: Response) => {
-
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 20, 50);
   const skip = (page - 1) * limit;
 
-  const [items, total] = await Promise.all([
-    Post.find({ status: 'pending' })
-      .populate('authorId', 'firstName lastName email')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    Post.countDocuments({ status: 'pending' }),
+  const [itemsRaw, total] = await Promise.all([
+    prisma.post.findMany({
+      where: { status: PostStatus.pending },
+      include: { author: { select: { firstName: true, lastName: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    }),
+    prisma.post.count({ where: { status: PostStatus.pending } })
   ]);
+
+  const items = itemsRaw.map(item => ({ ...item, authorId: item.author }));
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, {
@@ -113,26 +114,28 @@ export const getPendingPosts = asyncHandler(async (req: Request, res: Response) 
 
 // ─── GET /admin/posts/all ────────────────────────────────────────────────────
 export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response) => {
-
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 20, 50);
   const skip = (page - 1) * limit;
   const { status } = req.query;
 
-  const filter: Record<string, any> = {};
+  const filter: any = {};
   if (status && ['pending', 'published', 'rejected'].includes(String(status))) {
-    filter.status = status;
+    filter.status = status as PostStatus;
   }
 
-  const [items, total] = await Promise.all([
-    Post.find(filter)
-      .populate('authorId', 'firstName lastName email')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    Post.countDocuments(filter),
+  const [itemsRaw, total] = await Promise.all([
+    prisma.post.findMany({
+      where: filter,
+      include: { author: { select: { firstName: true, lastName: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    }),
+    prisma.post.count({ where: filter })
   ]);
+
+  const items = itemsRaw.map(item => ({ ...item, authorId: item.author }));
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, {
@@ -149,50 +152,53 @@ export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response)
 
 // ─── PATCH /admin/posts/:postId/approve ──────────────────────────────────────
 export const approvePost = asyncHandler(async (req: Request, res: Response) => {
-
   const { postId } = req.params;
-  const post = await Post.findByIdAndUpdate(
-    postId,
-    { status: 'published', published: true },
-    { returnDocument: 'after' }
-  );
 
+  const post = await prisma.post.findUnique({ where: { id: postId } });
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
 
-  // Notify author about approval
-  await Notification.create({
-    recipientId: post.authorId,
-    title: 'Post Approved! 🎉',
-    message: `Great news! Your post "${post.title}" has been approved and is now live on the platform.`,
-    type: 'post_approved'
+  const updatedPost = await prisma.post.update({
+    where: { id: postId },
+    data: { status: PostStatus.published, published: true }
+  });
+
+  await prisma.notification.create({
+    data: {
+      recipientId: updatedPost.authorId,
+      title: 'Post Approved! 🎉',
+      message: `Great news! Your post "${updatedPost.title}" has been approved and is now live on the platform.`,
+      type: NotificationType.post_approved
+    }
   });
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { _id: post._id, status: post.status }, 'Post approved and published')
+    new ApiResponse(StatusCodes.OK, { _id: updatedPost.id, id: updatedPost.id, status: updatedPost.status }, 'Post approved and published')
   );
 });
 
 // ─── PATCH /admin/posts/:postId/reject ───────────────────────────────────────
 export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
-
   const { postId } = req.params;
-  const post = await Post.findByIdAndUpdate(
-    postId,
-    { status: 'rejected', published: false },
-    { returnDocument: 'after' }
-  );
 
+  const post = await prisma.post.findUnique({ where: { id: postId } });
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
 
-  // Notify author about rejection
-  await Notification.create({
-    recipientId: post.authorId,
-    title: 'Post Rejected',
-    message: `Your post "${post.title}" was not approved by the admin. Please review our guidelines and try again.`,
-    type: 'post_rejected'
+  const updatedPost = await prisma.post.update({
+    where: { id: postId },
+    data: { status: PostStatus.rejected, published: false }
+  });
+
+  await prisma.notification.create({
+    data: {
+      recipientId: updatedPost.authorId,
+      title: 'Post Rejected',
+      message: `Your post "${updatedPost.title}" was not approved by the admin. Please review our guidelines and try again.`,
+      type: NotificationType.post_rejected
+    }
   });
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { _id: post._id, status: post.status }, 'Post rejected')
+    new ApiResponse(StatusCodes.OK, { _id: updatedPost.id, id: updatedPost.id, status: updatedPost.status }, 'Post rejected')
   );
 });
+

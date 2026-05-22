@@ -1,9 +1,8 @@
 import express from 'express';
-import { connectDatabase } from './config/db';  
+import { connectDatabase } from './config/db';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import mongoSanitize from 'express-mongo-sanitize';
 import { env } from './config/env';
 import { defaultLimiter } from './config/rateLimit';
 import errorHandler from './middleware/errorHandler';
@@ -25,7 +24,7 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.indexOf(origin) !== -1 || env.NODE_ENV === "development") {
       callback(null, true);
     } else {
@@ -33,10 +32,10 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,                
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  maxAge: 86400 
+  maxAge: 86400
 }));
 
 // 2. Security Headers
@@ -59,9 +58,6 @@ app.use('/api/', defaultLimiter);
 // 6. Body Parsers
 app.use(express.json({ limit: "10mb" })); // Reduced from 50mb for security
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-
-// 7. Sanitize Data (Security - Against NoSQL Injection)
-app.use(mongoSanitize());
 
 app.use(cookieParser());
 

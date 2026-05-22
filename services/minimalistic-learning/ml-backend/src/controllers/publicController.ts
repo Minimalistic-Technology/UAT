@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
+import { prisma } from '../config/db';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponse } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
-import SiteSetting from '../models/SiteSetting';
 import { sendNewsletterWelcomeEmail } from '../utils/email';
 
 /**
@@ -11,7 +11,7 @@ import { sendNewsletterWelcomeEmail } from '../utils/email';
  * Returns only the public-facing feature flags — no auth required.
  */
 export const getPublicSettings = asyncHandler(async (_req: Request, res: Response) => {
-  const setting = await SiteSetting.findOne({ key: 'global' });
+  const setting = await prisma.siteSetting.findUnique({ where: { key: 'global' } });
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, {
@@ -37,4 +37,3 @@ export const subscribeNewsletter = asyncHandler(async (req: Request, res: Respon
     new ApiResponse(StatusCodes.OK, {}, 'Thank you for subscribing! Check your inbox 📬')
   );
 });
-

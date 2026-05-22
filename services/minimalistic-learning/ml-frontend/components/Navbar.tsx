@@ -151,6 +151,9 @@ export const Navbar: React.FC = () => {
                           <p className="text-xs text-foreground/60 truncate">{user?.email}</p>
                         </div>
 
+                        <Link href="/dashboard" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-theme-element-sec transition-colors">
+                          <Home size={16} className="text-foreground/50" /> Dashboard
+                        </Link>
                         {user?.role?.toLowerCase() === 'admin' ? (
                           <Link href="/dashboard/blog-history" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-theme-element-sec transition-colors">
                             <Newspaper size={16} className="text-foreground/50" /> Blog History

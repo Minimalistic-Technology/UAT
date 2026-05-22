@@ -17,7 +17,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Minimalistic Learning",
+  title: {
+    default: "Minimalistic Learning | Elevate Your Knowledge",
+    template: "%s | Minimalistic Learning"
+  },
+  description: "A premium blog platform for sharing minimal technology insights, learning experiences, and coding walkthroughs.",
+  keywords: ["Learning", "Tech", "Walkthroughs", "Minimalism", "Development"],
 };
 
 export default function RootLayout({

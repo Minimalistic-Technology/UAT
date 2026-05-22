@@ -1,4 +1,10 @@
 import { BlogList } from "@/features/blog/components/blog-list";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Blogs & Articles",
+  description: "Explore our latest insights, success stories, and industry expertise.",
+};
 
 export default function BlogPage() {
   return (

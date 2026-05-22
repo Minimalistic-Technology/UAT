@@ -7,22 +7,36 @@ import { loginSchema } from "../schema/auth-schema";
 import { LoginValues } from "../types/auth-type";
 import { useLogin } from "../hooks/use-login";
 import { useVerifyOTP } from "../hooks/use-verify-otp";
+import { useForgotPassword } from "../hooks/use-forgot-password";
+import { useResetPassword } from "../hooks/use-reset-password";
 import Link from "next/link";
 import { isAxiosError } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "../context/auth-context";
-import { Mail, Lock, ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, ShieldCheck, ArrowRight, Loader2, KeyRound, ArrowLeft } from "lucide-react";
 
 const LoginForm = () => {
   const router = useRouter();
   const { refreshUser } = useAuth();
+
+  // Normal Login OTP State
   const [showOTP, setShowOTP] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [otpValue, setOtpValue] = useState("");
 
+  // Forgot Password Flow States
+  const [isForgotMode, setIsForgotMode] = useState(false);
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1); // 1 = Enter Email + New Pass, 2 = Enter OTP
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotOTPValue, setForgotOTPValue] = useState("");
+
+  // Queries/Mutations Hooks
   const { mutate: loginMutate, isPending: isLoginPending } = useLogin();
   const { mutate: verifyMutate, isPending: isVerifyPending } = useVerifyOTP();
+  const { mutate: forgotPasswordMutate, isPending: isForgotPending } = useForgotPassword();
+  const { mutate: resetPasswordMutate, isPending: isResetPending } = useResetPassword();
 
   const {
     register,
@@ -32,20 +46,17 @@ const LoginForm = () => {
     resolver: zodResolver(loginSchema),
   });
 
+  // ── Normal Login Flow ────────────────────────────────────────────────────────
   const onSubmit = (data: LoginValues) => {
     loginMutate(data, {
       onSuccess: (res: any) => {
-        // Backend auto-detects role from DB:
-        // If admin → tokens returned directly → login complete
-        // If user  → OTP sent → show OTP screen
         const userRole = res?.data?.user?.role?.toLowerCase();
 
-        if (userRole === 'admin') {
+        if (userRole === "admin") {
           toast.success("Welcome, Admin!");
           refreshUser();
           setTimeout(() => {
             router.push("/dashboard");
-            // Fallback for production stutters
             setTimeout(() => { window.location.href = "/dashboard"; }, 1000);
           }, 500);
         } else {
@@ -73,7 +84,6 @@ const LoginForm = () => {
         refreshUser();
         setTimeout(() => {
           router.push("/my-blogs");
-          // Fallback for production stutters
           setTimeout(() => { window.location.href = "/my-blogs"; }, 1000);
         }, 500);
       },
@@ -83,7 +93,58 @@ const LoginForm = () => {
     });
   };
 
-  // ── OTP Screen (Unchanged Logic, Updated UI for Dark Mode) ───────────────────
+  // ── Forgot Password Flow Step 1: Request Code with Email + Password ───────────
+  const handleInitiateForgot = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    if (forgotNewPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
+      return;
+    }
+
+    forgotPasswordMutate(forgotEmail, {
+      onSuccess: (res: any) => {
+        toast.success(res?.message || "Verification code sent to your email!");
+        setForgotStep(2);
+      },
+      onError: (err) => {
+        toast.error(isAxiosError(err) ? err.response?.data?.message : "Failed to initiate reset");
+      }
+    });
+  };
+
+  // ── Forgot Password Flow Step 2: Complete Reset using OTP ─────────────────────
+  const handleCompleteForgot = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (forgotOTPValue.length !== 6) {
+      toast.error("Please enter the 6-digit code");
+      return;
+    }
+
+    resetPasswordMutate({
+      email: forgotEmail,
+      token: forgotOTPValue,
+      password: forgotNewPassword,
+    }, {
+      onSuccess: (res: any) => {
+        toast.success(res?.message || "Password reset successfully! Please login with your new password.");
+        // Reset States
+        setIsForgotMode(false);
+        setForgotStep(1);
+        setForgotEmail("");
+        setForgotNewPassword("");
+        setForgotOTPValue("");
+      },
+      onError: (err) => {
+        toast.error(isAxiosError(err) ? err.response?.data?.message : "Failed to reset password");
+      }
+    });
+  };
+
+  // ── SCREEN A: Normal Login OTP Verification Screen ───────────────────────────
   if (showOTP) {
     return (
       <div className="w-full mx-auto p-8 sm:p-10 bg-white dark:bg-[#0a0a0a] rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-gray-100 dark:border-white/5 animate-in fade-in zoom-in duration-300">
@@ -139,9 +200,148 @@ const LoginForm = () => {
     );
   }
 
-  // ── Login Form (New Minimalist Aesthetic) ───────────────────────────────────
+  // ── SCREEN B: Forgot Password Flow ───────────────────────────────────────────
+  if (isForgotMode) {
+    return (
+      <div className="w-full mx-auto p-8 sm:p-10 bg-white dark:bg-[#0a0a0a] rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-gray-100 dark:border-white/5 animate-in fade-in zoom-in duration-300">
+
+        {/* Step 1: Input Email + New Password */}
+        {forgotStep === 1 ? (
+          <div>
+            <div className="flex flex-col items-center mb-8">
+              <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 rounded-2xl flex items-center justify-center mb-4">
+                <KeyRound size={32} />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Reset Password</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Enter your details to generate a recovery code</p>
+            </div>
+
+            <form onSubmit={handleInitiateForgot} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Email Address</label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">New Password</label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={forgotNewPassword}
+                    onChange={(e) => setForgotNewPassword(e.target.value)}
+                    className="w-full px-4 py-3 bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                    placeholder="Min. 8 characters"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isForgotPending}
+                className="group w-full py-3.5 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
+              >
+                {isForgotPending ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  <>
+                    Send verification code
+                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsForgotMode(false)}
+                className="w-full py-2 text-sm font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <ArrowLeft size={16} />
+                Back to Login
+              </button>
+            </form>
+          </div>
+        ) : (
+          /* Step 2: Input Verification Code */
+          <div>
+            <div className="flex flex-col items-center mb-8">
+              <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-4">
+                <ShieldCheck size={32} />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Verify Code</h2>
+              <p className="text-gray-500 dark:text-gray-400 mt-2 text-center text-sm font-medium">
+                We've sent a 6-digit password reset code to <br />
+                <span className="text-gray-900 dark:text-gray-200 font-bold">{forgotEmail}</span>
+              </p>
+            </div>
+
+            <form onSubmit={handleCompleteForgot} className="space-y-6">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Verification Code</label>
+                <input
+                  value={forgotOTPValue}
+                  onChange={(e) => setForgotOTPValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  type="text"
+                  maxLength={6}
+                  className="w-full py-4 bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl text-2xl font-bold tracking-[1em] text-center text-gray-900 dark:text-white focus:border-[#10B981] dark:focus:border-[#10B981] focus:ring-1 focus:ring-[#10B981] outline-none transition-all placeholder:text-gray-300 dark:placeholder:text-gray-700"
+                  placeholder="000000"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isResetPending || forgotOTPValue.length !== 6}
+                className="group w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isResetPending ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  <>
+                    Reset Password
+                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setForgotStep(1)}
+                  className="w-1/2 text-sm font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                >
+                  Change Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotMode(false);
+                    setForgotStep(1);
+                  }}
+                  className="w-1/2 text-sm font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── SCREEN C: Normal Login Form ──────────────────────────────────────────────
   return (
-    <div className="w-full mx-auto p-8 sm:p-10 bg-white dark:bg-[#0a0a0a] rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-gray-100 dark:border-white/5">
+    <div className="w-full mx-auto p-8 sm:p-10 bg-white dark:bg-[#0a0a0a] rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-gray-100 dark:border-white/5 animate-in fade-in zoom-in duration-300">
       <div className="flex flex-col items-center mb-8">
         <h2 className="text-[28px] font-bold text-gray-900 dark:text-white tracking-tight mb-2">
           Welcome Back
@@ -166,9 +366,16 @@ const LoginForm = () => {
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Password</label>
-            <Link href="#" className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+            <button
+              type="button"
+              onClick={() => {
+                setIsForgotMode(true);
+                setForgotStep(1);
+              }}
+              className="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-[#1877F2] dark:hover:text-blue-400 transition-colors cursor-pointer"
+            >
               Forgot password?
-            </Link>
+            </button>
           </div>
           <div className="relative">
             <input
@@ -215,7 +422,7 @@ const LoginForm = () => {
 
       <button
         type="button"
-        className="w-full py-3 bg-white dark:bg-[#111] text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-all flex items-center justify-center gap-2"
+        className="w-full py-3 bg-white dark:bg-[#111] text-gray-700 dark:text-gray-200 text-sm font-semibold rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-all flex items-center justify-center gap-2 animate-in duration-200"
       >
         <svg className="w-4 h-4" viewBox="0 0 24 24">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -226,7 +433,7 @@ const LoginForm = () => {
         Google
       </button>
 
-      <div className="mt-8 text-center">
+      <div className="mt-8 text-center animate-in duration-200">
         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
           Don't have an account?{" "}
           <Link href="/register" className="text-gray-900 dark:text-white font-bold hover:underline">

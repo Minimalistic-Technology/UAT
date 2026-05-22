@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import PendingUser from '../models/PendingUser';
+import { prisma } from '../config/db';
 import {
   signupSchema,
   loginSchema,
@@ -26,7 +26,7 @@ import { env } from '../config/env';
 import { getCookieConfig } from '../config/cookieConfig';
 import { durationToMs } from '../utils/time';
 import { ApiResponse } from "../utils/ApiResponse";
-import { sendOTP } from "../utils/email";
+import { sendOTP, sendPasswordResetOTP } from "../utils/email";
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -41,30 +41,26 @@ import type {
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const payload = signupSchema.parse(req.body) as userService.CreateUserPayload;
 
-  // 1. Check if already in main User DB
   const existing = await userService.findByEmail(payload.email);
   if (existing) {
     throw new ApiError(StatusCodes.CONFLICT, 'Email already in use');
   }
 
-  // 2. Generate OTP
   const otp = crypto.randomInt(100000, 999999).toString();
-  const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // Exact 5 mins
+  const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
-  // 3. Hash password before storing in Temp (if provided)
   let hashedPassword = payload.password;
   if (payload.password) {
-    hashedPassword = await bcrypt.hash(payload.password, 10);
+    const salt = await bcrypt.genSalt(10);
+    hashedPassword = await bcrypt.hash(payload.password, salt);
   }
 
-  // 4. Save to PendingUser (Temporary)
-  await PendingUser.findOneAndUpdate(
-    { email: payload.email },
-    { ...payload, password: hashedPassword, otp, otpExpires },
-    { upsert: true, new: true }
-  );
+  await prisma.pendingUser.upsert({
+    where: { email: payload.email },
+    update: { ...payload, password: hashedPassword, otp, otpExpires: new Date(otpExpires) },
+    create: { ...payload, password: hashedPassword, otp, otpExpires: new Date(otpExpires) }
+  });
 
-  // 5. Send verification email (Fire and Forget to prevent UI hang and 500 errors on slow networks)
   sendOTP(payload.email, otp).catch((err) => {
     console.error('[Background] Failed to send signup OTP email:', err);
   });
@@ -82,21 +78,19 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
   }
 
-  const isPasswordValid = await user.comparePassword(credentials.password);
+  const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
   if (!isPasswordValid) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
   }
 
-  // Ultra-safe role detection
   const detectedRole = user.role?.toString().trim().toLowerCase();
   console.log(`[auth] Login attempt: ${user.email}, Detected Role: ${detectedRole}`);
 
   if (detectedRole === 'admin') {
-    // Admin Flow: Direct login (No OTP)
-    const accessToken = signAccessToken(user._id);
-    const refreshToken = signRefreshToken(user._id);
+    const accessToken = signAccessToken(user.id);
+    const refreshToken = signRefreshToken(user.id);
 
-    await replaceRefreshToken(user._id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
+    await replaceRefreshToken(user.id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
     const cookieBase = getCookieConfig();
 
     return res
@@ -117,23 +111,20 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       );
   }
 
-  // User Flow: OTP
-  // Generate 6-digit OTP
   const otp = crypto.randomInt(100000, 999999).toString();
-  const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // Exact 5 minutes
+  const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
 
-  // Save to user
-  user.otp = otp;
-  user.otpExpires = otpExpires;
-  await user.save();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { otp, otpExpires: new Date(otpExpires) }
+  });
 
-  // Send Email (Fire and Forget)
   sendOTP(user.email, otp).catch((err) => {
     console.error('[Background] Failed to send login OTP email:', err);
   });
 
-  const message = user.isVerified 
-    ? "OTP sent to your email. Please verify." 
+  const message = user.isVerified
+    ? "OTP sent to your email. Please verify."
     : "Please verify your account. OTP sent to your email.";
 
   return res.status(StatusCodes.OK).json(
@@ -145,43 +136,43 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
   const { email, otp } = verifyOTPSchema.parse(req.body);
   let user: any = null;
 
-  // 1. Check if it's a Login verification (User already in DB)
   user = await userService.findByEmail(email);
 
   if (user) {
-    // Add 60s buffer for server time sync issues
-    const isExpired = new Date(Date.now() - 60000) > (user.otpExpires || 0);
+    const isExpired = user.otpExpires && new Date(Date.now() - 60000) > user.otpExpires;
     if (user.otp !== otp || isExpired) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired OTP');
     }
-    user.otp = undefined;
-    user.otpExpires = undefined;
-    user.isVerified = true;
-    await user.save();
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { otp: null, otpExpires: null, isVerified: true }
+    });
   } else {
-    // 2. Check if it's a Signup verification (User in PendingUser DB)
-    const pending = await PendingUser.findOne({ email });
-    // Add 60s buffer for server time sync issues
+    const pending = await prisma.pendingUser.findUnique({ where: { email } });
     const isExpired = pending && new Date(Date.now() - 60000) > pending.otpExpires;
-    
+
     if (!pending || pending.otp !== otp || isExpired) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired OTP');
     }
 
-    // Move from Pending to Actual User
-    const { _id, otp: _o, otpExpires: _e, createdAt: _c, ...userData } = pending.toObject();
+    const { id, otp: _o, otpExpires: _e, createdAt: _c, password, ...userData } = pending;
 
-    const User = require('../models/User').default;
-    user = new User({ ...userData, isVerified: true });
-    await user.save();
+    user = await prisma.user.create({
+      data: {
+        ...userData,
+        password: password || "",
+        lastName: userData.lastName || "",
+        contactNumber: userData.contactNumber || "",
+        isVerified: true
+      }
+    });
 
-    // Clean up
-    await PendingUser.deleteOne({ _id: pending._id });
+    await prisma.pendingUser.delete({ where: { id: pending.id } });
   }
 
-  const accessToken = signAccessToken(user._id);
-  const refreshToken = signRefreshToken(user._id);
-  await replaceRefreshToken(user._id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
+  const accessToken = signAccessToken(user.id);
+  const refreshToken = signRefreshToken(user.id);
+  await replaceRefreshToken(user.id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
 
   const cookieBase = getCookieConfig();
 
@@ -265,16 +256,19 @@ export const initiatePasswordReset = asyncHandler(async (req: Request, res: Resp
 
   const user = await userService.findByEmail(email);
   if (!user) {
-    return res.status(StatusCodes.OK).json(
-      new ApiResponse(StatusCodes.OK, null, 'If the email exists, a reset token has been sent.')
-    );
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User with this email address does not exist.');
   }
 
-  const resetToken = createTokenString();
-  await storeResetToken(user.id, resetToken, env.PASSWORD_RESET_EXPIRE);
+  const resetOTP = crypto.randomInt(100000, 999999).toString();
+
+  await storeResetToken(user.id, resetOTP, env.PASSWORD_RESET_EXPIRE || '15m');
+
+  sendPasswordResetOTP(email, resetOTP).catch((err) => {
+    console.error('[Background] Failed to send password reset OTP:', err);
+  });
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse<PasswordResetInitResponseData>(StatusCodes.OK, { resetToken }, 'Password reset token generated successfully.')
+    new ApiResponse(StatusCodes.OK, { email }, 'A password reset code has been sent to your email.')
   );
 });
 
@@ -283,20 +277,21 @@ export const completePasswordReset = asyncHandler(async (req: Request, res: Resp
 
   const user = await userService.findByEmail(payload.email);
   if (!user) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired password reset token.');
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid user or expired token.');
   }
 
   const tokenDoc = await verifyStoredToken(user.id, payload.token, 'reset');
   if (!tokenDoc) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired password reset token.');
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired password reset verification code.');
   }
 
   await userService.updatePassword(user, payload.password);
   await deleteToken(tokenDoc);
+
   await invalidateTokens(user.id, 'refresh');
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, null, 'Password updated successfully.')
+    new ApiResponse(StatusCodes.OK, null, 'Your password has been successfully reset.')
   );
 });
 
@@ -307,7 +302,7 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
   }
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(user) }, "User profile fetched successfully")
+    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(user as any) }, "User profile fetched successfully")
   );
 });
 
@@ -327,32 +322,35 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
-  const user = req.user!;
+  const user: any = req.user!;
   const { firstName, lastName, contactNumber, currentPassword, newPassword } = req.body;
 
-  // Update basic profile fields
-  if (firstName && firstName.trim()) user.firstName = firstName.trim();
-  if (lastName && lastName.trim()) user.lastName = lastName.trim();
-  if (contactNumber && contactNumber.trim()) user.contactNumber = contactNumber.trim();
+  const dataToUpdate: any = {};
+  if (firstName && firstName.trim()) dataToUpdate.firstName = firstName.trim();
+  if (lastName && lastName.trim()) dataToUpdate.lastName = lastName.trim();
+  if (contactNumber && contactNumber.trim()) dataToUpdate.contactNumber = contactNumber.trim();
 
-  // Handle password change
   if (newPassword) {
     if (!currentPassword) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Current password is required to set a new password');
     }
-    const isValid = await user.comparePassword(currentPassword);
+    const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) {
       throw new ApiError(StatusCodes.UNAUTHORIZED, 'Current password is incorrect');
     }
     if (newPassword.length < 8) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'New password must be at least 8 characters');
     }
-    user.password = newPassword;
+    const salt = await bcrypt.genSalt(10);
+    dataToUpdate.password = await bcrypt.hash(newPassword, salt);
   }
 
-  await user.save();
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id || user._id.toString() },
+    data: dataToUpdate
+  });
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(user) }, 'Profile updated successfully')
+    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(updatedUser) }, 'Profile updated successfully')
   );
 });

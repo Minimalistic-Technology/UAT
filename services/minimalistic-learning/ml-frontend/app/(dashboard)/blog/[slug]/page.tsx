@@ -5,6 +5,9 @@ import { AlertCircle, Home } from 'lucide-react';
 import Link from 'next/link';
 import { Metadata } from 'next';
 
+// Revalidate this page at most every 60 seconds (Incremental Static Regeneration)
+export const revalidate = 60;
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -53,24 +56,29 @@ const BlogDetailPage = async ({ params }: Props) => {
   let error: string | null = null;
 
   try {
-    // Fetch data on the server for speed and SEO
-    const [blogRes, latestRes] = await Promise.all([
-      blogService.getBlogBySlug(slug),
-      blogService.getBlogs({ page: 1, limit: 3 })
-    ]);
+    // Fetch data on the server for speed and SEO (Resilient fetches)
+    const blogRes = await blogService.getBlogBySlug(slug).catch(e => {
+      console.error("Blog fetch error:", e?.message);
+      return { success: false, message: e?.message || "Failed to fetch" };
+    });
 
-    if (blogRes.success && blogRes.data) {
-      blog = blogRes.data;
+    const latestRes = await blogService.getBlogs({ page: 1, limit: 3 }).catch(e => {
+      console.error("Latest blogs fetch error:", e?.message);
+      return { success: false, data: { items: [] } };
+    });
+
+    if (blogRes && (blogRes as any).success && (blogRes as any).data) {
+      blog = (blogRes as any).data;
     } else {
-      error = blogRes.message || 'Blog not found.';
+      error = (blogRes as any)?.message || 'Blog not found.';
     }
 
-    if (latestRes.success && latestRes.data) {
-      latestBlogs = latestRes.data.items;
+    if (latestRes && (latestRes as any).success && (latestRes as any).data) {
+      latestBlogs = (latestRes as any).data.items;
     }
   } catch (err: any) {
     console.error('Error fetching blog data on server:', err);
-    error = 'We couldn\'t fetch the blog details.';
+    error = err?.message || 'We couldn\'t fetch the blog details.';
   }
 
   if (error || !blog) {

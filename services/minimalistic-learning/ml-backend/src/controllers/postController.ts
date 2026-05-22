@@ -1,8 +1,5 @@
 import { Request, Response } from "express";
-import Post from "../models/Post";
-import SiteSetting from "../models/SiteSetting";
-import User from "../models/User";
-import Notification from "../models/Notification";
+import { prisma } from "../config/db";
 import { uploadToCloudinary } from "../utils/cloudinary";
 import { StatusCodes } from "http-status-codes";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -14,29 +11,39 @@ import {
 import { verifyAccessToken } from '../utils/jwt';
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
+import { PostStatus, NotificationType } from '@prisma/client';
+import crypto from 'crypto';
 
 export const listPosts = asyncHandler(async (req: Request, res: Response) => {
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 10, 50);
   const { tag, q, category } = req.query;
 
-  const query: Record<string, unknown> = { published: true, status: 'published' };
+  const where: any = { published: true, status: PostStatus.published };
 
-  if (tag) query.tags = tag;
-  if (category) query.category = category;
-  if (q) query.$text = { $search: String(q) };
+  if (tag) where.tags = { has: String(tag) };
+  if (category) where.category = category;
+  if (q) {
+    where.OR = [
+      { title: { contains: String(q), mode: 'insensitive' } },
+      { content: { contains: String(q), mode: 'insensitive' } }
+    ];
+  }
 
   const skip = (page - 1) * limit;
 
-  const [items, total] = await Promise.all([
-    Post.find(query)
-      .populate("authorId", "firstName lastName")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    Post.countDocuments(query),
+  const [itemsRaw, total] = await Promise.all([
+    prisma.post.findMany({
+      where,
+      include: { author: { select: { firstName: true, lastName: true } } },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    }),
+    prisma.post.count({ where }),
   ]);
+
+  const items = itemsRaw.map(item => ({ ...item, authorId: item.author }));
 
   const bearer = req.headers.authorization;
   const tokenFromCookie = req.cookies?.access_token as string | undefined;
@@ -47,9 +54,7 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
     try {
       const payload = verifyAccessToken(token) as { sub: string };
       currentUserId = payload.sub;
-    } catch (e) {
-      // Ignored for public route
-    }
+    } catch { }
   }
 
   const totalPages = Math.ceil(total / limit);
@@ -58,13 +63,9 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
 
   const itemsResponse = items.map((post: any) => {
     const likesCount = post.likes?.length || 0;
-    const hasLiked = currentUserId ? post.likes?.some((id: any) => id.toString() === currentUserId) : false;
+    const hasLiked = currentUserId ? post.likes?.some((id: string) => id === currentUserId) : false;
 
-    const mappedPost = {
-      ...post,
-      likesCount,
-      hasLiked,
-    };
+    const mappedPost = { ...post, likesCount, hasLiked };
     delete mappedPost.likes;
     return mappedPost;
   });
@@ -75,12 +76,7 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
       {
         items: itemsResponse,
         pagination: {
-          total,
-          totalPages,
-          currentPage: page,
-          limit,
-          hasNextPage,
-          hasPrevPage,
+          total, totalPages, currentPage: page, limit, hasNextPage, hasPrevPage,
         },
       },
       "Posts fetched successfully",
@@ -89,33 +85,30 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const listMyPosts = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user!._id;
+  const userId = req.user!.id || (req.user as any)._id.toString();
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 10, 50);
 
-  const query = { authorId: userId };
+  const where = { authorId: userId };
   const skip = (page - 1) * limit;
 
   const [items, total] = await Promise.all([
-    Post.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    Post.countDocuments(query),
+    prisma.post.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    }),
+    prisma.post.count({ where }),
   ]);
 
   const totalPages = Math.ceil(total / limit);
 
   const itemsResponse = items.map((post: any) => {
     const likesCount = post.likes?.length || 0;
-    const hasLiked = post.likes?.some((id: any) => id.toString() === userId.toString()) || false;
+    const hasLiked = post.likes?.some((id: string) => id === userId) || false;
 
-    const mappedPost = {
-      ...post,
-      likesCount,
-      hasLiked,
-    };
+    const mappedPost = { ...post, likesCount, hasLiked };
     delete mappedPost.likes;
     return mappedPost;
   });
@@ -128,97 +121,26 @@ export const listMyPosts = asyncHandler(async (req: Request, res: Response) => {
       StatusCodes.OK,
       {
         items: itemsResponse,
-        pagination: {
-          total,
-          totalPages,
-          currentPage: page,
-          limit,
-          hasNextPage,
-          hasPrevPage
-        },
+        pagination: { total, totalPages, currentPage: page, limit, hasNextPage, hasPrevPage },
       },
       "My posts fetched successfully",
     ),
   );
 });
 
-export const getPostBySlug = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { slug } = req.params;
+export const getPostBySlug = asyncHandler(async (req: Request, res: Response) => {
+  const { slug } = req.params;
 
-    if (!slug) {
-      throw new ApiError(
-        StatusCodes.BAD_REQUEST,
-        "Slug parameter is required.",
-      );
-    }
+  if (!slug) throw new ApiError(StatusCodes.BAD_REQUEST, "Slug parameter is required.");
 
-    const post = await Post.findOne({
-      slug: slug,
-      published: true,
-      status: 'published',
-    })
-      .populate("authorId", "firstName lastName")
-      .select("-__v")
-      .lean();
+  let post: any = await prisma.post.findFirst({
+    where: { slug, published: true, status: PostStatus.published },
+    include: { author: { select: { firstName: true, lastName: true } } }
+  });
 
-    if (!post) {
-      throw new ApiError(
-        StatusCodes.NOT_FOUND,
-        `Post with slug '${slug}' not found.`,
-      );
-    }
+  if (!post) throw new ApiError(StatusCodes.NOT_FOUND, `Post with slug '${slug}' not found.`);
 
-    const bearer = req.headers.authorization;
-    const tokenFromCookie = req.cookies?.access_token as string | undefined;
-    const token = tokenFromCookie || (bearer && bearer.startsWith('Bearer ') ? bearer.split(" ")[1] : undefined);
-
-    let currentUserId: string | null = null;
-    if (token) {
-      try {
-        const payload = verifyAccessToken(token) as { sub: string };
-        currentUserId = payload.sub;
-      } catch (e) {
-        // Ignored for public route
-      }
-    }
-
-    const likesCount = post.likes?.length || 0;
-
-    let hasLiked = false;
-
-    if (currentUserId) {
-      hasLiked = post.likes?.some((id: any) => id.toString() === currentUserId) || false;
-    }
-
-    const postResponse: any = {
-      ...post,
-      likesCount,
-      hasLiked,
-    };
-
-    delete postResponse.likes;
-
-    return res
-      .status(StatusCodes.OK)
-      .json(new ApiResponse(StatusCodes.OK, postResponse, "Post fetched successfully"));
-  },
-);
-
-export const getPostById = asyncHandler(async (req: Request, res: Response) => {
-  const { blogId } = postParamsSchema.parse(req.params);
-
-  const post = await Post.findById(blogId)
-    .populate("authorId", "firstName lastName")
-    .select("-__v")
-    .lean();
-
-  if (!post) {
-    throw new ApiError(
-      StatusCodes.NOT_FOUND,
-      `Post with id '${blogId}' not found.`,
-    );
-  }
+  post = { ...post, authorId: post.author };
 
   const bearer = req.headers.authorization;
   const tokenFromCookie = req.cookies?.access_token as string | undefined;
@@ -229,131 +151,134 @@ export const getPostById = asyncHandler(async (req: Request, res: Response) => {
     try {
       const payload = verifyAccessToken(token) as { sub: string };
       currentUserId = payload.sub;
-    } catch (e) {
-      // Ignored for public route
-    }
+    } catch { }
   }
 
   const likesCount = post.likes?.length || 0;
-
   let hasLiked = false;
 
   if (currentUserId) {
-    hasLiked = post.likes?.some((id: any) => id.toString() === currentUserId) || false;
+    hasLiked = post.likes?.some((id: string) => id === currentUserId) || false;
   }
 
-  const postResponse: any = {
-    ...post,
-    likesCount,
-    hasLiked,
-  };
-
+  const postResponse = { ...post, likesCount, hasLiked };
   delete postResponse.likes;
 
-  return res
-    .status(StatusCodes.OK)
-    .json(new ApiResponse(StatusCodes.OK, postResponse, "Post fetched successfully"));
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, postResponse, "Post fetched successfully"));
+});
+
+export const getPostById = asyncHandler(async (req: Request, res: Response) => {
+  const { blogId } = postParamsSchema.parse(req.params);
+
+  let post: any = await prisma.post.findUnique({
+    where: { id: blogId },
+    include: { author: { select: { firstName: true, lastName: true } } }
+  });
+
+  if (!post) throw new ApiError(StatusCodes.NOT_FOUND, `Post with id '${blogId}' not found.`);
+
+  post = { ...post, authorId: post.author };
+
+  const bearer = req.headers.authorization;
+  const tokenFromCookie = req.cookies?.access_token as string | undefined;
+  const token = tokenFromCookie || (bearer && bearer.startsWith('Bearer ') ? bearer.split(" ")[1] : undefined);
+
+  let currentUserId: string | null = null;
+  if (token) {
+    try {
+      const payload = verifyAccessToken(token) as { sub: string };
+      currentUserId = payload.sub;
+    } catch { }
+  }
+
+  const likesCount = post.likes?.length || 0;
+  let hasLiked = false;
+
+  if (currentUserId) {
+    hasLiked = post.likes?.some((id: string) => id === currentUserId) || false;
+  }
+
+  const postResponse = { ...post, likesCount, hasLiked };
+  delete postResponse.likes;
+
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, postResponse, "Post fetched successfully"));
 });
 
 export const createPost = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user!._id.toString();
-
+  const userId = req.user!.id || (req.user as any)._id.toString();
   const parsedBody = createPostSchema.parse(req.body);
   const { title, content, tags, published, category, coverImageUrl } = parsedBody;
 
-  const baseSlug = (title || "untitled-draft")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+  const baseSlug = (title || "untitled-draft").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
   let slug = baseSlug || `draft-${Date.now()}`;
-  const existingPost = await Post.findOne({ slug });
+  const existingPost = await prisma.post.findUnique({ where: { slug } });
   if (existingPost) slug = `${slug}-${Date.now()}`;
 
   const sanitizedTags: string[] = Array.isArray(tags)
     ? [...new Set(tags.map((t: string) => t.trim()).filter(Boolean))]
     : typeof tags === "string"
-      ? [
-        ...new Set(
-          (tags as string)
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
-        ),
-      ]
+      ? [...new Set((tags as string).split(",").map((t) => t.trim()).filter(Boolean))]
       : [];
 
   let coverImage = { url: coverImageUrl || "", alt: (title || "Story").trim(), publicId: "" };
   if (req.file) {
-    const uploaded = await uploadToCloudinary(
-      req.file.buffer,
-      req.file.mimetype,
-    );
-    coverImage = {
-      url: uploaded.url,
-      alt: (title || "Story").trim(),
-      publicId: uploaded.publicId,
-    };
+    const uploaded = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
+    coverImage = { url: uploaded.url, alt: (title || "Story").trim(), publicId: uploaded.publicId };
   }
 
   const safeTitle = (title || "Untitled Story").trim() || "Untitled Story";
 
-  // Check auto-approve setting
-  let setting = await SiteSetting.findOne({ key: 'global' });
-  if (!setting) setting = await SiteSetting.create({ key: 'global', autoApprovePost: true });
+  let setting = await prisma.siteSetting.findUnique({ where: { key: 'global' } });
+  if (!setting) {
+    setting = await prisma.siteSetting.create({ data: { key: 'global', autoApprovePost: true } });
+  }
   const autoApprove = setting.autoApprovePost;
 
-  const postStatus = autoApprove ? 'published' : 'pending';
+  const postStatus = autoApprove ? PostStatus.published : PostStatus.pending;
   const postPublished = autoApprove ? (published === true) : false;
 
-  const post = await Post.create({
-    title: safeTitle,
-    slug,
-    content: (content || "").trim(),
-    category: (category || "Uncategorized").trim(),
-    coverImage,
-    tags: sanitizedTags,
-    published: postPublished,
-    status: postStatus,
-    authorId: userId,
+  const post = await prisma.post.create({
+    data: {
+      title: safeTitle,
+      slug,
+      content: (content || "").trim(),
+      category: (category || "Uncategorized").trim(),
+      coverImage,
+      tags: sanitizedTags,
+      published: postPublished,
+      status: postStatus,
+      authorId: userId,
+    }
   });
 
-  // If manual approval is required, notify all admins
-  if (postStatus === 'pending') {
-    const admins = await User.find({ role: 'admin' });
-    const notificationPromises = admins.map(admin =>
-      Notification.create({
-        recipientId: admin._id,
-        title: 'New Post Pending Approval',
-        message: `A new post "${safeTitle}" has been submitted and requires your review.`,
-        type: 'general'
-      })
-    );
-    await Promise.all(notificationPromises);
+  if (postStatus === PostStatus.pending) {
+    const admins = await prisma.user.findMany({ where: { role: 'admin' } });
+    for (const admin of admins) {
+      await prisma.notification.create({
+        data: {
+          recipientId: admin.id,
+          title: 'New Post Pending Approval',
+          message: `A new post "${safeTitle}" has been submitted and requires your review.`,
+          type: NotificationType.general
+        }
+      });
+    }
   }
 
-  const message = autoApprove
-    ? 'Post created successfully'
-    : 'Post submitted for review. It will be live once approved by admin.';
-
-  return res
-    .status(StatusCodes.CREATED)
-    .json(
-      new ApiResponse(StatusCodes.CREATED, post, message),
-    );
+  return res.status(StatusCodes.CREATED).json(
+    new ApiResponse(StatusCodes.CREATED, post, autoApprove ? 'Post created successfully' : 'Post submitted for review. It will be live once approved by admin.')
+  );
 });
 
 export const uploadMedia = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.file) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "No file uploaded");
-  }
+  if (!req.file) throw new ApiError(StatusCodes.BAD_REQUEST, "No file uploaded");
 
   const uploaded = await uploadToCloudinary(
     req.file.buffer,
     req.file.mimetype,
     'blog-media',
-    false // isCoverImage = false to prevent strict cropping
+    false
   );
 
   return res.status(StatusCodes.OK).json(
@@ -363,27 +288,16 @@ export const uploadMedia = asyncHandler(async (req: Request, res: Response) => {
 
 export const updatePost = asyncHandler(async (req: Request, res: Response) => {
   const { blogId } = postParamsSchema.parse(req.params);
-  const userId = req.user!._id.toString();
+  const userId = req.user!.id || (req.user as any)._id.toString();
 
   const parsedBody = updatePostSchema.parse(req.body);
 
-  let sanitizedTags = undefined;
+  let sanitizedTags: string[] | undefined = undefined;
   if (parsedBody.tags) {
     sanitizedTags = Array.isArray(parsedBody.tags)
-      ? [
-        ...new Set(
-          parsedBody.tags.map((t: string) => t.trim()).filter(Boolean),
-        ),
-      ]
+      ? [...new Set(parsedBody.tags.map((t: string) => t.trim()).filter(Boolean))]
       : typeof parsedBody.tags === "string"
-        ? [
-          ...new Set(
-            (parsedBody.tags as string)
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean),
-          ),
-        ]
+        ? [...new Set((parsedBody.tags as string).split(",").map((t) => t.trim()).filter(Boolean))]
         : [];
   }
 
@@ -391,115 +305,77 @@ export const updatePost = asyncHandler(async (req: Request, res: Response) => {
   if (sanitizedTags) updatePayload.tags = sanitizedTags;
 
   if (updatePayload.published !== undefined) {
-    updatePayload.published =
-      updatePayload.published === true || updatePayload.published === "true";
+    updatePayload.published = updatePayload.published === true || updatePayload.published === "true";
   }
 
   if (req.file) {
-    const uploaded = await uploadToCloudinary(
-      req.file.buffer,
-      req.file.mimetype,
-    );
-    updatePayload.coverImage = {
-      url: uploaded.url,
-      alt: parsedBody.title?.trim() || "",
-      publicId: uploaded.publicId,
-    };
+    const uploaded = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
+    updatePayload.coverImage = { url: uploaded.url, alt: parsedBody.title?.trim() || "", publicId: uploaded.publicId };
   } else if (parsedBody.coverImageUrl) {
-    updatePayload.coverImage = {
-      url: parsedBody.coverImageUrl,
-      alt: parsedBody.title?.trim() || "",
-      publicId: "",
-    };
+    updatePayload.coverImage = { url: parsedBody.coverImageUrl, alt: parsedBody.title?.trim() || "", publicId: "" };
   }
 
-  const post = await Post.findOneAndUpdate(
-    { _id: blogId, authorId: userId },
-    updatePayload,
-    { returnDocument: 'after' },
-  );
+  const post = await prisma.post.updateMany({
+    where: { id: blogId, authorId: userId },
+    data: updatePayload
+  });
 
-  if (!post)
-    throw new ApiError(
-      StatusCodes.NOT_FOUND,
-      "Post not found or you don't have permission",
-    );
+  if (post.count === 0) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Post not found or you don't have permission");
+  }
 
-  return res
-    .status(StatusCodes.OK)
-    .json(new ApiResponse(StatusCodes.OK, post, "Post updated successfully"));
+  const updatedPost = await prisma.post.findUnique({ where: { id: blogId } });
+
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, updatedPost, "Post updated successfully"));
 });
 
 export const deletePost = asyncHandler(async (req: Request, res: Response) => {
   const { blogId } = postParamsSchema.parse(req.params);
-  const userId = req.user!._id.toString();
+  const userId = req.user!.id || (req.user as any)._id.toString();
 
-  const post = await Post.findOneAndDelete({
-    _id: blogId,
-    authorId: userId,
+  const count = await prisma.post.deleteMany({
+    where: { id: blogId, authorId: userId }
   });
 
-  if (!post)
-    throw new ApiError(
-      StatusCodes.NOT_FOUND,
-      "Post not found or you don't have permission",
-    );
+  if (count.count === 0) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found or you don't have permission");
 
-  return res
-    .status(StatusCodes.OK)
-    .json(new ApiResponse(StatusCodes.OK, null, "Post deleted successfully"));
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, null, "Post deleted successfully"));
 });
 
 export const likePost = asyncHandler(async (req: Request, res: Response) => {
   const { blogId } = postParamsSchema.parse(req.params);
-  const userId = req.user!._id;
+  const userId = req.user!.id || (req.user as any)._id.toString();
 
-  const post = await Post.findById(blogId);
+  const post = await prisma.post.findUnique({ where: { id: blogId } });
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found");
 
   const hasLiked = post.likes.includes(userId);
 
-  if (hasLiked) {
-    post.likes = post.likes.filter(
-      (id) => id.toString() !== userId.toString(),
-    );
-  } else {
-    post.likes.push(userId);
-  }
+  const updatedLikes = hasLiked
+    ? post.likes.filter((id) => id !== userId)
+    : [...post.likes, userId];
 
-  await post.save();
+  const updatedPost = await prisma.post.update({
+    where: { id: blogId },
+    data: { likes: updatedLikes }
+  });
+
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(
-      StatusCodes.OK,
-      {
-        likes: post.likes.length,
-        hasLiked: !hasLiked,
-      },
-      hasLiked ? "Post unliked" : "Post liked",
-    ),
+    new ApiResponse(StatusCodes.OK, { likes: updatedLikes.length, hasLiked: !hasLiked }, hasLiked ? "Post unliked" : "Post liked")
   );
 });
 
-/**
- * POST /posts/slug/:slug/view
- * Instagram-style view tracking — each unique viewer (user or IP) is counted only once per post.
- * No auth required — works for both logged-in users and anonymous visitors.
- */
-import crypto from "crypto";
-
 export const recordView = asyncHandler(async (req: Request, res: Response) => {
   const { slug } = req.params;
-
   if (!slug) throw new ApiError(StatusCodes.BAD_REQUEST, "Slug required.");
 
-  const post = await Post.findOne({ slug, published: true, status: "published" }).select("+viewedBy");
+  const post = await prisma.post.findFirst({
+    where: { slug, published: true, status: PostStatus.published }
+  });
 
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found.");
 
-  // Build a unique viewer fingerprint
   let viewerId: string;
-
-  // Try logged-in user first
   const bearer = req.headers.authorization;
   const tokenFromCookie = req.cookies?.access_token as string | undefined;
   const token = tokenFromCookie || (bearer && bearer.startsWith("Bearer ") ? bearer.split(" ")[1] : undefined);
@@ -509,43 +385,40 @@ export const recordView = asyncHandler(async (req: Request, res: Response) => {
       const payload = verifyAccessToken(token) as { sub: string };
       viewerId = `user:${payload.sub}`;
     } catch {
-      // Fallback to IP-based
       const ip = req.ip || req.socket?.remoteAddress || "unknown";
       viewerId = `ip:${crypto.createHash("sha256").update(ip).digest("hex")}`;
     }
   } else {
-    // Anonymous visitor — fingerprint by hashed IP
     const ip = req.ip || req.socket?.remoteAddress || "unknown";
     viewerId = `ip:${crypto.createHash("sha256").update(ip).digest("hex")}`;
   }
 
-  // Only count if this viewer has NOT already viewed this post
   if (!post.viewedBy.includes(viewerId)) {
-    post.viewedBy.push(viewerId);
-    post.viewCount = (post.viewCount || 0) + 1;
-    await post.save();
+    await prisma.post.update({
+      where: { id: post.id },
+      data: {
+        viewedBy: { push: viewerId },
+        viewCount: { increment: 1 }
+      }
+    });
+    post.viewCount++;
   }
 
-  return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { viewCount: post.viewCount }, "View recorded")
-  );
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, { viewCount: post.viewCount }, "View recorded"));
 });
 
-/**
- * GET /posts/trending?limit=6
- * Returns top N published posts sorted by viewCount descending.
- */
 export const listTrending = asyncHandler(async (req: Request, res: Response) => {
   const limit = Math.min(Number(req.query.limit) || 6, 20);
 
-  const posts = await Post.find({ published: true, status: "published" })
-    .populate("authorId", "firstName lastName")
-    .sort({ viewCount: -1, createdAt: -1 })
-    .limit(limit)
-    .select("-viewedBy -__v")
-    .lean();
+  const postsRaw = await prisma.post.findMany({
+    where: { published: true, status: PostStatus.published },
+    include: { author: { select: { firstName: true, lastName: true } } },
+    orderBy: [{ viewCount: 'desc' }, { createdAt: 'desc' }],
+    take: limit
+  });
 
-  // Resolve current user for hasLiked
+  const posts = postsRaw.map(item => ({ ...item, authorId: item.author }));
+
   const bearer = req.headers.authorization;
   const tokenFromCookie = req.cookies?.access_token as string | undefined;
   const token = tokenFromCookie || (bearer && bearer.startsWith("Bearer ") ? bearer.split(" ")[1] : undefined);
@@ -554,54 +427,37 @@ export const listTrending = asyncHandler(async (req: Request, res: Response) => 
     try {
       const payload = verifyAccessToken(token) as { sub: string };
       currentUserId = payload.sub;
-    } catch { /* public route */ }
+    } catch { }
   }
 
   const items = posts.map((post: any) => {
     const likesCount = post.likes?.length || 0;
-    const hasLiked = currentUserId ? post.likes?.some((id: any) => id.toString() === currentUserId) : false;
+    const hasLiked = currentUserId ? post.likes?.some((id: string) => id === currentUserId) : false;
     const mapped = { ...post, likesCount, hasLiked };
+    delete mapped.viewedBy;
     delete mapped.likes;
     return mapped;
   });
 
-  return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { items }, "Trending posts fetched")
-  );
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, { items }, "Trending posts fetched"));
 });
 
 export const getUserStats = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user!._id;
+  const userId = req.user!.id || (req.user as any)._id.toString();
 
-  // Run queries in parallel for high performance
-  const [blogsCount, readingTimeResult, viewsResult, savedCount] = await Promise.all([
-    Post.countDocuments({ authorId: userId }),
-    Post.aggregate([
-      { $match: { authorId: userId } },
-      { $group: { _id: null, total: { $sum: "$readTime" } } }
-    ]),
-    Post.aggregate([
-      { $match: { authorId: userId } },
-      { $group: { _id: null, total: { $sum: "$viewCount" } } }
-    ]),
-    Post.countDocuments({ likes: userId })
+  const [blogsCount, savedCount, aggregates] = await Promise.all([
+    prisma.post.count({ where: { authorId: userId } }),
+    prisma.post.count({ where: { likes: { has: userId } } }),
+    prisma.post.aggregate({
+      where: { authorId: userId },
+      _sum: { readTime: true, viewCount: true }
+    })
   ]);
 
-  const totalReadTime = readingTimeResult[0]?.total || 0;
-  const totalViews = viewsResult[0]?.total || 0;
+  const totalReadTime = aggregates._sum.readTime || 0;
+  const totalViews = aggregates._sum.viewCount || 0;
 
-  return res.status(StatusCodes.OK).json(
-    new ApiResponse(
-      StatusCodes.OK,
-      {
-        blogsCount,
-        totalReadTime,
-        totalViews,
-        savedCount
-      },
-      "User stats fetched successfully"
-    )
-  );
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, { blogsCount, totalReadTime, totalViews, savedCount }, "User stats fetched successfully"));
 });
 
 

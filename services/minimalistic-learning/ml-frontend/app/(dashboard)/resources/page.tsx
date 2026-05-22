@@ -10,6 +10,12 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Resources Hub",
+  description: "Explore our curated collection of books, guides, and tech tools designed for creators and learners.",
+};
 
 const resourceCategories = [
   {

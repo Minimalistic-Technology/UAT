@@ -7,7 +7,8 @@ import { TrendingUp, Eye, Heart, Clock, ArrowRight, Flame } from "lucide-react";
 import { api } from "@/lib/api";
 
 interface TrendPost {
-    _id: string;
+    id?: string;
+    _id?: string;
     title: string;
     slug: string;
     description?: string;
@@ -113,7 +114,7 @@ export default function TrendingSection() {
                 {/* Symmetrical Horizontal Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
                     {posts.map((post, i) => (
-                        <Reveal key={post._id} delay={i * 80}>
+                        <Reveal key={post.id || post._id} delay={i * 80}>
                             <TiltCard>
                                 <Link
                                     href={`/blog/${post.slug}`}
