@@ -79,6 +79,7 @@ model PendingUser {
   email         String   @unique
   password      String?
   contactNumber String?
+  role          Role     @default(user)
   otp           String
   otpExpires    DateTime
   createdAt     DateTime @default(now())
