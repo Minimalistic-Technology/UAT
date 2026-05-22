@@ -160,6 +160,12 @@ export const updateMember = async (
     if (isActive !== undefined) {
       memberToUpdate.isActive = isActive;
       await memberToUpdate.save({ session });
+
+      if(isActive === false){
+        await User.findByIdAndUpdate(memberToUpdate.user, {
+          isActive: false,
+        }).session(session);
+      }
     }
 
     if (firstName || lastName) {

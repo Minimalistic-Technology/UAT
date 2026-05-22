@@ -13,14 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  isActive: z.boolean(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { updateTeamMemberSchema, UpdateTeamMemberSchema } from "@/features/employer/validations/team.schema";
 
 export default function UpdateTeamMemberPage() {
   const router = useRouter();
@@ -36,8 +29,8 @@ export default function UpdateTeamMemberPage() {
     setValue,
     watch,
     formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  } = useForm<UpdateTeamMemberSchema>({
+    resolver: zodResolver(updateTeamMemberSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -56,7 +49,7 @@ export default function UpdateTeamMemberPage() {
     }
   }, [memberData, setValue]);
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = (data: UpdateTeamMemberSchema) => {
     updateEmployeeMutation.mutate({ id: memberId, data });
   };
 
