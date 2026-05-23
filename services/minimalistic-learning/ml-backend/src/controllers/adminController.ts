@@ -4,7 +4,7 @@ import { prisma } from '../config/db';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
-import { PostStatus, NotificationType } from '@prisma/client';
+import { PostStatus, NotificationType, Role } from '@prisma/client';
 
 // ─── DELETE /admin/posts/:postId ──────────────────────────────────────────────
 export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) => {
@@ -199,6 +199,150 @@ export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, { _id: updatedPost.id, id: updatedPost.id, status: updatedPost.status }, 'Post rejected')
+  );
+});
+
+// ─── USER CONTROLLER ENDPOINTS ────────────────────────────────────────────────
+export const listUsers = asyncHandler(async (req: Request, res: Response) => {
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      role: true,
+      isVerified: true,
+      createdAt: true
+    }
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, users, 'Users fetched successfully')
+  );
+});
+
+export const updateUser = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const { role, firstName, lastName, isVerified } = req.body;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+
+  const updateData: Record<string, any> = {};
+  if (role && (role === 'admin' || role === 'user')) {
+    updateData.role = role as Role;
+  }
+  if (firstName !== undefined) updateData.firstName = firstName;
+  if (lastName !== undefined) updateData.lastName = lastName;
+  if (isVerified !== undefined) updateData.isVerified = isVerified;
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: updateData
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, updatedUser, 'User updated successfully')
+  );
+});
+
+export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = req.params;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+
+  // Prevent admin from deleting themselves
+  if (req.user && req.user.id === userId) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'You cannot delete your own admin account');
+  }
+
+  await prisma.user.delete({ where: { id: userId } });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, null, 'User deleted successfully')
+  );
+});
+
+// ─── ROUTE PERMISSIONS ENDPOINTS ──────────────────────────────────────────────
+export const listPermissions = asyncHandler(async (req: Request, res: Response) => {
+  const permissions = await prisma.routePermission.findMany({
+    orderBy: [{ role: 'asc' }, { path: 'asc' }]
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, permissions, 'Permissions fetched successfully')
+  );
+});
+
+export const createPermission = asyncHandler(async (req: Request, res: Response) => {
+  const { path, method, role, isActive, description } = req.body;
+
+  if (!path || !role) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Path and Role parameters are required');
+  }
+
+  if (role !== 'admin' && role !== 'user') {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid role');
+  }
+
+  // Check unique key constraint manually
+  const existing = await prisma.routePermission.findUnique({
+    where: {
+      path_method_role: {
+        path: path.trim(),
+        method: method ? method.trim() : null,
+        role: role as Role
+      }
+    }
+  });
+
+  if (existing) {
+    throw new ApiError(StatusCodes.CONFLICT, 'Permission rule already exists');
+  }
+
+  const permission = await prisma.routePermission.create({
+    data: {
+      path: path.trim(),
+      method: method ? method.toUpperCase().trim() : null,
+      role: role as Role,
+      isActive: typeof isActive === 'boolean' ? isActive : true,
+      description: description ? description.trim() : null
+    }
+  });
+
+  return res.status(StatusCodes.CREATED).json(
+    new ApiResponse(StatusCodes.CREATED, permission, 'Permission created successfully')
+  );
+});
+
+export const togglePermission = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const permission = await prisma.routePermission.findUnique({ where: { id } });
+  if (!permission) throw new ApiError(StatusCodes.NOT_FOUND, 'Permission rule not found');
+
+  const updatedPermission = await prisma.routePermission.update({
+    where: { id },
+    data: { isActive: !permission.isActive }
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, updatedPermission, 'Permission toggled successfully')
+  );
+});
+
+export const deletePermission = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const permission = await prisma.routePermission.findUnique({ where: { id } });
+  if (!permission) throw new ApiError(StatusCodes.NOT_FOUND, 'Permission rule not found');
+
+  await prisma.routePermission.delete({ where: { id } });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, null, 'Permission rule deleted successfully')
   );
 });
 

@@ -14,6 +14,7 @@ import {
   getUserStats,
 } from "../controllers/postController";
 import requireAuth from "../middleware/requireAuth";
+import checkDbPermission from "../middleware/checkDbPermission";
 import { uploadCoverImage, uploadMedia as uploadMediaMiddleware } from "../middleware/upload";
 
 const router = Router();
@@ -26,10 +27,10 @@ router.get("/slug/:slug", getPostBySlug);
 
 router.post("/slug/:slug/view", recordView);        // Public — no auth needed
 router.get("/id/:blogId", getPostById);
-router.post("/", requireAuth, uploadCoverImage, createPost);
-router.put("/:blogId", requireAuth, updatePost);
-router.delete("/:blogId", requireAuth, deletePost);
-router.post("/:blogId/like", requireAuth, likePost);
-router.post("/media/upload", requireAuth, uploadMediaMiddleware, uploadMedia);
+router.post("/", requireAuth, checkDbPermission, uploadCoverImage, createPost);
+router.put("/:blogId", requireAuth, checkDbPermission, updatePost);
+router.delete("/:blogId", requireAuth, checkDbPermission, deletePost);
+router.post("/:blogId/like", requireAuth, checkDbPermission, likePost);
+router.post("/media/upload", requireAuth, checkDbPermission, uploadMediaMiddleware, uploadMedia);
 
 export default router;

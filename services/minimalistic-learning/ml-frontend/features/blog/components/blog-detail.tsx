@@ -79,9 +79,10 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
           setLikesCount(res.data.likes);
         }
       },
-      onError: () => {
+      onError: (err: any) => {
         setHasLiked(previousHasLiked);
         setLikesCount(previousCount);
+        toast.error(err?.response?.data?.message || "Action failed.");
       }
     });
   };
@@ -98,12 +99,20 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
     createComment({ postId: blogId, content: commentText }, {
       onSuccess: () => {
         setCommentText("");
+        toast.success("Comment posted!");
+      },
+      onError: (err: any) => {
+        toast.error(err?.response?.data?.message || "Failed to post comment.");
       }
     });
   };
 
   const handleLikeComment = (commentId: string) => {
-    likeComment(commentId);
+    likeComment(commentId, {
+      onError: (err: any) => {
+        toast.error(err?.response?.data?.message || "Action failed.");
+      }
+    });
   };
 
   const comments = commentsData?.data || [];
@@ -249,7 +258,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
                     </div>
                   ) : comments.length > 0 ? (
                     comments.map((cmt: any, i: number) => (
-                      <div key={cmt._id || i} className="flex gap-4 p-6 rounded-[2rem] bg-theme-element border border-theme-accent/10 shadow-sm hover:shadow-md transition-shadow">
+                      <div key={cmt.id || cmt._id || i} className="flex gap-4 p-6 rounded-[2rem] bg-theme-element border border-theme-accent/10 shadow-sm hover:shadow-md transition-shadow">
                         <div className="w-12 h-12 rounded-full bg-theme-action/10 shrink-0 flex items-center justify-center font-black text-theme-action text-base border border-theme-action/20">
                           {cmt.authorId?.firstName?.charAt(0) || 'U'}
                         </div>
@@ -358,7 +367,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {latestBlogs.map((item) => (
-                <BlogCard key={item._id} blog={item} />
+                <BlogCard key={item.id || item._id} blog={item} />
               ))}
             </div>
           </div>

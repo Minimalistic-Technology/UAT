@@ -37,3 +37,5 @@ export const subscribeNewsletter = asyncHandler(async (req: Request, res: Respon
     new ApiResponse(StatusCodes.OK, {}, 'Thank you for subscribing! Check your inbox 📬')
   );
 });
+
+

@@ -23,6 +23,11 @@ export const api = axios.create({
   },
 });
 
+// VERY IMPORTANT for Next.js Fast Refresh: 
+// Clear ghost interceptors from old browser memory instances
+api.interceptors.request.clear();
+api.interceptors.response.clear();
+
 // Request interceptor
 api.interceptors.request.use((config) => {
   // If we have a token in localStorage, use it as a fallback
@@ -61,6 +66,11 @@ api.interceptors.response.use(
     // Silently handle expected 401 for /me (guest mode)
     if (error.response?.status === 401 && originalRequest.url?.endsWith("/auth/me")) {
       return Promise.resolve({ data: { data: { user: null } } });
+    }
+
+    // Globally intercept completely disabled functionality features
+    if (error.response?.status === 503) {
+      return Promise.reject(error);
     }
 
     // If 401 and not a retry yet, and not the refresh token endpoint itself

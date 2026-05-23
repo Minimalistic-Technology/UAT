@@ -54,9 +54,10 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
         } else {
           setError(response.message || 'Failed to fetch blogs');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching blogs:', err);
-        setError('Something went wrong while fetching blogs.');
+        const serverMsg = err?.response?.data?.message || 'Something went wrong while fetching blogs.';
+        setError(serverMsg);
       } finally {
         setLoading(false);
       }
