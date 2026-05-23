@@ -72,7 +72,7 @@ router.get(
 router.put(
   "/:id/status",
   protect,
-  authorize(GlobalRole.USER), // only for employer
+  authorize(GlobalRole.USER), // only for owner / hr
   validate(updateApplicationStatusSchema),
   updateApplicationStatus,
 );

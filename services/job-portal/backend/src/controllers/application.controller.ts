@@ -284,9 +284,19 @@ export const updateApplicationStatus = async (
       throw new ApiError(404, "Application not found");
     }
 
-    // Verify job belongs to employer
+    // Verify job belongs to employer or user is HR/OWNER of the company
     const job: any = application.job;
-    if (job.postedBy.toString() !== req.user.id) {
+    
+    const companyMember = await CompanyMember.findOne({
+      user: req.user._id,
+      company: job.company,
+    });
+
+    const isEmployer = job.postedBy.toString() === req.user.id;
+    const isAuthorizedMember = companyMember && 
+      (companyMember.role === CompanyRole.HR || companyMember.role === CompanyRole.OWNER);
+
+    if (!isEmployer && !isAuthorizedMember) {
       throw new ApiError(403, "Not authorized to update this application");
     }
 
