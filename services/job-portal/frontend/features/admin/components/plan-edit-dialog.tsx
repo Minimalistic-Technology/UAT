@@ -37,7 +37,11 @@ interface PlanEditDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function PlanEditDialog({ plan, open, onOpenChange }: PlanEditDialogProps) {
+export function PlanEditDialog({
+  plan,
+  open,
+  onOpenChange,
+}: PlanEditDialogProps) {
   const { mutate: updatePlan, isPending } = useUpdatePlan();
 
   const {
@@ -56,6 +60,7 @@ export function PlanEditDialog({ plan, open, onOpenChange }: PlanEditDialogProps
       currency: "INR",
       durationDays: 30,
       jobPostLimit: -1,
+      teamMemberLimit: -1,
       features: [""],
       isFeatured: false,
       isDefault: false,
@@ -78,6 +83,8 @@ export function PlanEditDialog({ plan, open, onOpenChange }: PlanEditDialogProps
         currency: plan.currency,
         durationDays: plan.durationDays,
         jobPostLimit: plan.jobPostLimit,
+        teamMemberLimit:
+          plan.teamMemberLimit !== undefined ? plan.teamMemberLimit : -1,
         features: plan.features?.length ? plan.features : [""],
         isFeatured: plan.isFeatured,
         isDefault: plan.isDefault,
@@ -95,14 +102,14 @@ export function PlanEditDialog({ plan, open, onOpenChange }: PlanEditDialogProps
         onSuccess: () => {
           onOpenChange(false);
         },
-      }
+      },
     );
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden p-0">
+        <DialogHeader className="border-b px-6 py-4">
           <DialogTitle>Edit Plan</DialogTitle>
           <DialogDescription>
             Update pricing, limits, and features for this plan.
@@ -110,7 +117,11 @@ export function PlanEditDialog({ plan, open, onOpenChange }: PlanEditDialogProps
         </DialogHeader>
 
         <ScrollArea className="flex-1 overflow-y-auto px-6 py-4">
-          <form id="plan-edit-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form
+            id="plan-edit-form"
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-6"
+          >
             {/* Basic Info */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
@@ -213,6 +224,24 @@ export function PlanEditDialog({ plan, open, onOpenChange }: PlanEditDialogProps
               </div>
             </div>
 
+            <div className="grid grid-cols-1">
+              <div className="space-y-2">
+                <Label htmlFor="edit-teamMemberLimit">
+                  Team Member Limit (-1 = Unlimited)
+                </Label>
+                <Input
+                  id="edit-teamMemberLimit"
+                  type="number"
+                  {...register("teamMemberLimit", { valueAsNumber: true })}
+                />
+                {errors.teamMemberLimit && (
+                  <p className="text-destructive text-xs">
+                    {errors.teamMemberLimit.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
             {/* Toggles */}
             <div className="bg-muted/30 grid grid-cols-1 gap-4 rounded-lg border px-4 py-4 sm:grid-cols-3">
               <div className="flex items-center space-x-2">
@@ -287,7 +316,7 @@ export function PlanEditDialog({ plan, open, onOpenChange }: PlanEditDialogProps
             </div>
           </form>
         </ScrollArea>
-        <div className="p-6 border-t bg-muted/20 flex justify-end gap-3">
+        <div className="bg-muted/20 flex justify-end gap-3 border-t p-6">
           <Button
             type="button"
             variant="outline"
@@ -304,8 +333,7 @@ export function PlanEditDialog({ plan, open, onOpenChange }: PlanEditDialogProps
           >
             {isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
-                Saving...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
               </>
             ) : (
               "Save Changes"

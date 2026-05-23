@@ -50,6 +50,9 @@ export function PlanTableRow({ plan }: { plan: any }) {
         <TableCell className="text-muted-foreground hidden xl:table-cell">
           {plan.jobPostLimit === -1 ? "Unlimited" : plan.jobPostLimit}
         </TableCell>
+        <TableCell className="text-muted-foreground hidden xl:table-cell">
+          {plan.teamMemberLimit === -1 ? "Unlimited" : plan.teamMemberLimit}
+        </TableCell>
         <TableCell>
           <Badge
             variant={plan.isActive ? "default" : "destructive"}

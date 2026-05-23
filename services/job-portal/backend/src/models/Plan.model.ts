@@ -7,6 +7,7 @@ export interface IPlan extends Document {
   currency: string; // e.g., "INR", "USD"
   durationDays: number;
   jobPostLimit: number;
+  teamMemberLimit: number;
   isFeatured: boolean;
   isDefault: boolean;
   displayOrder: number;
@@ -61,6 +62,12 @@ const planSchema = new Schema<IPlan>(
       type: Number,
       required: [true, "Job post limit is required"],
       min: [-1, "Limit must be at least 1, or -1 for unlimited"],
+    },
+    teamMemberLimit: {
+      type: Number,
+      required: [true, "Team member limit is required"],
+      min: [-1, "Limit must be at least 0, or -1 for unlimited"],
+      default: 0,
     },
     isFeatured: {
       type: Boolean,

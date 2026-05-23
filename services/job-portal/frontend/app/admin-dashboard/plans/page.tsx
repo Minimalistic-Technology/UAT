@@ -30,6 +30,7 @@ const COLUMNS = [
   { key: "price", label: "Price", className: "hidden md:table-cell" },
   { key: "duration", label: "Duration", className: "hidden lg:table-cell" },
   { key: "limit", label: "Job Limit", className: "hidden xl:table-cell" },
+  { key: "teamLimit", label: "Team Limit", className: "hidden xl:table-cell" },
   { key: "status", label: "Status" },
   { key: "created", label: "Created At", className: "hidden md:table-cell" },
   { key: "actions", label: "Actions" },

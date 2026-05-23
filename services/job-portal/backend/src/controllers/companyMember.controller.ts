@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import bcrypt from "bcryptjs";
+import Subscription from "../models/Subscription.model.js";
 
 export const getAllCompanyMembers = async (
   req: AuthRequest,
@@ -64,6 +65,32 @@ export const addMember = async (req: AuthRequest, res: Response) => {
       return res
         .status(400)
         .json({ success: false, message: "Unauthorized or invalid access." });
+    }
+
+    const activeSubscription = await Subscription.findOne({
+      companyId: ownerMember.company,
+      status: "active",
+      expiryDate: { $gt: new Date() },
+    }).populate("planId").session(session);
+
+    if (!activeSubscription) {
+      return res.status(403).json({ success: false, message: "You must have an active subscription to add team members." });
+    }
+
+    const plan = activeSubscription.planId as any;
+
+    if (plan.teamMemberLimit !== -1) {
+      const currentMemberCount = await CompanyMember.countDocuments({
+        company: ownerMember.company,
+        role: { $ne: CompanyRole.OWNER },
+      }).session(session);
+
+      if (currentMemberCount >= plan.teamMemberLimit) {
+        return res.status(403).json({ 
+          success: false, 
+          message: `Team member limit reached. Your current plan allows up to ${plan.teamMemberLimit} additional members.` 
+        });
+      }
     }
 
     const { firstName, lastName, email, password } = req.body;

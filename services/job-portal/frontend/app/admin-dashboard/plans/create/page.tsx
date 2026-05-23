@@ -47,6 +47,7 @@ export default function CreatePlanForm() {
       currency: "INR",
       durationDays: 30,
       jobPostLimit: -1,
+      teamMemberLimit: -1,
       features: [""],
       isFeatured: false,
       isDefault: false,
@@ -123,7 +124,7 @@ export default function CreatePlanForm() {
                   id="price"
                   type="number"
                   step="1"
-                   min={0}    
+                  min={0}
                   {...register("price", { valueAsNumber: true })}
                 />
                 {errors.price && (
@@ -154,7 +155,7 @@ export default function CreatePlanForm() {
               </div>
             </div>
 
-            {/* Duration ( Days ) */}
+            {/* Duration and Limits */}
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="duration">Expiry Period (In Days)</Label>
@@ -184,6 +185,25 @@ export default function CreatePlanForm() {
                 {errors.jobPostLimit && (
                   <p className="text-destructive text-xs">
                     {errors.jobPostLimit.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1">
+              <div className="space-y-2">
+                <Label htmlFor="teamMemberLimit">
+                  Team Member Limit (-1 = Unlimited)
+                </Label>
+                <Input
+                  id="teamMemberLimit"
+                  type="number"
+                  min={-1}
+                  {...register("teamMemberLimit", { valueAsNumber: true })}
+                />
+                {errors.teamMemberLimit && (
+                  <p className="text-destructive text-xs">
+                    {errors.teamMemberLimit.message}
                   </p>
                 )}
               </div>
@@ -266,7 +286,7 @@ export default function CreatePlanForm() {
               <Button
                 type="submit"
                 disabled={isPending}
-                className="w-full min-w-37.5 cursor-pointer sm:w-auto bg-indigo-700"
+                className="w-full min-w-37.5 cursor-pointer bg-indigo-700 sm:w-auto"
               >
                 {isPending ? (
                   <>

@@ -12,6 +12,9 @@ export const createPlanSchema = z.object({
   jobPostLimit: z
     .number({ message: "Job post limit must be an integer" })
     .min(-1, "Use -1 for unlimited, or a positive number"),
+  teamMemberLimit: z
+    .number({ message: "Team member limit must be an integer" })
+    .min(-1, "Use -1 for unlimited, or a positive number"),
   features: z.array(z.string().min(1, "Feature description is required")),
   isFeatured: z.boolean(),
   isDefault: z.boolean(),
