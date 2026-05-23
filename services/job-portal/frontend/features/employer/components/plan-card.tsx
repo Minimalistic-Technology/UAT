@@ -38,6 +38,7 @@ import { APP_NAME } from "@/constants";
 
 export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boolean }) {
   const { data: session } = useSession();
+  const companyRole = session?.user.companyRole;
   const userId = session?.user.id;
   const isUnlimited = plan.jobPostLimit === -1;
   const router = useRouter();
@@ -91,7 +92,12 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
   };
 
   const handlePayment = async () => {
-    const isLoaded = await loadRazorpayScript();
+    if(companyRole !== 'owner') {
+      toast.error("Only owner can buy plans");
+      return;
+    }
+
+     const isLoaded = await loadRazorpayScript();
 
     if (!isLoaded) {
       toast.error("Razorpay SDK failed to load.");
