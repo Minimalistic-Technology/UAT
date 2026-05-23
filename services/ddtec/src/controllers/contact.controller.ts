@@ -23,20 +23,43 @@ export const submitContactForm = async (req: Request, res: Response) => {
 
         const savedContact = await newContact.save();
 
-        // 3. Send Email Notification
+        // 3. Send Email Notification (Background - Don't await to prevent timeout)
         const emailValidation = ValidationService.isRealEmail(email);
-        if (!emailValidation.isValid) {
-            return res.status(400).json({ msg: emailValidation.msg });
+        if (emailValidation.isValid) {
+            setImmediate(() => {
+                NotificationService.sendContactNotification({ firstName, lastName, email, message })
+                    .catch(err => console.error('[BACKGROUND-MAIL-ERROR] Contact Notification failed:', err));
+            });
         }
 
-        const sent = await NotificationService.sendContactNotification({ firstName, lastName, email, message });
+        // Return response immediately
+        return res.status(201).json({
+            msg: 'Message received successfully!',
+            contact: savedContact
+        });
 
-        if (sent) {
-            res.status(201).json({ msg: 'Message sent and saved successfully', contact: savedContact });
-        } else {
-            res.status(201).json({ msg: 'Message saved, but notification failed.', contact: savedContact });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+
+export const getMessages = async (req: Request, res: Response) => {
+    try {
+        const messages = await Contact.find().sort({ createdAt: -1 });
+        res.json(messages);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+};
+export const deleteMessage = async (req: Request, res: Response) => {
+    try {
+        const message = await Contact.findByIdAndDelete(req.params.id);
+        if (!message) {
+            return res.status(404).json({ msg: 'Message not found' });
         }
-
+        res.json({ msg: 'Message deleted successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');

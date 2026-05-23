@@ -1,7 +1,6 @@
 import { Router } from 'express';
-import { register, login, logout, getMe, sendOtp, verifyOtp, createUser, toggleUserStatus, updateUser, updateMe, checkUser, changePassword } from '../controllers/auth.controller';
-import auth from '../middleware/auth.middleware';
-import admin from '../middleware/admin.middleware';
+import { register, login, logout, getMe, sendOtp, verifyOtp, createUser, toggleUserStatus, updateUser, updateMe, checkUser, changePassword, updateCreditBalance, getAllUsers } from '../controllers/auth.controller';
+import { auth, checkPermission, checkGranularPermission } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -14,12 +13,12 @@ router.get('/me', auth, getMe);
 router.put('/me', auth, updateMe);
 router.put('/change-password', auth, changePassword);
 router.post('/check-user', checkUser);
-// router.get('/me', auth, getMe); // Removed duplicate
 
 // Admin Routes
-router.post('/create-user', auth, admin, createUser);
-
-router.put('/users/:id/status', auth, admin, toggleUserStatus);
-router.put('/users/:id', auth, admin, updateUser);
+router.post('/create-user', auth as any, checkGranularPermission('users', 'add'), createUser);
+router.get('/users', auth as any, checkGranularPermission('users', 'view'), getAllUsers);
+router.put('/users/:id/status', auth as any, checkGranularPermission('users', 'edit'), toggleUserStatus);
+router.put('/users/:id/credit', auth as any, checkGranularPermission('users', 'edit'), updateCreditBalance);
+router.put('/users/:id', auth as any, checkGranularPermission('users', 'edit'), updateUser);
 
 export default router;

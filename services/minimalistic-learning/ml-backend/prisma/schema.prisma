@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  @@index([email])
+  @@index([role])
+  id            String         @id @default(cuid())
+  firstName     String
+  lastName      String
+  contactNumber String
+  email         String         @unique
+  password      String
+  role          Role           @default(user)
+  isVerified    Boolean        @default(false)
+  otp           String?
+  otpExpires    DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  comments      Comment[]
+  notifications Notification[]
+  posts         Post[]
+  tokens        Token[]
+}
+
+model Post {
+  @@index([slug])
+  @@index([authorId])
+  @@index([published])
+  @@index([status])
+  @@index([createdAt])
+  id          String     @id @default(cuid())
+  title       String     @default("Untitled Story")
+  slug        String     @unique
+  content     String     @default("")
+  description String?
+  coverImage  Json?
+  readTime    Int        @default(0)
+  tags        String[]
+  authorId    String
+  published   Boolean    @default(false)
+  status      PostStatus @default(pending)
+  category    String     @default("Uncategorized")
+  viewCount   Int        @default(0)
+  viewedBy    String[]
+  likes       String[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  comments    Comment[]
+  author      User       @relation(fields: [authorId], references: [id])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  parentId  String?
+  likes     String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation(fields: [authorId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  title       String
+  message     String
+  type        NotificationType @default(general)
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  recipient   User             @relation(fields: [recipientId], references: [id])
+}
+
+model PendingUser {
+  id            String   @id @default(cuid())
+  firstName     String
+  lastName      String?
+  email         String   @unique
+  password      String?
+  contactNumber String?
+  role          Role     @default(user)
+  otp           String
+  otpExpires    DateTime
+  createdAt     DateTime @default(now())
+}
+
+model Token {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  type      TokenType
+  expiresAt DateTime
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model SiteSetting {
+  id                 String   @id @default(cuid())
+  key                String   @unique @default("global")
+  autoApprovePost    Boolean  @default(true)
+  resourceHubEnabled Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model AllowedRoute {
+  id        String   @id @default(cuid())
+  path      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model RoutePermission {
+  id          String   @id @default(cuid())
+  path        String
+  method      String?
+  role        Role     @default(user)
+  isActive    Boolean  @default(true)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([path, method, role])
+}
+
+
+enum Role {
+  user
+  admin
+}
+
+enum PostStatus {
+  pending
+  published
+  rejected
+}
+
+enum NotificationType {
+  post_deleted
+  post_approved
+  post_rejected
+  general
+}
+
+enum TokenType {
+  refresh
+  reset
+}

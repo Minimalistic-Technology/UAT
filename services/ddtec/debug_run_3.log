@@ -1,5 +1,0 @@
-Starting server code...
-[dotenv@17.2.3] injecting env (4) from ..\..\.env -- tip: ⚙️  write to custom object with { processEnv: myObject }
-DDTEC service listening on port http://localhost:5000
-MongoDB Connected: ac-bisdelb-shard-00-00.4klpagy.mongodb.net
-Terminate batch job (Y/N)? Terminate batch job (Y/N)? 

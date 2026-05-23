@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { getProducts, getProductById, createProduct, updateProduct, deleteProduct, toggleProductStatus } from '../controllers/products.controller';
-import auth from '../middleware/auth.middleware';
-import admin from '../middleware/admin.middleware';
+import { auth, checkPermission } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -18,22 +17,22 @@ router.get('/:id', getProductById);
 // @route   POST api/products
 // @desc    Create a product
 // @access  Private/Admin
-router.post('/', auth, admin, createProduct);
+router.post('/', auth, checkPermission(['product_manager']), createProduct);
 
 // @route   PUT api/products/:id
 // @desc    Update a product
 // @access  Private/Admin
-router.put('/:id', auth, admin, updateProduct);
+router.put('/:id', auth as any, checkPermission(['product_manager', 'order_manager', 'finance']), updateProduct);
 
 // @route   DELETE api/products/:id
 // @desc    Delete a product
 // @access  Private/Admin
-router.delete('/:id', auth, admin, deleteProduct);
+router.delete('/:id', auth, checkPermission(['product_manager']), deleteProduct);
 
 
 // @route   PUT api/products/:id/status
 // @desc    Toggle product status
 // @access  Private/Admin
-router.put('/:id/status', auth, admin, toggleProductStatus);
+router.put('/:id/status', auth, checkPermission(['product_manager']), toggleProductStatus);
 
 export default router;

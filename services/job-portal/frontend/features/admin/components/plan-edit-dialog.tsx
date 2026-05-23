@@ -1,0 +1,346 @@
+"use client";
+
+import { useEffect } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus, Trash2, Loader2 } from "lucide-react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+import {
+  CreatePlanFormValues,
+  createPlanSchema,
+} from "@/features/admin/validations/plan.schema";
+import { useUpdatePlan } from "@/features/admin/hooks/use-plan";
+
+interface PlanEditDialogProps {
+  plan: any | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function PlanEditDialog({
+  plan,
+  open,
+  onOpenChange,
+}: PlanEditDialogProps) {
+  const { mutate: updatePlan, isPending } = useUpdatePlan();
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<CreatePlanFormValues>({
+    resolver: zodResolver(createPlanSchema),
+    defaultValues: {
+      name: "",
+      price: 0,
+      currency: "INR",
+      durationDays: 30,
+      jobPostLimit: -1,
+      teamMemberLimit: -1,
+      features: [""],
+      isFeatured: false,
+      isDefault: false,
+      displayOrder: 0,
+      isActive: true,
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    //@ts-ignore
+    name: "features",
+  });
+
+  useEffect(() => {
+    if (plan && open) {
+      reset({
+        name: plan.name,
+        price: plan.price,
+        currency: plan.currency,
+        durationDays: plan.durationDays,
+        jobPostLimit: plan.jobPostLimit,
+        teamMemberLimit:
+          plan.teamMemberLimit !== undefined ? plan.teamMemberLimit : -1,
+        features: plan.features?.length ? plan.features : [""],
+        isFeatured: plan.isFeatured,
+        isDefault: plan.isDefault,
+        displayOrder: plan.displayOrder,
+        isActive: plan.isActive,
+      });
+    }
+  }, [plan, open, reset]);
+
+  const onSubmit = (data: CreatePlanFormValues) => {
+    if (!plan?._id) return;
+    updatePlan(
+      { id: plan._id, data },
+      {
+        onSuccess: () => {
+          onOpenChange(false);
+        },
+      },
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden p-0">
+        <DialogHeader className="border-b px-6 py-4">
+          <DialogTitle>Edit Plan</DialogTitle>
+          <DialogDescription>
+            Update pricing, limits, and features for this plan.
+          </DialogDescription>
+        </DialogHeader>
+
+        <ScrollArea className="flex-1 overflow-y-auto px-6 py-4">
+          <form
+            id="plan-edit-form"
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-6"
+          >
+            {/* Basic Info */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Plan Name</Label>
+                <Input
+                  id="edit-name"
+                  {...register("name")}
+                  placeholder="e.g. Premium Plan"
+                />
+                {errors.name && (
+                  <p className="text-destructive text-xs">
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-displayOrder">Display Order</Label>
+                <Input
+                  id="edit-displayOrder"
+                  type="number"
+                  {...register("displayOrder", { valueAsNumber: true })}
+                />
+                {errors.displayOrder && (
+                  <p className="text-destructive text-xs">
+                    {errors.displayOrder.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Pricing */}
+            <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-price">Price</Label>
+                <Input
+                  id="edit-price"
+                  type="number"
+                  step="0.01"
+                  {...register("price", { valueAsNumber: true })}
+                />
+                {errors.price && (
+                  <p className="text-destructive text-xs">
+                    {errors.price.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Currency</Label>
+                <Select
+                  onValueChange={(val) =>
+                    setValue("currency", val as "INR" | "USD" | "EUR" | "GBP")
+                  }
+                  value={watch("currency")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INR">INR — Indian Rupee</SelectItem>
+                    <SelectItem value="USD">USD — US Dollar</SelectItem>
+                    <SelectItem value="EUR">EUR — Euro</SelectItem>
+                    <SelectItem value="GBP">GBP — British Pound</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Limits */}
+            <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-duration">Duration (Days)</Label>
+                <Input
+                  id="edit-duration"
+                  type="number"
+                  {...register("durationDays", { valueAsNumber: true })}
+                />
+                {errors.durationDays && (
+                  <p className="text-destructive text-xs">
+                    {errors.durationDays.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-jobLimit">
+                  Job Post Limit (-1 = Unlimited)
+                </Label>
+                <Input
+                  id="edit-jobLimit"
+                  type="number"
+                  {...register("jobPostLimit", { valueAsNumber: true })}
+                />
+                {errors.jobPostLimit && (
+                  <p className="text-destructive text-xs">
+                    {errors.jobPostLimit.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1">
+              <div className="space-y-2">
+                <Label htmlFor="edit-teamMemberLimit">
+                  Team Member Limit (-1 = Unlimited)
+                </Label>
+                <Input
+                  id="edit-teamMemberLimit"
+                  type="number"
+                  {...register("teamMemberLimit", { valueAsNumber: true })}
+                />
+                {errors.teamMemberLimit && (
+                  <p className="text-destructive text-xs">
+                    {errors.teamMemberLimit.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Toggles */}
+            <div className="bg-muted/30 grid grid-cols-1 gap-4 rounded-lg border px-4 py-4 sm:grid-cols-3">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="edit-isActive"
+                  checked={watch("isActive")}
+                  onCheckedChange={(val) => setValue("isActive", val)}
+                />
+                <Label htmlFor="edit-isActive">Active Plan</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="edit-isFeatured"
+                  checked={watch("isFeatured")}
+                  onCheckedChange={(val) => setValue("isFeatured", val)}
+                />
+                <Label htmlFor="edit-isFeatured">Featured Plan</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="edit-isDefault"
+                  checked={watch("isDefault")}
+                  onCheckedChange={(val) => setValue("isDefault", val)}
+                />
+                <Label htmlFor="edit-isDefault">Default Plan</Label>
+              </div>
+            </div>
+
+            {/* Features Array */}
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-bold">Plan Features</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => append("" as any)}
+                >
+                  <Plus className="mr-1 h-4 w-4" /> Add Feature
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="space-y-1">
+                    <div className="flex gap-2">
+                      <Input
+                        {...register(`features.${index}` as const)}
+                        placeholder={`Feature ${index + 1}`}
+                        className={
+                          errors.features?.[index] ? "border-destructive" : ""
+                        }
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:bg-destructive/10 shrink-0"
+                        onClick={() => remove(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {errors.features?.[index] && (
+                      <p className="text-destructive ml-1 text-xs font-medium">
+                        {errors.features[index]?.message}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </form>
+        </ScrollArea>
+        <div className="bg-muted/20 flex justify-end gap-3 border-t p-6">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="plan-edit-form"
+            disabled={isPending}
+            className="bg-indigo-700 hover:bg-indigo-800"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

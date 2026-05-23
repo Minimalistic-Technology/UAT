@@ -1,0 +1,71 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { 
+  LayoutDashboard, 
+  Users, 
+  Briefcase, 
+  BarChart3, 
+  ShieldCheck, 
+  Settings,
+  LogOut,
+  Ticket,
+  Notebook
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { signOut } from "next-auth/react"
+import { SidebarNavItem } from "@/components/sidebar-nav-item"
+
+export const menuItems = [
+  { label: "Dashboard", icon: LayoutDashboard, href: "/admin-dashboard" },
+  { label: "User Management", icon: Users, href: "/admin-dashboard/users" },
+  { label: "KYC Applications", icon: ShieldCheck, href: "/admin-dashboard/kyc" },
+  { label: "Analytics", icon: BarChart3, href: "/admin-dashboard/analytics" },
+  {label: "Coupons", icon: Ticket, href: "/admin-dashboard/coupons"},
+  {label: "Plans", icon: Notebook, href: "/admin-dashboard/plans"},
+  { label: "System Settings", icon: Settings, href: "/admin-dashboard/settings" },
+]
+
+export function Sidebar({ className }: { className?: string }) {
+  const pathname = usePathname();
+  const handleLogout = () => signOut({ callbackUrl: "/login" });
+
+  return (
+    <div className={cn("min-h-[calc(100vh-4rem)] w-64 flex-col border-r bg-slate-50/50 hidden lg:flex", className)}>
+      <div className="flex h-16 items-center px-6 border-b bg-white">
+        <div className="size-10 rounded-lg bg-indigo-600 flex items-center justify-center">
+          <span className="text-white font-bold text-xl">SA</span>
+        </div>
+        <span className="ml-3 font-bold text-lg tracking-tight text-slate-900">Super Admin</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto py-6 px-3">
+        <nav className="space-y-1">
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <SidebarNavItem
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                isActive={isActive}
+              />
+            )
+          })}
+        </nav>
+      </div>
+
+      <div className="border-t p-4 bg-white">
+        <Button 
+        onClick={handleLogout}
+        variant="ghost" className="w-full justify-start text-slate-500 hover:text-red-600 hover:bg-red-50 cursor-pointer">
+          <LogOut className="mr-3 h-4 w-4" />
+          Logout
+        </Button>
+      </div>
+    </div>
+  )
+}
