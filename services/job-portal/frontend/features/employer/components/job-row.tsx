@@ -46,7 +46,7 @@ export function JobRow({ job }: { job: any }) {
         </span>
       </TableCell>
       <TableCell>
-        <span className="text-sm font-medium">{job.postedBy}</span>
+        <span className="text-sm font-medium">{job.postedBy.firstName + " " + job.postedBy.lastName}</span>
       </TableCell>
       <TableCell className="text-sm text-gray-500">
         {format(new Date(job.createdAt), "MMM dd, yyyy")}
