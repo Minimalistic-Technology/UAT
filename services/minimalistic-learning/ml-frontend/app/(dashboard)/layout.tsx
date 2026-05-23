@@ -36,12 +36,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="flex flex-col min-h-screen bg-background text-foreground" suppressHydrationWarning>
         <Providers>
           <Navbar />
-          <div className="flex flex-col min-h-screen bg-transparent transition-colors duration-500 text-gray-900 dark:text-gray-100">
+          <main className="flex flex-col flex-1 pt-16 transition-colors duration-500">
             {children}
-          </div>
+          </main>
           <Footer />
         </Providers>
         <Toaster position="top-right" richColors />

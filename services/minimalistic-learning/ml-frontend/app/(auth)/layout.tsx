@@ -9,11 +9,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-full flex flex-col">
+      <body className="flex flex-col min-h-screen bg-background text-foreground" suppressHydrationWarning>
         <Providers>
-          <div className="flex flex-col min-h-screen bg-[#FDFDFF]">
+          <main className="flex flex-col flex-1 transition-colors duration-500">
             {children}
-          </div>
+          </main>
         </Providers>
         <Toaster position="top-right" richColors />
       </body>
