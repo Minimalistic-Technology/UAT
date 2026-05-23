@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react"
 import { SidebarNavItem } from "@/components/sidebar-nav-item"
 
 const menuItems = [
@@ -31,6 +31,12 @@ const menuItems = [
 export default function EmployerSidebar({ className }: { className?: string }) {
   const pathname = usePathname()
   const handleLogout = () => signOut({ callbackUrl: "/login" });
+  const {data: session, status} = useSession();
+
+  const userDetails = session?.user;
+  const companyRole = userDetails?.companyRole;
+
+  const roleBasedItems = companyRole === "owner" ? menuItems : menuItems.filter(item => item.label !== "Manage Team");
 
   return (
     <div className={cn("min-h-[calc(100vh-4rem)] w-64 flex-col border-r bg-slate-50/50 hidden lg:flex", className)}>
@@ -43,7 +49,7 @@ export default function EmployerSidebar({ className }: { className?: string }) {
 
       <div className="flex-1 overflow-y-auto py-6 px-3">
         <nav className="space-y-1">
-          {menuItems.map((item) => {
+          {roleBasedItems.map((item) => {
             const isActive = pathname === item.href
             return (
               <SidebarNavItem
