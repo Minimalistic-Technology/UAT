@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Settings,
   Sparkles,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -221,7 +222,7 @@ const Page = () => {
       )}
 
       {/* Quick Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Active Jobs"
           value={Number(companyDetails?.activeJobs)}
@@ -260,6 +261,23 @@ const Page = () => {
     </Link>
   }
 />
+
+        <StatCard
+          title="Remaining Job Posts"
+          value={
+            companyDetails?.remainingJobPosts === -1
+              ? "Unlimited"
+              : companyDetails?.remainingJobPosts !== undefined && companyDetails?.remainingJobPosts !== null
+                ? Number(companyDetails.remainingJobPosts)
+                : 0
+          }
+          icon={FileText}
+          description={
+            companyDetails?.remainingJobPosts === -1
+              ? "Post as many jobs as you want"
+              : "Posts available in current plan"
+          }
+        />
       </div>
 
       {/* Recent Applications Table */}
@@ -352,8 +370,8 @@ export const DashboardSkeleton = () => {
       </div>
 
       {/* Quick Stats Grid Skeleton */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3].map((i) => (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Skeleton className="h-4 w-24" /> {/* Card Title */}

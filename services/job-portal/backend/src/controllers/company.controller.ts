@@ -222,6 +222,7 @@ export const getCompany = async (
       totalMembers,
       currentPlan: currentSubscription ? currentSubscription.planId : null,
       subscription: currentSubscription,
+      remainingJobPosts: currentSubscription ? currentSubscription.postsRemaining : null,
     };
 
     res
@@ -275,6 +276,7 @@ export const getMyCompany = async (
       totalMembers,
       currentPlan: currentSubscription ? currentSubscription.planId : null,
       subscription: currentSubscription,
+      remainingJobPosts: currentSubscription ? currentSubscription.postsRemaining : null,
       kycStatus: kyc ? kyc.status : null,
       kycRejectionReason: kyc?.rejectionReason || null,
     };
