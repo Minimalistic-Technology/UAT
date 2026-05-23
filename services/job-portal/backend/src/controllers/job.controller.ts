@@ -390,10 +390,9 @@ export const getMyJobs = async (
       companyMember.role === CompanyRole.HR ||
       companyMember.role === CompanyRole.OWNER
     ) {
-      const jobs = await Job.find({ company: companyMember.company }).populate(
-        "company",
-        "name logo",
-      );
+      const jobs = await Job.find({ company: companyMember.company })
+        .populate("company", "name logo")
+        .populate("postedBy", "firstName lastName");
 
       return res.status(200).json(
         new ApiResponse(
