@@ -15,21 +15,20 @@ import {
 import { useRouter } from "next/navigation";
 import { useDeleteMyJobPosting } from "../hooks/use-job";
 
-export function JobRow({ job }: { job: any }) {
-  // Logic to determine badge color based on status
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "active":
-        return "bg-green-100 text-green-700 hover:bg-green-100";
-      case "draft":
-        return "bg-gray-100 text-gray-700 hover:bg-gray-100";
-      case "expired":
-        return "bg-red-100 text-red-700 hover:bg-red-100";
-      default:
-        return "bg-blue-100 text-blue-700 hover:bg-blue-100";
-    }
-  };
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "active":
+      return "bg-green-100 text-green-700 hover:bg-green-100";
+    case "draft":
+      return "bg-gray-100 text-gray-700 hover:bg-gray-100";
+    case "expired":
+      return "bg-red-100 text-red-700 hover:bg-red-100";
+    default:
+      return "bg-blue-100 text-blue-700 hover:bg-blue-100";
+  }
+};
 
+export function JobRow({ job }: { job: any }) {
   const router = useRouter();
   const { mutate: deleteJob, isPending: isDeleting } = useDeleteMyJobPosting();
 
@@ -45,6 +44,9 @@ export function JobRow({ job }: { job: any }) {
         <span className="text-sm font-medium">
           {job.applicationsCount || 0}
         </span>
+      </TableCell>
+      <TableCell>
+        <span className="text-sm font-medium">{job.postedBy}</span>
       </TableCell>
       <TableCell className="text-sm text-gray-500">
         {format(new Date(job.createdAt), "MMM dd, yyyy")}
@@ -87,9 +89,9 @@ export function JobRow({ job }: { job: any }) {
               )}
             </DropdownMenuItem>
             <DropdownMenuItem
-            onClick={() => {
-              alert("Edit button clicked")
-            }}
+              onClick={() => {
+                alert("Edit button clicked");
+              }}
             >
               <Edit className="mr-2 size-4" /> Edit Job
             </DropdownMenuItem>
@@ -99,7 +101,8 @@ export function JobRow({ job }: { job: any }) {
               disabled={isDeleting}
               onClick={() => deleteJob(job._id)}
             >
-              <Trash2 className="mr-2 size-4 hover:stroke-red-200" /> {isDeleting ? "Deleting..." : "Delete"}
+              <Trash2 className="mr-2 size-4 hover:stroke-red-200" />{" "}
+              {isDeleting ? "Deleting..." : "Delete"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

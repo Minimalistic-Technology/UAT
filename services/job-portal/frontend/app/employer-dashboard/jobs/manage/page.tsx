@@ -62,6 +62,7 @@ const Page = () => {
               <TableHead className="w-62.5 font-semibold">Job Title</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold">Applications</TableHead>
+              <TableHead className="font-semibold">Posted By</TableHead>
               <TableHead className="font-semibold">Posted</TableHead>
               <TableHead className="text-right font-semibold">
                 Actions
