@@ -2,28 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Shield, Zap, Globe, BookOpen, Target, Users, Star, ArrowRight, CheckCircle,
+  Shield, Zap, Globe, Target, Users, Star, ArrowRight, CheckCircle, Lightbulb
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-/* ─── Global keyframes injected once on client ──────────────────────────── */
-const KEYFRAMES = `
-  @keyframes floatBob {
-    from { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-    to   { transform: translateY(-20px) rotate(8deg); opacity: 0.8; }
-  }
-  @keyframes heroSlideUp {
-    from { opacity: 0; transform: translateY(28px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes heroPulse {
-    0%, 100% { transform: scale(1); }
-    50%       { transform: scale(1.04); }
-  }
-`;
-
-/* ─── Scroll-reveal hook ────────────────────────────────────────────────── */
+/* ─── Scroll-reveal hook ─────────────────────────────────────────────── */
 function useScrollReveal() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -32,8 +16,14 @@ function useScrollReveal() {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { threshold: 0.12 }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Small delay ensures the initial CSS (opacity 0) is painted before transitioning
+          setTimeout(() => setVisible(true), 50);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -20px 0px" }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -42,26 +32,29 @@ function useScrollReveal() {
   return { ref, visible };
 }
 
-/* ─── Reveal wrapper ────────────────────────────────────────────────────── */
+/* ─── Reveal wrapper ─────────────────────────────────────────────────── */
 function Reveal({
-  children, delay = 0, direction = "up",
+  children, delay = 0, direction, dir, className = ""
 }: {
-  children: React.ReactNode; delay?: number; direction?: "up" | "left" | "right" | "fade";
+  children: React.ReactNode; delay?: number; direction?: "up" | "left" | "right" | "fade"; dir?: "up" | "left" | "right" | "fade"; className?: string
 }) {
+  const finalDir = dir || direction || "up";
   const { ref, visible } = useScrollReveal();
   const transforms: Record<string, string> = {
-    up: "translateY(36px)",
-    left: "translateX(-36px)",
-    right: "translateX(36px)",
-    fade: "scale(0.96)",
+    up: "translateY(30px)",
+    left: "translateX(-30px)",
+    right: "translateX(30px)",
+    fade: "scale(0.95)",
   };
   return (
     <div
       ref={ref}
+      className={className}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? "none" : transforms[direction],
-        transition: `opacity 0.65s ease ${delay}ms, transform 0.65s ease ${delay}ms`,
+        transform: visible ? "translate(0px,0px) scale(1)" : transforms[finalDir],
+        transition: `opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) ${delay}ms, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) ${delay}ms`,
+        willChange: "opacity, transform"
       }}
     >
       {children}
@@ -69,321 +62,192 @@ function Reveal({
   );
 }
 
-/* ─── 3D Tilt Card ──────────────────────────────────────────────────────── */
-function TiltCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  const card = useRef<HTMLDivElement>(null);
-  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const el = card.current;
-    if (!el) return;
-    const { left, top, width, height } = el.getBoundingClientRect();
-    const x = (e.clientX - left) / width - 0.5;
-    const y = (e.clientY - top) / height - 0.5;
-    el.style.transform = `perspective(600px) rotateY(${x * 10}deg) rotateX(${-y * 10}deg) scale3d(1.03,1.03,1.03)`;
-  };
-  const handleLeave = () => {
-    if (card.current)
-      card.current.style.transform = "perspective(600px) rotateY(0deg) rotateX(0deg) scale3d(1,1,1)";
-  };
-  return (
-    <div
-      ref={card}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
-      className={`transition-transform duration-200 ease-out will-change-transform ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
-
-/* ─── Animated Counter ──────────────────────────────────────────────────── */
+/* ─── Animated Counter ───────────────────────────────────────────────── */
 function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
   const [count, setCount] = useState(0);
   const { ref, visible } = useScrollReveal();
+
   useEffect(() => {
     if (!visible) return;
     let cur = 0;
-    const step = Math.ceil(target / 55);
+    const step = Math.ceil(target / 40);
     const t = setInterval(() => {
       cur += step;
       if (cur >= target) { setCount(target); clearInterval(t); }
       else setCount(cur);
-    }, 20);
+    }, 30);
     return () => clearInterval(t);
   }, [visible, target]);
+
   return <span ref={ref} className="tabular-nums">{count.toLocaleString()}{suffix}</span>;
 }
 
-/* ─── Fixed particle config — generated once, never random ─────────────── */
-// Deterministic values avoid any SSR/client mismatch.
-const PARTICLES = [
-  { id: 0, size: 8, left: 10, top: 15, delay: 0, dur: 7 },
-  { id: 1, size: 5, left: 25, top: 70, delay: 1, dur: 9 },
-  { id: 2, size: 10, left: 40, top: 30, delay: 2, dur: 8 },
-  { id: 3, size: 6, left: 55, top: 85, delay: 0.5, dur: 11 },
-  { id: 4, size: 9, left: 70, top: 20, delay: 3, dur: 7 },
-  { id: 5, size: 4, left: 82, top: 60, delay: 1.5, dur: 10 },
-  { id: 6, size: 7, left: 90, top: 40, delay: 2.5, dur: 6 },
-  { id: 7, size: 5, left: 15, top: 90, delay: 4, dur: 9 },
-  { id: 8, size: 8, left: 60, top: 10, delay: 0.8, dur: 12 },
-  { id: 9, size: 6, left: 35, top: 55, delay: 3.5, dur: 8 },
-  { id: 10, size: 9, left: 75, top: 78, delay: 1.2, dur: 7 },
-  { id: 11, size: 5, left: 5, top: 45, delay: 2, dur: 11 },
-  { id: 12, size: 7, left: 48, top: 65, delay: 0.3, dur: 9 },
-  { id: 13, size: 10, left: 92, top: 88, delay: 4.5, dur: 6 },
-  { id: 14, size: 4, left: 20, top: 35, delay: 1.8, dur: 10 },
-  { id: 15, size: 8, left: 65, top: 50, delay: 2.7, dur: 8 },
-  { id: 16, size: 6, left: 30, top: 20, delay: 0.6, dur: 12 },
-  { id: 17, size: 9, left: 80, top: 95, delay: 3.2, dur: 7 },
-];
-
-/* ─── Page data ─────────────────────────────────────────────────────────── */
+/* ─── Page data ──────────────────────────────────────────────────────── */
 const STATS = [
   { value: 12000, suffix: "+", label: "Active Learners" },
-  { value: 350, suffix: "+", label: "Published Articles" },
-  { value: 98, suffix: "%", label: "Satisfaction Rate" },
+  { value: 98, suffix: "%", label: "Completion Rate" },
+  { value: 350, suffix: "+", label: "Curated Guides" },
   { value: 40, suffix: "+", label: "Expert Authors" },
 ];
 
 const VALUES = [
-  { icon: Shield, title: "Distraction-Free", bg: "bg-blue-50", text: "text-blue-600", desc: "Curated content with zero ads, pop-ups, or irrelevant noise. Just pure knowledge." },
-  { icon: Zap, title: "Lightning Fast", bg: "bg-amber-50", text: "text-amber-600", desc: "Optimized for speed so you spend time learning, not waiting." },
-  { icon: Globe, title: "Global Community", bg: "bg-emerald-50", text: "text-emerald-600", desc: "Connect with focused learners and expert educators from across the world." },
-  { icon: Target, title: "Goal Oriented", bg: "bg-purple-50", text: "text-purple-600", desc: "Every piece of content is structured to help you achieve measurable results." },
-  { icon: Users, title: "Expert-Led", bg: "bg-pink-50", text: "text-pink-600", desc: "Content authored by practitioners who have mastered their domains." },
-  { icon: Star, title: "Quality First", bg: "bg-indigo-50", text: "text-indigo-600", desc: "Every article is reviewed and curated for accuracy, depth, and clarity." },
+  { icon: Shield, title: "Uncompromising Quality", desc: "Every article is rigorously reviewed. We prioritize depth, accuracy, and absolute clarity over sheer volume." },
+  { icon: Zap, title: "Zero Friction", desc: "No ads, no popups, no dark patterns. We designed a platform that respects your time and your attention." },
+  { icon: Users, title: "Elite Community", desc: "Surround yourself with driven peers. Growth accelerates when you immerse in a network of dedicated builders." },
+  { icon: Target, title: "Goal-Oriented", desc: "Reading should yield results. Our resources are deeply actionable and meant to be applied in the real world." },
+  { icon: Globe, title: "Global Perspective", desc: "Diverse authors cross-pollinate ideas from different regions, creating a truly global learning standard." },
+  { icon: Lightbulb, title: "Continuous Evolution", desc: "Our curriculum adapts to modern tech. We constantly refine our resources to keep you at the sharpest edge." },
 ];
 
-const PRINCIPLES = [
-  "Less content, more impact",
-  "Clarity over complexity",
-  "Depth over breadth",
-  "Community-driven growth",
-];
-
-/* ─── Main Component ────────────────────────────────────────────────────── */
+/* ─── Main Component ─────────────────────────────────────────────────── */
 export default function AboutPage() {
-  /* Inject keyframes once on client */
-  useEffect(() => {
-    const id = "about-keyframes";
-    if (document.getElementById(id)) return;
-    const style = document.createElement("style");
-    style.id = id;
-    style.textContent = KEYFRAMES;
-    document.head.appendChild(style);
-    return () => { document.getElementById(id)?.remove(); };
-  }, []);
-
   return (
-    <main className="flex-1 overflow-hidden">
+    <main className="flex-1 overflow-hidden bg-background">
 
-      {/* ── HERO ──────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-[5%] overflow-hidden">
-        {/* Radial bg */}
-        <div
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 60% at 50% -10%, var(--color-theme-action) 0%, transparent 70%), var(--color-background)",
-            opacity: 0.1,
-          }}
-        />
+      {/* ── CLEAN HERO ───────────────────────────────────────────────── */}
+      <section className="relative w-full pt-6 pb-24 md:pt-10 md:pb-32 lg:pt-12 lg:pb-40 px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
 
-        {/* Floating particles — deterministic, no Math.random() */}
-        {PARTICLES.map((p) => (
-          <span
-            key={p.id}
-            className="absolute rounded-full bg-[#1877F2]/10 pointer-events-none"
-            style={{
-              width: `${p.size}px`,
-              height: `${p.size}px`,
-              left: `${p.left}%`,
-              top: `${p.top}%`,
-              animation: `floatBob ${p.dur}s ${p.delay}s ease-in-out infinite alternate`,
-            }}
-          />
-        ))}
+        {/* Soft Ambient Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[800px] h-[400px] bg-theme-action/10 blur-[100px] rounded-full pointer-events-none -z-10"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-theme-accent)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-theme-accent)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_10%,transparent_100%)] opacity-5 pointer-events-none -z-10"></div>
 
-        {/* Badge */}
-        <div
-          className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-theme-action/10 border border-theme-action/20 text-theme-action text-xs font-bold uppercase tracking-widest mb-8"
-          style={{ animation: "heroSlideUp 0.6s ease both" }}
-        >
-          <BookOpen size={13} />
-          About Minimalistic Learning
-        </div>
+        <div className="max-w-4xl mx-auto flex flex-col items-center">
+          <Reveal delay={0} direction="up">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-theme-element-sec border border-theme-accent/20 shadow-sm mb-8">
+              <div className="w-2 h-2 rounded-full bg-theme-action"></div>
+              <span className="text-[11px] font-bold text-foreground/80 uppercase tracking-widest leading-none mt-0.5">Who We Are</span>
+            </div>
+          </Reveal>
 
-        <h1
-          className="text-5xl sm:text-7xl md:text-8xl font-black text-foreground tracking-tighter leading-[1.05] mb-8 max-w-5xl"
-          style={{ animation: "heroSlideUp 0.7s 0.1s ease both" }}
-        >
-          Pure Education.{" "}
-          <span
-            className="text-theme-action inline-block"
-            style={{ animation: "heroPulse 4s ease-in-out infinite" }}
-          >
-            Zero Noise.
-          </span>
-        </h1>
+          <Reveal delay={100} direction="up">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-foreground tracking-tighter leading-[1.05] mb-6 drop-shadow-sm">
+              The Platform Engineered <br className="hidden md:block" /> for Absolute <span className="text-theme-action">Focus.</span>
+            </h1>
+          </Reveal>
 
-        <p
-          className="text-foreground/70 text-lg md:text-xl font-medium leading-relaxed max-w-2xl mx-auto mb-12"
-          style={{ animation: "heroSlideUp 0.7s 0.2s ease both" }}
-        >
-          We believe the fastest path to mastery is radical simplicity —
-          stripping away every distraction until only the knowledge remains.
-        </p>
+          <Reveal delay={200} direction="up">
+            <p className="text-foreground/70 font-medium text-lg md:text-xl leading-relaxed max-w-2xl text-balance mb-10">
+              Modern the web is loud. We built Minimalistic Learning as the ultimate quiet place—stripping away every distraction until only pure, actionable knowledge remains.
+            </p>
+          </Reveal>
 
-        <div
-          className="flex flex-col sm:flex-row items-center gap-4"
-          style={{ animation: "heroSlideUp 0.7s 0.3s ease both" }}
-        >
-          <Link
-            href="/blog"
-            className="group flex items-center gap-2 px-8 py-4 bg-theme-action text-white rounded-full font-bold text-sm hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
-          >
-            Start Learning
-            <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
-          <Link
-            href="/register"
-            className="px-8 py-4 bg-theme-element-sec text-foreground border border-theme-accent/20 rounded-full font-bold text-sm hover:border-theme-action/50 hover:shadow-md transition-all"
-          >
-            Join Free
-          </Link>
+          <Reveal delay={300} direction="up">
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto justify-center">
+              <Link href="/blog" className="w-full sm:w-auto px-8 py-3.5 bg-foreground text-background rounded-xl font-black text-sm hover:-translate-y-1 hover:shadow-lg transition-all flex items-center justify-center gap-2 group">
+                Explore Content
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link href="/register" className="w-full sm:w-auto px-8 py-3.5 bg-theme-element-sec border border-theme-accent/20 text-foreground rounded-xl font-bold text-sm hover:border-theme-action/40 transition-all text-center">
+                Join Community
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ── STATS ─────────────────────────────────────────────────────── */}
-      <section className="px-[5%] py-24 bg-gray-950">
-        <div className="max-w-[1100px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-8">
-          {STATS.map((s, i) => (
-            <Reveal key={s.label} delay={i * 80} direction="up">
-              <div className="text-center">
-                <p className="text-4xl sm:text-5xl font-black text-white mb-2">
+      {/* ── SLEEK STATS STRIP ────────────────────────────────────────── */}
+      <section className="w-full px-4 sm:px-6 lg:px-8 pb-32">
+        <Reveal delay={400} direction="up">
+          <div className="max-w-6xl mx-auto rounded-3xl bg-theme-element-sec shadow-sm border border-theme-accent/15 divide-y md:divide-y-0 md:divide-x divide-theme-accent/10 flex flex-col md:flex-row">
+            {STATS.map((s, i) => (
+              <div key={i} className="flex-1 px-8 py-10 flex flex-col items-center justify-center text-center group">
+                <p className="text-4xl lg:text-5xl font-black text-foreground tracking-tighter mb-2 group-hover:scale-105 transition-transform duration-300">
                   <Counter target={s.value} suffix={s.suffix} />
                 </p>
-                <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">
-                  {s.label}
-                </p>
+                <p className="text-[11px] font-bold text-theme-action uppercase tracking-widest">{s.label}</p>
               </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* ── FOCUS ZONE — Clean Image ───────────────────────────────────── */}
-      <section className="px-[5%] py-28 bg-background">
-        <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <Reveal direction="left">
-              <p className="text-xs font-black text-theme-action uppercase tracking-widest mb-4">
-                The Philosophy
-              </p>
-              <h2 className="text-4xl md:text-5xl font-black text-foreground leading-tight tracking-tighter mb-6">
-                The Minimalist<br />
-                <span className="text-theme-action">Learning Edge</span>
-              </h2>
-              <p className="text-foreground/70 text-lg leading-relaxed mb-8">
-                Modern platforms drown learners in noise. Notifications, ads, and
-                irrelevant content create mental fatigue that kills deep understanding.
-                We built the antidote — a space engineered for depth.
-              </p>
-            </Reveal>
-            <div className="space-y-3">
-              {PRINCIPLES.map((p, i) => (
-                <Reveal key={p} delay={i * 80} direction="left">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle size={18} className="text-theme-action shrink-0" />
-                    <span className="text-foreground/80 font-semibold">{p}</span>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
+            ))}
           </div>
+        </Reveal>
+      </section>
 
-          {/* Clean image — no overlay, no blur, no text */}
-          <Reveal direction="right">
-            <TiltCard>
-              <div className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl dark:shadow-none border border-theme-accent/20">
-                <Image
-                  src="/focus_zone_about.png"
-                  alt="Minimalistic Learning — Focus Zone workspace"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 580px"
-                  priority
-                  className="object-cover"
-                />
-              </div>
-            </TiltCard>
+      {/* ── PHILOSOPHY (Z-PATTERN) ───────────────────────────────────── */}
+      <section className="w-full px-4 sm:px-6 lg:px-8 py-24 bg-theme-element border-y border-theme-accent/10">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+
+          <Reveal direction="left" className="order-2 lg:order-1">
+            <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl border border-theme-accent/20 bg-theme-element-sec group">
+              <div className="absolute inset-0 bg-theme-action/5 mix-blend-overlay group-hover:bg-transparent transition-colors duration-500 z-10"></div>
+              <Image
+                src="/focus_zone_about.png"
+                alt="Workspace engineered for focus"
+                fill
+                sizes="(max-width: 1024px) 100vw, 600px"
+                className="object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+            </div>
           </Reveal>
+
+          <Reveal direction="right" className="order-1 lg:order-2">
+            <div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tighter leading-tight mb-6">
+                Redefining the <br /> <span className="text-theme-action">Learning Edge.</span>
+              </h2>
+              <p className="text-foreground/70 font-medium text-base sm:text-lg leading-relaxed mb-8">
+                The prevailing model of online education is flawed. Subscriptions trap you, notifications distract you, and infinite scrolling feeds paralyze you. We built this platform as an antidote. A space strictly reserved for high-signal, zero-noise engineering and design education.
+              </p>
+
+              <ul className="space-y-4">
+                {[
+                  "No intrusive advertisements or paywalls.",
+                  "Clean, readable typography on every device.",
+                  "Community-vetted, expert-authored insights."
+                ].map((text, i) => (
+                  <li key={i} className="flex items-start gap-4">
+                    <div className="mt-0.5 rounded-full bg-theme-action/10 p-1 text-theme-action shrink-0">
+                      <CheckCircle size={16} />
+                    </div>
+                    <span className="text-foreground/80 font-bold text-sm sm:text-base leading-snug">{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+
         </div>
       </section>
 
-      {/* ── VALUES GRID ───────────────────────────────────────────────── */}
-      <section className="px-[5%] py-28 bg-theme-element-sec">
-        <div className="max-w-[1200px] mx-auto">
+      {/* ── CORE VALUES GRID ─────────────────────────────────────────── */}
+      <section className="w-full px-4 sm:px-6 lg:px-8 py-32 bg-background">
+        <div className="max-w-6xl mx-auto">
           <Reveal direction="up">
-            <div className="text-center mb-16">
-              <p className="text-xs font-black text-theme-action uppercase tracking-widest mb-3">
-                What We Stand For
-              </p>
-              <h2 className="text-4xl md:text-5xl font-black text-foreground tracking-tighter">
-                Our Core Values
-              </h2>
+            <div className="text-center mb-16 md:mb-24">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-foreground tracking-tighter mb-4">Our Core Values</h2>
+              <p className="text-foreground/70 font-medium text-lg max-w-2xl mx-auto">The unshakeable principles that guide everything we build, design, and write.</p>
             </div>
           </Reveal>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {VALUES.map((v, i) => (
-              <Reveal key={v.title} delay={i * 70} direction="up">
-                <TiltCard>
-                  <div className="bg-theme-element rounded-3xl p-8 border border-theme-accent/20 shadow-sm hover:shadow-lg hover:border-theme-action/50 transition-all h-full cursor-default">
-                    <div className={`w-12 h-12 rounded-2xl ${v.bg} flex items-center justify-center ${v.text} mb-5`}>
-                      <v.icon size={22} />
-                    </div>
-                    <h3 className="text-lg font-black text-foreground mb-2">{v.title}</h3>
-                    <p className="text-foreground/70 text-sm leading-relaxed">{v.desc}</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 auto-rows-[minmax(0,_1fr)]">
+            {VALUES.map((val, i) => (
+              <Reveal key={i} delay={i * 50} direction="up" className="h-full">
+                <div className="h-full p-8 rounded-3xl bg-theme-element-sec border border-theme-accent/20 hover:border-theme-action/30 hover:shadow-lg transition-all duration-300 flex flex-col group">
+                  <div className="w-14 h-14 rounded-2xl bg-background border border-theme-accent/15 flex items-center justify-center text-foreground mb-6 shadow-sm group-hover:bg-theme-action group-hover:text-white group-hover:border-theme-action group-hover:-rotate-3 transition-all duration-300 shrink-0">
+                    <val.icon size={24} />
                   </div>
-                </TiltCard>
+                  <h3 className="text-xl font-black text-foreground tracking-tight mb-3">{val.title}</h3>
+                  <p className="text-foreground/70 text-sm font-medium leading-relaxed">{val.desc}</p>
+                </div>
               </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── CTA ───────────────────────────────────────────────────────── */}
-      <section className="relative px-[5%] py-36 overflow-hidden">
-        <div
-          className="absolute inset-0 -z-10"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 80% at 50% 50%, var(--color-theme-action) 0%, transparent 70%), var(--color-background)",
-            opacity: 0.08, // Keep it subtle so it blends into the background nicely
-          }}
-        />
-        <Reveal direction="fade">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-5xl sm:text-6xl font-black text-foreground tracking-tighter mb-6">
-              Ready to learn<br />
-              <span className="text-theme-action">the smarter way?</span>
-            </h2>
-            <p className="text-foreground/70 text-lg mb-12 leading-relaxed">
-              Join thousands of learners who chose clarity over clutter
-              and depth over distraction.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/register"
-                className="group flex items-center gap-2 px-10 py-4 bg-theme-action text-white rounded-full font-bold text-base hover:shadow-2xl hover:scale-105 active:scale-95 transition-all"
-              >
-                Get Started Free
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                href="/blog"
-                className="px-10 py-4 bg-theme-element-sec text-foreground border border-theme-accent/20 rounded-full font-bold text-base hover:border-theme-action/50 hover:shadow-md transition-all"
-              >
-                Explore Articles
+      {/* ── CTA ──────────────────────────────────────────────────────── */}
+      <section className="w-full px-4 sm:px-6 lg:px-8 pb-32">
+        <Reveal direction="up">
+          <div className="max-w-5xl mx-auto rounded-[2.5rem] bg-foreground text-background px-8 py-16 text-center shadow-2xl relative overflow-hidden flex flex-col items-center group">
+            <div className="absolute inset-0 opacity-[0.03] dark:opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-theme-action/40 blur-[120px] rounded-full group-hover:bg-blue-400/50 transition-colors duration-1000"></div>
+
+            <div className="relative z-10">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 tracking-tighter">Ready to focus?</h2>
+              <p className="text-background/80 text-lg font-medium max-w-md mx-auto mb-10">
+                Join thousands of developers learning without the noise.
+              </p>
+              <Link href="/register" className="inline-flex items-center justify-center gap-3 px-10 py-4 bg-theme-action text-white rounded-xl font-black text-sm lg:text-base hover:opacity-90 hover:-translate-y-1 transition-all shadow-xl shadow-theme-action/20">
+                Join Minimalistic Free
+                <ArrowRight size={18} />
               </Link>
             </div>
           </div>

@@ -76,24 +76,21 @@ export const Navbar: React.FC = () => {
       <nav
         className={`fixed top-0 left-0 right-0 w-full z-[100] transition-all duration-500 ease-out ${isScrolled
           ? 'bg-theme-element/85 backdrop-blur-xl shadow-sm border-b border-theme-accent/20 py-0'
-          : 'bg-theme-element border-b border-transparent py-1'
+          : 'bg-theme-element border-b border-transparent py-0'
           }`}
       >
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+          <div className="flex justify-between items-center h-16">
 
             {/* Left side: Logo */}
             <div className="flex items-center gap-8">
               <Link href="/" className="flex items-center gap-3 group">
-                <div className="w-11 h-11 rounded-xl overflow-hidden shadow-sm border border-theme-accent/20 flex items-center justify-center bg-white transition-transform duration-300 group-hover:scale-105">
-                  <Image src="/logoML.png" alt="ML Logo" width={40} height={40} className="object-contain" priority />
+                <div className="w-8 h-8 rounded-lg overflow-hidden shadow-sm border border-theme-accent/20 flex items-center justify-center bg-white transition-transform duration-300 group-hover:scale-105">
+                  <Image src="/logoML.png" alt="ML Logo" width={30} height={30} className="object-contain" priority />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xl font-extrabold tracking-tight text-foreground leading-none">
+                  <span className="text-lg font-extrabold tracking-tight text-foreground leading-none">
                     Minimalistic<span className="text-theme-action">Learning</span>
-                  </span>
-                  <span className="text-[9px] font-semibold text-foreground/50 tracking-widest uppercase mt-0.5 ml-0.5">
-                    Platform
                   </span>
                 </div>
               </Link>
