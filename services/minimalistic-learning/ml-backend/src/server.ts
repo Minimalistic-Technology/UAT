@@ -3,7 +3,7 @@ import app from "./app";
 import { connectDatabase } from './config/db';
 import { env } from './config/env';
 
-const PORT = env.PORT || 5001;
+const PORT = env.PORT || 5000;
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Minimalistic Learning Backend API");
