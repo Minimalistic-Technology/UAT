@@ -4,7 +4,10 @@ import { prisma } from '../config/db';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
-import { PostStatus, NotificationType, Role } from '@prisma/client';
+
+type PostStatus = 'pending' | 'published' | 'rejected';
+type NotificationType = 'post_deleted' | 'post_approved' | 'post_rejected' | 'general';
+type Role = 'admin' | 'user';
 
 // ─── DELETE /admin/posts/:postId ──────────────────────────────────────────────
 export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) => {
@@ -24,7 +27,7 @@ export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) 
       recipientId: authorId,
       title: 'Post Deleted by Admin',
       message: `Your post "${postTitle}" was deleted by an admin.${reason ? ` Reason: ${reason}` : ''}`,
-      type: NotificationType.post_deleted
+      type: 'post_deleted'
     }
   });
 
@@ -88,13 +91,13 @@ export const getPendingPosts = asyncHandler(async (req: Request, res: Response) 
 
   const [itemsRaw, total] = await Promise.all([
     prisma.post.findMany({
-      where: { status: PostStatus.pending },
+      where: { status: 'pending' },
       include: { author: { select: { firstName: true, lastName: true, email: true } } },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit
     }),
-    prisma.post.count({ where: { status: PostStatus.pending } })
+    prisma.post.count({ where: { status: 'pending' } })
   ]);
 
   const items = itemsRaw.map(item => ({ ...item, authorId: item.author }));
@@ -159,7 +162,7 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
 
   const updatedPost = await prisma.post.update({
     where: { id: postId },
-    data: { status: PostStatus.published, published: true }
+    data: { status: 'published', published: true }
   });
 
   await prisma.notification.create({
@@ -167,7 +170,7 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
       recipientId: updatedPost.authorId,
       title: 'Post Approved! 🎉',
       message: `Great news! Your post "${updatedPost.title}" has been approved and is now live on the platform.`,
-      type: NotificationType.post_approved
+      type: 'post_approved'
     }
   });
 
@@ -185,7 +188,7 @@ export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
 
   const updatedPost = await prisma.post.update({
     where: { id: postId },
-    data: { status: PostStatus.rejected, published: false }
+    data: { status: 'rejected', published: false }
   });
 
   await prisma.notification.create({
@@ -193,7 +196,7 @@ export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
       recipientId: updatedPost.authorId,
       title: 'Post Rejected',
       message: `Your post "${updatedPost.title}" was not approved by the admin. Please review our guidelines and try again.`,
-      type: NotificationType.post_rejected
+      type: 'post_rejected'
     }
   });
 

@@ -1,8 +1,12 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { prisma } from '../config/db';
-import { TokenType, Token } from '@prisma/client';
 import { durationToMs } from '../utils/time';
+
+type TokenType = 'refresh' | 'reset';
+
+// Get the Token type from the prisma result (non-null version)
+type Token = Exclude<Awaited<ReturnType<typeof prisma.token.findFirst>>, null>;
 
 const SALT_ROUNDS = 10;
 
@@ -11,13 +15,13 @@ export const createTokenString = (bytes = 32) => crypto.randomBytes(bytes).toStr
 const createExpiryDate = (duration: string) => new Date(Date.now() + durationToMs(duration));
 
 export const replaceRefreshToken = async (userId: string, tokenValue: string, expiresIn: string) => {
-  await prisma.token.deleteMany({ where: { userId, type: TokenType.refresh } });
-  return storeToken(userId, tokenValue, TokenType.refresh, expiresIn);
+  await prisma.token.deleteMany({ where: { userId, type: 'refresh' } });
+  return storeToken(userId, tokenValue, 'refresh', expiresIn);
 };
 
 export const storeResetToken = async (userId: string, tokenValue: string, expiresIn: string) => {
-  await prisma.token.deleteMany({ where: { userId, type: TokenType.reset } });
-  return storeToken(userId, tokenValue, TokenType.reset, expiresIn);
+  await prisma.token.deleteMany({ where: { userId, type: 'reset' } });
+  return storeToken(userId, tokenValue, 'reset', expiresIn);
 };
 
 export const invalidateTokens = (userId: string, type?: TokenType) => {

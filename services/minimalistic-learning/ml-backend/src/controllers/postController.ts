@@ -11,15 +11,17 @@ import {
 import { verifyAccessToken } from '../utils/jwt';
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
-import { PostStatus, NotificationType } from '@prisma/client';
 import crypto from 'crypto';
+
+type PostStatus = 'pending' | 'published' | 'rejected';
+type NotificationType = 'post_deleted' | 'post_approved' | 'post_rejected' | 'general';
 
 export const listPosts = asyncHandler(async (req: Request, res: Response) => {
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 10, 50);
   const { tag, q, category } = req.query;
 
-  const where: any = { published: true, status: PostStatus.published };
+  const where: any = { published: true, status: 'published' };
 
   if (tag) where.tags = { has: String(tag) };
   if (category) where.category = category;
@@ -135,7 +137,7 @@ export const getPostBySlug = asyncHandler(async (req: Request, res: Response) =>
 
   try {
     let post: any = await prisma.post.findFirst({
-      where: { slug, published: true, status: PostStatus.published },
+      where: { slug, published: true, status: 'published' },
       include: { author: { select: { firstName: true, lastName: true } } }
     });
 
@@ -258,7 +260,7 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
   }
   const autoApprove = setting.autoApprovePost;
 
-  const postStatus = autoApprove ? PostStatus.published : PostStatus.pending;
+  const postStatus = autoApprove ? 'published' : 'pending';
   const postPublished = autoApprove ? (published === true) : false;
 
   const post = await prisma.post.create({
@@ -275,7 +277,7 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
-  if (postStatus === PostStatus.pending) {
+  if (postStatus === 'pending') {
     const admins = await prisma.user.findMany({ where: { role: 'admin' } });
     for (const admin of admins) {
       await prisma.notification.create({
@@ -283,7 +285,7 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
           recipientId: admin.id,
           title: 'New Post Pending Approval',
           message: `A new post "${safeTitle}" has been submitted and requires your review.`,
-          type: NotificationType.general
+          type: 'general'
         }
       });
     }
@@ -337,7 +339,7 @@ export const updatePost = asyncHandler(async (req: Request, res: Response) => {
     updatePayload.published = updatePayload.published === true || updatePayload.published === "true";
     if (updatePayload.published) {
       if (!autoApprove) {
-        updatePayload.status = PostStatus.pending;
+        updatePayload.status = 'pending';
         updatePayload.published = false;
 
         // Notify admins of submission
@@ -348,12 +350,12 @@ export const updatePost = asyncHandler(async (req: Request, res: Response) => {
               recipientId: admin.id,
               title: 'Updated Post Pending Approval',
               message: `The post "${parsedBody.title || 'Untitled Post'}" has been updated and requires review.`,
-              type: NotificationType.general
+              type: 'general'
             }
           });
         }
       } else {
-        updatePayload.status = PostStatus.published;
+        updatePayload.status = 'published';
       }
     }
   }
@@ -422,7 +424,7 @@ export const recordView = asyncHandler(async (req: Request, res: Response) => {
   if (!slug) throw new ApiError(StatusCodes.BAD_REQUEST, "Slug required.");
 
   const post = await prisma.post.findFirst({
-    where: { slug, published: true, status: PostStatus.published }
+    where: { slug, published: true, status: 'published' }
   });
 
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found.");
@@ -463,7 +465,7 @@ export const listTrending = asyncHandler(async (req: Request, res: Response) => 
   const limit = Math.min(Number(req.query.limit) || 6, 20);
 
   const postsRaw = await prisma.post.findMany({
-    where: { published: true, status: PostStatus.published },
+    where: { published: true, status: 'published' },
     include: { author: { select: { firstName: true, lastName: true } } },
     orderBy: [{ viewCount: 'desc' }, { createdAt: 'desc' }],
     take: limit
