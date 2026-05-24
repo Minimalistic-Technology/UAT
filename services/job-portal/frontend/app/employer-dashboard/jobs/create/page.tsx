@@ -236,7 +236,9 @@ function PostJobPage() {
                     <SelectContent>
                       {Object.values(JobType).map((type) => (
                         <SelectItem key={type} value={type}>
-                          {type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                          {type
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase())}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -492,6 +494,70 @@ function PostJobPage() {
             <div className="grid gap-2">
               <Label>Number of Openings</Label>
               <Input type="number" {...register("openings")} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Publishing Options */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Publishing Options</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Benefits */}
+            <div className="grid gap-2">
+              <Label>Benefits (One per line)</Label>
+              <Textarea
+                placeholder="Health Insurance..."
+                onChange={(e) =>
+                  setValue(
+                    "benefits",
+                    e.target.value.split("\n").filter(Boolean),
+                  )
+                }
+                className="min-h-37.5"
+              />
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Application Deadline */}
+              <div className="grid gap-2">
+                <Label>Application Deadline</Label>
+                <Input
+                  min={new Date().toISOString().split("T")[0]}
+                  type="date"
+                  {...register("applicationDeadline")}
+                />
+                {errors.applicationDeadline && (
+                  <p className="text-destructive text-xs">
+                    {errors.applicationDeadline.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Featured */}
+              <div className="grid gap-2">
+                <Label>Visibility</Label>
+                <div className="flex h-9 items-center gap-3 rounded-md border px-3">
+                  <Controller
+                    name="isFeatured"
+                    control={control}
+                    render={({ field }) => (
+                      <Checkbox
+                        id="isFeatured"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
+                  <Label
+                    htmlFor="isFeatured"
+                    className="cursor-pointer font-normal"
+                  >
+                    Feature this listing
+                  </Label>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

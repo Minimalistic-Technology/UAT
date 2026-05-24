@@ -40,7 +40,21 @@ export const createJobSchema = z.object({
   benefits: z.array(z.string()).optional(),
 
   // Dates & Status
-  applicationDeadline: z.coerce.date().optional(),
+  applicationDeadline: z.string().optional().transform((val, ctx) => {
+    if (!val) return undefined;
+    const date = new Date(val);
+    if (isNaN(date.getTime())) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid date" });
+      return z.NEVER;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Deadline cannot be in the past" });
+      return z.NEVER;
+    }
+    return date;
+  }),
   isFeatured: z.boolean().default(false),
   status: z.enum(["open", "closed", "draft"]).default("open"),
 });
