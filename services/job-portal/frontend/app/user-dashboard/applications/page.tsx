@@ -117,6 +117,9 @@ const MyApplicationsPage = () => {
                   Applied Date
                 </TableHead>
                 <TableHead className="text-xs font-semibold tracking-wider uppercase">
+                  Company
+                </TableHead>
+                <TableHead className="text-xs font-semibold tracking-wider uppercase">
                   Status
                 </TableHead>
                 <TableHead className="text-right text-xs font-semibold tracking-wider uppercase">
@@ -160,6 +163,11 @@ const MyApplicationsPage = () => {
                         <Clock className="h-3.5 w-3.5" />
                         {format(new Date(app.createdAt), "dd MMM yyyy")}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm font-medium">
+                        {app.job?.company?.name ?? "Unknown Company"}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={app.status} />

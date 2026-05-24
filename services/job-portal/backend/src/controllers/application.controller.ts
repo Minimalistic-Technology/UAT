@@ -142,7 +142,14 @@ export const getMyApplications = async (
 
     const [applications, totalApplications] = await Promise.all([
       Application.find({ jobSeeker: req.user.id })
-        .populate("job")
+        .populate({
+          path: "job",
+          select: "location jobType title company",
+          populate: {
+            path: "company",
+            select: "name",
+          },
+        })
         .sort("-createdAt")
         .skip(skip)
         .limit(limit),
@@ -286,14 +293,14 @@ export const updateApplicationStatus = async (
 
     // Verify job belongs to employer or user is HR/OWNER of the company
     const job: any = application.job;
-    
+
     const companyMember = await CompanyMember.findOne({
       user: req.user._id,
       company: job.company,
     });
 
     const isEmployer = job.postedBy.toString() === req.user.id;
-    const isAuthorizedMember = companyMember && 
+    const isAuthorizedMember = companyMember &&
       (companyMember.role === CompanyRole.HR || companyMember.role === CompanyRole.OWNER);
 
     if (!isEmployer && !isAuthorizedMember) {
@@ -407,8 +414,15 @@ export const getAllCompanyApplications = async (
 
     const [applications, totalApplications] = await Promise.all([
       Application.find(query)
-        .populate("job", "title location jobType")
-        .populate("jobSeeker", "firstName lastName email phone")
+        .populate({
+          path: "job",
+          select: "title location jobType company",
+          populate: {
+            path: "company",
+            select: "name",
+          },
+        })
+        .populate("jobSeeker", "firstName lastName email")
         .sort("-createdAt")
         .skip(skip)
         .limit(limit),
