@@ -319,7 +319,7 @@ export const updateCompany = async (
       new: true,
       runValidators: true,
     });
-
+    
     res.status(200).json({
       success: true,
       data: company,
