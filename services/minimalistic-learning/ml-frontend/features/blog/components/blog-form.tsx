@@ -198,7 +198,7 @@ export const BlogForm = ({ id }: { id?: string }) => {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-32 pb-16 px-[5%] transition-colors duration-500">
+    <div className="min-h-screen bg-background pt-32 pb-16 px-4 sm:px-6 lg:px-8 transition-colors duration-500">
       <div className="max-w-4xl mx-auto">
 
         {/* Header */}

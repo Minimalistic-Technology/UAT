@@ -346,3 +346,30 @@ export const deletePermission = asyncHandler(async (req: Request, res: Response)
   );
 });
 
+// ─── SITE CONTENT ENDPOINTS ──────────────────────────────────────────────────
+export const updateSiteContent = asyncHandler(async (req: Request, res: Response) => {
+  const { page, section } = req.params;
+  const { content } = req.body;
+
+  if (!content) throw new ApiError(StatusCodes.BAD_REQUEST, 'Content body is required');
+
+  const updatedContent = await (prisma as any).siteContent.upsert({
+    where: {
+      page_section: {
+        page,
+        section
+      }
+    },
+    update: { content },
+    create: {
+      page,
+      section,
+      content
+    }
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, updatedContent, 'Site content updated successfully')
+  );
+});
+

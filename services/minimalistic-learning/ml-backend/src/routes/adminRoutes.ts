@@ -16,6 +16,7 @@ import {
   createPermission,
   togglePermission,
   deletePermission,
+  updateSiteContent
 } from '../controllers/adminController';
 
 const router = Router();
@@ -42,5 +43,8 @@ router.get('/permissions', checkDbPermission, listPermissions);
 router.post('/permissions', checkDbPermission, createPermission);
 router.patch('/permissions/:id/toggle', checkDbPermission, togglePermission);
 router.delete('/permissions/:id', checkDbPermission, deletePermission);
+
+// Site Content Management
+router.put('/content/:page/:section', checkDbPermission, updateSiteContent);
 
 export default router;

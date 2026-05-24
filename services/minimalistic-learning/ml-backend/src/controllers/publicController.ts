@@ -38,4 +38,23 @@ export const subscribeNewsletter = asyncHandler(async (req: Request, res: Respon
   );
 });
 
+/**
+ * GET /api/v1/public/content/:page
+ * Gets content blocks for a specific page
+ */
+export const getSiteContent = asyncHandler(async (req: Request, res: Response) => {
+  const { page } = req.params;
+  const content = await (prisma as any).siteContent.findMany({
+    where: { page }
+  });
 
+  // Transform array into section key-value object
+  const contentMap = content.reduce((acc: any, curr: any) => {
+    acc[curr.section] = curr.content;
+    return acc;
+  }, {});
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, contentMap, 'Page content fetched successfully')
+  );
+});

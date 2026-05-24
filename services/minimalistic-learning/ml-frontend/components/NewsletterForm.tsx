@@ -34,16 +34,16 @@ export default function NewsletterForm() {
 
     if (status === "success") {
         return (
-            <div className="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 w-full">
-                <CheckCircle size={18} className="text-green-400 shrink-0" />
-                <p className="text-green-300 text-sm font-bold">{msg}</p>
+            <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 w-full">
+                <CheckCircle size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <p className="text-emerald-700 dark:text-emerald-300 text-sm font-bold">{msg}</p>
             </div>
         );
     }
 
     return (
         <form onSubmit={handleSubmit} noValidate>
-            <div className="flex items-center w-full bg-gray-900 border border-gray-800 rounded-lg overflow-hidden focus-within:border-[#1877F2] focus-within:shadow-[0_0_10px_rgba(24,119,242,0.1)] transition-all">
+            <div className="flex items-center w-full bg-background border border-theme-accent/20 rounded-lg overflow-hidden focus-within:border-theme-action focus-within:shadow-[0_0_10px_var(--color-theme-action)] transition-all">
                 <input
                     type="email"
                     value={email}
@@ -52,12 +52,12 @@ export default function NewsletterForm() {
                         if (status === "error") setStatus("idle");
                     }}
                     placeholder="Email..."
-                    className="w-full bg-transparent border-none outline-none px-4 py-2.5 text-white text-[13px] min-w-0 placeholder:text-gray-600"
+                    className="w-full bg-transparent border-none outline-none px-4 py-2.5 text-foreground text-[13px] min-w-0 placeholder:text-foreground/40"
                 />
                 <button
                     type="submit"
                     disabled={status === "loading"}
-                    className="bg-[#1877F2] hover:bg-blue-600 px-4 py-2.5 text-white transition-colors flex items-center justify-center disabled:opacity-60"
+                    className="bg-theme-action hover:brightness-110 px-4 py-2.5 text-white transition-all flex items-center justify-center disabled:opacity-60"
                 >
                     {status === "loading"
                         ? <Loader2 size={16} className="animate-spin" />
@@ -65,7 +65,7 @@ export default function NewsletterForm() {
                 </button>
             </div>
             {status === "error" && (
-                <p className="text-red-400 text-[11px] font-bold mt-2">{msg}</p>
+                <p className="text-red-600 dark:text-red-400 text-[11px] font-bold mt-2">{msg}</p>
             )}
         </form>
     );

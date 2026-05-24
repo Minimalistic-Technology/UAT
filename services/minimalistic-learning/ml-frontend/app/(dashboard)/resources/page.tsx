@@ -51,7 +51,7 @@ const resourceCategories = [
 
 const ResourcesHub = () => {
   return (
-    <main className="flex-1 pt-16 pb-24 px-[5%]">
+    <main className="flex-1 pt-16 pb-24 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <section className="max-w-4xl mx-auto text-center mb-24 mt-12">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-[#1877F2] text-xs font-bold mb-8 uppercase tracking-widest">
@@ -68,7 +68,7 @@ const ResourcesHub = () => {
       </section>
 
       {/* Resources Grid */}
-      <section className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-32">
+      <section className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-32">
         {resourceCategories.map((category, index) => (
           <div
             key={index}
@@ -99,7 +99,7 @@ const ResourcesHub = () => {
       </section>
 
       {/* Explore Categories Banner */}
-      <section className="max-w-[1200px] mx-auto mb-32">
+      <section className="max-w-7xl mx-auto mb-32">
         <div className="w-full rounded-[3rem] bg-gray-900 p-12 md:p-20 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 text-white">
           {/* Decorative background circle */}
           <div className="absolute top-[-50%] right-[-10%] w-[400px] h-[400px] rounded-full bg-blue-500/20 blur-[100px]" />

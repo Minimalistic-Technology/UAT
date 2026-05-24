@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Zap, Shield, Users, Code, Terminal, Sparkles } from "lucide-react";
 import GetStartedBtn from "./get-started";
+import { api } from "@/lib/api";
 
 /* ─── Deterministic particles ─── */
 const PARTICLES = [
@@ -118,7 +119,28 @@ function Reveal({ children, delay = 0, dir = "up" }:
 }
 
 /* ─── Main Hero ──────────────────────────────────────────────────────── */
-export const Hero = () => {
+export const Hero = ({ previewData }: { previewData?: any }) => {
+  const [heroContent, setHeroContent] = useState<any>(null);
+
+  useEffect(() => {
+    if (previewData) {
+      setHeroContent(previewData);
+      return;
+    }
+
+    const fetchContent = async () => {
+      try {
+        const res = await api.get('/public/content/home');
+        if (res.data?.data?.hero) {
+          setHeroContent(res.data.data.hero);
+        }
+      } catch (e) {
+        // fail silently, falls back to default layout
+      }
+    };
+    fetchContent();
+  }, [previewData]);
+
   useEffect(() => {
     const id = "hero-kf";
     if (document.getElementById(id)) return;
@@ -155,33 +177,33 @@ export const Hero = () => {
 
         {/* 2-COLUMN LAYOUT */}
         <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-8 items-center">
 
             {/* LEFT COLUMN: Content */}
-            <div className="flex flex-col items-start text-left">
+            <div className="flex flex-col items-center text-center lg:items-start lg:text-left w-full">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-theme-element-sec backdrop-blur-md border border-theme-accent/20 shadow-sm text-theme-action text-[11px] font-black uppercase tracking-widest mb-6 lg:mb-8"
                 style={{ animation: "slideRight 0.6s ease both" }}>
-                <Sparkles size={14} className="text-amber-500" /> Premium Learning Experience
+                <Sparkles size={14} className="text-amber-500" /> {heroContent?.badgeText || "Premium Learning Experience"}
               </div>
 
               <h1
-                className="text-5xl sm:text-6xl lg:text-7xl xl:text-[5rem] font-black text-foreground tracking-tighter leading-[1.1] mb-6 drop-shadow-sm dark:drop-shadow-none"
+                className="text-4xl xs:text-5xl sm:text-6xl lg:text-[3.5rem] xl:text-[4.2rem] font-black text-foreground tracking-tighter leading-[1.1] mb-6 drop-shadow-sm dark:drop-shadow-none"
                 style={{ animation: "slideRight 0.7s 0.1s ease both" }}
               >
-                Elevate your <br className="hidden md:block" />
+                {heroContent?.title || "Elevate your"} {' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-theme-action to-purple-500" style={{ animation: "pulse3d 5s ease-in-out infinite" }}>
-                  Knowledge
+                  {heroContent?.highlight || "Knowledge"}
                 </span>
-                <br /> Without Noise.
+                <br /> {heroContent?.bottomText || "Without Noise."}
               </h1>
 
-              <p className="text-foreground/70 font-medium text-lg lg:text-xl max-w-xl mb-10 leading-relaxed"
+              <p className="mx-auto lg:mx-0 text-foreground/70 font-medium text-base lg:text-lg max-w-xl mb-10 leading-relaxed"
                 style={{ animation: "slideRight 0.7s 0.2s ease both" }}>
-                Welcome to Minimalistic Learning. A distraction-free platform where curious minds flourish. Master new tech skills with total clarity.
+                {heroContent?.subtitle || "Welcome to Minimalistic Learning. A distraction-free platform where curious minds flourish. Master new tech skills with total clarity."}
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 sm:gap-6 w-full"
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6 w-full"
                 style={{ animation: "slideRight 0.7s 0.3s ease both" }}>
                 <GetStartedBtn />
                 <Link href="/resources"
@@ -195,7 +217,7 @@ export const Hero = () => {
               </div>
 
               {/* User Trust small widget */}
-              <div className="mt-12 flex items-center gap-4 border-t border-theme-accent/10 pt-6 w-full" style={{ animation: "slideRight 0.7s 0.4s ease both" }}>
+              <div className="mt-12 flex items-center justify-center lg:justify-start gap-4 border-t border-theme-accent/10 pt-6 w-full" style={{ animation: "slideRight 0.7s 0.4s ease both" }}>
                 <div className="flex -space-x-3">
                   <div className="w-10 h-10 rounded-full border-2 border-background bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">JD</div>
                   <div className="w-10 h-10 rounded-full border-2 border-background bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs">AS</div>
@@ -207,12 +229,12 @@ export const Hero = () => {
             </div>
 
             {/* RIGHT COLUMN: Visual Glass Card */}
-            <div className="flex w-full justify-center xl:justify-end mt-12 lg:mt-0 relative" style={{ animation: "slideUp 0.8s 0.2s ease both" }}>
+            <div className="flex w-full justify-center lg:justify-end mt-4 sm:mt-8 lg:mt-0 relative" style={{ animation: "slideUp 0.8s 0.2s ease both" }}>
               {/* Decorative Ring */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] sm:w-[450px] sm:h-[450px] rounded-full border border-theme-accent/20 border-dashed animate-spin-slow pointer-events-none" style={{ animationDuration: '30s' }}></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] sm:w-[450px] sm:h-[450px] lg:w-[550px] lg:h-[550px] rounded-full border border-theme-accent/20 border-dashed animate-spin-slow pointer-events-none" style={{ animationDuration: '30s' }}></div>
 
               {/* Main IDE Glass Card */}
-              <div className="relative w-full max-w-[320px] sm:max-w-[500px] aspect-[4/3] sm:aspect-[4/3] z-10 mx-auto lg:mx-0" style={{ animation: "floatUI 8s ease-in-out infinite" }}>
+              <div className="relative w-full max-w-[95vw] xs:max-w-[400px] sm:max-w-[500px] lg:max-w-[600px] xl:max-w-[650px] aspect-[4/3] z-10 mx-auto lg:mx-0" style={{ animation: "floatUI 8s ease-in-out infinite" }}>
                 <div className="absolute inset-0 bg-gradient-to-tr from-theme-action/20 to-purple-500/20 blur-2xl rounded-[2rem]" />
 
                 <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-2xl border border-black/5 dark:border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
@@ -266,15 +288,15 @@ export const Hero = () => {
                 <div className="bg-theme-element-sec rounded-full px-4 py-1.5 flex items-center gap-2">
                   <Sparkles size={14} className="text-theme-action" />
                   <span className="text-xs font-black text-foreground/80 uppercase tracking-widest">
-                    The Advantage
+                    {heroContent?.advantageBadge || "The Advantage"}
                   </span>
                 </div>
               </div>
 
               <h2 className="text-4xl sm:text-5xl lg:text-[4rem] font-black text-foreground tracking-tighter leading-[1.05]">
-                Why choose <br className="sm:hidden" />
+                {heroContent?.advantageTitle1 || "Why choose"} <br className="sm:hidden" />
                 <span className="text-theme-action">
-                  Minimalistic?
+                  {heroContent?.advantageTitle2 || "Minimalistic?"}
                 </span>
               </h2>
             </div>
@@ -296,14 +318,14 @@ export const Hero = () => {
                           <Shield size={28} />
                         </div>
                         <div className="text-right">
-                          <h3 className="text-3xl sm:text-4xl font-black text-foreground tracking-tighter mb-1">100%</h3>
-                          <p className="text-[10px] font-bold text-theme-action uppercase tracking-widest leading-tight">Ad & Noise <br />Free</p>
+                          <h3 className="text-3xl sm:text-4xl font-black text-foreground tracking-tighter mb-1">{heroContent?.c1Stat || "100%"}</h3>
+                          <p className="text-[10px] font-bold text-theme-action uppercase tracking-widest leading-tight">{heroContent?.c1StatLabel || "Ad & Noise Free"}</p>
                         </div>
                       </div>
 
                       <div className="relative z-10">
-                        <h3 className="text-2xl font-black text-foreground mb-3">Focus on Core</h3>
-                        <p className="text-foreground/70 font-medium text-base leading-relaxed">We radically strip away the noise. Every piece of content is engineered for maximum clarity and depth.</p>
+                        <h3 className="text-2xl font-black text-foreground mb-3">{heroContent?.c1Title || "Focus on Core"}</h3>
+                        <p className="text-foreground/70 font-medium text-base leading-relaxed">{heroContent?.c1Desc || "We radically strip away the noise. Every piece of content is engineered for maximum clarity and depth."}</p>
                       </div>
                     </div>
                   </div>
@@ -324,14 +346,14 @@ export const Hero = () => {
                           <Zap size={28} />
                         </div>
                         <div className="text-right">
-                          <h3 className="text-3xl sm:text-4xl font-black text-foreground tracking-tighter mb-1">4.9<span className="text-amber-500 text-2xl">★</span></h3>
-                          <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest leading-tight">Average<br />Rating</p>
+                          <h3 className="text-3xl sm:text-4xl font-black text-foreground tracking-tighter mb-1">{heroContent?.c2Stat || "4.9★"}</h3>
+                          <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest leading-tight">{heroContent?.c2StatLabel || "Average Rating"}</p>
                         </div>
                       </div>
 
                       <div className="relative z-10">
-                        <h3 className="text-2xl font-black text-foreground mb-3">Uncompromising Quality</h3>
-                        <p className="text-foreground/70 font-medium text-base leading-relaxed">Our editorial standards are absolute. Content only makes it through if it genuinely provides actionable value.</p>
+                        <h3 className="text-2xl font-black text-foreground mb-3">{heroContent?.c2Title || "Uncompromising Quality"}</h3>
+                        <p className="text-foreground/70 font-medium text-base leading-relaxed">{heroContent?.c2Desc || "Our editorial standards are absolute. Content only makes it through if it genuinely provides actionable value."}</p>
                       </div>
                     </div>
                   </div>
@@ -352,14 +374,14 @@ export const Hero = () => {
                           <Users size={28} />
                         </div>
                         <div className="text-right">
-                          <h3 className="text-3xl sm:text-4xl font-black text-foreground tracking-tighter mb-1">12k+</h3>
-                          <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest leading-tight">Active<br />Members</p>
+                          <h3 className="text-3xl sm:text-4xl font-black text-foreground tracking-tighter mb-1">{heroContent?.c3Stat || "12k+"}</h3>
+                          <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest leading-tight">{heroContent?.c3StatLabel || "Active Members"}</p>
                         </div>
                       </div>
 
                       <div className="relative z-10">
-                        <h3 className="text-2xl font-black text-foreground mb-3">Elite Peer Community</h3>
-                        <p className="text-foreground/70 font-medium text-base leading-relaxed">Growth accelerates around the right people. Connect with ambitious developers dedicated to deep mastery.</p>
+                        <h3 className="text-2xl font-black text-foreground mb-3">{heroContent?.c3Title || "Elite Peer Community"}</h3>
+                        <p className="text-foreground/70 font-medium text-base leading-relaxed">{heroContent?.c3Desc || "Growth accelerates around the right people. Connect with ambitious developers dedicated to deep mastery."}</p>
                       </div>
                     </div>
                   </div>
@@ -377,8 +399,8 @@ export const Hero = () => {
               <div className="absolute right-[-10%] top-[-50%] w-[500px] h-[500px] bg-theme-action/30 blur-[120px] rounded-full group-hover:bg-purple-500/40 transition-colors duration-1000"></div>
 
               <div className="relative z-10 text-center md:text-left">
-                <h3 className="font-black text-3xl sm:text-4xl lg:text-5xl mb-4 tracking-tight drop-shadow-sm">Commit to Mastery</h3>
-                <p className="text-background/80 text-lg font-medium max-w-xl">Join the definitive platform built strictly for focused developers avoiding the modern noise.</p>
+                <h3 className="font-black text-3xl sm:text-4xl lg:text-5xl mb-4 tracking-tight drop-shadow-sm">{heroContent?.ctaTitle || "Commit to Mastery"}</h3>
+                <p className="text-background/80 text-lg font-medium max-w-xl">{heroContent?.ctaSubtitle || "Join the definitive platform built strictly for focused developers avoiding the modern noise."}</p>
               </div>
               <Link href="/register"
                 className="relative z-10 group/btn flex items-center justify-center gap-3 px-10 py-5 bg-theme-action text-white rounded-2xl font-black text-sm lg:text-base hover:opacity-90 hover:-translate-y-1 transition-all shadow-xl shadow-theme-action/20 shrink-0 w-full md:w-auto">

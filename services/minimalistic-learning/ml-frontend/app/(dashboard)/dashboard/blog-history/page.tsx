@@ -124,7 +124,7 @@ const BlogHistoryPage = () => {
   );
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-[5%] py-24 sm:py-32">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-12">
         <div className="flex items-center gap-4">

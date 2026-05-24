@@ -155,3 +155,13 @@ enum TokenType {
   refresh
   reset
 }
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  page      String   // e.g., "home"
+  section   String   // e.g., "hero", "features", "cta"
+  content   Json     // Storing nested properties like title, subtitle
+  updatedAt DateTime @updatedAt
+
+  @@unique([page, section])
+}
