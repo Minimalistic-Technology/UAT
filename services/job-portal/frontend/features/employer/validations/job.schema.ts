@@ -4,8 +4,8 @@ import { ExperienceLevel, JobType } from "@/types";
 export const createJobSchema = z.object({
   title: z.string().trim().min(1, "Job title is required"),
   description: z.string().trim().min(1, "Job description is required"),
-  jobType: z.enum(JobType),
-  experienceLevel: z.enum(ExperienceLevel),
+  jobType: z.nativeEnum(JobType, { error: "Job type is required" }),
+  experienceLevel: z.nativeEnum(ExperienceLevel, { error: "Experience level is required" }),
   openings: z.coerce.number().int().min(1, "Openings must be at least 1"),
 
   // Nested Location Object
