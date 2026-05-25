@@ -7,10 +7,13 @@ import { connectDB } from './config/database.js';
 import { config } from './config/env.js';
 import { generalLimiter } from './middleware/rateLimiter.js';
 import { sanitizeInput } from './middleware/sanitize.middleware.js';
+import { ApiResponse } from './utils/apiResponse.js';
+import { handleRazorpayWebhook } from './controllers/payment.controller.js';
 
 // Import routes
 import authRoutes from './routes/auth.routes.js';
 import jobRoutes from './routes/job.routes.js';
+import internshipRoutes from './routes/internship.route.js';
 import applicationRoutes from './routes/application.routes.js';
 import userRoutes from './routes/user.routes.js';
 import companyRoutes from './routes/company.routes.js';
@@ -21,17 +24,15 @@ import couponRoutes from './routes/coupon.routes.js';
 import paymentRoutes from './routes/payment.route.js';
 import subscriptionRoutes from './routes/subscription.route.js';
 import demoRoutes from './routes/demo.routes.js';
-import { ApiResponse } from './utils/apiResponse.js';
-import { handleRazorpayWebhook } from './controllers/payment.controller.js';
 
-// Initialize express app
 const app: Application = express();
+const PORT = config.port;
 
-// Connect to database
 connectDB();
 
 app.set('trust proxy', 1);
-// Middleware
+
+// Middlewares
 app.use(helmet()); // Security headers
 app.use(
   cors({
@@ -52,7 +53,7 @@ app.use(cookieParser());
 // Sanitize data
 // app.use(sanitizeInput);
 
-// Rate limiting
+// General Rate limiter for all routes
 app.use('/api', generalLimiter);
 
 app.post(
@@ -64,6 +65,7 @@ app.post(
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use("/api/internships", internshipRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/companies', companyRoutes);
@@ -74,6 +76,7 @@ app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/demo", demoRoutes);
+
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, null, "Server is running"));
@@ -96,8 +99,6 @@ app.use((req: Request, res: Response) => {
   });
 });
 
-// Start server
-const PORT = config.port;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
