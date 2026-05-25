@@ -1,20 +1,41 @@
-import { body, param } from "express-validator";
+import { body, param, query } from "express-validator";
 import { ApplicationStatus } from "../models/Application.model.js";
 
 export const applyForJobSchema = [
-  body("jobId")
+  body("listingId")
     .notEmpty()
-    .withMessage("Job ID is required")
+    .withMessage("Listing ID is required")
     .isMongoId()
-    .withMessage("Invalid Job ID"),
+    .withMessage("Invalid Listing ID"),
+  body("listingType")
+    .notEmpty()
+    .withMessage("Listing Type is required")
+    .isIn(["job", "internship"])
+    .withMessage("Invalid listing type"),
+];
+
+export const getAllCompanyApplicationsschema = [
+  query("status")
+    .optional()
+    .isIn(Object.values(ApplicationStatus))
+    .withMessage("Invalid application status"),
+  query("listingType")
+    .optional()
+    .isIn(["job", "internship"])
+    .withMessage("Invalid listing type"),
 ];
 
 export const getJobApplicantsSchema = [
-  param("jobId")
+  body("listingId")
     .notEmpty()
-    .withMessage("Job ID is required")
+    .withMessage("Listing ID is required")
     .isMongoId()
-    .withMessage("Invalid Job ID"),
+    .withMessage("Invalid Listing ID"),
+  body("listingType")
+    .notEmpty()
+    .withMessage("Listing Type is required")
+    .isIn(["job", "internship"])
+    .withMessage("Invalid listing type"),
 ];
 
 export const getJobApplicationByIdSchema = [
