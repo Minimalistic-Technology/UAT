@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-brand: #0ea5e9;
+  --color-brand-glow: rgba(14, 165, 233, 0.4);
+}
+
+@layer base {
+  :root {
+    /* Beautiful Soft Light Theme */
+    --background: #f8fafc;
+    /* Slate 50 */
+    --foreground: #334155;
+    /* Slate 700 */
+    --card: #ffffff;
+    --primary: #0ea5e9;
+    /* Light Sky Blue */
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    /* Slate 100 */
+    --muted: #e2e8f0;
+    /* Slate 200 */
+    --muted-foreground: #64748b;
+    /* Slate 500 */
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  html {
+    color-scheme: light;
+  }
+
+  * {
+    border-color: var(--secondary);
+  }
+}
+
+.glassmorphism {
+  background-color: #ffffff;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
+}
+
+.glass-card {
+  border-radius: 1.5rem;
+  background-color: #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f8fafc;
+  transition: all 0.2s ease-in-out;
+}
+
+.glass-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+}
