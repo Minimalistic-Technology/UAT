@@ -13,13 +13,35 @@ export const buildBaseJobQuery = (
     const query: Record<string, any> = { status: JobStatus.ACTIVE };
 
     if (jobType && jobType !== "all") {
-        if (!isValidJobType(jobType)) throw new ApiError(400, "Invalid job type");
-        query.jobType = jobType;
+        const jobTypeArray = Array.isArray(jobType) ? jobType : jobType.split(",");
+        const validJobTypes = jobTypeArray.filter(isValidJobType);
+        if (validJobTypes.length > 0) {
+            query.jobType = { $in: validJobTypes };
+        }
     }
 
     if (workMode && workMode !== "all") {
-        if (!isValidWorkMode(workMode)) throw new ApiError(400, "Invalid work mode");
-        query.workMode = workMode;
+        const workModeArray = Array.isArray(workMode) ? workMode : workMode.split(",");
+        const validWorkModes = workModeArray.filter(isValidWorkMode);
+        if (validWorkModes.length > 0) {
+            query.workMode = { $in: validWorkModes };
+        }
+    }
+
+    const { roleCategory, companyType } = queryParams;
+
+    if (roleCategory) {
+        const roleCategoryArray = Array.isArray(roleCategory) ? roleCategory : roleCategory.split(",");
+        if (roleCategoryArray.length > 0) {
+            query.roleCategory = { $in: roleCategoryArray };
+        }
+    }
+
+    if (companyType) {
+        const companyTypeArray = Array.isArray(companyType) ? companyType : companyType.split(",");
+        if (companyTypeArray.length > 0) {
+            query.companyType = { $in: companyTypeArray };
+        }
     }
 
     if (search && typeof search === "string") {

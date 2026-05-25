@@ -45,7 +45,7 @@ const CurrencyIcon = ({
 
 export default function JobCard({ job }: JobCardProps) {
   return (
-    <Link href={`/jobs/${job._id}`} className="group block">
+    <Link href={`/${job.listingType === 'internship' ? 'internships' : 'jobs'}/${job._id}`} className="group block">
       <Card className="hover:border-primary/20 overflow-hidden border shadow-sm transition-all duration-200 hover:shadow-md">
         <CardContent className="p-5">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
@@ -75,6 +75,14 @@ export default function JobCard({ job }: JobCardProps) {
                       <Zap className="h-3 w-3 fill-current" /> Featured
                     </Badge>
                   )}
+                  {job.listingType === "internship" && (
+                    <Badge
+                      variant="secondary"
+                      className="bg-primary/10 text-primary hover:bg-primary/20 px-2 py-0 text-[10px] font-bold uppercase"
+                    >
+                      Internship
+                    </Badge>
+                  )}
                   {job.hasApplied && (
                     <Badge
                       variant="outline"
@@ -91,7 +99,28 @@ export default function JobCard({ job }: JobCardProps) {
             </div>
 
             {/* Right side: Salary Info (Desktop) */}
-            {job.salary?.min || job.salary?.max ? (
+            {job.listingType === "internship" ? (
+              job.stipend?.amount ? (
+                <div className="hidden flex-col items-end md:flex">
+                  <div className="text-foreground flex items-center text-base font-bold">
+                    <CurrencyIcon
+                      currency={job.stipend.currency}
+                      className="mr-0.5 h-4 w-4"
+                    />
+                    <span>{job.stipend.amount.toLocaleString()}</span>
+                  </div>
+                  <p className="text-muted-foreground text-[11px] font-bold tracking-wider uppercase">
+                    Per {job.stipend.period}
+                  </p>
+                </div>
+              ) : (
+                <div className="hidden flex-col items-end md:flex">
+                  <span className="text-muted-foreground text-sm font-medium capitalize">
+                    {job.stipend?.type?.replace("_", " ")} Stipend
+                  </span>
+                </div>
+              )
+            ) : job.salary?.min || job.salary?.max ? (
               <div className="hidden flex-col items-end md:flex">
                 <div className="text-foreground flex items-center text-base font-bold">
                   <CurrencyIcon
@@ -156,7 +185,21 @@ export default function JobCard({ job }: JobCardProps) {
               })}
             </div>
             {/* Mobile Salary View */}
-            {job.salary?.min || job.salary?.max ? (
+            {job.listingType === "internship" ? (
+              job.stipend?.amount ? (
+                <div className="text-foreground flex items-center gap-1.5 font-semibold md:hidden">
+                  <CurrencyIcon
+                    currency={job.stipend.currency}
+                    className="h-4 w-4"
+                  />
+                  {job.stipend.amount.toLocaleString()}
+                </div>
+              ) : (
+                <div className="text-muted-foreground flex items-center text-sm font-medium capitalize md:hidden">
+                  {job.stipend?.type?.replace("_", " ")} Stipend
+                </div>
+              )
+            ) : job.salary?.min || job.salary?.max ? (
               <div className="text-foreground flex items-center gap-1.5 font-semibold md:hidden">
                 <CurrencyIcon
                   currency={job.salary.currency}

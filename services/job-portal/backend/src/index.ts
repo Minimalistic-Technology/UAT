@@ -24,6 +24,7 @@ import couponRoutes from './routes/coupon.routes.js';
 import paymentRoutes from './routes/payment.route.js';
 import subscriptionRoutes from './routes/subscription.route.js';
 import demoRoutes from './routes/demo.routes.js';
+import listingRoutes from './routes/listing.routes.js';
 
 const app: Application = express();
 const PORT = config.port;
@@ -76,6 +77,7 @@ app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/demo", demoRoutes);
+app.use("/api/listings", listingRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
