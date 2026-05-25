@@ -10,7 +10,7 @@ export const useGetJobs = (filters: any = {}) => {
 
 export const useGetJobDetailsById = (jobId: string) => {
     return useQuery({
-        queryKey: ["job-details"],
+        queryKey: ["job-details", jobId],
         queryFn: () => getJobDetailsById(jobId)
     })
 }

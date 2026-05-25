@@ -35,14 +35,52 @@ import { ExperienceLevel, JobType } from "@/types";
 import { useCreateMyJobPosting } from "@/features/employer/hooks/use-job";
 
 const PREDEFINED_SKILLS = [
-  "JavaScript", "TypeScript", "React", "Next.js", "Node.js", 
-  "Express", "Python", "Django", "Flask", "Java", "Spring Boot", 
-  "C++", "C#", ".NET", "Ruby", "Ruby on Rails", "PHP", "Laravel", 
-  "Go", "Rust", "Swift", "Kotlin", "React Native", "Flutter",
-  "SQL", "PostgreSQL", "MySQL", "MongoDB", "Redis", "AWS", 
-  "Azure", "Google Cloud", "Docker", "Kubernetes", "Git", "CI/CD",
-  "GraphQL", "REST API", "Tailwind CSS", "SASS", "HTML", "CSS",
-  "Machine Learning", "Data Science", "UI/UX Design", "Figma"
+  "JavaScript",
+  "TypeScript",
+  "React",
+  "Next.js",
+  "Node.js",
+  "Express",
+  "Python",
+  "Django",
+  "Flask",
+  "Java",
+  "Spring Boot",
+  "C++",
+  "C#",
+  ".NET",
+  "Ruby",
+  "Ruby on Rails",
+  "PHP",
+  "Laravel",
+  "Go",
+  "Rust",
+  "Swift",
+  "Kotlin",
+  "React Native",
+  "Flutter",
+  "SQL",
+  "PostgreSQL",
+  "MySQL",
+  "MongoDB",
+  "Redis",
+  "AWS",
+  "Azure",
+  "Google Cloud",
+  "Docker",
+  "Kubernetes",
+  "Git",
+  "CI/CD",
+  "GraphQL",
+  "REST API",
+  "Tailwind CSS",
+  "SASS",
+  "HTML",
+  "CSS",
+  "Machine Learning",
+  "Data Science",
+  "UI/UX Design",
+  "Figma",
 ];
 
 function PostJobPage() {
@@ -83,7 +121,7 @@ function PostJobPage() {
   const filteredSkills = PREDEFINED_SKILLS.filter(
     (skill) =>
       skill.toLowerCase().includes(skillInput.toLowerCase()) &&
-      !currentSkills.includes(skill)
+      !currentSkills.includes(skill),
   );
 
   const onSubmit: SubmitHandler<CreateJobFormData> = async (data) => {
@@ -116,7 +154,10 @@ function PostJobPage() {
   const handleSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     if (val.includes(",")) {
-      const skillsToAdd = val.split(",").map((s) => s.trim()).filter(Boolean);
+      const skillsToAdd = val
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
       let newSkillsList = [...currentSkills];
       skillsToAdd.forEach((s) => {
         if (!newSkillsList.includes(s)) {
@@ -182,49 +223,60 @@ function PostJobPage() {
               )}
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="grid gap-2">
-                <Label>Job Type</Label>
-                <Controller
-                  name="jobType"
-                  control={control}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(JobType).map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>Experience Level</Label>
-                <Controller
-                  name="experienceLevel"
-                  control={control}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(ExperienceLevel).map((level) => (
-                          <SelectItem key={level} value={level}>
-                            {level}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
+            <div className="grid gap-2">
+              <Label>Job Type</Label>
+              <Controller
+                name="jobType"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(JobType).map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase())}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.jobType && (
+                <p className="text-destructive text-xs">
+                  {errors.jobType.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Experience Level</Label>
+              <Controller
+                name="experienceLevel"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(ExperienceLevel).map((level) => (
+                        <SelectItem key={level} value={level}>
+                          {level.replace(/\b\w/g, (c) => c.toUpperCase())}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.experienceLevel && (
+                <p className="text-destructive text-xs">
+                  {errors.experienceLevel.message}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -251,10 +303,20 @@ function PostJobPage() {
               <div className="grid gap-2">
                 <Label>State</Label>
                 <Input {...register("location.state")} placeholder="CA" />
+                {errors.location?.state && (
+                  <p className="text-destructive text-xs">
+                    {errors.location.state.message}
+                  </p>
+                )}
               </div>
               <div className="grid gap-2">
                 <Label>Country</Label>
                 <Input {...register("location.country")} placeholder="USA" />
+                {errors.location?.country && (
+                  <p className="text-destructive text-xs">
+                    {errors.location.country.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -348,7 +410,7 @@ function PostJobPage() {
             <div className="space-y-2">
               <Label>Skills</Label>
               <div className="relative">
-                <div className="focus-within:ring-ring flex flex-wrap gap-2 rounded-md border p-2 focus-within:ring-2 bg-background">
+                <div className="focus-within:ring-ring bg-background flex flex-wrap gap-2 rounded-md border p-2 focus-within:ring-2">
                   {currentSkills.map((skill) => (
                     <Badge
                       key={skill}
@@ -382,15 +444,15 @@ function PostJobPage() {
                       setShowSuggestions(false);
                     }}
                     placeholder="Add skill... (comma or enter to add)"
-                    className="flex-1 bg-transparent outline-none min-w-[150px]"
+                    className="min-w-[150px] flex-1 bg-transparent outline-none"
                   />
                 </div>
                 {showSuggestions && skillInput && filteredSkills.length > 0 && (
-                  <div className="absolute top-full left-0 z-50 w-full mt-1 bg-popover text-popover-foreground border rounded-md shadow-md max-h-48 overflow-y-auto">
+                  <div className="bg-popover text-popover-foreground absolute top-full left-0 z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border shadow-md">
                     {filteredSkills.map((skill) => (
                       <div
                         key={skill}
-                        className="px-4 py-2 cursor-pointer hover:bg-muted text-sm"
+                        className="hover:bg-muted cursor-pointer px-4 py-2 text-sm"
                         onMouseDown={(e) => {
                           e.preventDefault(); // Prevents input from losing focus
                           addSkill(skill);
@@ -432,6 +494,70 @@ function PostJobPage() {
             <div className="grid gap-2">
               <Label>Number of Openings</Label>
               <Input type="number" {...register("openings")} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Publishing Options */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Publishing Options</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Benefits */}
+            <div className="grid gap-2">
+              <Label>Benefits (One per line)</Label>
+              <Textarea
+                placeholder="Health Insurance..."
+                onChange={(e) =>
+                  setValue(
+                    "benefits",
+                    e.target.value.split("\n").filter(Boolean),
+                  )
+                }
+                className="min-h-37.5"
+              />
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Application Deadline */}
+              <div className="grid gap-2">
+                <Label>Application Deadline</Label>
+                <Input
+                  min={new Date().toISOString().split("T")[0]}
+                  type="date"
+                  {...register("applicationDeadline")}
+                />
+                {errors.applicationDeadline && (
+                  <p className="text-destructive text-xs">
+                    {errors.applicationDeadline.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Featured */}
+              <div className="grid gap-2">
+                <Label>Visibility</Label>
+                <div className="flex h-9 items-center gap-3 rounded-md border px-3">
+                  <Controller
+                    name="isFeatured"
+                    control={control}
+                    render={({ field }) => (
+                      <Checkbox
+                        id="isFeatured"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
+                  <Label
+                    htmlFor="isFeatured"
+                    className="cursor-pointer font-normal"
+                  >
+                    Feature this listing
+                  </Label>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

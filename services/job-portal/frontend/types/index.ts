@@ -2,6 +2,7 @@ export enum CompanyRole {
   OWNER = "owner",
   ADMIN = "admin",
   RECRUITER = "recruiter",
+  HR = "hr",
 }
 
 export enum GlobalRole {
