@@ -10,11 +10,6 @@ export const errorHandler = (err: any, _req: Request, res: Response, _next: Next
     details: err.errors || err.issues || null
   });
 
-  try {
-    const fs = require('fs');
-    fs.appendFileSync('backend-error.log', new Date().toISOString() + '\\n' + err.stack + '\\n\\n');
-  } catch (e) { }
-
   if (err instanceof z.ZodError) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       message: 'Validation failed',
