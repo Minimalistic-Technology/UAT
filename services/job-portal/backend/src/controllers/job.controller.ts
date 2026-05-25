@@ -85,7 +85,7 @@ export const getJobs = async (
       });
 
       const appliedJobIds = new Set(
-        applications.map((app) => app.job.toString()),
+        applications.map((app) => app.listing.toString()),
       );
 
       formattedJobs = jobsWithDetails.map((job) => ({
