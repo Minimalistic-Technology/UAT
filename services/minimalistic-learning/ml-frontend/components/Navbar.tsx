@@ -175,12 +175,12 @@ export const Navbar: React.FC = () => {
                 </div>
               ) : (
                 <div className="hidden sm:flex items-center gap-3">
-                  <Link href="/login" className="px-5 py-2 text-sm font-semibold text-foreground/70 hover:text-foreground transition-colors">
+                  <a href="/login" className="px-5 py-2 text-sm font-semibold text-foreground/70 hover:text-foreground transition-colors">
                     Login
-                  </Link>
-                  <Link href="/register" className="px-6 py-2.5 bg-theme-action text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-all active:scale-95">
+                  </a>
+                  <a href="/register" className="px-6 py-2.5 bg-theme-action text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-all active:scale-95">
                     Signup
-                  </Link>
+                  </a>
                 </div>
               )}
 
@@ -227,20 +227,20 @@ export const Navbar: React.FC = () => {
 
           {!isAuthenticated && (
             <div className="flex flex-col gap-3 mt-8 pt-6 border-t border-theme-accent/10 pl-2 pr-2">
-              <Link
+              <a
                 href="/login"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="w-full py-3 text-center text-foreground font-semibold border border-theme-accent/20 rounded-xl hover:bg-theme-element-sec"
               >
                 Login
-              </Link>
-              <Link
+              </a>
+              <a
                 href="/register"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="w-full py-3 text-center bg-theme-action text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
               >
                 Signup
-              </Link>
+              </a>
             </div>
           )}
         </div>
