@@ -1,9 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
-import Job, {
+import {
   ExperienceLevel,
   JobStatus,
   JobType,
-} from "../models/Job.model.js";
+} from "../models/BaseJob.model.js";
+import Job from "../models/Job.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
 import mongoose from "mongoose";
@@ -12,6 +13,7 @@ import Company from "../models/Company.model.js";
 import Subscription from "../models/Subscription.model.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
+import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
 
 export function isValidJobType(value: any): value is JobType {
   return Object.values(JobType).includes(value);
@@ -21,78 +23,39 @@ export function isValidExperienceType(value: any): value is ExperienceLevel {
   return Object.values(ExperienceLevel).includes(value);
 }
 
+export function isValidWorkMode(value: any): value is string {
+    const validWorkModes = ["remote", "work from office", "hybrid", "temporary work from home"];
+    return validWorkModes.includes(value);
+}
+
 export const getJobs = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const {
-      search,
-      remote,
-      jobType,
-      experienceLevel,
-      skills,
-      minSalary,
-      maxSalary,
-      city,
-      state,
-      country,
-      page = 1,
-      limit = 10,
-    } = req.query;
+    const query = buildBaseJobQuery(req.query as Record<string, any>);
 
-    let query: any = { status: JobStatus.ACTIVE };
-
-    if (remote === "true") {
-      query["location.remote"] = true;
-    }
-
-    if (jobType && jobType !== "all") {
-      if (!isValidJobType(jobType)) {
-        return next(new ApiError(400, "Invalid job type"));
-      }
-      query.jobType = jobType;
-    }
+    const { experienceLevel, minSalary, maxSalary } = req.query;
 
     if (experienceLevel) {
-      if (!isValidExperienceType(experienceLevel)) {
+      if (!isValidExperienceType(experienceLevel))
         return next(new ApiError(400, "Invalid experience type"));
-      }
       query.experienceLevel = experienceLevel;
-    }
-
-    if (search && typeof search === "string") {
-      query.$text = { $search: search };
-    }
-
-    if (skills) {
-      const skillArray = Array.isArray(skills) ? skills : [skills];
-      query.skills = { $in: skillArray };
     }
 
     if (minSalary || maxSalary) {
       query["salary.min"] = {};
-
       if (minSalary) query["salary.min"].$gte = Number(minSalary);
       if (maxSalary) query["salary.max"] = { $lte: Number(maxSalary) };
     }
 
-    if (city) {
-      query["location.city"] = { $regex: city as string, $options: "i" };
-    }
-    if (state) {
-      query["location.state"] = { $regex: state as string, $options: "i" };
-    }
-    if (country) {
-      query["location.country"] = { $regex: country as string, $options: "i" };
-    }
+    const { page, limit } = req.query;
 
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 10;
     const skip = (pageNumber - 1) * limitNumber;
 
-    console.log(query);
 
     const [jobs, total] = await Promise.all([
       Job.find(query)
