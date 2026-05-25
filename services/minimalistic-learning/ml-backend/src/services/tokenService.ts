@@ -59,11 +59,11 @@ export const verifyStoredToken = async (
   }
 
   if (tokenDoc.expiresAt.getTime() < Date.now()) {
-    await prisma.token.delete({ where: { id: tokenDoc.id } });
+    await prisma.token.deleteMany({ where: { id: tokenDoc.id } });
     return null;
   }
 
   return tokenDoc;
 };
 
-export const deleteToken = (tokenDoc: Token) => prisma.token.delete({ where: { id: tokenDoc.id } });
+export const deleteToken = (tokenDoc: Token) => prisma.token.deleteMany({ where: { id: tokenDoc.id } });
