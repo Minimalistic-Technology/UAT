@@ -1,0 +1,50 @@
+2026-05-25T08:38:26.842Z\nPrismaClientKnownRequestError: 
+Invalid `prisma.user.findFirst()` invocation in
+D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\src\services\userService.ts:7:59
+
+  4 
+  5 export type CreateUserPayload = Prisma.UserCreateInput;
+  6 
+→ 7 export const findByEmail = (email: string) => prisma.user.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+    at ei.handleRequestError (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at a (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\src\controllers\authController.ts:76:16\n\n2026-05-25T08:38:59.298Z\nPrismaClientKnownRequestError: 
+Invalid `prisma.user.findFirst()` invocation in
+D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\src\services\userService.ts:7:59
+
+  4 
+  5 export type CreateUserPayload = Prisma.UserCreateInput;
+  6 
+→ 7 export const findByEmail = (email: string) => prisma.user.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+    at ei.handleRequestError (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at a (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\src\controllers\authController.ts:76:16\n\n2026-05-25T08:47:29.517Z\nError: 
+Invalid `prisma.post.findFirst()` invocation in
+D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\src\controllers\postController.ts:137:39
+
+  134 if (!slug) throw new ApiError(StatusCodes.BAD_REQUEST, "Slug parameter is required.");
+  135 
+  136 try {
+→ 137   let post: any = await prisma.post.findFirst(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+    at D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\src\controllers\postController.ts:189:11\n\n2026-05-25T08:48:00.126Z\nPrismaClientKnownRequestError: 
+Invalid `prisma.post.findMany()` invocation in
+D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\src\controllers\postController.ts:36:17
+
+  33 const skip = (page - 1) * limit;
+  34 
+  35 const [itemsRaw, total] = await Promise.all([
+→ 36   prisma.post.findMany(
+Timed out fetching a new connection from the connection pool. More info: http://pris.ly/d/connection-pool (Current connection pool timeout: 10, connection limit: 5)
+    at ei.handleRequestError (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at a (D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async Promise.all (index 0)
+    at D:\JOBPORTEL\UAT\services\minimalistic-learning\ml-backend\src\controllers\postController.ts:35:29\n\n

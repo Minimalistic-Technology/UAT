@@ -21,11 +21,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const router = useRouter();
   const pathname = usePathname();
 
-  const { data, isLoading, refetch, isError } = useQuery({
+  const { data, isLoading, isFetched, refetch } = useQuery({
     queryKey: ["auth-me"],
     queryFn: () => authService.getMe(),
     retry: false,
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000,  // 5 minutes — prevent constant refetching
+    gcTime: 10 * 60 * 1000,    // keep cache for 10 minutes
   });
 
   const user = data?.data?.user || null;
@@ -33,7 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // React Client-side Route Protection (Replaces Next.js Edge Middleware for Static Export)
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !isFetched) return; // wait until auth status is fully known
 
     const PROTECTED_ROUTES = ['/dashboard', '/my-blogs', '/blog/create', '/blog/edit'];
     const AUTH_ROUTES = ['/login', '/register', '/verify-otp'];
@@ -46,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else if (isAuthRoute && isAuthenticated) {
       router.push('/dashboard');
     }
-  }, [isLoading, isAuthenticated, pathname, router]);
+  }, [isLoading, isFetched, isAuthenticated, pathname, router]);
 
   const logout = async () => {
     try {
@@ -56,8 +57,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       queryClient.setQueryData(["auth-me"], null);
       queryClient.clear();
-      router.push("/login");
-      router.refresh();
+      // Use hard navigation to cross layout boundary (dashboard → auth layout)
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
     }
   };
 

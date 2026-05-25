@@ -54,11 +54,8 @@ const LoginForm = () => {
 
         if (userRole === "admin") {
           toast.success("Welcome, Admin!");
-          refreshUser();
-          setTimeout(() => {
-            router.push("/dashboard");
-            setTimeout(() => { window.location.href = "/dashboard"; }, 1000);
-          }, 500);
+          // Hard navigate across layout boundary: auth → dashboard
+          setTimeout(() => { window.location.href = "/dashboard"; }, 600);
         } else {
           toast.success("OTP sent to your email!");
           setUserEmail(data.email);
@@ -81,11 +78,8 @@ const LoginForm = () => {
     verifyMutate({ email: userEmail, otp: otpValue }, {
       onSuccess: () => {
         toast.success("Login successful! Welcome back.");
-        refreshUser();
-        setTimeout(() => {
-          router.push("/my-blogs");
-          setTimeout(() => { window.location.href = "/my-blogs"; }, 1000);
-        }, 500);
+        // Hard navigate across layout boundary: auth → dashboard
+        setTimeout(() => { window.location.href = "/my-blogs"; }, 600);
       },
       onError: (err) => {
         toast.error(isAxiosError(err) ? err.response?.data?.message : "Verification failed");
