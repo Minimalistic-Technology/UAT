@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next';
 import { blogService } from '@/features/blog/services/blog-service';
 
+export const dynamic = 'force-static';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'http://localhost:3000'; // Should be your production URL in prod
 

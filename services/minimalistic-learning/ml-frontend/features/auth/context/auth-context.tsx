@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "../services/auth-service";
 import { LoginResponse } from "../types/auth-response";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 interface AuthContextType {
   user: LoginResponse["data"]["user"] | null;
@@ -19,18 +19,34 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const pathname = usePathname();
 
-  // The cookie-based session is managed automatically by the browser.
-  // We just attempt to fetch the current user profile on mount.
   const { data, isLoading, refetch, isError } = useQuery({
     queryKey: ["auth-me"],
     queryFn: () => authService.getMe(),
     retry: false,
-    staleTime: 0, // Always re-verify on mount to prevent auth bypass via stale cache
+    staleTime: 0,
   });
 
   const user = data?.data?.user || null;
   const isAuthenticated = !!user;
+
+  // React Client-side Route Protection (Replaces Next.js Edge Middleware for Static Export)
+  useEffect(() => {
+    if (isLoading) return;
+
+    const PROTECTED_ROUTES = ['/dashboard', '/my-blogs', '/blog/create', '/blog/edit'];
+    const AUTH_ROUTES = ['/login', '/register', '/verify-otp'];
+
+    const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
+    const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+
+    if (isProtectedRoute && !isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+    } else if (isAuthRoute && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isLoading, isAuthenticated, pathname, router]);
 
   const logout = async () => {
     try {
@@ -38,7 +54,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.warn("Backend logout failed, but clearing local session anyway:", error);
     } finally {
-      // ALWAYS clear local state even if server is unreachable
       queryClient.setQueryData(["auth-me"], null);
       queryClient.clear();
       router.push("/login");

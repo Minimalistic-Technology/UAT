@@ -269,3 +269,118 @@ export const sendPasswordResetOTP = async (to: string, otp: string) => {
   return smartSend(to, subject, html);
 };
 
+/* ─── Unified Login Alert Email ──────────────────────────────────────── */
+export const sendLoginAlertEmail = async (to: string, userName: string, ipAddress: string = 'Unknown IP', device: string = 'Unknown Device') => {
+  const subject = 'New Login Alert — Minimalistic Learning';
+  const year = new Date().getFullYear();
+  const time = new Date().toLocaleString();
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:24px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.04);">
+        <tr>
+          <td style="padding:40px 40px 20px;">
+            <div style="width:48px;height:48px;background:#e0e7ff;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+              <span style="font-size:24px;">🔓</span>
+            </div>
+            <h1 style="margin:0 0 10px;color:#0f172a;font-size:24px;font-weight:800;letter-spacing:-0.5px;">New Login Detected</h1>
+            <p style="margin:0;color:#475569;font-size:15px;line-height:1.6;">Hi ${userName},</p>
+            <p style="margin:10px 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+              We noticed a new login to your Minimalistic Learning account. If this was you, you can safely ignore this email.
+            </p>
+            <div style="background:#f8fafc;border-radius:16px;padding:24px;margin-bottom:30px;border:1px solid #f1f5f9;">
+              <p style="margin:0 0 8px;font-size:12px;text-transform:uppercase;font-weight:700;color:#94a3b8;letter-spacing:0.05em;">Login Details</p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:14px;font-weight:600;">Time:</td>
+                  <td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#0f172a;font-size:14px;font-weight:700;text-align:right;">${time}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:14px;font-weight:600;">IP Address:</td>
+                  <td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#0f172a;font-size:14px;font-weight:700;text-align:right;">${ipAddress}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;color:#64748b;font-size:14px;font-weight:600;">Device:</td>
+                  <td style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:700;text-align:right;">${device}</td>
+                </tr>
+              </table>
+            </div>
+            <div style="background:#fff1f2;border-left:4px solid #f43f5e;padding:16px;border-radius:0 12px 12px 0;">
+              <p style="margin:0;color:#881337;font-size:13px;line-height:1.5;">
+                <strong style="font-weight:800;">Not you?</strong> Please reset your password immediately and contact our support team to secure your account.
+              </p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;padding:30px 40px;text-align:center;border-top:1px solid #f1f5f9;">
+            <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.7;">
+              &copy; ${year} Minimalistic Learning. All rights reserved.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+  `;
+  return smartSend(to, subject, html);
+};
+
+/* ─── Account Creation Welcome Email ───────────────────────────────────── */
+export const sendAccountCreatedEmail = async (to: string, userName: string) => {
+  const subject = 'Welcome to Minimalistic Learning';
+  const year = new Date().getFullYear();
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#1e293b;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#1e293b;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#0f172a;border-radius:24px;border:1px solid #334155;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.4);">
+        <tr>
+          <td style="padding:50px 40px;text-align:center;background:linear-gradient(180deg, rgba(16,185,129,0.1) 0%, transparent 100%);">
+            <h1 style="margin:0 0 16px;color:#ffffff;font-size:28px;font-weight:900;letter-spacing:-0.5px;">Welcome, ${userName}! 🚀</h1>
+            <p style="margin:0;color:#94a3b8;font-size:16px;line-height:1.6;max-width:400px;margin-left:auto;margin-right:auto;">
+              Your account has been successfully created. You're now part of an elite community dedicated to mastering technology.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 40px 40px;">
+            <div style="background:#1e293b;border-radius:16px;padding:32px;border:1px solid #334155;text-align:left;">
+              <h3 style="margin:0 0 16px;color:#f8fafc;font-size:18px;font-weight:700;">What's next?</h3>
+              <ul style="margin:0;padding-left:20px;color:#cbd5e1;font-size:15px;line-height:1.8;">
+                <li style="margin-bottom:8px;">Access premium masterclasses and deep dives.</li>
+                <li style="margin-bottom:8px;">Interact with the active developer community.</li>
+                <li>Curate your personalized learning feed.</li>
+              </ul>
+              <div style="margin-top:32px;text-align:center;">
+                <a href="${env.corsOrigins[0] || 'http://localhost:3000'}/login" style="display:inline-block;background:#10b981;color:#ffffff;font-size:14px;font-weight:800;text-decoration:none;padding:14px 32px;border-radius:12px;text-transform:uppercase;letter-spacing:0.1em;">Go to Dashboard</a>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 40px;text-align:center;border-top:1px solid #1e293b;">
+            <p style="margin:0;color:#64748b;font-size:12px;line-height:1.7;">
+              &copy; ${year} Minimalistic Learning.<br>Focus on Core. Avoid the Noise.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+  `;
+  return smartSend(to, subject, html);
+};

@@ -26,7 +26,7 @@ import { env } from '../config/env';
 import { getCookieConfig } from '../config/cookieConfig';
 import { durationToMs } from '../utils/time';
 import { ApiResponse } from "../utils/ApiResponse";
-import { sendOTP, sendPasswordResetOTP } from "../utils/email";
+import { sendOTP, sendPasswordResetOTP, sendAccountCreatedEmail, sendLoginAlertEmail } from "../utils/email";
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -93,6 +93,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     await replaceRefreshToken(user.id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
     const cookieBase = getCookieConfig();
 
+    sendLoginAlertEmail(user.email, user.firstName, req.ip, req.headers['user-agent']).catch(console.error);
+
     return res
       .cookie('access_token', accessToken, {
         ...cookieBase,
@@ -147,6 +149,8 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
       where: { id: user.id },
       data: { otp: null, otpExpires: null, isVerified: true }
     });
+
+    sendLoginAlertEmail(user.email, user.firstName, req.ip, req.headers['user-agent']).catch(console.error);
   } else {
     const pending = await prisma.pendingUser.findUnique({ where: { email } });
     const isExpired = pending && new Date(Date.now() - 60000) > pending.otpExpires;
@@ -168,6 +172,7 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
     });
 
     await prisma.pendingUser.delete({ where: { id: pending.id } });
+    sendAccountCreatedEmail(user.email, user.firstName).catch(console.error);
   }
 
   const accessToken = signAccessToken(user.id);
@@ -354,3 +359,5 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
     new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(updatedUser) }, 'Profile updated successfully')
   );
 });
+
+// Restart trigger

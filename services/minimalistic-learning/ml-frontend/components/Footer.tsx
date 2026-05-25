@@ -31,8 +31,8 @@ export const Footer = () => {
         {/* Main Grid Layout — 12 Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-y-12 lg:gap-x-6 xl:gap-x-12 mb-12">
 
-          {/* Col 1: Brand (Span 3) */}
-          <div className="lg:col-span-3 flex flex-col items-start">
+          {/* Col 1: Brand (Span 4) */}
+          <div className="lg:col-span-4 flex flex-col items-start">
             <Link href="/" className="flex items-center gap-3 mb-5 group">
               <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-theme-accent/20 flex items-center justify-center bg-white group-hover:scale-105 transition-transform">
                 <Image src="/logoML.png" alt="ML Logo" width={40} height={40} className="object-contain" />
@@ -59,37 +59,18 @@ export const Footer = () => {
           </div>
 
           {/* Col 2: Quick Links (Span 2) */}
-          <div className="lg:col-span-2 flex flex-col lg:pl-4">
+          <div className="lg:col-span-2 flex flex-col">
             <h4 className="text-foreground font-bold uppercase tracking-wider text-xs mb-5">Quick Links</h4>
             <div className="flex flex-col gap-3">
               {[
                 { name: 'About Us', href: '/about' },
-                { name: 'Our Services', href: '#' },
-                { name: 'Testimonials', href: '#' },
-                { name: 'Our Team', href: '#' },
-                { name: 'Careers', href: '#' },
+                { name: 'Our Services', href: '/services' },
+                { name: 'Testimonials', href: '/testimonials' },
+                { name: 'Our Team', href: '/team' },
+                { name: 'Careers', href: '/careers' },
               ].map(link => (
                 <Link key={link.name} href={link.href} className="group flex items-center gap-2 text-foreground/70 hover:text-foreground text-sm font-medium transition-colors w-fit">
                   <span className="w-0 h-px bg-foreground group-hover:w-2 transition-all duration-300" />
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Col 3: Categories (Span 2) */}
-          <div className="lg:col-span-2 flex flex-col">
-            <h4 className="text-foreground font-bold uppercase tracking-wider text-xs mb-5">Categories</h4>
-            <div className="flex flex-col gap-3">
-              {[
-                { name: 'Technology', href: '/blog?category=Technology' },
-                { name: 'Software Dev', href: '/blog?category=Software+Dev' },
-                { name: 'Machine Learning', href: '/blog?category=Machine+Learning' },
-                { name: 'Design', href: '/blog?category=Design' },
-                { name: 'Productivity', href: '/blog?category=Productivity' },
-              ].map(link => (
-                <Link key={link.name} href={link.href} className="group flex items-center gap-2 text-foreground/70 hover:text-theme-action text-sm font-medium transition-colors w-fit">
-                  <span className="w-0 h-px bg-theme-action group-hover:w-2 transition-all duration-300" />
                   {link.name}
                 </Link>
               ))}
@@ -111,8 +92,8 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Col 5: Stay Updated (Span 3) */}
-          <div className="lg:col-span-3 flex flex-col">
+          {/* Col 5: Stay Updated (Span 4) */}
+          <div className="lg:col-span-4 flex flex-col lg:pl-8">
             <h4 className="text-foreground font-bold uppercase tracking-wider text-xs mb-5">Stay Updated</h4>
             <NewsletterForm />
             <p className="text-foreground/50 text-xs font-medium mt-4">

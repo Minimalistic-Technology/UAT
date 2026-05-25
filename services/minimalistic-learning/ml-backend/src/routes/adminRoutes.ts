@@ -16,7 +16,8 @@ import {
   createPermission,
   togglePermission,
   deletePermission,
-  updateSiteContent
+  updateSiteContent,
+  getNewsletterSubscribers
 } from '../controllers/adminController';
 
 const router = Router();
@@ -46,5 +47,14 @@ router.delete('/permissions/:id', checkDbPermission, deletePermission);
 
 // Site Content Management
 router.put('/content/:page/:section', checkDbPermission, updateSiteContent);
+
+// Subscribers Management
+router.get('/subscribers', checkDbPermission, getNewsletterSubscribers);
+
+// Team Management
+import { addTeamMember, updateTeamMember, deleteTeamMember } from '../controllers/adminController';
+router.post('/team', checkDbPermission, addTeamMember);
+router.put('/team/:id', checkDbPermission, updateTeamMember);
+router.delete('/team/:id', checkDbPermission, deleteTeamMember);
 
 export default router;

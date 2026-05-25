@@ -373,3 +373,58 @@ export const updateSiteContent = asyncHandler(async (req: Request, res: Response
   );
 });
 
+// ─── SUBSCRIBERS ENDPOINTS ──────────────────────────────────────────────────
+export const getNewsletterSubscribers = asyncHandler(async (req: Request, res: Response) => {
+  const subscribers = await (prisma as any).subscriber.findMany({
+    orderBy: { createdAt: 'desc' }
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, subscribers, 'Subscribers fetched successfully')
+  );
+});
+
+// ─── TEAM ENDPOINTS ───────────────────────────────────────────────────────────
+export const addTeamMember = asyncHandler(async (req: Request, res: Response) => {
+  const { name, role, bio, image, github, twitter, linkedin, order } = req.body;
+
+  if (!name || !role) throw new ApiError(StatusCodes.BAD_REQUEST, 'Name and Role are required');
+
+  const newMember = await (prisma as any).teamMember.create({
+    data: { name, role, bio, image, github, twitter, linkedin, order: order || 0 }
+  });
+
+  return res.status(StatusCodes.CREATED).json(
+    new ApiResponse(StatusCodes.CREATED, newMember, 'Team member added successfully')
+  );
+});
+
+export const updateTeamMember = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, role, bio, image, github, twitter, linkedin, order } = req.body;
+
+  const existing = await (prisma as any).teamMember.findUnique({ where: { id } });
+  if (!existing) throw new ApiError(StatusCodes.NOT_FOUND, 'Team member not found');
+
+  const updatedMember = await (prisma as any).teamMember.update({
+    where: { id },
+    data: { name, role, bio, image, github, twitter, linkedin, order }
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, updatedMember, 'Team member updated successfully')
+  );
+});
+
+export const deleteTeamMember = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const existing = await (prisma as any).teamMember.findUnique({ where: { id } });
+  if (!existing) throw new ApiError(StatusCodes.NOT_FOUND, 'Team member not found');
+
+  await (prisma as any).teamMember.delete({ where: { id } });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, null, 'Team member removed successfully')
+  );
+});
