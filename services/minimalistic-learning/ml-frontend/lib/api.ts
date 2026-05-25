@@ -93,8 +93,9 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        // Important: use the exact configured baseURL, do not fallback to localhost in production
         const refreshResponse = await axios.post(
-          `${originalRequest.baseURL || "http://localhost:5001/api/v1"}/auth/refresh-token`,
+          `${baseURL}/auth/refresh-token`,
           {},
           { withCredentials: true }
         );

@@ -4,7 +4,7 @@ import { blogService } from '@/features/blog/services/blog-service';
 export const dynamic = 'force-static';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'http://localhost:3000'; // Should be your production URL in prod
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://minimalistic-learning.onrender.com';
 
   // Fetch all blogs for the sitemap
   let blogUrls: any[] = [];
