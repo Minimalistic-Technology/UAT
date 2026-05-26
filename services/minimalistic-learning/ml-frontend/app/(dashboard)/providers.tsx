@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { ThemeProvider } from "next-themes";
-
+import "../(dashboard)/globals.css";
 import { AuthProvider } from "@/features/auth/context/auth-context";
 
 export default function Providers({ children }: { children: React.ReactNode }) {

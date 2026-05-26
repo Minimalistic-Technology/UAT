@@ -1,4 +1,4 @@
-import "../(dashboard)/globals.css";
+
 import Providers from "../(dashboard)/providers";
 import { Toaster } from "sonner";
 
