@@ -6,7 +6,7 @@ import { BlogValues } from "../../types/blog-type";
 
 // Dynamic import for React Quill
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false }) as any;
-import "react-quill-new/dist/quill.snow.css";
+
 
 interface StepContentProps {
   control: Control<BlogValues>;

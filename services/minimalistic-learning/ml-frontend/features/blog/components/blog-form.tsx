@@ -22,8 +22,6 @@ import { blogService } from "../services/blog-service";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 
-// IMPORT QUILL CSS TO FIX THE HUGE TRIANGLE GLITCH
-import "react-quill-new/dist/quill.snow.css";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), {
   ssr: false,
