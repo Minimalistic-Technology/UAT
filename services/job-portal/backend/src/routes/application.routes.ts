@@ -1,6 +1,6 @@
 import express from "express";
 import {
-  applyForJob,
+  createApplication,
   getMyApplications,
   getJobApplicants,
   getAllCompanyApplications,
@@ -29,7 +29,7 @@ router.post(
   authorize(GlobalRole.USER), // only for job seeker
   applicationLimiter,
   validate(applyForJobSchema),
-  applyForJob,
+  createApplication,
 );
 
 router.get(
@@ -54,7 +54,7 @@ router.get(
 );
 
 router.get(
-  "/job/:jobId",
+  "/job/get-applicants",
   protect,
   authorize(GlobalRole.USER), // only for employer
   validate(getJobApplicantsSchema),

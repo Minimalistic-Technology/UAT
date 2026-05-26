@@ -1,4 +1,4 @@
-import { body } from "express-validator";
+import { body, query } from "express-validator";
 
 export const updateUserStatusSchema = [
   body("isActive")
@@ -15,4 +15,20 @@ export const updateKycStatusSchema = [
     .withMessage("Status is required")
     .isIn(["approved", "rejected"])
     .withMessage("Status must be either 'approved' or 'rejected'"),
+];
+
+export const getJobsByStatusSchema = [
+  query("status")
+    .exists({ checkNull: true })
+    .withMessage("Status is required")
+    .isIn(["active", "closed", "pending", "rejected"])
+    .withMessage("Status must be either 'active', 'closed', 'pending', or 'rejected'")
+];
+
+export const getKycApplicationsSchema = [
+  query("status")
+    .exists({ checkNull: true })
+    .withMessage("Status is required")
+    .isIn(["pending", "approved", "rejected"])
+    .withMessage("Status must be either 'pending', 'approved', or 'rejected'")
 ];

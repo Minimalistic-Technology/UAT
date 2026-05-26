@@ -27,6 +27,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Slider } from "@/components/ui/slider";
 
 function JobsPageContent() {
   const { filters, debouncedFilters, updateParams } = useJobFilters();
@@ -41,83 +48,253 @@ function JobsPageContent() {
   const jobs = responseData?.data.jobs;
   console.log("jobs", jobs);
 
-  const FilterSidebar = () => (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <label className="text-sm font-semibold">Job Type</label>
-        <Select
-          value={filters.jobType === "all" ? "" : filters.jobType}
-          onValueChange={(val) => updateParams({ jobType: val || "all" })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
+  const FilterSidebar = () => {
+    const toggleArrayFilter = (key: string, value: string) => {
+      const currentArray = (filters as any)[key] as string[];
+      const newArray = currentArray.includes(value)
+        ? currentArray.filter(v => v !== value)
+        : [...currentArray, value];
 
-            {Object.values(JobType).map((t) => (
-              <SelectItem key={t} value={t}>
-                {t.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ")}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      // If it's salary or stipend, we should calculate min and max and set them too
+      const paramsToUpdate: any = { [key]: newArray };
 
-      <div className="space-y-2">
-        <label className="text-sm font-semibold">Location</label>
-        <div className="space-y-2">
-          <Input
-            placeholder="City"
-            value={filters.city}
-            onChange={(e) => updateParams({ city: e.target.value })}
-          />
-          <Input
-            placeholder="State"
-            value={filters.state}
-            onChange={(e) => updateParams({ state: e.target.value })}
-          />
-          <Input
-            placeholder="Country"
-            value={filters.country}
-            onChange={(e) => updateParams({ country: e.target.value })}
-          />
+      if (key === "salaryRanges") {
+         let min = Infinity;
+         let max = -Infinity;
+         if (newArray.length === 0) {
+           paramsToUpdate.minSalary = "";
+           paramsToUpdate.maxSalary = "";
+         } else {
+           newArray.forEach(range => {
+             const [rmin, rmax] = range.split("-").map(Number);
+             if (rmin < min) min = rmin;
+             if (rmax > max) max = rmax;
+           });
+           paramsToUpdate.minSalary = min * 100000;
+           paramsToUpdate.maxSalary = max * 100000;
+         }
+      }
+
+      if (key === "stipendRanges") {
+         let min = Infinity;
+         let max = -Infinity;
+         const hasUnpaid = newArray.includes("unpaid");
+         const ranges = newArray.filter(r => r !== "unpaid");
+         
+         if (newArray.length === 0) {
+           paramsToUpdate.minStipend = "";
+           paramsToUpdate.maxStipend = "";
+           paramsToUpdate.stipendType = "";
+         } else {
+           if (hasUnpaid) paramsToUpdate.stipendType = "unpaid";
+           else paramsToUpdate.stipendType = "";
+
+           if (ranges.length > 0) {
+             ranges.forEach(range => {
+               const [rmin, rmax] = range.split("-").map(Number);
+               if (rmin < min) min = rmin;
+               if (rmax > max) max = rmax;
+             });
+             paramsToUpdate.minStipend = min * 1000; // e.g. 10k -> 10000
+             paramsToUpdate.maxStipend = max * 1000;
+           } else {
+             paramsToUpdate.minStipend = "";
+             paramsToUpdate.maxStipend = "";
+           }
+         }
+      }
+
+      updateParams(paramsToUpdate);
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-lg">All Filters</h3>
         </div>
-      </div>
+        <Accordion type="multiple" defaultValue={["workMode", "experience", "department", "salary", "companyType", "stipend", "duration"]} className="w-full">
+          {/* Work mode */}
+          <AccordionItem value="workMode">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Work mode</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-3 pt-1">
+                {[
+                  { label: "Work from office", value: "work from office" },
+                  { label: "Hybrid", value: "hybrid" },
+                  { label: "Remote", value: "remote" },
+                  { label: "Temp. WFH due to...", value: "temporary work from home" }
+                ].map((item) => (
+                  <div key={item.value} className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`wm-${item.value}`}
+                      checked={filters.workMode.includes(item.value)}
+                      onCheckedChange={() => toggleArrayFilter('workMode', item.value)}
+                    />
+                    <label htmlFor={`wm-${item.value}`} className="text-sm font-medium leading-none cursor-pointer">
+                      {item.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-      <div className="flex items-center space-x-2 pt-2">
-        <Checkbox
-          id="remote"
-          checked={filters.remote}
-          onCheckedChange={(checked) => updateParams({ remote: !!checked })}
-        />
-        <label htmlFor="remote" className="text-sm leading-none font-medium">
-          Remote Only
-        </label>
-      </div>
+          {/* Experience */}
+          <AccordionItem value="experience">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Experience</AccordionTrigger>
+            <AccordionContent>
+              <div className="px-2 pt-4 pb-2">
+                <Slider
+                  min={0}
+                  max={10}
+                  step={1}
+                  value={[filters.experienceYears === "Any" ? 10 : Number(filters.experienceYears)]}
+                  onValueChange={(vals) => {
+                    const val = vals[0];
+                    updateParams({ experienceYears: val === 10 ? "Any" : val.toString() });
+                  }}
+                />
+                <div className="flex justify-between mt-3 text-xs text-muted-foreground font-medium">
+                  <span>0 Yrs</span>
+                  <span>{filters.experienceYears === "Any" ? "Any" : `${filters.experienceYears} Yrs`}</span>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-      <Separator />
+          {/* Department */}
+          <AccordionItem value="department">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Department</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-3 pt-1">
+                {[
+                  { label: "Engineering - Software", value: "software_development" },
+                  { label: "Sales & Business Dev", value: "sales" },
+                  { label: "Customer Success", value: "customer_support" },
+                  { label: "Finance & Accounting", value: "finance" },
+                ].map((item) => (
+                  <div key={item.value} className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`dept-${item.value}`}
+                      checked={filters.roleCategory.includes(item.value)}
+                      onCheckedChange={() => toggleArrayFilter('roleCategory', item.value)}
+                    />
+                    <label htmlFor={`dept-${item.value}`} className="text-sm font-medium leading-none cursor-pointer">
+                      {item.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
-      <div className="space-y-4">
-        <label className="text-sm font-semibold">Salary Range</label>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            placeholder="Min"
-            value={filters.minSalary ?? ""}
-            onChange={(e) => updateParams({ minSalary: e.target.value })}
-          />
-          <span className="text-muted-foreground">-</span>
-          <Input
-            type="number"
-            placeholder="Max"
-            value={filters.maxSalary ?? ""}
-            onChange={(e) => updateParams({ maxSalary: e.target.value })}
-          />
-        </div>
+          {/* Salary */}
+          <AccordionItem value="salary">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Salary</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-3 pt-1">
+                {[
+                  { label: "0-3 Lakhs", value: "0-3" },
+                  { label: "3-6 Lakhs", value: "3-6" },
+                  { label: "6-10 Lakhs", value: "6-10" },
+                  { label: "10-15 Lakhs", value: "10-15" },
+                ].map((item) => (
+                  <div key={item.value} className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`sal-${item.value}`}
+                      checked={filters.salaryRanges.includes(item.value)}
+                      onCheckedChange={() => toggleArrayFilter('salaryRanges', item.value)}
+                    />
+                    <label htmlFor={`sal-${item.value}`} className="text-sm font-medium leading-none cursor-pointer">
+                      {item.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Company type */}
+          <AccordionItem value="companyType">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Company type</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-3 pt-1">
+                {[
+                  { label: "Foreign MNC", value: "foreign mnc" },
+                  { label: "Corporate", value: "corporate" },
+                  { label: "Indian MNC", value: "indian mnc" },
+                  { label: "Startup", value: "startup" },
+                ].map((item) => (
+                  <div key={item.value} className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`ct-${item.value}`}
+                      checked={filters.companyType.includes(item.value)}
+                      onCheckedChange={() => toggleArrayFilter('companyType', item.value)}
+                    />
+                    <label htmlFor={`ct-${item.value}`} className="text-sm font-medium leading-none cursor-pointer">
+                      {item.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Stipend */}
+          <AccordionItem value="stipend">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Stipend</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-3 pt-1">
+                {[
+                  { label: "Unpaid", value: "unpaid" },
+                  { label: "0-10k", value: "0-10" },
+                  { label: "10k-20k", value: "10-20" },
+                  { label: "20k-30k", value: "20-30" },
+                ].map((item) => (
+                  <div key={item.value} className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`stipend-${item.value}`}
+                      checked={filters.stipendRanges.includes(item.value)}
+                      onCheckedChange={() => toggleArrayFilter('stipendRanges', item.value)}
+                    />
+                    <label htmlFor={`stipend-${item.value}`} className="text-sm font-medium leading-none cursor-pointer">
+                      {item.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Duration */}
+          <AccordionItem value="duration">
+            <AccordionTrigger className="text-sm font-semibold hover:no-underline">Duration</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-3 pt-1">
+                {[
+                  { label: "1 Month", value: "1" },
+                  { label: "2 Months", value: "2" },
+                  { label: "3 Months", value: "3" },
+                  { label: "6 Months", value: "6" },
+                ].map((item) => (
+                  <div key={item.value} className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`dur-${item.value}`}
+                      checked={filters.durationMonths.includes(item.value)}
+                      onCheckedChange={() => toggleArrayFilter('durationMonths', item.value)}
+                    />
+                    <label htmlFor={`dur-${item.value}`} className="text-sm font-medium leading-none cursor-pointer">
+                      {item.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 md:py-10">
