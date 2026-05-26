@@ -1,0 +1,17 @@
+{
+  "/(auth)/login/page": "/login",
+  "/(auth)/register/page": "/register",
+  "/(dashboard)/about/page": "/about",
+  "/(dashboard)/blog/[slug]/page": "/blog/[slug]",
+  "/(dashboard)/blog/create/page": "/blog/create",
+  "/(dashboard)/blog/edit/[id]/page": "/blog/edit/[id]",
+  "/(dashboard)/blog/page": "/blog",
+  "/(dashboard)/dashboard/blog-history/page": "/dashboard/blog-history",
+  "/(dashboard)/dashboard/page": "/dashboard",
+  "/(dashboard)/dashboard/settings/page": "/dashboard/settings",
+  "/(dashboard)/my-blogs/page": "/my-blogs",
+  "/(dashboard)/page": "/",
+  "/(dashboard)/resources/page": "/resources",
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found"
+}
