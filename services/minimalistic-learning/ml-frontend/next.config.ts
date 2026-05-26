@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+   transpilePackages: ['react-quill-new'],
 };
 
 export default nextConfig;
