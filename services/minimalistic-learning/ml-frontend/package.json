@@ -3,12 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    	"build": "next build",
+		"cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
+		"check": "npm run build && tsc",
+		"deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+		"dev": "next dev",
+		"lint": "next lint",
+		"preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+		"start": "next start"
   },
+  "cloudflare": {
+		"label": "Minimalistic Learning",
+		"products": [
+			"Workers"
+		],
+		"categories": [],
+		"preview_icon_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/05eee9e0-2c04-48fd-11bf-84e65f839000/public",
+		"preview_image_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/4e913a56-fd99-4372-0586-9f1364173100/preview",
+		"publish": true
+	},
   "dependencies": {
+    "@opennextjs/cloudflare": "1.14.0",
     "@hookform/resolvers": "^5.2.2",
     "date-fns": "^4.1.0",
     "@tailwindcss/typography": "^0.5.19",
@@ -36,6 +51,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "4.56.0"
   }
 }
