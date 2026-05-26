@@ -7,6 +7,8 @@ export interface IUser extends Document {
     role: 'Admin' | 'User';
     avatar?: string;
     isVerified: boolean;
+    otp?: string;
+    otpExpiry?: Date;
     refreshToken?: string;
     createdAt: Date;
     updatedAt: Date;
@@ -20,6 +22,8 @@ const UserSchema: Schema = new Schema(
         role: { type: String, enum: ['Admin', 'User'], default: 'User' },
         avatar: { type: String },
         isVerified: { type: Boolean, default: false },
+        otp: { type: String, select: false },
+        otpExpiry: { type: Date, select: false },
         refreshToken: { type: String, select: false }
     },
     { timestamps: true }

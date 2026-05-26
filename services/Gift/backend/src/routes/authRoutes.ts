@@ -1,9 +1,13 @@
 import express from 'express';
-import { register, login } from '../controllers/authController';
+import { register, login, getAllUsers, verifyOtp, updateUserRole } from '../controllers/authController';
+import { protect, adminMode } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
 router.post('/register', register);
+router.post('/verify-otp', verifyOtp);
 router.post('/login', login);
+router.get('/users', protect, adminMode, getAllUsers);
+router.put('/users/:id/role', protect, adminMode, updateUserRole);
 
 export default router;

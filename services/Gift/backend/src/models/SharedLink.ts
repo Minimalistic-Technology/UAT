@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface ISharedLink extends Document {
     token: string;
     adminId: mongoose.Types.ObjectId;
+    assignedTo?: mongoose.Types.ObjectId;
     selectedProducts: mongoose.Types.ObjectId[];
     expiryDate?: Date;
     password?: string;
@@ -16,6 +17,7 @@ const SharedLinkSchema: Schema = new Schema(
     {
         token: { type: String, required: true, unique: true },
         adminId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        assignedTo: { type: Schema.Types.ObjectId, ref: 'User' },
         selectedProducts: [{ type: Schema.Types.ObjectId, ref: 'Product' }],
         expiryDate: { type: Date },
         password: { type: String, select: false },

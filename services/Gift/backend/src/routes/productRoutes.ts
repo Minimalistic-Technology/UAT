@@ -11,7 +11,7 @@ router.route('/')
 
 router.route('/:id')
     .get(getProductById)
-    .put(protect, adminMode, updateProduct)
+    .put(protect, adminMode, upload.array('images', 5), updateProduct as any)
     .delete(protect, adminMode, deleteProduct);
 
 export default router;

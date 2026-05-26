@@ -6,7 +6,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 
 export const createShareLink = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { selectedProducts, expiryDate, password } = req.body;
+        const { selectedProducts, expiryDate, password, assignedTo } = req.body;
 
         if (!selectedProducts || Number(selectedProducts.length) === 0) {
             res.status(400).json({ error: 'Please select at least one product' });
@@ -18,6 +18,7 @@ export const createShareLink = async (req: AuthRequest, res: Response): Promise<
         const sharedLink = new SharedLink({
             token,
             adminId: req.user._id,
+            assignedTo,
             selectedProducts,
             expiryDate,
             password // in prod, hash this if actually enforcing secure passwords
@@ -74,6 +75,23 @@ export const getAnalytics = async (req: AuthRequest, res: Response): Promise<voi
 
         const analytics = await Analytics.find({ linkId: { $in: linkIds } }).populate('linkId');
         res.json({ links, analytics });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getMyLinks = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        if (req.user.role !== 'User') {
+            res.status(403).json({ error: 'Not authorized' });
+            return;
+        }
+
+        const links = await SharedLink.find({ assignedTo: req.user._id, isActive: true })
+            .populate('selectedProducts')
+            .populate('adminId', 'name email');
+
+        res.json(links);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
