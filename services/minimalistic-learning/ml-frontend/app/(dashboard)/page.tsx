@@ -17,7 +17,7 @@ function Reveal({ children, delay = 0, dir = "up" }:
     const el = ref.current; if (!el) return;
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } },
-      { threshold: 0.1 }
+      { threshold: 0.1 } 
     );
     obs.observe(el);
     return () => obs.disconnect();
