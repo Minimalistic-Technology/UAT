@@ -11,8 +11,14 @@ export enum ApplicationStatus {
   WITHDRAWN = 'withdrawn',
 }
 
+export enum ListingType {
+  JOB = 'job',
+  INTERNSHIP = 'internship',
+}
+
 export interface IApplication extends Document {
-  job: mongoose.Types.ObjectId;
+  listing: mongoose.Types.ObjectId;
+  listingType: ListingType;
   jobSeeker: mongoose.Types.ObjectId;
   resume: string;
   coverLetter?: string;
@@ -34,9 +40,15 @@ export interface IApplication extends Document {
 
 const applicationSchema = new Schema<IApplication>(
   {
-    job: {
+    listing: {
       type: Schema.Types.ObjectId,
-      ref: 'Job',
+      // No static `ref` here — we use refPath for dynamic population
+      refPath: 'listingType',
+      required: true,
+    },
+    listingType: {
+      type: String,
+      enum: Object.values(ListingType),
       required: true,
     },
     jobSeeker: {
@@ -79,7 +91,7 @@ const applicationSchema = new Schema<IApplication>(
 );
 
 // Prevent duplicate applications
-applicationSchema.index({ job: 1, jobSeeker: 1 }, { unique: true });
+applicationSchema.index({ listing: 1, jobSeeker: 1 }, { unique: true });
 
 // Add initial status to history
 applicationSchema.pre(

@@ -6,10 +6,12 @@ import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import Job, { JobStatus } from "../models/Job.model.js";
+import { JobStatus } from "../models/BaseJob.model.js";
+import Job from "../models/Job.model.js";
+import Internship from "../models/Internship.model.js";
 import Subscription from "../models/Subscription.model.js";
 import KYC from "../models/KYC.model.js";
-import Application from "../models/Application.model.js";
+import Application, { ListingType } from "../models/Application.model.js";
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
@@ -222,7 +224,9 @@ export const getCompany = async (
       totalMembers,
       currentPlan: currentSubscription ? currentSubscription.planId : null,
       subscription: currentSubscription,
-      remainingJobPosts: currentSubscription ? currentSubscription.postsRemaining : null,
+      remainingJobPosts: currentSubscription
+        ? currentSubscription.postsRemaining
+        : null,
     };
 
     res
@@ -254,29 +258,44 @@ export const getMyCompany = async (
       throw new ApiError(404, "You have not created a company yet");
     }
 
-    const totalJobs = await Job.countDocuments({ company: company._id });
-    const activeJobs = await Job.countDocuments({
-      company: company._id,
-      status: JobStatus.ACTIVE,
-    });
-    const totalMembers = await CompanyMember.countDocuments({
-      company: company._id,
-      isActive: true,
-    });
-    const currentSubscription = await Subscription.findOne({
-      companyId: company._id,
-      status: "active",
-    }).populate("planId", "name");
-    const kyc = await KYC.findOne({ user: req.user.id });
+    const [
+      totalJobs,
+      activeJobs,
+      totalInternships,
+      activeInternships,
+      totalMembers,
+      currentSubscription,
+      kyc,
+    ] = await Promise.all([
+      Job.countDocuments({ company: company._id }),
+      Job.countDocuments({ company: company._id, status: JobStatus.ACTIVE }),
+      Internship.countDocuments({ company: company._id }),
+      Internship.countDocuments({
+        company: company._id,
+        status: JobStatus.ACTIVE,
+      }),
+      CompanyMember.countDocuments({ company: company._id, isActive: true }),
+      Subscription.findOne({
+        companyId: company._id,
+        status: "active",
+      }).populate("planId", "name"),
+      KYC.findOne({ user: req.user.id }),
+    ]);
 
     const companyData = {
       ...company.toObject(),
       totalJobs,
       activeJobs,
+      totalInternships,
+      activeInternships,
+      totalListings: totalJobs + totalInternships,
+      activeListings: activeJobs + activeInternships,
       totalMembers,
       currentPlan: currentSubscription ? currentSubscription.planId : null,
       subscription: currentSubscription,
-      remainingJobPosts: currentSubscription ? currentSubscription.postsRemaining : null,
+      remainingJobPosts: currentSubscription
+        ? currentSubscription.postsRemaining
+        : null,
       kycStatus: kyc ? kyc.status : null,
       kycRejectionReason: kyc?.rejectionReason || null,
     };
@@ -302,7 +321,12 @@ export const updateCompany = async (
     });
 
     if (!isCompanyOwner) {
-      return next(new ApiError(403, "You are not authorized to update the company profile"));
+      return next(
+        new ApiError(
+          403,
+          "You are not authorized to update the company profile",
+        ),
+      );
     }
 
     let company = await Company.findById(isCompanyOwner.company);
@@ -319,7 +343,7 @@ export const updateCompany = async (
       new: true,
       runValidators: true,
     });
-    
+
     res.status(200).json({
       success: true,
       data: company,
@@ -351,7 +375,9 @@ export const deleteCompany = async (
     if (!isCompanyOwner) {
       await session.abortTransaction();
       session.endSession();
-      return next(new ApiError(403, "You are not authorized to delete this company"));
+      return next(
+        new ApiError(403, "You are not authorized to delete this company"),
+      );
     }
 
     const company = await Company.findById(req.params.id).session(session);
@@ -366,26 +392,44 @@ export const deleteCompany = async (
     }
 
     // Find all members
-    const members = await CompanyMember.find({ company: company._id }).session(session);
-    const userIds = members.map(m => m.user);
+    const members = await CompanyMember.find({ company: company._id }).session(
+      session,
+    );
+    const userIds = members.map((m) => m.user);
 
     // Unset company from all members' users
     await User.updateMany(
       { _id: { $in: userIds } },
-      { $unset: { company: 1 } }
+      { $unset: { company: 1 } },
     ).session(session);
 
-    // Find all jobs for the company
-    const jobs = await Job.find({ company: company._id }).session(session);
-    const jobIds = jobs.map(j => j._id);
+    // Find all jobs and internships for the company in parallel
+    const [jobs, internships] = await Promise.all([
+      Job.find({ company: company._id }, "_id").session(session),
+      Internship.find({ company: company._id }, "_id").session(session),
+    ]);
 
-    // Delete all applications for these jobs
-    if (jobIds.length > 0) {
-      await Application.deleteMany({ job: { $in: jobIds } }).session(session);
-    }
+    const jobIds = jobs.map((j: any) => j._id);
+    const internshipIds = internships.map((i: any) => i._id);
 
-    // Delete all jobs
-    await Job.deleteMany({ company: company._id }).session(session);
+    // Delete all applications for both using listingType to scope correctly
+    await Promise.all([
+      jobIds.length > 0 &&
+        Application.deleteMany({
+          listing: { $in: jobIds },
+          listingType: ListingType.JOB,
+        }).session(session),
+
+      internshipIds.length > 0 &&
+        Application.deleteMany({
+          listing: { $in: internshipIds },
+          listingType: ListingType.INTERNSHIP,
+        }).session(session),
+
+      // Delete the listings themselves
+      Job.deleteMany({ company: company._id }).session(session),
+      Internship.deleteMany({ company: company._id }).session(session),
+    ]);
 
     // Delete all members
     await CompanyMember.deleteMany({ company: company._id }).session(session);
@@ -424,7 +468,12 @@ export const uploadCompanyLogo = async (
     });
 
     if (!isCompanyOwner) {
-      return next(new ApiError(403, "You are not authorized to update the logo of this company"));
+      return next(
+        new ApiError(
+          403,
+          "You are not authorized to update the logo of this company",
+        ),
+      );
     }
 
     if (!req.file) {

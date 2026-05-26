@@ -1,117 +1,73 @@
 import type { Response, NextFunction } from "express";
-import Application, { ApplicationStatus } from "../models/Application.model.js";
-import Job from "../models/Job.model.js";
+import Application, {
+  ApplicationStatus,
+  ListingType,
+} from "../models/Application.model.js";
+import Job, { IJob } from "../models/Job.model.js";
+import Internship, { IInternship } from "../models/Internship.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 // import { sendEmail } from '../utils/email.js';
 import { ApiError } from "../utils/apiError.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
+import { JobStatus } from "../models/BaseJob.model.js";
+import { Model } from "mongoose";
 
-export const getApplicationById = async (
+export const createApplication = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { id } = req.params;
-
-    const application = await Application.findById(id)
-      .populate({
-        path: "job",
-        select: "title location jobType company postedBy status",
-        populate: {
-          path: "company",
-          select: "name logo industry",
-        },
-      })
-      .populate({
-        path: "jobSeeker",
-        select:
-          "firstName lastName email phone skills experience education resume",
-      });
-
-    if (!application) {
-      throw new ApiError(404, "Application not found");
-    }
-
-    const job: any = application.job;
-    const jobSeeker: any = application.jobSeeker;
-
-    // Authorization checks
-    const isJobSeeker = jobSeeker._id.toString() === req.user.id;
-    const isEmployer = job.postedBy.toString() === req.user.id;
-
-    let isCompanyMember = false;
-    if (!isJobSeeker && !isEmployer) {
-      const companyMember = await CompanyMember.findOne({
-        user: req.user.id,
-        company: job.company,
-      });
-      if (companyMember) {
-        isCompanyMember = true;
-      }
-    }
-
-    if (!isJobSeeker && !isEmployer && !isCompanyMember) {
-      throw new ApiError(403, "Not authorized to view this application");
-    }
-
-    res
-      .status(200)
-      .json(
-        new ApiResponse(200, application, "Application fetched successfully"),
-      );
-  } catch (error: any) {
-    next(error);
-  }
-};
-
-export const applyForJob = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { jobId } = req.body;
+    const { listingId, listingType } = req.body;
 
     if (!req.user.resume) {
-      throw new ApiError(400, "Resume is required to apply for this job");
+      throw new ApiError(
+        400,
+        "Resume is required to apply for this job. Please upload your resume in your profile.",
+      );
     }
 
-    const job = await Job.findById(jobId);
-    if (!job) {
-      throw new ApiError(404, "Job not found");
+    const listing =
+      listingType === ListingType.JOB
+        ? await Job.findById(listingId)
+        : await Internship.findById(listingId);
+
+    if (!listing) {
+      throw new ApiError(404, `${listingType} not found`);
+    }
+
+    if (listing.status === JobStatus.CLOSED) {
+      throw new ApiError(
+        400,
+        `This ${listingType} is no longer accepting applications`,
+      );
     }
 
     const existingApplication = await Application.findOne({
-      job: jobId,
-      jobSeeker: req.user.id,
+      listing: listingId,
+      listingType,
+      jobSeeker: req.user._id,
+      status: { $ne: ApplicationStatus.WITHDRAWN },
     });
 
-    if (
-      existingApplication &&
-      existingApplication.status !== ApplicationStatus.WITHDRAWN
-    ) {
-      throw new ApiError(400, "You have already applied for this job");
+    if (existingApplication) {
+      throw new ApiError(
+        400,
+        `You have already applied for this ${listingType}`,
+      );
     }
 
-    let application;
-
-    if (existingApplication?.status === ApplicationStatus.WITHDRAWN) {
-      existingApplication.status = ApplicationStatus.PENDING;
-      existingApplication.resume = req.user.resume;
-      application = await existingApplication.save();
-    } else {
-      application = await Application.create({
-        job: jobId,
-        jobSeeker: req.user._id,
-        resume: req.user.resume.url,
-      });
-    }
+    const application = await Application.create({
+      listing: listingId,
+      listingType,
+      jobSeeker: req.user._id,
+      resume: req.user.resume.url,
+    });
 
     // Increment applications count
-    job.applicationsCount += 1;
-    await job.save();
+    listing.applicationsCount += 1;
+    await listing.save();
 
     // Send confirmation email
     // await sendEmail({
@@ -141,9 +97,9 @@ export const getMyApplications = async (
     const skip = (page - 1) * limit;
 
     const [applications, totalApplications] = await Promise.all([
-      Application.find({ jobSeeker: req.user.id })
+      Application.find({ jobSeeker: req.user._id })
         .populate({
-          path: "job",
+          path: "listing",
           select: "location jobType title company",
           populate: {
             path: "company",
@@ -153,7 +109,7 @@ export const getMyApplications = async (
         .sort("-createdAt")
         .skip(skip)
         .limit(limit),
-      Application.countDocuments({ jobSeeker: req.user.id }),
+      Application.countDocuments({ jobSeeker: req.user._id }),
     ]);
 
     const totalPages = Math.ceil(totalApplications / limit);
@@ -188,7 +144,7 @@ export const getMyApplicationStats = async (
       { $match: { jobSeeker: req.user._id } },
       {
         $group: {
-          _id: "$status",
+          _id: { status: "$status", listingType: "$listingType" },
           count: { $sum: 1 },
         },
       },
@@ -196,19 +152,20 @@ export const getMyApplicationStats = async (
 
     const formattedStats = {
       total: 0,
-      pending: 0,
-      shortlisted: 0,
-      rejected: 0,
+      byStatus: Object.values(ApplicationStatus).reduce(
+        (acc, status) => ({ ...acc, [status]: 0 }),
+        {} as Record<ApplicationStatus, number>,
+      ),
+      byListingType: {
+        [ListingType.JOB]: 0,
+        [ListingType.INTERNSHIP]: 0,
+      },
     };
 
-    stats.forEach((stat) => {
-      formattedStats.total += stat.count;
-      if (stat._id === ApplicationStatus.PENDING)
-        formattedStats.pending = stat.count;
-      if (stat._id === ApplicationStatus.SHORTLISTED)
-        formattedStats.shortlisted = stat.count;
-      if (stat._id === ApplicationStatus.REJECTED)
-        formattedStats.rejected = stat.count;
+    stats.forEach(({ _id, count }) => {
+      formattedStats.total += count;
+      formattedStats.byStatus[_id.status as ApplicationStatus] += count;
+      formattedStats.byListingType[_id.listingType as ListingType] += count;
     });
 
     return res
@@ -220,164 +177,6 @@ export const getMyApplicationStats = async (
           "Application stats fetched successfully",
         ),
       );
-  } catch (error: any) {
-    next(error);
-  }
-};
-
-export const getJobApplicants = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { jobId } = req.params;
-
-    const job = await Job.findById(jobId);
-    if (!job) {
-      throw new ApiError(404, "Job not found");
-    }
-
-    const companyMember = await CompanyMember.findOne({
-      company: job.company,
-      user: req.user._id,
-    });
-
-    if (!companyMember) {
-      throw new ApiError(403, "Not authorized to view applicants");
-    }
-
-    if (
-      companyMember.role != CompanyRole.OWNER &&
-      companyMember.role != CompanyRole.HR
-    ) {
-      throw new ApiError(403, "Not authorized to view applicants");
-    }
-
-    const applications = await Application.find({ job: jobId })
-      .populate(
-        "jobSeeker",
-        "firstName lastName email phone skills experience education",
-      )
-      .sort("-createdAt");
-
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          { count: applications.length, applications },
-          "Applications fetched successfully",
-        ),
-      );
-  } catch (error: any) {
-    next(error);
-  }
-};
-
-export const updateApplicationStatus = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { status, note, interviewDate } = req.body;
-
-    const application = await Application.findById(req.params.id)
-      .populate("job")
-      .populate("jobSeeker", "email firstName lastName");
-
-    if (!application) {
-      throw new ApiError(404, "Application not found");
-    }
-
-    // Verify job belongs to employer or user is HR/OWNER of the company
-    const job: any = application.job;
-
-    const companyMember = await CompanyMember.findOne({
-      user: req.user._id,
-      company: job.company,
-    });
-
-    const isEmployer = job.postedBy.toString() === req.user.id;
-    const isAuthorizedMember = companyMember &&
-      (companyMember.role === CompanyRole.HR || companyMember.role === CompanyRole.OWNER);
-
-    if (!isEmployer && !isAuthorizedMember) {
-      throw new ApiError(403, "Not authorized to update this application");
-    }
-
-    // Update status
-    application.status = status;
-    if (interviewDate) {
-      application.interviewDate = new Date(interviewDate);
-    }
-    application.statusHistory.push({
-      status,
-      changedAt: new Date(),
-      changedBy: req.user.id,
-      note,
-    });
-
-    await application.save();
-
-    // Send notification email to job seeker
-    const jobSeeker: any = application.jobSeeker;
-    // await sendEmail({
-    //   email: jobSeeker.email,
-    //   subject: `Application Status Update - ${job.title}`,
-    //   message: `Your application status has been updated to: ${status}${
-    //     note ? `\n\nNote: ${note}` : ''
-    //   }`,
-    // });
-
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          application,
-          "Application status updated successfully",
-        ),
-      );
-  } catch (error: any) {
-    next(error);
-  }
-};
-
-export const withdrawApplication = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const application = await Application.findById(req.params.id);
-
-    if (!application) {
-      throw new ApiError(404, "Application not found");
-    }
-
-    // Verify application belongs to user
-    if (application.jobSeeker.toString() !== req.user.id) {
-      throw new ApiError(403, "Not authorized to withdraw this application");
-    }
-
-    if (application.status === ApplicationStatus.WITHDRAWN) {
-      throw new ApiError(400, "Application is already withdrawn");
-    }
-
-    application.status = ApplicationStatus.WITHDRAWN;
-    await application.save();
-
-    const job = await Job.findById(application.job);
-    if (job) {
-      job.applicationsCount -= 1;
-      await job.save();
-    }
-
-    res
-      .status(200)
-      .json(new ApiResponse(200, null, "Application withdrawn successfully"));
   } catch (error: any) {
     next(error);
   }
@@ -401,21 +200,37 @@ export const getAllCompanyApplications = async (
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    const { status } = req.query;
+    const { status, listingType } = req.query;
 
     // Find all jobs belonging to the company
-    const jobs = await Job.find({ company: companyId }).select("_id");
-    const jobIds = jobs.map((job) => job._id);
 
-    const query: any = { job: { $in: jobIds } };
+    const [jobs, internships] = await Promise.all([
+      Job.find({ company: companyId }).select("_id"),
+      Internship.find({ company: companyId }).select("_id"),
+    ]);
+
+    const listingIds = [
+      ...jobs.map((j) => j._id),
+      ...internships.map((i) => i._id),
+    ];
+
+    const query: any = { listing: { $in: listingIds } };
+
     if (status) {
       query.status = status;
+    }
+
+    if (
+      listingType &&
+      Object.values(ListingType).includes(listingType as ListingType)
+    ) {
+      query.listingType = listingType;
     }
 
     const [applications, totalApplications] = await Promise.all([
       Application.find(query)
         .populate({
-          path: "job",
+          path: "listing",
           select: "title location jobType company",
           populate: {
             path: "company",
@@ -446,6 +261,238 @@ export const getAllCompanyApplications = async (
         "Company applications fetched successfully",
       ),
     );
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const getJobApplicants = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { listingType, listingId } = req.body;
+
+    const listing =
+      listingType === ListingType.JOB
+        ? await Job.findById(listingId)
+        : await Internship.findById(listingId);
+
+    if (!listing) {
+      throw new ApiError(404, `${listingType} not found`);
+    }
+
+    const companyMember = await CompanyMember.findOne({
+      company: listing.company,
+      user: req.user._id,
+    });
+
+    if (!companyMember) {
+      throw new ApiError(403, "Not authorized to view applicants");
+    }
+
+    if (
+      companyMember.role != CompanyRole.OWNER &&
+      companyMember.role != CompanyRole.HR
+    ) {
+      throw new ApiError(403, "Not authorized to view applicants");
+    }
+
+    const applications = await Application.find({
+      jlisting: listingId,
+      listingType,
+    })
+      .populate(
+        "jobSeeker",
+        "firstName lastName email phone skills experience education",
+      )
+      .sort("-createdAt");
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { count: applications.length, applications },
+          "Applications fetched successfully",
+        ),
+      );
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const getApplicationById = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = req.params;
+
+    const application = await Application.findById(id)
+      .populate({
+        path: "listing",
+        select: "title location jobType company postedBy status",
+        populate: {
+          path: "company",
+          select: "name logo industry",
+        },
+      })
+      .populate({
+        path: "jobSeeker",
+        select:
+          "firstName lastName email phone skills experience education resume",
+      });
+
+    if (!application) {
+      throw new ApiError(404, "Application not found");
+    }
+
+    const listing: any = application.listing;
+    const jobSeeker: any = application.jobSeeker;
+
+    // Authorization checks
+    const isJobSeeker = jobSeeker._id.toString() === req.user._id.toString();
+    const isEmployer = listing.postedBy.toString() === req.user._id.toString();
+
+    let isCompanyMember = false;
+    if (!isJobSeeker && !isEmployer) {
+      const companyMember = await CompanyMember.findOne({
+        user: req.user._id,
+        company: listing.company,
+      });
+      if (companyMember) isCompanyMember = true;
+    }
+
+    if (!isJobSeeker && !isEmployer && !isCompanyMember) {
+      throw new ApiError(403, "Not authorized to view this application");
+    }
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, application, "Application fetched successfully"),
+      );
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const updateApplicationStatus = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = req.params;
+    const { status, note, interviewDate } = req.body;
+
+    const application = await Application.findById(id)
+      .populate("listing")
+      .populate("jobSeeker", "email firstName lastName");
+
+    if (!application) {
+      throw new ApiError(404, "Application not found");
+    }
+
+    // Verify job belongs to employer or user is HR/OWNER of the company
+    const listing: any = application.listing;
+
+    const companyMember = await CompanyMember.findOne({
+      user: req.user._id,
+      company: listing.company,
+    });
+
+    const isEmployer = listing.postedBy.toString() === req.user.id;
+    const isAuthorizedMember =
+      companyMember &&
+      (companyMember.role === CompanyRole.HR ||
+        companyMember.role === CompanyRole.OWNER);
+
+    if (!isEmployer && !isAuthorizedMember) {
+      throw new ApiError(403, "Not authorized to update this application");
+    }
+
+    // Update status
+    application.status = status;
+
+    if (interviewDate) {
+      application.interviewDate = new Date(interviewDate);
+    }
+
+    application.statusHistory.push({
+      status,
+      changedAt: new Date(),
+      changedBy: req.user.id,
+      note,
+    });
+
+    await application.save();
+
+    // Send notification email to job seeker
+    // const jobSeeker: any = application.jobSeeker;
+    // await sendEmail({
+    //   email: jobSeeker.email,
+    //   subject: `Application Status Update - ${job.title}`,
+    //   message: `Your application status has been updated to: ${status}${
+    //     note ? `\n\nNote: ${note}` : ''
+    //   }`,
+    // });
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          application,
+          "Application status updated successfully",
+        ),
+      );
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const withdrawApplication = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = req.params;
+    const application = await Application.findById(id);
+
+    if (!application) {
+      throw new ApiError(404, "Application not found");
+    }
+
+    // Verify application belongs to user
+    if (application.jobSeeker.toString() !== req.user.id) {
+      throw new ApiError(403, "Not authorized to withdraw this application");
+    }
+
+    if (application.status === ApplicationStatus.WITHDRAWN) {
+      throw new ApiError(400, "Application is already withdrawn");
+    }
+
+    const listing =
+      application.listingType === ListingType.JOB
+        ? await Job.findById(application.listing)
+        : await Internship.findById(application.listing);
+
+    if (listing && listing.applicationsCount > 0) {
+      listing.applicationsCount -= 1;
+      await listing.save();
+    }
+
+    application.status = ApplicationStatus.WITHDRAWN;
+    await application.save();
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, null, "Application withdrawn successfully"));
   } catch (error: any) {
     next(error);
   }

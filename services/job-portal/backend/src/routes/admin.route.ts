@@ -11,7 +11,7 @@ import {
   updateKycStatus
 } from "../controllers/admin.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { updateKycStatusSchema, updateUserStatusSchema } from "../validations/admin.validation.js";
+import { updateKycStatusSchema, updateUserStatusSchema, getJobsByStatusSchema } from "../validations/admin.validation.js";
 
 const router = Router();
 
@@ -19,7 +19,7 @@ router.use(protect);
 router.use(authorize(GlobalRole.SUPER_ADMIN));
 
 router.get("/users", getAllUsers);
-router.get("/jobs", getJobsByStatus);
+router.get("/jobs", validate(getJobsByStatusSchema), getJobsByStatus);
 router.put(
   "/users/:userId/toggle-status",
   validate(updateUserStatusSchema),

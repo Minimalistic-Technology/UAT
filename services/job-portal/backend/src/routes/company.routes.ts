@@ -11,7 +11,7 @@ import {
 import { protect, authorize } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { GlobalRole } from '../models/User.model.js';
-import { createCompanySchema } from '../validations/company.validation.js';
+import { createCompanySchema, deleteCompanySchema } from '../validations/company.validation.js';
 import { logoUpload } from '../constants/index.js';
 
 const router = express.Router();
@@ -30,6 +30,6 @@ router.post(
 
 router.put('/me', protect, authorize(GlobalRole.USER), updateCompany); // only for company owner
 router.put('/logo', protect, authorize(GlobalRole.USER), logoUpload.single('logo'), uploadCompanyLogo); // only for companyowner
-router.delete('/:id', protect, authorize(GlobalRole.USER), deleteCompany); // only for company owner
+router.delete('/:id', protect, authorize(GlobalRole.USER), validate(deleteCompanySchema), deleteCompany); // only for company owner
 
 export default router;
