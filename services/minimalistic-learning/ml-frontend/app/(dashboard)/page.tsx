@@ -7,7 +7,7 @@ import TrendingSection from "@/features/blog/components/TrendingSection";
 // import Link from "next/link"; // Commented out with Blog Section
 import { Hero } from "@/components/Hero";
 import { useEffect, useRef, useState } from "react";
-import "./globals.css";
+// import "./globals.css";
 
 /* ─── Scroll reveal ─────────────────────────────────────────────────── */
 function Reveal({ children, delay = 0, dir = "up" }:
