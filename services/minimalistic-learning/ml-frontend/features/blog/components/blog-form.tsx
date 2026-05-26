@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { blogService } from "../services/blog-service";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
-
+import "react-quill-new/dist/quill.snow.css";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), {
   ssr: false,
