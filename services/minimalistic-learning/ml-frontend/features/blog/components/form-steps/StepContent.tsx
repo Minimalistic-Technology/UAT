@@ -4,7 +4,7 @@ import { Control, Controller, FieldErrors, UseFormWatch } from "react-hook-form"
 import { Settings2, Loader2, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { BlogValues } from "../../types/blog-type";
-import "react-quill-new/dist/quill.snow.css";
+// import "react-quill-new/dist/quill.snow.css";
 
 // Dynamic import for React Quill
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false }) as any;
