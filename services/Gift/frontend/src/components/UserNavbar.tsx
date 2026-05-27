@@ -98,6 +98,12 @@ export default function UserNavbar() {
                                         <span>Admin Console</span>
                                     </DropdownMenuItem>
                                 )}
+                                {(user.role === "HRAdmin" || user.role === "Admin") && (
+                                    <DropdownMenuItem onClick={() => router.push("/hr/dashboard")} className="cursor-pointer gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors text-violet-500 font-medium">
+                                        <LayoutDashboard className="h-4 w-4 text-violet-500" />
+                                        <span>HR Console</span>
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer gap-2 p-2 rounded-lg text-destructive hover:bg-destructive/10 transition-colors">
                                     <LogOut className="h-4 w-4" />
@@ -166,6 +172,15 @@ export default function UserNavbar() {
                                         className="w-full gap-2 justify-start text-primary"
                                     >
                                         <LayoutDashboard className="w-4 h-4" /> Admin Console
+                                    </Button>
+                                )}
+                                {(user.role === "HRAdmin" || user.role === "Admin") && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => { setMobileMenuOpen(false); router.push("/hr/dashboard"); }}
+                                        className="w-full gap-2 justify-start text-violet-500"
+                                    >
+                                        <LayoutDashboard className="w-4 h-4 text-violet-500" /> HR Console
                                     </Button>
                                 )}
                                 <Button

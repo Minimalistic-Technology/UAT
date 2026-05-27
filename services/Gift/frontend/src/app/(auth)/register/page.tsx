@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirectTo = searchParams.get('redirect') || '';
     const { login } = useAuthStore();
     const [step, setStep] = useState(1);
     const [email, setEmail] = useState('');
@@ -64,7 +66,11 @@ export default function RegisterPage() {
             if (res.data.success) {
                 toast.success(`Welcome ${res.data.user.name}! 🚀`);
                 login(res.data.user, res.data.token);
-                router.push(res.data.user.role === 'Admin' ? '/admin/dashboard' : '/profile');
+                if (redirectTo) {
+                    router.push(redirectTo);
+                } else {
+                    router.push(res.data.user.role === 'Admin' ? '/admin/dashboard' : '/profile');
+                }
             }
         } catch (err: any) {
             setError(err.response?.data?.error || 'Invalid OTP. Please try again.');
@@ -146,7 +152,7 @@ export default function RegisterPage() {
 
                 <div className="mt-6 text-center text-sm text-muted-foreground">
                     Already have an account?{' '}
-                    <Link href="/login" className="text-primary hover:underline font-medium">Log in</Link>
+                    <Link href={redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"} className="text-primary hover:underline font-medium">Log in</Link>
                 </div>
             </motion.div>
         </AnimatePresence>

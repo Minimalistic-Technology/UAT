@@ -12,10 +12,26 @@ import { toast } from "sonner";
 import api from "@/lib/axios";
 import { Upload, Package } from "lucide-react";
 
+const PREDEFINED_CATEGORIES = [
+    "Electronics & Gadgets",
+    "Apparel & Fashion",
+    "Home & Living",
+    "Office & Stationery",
+    "Books & Media",
+    "Fitness & Outdoors",
+    "Food & Beverages",
+    "Beauty & Personal Care",
+    "Gift Cards & Vouchers",
+    "Kitchen & Dining",
+    "Travel & Luggage",
+    "General"
+];
+
 export default function AddProductPage() {
     const router = useRouter();
-    const { register, handleSubmit, formState: { errors } } = useForm();
+    const { register, handleSubmit, setValue, formState: { errors } } = useForm();
     const [loading, setLoading] = useState(false);
+    const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [images, setImages] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
 
@@ -82,10 +98,57 @@ export default function AddProductPage() {
                             {errors.description && <p className="text-xs text-destructive">Description is required</p>}
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="price">Price ($) *</Label>
-                            <Input id="price" type="number" step="0.01" placeholder="0.00" {...register("price", { required: true })} />
-                            {errors.price && <p className="text-xs text-destructive">Price is required</p>}
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="category-select">Category *</Label>
+                                    <select
+                                        id="category-select"
+                                        className="w-full text-sm h-10 px-3 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === "custom") {
+                                                setIsCustomCategory(true);
+                                                setValue("category", "");
+                                            } else {
+                                                setIsCustomCategory(false);
+                                                setValue("category", val);
+                                            }
+                                        }}
+                                        defaultValue={PREDEFINED_CATEGORIES[0]}
+                                    >
+                                        {PREDEFINED_CATEGORIES.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                        <option value="custom">➕ Custom Category...</option>
+                                    </select>
+                                    <input type="hidden" defaultValue={PREDEFINED_CATEGORIES[0]} {...register("category", { required: true })} />
+                                </div>
+
+                                {isCustomCategory && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="custom-category">Type Category Name *</Label>
+                                        <Input
+                                            id="custom-category"
+                                            placeholder="Type custom category name..."
+                                            onChange={(e) => setValue("category", e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="price">Price ($) *</Label>
+                                <Input id="price" type="number" step="0.01" placeholder="0.00" {...register("price", { required: true })} />
+                                {errors.price && <p className="text-xs text-destructive">Price is required</p>}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="stock">Initial Stock Quantity</Label>
+                                <Input id="stock" type="number" placeholder="10" defaultValue="10" {...register("stock")} />
+                            </div>
                         </div>
 
                         <Separator />
@@ -107,7 +170,7 @@ export default function AddProductPage() {
                         </div>
 
                         <div className="flex justify-end pt-2">
-                            <Button type="submit" disabled={loading} className="px-8">
+                            <Button type="submit" disabled={loading} className="px-8 bg-primary">
                                 {loading ? "Saving..." : "Save Product"}
                             </Button>
                         </div>

@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/authRoutes';
 import productRoutes from './routes/productRoutes';
 import shareRoutes from './routes/shareRoutes';
+import orderRoutes from './routes/orderRoutes';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api', limiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/share', shareRoutes);
+app.use('/api/orders', orderRoutes);
 
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', message: 'Backend is running' });

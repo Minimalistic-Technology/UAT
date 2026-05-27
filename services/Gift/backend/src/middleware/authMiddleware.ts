@@ -31,3 +31,11 @@ export const adminMode = (req: AuthRequest, res: Response, next: NextFunction): 
         res.status(403).json({ error: 'Not authorized as admin' });
     }
 };
+
+export const adminOrHRAdminMode = (req: AuthRequest, res: Response, next: NextFunction): void => {
+    if (req.user && (req.user.role === 'Admin' || req.user.role === 'HRAdmin')) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Not authorized' });
+    }
+};

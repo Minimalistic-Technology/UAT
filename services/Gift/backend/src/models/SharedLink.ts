@@ -27,7 +27,6 @@ const SharedLinkSchema: Schema = new Schema(
     { timestamps: true }
 );
 
-SharedLinkSchema.index({ token: 1 });
 SharedLinkSchema.index({ adminId: 1 });
 
 export default mongoose.models.SharedLink || mongoose.model<ISharedLink>('SharedLink', SharedLinkSchema);

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirectTo = searchParams.get('redirect') || '';
     const { login } = useAuthStore();
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -40,7 +42,11 @@ export default function LoginPage() {
             if (res.data.success) {
                 toast.success(`Welcome back, ${res.data.user.name}! ✨`);
                 login(res.data.user, res.data.token);
-                router.push(res.data.user.role === 'Admin' ? '/admin/dashboard' : '/profile');
+                if (redirectTo) {
+                    router.push(redirectTo);
+                } else {
+                    router.push(res.data.user.role === 'Admin' ? '/admin/dashboard' : '/profile');
+                }
             }
         } catch (err: any) {
             setError(err.response?.data?.error || 'Failed to login. Please try again.');
@@ -89,7 +95,7 @@ export default function LoginPage() {
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
                 Don't have an account?{' '}
-                <Link href="/register" className="text-primary hover:underline font-medium">Sign up</Link>
+                <Link href={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : "/register"} className="text-primary hover:underline font-medium">Sign up</Link>
             </div>
         </motion.div>
     );

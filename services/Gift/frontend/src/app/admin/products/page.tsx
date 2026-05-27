@@ -8,20 +8,37 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Package, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Package, Upload, AlertTriangle } from "lucide-react";
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
+    DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/axios";
 
+const PREDEFINED_CATEGORIES = [
+    "Electronics & Gadgets",
+    "Apparel & Fashion",
+    "Home & Living",
+    "Office & Stationery",
+    "Books & Media",
+    "Fitness & Outdoors",
+    "Food & Beverages",
+    "Beauty & Personal Care",
+    "Gift Cards & Vouchers",
+    "Kitchen & Dining",
+    "Travel & Luggage",
+    "General"
+];
+
 export default function ProductsPage() {
     const [products, setProducts] = useState<any[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState("");
     const [loading, setLoading] = useState(true);
 
     // Edit Product State
@@ -35,6 +52,10 @@ export default function ProductsPage() {
     const [editImage, setEditImage] = useState<File | null>(null);
     const [editImagePreview, setEditImagePreview] = useState("");
 
+    // Delete confirm dialogue states
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<string | null>(null);
+
     useEffect(() => { fetchProducts(); }, []);
 
     const fetchProducts = async () => {
@@ -45,13 +66,23 @@ export default function ProductsPage() {
         finally { setLoading(false); }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Delete this product?")) return;
+    const handleDelete = (id: string) => {
+        setProductToDelete(id);
+        setConfirmOpen(true);
+    };
+
+    const executeDelete = async () => {
+        if (!productToDelete) return;
         try {
-            await api.delete(`/products/${id}`);
-            toast.success("Product deleted");
-            setProducts(p => p.filter(x => x._id !== id));
-        } catch { toast.error("Failed to delete"); }
+            await api.delete(`/products/${productToDelete}`);
+            toast.success("Product deleted successfully!");
+            setProducts(p => p.filter(x => x._id !== productToDelete));
+        } catch {
+            toast.error("Failed to delete product");
+        } finally {
+            setConfirmOpen(false);
+            setProductToDelete(null);
+        }
     };
 
     const openEditDialog = (product: any) => {
@@ -107,27 +138,44 @@ export default function ProductsPage() {
         }
     };
 
+    const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+    const filteredProducts = products.filter(p => !selectedCategory || p.category === selectedCategory);
+
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Products</h1>
-                    <p className="text-muted-foreground mt-1">{products.length} products in your catalog</p>
+                    <p className="text-muted-foreground mt-1">
+                        {selectedCategory ? `${filteredProducts.length} of ${products.length} products (Filtered)` : `${products.length} products in your catalog`}
+                    </p>
                 </div>
-                <Link href="/admin/products/new">
-                    <Button className="gap-2"><Plus className="w-4 h-4" /> Add Product</Button>
-                </Link>
+                <div className="flex items-center gap-3">
+                    <select
+                        value={selectedCategory}
+                        onChange={e => setSelectedCategory(e.target.value)}
+                        className="text-xs h-9 px-3 border border-input rounded-xl bg-background text-muted-foreground focus-visible:outline-none focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                        <option value="">All Categories</option>
+                        {categories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                    </select>
+                    <Link href="/admin/products/new">
+                        <Button className="gap-2"><Plus className="w-4 h-4" /> Add Product</Button>
+                    </Link>
+                </div>
             </div>
 
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}
                 </div>
-            ) : products.length === 0 ? (
+            ) : filteredProducts.length === 0 ? (
                 <Card className="py-16 text-center">
                     <CardContent className="flex flex-col items-center gap-3">
                         <Package className="w-10 h-10 text-muted-foreground" />
-                        <p className="text-muted-foreground">No products yet. Add your first product!</p>
+                        <p className="text-muted-foreground">No matching products found.</p>
                         <Link href="/admin/products/new">
                             <Button className="mt-2 gap-2"><Plus className="w-4 h-4" /> Add Product</Button>
                         </Link>
@@ -135,7 +183,7 @@ export default function ProductsPage() {
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {products.map((product, i) => (
+                    {filteredProducts.map((product, i) => (
                         <motion.div key={product._id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
                             <Card className="overflow-hidden hover:shadow-md transition-shadow group flex flex-col h-full rounded-2xl">
                                 <div className="relative aspect-[4/3] bg-white flex items-center justify-center p-4 border-b border-border/40 overflow-hidden">
@@ -200,7 +248,20 @@ export default function ProductsPage() {
                             </div>
                             <div className="space-y-1">
                                 <Label htmlFor="edit-category">Category</Label>
-                                <Input id="edit-category" value={editCategory} onChange={e => setEditCategory(e.target.value)} />
+                                <select
+                                    id="edit-category"
+                                    value={editCategory}
+                                    onChange={e => setEditCategory(e.target.value)}
+                                    className="w-full text-xs h-9 px-3 border border-input rounded-xl bg-transparent focus-visible:outline-none focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
+                                >
+                                    <option value="">Select Category</option>
+                                    {PREDEFINED_CATEGORIES.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                    {editCategory && !PREDEFINED_CATEGORIES.includes(editCategory) && (
+                                        <option value={editCategory}>{editCategory}</option>
+                                    )}
+                                </select>
                             </div>
                         </div>
 
@@ -228,6 +289,28 @@ export default function ProductsPage() {
                             </Button>
                         </div>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <DialogContent className="max-w-md p-6 bg-card border rounded-2xl shadow-xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="w-5 h-5 animate-bounce-once" /> Confirm Deletion
+                        </DialogTitle>
+                        <DialogDescription className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                            Are you sure you want to delete this product? This action is permanent and cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-6 flex justify-end gap-3">
+                        <Button variant="ghost" onClick={() => setConfirmOpen(false)} className="rounded-xl">
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={executeDelete} className="rounded-xl shadow-md">
+                            Delete
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

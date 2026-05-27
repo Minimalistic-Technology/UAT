@@ -14,7 +14,7 @@ import {
     SidebarMenuButton,
     SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Gift, FileText, CheckCircle, LogOut, Briefcase } from "lucide-react";
+import { LayoutDashboard, Gift, FileText, CheckCircle, LogOut, Briefcase, Link2 } from "lucide-react";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "GIFT";
 import Link from "next/link";
@@ -24,7 +24,7 @@ import { Separator } from "@/components/ui/separator";
 
 const navItems = [
     { href: "/hr/dashboard", label: "Overview", icon: LayoutDashboard },
-    { href: "/hr/tasks", label: "HR Tasks (Placeholder)", icon: FileText },
+    { href: "/hr/links", label: "Gift Links", icon: Link2 },
 ];
 
 export default function HRAdminLayout({ children }: { children: React.ReactNode }) {

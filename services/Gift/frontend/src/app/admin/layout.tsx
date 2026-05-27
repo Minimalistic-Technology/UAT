@@ -28,6 +28,7 @@ const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/products", label: "Products", icon: Package },
     { href: "/admin/links", label: "Share Links", icon: Link2 },
+    { href: "/admin/orders", label: "Gift Claims", icon: Gift },
     { href: "/admin/users", label: "Users", icon: Users },
 ];
 

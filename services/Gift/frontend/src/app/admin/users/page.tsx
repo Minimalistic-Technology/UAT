@@ -6,13 +6,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Users, Shield, User as UserIcon, Briefcase, Trash2 } from "lucide-react";
+import { Users, Shield, User as UserIcon, Briefcase, Trash2, AlertTriangle } from "lucide-react";
 import api from "@/lib/axios";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function ManageUsersPage() {
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Confirm dialog state
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
     const fetchUsers = async () => {
         try {
@@ -40,15 +52,21 @@ export default function ManageUsersPage() {
     };
 
     const handleDeleteUser = async (userId: string) => {
-        if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
-            return;
-        }
+        setUserToDelete(userId);
+        setConfirmOpen(true);
+    };
+
+    const executeDelete = async () => {
+        if (!userToDelete) return;
         try {
-            await api.delete(`/auth/users/${userId}`);
+            await api.delete(`/auth/users/${userToDelete}`);
             toast.success("User deleted successfully!");
             fetchUsers();
         } catch (error: any) {
             toast.error(error.response?.data?.error || "Failed to delete user");
+        } finally {
+            setConfirmOpen(false);
+            setUserToDelete(null);
         }
     };
 
@@ -143,6 +161,28 @@ export default function ManageUsersPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <DialogContent className="max-w-md p-6 bg-card border rounded-2xl shadow-xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="w-5 h-5 animate-bounce-once" /> Confirm Deletion
+                        </DialogTitle>
+                        <DialogDescription className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                            Are you sure you want to delete this user? This action is permanent and cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-6 flex justify-end gap-3">
+                        <Button variant="ghost" onClick={() => setConfirmOpen(false)} className="rounded-xl">
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={executeDelete} className="rounded-xl shadow-md">
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
