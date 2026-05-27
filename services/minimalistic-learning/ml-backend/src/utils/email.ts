@@ -384,3 +384,146 @@ export const sendAccountCreatedEmail = async (to: string, userName: string) => {
   `;
   return smartSend(to, subject, html);
 };
+
+/* ─── Post Approved / Live Email ───────────────────────────────────── */
+export const sendPostApprovedEmail = async (to: string, userName: string, postTitle: string, postUrl: string) => {
+  const subject = 'Your post is now LIVE! 🎉';
+  const year = new Date().getFullYear();
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:24px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.04);">
+        <tr>
+          <td style="padding:40px 40px 20px;text-align:center;">
+            <div style="width:48px;height:48px;background:#d1fae5;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+              <span style="font-size:24px;">🚀</span>
+            </div>
+            <h1 style="margin:0 0 10px;color:#0f172a;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Your post is live!</h1>
+            <p style="margin:0;color:#475569;font-size:15px;line-height:1.6;">Hi ${userName},</p>
+            <p style="margin:10px 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+              Great news! Your post <strong>"${postTitle}"</strong> has been approved by our administrators and is now live on Minimalistic Learning.
+            </p>
+            <div style="margin-top:20px;margin-bottom:30px;">
+              <a href="${postUrl}" style="display:inline-block;background:#10b981;color:#ffffff;font-size:14px;font-weight:800;text-decoration:none;padding:14px 32px;border-radius:12px;text-transform:uppercase;letter-spacing:0.1em;">View Your Post</a>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;padding:30px 40px;text-align:center;border-top:1px solid #f1f5f9;">
+            <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.7;">
+              &copy; ${year} Minimalistic Learning. All rights reserved.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+  `;
+  return smartSend(to, subject, html);
+};
+
+/* ─── Post Rejected Email ───────────────────────────────────── */
+export const sendPostRejectedEmail = async (to: string, userName: string, postTitle: string, reason: string = 'Did not meet content guidelines.') => {
+  const subject = 'Update on your recent post submission';
+  const year = new Date().getFullYear();
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:24px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.04);">
+        <tr>
+          <td style="padding:40px 40px 20px;text-align:center;">
+            <div style="width:48px;height:48px;background:#fef08a;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+              <span style="font-size:24px;">📝</span>
+            </div>
+            <h1 style="margin:0 0 10px;color:#0f172a;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Post Update</h1>
+            <p style="margin:0;color:#475569;font-size:15px;line-height:1.6;">Hi ${userName},</p>
+            <p style="margin:10px 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+              Thank you for submitting your post <strong>"${postTitle}"</strong>. After review, we are unable to publish it at this time.
+            </p>
+            <div style="background:#fefce8;border-left:4px solid #eab308;padding:16px;border-radius:0 12px 12px 0;text-align:left;margin-bottom:20px;">
+              <p style="margin:0 0 8px;font-size:12px;text-transform:uppercase;font-weight:700;color:#a16207;letter-spacing:0.05em;">Reason</p>
+              <p style="margin:0;color:#854d0e;font-size:14px;line-height:1.5;">
+                ${reason}
+              </p>
+            </div>
+            <p style="margin:10px 0 0;color:#475569;font-size:15px;line-height:1.6;">
+              You can review our submission guidelines and try again. Don't be discouraged!
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;padding:30px 40px;text-align:center;border-top:1px solid #f1f5f9;">
+            <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.7;">
+              &copy; ${year} Minimalistic Learning. All rights reserved.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+  `;
+  return smartSend(to, subject, html);
+};
+
+/* ─── Post Deleted Email ───────────────────────────────────── */
+export const sendPostDeletedEmail = async (to: string, userName: string, postTitle: string) => {
+  const subject = 'Your post has been removed';
+  const year = new Date().getFullYear();
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f8fafc;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:24px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.04);">
+        <tr>
+          <td style="padding:40px 40px 20px;text-align:center;">
+            <div style="width:48px;height:48px;background:#fee2e2;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+              <span style="font-size:24px;">🗑️</span>
+            </div>
+            <h1 style="margin:0 0 10px;color:#0f172a;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Post Removed</h1>
+            <p style="margin:0;color:#475569;font-size:15px;line-height:1.6;">Hi ${userName},</p>
+            <p style="margin:10px 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+              We want to let you know that your post <strong>"${postTitle}"</strong> has been removed from Minimalistic Learning by an administrator.
+            </p>
+            <div style="background:#fff1f2;border-left:4px solid #f43f5e;padding:16px;border-radius:0 12px 12px 0;text-align:left;margin-bottom:20px;">
+              <p style="margin:0;color:#881337;font-size:13px;line-height:1.5;">
+                This action is typically taken when content violates our community guidelines or terms of service.
+              </p>
+            </div>
+            <p style="margin:10px 0 0;color:#475569;font-size:14px;line-height:1.6;">
+              If you have any questions, please contact our support team.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;padding:30px 40px;text-align:center;border-top:1px solid #f1f5f9;">
+            <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.7;">
+              &copy; ${year} Minimalistic Learning. All rights reserved.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+  `;
+  return smartSend(to, subject, html);
+};

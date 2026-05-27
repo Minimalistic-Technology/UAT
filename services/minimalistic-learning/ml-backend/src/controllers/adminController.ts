@@ -5,13 +5,15 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
 import { PostStatus, NotificationType, Role } from '@prisma/client';
+import { sendPostApprovedEmail, sendPostRejectedEmail, sendPostDeletedEmail } from '../utils/email';
+import { env } from '../config/env';
 
 // ─── DELETE /admin/posts/:postId ──────────────────────────────────────────────
 export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = req.params;
   const { reason } = req.body;
 
-  const post = await prisma.post.findUnique({ where: { id: postId } });
+  const post = await prisma.post.findUnique({ where: { id: postId }, include: { author: true } });
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
 
   const authorId = post.authorId;
@@ -27,6 +29,10 @@ export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) 
       type: NotificationType.post_deleted
     }
   });
+
+  if (post.author && post.author.email) {
+    sendPostDeletedEmail(post.author.email, post.author.firstName, postTitle).catch(console.error);
+  }
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, null, 'Post deleted and user notified')
@@ -154,7 +160,7 @@ export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response)
 export const approvePost = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = req.params;
 
-  const post = await prisma.post.findUnique({ where: { id: postId } });
+  const post = await prisma.post.findUnique({ where: { id: postId }, include: { author: true } });
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
 
   const updatedPost = await prisma.post.update({
@@ -171,6 +177,11 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
+  if (post.author && post.author.email) {
+    const postUrl = `${env.corsOrigins[0] || 'http://localhost:3000'}/blog/${updatedPost.slug}`;
+    sendPostApprovedEmail(post.author.email, post.author.firstName, updatedPost.title, postUrl).catch(console.error);
+  }
+
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, { _id: updatedPost.id, id: updatedPost.id, status: updatedPost.status }, 'Post approved and published')
   );
@@ -179,8 +190,9 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
 // ─── PATCH /admin/posts/:postId/reject ───────────────────────────────────────
 export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = req.params;
+  const { reason = 'Did not meet content guidelines.' } = req.body;
 
-  const post = await prisma.post.findUnique({ where: { id: postId } });
+  const post = await prisma.post.findUnique({ where: { id: postId }, include: { author: true } });
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
 
   const updatedPost = await prisma.post.update({
@@ -196,6 +208,10 @@ export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
       type: NotificationType.post_rejected
     }
   });
+
+  if (post.author && post.author.email) {
+    sendPostRejectedEmail(post.author.email, post.author.firstName, updatedPost.title, reason).catch(console.error);
+  }
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, { _id: updatedPost.id, id: updatedPost.id, status: updatedPost.status }, 'Post rejected')
