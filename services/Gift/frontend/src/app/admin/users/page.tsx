@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Users, Shield, User as UserIcon, Briefcase } from "lucide-react";
+import { Users, Shield, User as UserIcon, Briefcase, Trash2 } from "lucide-react";
 import api from "@/lib/axios";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -36,6 +36,19 @@ export default function ManageUsersPage() {
             fetchUsers();
         } catch (error: any) {
             toast.error(error.response?.data?.error || "Failed to update role");
+        }
+    };
+
+    const handleDeleteUser = async (userId: string) => {
+        if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+            return;
+        }
+        try {
+            await api.delete(`/auth/users/${userId}`);
+            toast.success("User deleted successfully!");
+            fetchUsers();
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || "Failed to delete user");
         }
     };
 
@@ -100,7 +113,7 @@ export default function ManageUsersPage() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    <div className="flex justify-end">
+                                                    <div className="flex justify-end items-center gap-2">
                                                         <Select value={u.role} onValueChange={(newRole) => handleRoleChange(u._id, newRole)}>
                                                             <SelectTrigger className="w-[120px] h-8 text-xs bg-background">
                                                                 <SelectValue placeholder="Set Role" />
@@ -111,6 +124,14 @@ export default function ManageUsersPage() {
                                                                 <SelectItem value="Admin">Admin</SelectItem>
                                                             </SelectContent>
                                                         </Select>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive rounded-lg"
+                                                            onClick={() => handleDeleteUser(u._id)}
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
