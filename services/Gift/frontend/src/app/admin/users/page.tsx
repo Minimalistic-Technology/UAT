@@ -6,8 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Users, Shield, User as UserIcon } from "lucide-react";
+import { Users, Shield, User as UserIcon, Briefcase } from "lucide-react";
 import api from "@/lib/axios";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ManageUsersPage() {
     const [users, setUsers] = useState<any[]>([]);
@@ -91,21 +92,26 @@ export default function ManageUsersPage() {
                                                     <div className="flex items-center gap-1.5">
                                                         {u.role === "Admin" ? (
                                                             <><Shield className="w-4 h-4 text-primary" /> <span className="text-primary font-medium">Admin</span></>
+                                                        ) : u.role === "HRAdmin" ? (
+                                                            <><Briefcase className="w-4 h-4 text-violet-500" /> <span className="text-violet-500 font-medium">HR Admin</span></>
                                                         ) : (
                                                             <><UserIcon className="w-4 h-4 text-muted-foreground" /> <span className="text-muted-foreground">User</span></>
                                                         )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    {u.role === "User" ? (
-                                                        <Button variant="outline" size="sm" onClick={() => handleRoleChange(u._id, "Admin")}>
-                                                            Make Admin
-                                                        </Button>
-                                                    ) : (
-                                                        <Button variant="ghost" size="sm" onClick={() => handleRoleChange(u._id, "User")} className="text-destructive hover:bg-destructive/10">
-                                                            Remove Admin
-                                                        </Button>
-                                                    )}
+                                                    <div className="flex justify-end">
+                                                        <Select value={u.role} onValueChange={(newRole) => handleRoleChange(u._id, newRole)}>
+                                                            <SelectTrigger className="w-[120px] h-8 text-xs bg-background">
+                                                                <SelectValue placeholder="Set Role" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="User">User</SelectItem>
+                                                                <SelectItem value="HRAdmin">HR Admin</SelectItem>
+                                                                <SelectItem value="Admin">Admin</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))

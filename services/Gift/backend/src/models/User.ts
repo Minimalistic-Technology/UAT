@@ -4,7 +4,7 @@ export interface IUser extends Document {
     name: string;
     email: string;
     password?: string;
-    role: 'Admin' | 'User';
+    role: 'Admin' | 'HRAdmin' | 'User';
     avatar?: string;
     isVerified: boolean;
     otp?: string;
@@ -19,7 +19,7 @@ const UserSchema: Schema = new Schema(
         name: { type: String, required: true },
         email: { type: String, required: true, unique: true },
         password: { type: String, select: false },
-        role: { type: String, enum: ['Admin', 'User'], default: 'User' },
+        role: { type: String, enum: ['Admin', 'HRAdmin', 'User'], default: 'User' },
         avatar: { type: String },
         isVerified: { type: Boolean, default: false },
         otp: { type: String, select: false },
