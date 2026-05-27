@@ -22,6 +22,7 @@ import {
 export function PlanTableRow({ plan }: { plan: any }) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { mutate: deletePlan, isPending: isDeleting } = useDeletePlan();
+  console.log("Plan", plan);
 
   return (
     <>
@@ -52,6 +53,9 @@ export function PlanTableRow({ plan }: { plan: any }) {
         </TableCell>
         <TableCell className="text-muted-foreground hidden xl:table-cell">
           {plan.teamMemberLimit === -1 ? "Unlimited" : plan.teamMemberLimit}
+        </TableCell>
+        <TableCell className="text-muted-foreground hidden xl:table-cell">
+          {plan.postValidityDays}
         </TableCell>
         <TableCell>
           <Badge

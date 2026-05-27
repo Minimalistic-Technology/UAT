@@ -27,6 +27,14 @@ export const createPlan = async (
       postValidityDays
     } = req.body;
 
+    const existingPlan = await Plan.findOne({ 
+      name: { $regex: new RegExp(`^${name.trim()}$`, "i") } // Case-insensitive check
+    });
+
+    if (existingPlan) {
+      return next(new ApiError(400, `A plan named "${name}" already exists.`));
+    }
+
     // If making this the default plan, remove default status from others
     if (isDefault) {
       await Plan.updateMany({}, { isDefault: false });
@@ -197,6 +205,7 @@ export const deletePlan = async (
 
     // Check if the plan is in use
     const isPlanInUse = await Subscription.exists({ plan: id });
+    console.log(isPlanInUse);
 
     if (isPlanInUse) {
       // Soft delete instead

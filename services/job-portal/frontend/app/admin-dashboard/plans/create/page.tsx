@@ -272,7 +272,7 @@ export default function CreatePlanForm() {
                   )}
                 />
                 <Label htmlFor="allowResumeDownload" className="cursor-pointer font-semibold text-indigo-700 dark:text-indigo-400">
-                  Allow Downloads
+                  Allow Resume Downloads
                 </Label>
               </div>
             </div>
