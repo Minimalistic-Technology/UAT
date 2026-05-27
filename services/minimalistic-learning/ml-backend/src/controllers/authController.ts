@@ -38,8 +38,27 @@ import type {
   PasswordResetInitResponseData
 } from '../types/auth.types';
 
+interface LockoutInfo {
+  attempts: number;
+  lockUntil: Date | null;
+}
+
+const loginLockoutMap = new Map<string, LockoutInfo>();
+const otpLockoutMap = new Map<string, LockoutInfo>();
+
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const payload = signupSchema.parse(req.body) as userService.CreateUserPayload;
+  const emailKey = payload.email.toLowerCase().trim();
+
+  // Check OTP lockout
+  const otpLockout = otpLockoutMap.get(emailKey);
+  if (otpLockout && otpLockout.lockUntil && otpLockout.lockUntil > new Date()) {
+    const minLeft = Math.ceil((otpLockout.lockUntil.getTime() - Date.now()) / 1000 / 60);
+    throw new ApiError(
+      StatusCodes.TOO_MANY_REQUESTS,
+      `Too many OTP requests. Signup is blocked. Please try again after ${minLeft} minute(s).`
+    );
+  }
 
   const existing = await userService.findByEmail(payload.email);
   if (existing) {
@@ -47,7 +66,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const otp = crypto.randomInt(100000, 999999).toString();
-  const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+  const otpExpires = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes expiration
 
   let hashedPassword = payload.password;
   if (payload.password) {
@@ -72,16 +91,58 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const credentials = loginSchema.parse(req.body);
+  const emailKey = credentials.email.toLowerCase().trim();
+
+  // Check login lockout
+  const loginLockout = loginLockoutMap.get(emailKey);
+  if (loginLockout && loginLockout.lockUntil && loginLockout.lockUntil > new Date()) {
+    const minLeft = Math.ceil((loginLockout.lockUntil.getTime() - Date.now()) / 1000 / 60);
+    throw new ApiError(
+      StatusCodes.TOO_MANY_REQUESTS,
+      `Too many failed login attempts. Your login request is blocked. Please try again after ${minLeft} minute(s).`
+    );
+  }
 
   const user = await userService.findByEmail(credentials.email);
   if (!user) {
+    // Record login failure for query targeting non-existing logins too to protect enumeration
+    const current = loginLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
+    current.attempts += 1;
+    if (current.attempts >= 3) {
+      current.lockUntil = new Date(Date.now() + 2 * 60 * 1000);
+      current.attempts = 0;
+      loginLockoutMap.set(emailKey, current);
+    } else {
+      loginLockoutMap.set(emailKey, current);
+    }
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
   }
 
   const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
   if (!isPasswordValid) {
-    throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
+    // Record login failure
+    const current = loginLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
+    current.attempts += 1;
+    if (current.attempts >= 3) {
+      current.lockUntil = new Date(Date.now() + 2 * 60 * 1000); // Lock for 2 minutes
+      current.attempts = 0;
+      loginLockoutMap.set(emailKey, current);
+      throw new ApiError(
+        StatusCodes.TOO_MANY_REQUESTS,
+        'Too many failed login attempts. Your account has been temporarily locked for 2 minutes.'
+      );
+    } else {
+      loginLockoutMap.set(emailKey, current);
+      const remaining = 3 - current.attempts;
+      throw new ApiError(
+        StatusCodes.UNAUTHORIZED,
+        `Invalid credentials. ${remaining} attempt(s) remaining before block.`
+      );
+    }
   }
+
+  // Clear login lockout on successful password match
+  loginLockoutMap.delete(emailKey);
 
   const detectedRole = user.role?.toString().trim().toLowerCase();
   console.log(`[auth] Login attempt: ${user.email}, Detected Role: ${detectedRole}`);
@@ -113,8 +174,18 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       );
   }
 
+  // Check OTP request lockout
+  const otpLockout = otpLockoutMap.get(emailKey);
+  if (otpLockout && otpLockout.lockUntil && otpLockout.lockUntil > new Date()) {
+    const minLeft = Math.ceil((otpLockout.lockUntil.getTime() - Date.now()) / 1000 / 60);
+    throw new ApiError(
+      StatusCodes.TOO_MANY_REQUESTS,
+      `Too many OTP requests. Please wait ${minLeft} minute(s) before logging in again.`
+    );
+  }
+
   const otp = crypto.randomInt(100000, 999999).toString();
-  const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+  const otpExpires = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes expiration
 
   await prisma.user.update({
     where: { id: user.id },
@@ -136,15 +207,48 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
 export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
   const { email, otp } = verifyOTPSchema.parse(req.body);
-  let user: any = null;
+  const emailKey = email.toLowerCase().trim();
 
+  // Check OTP lockout
+  const otpLockout = otpLockoutMap.get(emailKey);
+  if (otpLockout && otpLockout.lockUntil && otpLockout.lockUntil > new Date()) {
+    const minLeft = Math.ceil((otpLockout.lockUntil.getTime() - Date.now()) / 1000 / 60);
+    throw new ApiError(
+      StatusCodes.TOO_MANY_REQUESTS,
+      `Too many incorrect OTP attempts. Your validation is blocked. Please try again after ${minLeft} minute(s).`
+    );
+  }
+
+  let user: any = null;
   user = await userService.findByEmail(email);
 
   if (user) {
-    const isExpired = user.otpExpires && new Date(Date.now() - 60000) > user.otpExpires;
+    const isExpired = user.otpExpires && new Date(Date.now() - 5000) > user.otpExpires;
     if (user.otp !== otp || isExpired) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired OTP');
+      // Record OTP verification failure
+      const current = otpLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
+      current.attempts += 1;
+      if (current.attempts >= 3) {
+        current.lockUntil = new Date(Date.now() + 2 * 60 * 1000); // Lock for 2 minutes
+        current.attempts = 0;
+        otpLockoutMap.set(emailKey, current);
+        throw new ApiError(
+          StatusCodes.TOO_MANY_REQUESTS,
+          'Too many incorrect/expired OTP attempts. Verification blocked for 2 minutes.'
+        );
+      } else {
+        otpLockoutMap.set(emailKey, current);
+        const remaining = 3 - current.attempts;
+        throw new ApiError(
+          StatusCodes.BAD_REQUEST,
+          `Invalid or expired OTP. ${remaining} attempt(s) remaining.`
+        );
+      }
     }
+
+    // Clear lockout on success
+    otpLockoutMap.delete(emailKey);
+
     user = await prisma.user.update({
       where: { id: user.id },
       data: { otp: null, otpExpires: null, isVerified: true }
@@ -153,11 +257,32 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
     sendLoginAlertEmail(user.email, user.firstName, req.ip, req.headers['user-agent']).catch(console.error);
   } else {
     const pending = await prisma.pendingUser.findUnique({ where: { email } });
-    const isExpired = pending && new Date(Date.now() - 60000) > pending.otpExpires;
+    const isExpired = pending && new Date(Date.now() - 5000) > pending.otpExpires;
 
     if (!pending || pending.otp !== otp || isExpired) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired OTP');
+      // Record OTP verification failure
+      const current = otpLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
+      current.attempts += 1;
+      if (current.attempts >= 3) {
+        current.lockUntil = new Date(Date.now() + 2 * 60 * 1000); // Lock for 2 minutes
+        current.attempts = 0;
+        otpLockoutMap.set(emailKey, current);
+        throw new ApiError(
+          StatusCodes.TOO_MANY_REQUESTS,
+          'Too many incorrect/expired OTP attempts. Verification blocked for 2 minutes.'
+        );
+      } else {
+        otpLockoutMap.set(emailKey, current);
+        const remaining = 3 - current.attempts;
+        throw new ApiError(
+          StatusCodes.BAD_REQUEST,
+          `Invalid or expired OTP. ${remaining} attempt(s) remaining.`
+        );
+      }
     }
+
+    // Clear lockout on success
+    otpLockoutMap.delete(emailKey);
 
     const { id, otp: _o, otpExpires: _e, createdAt: _c, password, ...userData } = pending;
 

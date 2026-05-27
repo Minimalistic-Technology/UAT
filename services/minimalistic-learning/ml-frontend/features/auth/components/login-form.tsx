@@ -25,6 +25,30 @@ const LoginForm = () => {
   const [userEmail, setUserEmail] = useState("");
   const [otpValue, setOtpValue] = useState("");
 
+  // OTP Countdown Timer State
+  const [timer, setTimer] = useState(120);
+
+  React.useEffect(() => {
+    if (!showOTP) return;
+    setTimer(120);
+    const interval = setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [showOTP]);
+
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
   // Forgot Password Flow States
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [forgotStep, setForgotStep] = useState<1 | 2>(1); // 1 = Enter Email + New Pass, 2 = Enter OTP
@@ -155,7 +179,19 @@ const LoginForm = () => {
 
         <form onSubmit={onVerifyOTP} className="space-y-6">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">Verification Code</label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">Verification Code</label>
+              <span className={`text-xs font-bold ${timer === 0 ? "text-red-500 animate-pulse" : "text-[#1877F2] flex items-center gap-1"}`}>
+                {timer > 0 ? (
+                  <>
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+                    Expires in {formatTimer(timer)}
+                  </>
+                ) : (
+                  "Code expired"
+                )}
+              </span>
+            </div>
             <input
               value={otpValue}
               onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -169,7 +205,7 @@ const LoginForm = () => {
 
           <button
             type="submit"
-            disabled={isVerifyPending || otpValue.length !== 6}
+            disabled={isVerifyPending || otpValue.length !== 6 || timer === 0}
             className="group w-full py-3.5 bg-[#1877F2] hover:bg-blue-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isVerifyPending ? (

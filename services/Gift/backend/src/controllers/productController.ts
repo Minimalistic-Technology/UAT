@@ -59,15 +59,28 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
     }
 };
 
-export const updateProduct = async (req: Request, res: Response): Promise<void> => {
+export const updateProduct = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const product = await Product.findById(req.params.id);
 
         if (product) {
             product.title = req.body.title || product.title;
             product.slug = req.body.slug || product.slug;
+            product.description = req.body.description || product.description;
+            product.category = req.body.category || product.category;
             product.price = req.body.price !== undefined ? Number(req.body.price) : product.price;
             product.stock = req.body.stock !== undefined ? Number(req.body.stock) : product.stock;
+
+            if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+                const newUrls: string[] = [];
+                for (const file of req.files) {
+                    const result = await uploadImage(file.path, 'products');
+                    newUrls.push(result.secure_url);
+                    fs.unlinkSync(file.path); // clean local tmp
+                }
+                product.images = newUrls;
+                product.thumbnail = newUrls[0] || '';
+            }
 
             const updatedProduct = await product.save();
             res.json(updatedProduct);
