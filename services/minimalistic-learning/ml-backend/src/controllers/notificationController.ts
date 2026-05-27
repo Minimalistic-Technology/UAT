@@ -7,6 +7,15 @@ import { ApiResponse } from '../utils/ApiResponse';
 export const getMyNotifications = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id || (req.user as any)._id.toString();
 
+  // Auto-prune old notifications to prevent storage accumulation (older than 2 hours)
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  await prisma.notification.deleteMany({
+    where: {
+      recipientId: userId,
+      createdAt: { lt: twoHoursAgo }
+    }
+  });
+
   const notifications = await prisma.notification.findMany({
     where: { recipientId: userId },
     orderBy: { createdAt: 'desc' },
@@ -26,26 +35,26 @@ export const markAsRead = asyncHandler(async (req: Request, res: Response) => {
   const { notificationId } = req.params;
   const userId = req.user!.id || (req.user as any)._id.toString();
 
-  await prisma.notification.updateMany({
-    where: { id: notificationId, recipientId: userId },
-    data: { isRead: true }
+  // Delete notification immediately on read, so it is never permanently stored
+  await prisma.notification.deleteMany({
+    where: { id: notificationId, recipientId: userId }
   });
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, null, 'Notification marked as read')
+    new ApiResponse(StatusCodes.OK, null, 'Notification seen and deleted')
   );
 });
 
 export const markAllAsRead = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id || (req.user as any)._id.toString();
 
-  await prisma.notification.updateMany({
-    where: { recipientId: userId, isRead: false },
-    data: { isRead: true }
+  // Delete all notifications for the user on mark all as read
+  await prisma.notification.deleteMany({
+    where: { recipientId: userId }
   });
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, null, 'All notifications marked as read')
+    new ApiResponse(StatusCodes.OK, null, 'All notifications seen and deleted')
   );
 });
 

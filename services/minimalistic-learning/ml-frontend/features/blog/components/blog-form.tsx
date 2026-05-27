@@ -22,20 +22,12 @@ import { blogService } from "../services/blog-service";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 
-// IMPORT QUILL CSS TO FIX THE HUGE TRIANGLE GLITCH
-import "react-quill-new/dist/quill.snow.css";
-
-const ReactQuill = dynamic(() => import("react-quill-new"), {
+const TiptapEditor = dynamic(() => import("./tiptap-editor"), {
   ssr: false,
-  loading: () => <div className="h-[400px] bg-theme-element rounded-2xl animate-pulse border border-theme-accent/10" />
+  loading: () => <div className="h-[450px] bg-theme-element rounded-[2rem] animate-pulse border border-theme-accent/10" />
 });
 
 const CATEGORIES = ["Technology", "Lifestyle", "Business", "Education", "AI & Future"];
-
-const formats = [
-  "header", "font", "size", "bold", "italic", "underline", "strike", "blockquote",
-  "list", "indent", "script", "color", "background", "link", "image", "video", "align"
-];
 
 export const BlogForm = ({ id }: { id?: string }) => {
   const { user } = useAuth();
@@ -56,7 +48,6 @@ export const BlogForm = ({ id }: { id?: string }) => {
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
-  const quillRef = useRef<any>(null);
 
   const {
     register,
@@ -120,7 +111,7 @@ export const BlogForm = ({ id }: { id?: string }) => {
     return () => clearTimeout(timer);
   }, [currentValues, isEdit, activeDraftId]);
 
-  const imageHandler = useCallback(() => {
+  const handleEditorImage = useCallback((editorInstance: any) => {
     const input = document.createElement("input");
     input.setAttribute("type", "file");
     input.setAttribute("accept", "image/*");
@@ -131,28 +122,12 @@ export const BlogForm = ({ id }: { id?: string }) => {
       setIsUploadingMedia(true);
       try {
         const { url } = await blogService.uploadMedia(file);
-        const quill = quillRef.current?.getEditor();
-        if (quill) {
-          const range = quill.getSelection(true);
-          quill.insertEmbed(range.index, "image", url);
+        if (editorInstance) {
+          editorInstance.chain().focus().setImage({ src: url }).run();
         }
       } catch { toast.error("Image upload failed."); } finally { setIsUploadingMedia(false); }
     };
   }, []);
-
-  const modules = useMemo(() => ({
-    toolbar: {
-      container: [
-        [{ header: [1, 2, 3, false] }],
-        ["bold", "italic", "underline", "strike"],
-        [{ list: "ordered" }, { list: "bullet" }],
-        ["link", "image", "video"],
-        ["clean"]
-      ],
-      handlers: { image: imageHandler }
-    },
-    clipboard: { matchVisual: false }
-  }), [imageHandler]);
 
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -309,23 +284,84 @@ export const BlogForm = ({ id }: { id?: string }) => {
               <h2 className="text-xl font-black text-foreground">Post Content</h2>
             </div>
 
-            <div className="quill-single-form text-foreground [&_.ql-toolbar]:bg-theme-element [&_.ql-toolbar]:border-theme-accent/20 [&_.ql-container]:border-theme-accent/20 [&_.ql-toolbar_stroke]:stroke-foreground [&_.ql-toolbar_fill]:fill-foreground [&_.ql-snow_.ql-picker]:text-foreground [&_.ql-editor]:text-foreground [&_.ql-snow_.ql-picker-options]:bg-theme-element [&_.ql-snow_.ql-picker-options]:border-theme-accent/20">
-              {isMounted && (() => {
-                const QuillEditor = ReactQuill as any;
-                return (
-                  <QuillEditor
-                    ref={quillRef}
-                    theme="snow"
-                    value={content || ""}
-                    onChange={(val: string) => setValue("content", val, { shouldDirty: true, shouldValidate: true })}
-                    modules={modules}
-                    formats={formats}
-                    placeholder="Start writing your story here..."
-                  />
-                );
-              })()}
+            <div className="border border-theme-accent/20 rounded-2xl bg-theme-element overflow-hidden">
+              <style>{`
+                .tiptap {
+                  outline: none;
+                  min-height: 400px;
+                  font-family: inherit;
+                  font-size: 1.05rem;
+                  line-height: 1.8;
+                }
+                .tiptap p {
+                  margin-bottom: 1.25rem;
+                }
+                .tiptap h1 {
+                  font-size: 2.25rem;
+                  font-weight: 900;
+                  margin-top: 2rem;
+                  margin-bottom: 1rem;
+                  letter-spacing: -0.025em;
+                }
+                .tiptap h2 {
+                  font-size: 1.75rem;
+                  font-weight: 800;
+                  margin-top: 1.75rem;
+                  margin-bottom: 0.75rem;
+                  letter-spacing: -0.02em;
+                }
+                .tiptap h3 {
+                  font-size: 1.35rem;
+                  font-weight: 700;
+                  margin-top: 1.5rem;
+                  margin-bottom: 0.5rem;
+                }
+                .tiptap ul {
+                  list-style-type: disc;
+                  padding-left: 1.5rem;
+                  margin-bottom: 1.25rem;
+                }
+                .tiptap ol {
+                  list-style-type: decimal;
+                  padding-left: 1.5rem;
+                  margin-bottom: 1.25rem;
+                }
+                .tiptap li {
+                  margin-bottom: 0.5rem;
+                }
+                .tiptap blockquote {
+                  border-left: 4px solid var(--theme-action, #3b82f6);
+                  padding-left: 1.25rem;
+                  font-style: italic;
+                  margin: 1.5rem 0;
+                  color: inherit;
+                  opacity: 0.9;
+                }
+                .tiptap img {
+                  max-width: 100%;
+                  height: auto;
+                  border-radius: 1.5rem;
+                  margin: 2.5rem auto;
+                  display: block;
+                  border: 1px solid rgba(var(--theme-accent-rgb), 0.1);
+                  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+                }
+                .tiptap a {
+                  color: #3b82f6;
+                  text-decoration: underline;
+                  cursor: pointer;
+                }
+              `}</style>
+
+              <TiptapEditor
+                value={content || ""}
+                onChange={(val: string) => setValue("content", val, { shouldDirty: true, shouldValidate: true })}
+                imageHandler={handleEditorImage}
+                blogDataContent={blogData?.data?.content}
+              />
+
               {isUploadingMedia && (
-                <div className="flex items-center gap-2 text-xs font-bold text-theme-action mt-4 animate-pulse">
+                <div className="flex items-center gap-2 text-xs font-bold text-theme-action p-4 border-t border-theme-accent/10 bg-theme-element animate-pulse">
                   <Loader2 size={14} className="animate-spin" /> Uploading image to content...
                 </div>
               )}
