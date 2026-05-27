@@ -22,7 +22,9 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+import { Suspense } from 'react';
+
+function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get('redirect') || '';
@@ -98,5 +100,13 @@ export default function LoginPage() {
                 <Link href={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : "/register"} className="text-primary hover:underline font-medium">Sign up</Link>
             </div>
         </motion.div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="text-center py-10 text-sm text-muted-foreground">Loading login form...</div>}>
+            <LoginForm />
+        </Suspense>
     );
 }

@@ -23,7 +23,9 @@ const registerSchema = z.object({
 });
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-export default function RegisterPage() {
+import { Suspense } from 'react';
+
+function RegisterForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const redirectTo = searchParams.get('redirect') || '';
@@ -156,5 +158,13 @@ export default function RegisterPage() {
                 </div>
             </motion.div>
         </AnimatePresence>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={<div className="text-center py-10 text-sm text-muted-foreground">Loading registration form...</div>}>
+            <RegisterForm />
+        </Suspense>
     );
 }
