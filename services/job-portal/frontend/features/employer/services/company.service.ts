@@ -4,6 +4,8 @@ import { Company } from "@/types";
 export interface CompanyMetrics {
   totalJobs: number;
   activeJobs: number;
+  activeInternships: number;
+  activeListings: number;
   totalMembers: number;
   currentPlan: { _id: string; name: string } | null;
   subscription: any | null;

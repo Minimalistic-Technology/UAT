@@ -11,6 +11,8 @@ export interface Plan {
   displayOrder: number;
   features: string[];
   isActive: boolean;
+  postValidityDays: number;
+  allowResumeDownload: boolean;
   createdAt: string;
   updatedAt: string;
 }

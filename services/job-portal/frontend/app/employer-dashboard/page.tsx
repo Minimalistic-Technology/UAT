@@ -53,6 +53,7 @@ const Page = () => {
   const router = useRouter();
 
   const companyDetails = responseData?.data;
+  console.log("Company Details", companyDetails);
   const isUnverified = companyDetails?.isVerified === false;
   const kycStatus = companyDetails?.kycStatus;
 
@@ -225,8 +226,8 @@ const Page = () => {
       {/* Quick Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Active Jobs"
-          value={Number(companyDetails?.activeJobs)}
+          title="Active Listings"
+          value={Number(companyDetails?.activeListings)}
           icon={Briefcase}
           description={`Total listings: ${companyDetails?.totalJobs}`}
         />
