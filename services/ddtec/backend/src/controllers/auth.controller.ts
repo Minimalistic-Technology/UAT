@@ -79,7 +79,8 @@ export const verifyOtp = async (req: Request, res: Response) => {
         });
 
         if (user && user.lockUntil && user.lockUntil > Date.now()) {
-            return res.status(403).json({ msg: 'Account is temporarily locked due to multiple failed attempts. Please try again after 2 minutes.' });
+            const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
+            return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${minutesLeft} minute(s).` });
         }
 
         const otpRecord = await OTP.findOne({ identifier });
@@ -92,12 +93,13 @@ export const verifyOtp = async (req: Request, res: Response) => {
             if (user) {
                 user.loginAttempts = (user.loginAttempts || 0) + 1;
                 if (user.loginAttempts >= 3) {
-                    user.lockUntil = Date.now() + 2 * 60 * 1000; // 2 minutes
+                    const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
+                    user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
                 }
                 await user.save();
             }
             return res.status(400).json({ msg: 'Invalid OTP', isValid: false });
-        } // Add closing brace for if (otpRecord.otp !== String(otp))
+        }
 
         // Reset attempts on success
         if (user) {
@@ -227,7 +229,8 @@ export const login = async (req: Request, res: Response) => {
 
         // Check if locked
         if (user.lockUntil && user.lockUntil > Date.now()) {
-            return res.status(403).json({ msg: 'Account is temporarily locked due to multiple failed attempts. Please try again after 2 minutes.' });
+            const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
+            return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${minutesLeft} minute(s).` });
         }
 
         // Validate password
@@ -235,7 +238,8 @@ export const login = async (req: Request, res: Response) => {
         if (!isMatch) {
             user.loginAttempts = (user.loginAttempts || 0) + 1;
             if (user.loginAttempts >= 3) {
-                user.lockUntil = Date.now() + 2 * 60 * 1000; // 2 minutes
+                const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
+                user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
             }
             await user.save();
             return res.status(400).json({ msg: 'Invalid credentials' });
