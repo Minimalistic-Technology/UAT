@@ -24,8 +24,13 @@ export function isValidExperienceType(value: any): value is ExperienceLevel {
 }
 
 export function isValidWorkMode(value: any): value is string {
-    const validWorkModes = ["remote", "work from office", "hybrid", "temporary work from home"];
-    return validWorkModes.includes(value);
+  const validWorkModes = [
+    "remote",
+    "work from office",
+    "hybrid",
+    "temporary work from home",
+  ];
+  return validWorkModes.includes(value);
 }
 
 export const getJobs = async (
@@ -55,7 +60,6 @@ export const getJobs = async (
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 10;
     const skip = (pageNumber - 1) * limitNumber;
-
 
     const [jobs, total] = await Promise.all([
       Job.find(query)
@@ -204,14 +208,24 @@ export const createJob = async (
       title: req.body.title,
       description: req.body.description,
       jobType: req.body.jobType,
+      workMode: req.body.workMode,
+      companyType: req.body.companyType,
+      roleCategory: req.body.roleCategory,
+      industry: req.body.industry,
       experienceLevel: req.body.experienceLevel,
+      experienceInYears: req.body.experienceInYears,
       openings: req.body.openings,
 
       location: {
         city: req.body.location.city,
         state: req.body.location.state,
         country: req.body.location.country,
-        remote: req.body.location.remote,
+      },
+
+      education: {
+        minimumDegree: req.body.education.minimumDegree,
+        preferredFields: req.body.education.preferredFields,
+        isRequired: req.body.education.isRequired ?? false,
       },
 
       salary: {
@@ -226,7 +240,8 @@ export const createJob = async (
       benefits: req.body.benefits,
 
       applicationDeadline: req.body.applicationDeadline,
-      isFeatured: req.body.isFeatured,
+      isFeatured: req.body.isFeatured ?? false,
+      status: req.body.status ?? "active",
       postedBy: req.user.id,
       company: company._id,
     };
