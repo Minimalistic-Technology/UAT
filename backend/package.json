@@ -10,6 +10,7 @@
     "seed": "ts-node scripts/seed.ts"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^5.0.4",
     "@sendgrid/mail": "^8.1.6",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",

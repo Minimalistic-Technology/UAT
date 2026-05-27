@@ -91,7 +91,7 @@ export default function InventoryView({
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-205 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm flex flex-col gap-6 flex-1">
+        <div className="bg-white dark:bg-slate-900 border-0 rounded-3xl p-6 shadow-xl dark:shadow-slate-900 drop-shadow-md flex flex-col gap-6 flex-1">
             {/* Header controls layout */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-850 pb-4">
                 <div>

@@ -1,5 +1,5 @@
-import nodemailer from 'nodemailer';
-import sgMail from '@sendgrid/mail';
+// @ts-ignore
+import { BrevoClient } from '@getbrevo/brevo';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Bill from '../models/Bill';
@@ -9,61 +9,61 @@ class NotificationService {
     private static _isTestAccount: boolean = false;
 
     private static async getEmailTransporter() {
-        console.log('[NOTIFICATION] Nodemailer is currently disabled in favor of SendGrid.');
+        console.log('[NOTIFICATION] Transporter logic superseded by BrevoClient integration.');
         return null;
-        /*
-        if (!this._emailTransporter) {
-            // ... original nodemailer setup ...
-        }
-        return this._emailTransporter;
-        */
     }
 
     /**
-     * Helper to send email via SendGrid with Nodemailer fallback
+     * Helper to send email via Brevo transactional pipeline
      */
-    private static async sendWithFallback(mailOptions: any): Promise<{ success: boolean, info?: any, method: 'sendgrid' | 'nodemailer' }> {
-        // 1. Try SendGrid
-        if (process.env.SENDGRID_API_KEY) {
-            try {
-                sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-                const msg = {
-                    to: mailOptions.to,
-                    from: mailOptions.from, // Ensure this is a verified sender in SendGrid
-                    subject: mailOptions.subject,
-                    html: mailOptions.html,
-                    bcc: mailOptions.bcc,
-                    replyTo: mailOptions.replyTo,
-                    attachments: mailOptions.attachments
-                };
+    private static async sendBrevoEmail(mailOptions: any): Promise<{ success: boolean, method: string }> {
+        try {
+            const apiKey = process.env.BREVO_API_KEY || 'YOUR_BREVO_API_KEY_HERE';
+            const brevo = new BrevoClient({ apiKey });
 
-                const [response] = await sgMail.send(msg as any);
-                console.log(`[NOTIFICATION] Email sent via SendGrid to ${mailOptions.to}`);
-                return { success: true, info: response, method: 'sendgrid' };
-            } catch (error: any) {
-                console.error('[NOTIFICATION] SendGrid failed, falling back to Nodemailer:', error);
-                if (error.response) {
-                    console.error('[NOTIFICATION] SendGrid Error Body:', error.response.body);
-                }
+            const sender = {
+                name: process.env.BREVO_SENDER_NAME || 'DDTECH',
+                email: process.env.BREVO_SENDER_EMAIL || 'parthdoshi480@gmail.com'
+            };
+
+            let toList = [];
+            if (typeof mailOptions.to === 'string') {
+                toList.push({ email: mailOptions.to });
+            } else if (Array.isArray(mailOptions.to)) {
+                toList = mailOptions.to.map((t: string) => ({ email: t }));
             }
+
+            let bccList = undefined;
+            if (mailOptions.bcc) {
+                bccList = [{ email: mailOptions.bcc }];
+            }
+
+            let brevoAttachments = undefined;
+            if (mailOptions.attachments && mailOptions.attachments.length > 0) {
+                brevoAttachments = mailOptions.attachments.map((att: any) => ({
+                    name: att.filename,
+                    content: att.content
+                }));
+            }
+
+            const result = await brevo.transactionalEmails.sendTransacEmail({
+                subject: mailOptions.subject,
+                htmlContent: mailOptions.html,
+                sender: sender,
+                to: toList,
+                bcc: bccList,
+                attachment: brevoAttachments
+            });
+
+            console.log(`[NOTIFICATION] Email sent via Brevo to ${mailOptions.to}. Message ID:`, result.messageId);
+            return { success: true, method: 'brevo' };
+        } catch (error: any) {
+            console.error('[NOTIFICATION] Brevo failed:', error);
+            if (error.response) {
+                console.error('[NOTIFICATION] Brevo Error Body:', error.response.body);
+            }
+            return { success: false, method: 'brevo' };
         }
-
-        // 2. Fallback to Nodemailer (DISABLED)
-        // try {
-        //     const transporter = await this.getEmailTransporter();
-        //     if (!transporter) {
-        //         console.error('[NOTIFICATION] Nodemailer transporter not available for fallback.');
-        //         return { success: false, method: 'nodemailer' };
-        //     }
-        //     const info = await transporter.sendMail(mailOptions);
-        //     return { success: true, info, method: 'nodemailer' };
-        // } catch (error) {
-        //     console.error('[NOTIFICATION] Nodemailer also failed:', error);
-        //     return { success: false, method: 'nodemailer' };
-        // }
-
-        console.warn('[NOTIFICATION] Fallback to Nodemailer is currently disabled.');
-        return { success: false, method: 'sendgrid' };
     }
 
     /**
@@ -113,7 +113,7 @@ class NotificationService {
             console.log(`[NOTIFICATION] Attempting to send OTP email to ${email}...`);
 
             // Use fallback mechanism
-            const result = await this.sendWithFallback(mailOptions);
+            const result = await this.sendBrevoEmail(mailOptions);
 
             if (!result.success) {
                 console.log('\n==================================================');
@@ -215,7 +215,7 @@ class NotificationService {
             };
 
             console.log(`[NOTIFICATION] Attempting to send Order Confirmation to ${to}...`);
-            const result = await this.sendWithFallback(mailOptions);
+            const result = await this.sendBrevoEmail(mailOptions);
             return result.success;
         } catch (error: any) {
             console.error('[STRICT-ERROR] Order confirmation failed:', error);
@@ -324,19 +324,14 @@ class NotificationService {
 
             console.log(`[NOTIFICATION] Attempting to send Contact Notification to ${to}...`);
 
-            const result = await this.sendWithFallback(mailOptions);
+            const result = await this.sendBrevoEmail(mailOptions);
 
             if (!result.success) return false;
 
             console.log(`[NOTIFICATION] Contact Notification Mail send call finished via ${result.method}.`);
 
-            if (result.method === 'nodemailer' && !this._isTestAccount) {
-                const host = process.env.EMAIL_HOST || 'unknown-host';
-                console.log(`[STRICT] Real Email notification sent. MessageId: ${result.info.messageId} via ${result.method} (${host}). From: ${from}`);
-            }
-
-            if (result.method === 'nodemailer' && this._isTestAccount) {
-                console.log('[SANDBOX-CONTACT] Message Preview:', nodemailer.getTestMessageUrl(result.info));
+            if (result.method === 'brevo') {
+                console.log(`[STRICT] Brevo Email notification sent successfully.`);
             }
 
             return true;
@@ -348,10 +343,102 @@ class NotificationService {
         }
     }
     /**
+     * Sends a successful login alert to the User
+     */
+    static async sendLoginAlert(user: any): Promise<boolean> {
+        try {
+            if (!user.email) return false;
+
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+
+            const mailOptions: any = {
+                from,
+                to: user.email,
+                subject: `New Login to your DDTEC Account`,
+                html: `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                        <h2 style="color: #0d9488; text-align: center;">Security Alert</h2>
+                        <p>Hello ${user.name || user.firstName || 'Customer'},</p>
+                        <p>We noticed a successful login to your DDTEC account.</p>
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <p style="margin: 0;"><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+                            <p style="margin: 5px 0 0;"><strong>Status:</strong> Successful</p>
+                        </div>
+                        <p>If this was you, you don't need to do anything. If you don't recognize this activity, please contact support immediately.</p>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                        <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 DDTEC. All rights reserved.</p>
+                    </div>
+                `
+            };
+            const result = await this.sendBrevoEmail(mailOptions);
+            return result.success;
+        } catch (error) {
+            console.error('[STRICT-ERROR] Login alert failed:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Sends an Order Status Update email
+     */
+    static async sendOrderStatusUpdate(order: any, status: string): Promise<boolean> {
+        try {
+            const to = order.shippingInfo?.email;
+            if (!to) return false;
+
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+
+            // Format status for display
+            let statusDisplay = '';
+            let message = '';
+            switch (status) {
+                case 'processing':
+                    statusDisplay = 'In Packing Queue';
+                    message = 'Your order is currently being packed in our warehouse. We will notify you once it is dispatched/shipped.';
+                    break;
+                case 'shipped':
+                    statusDisplay = 'Dispatched / Shipped';
+                    message = 'Good news! Your order has been dispatched from our warehouse and is on its way to you via courier.';
+                    break;
+                case 'delivered':
+                    statusDisplay = 'Delivered';
+                    message = 'Your order has been successfully delivered. Thank you for shopping with DDTEC!';
+                    break;
+                default:
+                    return false; // Don't send emails for other statuses unless needed
+            }
+
+            const mailOptions: any = {
+                from,
+                to,
+                subject: `Order Update: ${statusDisplay} - #${order._id.toString().slice(-6).toUpperCase()}`,
+                html: `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                        <h2 style="color: #0d9488; text-align: center;">Order Update: ${statusDisplay}</h2>
+                        <p>Hello ${order.shippingInfo?.fullName || 'Customer'},</p>
+                        <p>${message}</p>
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                            <p style="margin: 0; font-size: 16px;"><strong>Order ID:</strong> #${order._id}</p>
+                        </div>
+                        <p>You can track the live status from your <strong>My Orders</strong> section in the dashboard.</p>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                        <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 DDTEC. All rights reserved.</p>
+                    </div>
+                `
+            };
+            const result = await this.sendBrevoEmail(mailOptions);
+            return result.success;
+        } catch (error) {
+            console.error('[STRICT-ERROR] Order status update email failed:', error);
+            return false;
+        }
+    }
+
+    /**
      * Checks SMTP status and logs results.
      */
     static async checkStatus(): Promise<{ success: boolean; message: string }> {
-        return { success: true, message: 'SendGrid Web API Enabled (Nodemailer Disabled)' };
+        return { success: true, message: 'Brevo Transac API Enabled (Nodemailer Disabled)' };
         /*
         try {
             const transporter = await this.getEmailTransporter();

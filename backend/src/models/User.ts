@@ -24,6 +24,8 @@ export interface IUser extends Document {
         zip: string;
         country: string;
     };
+    loginAttempts: number;
+    lockUntil?: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -95,7 +97,9 @@ const UserSchema: Schema = new Schema({
         state: String,
         zip: String,
         country: String
-    }
+    },
+    loginAttempts: { type: Number, required: true, default: 0 },
+    lockUntil: { type: Number }
 }, { timestamps: true });
 
 // Hash password before saving

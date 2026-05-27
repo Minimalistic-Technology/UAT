@@ -26,7 +26,7 @@ export default function Footer() {
     }
   };
 
-  if (pathname?.startsWith('/warehouse')) {
+  if (pathname?.startsWith('/warehouse') || pathname?.startsWith('/admin')) {
     return null;
   }
 

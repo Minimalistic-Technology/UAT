@@ -56,7 +56,7 @@ export default function PackingView({
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-205 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm flex flex-col gap-6 flex-1">
+        <div className="bg-white dark:bg-slate-900 border-0 rounded-3xl p-6 shadow-xl dark:shadow-slate-900 drop-shadow-md flex flex-col gap-6 flex-1">
             <div className="border-b border-slate-100 dark:border-slate-850 pb-4">
                 <h3 className="font-extrabold text-lg text-slate-900 dark:text-white flex items-center gap-2">
                     <Clock className="size-5 text-amber-500 animate-pulse" />

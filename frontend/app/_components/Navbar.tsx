@@ -133,7 +133,8 @@ export default function Navbar() {
     { name: "What we offer", href: "/what" },
     { name: "Blog", href: "/blogs" },
     { name: "Contact", href: "/contact" },
-    ...(user && user.role === 'admin' ? [{ name: "Dashboard", href: "/admin" }] : [])
+    ...(user && user.role === 'admin' ? [{ name: "Dashboard", href: "/admin" }] : []),
+    ...(user && user.role === 'warehouse' ? [{ name: "Warehouse", href: "/warehouse" }] : [])
   ];
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -208,10 +209,6 @@ export default function Navbar() {
     return currentHash === id;
   };
 
-  if (pathname?.startsWith('/warehouse')) {
-    return null;
-  }
-
   return (
     <>
       <LoadingBar />
@@ -226,17 +223,24 @@ export default function Navbar() {
             : "bg-transparent border-transparent"
         )}
       >
-        <nav className={cn("px-4 md:px-6 h-16 flex items-center justify-between relative", pathname?.startsWith('/admin') ? "w-full" : "container mx-auto")}>
+        <nav className={cn("px-4 md:px-6 h-16 flex items-center justify-between relative", (pathname?.startsWith('/admin') || pathname?.startsWith('/warehouse')) ? "w-full" : "container mx-auto")}>
 
           <Link href="/" className="flex items-center gap-2 group">
             <div className="size-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold shadow-lg shadow-teal-500/20 group-hover:shadow-teal-500/40 transition-all">
               D
             </div>
-            <span className={cn("font-bold text-xl tracking-tight transition-colors",
-              scrolled ? "text-slate-900 dark:text-white" : "text-slate-800 dark:text-white"
-            )}>
-              DDTEC
-            </span>
+            <div className="flex flex-col">
+              <span className={cn("font-bold text-xl tracking-tight transition-colors leading-none",
+                scrolled ? "text-slate-900 dark:text-white" : "text-slate-800 dark:text-white"
+              )}>
+                DDTEC
+              </span>
+              {pathname?.startsWith('/warehouse') && (
+                <span className="text-[10px] text-teal-600 dark:text-teal-400 font-extrabold tracking-wider uppercase leading-none mt-0.5">
+                  Warehouse Hub
+                </span>
+              )}
+            </div>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -299,7 +303,7 @@ export default function Navbar() {
 
 
           <div className="flex items-center gap-2 sm:gap-4">
-            {(!user || user.role !== 'admin') && (
+            {(!user || (user.role !== 'admin' && user.role !== 'warehouse')) && (
               <Link
                 href="/cart"
                 onClick={(e) => {
@@ -336,6 +340,8 @@ export default function Navbar() {
                 {theme === "light" ? <Moon className="size-5" /> : <Sun className="size-5" />}
               </button>
             )}
+
+            <div id="warehouse-nav-portal-target" className="flex items-center gap-2 empty:hidden"></div>
 
             {mounted && (
               user ? (

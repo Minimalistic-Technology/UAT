@@ -172,6 +172,11 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             return res.status(404).json({ msg: 'Order not found' });
         }
 
+        // Send Email Alert for order status update (Only for users)
+        NotificationService.sendOrderStatusUpdate(order, status).catch(err => {
+            console.error('[EMAIL-ERROR] Failed to send order status update:', err);
+        });
+
         res.json(order);
     } catch (error) {
         console.error('Error updating order status:', error);

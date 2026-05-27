@@ -76,13 +76,6 @@ export default function WarehouseDashboard() {
             description: "Warehouse security console correctly connected & active.",
             time: "10m ago",
             isRead: false
-        },
-        {
-            id: "stock-warn",
-            title: "Low Inventory Warning",
-            description: "Safety gear quantities are below the safeguard threshold (25 units).",
-            time: "5m ago",
-            isRead: false
         }
     ]);
 
@@ -180,7 +173,7 @@ export default function WarehouseDashboard() {
                         showToast(`New order #${newItems[0]._id.substring(newItems[0]._id.length - 6).toUpperCase()} received! Ready for dispatch.`, "success");
                     }, 0);
 
-                    // Synthesise high-fidelity warehouse audio confirmation alerts
+                    // Tone audio logic
                     try {
                         const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
                         if (AudioContextClass) {
@@ -237,8 +230,6 @@ export default function WarehouseDashboard() {
             if (newStatus === "delivered") message = "Parcel successfully completed and delivered!";
 
             showToast(message, "success");
-
-            // Optimistic sync update
             setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
         } catch (error: any) {
             const fallback = error.response?.data?.msg || "Failed to update shipment stage.";
@@ -299,9 +290,9 @@ export default function WarehouseDashboard() {
 
     if (loading || !user) {
         return (
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-955 flex flex-col items-center justify-center gap-4 transition-colors">
-                <Activity className="size-10 text-teal-650 dark:text-teal-500 animate-spin" />
-                <p className="text-slate-550 dark:text-slate-400 font-extrabold text-sm uppercase tracking-widest font-sans">Verifying security clearances...</p>
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center gap-4 transition-colors">
+                <Activity className="size-10 text-teal-600 dark:text-teal-500 animate-spin" />
+                <p className="text-slate-500 font-bold text-sm tracking-widest uppercase">Loading workspace...</p>
             </div>
         );
     }
@@ -311,7 +302,6 @@ export default function WarehouseDashboard() {
             case "Dashboard":
                 return (
                     <>
-                        {/* StatsGrid Indicators */}
                         <StatsGrid
                             pendingCount={pendingOrders.length}
                             packingCount={packingOrders.length}
@@ -319,17 +309,13 @@ export default function WarehouseDashboard() {
                             lowStockCount={lowStockProducts.length}
                         />
 
-                        {/* Double-Pane split panels */}
                         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 flex-1">
-                            {/* OrdersTable queue */}
                             <OrdersTable
                                 orders={filteredOrders}
                                 isLoadingOrders={isLoadingOrders}
                                 actionLoadingId={actionLoadingId}
                                 updateOrderStage={updateOrderStage}
                             />
-
-                            {/* InventoryList status limits */}
                             <InventoryList
                                 products={filteredProducts}
                                 isLoadingProducts={isLoadingProducts}
@@ -341,81 +327,60 @@ export default function WarehouseDashboard() {
                     </>
                 );
             case "Orders":
-                return (
-                    <OrdersView
-                        orders={orders}
-                        isLoadingOrders={isLoadingOrders}
-                        actionLoadingId={actionLoadingId}
-                        updateOrderStage={updateOrderStage}
-                    />
-                );
+                return <OrdersView orders={orders} isLoadingOrders={isLoadingOrders} actionLoadingId={actionLoadingId} updateOrderStage={updateOrderStage} />;
             case "Inventory":
-                return (
-                    <InventoryView
-                        products={products}
-                        isLoadingProducts={isLoadingProducts}
-                        updateStockDirectly={updateStockDirectly}
-                    />
-                );
+                return <InventoryView products={products} isLoadingProducts={isLoadingProducts} updateStockDirectly={updateStockDirectly} />;
             case "Packing":
-                return (
-                    <PackingView
-                        orders={orders}
-                        isLoadingOrders={isLoadingOrders}
-                        actionLoadingId={actionLoadingId}
-                        updateOrderStage={updateOrderStage}
-                    />
-                );
+                return <PackingView orders={orders} isLoadingOrders={isLoadingOrders} actionLoadingId={actionLoadingId} updateOrderStage={updateOrderStage} />;
             case "Shipments":
-                return (
-                    <ShipmentsView
-                        orders={orders}
-                        isLoadingOrders={isLoadingOrders}
-                        actionLoadingId={actionLoadingId}
-                        updateOrderStage={updateOrderStage}
-                    />
-                );
+                return <ShipmentsView orders={orders} isLoadingOrders={isLoadingOrders} actionLoadingId={actionLoadingId} updateOrderStage={updateOrderStage} />;
             case "Reports":
-                return (
-                    <ReportsView
-                        ordersCount={orders.length}
-                        dispatchedCount={dispatchedOrders.length}
-                        lowStockCount={lowStockProducts.length}
-                    />
-                );
+                return <ReportsView ordersCount={orders.length} dispatchedCount={dispatchedOrders.length} lowStockCount={lowStockProducts.length} />;
             case "Settings":
-                return (
-                    <SettingsView
-                        user={user}
-                        showToast={showToast}
-                    />
-                );
+                return <SettingsView user={user} showToast={showToast} />;
             default:
                 return null;
         }
     };
 
     return (
-        <main className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex transition-colors duration-150 font-sans">
-            {/* Ambient glows behind modules */}
-            <div className="absolute top-0 right-1/4 w-96 h-96 bg-teal-500/5 dark:bg-teal-500/10 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-emerald-500/5 dark:bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+        <main className="flex min-h-screen bg-slate-50 dark:bg-slate-900 font-poppins text-slate-800 dark:text-slate-100">
+            {/* Sidebar matching admin panel width and colors */}
+            <div className="hidden md:block w-64 shrink-0 shadow-2xl drop-shadow-md border-0 bg-white dark:bg-slate-800 sticky top-0 h-screen overflow-y-auto pt-16 relative z-[5]">
+                <Sidebar
+                    sidebarActiveItem={sidebarActiveItem}
+                    setSidebarActiveItem={setSidebarActiveItem}
+                    pendingCount={pendingOrders.length}
+                    packingCount={packingOrders.length}
+                    lowStockCount={lowStockProducts.length}
+                    logout={logout}
+                    isMobileSidebarOpen={isMobileSidebarOpen}
+                    setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+                />
+            </div>
 
-            {/* Left Brand Navigation Sidebar (under 120 lines) */}
-            <Sidebar
-                sidebarActiveItem={sidebarActiveItem}
-                setSidebarActiveItem={setSidebarActiveItem}
-                pendingCount={pendingOrders.length}
-                packingCount={packingOrders.length}
-                lowStockCount={lowStockProducts.length}
-                logout={logout}
-                isMobileSidebarOpen={isMobileSidebarOpen}
-                setIsMobileSidebarOpen={setIsMobileSidebarOpen}
-            />
+            {/* Mobile Sidebar popup */}
+            {isMobileSidebarOpen && (
+                <div className="md:hidden fixed inset-0 z-50 flex">
+                    <div className="fixed inset-0 bg-black/50" onClick={() => setIsMobileSidebarOpen(false)}></div>
+                    <div className="relative w-64 bg-white dark:bg-slate-800 h-full shadow-2xl pt-4">
+                        <Sidebar
+                            sidebarActiveItem={sidebarActiveItem}
+                            setSidebarActiveItem={setSidebarActiveItem}
+                            pendingCount={pendingOrders.length}
+                            packingCount={packingOrders.length}
+                            lowStockCount={lowStockProducts.length}
+                            logout={logout}
+                            isMobileSidebarOpen={isMobileSidebarOpen}
+                            setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Main Content Workspace Panel */}
-            <div className="flex-1 md:pl-64 flex flex-col min-w-0">
-                {/* Header (under 120 lines) */}
+            <div className="flex-1 flex flex-col min-w-0 pt-16">
+                {/* Header carrying the notifications, search, and admin-like stats */}
                 <Header
                     user={user}
                     activeTab={activeTab}
@@ -429,26 +394,7 @@ export default function WarehouseDashboard() {
                 />
 
                 <div className="p-6 flex-1 flex flex-col gap-6">
-                    {/* Background refresh syncer badge */}
-                    <div className="flex items-center justify-between bg-white dark:bg-slate-900 px-5 py-3 border border-slate-205 dark:border-slate-800 rounded-3xl shadow-sm">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-450">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            {isRefreshing ? "Auto-synced successfully in real-time" : "Operational database ready"}
-                            <span className="hidden md:inline text-slate-450 dark:text-slate-550 font-medium">| Connected on {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                        </div>
 
-                        <button
-                            onClick={silentBackgroundSync}
-                            disabled={isRefreshing}
-                            className="text-xs font-black text-teal-650 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-350 transition flex items-center gap-1.5 font-sans"
-                        >
-                            {isRefreshing ? <Activity className="size-3.5 animate-spin" /> : <RotateCcw className="size-3.5" />}
-                            Sync System
-                        </button>
-                    </div>
 
                     {/* Central Dynamic Screen Render */}
                     {renderActiveView()}

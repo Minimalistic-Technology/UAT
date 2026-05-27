@@ -44,7 +44,7 @@ export default function OrdersTable({
     updateOrderStage
 }: OrdersTableProps) {
     return (
-        <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm flex flex-col gap-5 min-h-[450px]">
+        <div className="xl:col-span-2 bg-white dark:bg-slate-900 border-0 rounded-3xl p-6 shadow-xl dark:shadow-slate-900 drop-shadow-md flex flex-col gap-5 min-h-[450px]">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-4">
                 <div>
                     <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Recent Pending Orders</h3>

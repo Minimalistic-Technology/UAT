@@ -9,8 +9,12 @@ import {
     Truck,
     CheckCircle,
     SlidersHorizontal,
-    Activity
+    Activity,
+    MapPin,
+    X,
+    Inbox
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Order {
     _id: string;
@@ -50,6 +54,7 @@ export default function OrdersView({
 }: OrdersViewProps) {
     const [selectedStatusTab, setSelectedStatusTab] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState<string>("");
+    const [addressModalData, setAddressModalData] = useState<Order['shippingInfo'] | null>(null);
 
     const filtered = orders.filter(o => {
         const matchesStatus = selectedStatusTab === "all" || o.status === selectedStatusTab;
@@ -76,7 +81,7 @@ export default function OrdersView({
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 border border-slate-205 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm flex flex-col gap-6 flex-1">
+        <div className="bg-white dark:bg-slate-900 border-0 rounded-3xl p-6 shadow-xl dark:shadow-slate-900 drop-shadow-md flex flex-col gap-6 flex-1">
             {/* Header section with Stats Bar */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-850 pb-4">
                 <div>
@@ -139,7 +144,7 @@ export default function OrdersView({
                     </div>
                 ) : filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <InboxIcon className="size-12 text-slate-350 dark:text-slate-700 mb-3" />
+                        <Inbox className="size-12 text-slate-350 dark:text-slate-700 mb-3" />
                         <p className="text-slate-800 dark:text-slate-300 font-black text-sm">No Orders Found</p>
                         <p className="text-slate-450 dark:text-slate-500 text-xs mt-1">Try resetting the status filter or search parameters.</p>
                     </div>
@@ -149,6 +154,7 @@ export default function OrdersView({
                             <tr className="border-b border-slate-100 dark:border-slate-850 text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
                                 <th className="pb-3.5 pl-2 font-black">Order ID</th>
                                 <th className="pb-3.5 font-black">Receiver Detail</th>
+                                <th className="pb-3.5 font-black">Address View</th>
                                 <th className="pb-3.5 font-black">Fulfillment Product</th>
                                 <th className="pb-3.5 text-center font-black">Quantity</th>
                                 <th className="pb-3.5 text-center font-black">Status</th>
@@ -169,9 +175,17 @@ export default function OrdersView({
                                             <div className="text-xs font-black text-slate-800 dark:text-white truncate max-w-[130px]">
                                                 {order.shippingInfo?.fullName || "Guest Customer"}
                                             </div>
-                                            <div className="text-[10px] text-slate-400 dark:text-slate-500 leading-none truncate max-w-[130px] mt-0.5" title={order.shippingInfo?.address}>
-                                                {order.shippingInfo?.city || "Remote Destination"}
+                                            <div className="text-[10px] text-slate-450 dark:text-slate-500 leading-none truncate max-w-[130px] mt-0.5">
+                                                {order.shippingInfo?.email || "Guest Email"}
                                             </div>
+                                        </td>
+                                        <td className="py-4">
+                                            <button
+                                                onClick={() => setAddressModalData(order.shippingInfo)}
+                                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-600 dark:hover:text-teal-400 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-xs"
+                                            >
+                                                <MapPin className="size-3" /> View Address
+                                            </button>
                                         </td>
                                         <td className="py-4">
                                             <div className="flex items-center gap-3">
@@ -241,26 +255,59 @@ export default function OrdersView({
                     </table>
                 )}
             </div>
-        </div>
-    );
-}
 
-function InboxIcon(props: React.SVGProps<SVGSVGElement>) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-            <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0 -1.79 1.11z" />
-        </svg>
+            {/* Address Modal Popup with Framer Motion */}
+            <AnimatePresence>
+                {addressModalData && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setAddressModalData(null)}
+                        className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 shadow-2xl"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                            transition={{ type: "spring", bounce: 0.4 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[28px] shadow-2xl drop-shadow-2xl p-6 w-full max-w-sm relative"
+                        >
+                            <button
+                                onClick={() => setAddressModalData(null)}
+                                className="absolute top-4 right-4 p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-500 transition-colors"
+                                title="Close"
+                            >
+                                <X className="size-4" />
+                            </button>
+                            <div className="flex items-center gap-3 mb-5 border-b border-slate-100 dark:border-slate-850 pb-4">
+                                <div className="size-10 rounded-full bg-teal-100/50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center shadow-inner">
+                                    <MapPin className="size-5" />
+                                </div>
+                                <div>
+                                    <h3 className="font-extrabold text-slate-900 dark:text-white text-lg leading-none">Destination</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">Shipping Details</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Recipient Name</span>
+                                    <p className="text-sm font-black text-slate-800 dark:text-slate-200">{addressModalData.fullName || "Guest Customer"}</p>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Delivery Locality</span>
+                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border-l-[3px] border-teal-500">
+                                        {addressModalData.address || "N/A"}<br />
+                                        <span className="opacity-70 mt-1 block">{addressModalData.city || ""} — {addressModalData.zip || ""}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }

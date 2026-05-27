@@ -46,22 +46,13 @@ export default function Sidebar({
 
     return (
         <>
-            <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-slate-900 border-r border-slate-205 dark:border-slate-800 transition-all duration-300 transform md:translate-x-0 ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} flex flex-col`}>
-                {/* Brand Header */}
-                <div className="p-6 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="size-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold shadow-lg shadow-teal-500/20 flex-shrink-0">
-                            D
-                        </div>
-                        <div>
-                            <span className="font-sans font-black text-slate-900 dark:text-white text-base leading-none block">DDTEC</span>
-                            <span className="text-[10px] text-teal-600 dark:text-teal-400 font-extrabold tracking-wider uppercase block mt-1">Warehouse Hub</span>
-                        </div>
-                    </div>
-                    {/* Close Mobile Sidebar */}
+            <aside className={`fixed inset-y-0 left-0 z-40 w-64 pt-16 bg-white dark:bg-slate-800 border-0 shadow-2xl drop-shadow-xl transition-all duration-300 transform md:translate-x-0 ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} flex flex-col`}>
+
+                {/* Mobile Close Button Container */}
+                <div className="md:hidden p-4 border-0 flex justify-end">
                     <button
                         onClick={() => setIsMobileSidebarOpen(false)}
-                        className="md:hidden p-1.5 rounded-lg text-slate-455 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        className="p-1.5 rounded-lg text-slate-455 hover:bg-slate-100 dark:hover:bg-slate-700"
                     >
                         <X className="size-5" />
                     </button>
@@ -100,7 +91,7 @@ export default function Sidebar({
                 </nav>
 
                 {/* Footer block of sidebar */}
-                <div className="p-4 border-t border-slate-150 dark:border-slate-800">
+                <div className="p-4 border-0 mt-2">
                     <button
                         onClick={logout}
                         className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-black text-red-650 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all font-sans"

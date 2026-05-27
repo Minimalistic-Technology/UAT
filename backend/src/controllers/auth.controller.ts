@@ -73,9 +73,37 @@ export const verifyOtp = async (req: Request, res: Response) => {
     try {
         const { identifier, otp } = req.body;
 
-        const otpRecord = await OTP.findOne({ identifier, otp });
+        // Check if user exists and is locked before verifying
+        const user = await User.findOne({
+            $or: [{ email: identifier }, { phone: identifier }]
+        });
+
+        if (user && user.lockUntil && user.lockUntil > Date.now()) {
+            return res.status(403).json({ msg: 'Account is temporarily locked due to multiple failed attempts. Please try again after 2 minutes.' });
+        }
+
+        const otpRecord = await OTP.findOne({ identifier });
         if (!otpRecord) {
-            return res.status(400).json({ msg: 'Invalid or expired OTP', isValid: false });
+            return res.status(400).json({ msg: 'OTP expired or not sent', isValid: false });
+        }
+
+        if (otpRecord.otp !== String(otp)) {
+            // Track failed attempts if user exists
+            if (user) {
+                user.loginAttempts = (user.loginAttempts || 0) + 1;
+                if (user.loginAttempts >= 3) {
+                    user.lockUntil = Date.now() + 2 * 60 * 1000; // 2 minutes
+                }
+                await user.save();
+            }
+            return res.status(400).json({ msg: 'Invalid OTP', isValid: false });
+        } // Add closing brace for if (otpRecord.otp !== String(otp))
+
+        // Reset attempts on success
+        if (user) {
+            user.loginAttempts = 0;
+            user.lockUntil = undefined;
+            await user.save();
         }
 
         res.json({ msg: 'OTP verified successfully', isValid: true });
@@ -197,13 +225,26 @@ export const login = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
+        // Check if locked
+        if (user.lockUntil && user.lockUntil > Date.now()) {
+            return res.status(403).json({ msg: 'Account is temporarily locked due to multiple failed attempts. Please try again after 2 minutes.' });
+        }
+
         // Validate password
-        // Note: user.password is explicitly typed as string in schema, but may be undefined in TS if not careful.
-        // Mongoose document types can be tricky.
         const isMatch = await bcrypt.compare(password, user.password as string);
         if (!isMatch) {
+            user.loginAttempts = (user.loginAttempts || 0) + 1;
+            if (user.loginAttempts >= 3) {
+                user.lockUntil = Date.now() + 2 * 60 * 1000; // 2 minutes
+            }
+            await user.save();
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
+
+        // Success - Reset lock and attempts
+        user.loginAttempts = 0;
+        user.lockUntil = undefined;
+        await user.save();
 
         // Check if user is active (bypass for admins to prevent lockout)
         if (user.role === 'user') {
@@ -245,6 +286,14 @@ export const login = async (req: Request, res: Response) => {
                     sameSite: 'none' // Allow cross-site cookie
                 });
                 // Return token in body for fallback
+
+                // Send Login Alert (Only for standard users, not admins)
+                if (user.role === 'user' && user.email) {
+                    NotificationService.sendLoginAlert(user).catch(err => {
+                        console.error('[EMAIL-ERROR] Failed to send login alert:', err);
+                    });
+                }
+
                 res.json({ user: payload, token });
             }
         );
