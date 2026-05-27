@@ -22,7 +22,7 @@ import {
 const router = express.Router();
 
 router.get("/", optionalAuth, getAllInternships);
-router.get("/my-jobs", protect, authorize(GlobalRole.USER), getMyInternships); // only for owner / hr
+router.get("/my-internships", protect, authorize(GlobalRole.USER), getMyInternships); // only for owner / hr
 router.get("/:id", validate(getInternshipByIdSchema), getInternshipById);
 router.post(
   "/",
