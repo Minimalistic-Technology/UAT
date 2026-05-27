@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { sendEmail } from '../utils/sendEmail';
+import { getOtpEmail, getWelcomeEmail, getLoginAlertEmail } from '../utils/emailTemplates';
 
 const generateToken = (id: string, role: string) => {
     return jwt.sign({ id, role }, process.env.JWT_SECRET || 'secret', {
@@ -24,7 +25,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+        const otpExpiry = new Date(Date.now() + 2 * 60 * 1000); // 2 mins
 
         if (!user) {
             user = await User.create({
@@ -46,12 +47,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
             await user.save();
         }
 
-        const htmlContent = `
-            <h2>Welcome to ${process.env.NEXT_PUBLIC_APP_NAME || 'SmartShare'}!</h2>
-            <p>Your OTP for email verification is: <strong>${otp}</strong></p>
-            <p>This OTP is valid for 10 minutes.</p>
-        `;
-
+        const appName = process.env.NEXT_PUBLIC_APP_NAME || 'SmartShare';
+        const htmlContent = getOtpEmail(appName, otp);
         await sendEmail({ to: email, subject: 'Your Verification OTP', htmlContent });
 
         res.status(200).json({ success: true, message: 'OTP sent to email. Please verify.', email: user.email });
@@ -84,11 +81,11 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
         if (user.otp !== otp || (user.otpExpiry && new Date() > user.otpExpiry)) {
             user.otpAttempts = (user.otpAttempts || 0) + 1;
             let errorMessage = 'Invalid or expired OTP';
-            if (user.otpAttempts >= 4) {
+            if (user.otpAttempts >= 3) {
                 user.otpLockUntil = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes lockout
                 errorMessage = 'Invalid or expired OTP. Maximum attempts reached. Account locked for OTP verification for 2 minutes.';
             } else {
-                errorMessage = `Invalid or expired OTP. Remaining verification attempts: ${4 - user.otpAttempts}`;
+                errorMessage = `Invalid or expired OTP. Remaining verification attempts: ${3 - user.otpAttempts}`;
             }
             await user.save();
             res.status(400).json({ error: errorMessage });
@@ -102,11 +99,9 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
         user.otpLockUntil = undefined;
         await user.save();
 
-        const welcomeHtml = `
-            <h2>Account Verified! 🎉</h2>
-            <p>Hi ${user.name}, your account has been successfully verified.</p>
-        `;
-        await sendEmail({ to: email, subject: 'Welcome to SmartShare', htmlContent: welcomeHtml }).catch(console.error);
+        const appName = process.env.NEXT_PUBLIC_APP_NAME || 'SmartShare';
+        const welcomeHtml = getWelcomeEmail(appName, user.name);
+        await sendEmail({ to: email, subject: 'Welcome to ' + appName, htmlContent: welcomeHtml }).catch(console.error);
 
         const token = generateToken(user._id as string, user.role);
 
@@ -145,11 +140,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         if (!isMatch) {
             user.loginAttempts = (user.loginAttempts || 0) + 1;
             let errorMessage = 'Invalid credentials';
-            if (user.loginAttempts >= 4) {
+            if (user.loginAttempts >= 3) {
                 user.lockUntil = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes lockout
                 errorMessage = 'Invalid credentials. Maximum attempts reached. Account locked for 2 minutes.';
             } else {
-                errorMessage = `Invalid credentials. Remaining login attempts: ${4 - user.loginAttempts}`;
+                errorMessage = `Invalid credentials. Remaining login attempts: ${3 - user.loginAttempts}`;
             }
             await user.save();
             res.status(400).json({ error: errorMessage });
@@ -161,6 +156,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         await user.save();
 
         const token = generateToken(user._id as string, user.role);
+
+        // Send Login Alert Email
+        const appName = process.env.NEXT_PUBLIC_APP_NAME || 'SmartShare';
+        const loginTime = new Date().toLocaleString();
+        const loginAlertHtml = getLoginAlertEmail(appName, user.name, loginTime);
+        sendEmail({ to: user.email, subject: 'New Login Alert - ' + appName, htmlContent: loginAlertHtml }).catch(console.error);
 
         res.status(200).json({
             success: true,
@@ -230,6 +231,46 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
 
         await User.findByIdAndDelete(id);
         res.json({ success: true, message: 'User deleted successfully' });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const resendOtp = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email }).select('+isVerified +otpAttempts +otpLockUntil');
+
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+
+        if (user.isVerified) {
+            res.status(400).json({ error: 'User already verified' });
+            return;
+        }
+
+        if (user.otpLockUntil && user.otpLockUntil > new Date()) {
+            const minutesLeft = Math.ceil((user.otpLockUntil.getTime() - Date.now()) / (1000 * 60));
+            res.status(429).json({ error: `OTP verification is locked. Please try again after ${minutesLeft} minute(s).` });
+            return;
+        }
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiry = new Date(Date.now() + 2 * 60 * 1000); // 2 mins
+
+        user.otp = otp;
+        user.otpExpiry = otpExpiry;
+        user.otpAttempts = 0;
+        user.otpLockUntil = undefined;
+        await user.save();
+
+        const appName = process.env.NEXT_PUBLIC_APP_NAME || 'SmartShare';
+        const htmlContent = getOtpEmail(appName, otp);
+        await sendEmail({ to: email, subject: 'Your Verification OTP', htmlContent });
+
+        res.status(200).json({ success: true, message: 'OTP resent successfully.' });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

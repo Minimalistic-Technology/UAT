@@ -2,6 +2,8 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Order from '../models/Order';
 import SharedLink from '../models/SharedLink';
+import { sendEmail } from '../utils/sendEmail';
+import { getGiftApprovedEmail, getGiftRejectedEmail } from '../utils/emailTemplates';
 
 export const createOrder = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -100,6 +102,16 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response): Promis
 
         order.status = status;
         await order.save();
+
+        const appName = process.env.NEXT_PUBLIC_APP_NAME || 'SmartShare';
+
+        if (status === 'Approved') {
+            const htmlContent = getGiftApprovedEmail(appName, order.employeeName);
+            sendEmail({ to: order.employeeEmail, subject: `Gift Request Approved - ${appName}`, htmlContent }).catch(console.error);
+        } else if (status === 'Rejected') {
+            const htmlContent = getGiftRejectedEmail(appName, order.employeeName);
+            sendEmail({ to: order.employeeEmail, subject: `Gift Request Update - ${appName}`, htmlContent }).catch(console.error);
+        }
 
         res.json({ success: true, message: 'Order status updated successfully', order });
     } catch (error: any) {
