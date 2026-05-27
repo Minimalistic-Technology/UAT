@@ -10,6 +10,10 @@ export interface IUser extends Document {
     otp?: string;
     otpExpiry?: Date;
     refreshToken?: string;
+    loginAttempts: number;
+    lockUntil?: Date;
+    otpAttempts: number;
+    otpLockUntil?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -24,7 +28,11 @@ const UserSchema: Schema = new Schema(
         isVerified: { type: Boolean, default: false },
         otp: { type: String, select: false },
         otpExpiry: { type: Date, select: false },
-        refreshToken: { type: String, select: false }
+        refreshToken: { type: String, select: false },
+        loginAttempts: { type: Number, default: 0 },
+        lockUntil: { type: Date },
+        otpAttempts: { type: Number, default: 0 },
+        otpLockUntil: { type: Date }
     },
     { timestamps: true }
 );

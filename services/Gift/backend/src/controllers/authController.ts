@@ -41,6 +41,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
             user.password = hashedPassword;
             user.otp = otp;
             user.otpExpiry = otpExpiry;
+            user.otpAttempts = 0;
+            user.otpLockUntil = undefined;
             await user.save();
         }
 
@@ -61,7 +63,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email, otp } = req.body;
-        const user = await User.findOne({ email }).select('+otp +otpExpiry');
+        const user = await User.findOne({ email }).select('+otp +otpExpiry +otpAttempts +otpLockUntil');
 
         if (!user) {
             res.status(404).json({ error: 'User not found' });
@@ -73,14 +75,31 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
+        if (user.otpLockUntil && user.otpLockUntil > new Date()) {
+            const minutesLeft = Math.ceil((user.otpLockUntil.getTime() - Date.now()) / (1000 * 60));
+            res.status(429).json({ error: `OTP verification is locked. Please try again after ${minutesLeft} minute(s).` });
+            return;
+        }
+
         if (user.otp !== otp || (user.otpExpiry && new Date() > user.otpExpiry)) {
-            res.status(400).json({ error: 'Invalid or expired OTP' });
+            user.otpAttempts = (user.otpAttempts || 0) + 1;
+            let errorMessage = 'Invalid or expired OTP';
+            if (user.otpAttempts >= 4) {
+                user.otpLockUntil = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes lockout
+                errorMessage = 'Invalid or expired OTP. Maximum attempts reached. Account locked for OTP verification for 2 minutes.';
+            } else {
+                errorMessage = `Invalid or expired OTP. Remaining verification attempts: ${4 - user.otpAttempts}`;
+            }
+            await user.save();
+            res.status(400).json({ error: errorMessage });
             return;
         }
 
         user.isVerified = true;
         user.otp = undefined;
         user.otpExpiry = undefined;
+        user.otpAttempts = 0;
+        user.otpLockUntil = undefined;
         await user.save();
 
         const welcomeHtml = `
@@ -105,9 +124,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email, password } = req.body;
 
-        const user = await User.findOne({ email }).select('+password');
+        const user = await User.findOne({ email }).select('+password +loginAttempts +lockUntil');
         if (!user) {
             res.status(400).json({ error: 'Invalid credentials' });
+            return;
+        }
+
+        if (user.lockUntil && user.lockUntil > new Date()) {
+            const minutesLeft = Math.ceil((user.lockUntil.getTime() - Date.now()) / (1000 * 60));
+            res.status(429).json({ error: `Account is temporarily locked. Please try again after ${minutesLeft} minute(s).` });
             return;
         }
 
@@ -118,9 +143,22 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
         const isMatch = await bcrypt.compare(password, user.password!);
         if (!isMatch) {
-            res.status(400).json({ error: 'Invalid credentials' });
+            user.loginAttempts = (user.loginAttempts || 0) + 1;
+            let errorMessage = 'Invalid credentials';
+            if (user.loginAttempts >= 4) {
+                user.lockUntil = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes lockout
+                errorMessage = 'Invalid credentials. Maximum attempts reached. Account locked for 2 minutes.';
+            } else {
+                errorMessage = `Invalid credentials. Remaining login attempts: ${4 - user.loginAttempts}`;
+            }
+            await user.save();
+            res.status(400).json({ error: errorMessage });
             return;
         }
+
+        user.loginAttempts = 0;
+        user.lockUntil = undefined;
+        await user.save();
 
         const token = generateToken(user._id as string, user.role);
 
