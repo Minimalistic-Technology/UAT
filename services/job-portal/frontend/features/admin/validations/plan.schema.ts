@@ -22,6 +22,8 @@ export const createPlanSchema = z.object({
     .number({ message: "Display order must be a number" })
     .min(0, "Display order cannot be negative"),
   isActive: z.boolean(),
+  allowResumeDownload: z.boolean({message: "allowResumeDowload field is required"}),
+  postValidityDays: z.number({message: "Post Validity Days must be a number"}).min(1, {message: "Post Validity Days should be atleast 1"})
 });
 
 export type CreatePlanFormValues = z.infer<typeof createPlanSchema>;

@@ -13,6 +13,8 @@ export interface IPlan extends Document {
   displayOrder: number;
   features: string[];
   isActive: boolean;
+  allowResumeDownload: boolean;
+  postValidityDays: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -89,6 +91,14 @@ const planSchema = new Schema<IPlan>(
       type: Boolean,
       default: true,
     },
+    allowResumeDownload: {
+      type: Boolean,
+      require: true
+    },
+    postValidityDays: {
+      type: Number,
+      required: true
+    }
   },
   {
     timestamps: true,

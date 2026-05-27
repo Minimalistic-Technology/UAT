@@ -23,6 +23,8 @@ export const createPlan = async (
       displayOrder,
       features,
       isActive,
+      allowResumeDownload,
+      postValidityDays
     } = req.body;
 
     // If making this the default plan, remove default status from others
@@ -42,6 +44,8 @@ export const createPlan = async (
       displayOrder: displayOrder !== undefined ? displayOrder : 0,
       features: features || [],
       isActive: isActive !== undefined ? isActive : true,
+      allowResumeDownload,
+      postValidityDays
     });
 
     return res
