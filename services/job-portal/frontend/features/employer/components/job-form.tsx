@@ -1,14 +1,13 @@
 import { useCreateMyJobPosting } from "../hooks/use-job";
-import {
-  CreateJobFormData,
-  createJobSchema,
-} from "../validations/job.schema";
+import { CreateJobFormData, createJobSchema } from "../validations/job.schema";
 import {
   Company_Type,
   Work_Mode,
   Degree_Level,
   ROLE_CATEGORIES,
   INDUSTRIES,
+  Experience_Level,
+  Job_Type,
 } from "../validations/base-listing.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, Controller, SubmitHandler, Resolver } from "react-hook-form";
@@ -24,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ExperienceLevel, JobType } from "@/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SkillInput } from "./skill-input";
 import { Button } from "@/components/ui/button";
@@ -49,7 +47,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
       skills: [],
       requirements: [],
       isFeatured: false,
-      status: "open",
+      status: "active",
     },
   });
 
@@ -90,11 +88,11 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-4">
             {/* Job Type */}
             <div className="grid gap-2">
               <Label>
-                Job Type <Asterisk className="text-destructive size-3 inline" />
+                Job Type <Asterisk className="text-destructive inline size-3" />
               </Label>
               <Controller
                 name="jobType"
@@ -105,7 +103,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.values(JobType).map((type) => (
+                      {Job_Type.map((type) => (
                         <SelectItem key={type} value={type}>
                           {type
                             .replace(/_/g, " ")
@@ -127,7 +125,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             <div className="grid gap-2">
               <Label>
                 Work Mode{" "}
-                <Asterisk className="text-destructive size-3 inline" />
+                <Asterisk className="text-destructive inline size-3" />
               </Label>
               <Controller
                 name="workMode"
@@ -158,7 +156,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             <div className="grid gap-2">
               <Label>
                 Company Type{" "}
-                <Asterisk className="text-destructive size-3 inline" />
+                <Asterisk className="text-destructive inline size-3" />
               </Label>
               <Controller
                 name="companyType"
@@ -191,7 +189,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             <div className="grid gap-2">
               <Label>
                 Experience Level{" "}
-                <Asterisk className="text-destructive size-3 inline" />
+                <Asterisk className="text-destructive inline size-3" />
               </Label>
               <Controller
                 name="experienceLevel"
@@ -202,7 +200,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.values(ExperienceLevel).map((level) => (
+                      {Experience_Level.map((level) => (
                         <SelectItem key={level} value={level}>
                           {level.replace(/\b\w/g, (c) => c.toUpperCase())}
                         </SelectItem>
@@ -219,27 +217,28 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             </div>
           </div>
 
-          {/* Experience in Years */}
-          <div className="grid gap-2">
-            <Label className="flex items-center gap-1">
-              Years of Experience{" "}
-              <Asterisk className="text-destructive size-3" />
-            </Label>
-            <Input
-              min={0}
-              type="number"
-              {...register("experienceInYears")}
-              placeholder="e.g. 3"
-            />
-            {errors.experienceInYears && (
-              <p className="text-destructive text-xs">
-                {errors.experienceInYears.message}
-              </p>
-            )}
-          </div>
+          <div className="grid gap-4 md:grid-cols-4">
+            {/* Years of Experience */}
+            <div className="grid gap-2">
+              <Label className="flex items-center gap-1">
+                Years of Experience{" "}
+                <Asterisk className="text-destructive size-3" />
+              </Label>
+              <Input
+                min={0}
+                type="number"
+                {...register("experienceInYears")}
+                placeholder="e.g. 3"
+              />
+              {errors.experienceInYears && (
+                <p className="text-destructive text-xs">
+                  {errors.experienceInYears.message}
+                </p>
+              )}
+            </div>
 
-          {/* Role Category */}
-          <div className="grid gap-2">
+            {/* Role Category */}
+            <div className="grid gap-2">
               <Label className="flex items-center gap-1">
                 Role Category <Asterisk className="text-destructive size-3" />
               </Label>
@@ -270,7 +269,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
               )}
             </div>
 
-             {/* Industry */}
+            {/* Industry */}
             <div className="grid gap-2">
               <Label className="flex items-center gap-1">
                 Industry <Asterisk className="text-destructive size-3" />
@@ -301,6 +300,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
                 </p>
               )}
             </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -313,7 +313,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="grid gap-2">
               <Label>
-                City <Asterisk className="text-destructive size-3 inline" />
+                City <Asterisk className="text-destructive inline size-3" />
               </Label>
               <Input {...register("location.city")} placeholder="Mumbai" />
               {errors.location?.city && (
@@ -324,7 +324,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             </div>
             <div className="grid gap-2">
               <Label>
-                State <Asterisk className="text-destructive size-3 inline" />
+                State <Asterisk className="text-destructive inline size-3" />
               </Label>
               <Input
                 {...register("location.state")}
@@ -338,7 +338,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             </div>
             <div className="grid gap-2">
               <Label>
-                Country <Asterisk className="text-destructive size-3 inline" />
+                Country <Asterisk className="text-destructive inline size-3" />
               </Label>
               <Input {...register("location.country")} placeholder="India" />
               {errors.location?.country && (
@@ -361,7 +361,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             <div className="grid gap-2">
               <Label>
                 Minimum Degree{" "}
-                <Asterisk className="text-destructive size-3 inline" />
+                <Asterisk className="text-destructive inline size-3" />
               </Label>
               <Controller
                 name="education.minimumDegree"
@@ -440,11 +440,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
           {/* No valueAsNumber — preprocess handles coercion */}
           <div className="grid gap-2">
             <Label>Min</Label>
-            <Input
-              min={0}
-              type="number"
-              {...register("salary.min")}
-            />
+            <Input min={0} type="number" {...register("salary.min")} />
             {errors.salary?.min && (
               <p className="text-destructive text-xs">
                 {errors.salary.min.message}
@@ -453,11 +449,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
           </div>
           <div className="grid gap-2">
             <Label>Max</Label>
-            <Input
-              min={0}
-              type="number"
-              {...register("salary.max")}
-            />
+            <Input min={0} type="number" {...register("salary.max")} />
             {errors.salary?.max && (
               <p className="text-destructive text-xs">
                 {errors.salary.max.message}
@@ -603,7 +595,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent defaultValue={"active"}>
-                      <SelectItem value="active" >Active</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="closed">Closed</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>

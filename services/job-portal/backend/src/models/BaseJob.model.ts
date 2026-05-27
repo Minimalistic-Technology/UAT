@@ -1,134 +1,145 @@
-import mongoose, { Document, Schema, SchemaDefinition, SchemaDefinitionType } from 'mongoose';
+import mongoose, {
+  Document,
+  Schema,
+  SchemaDefinition,
+  SchemaDefinitionType,
+} from "mongoose";
 
 export enum JobType {
-  FULL_TIME = 'full_time',
-  PART_TIME = 'part_time',
-  CONTRACT = 'contract',
-  INTERNSHIP = 'internship',
-  FREELANCE = 'freelance',
+  FULL_TIME = "full_time",
+  PART_TIME = "part_time",
+  CONTRACT = "contract",
+  INTERNSHIP = "internship",
+  FREELANCE = "freelance",
 }
 
 export enum ExperienceLevel {
-  ENTRY = 'entry',
-  INTERMEDIATE = 'intermediate',
-  SENIOR = 'senior',
-  EXPERT = 'expert',
+  ENTRY = "entry",
+  INTERMEDIATE = "intermediate",
+  SENIOR = "senior",
+  EXPERT = "expert",
 }
 
 export enum JobStatus {
-  ACTIVE = 'active',
-  CLOSED = 'closed',
-  PENDING = 'pending',
-  REJECTED = 'rejected',
+  ACTIVE = "active",
+  CLOSED = "closed",
+  PENDING = "pending",
+  REJECTED = "rejected",
 }
 
 export enum WorkMode {
-  WORKFROMOFFICE = 'work from office',
-  REMOTE = 'remote',
-  HYBRID = 'hybrid',
-  TEMPWFH = 'temporary work from home',
+  WORKFROMOFFICE = "work from office",
+  REMOTE = "remote",
+  HYBRID = "hybrid",
+  TEMPWFH = "temporary work from home",
 }
 
 export enum CompanyType {
-  STARTUP = 'startup',
-  MNC = 'mnc',
-  FOREIGN_MNC = 'foreign mnc',
-  INDIAN_MNC = 'indian mnc',
-  CORPORATE = 'corporate',
-  "GOVT/PSU" = 'govt/psu',
-  OTHERS = 'others'
+  STARTUP = "startup",
+  MNC = "mnc",
+  FOREIGN_MNC = "foreign mnc",
+  INDIAN_MNC = "indian mnc",
+  CORPORATE = "corporate",
+  "GOVT/PSU" = "govt/psu",
+  OTHERS = "others",
 }
 
 export enum RoleCategory {
   // Engineering & Tech
-  SOFTWARE_DEVELOPMENT = 'software_development',
-  DATA_SCIENCE = 'data_science',
-  DEVOPS = 'devops',
-  CYBERSECURITY = 'cybersecurity',
-  IT_SUPPORT = 'it_support',
-  QA_TESTING = 'qa_testing',
-  HARDWARE = 'hardware',
+  SOFTWARE_DEVELOPMENT = "software_development",
+  DATA_SCIENCE = "data_science",
+  DEVOPS = "devops",
+  CYBERSECURITY = "cybersecurity",
+  IT_SUPPORT = "it_support",
+  QA_TESTING = "qa_testing",
+  HARDWARE = "hardware",
 
   // Design
-  UI_UX = 'ui_ux',
-  GRAPHIC_DESIGN = 'graphic_design',
-  PRODUCT_DESIGN = 'product_design',
+  UI_UX = "ui_ux",
+  GRAPHIC_DESIGN = "graphic_design",
+  PRODUCT_DESIGN = "product_design",
 
   // Business & Management
-  PRODUCT_MANAGEMENT = 'product_management',
-  PROJECT_MANAGEMENT = 'project_management',
-  BUSINESS_ANALYSIS = 'business_analysis',
-  OPERATIONS = 'operations',
-  CONSULTING = 'consulting',
+  PRODUCT_MANAGEMENT = "product_management",
+  PROJECT_MANAGEMENT = "project_management",
+  BUSINESS_ANALYSIS = "business_analysis",
+  OPERATIONS = "operations",
+  CONSULTING = "consulting",
 
   // Sales & Marketing
-  SALES = 'sales',
-  DIGITAL_MARKETING = 'digital_marketing',
-  CONTENT = 'content',
-  SEO_SEM = 'seo_sem',
-  BRAND_MANAGEMENT = 'brand_management',
+  SALES = "sales",
+  DIGITAL_MARKETING = "digital_marketing",
+  CONTENT = "content",
+  SEO_SEM = "seo_sem",
+  BRAND_MANAGEMENT = "brand_management",
 
   // Finance & Legal
-  FINANCE = 'finance',
-  ACCOUNTING = 'accounting',
-  LEGAL = 'legal',
-  COMPLIANCE = 'compliance',
+  FINANCE = "finance",
+  ACCOUNTING = "accounting",
+  LEGAL = "legal",
+  COMPLIANCE = "compliance",
 
   // HR & Admin
-  HUMAN_RESOURCES = 'human_resources',
-  RECRUITMENT = 'recruitment',
-  ADMINISTRATION = 'administration',
+  HUMAN_RESOURCES = "human_resources",
+  RECRUITMENT = "recruitment",
+  ADMINISTRATION = "administration",
 
   // Other
-  CUSTOMER_SUPPORT = 'customer_support',
-  RESEARCH = 'research',
-  OTHER = 'other',
+  CUSTOMER_SUPPORT = "customer_support",
+  RESEARCH = "research",
+  OTHER = "other",
 }
 
 export enum Industry {
   // Tech
-  INFORMATION_TECHNOLOGY = 'information_technology',
-  SOFTWARE = 'software',
-  ECOMMERCE = 'ecommerce',
-  FINTECH = 'fintech',
-  EDTECH = 'edtech',
-  HEALTHTECH = 'healthtech',
+  INFORMATION_TECHNOLOGY = "information_technology",
+  SOFTWARE = "software",
+  ECOMMERCE = "ecommerce",
+  FINTECH = "fintech",
+  EDTECH = "edtech",
+  HEALTHTECH = "healthtech",
 
   // Traditional sectors
-  BANKING = 'banking',
-  INSURANCE = 'insurance',
-  HEALTHCARE = 'healthcare',
-  EDUCATION = 'education',
-  MANUFACTURING = 'manufacturing',
-  RETAIL = 'retail',
-  REAL_ESTATE = 'real_estate',
-  LOGISTICS = 'logistics',
-  AUTOMOTIVE = 'automotive',
-  ENERGY = 'energy',
-  TELECOM = 'telecom',
-  MEDIA = 'media',
-  ENTERTAINMENT = 'entertainment',
-  HOSPITALITY = 'hospitality',
-  AGRICULTURE = 'agriculture',
-  GOVERNMENT = 'government',
-  NONPROFIT = 'nonprofit',
-  OTHER = 'other',
+  BANKING = "banking",
+  INSURANCE = "insurance",
+  HEALTHCARE = "healthcare",
+  EDUCATION = "education",
+  MANUFACTURING = "manufacturing",
+  RETAIL = "retail",
+  REAL_ESTATE = "real_estate",
+  LOGISTICS = "logistics",
+  AUTOMOTIVE = "automotive",
+  ENERGY = "energy",
+  TELECOM = "telecom",
+  MEDIA = "media",
+  ENTERTAINMENT = "entertainment",
+  HOSPITALITY = "hospitality",
+  AGRICULTURE = "agriculture",
+  GOVERNMENT = "government",
+  NONPROFIT = "nonprofit",
+  OTHER = "other",
 }
 
 // Degree level — used to express the minimum bar
 export enum DegreeLevel {
-  HIGH_SCHOOL = 'high_school',
-  DIPLOMA = 'diploma',
-  BACHELORS = 'bachelors',
-  MASTERS = 'masters',
-  PHD = 'phd',
-  ANY = 'any', // no hard requirement
+  HIGH_SCHOOL = "high_school",
+  DIPLOMA = "diploma",
+  BACHELORS = "bachelors",
+  MASTERS = "masters",
+  PHD = "phd",
+  ANY = "any", // no hard requirement
 }
 
 export interface IEducation {
   minimumDegree: DegreeLevel;
   preferredFields?: string[]; // e.g. ['Computer Science', 'Information Technology']
   isRequired: boolean; // false = preferred but not mandatory
+}
+
+export interface ILocation {
+  city: string;
+  state: string;
+  country: string;
 }
 
 export interface IBaseJob extends Document {
@@ -139,11 +150,10 @@ export interface IBaseJob extends Document {
   jobType: JobType;
   workMode: WorkMode;
   companyType: CompanyType;
-  location: {
-    city: string;
-    state: string;
-    country: string;
-  };
+  roleCategory: RoleCategory;
+  industry: Industry;
+  location: ILocation;
+  education: IEducation;
   skills: string[];
   requirements: string[];
   benefits?: string[];
@@ -153,31 +163,30 @@ export interface IBaseJob extends Document {
   isFeatured: boolean;
   applicationsCount: number;
   viewsCount: number;
-  roleCategory: RoleCategory;
-  industry: Industry;
-  education: IEducation;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export const baseJobSchemaDefinition: SchemaDefinition<SchemaDefinitionType<IBaseJob>> = {
+export const baseJobSchemaDefinition: SchemaDefinition<
+  SchemaDefinitionType<IBaseJob>
+> = {
   title: {
     type: String,
-    required: [true, 'Job title is required'],
+    required: [true, "Job title is required"],
     trim: true,
   },
   description: {
     type: String,
-    required: [true, 'Job description is required'],
+    required: [true, "Job description is required"],
   },
   company: {
     type: Schema.Types.ObjectId,
-    ref: 'Company',
+    ref: "Company",
     required: true,
   },
   postedBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
     required: true,
   },
   jobType: {
