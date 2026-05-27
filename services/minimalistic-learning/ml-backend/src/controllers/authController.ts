@@ -109,8 +109,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     const current = loginLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
     current.attempts += 1;
     if (current.attempts >= 3) {
-      current.lockUntil = new Date(Date.now() + 2 * 60 * 1000);
-      current.attempts = 0;
+      const lockMinutes = Math.min(60, Math.pow(2, current.attempts - 3) * 2);
+      current.lockUntil = new Date(Date.now() + lockMinutes * 60 * 1000);
       loginLockoutMap.set(emailKey, current);
     } else {
       loginLockoutMap.set(emailKey, current);
@@ -124,12 +124,12 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     const current = loginLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
     current.attempts += 1;
     if (current.attempts >= 3) {
-      current.lockUntil = new Date(Date.now() + 2 * 60 * 1000); // Lock for 2 minutes
-      current.attempts = 0;
+      const lockMinutes = Math.min(60, Math.pow(2, current.attempts - 3) * 2);
+      current.lockUntil = new Date(Date.now() + lockMinutes * 60 * 1000);
       loginLockoutMap.set(emailKey, current);
       throw new ApiError(
         StatusCodes.TOO_MANY_REQUESTS,
-        'Too many failed login attempts. Your account has been temporarily locked for 2 minutes.'
+        `Too many failed login attempts. Your account has been temporarily locked for ${lockMinutes} minutes.`
       );
     } else {
       loginLockoutMap.set(emailKey, current);
@@ -229,12 +229,12 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
       const current = otpLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
       current.attempts += 1;
       if (current.attempts >= 3) {
-        current.lockUntil = new Date(Date.now() + 2 * 60 * 1000); // Lock for 2 minutes
-        current.attempts = 0;
+        const lockMinutes = Math.min(60, Math.pow(2, current.attempts - 3) * 2);
+        current.lockUntil = new Date(Date.now() + lockMinutes * 60 * 1000);
         otpLockoutMap.set(emailKey, current);
         throw new ApiError(
           StatusCodes.TOO_MANY_REQUESTS,
-          'Too many incorrect/expired OTP attempts. Verification blocked for 2 minutes.'
+          `Too many incorrect/expired OTP attempts. Verification blocked for ${lockMinutes} minutes.`
         );
       } else {
         otpLockoutMap.set(emailKey, current);
@@ -264,12 +264,12 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
       const current = otpLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
       current.attempts += 1;
       if (current.attempts >= 3) {
-        current.lockUntil = new Date(Date.now() + 2 * 60 * 1000); // Lock for 2 minutes
-        current.attempts = 0;
+        const lockMinutes = Math.min(60, Math.pow(2, current.attempts - 3) * 2);
+        current.lockUntil = new Date(Date.now() + lockMinutes * 60 * 1000);
         otpLockoutMap.set(emailKey, current);
         throw new ApiError(
           StatusCodes.TOO_MANY_REQUESTS,
-          'Too many incorrect/expired OTP attempts. Verification blocked for 2 minutes.'
+          `Too many incorrect/expired OTP attempts. Verification blocked for ${lockMinutes} minutes.`
         );
       } else {
         otpLockoutMap.set(emailKey, current);
