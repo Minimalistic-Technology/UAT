@@ -3,6 +3,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { IconBrandGithub, IconBrandTwitter, IconBrandLinkedin } from '@tabler/icons-react';
+import Logo from "@/components/logo";
 
 const FOOTER_COLS = [
   {
@@ -45,14 +46,7 @@ export const Footer = () => {
         <div className="grid lg:grid-cols-12 gap-16 lg:gap-12">
           {/* Brand & Newsletter Column */}
           <div className="lg:col-span-5">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-950 text-white font-bold text-xl shadow-lg shadow-slate-200">
-                H
-              </div>
-              <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                hireloop<span className="text-indigo-600">.</span>
-              </span>
-            </div>
+            <Logo />
             
             <p className="mt-6 text-slate-500 max-w-sm leading-relaxed text-lg">
               The career platform for people who care about the work. Join
