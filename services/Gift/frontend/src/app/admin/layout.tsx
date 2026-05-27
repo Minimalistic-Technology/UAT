@@ -1,91 +1,122 @@
 "use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { LayoutDashboard, Package, Link as LinkIcon, BarChart3, Settings, LogOut } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
-import { cn } from '@/components/ui/Button';
+import { useAuthStore } from "@/store/authStore";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import {
+    SidebarProvider,
+    Sidebar,
+    SidebarContent,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuItem,
+    SidebarMenuButton,
+    SidebarFooter,
+} from "@/components/ui/sidebar";
+import { LayoutDashboard, Package, Link2, LogOut, Gift } from "lucide-react";
 
-const sidebarLinks = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Products', href: '/admin/products', icon: Package },
-    { name: 'Share Links', href: '/admin/links', icon: LinkIcon },
-    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "GIFT";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+
+import { Users } from "lucide-react";
+
+const navItems = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/products", label: "Products", icon: Package },
+    { href: "/admin/links", label: "Share Links", icon: Link2 },
+    { href: "/admin/orders", label: "Gift Claims", icon: Gift },
+    { href: "/admin/users", label: "Users", icon: Users },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+    const { isAuthenticated, user, logout } = useAuthStore();
+    const router = useRouter();
     const pathname = usePathname();
-    const { logout, user } = useAuthStore();
+
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (!mounted) return;
+        if (!isAuthenticated) {
+            router.replace("/login");
+        } else if (user?.role !== "Admin") {
+            router.replace("/profile");
+        }
+    }, [isAuthenticated, user?.role, router, mounted]);
+
+    if (!mounted) return null;
+    if (!isAuthenticated || user?.role !== "Admin") return null;
 
     return (
-        <div className="min-h-screen bg-background flex flex-col md:flex-row">
-            <aside className="w-full md:w-64 glassmorphism border-r border-secondary/50 flex flex-col md:h-screen sticky top-0">
-                <div className="p-6 border-b border-secondary/50">
-                    <Link href="/admin/dashboard" className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold">
-                            S
+        <SidebarProvider>
+            <div className="flex min-h-screen w-full bg-background">
+                <Sidebar className="border-r border-border">
+                    <SidebarHeader className="p-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
+                                <Gift className="w-4 h-4 text-primary-foreground" />
+                            </div>
+                            <span className="font-bold text-lg">{APP_NAME}</span>
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-foreground">SmartShare</span>
-                    </Link>
-                </div>
+                    </SidebarHeader>
 
-                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                    {sidebarLinks.map((link) => {
-                        const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
-                        const Icon = link.icon;
+                    <Separator />
 
-                        return (
-                            <Link key={link.name} href={link.href}>
-                                <div
-                                    className={cn(
-                                        "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative",
-                                        isActive
-                                            ? "text-primary font-medium bg-primary/10"
-                                            : "text-muted-foreground hover:bg-secondary/30 hover:text-foreground"
-                                    )}
-                                >
-                                    {isActive && (
-                                        <motion.div
-                                            layoutId="active-sidebar"
-                                            className="absolute inset-0 bg-primary/10 rounded-xl"
-                                            initial={false}
-                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                        />
-                                    )}
-                                    <Icon size={20} className="relative z-10" />
-                                    <span className="relative z-10">{link.name}</span>
-                                </div>
-                            </Link>
-                        );
-                    })}
-                </nav>
+                    <SidebarContent className="p-2 mt-2">
+                        <SidebarMenu>
+                            {navItems.map(({ href, label, icon: Icon }) => (
+                                <SidebarMenuItem key={href}>
+                                    <SidebarMenuButton
+                                        render={<Link href={href} />}
+                                        isActive={pathname === href}
+                                        className="rounded-xl"
+                                    >
+                                        <Icon className="w-4 h-4" />
+                                        <span>{label}</span>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarContent>
 
-                <div className="p-4 border-t border-secondary/50 space-y-2">
-                    <div className="px-3 py-2 text-sm">
-                        <p className="font-semibold text-foreground truncate">{user?.name || 'Admin User'}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user?.email || 'admin@example.com'}</p>
+                    <SidebarFooter className="p-4 space-y-3">
+                        <Separator />
+                        <div className="flex items-center gap-3 py-2">
+                            <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                                    {user?.name?.charAt(0).toUpperCase() || "A"}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{user?.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => { logout(); router.push("/login"); }}
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors w-full px-2 py-1.5 rounded-lg hover:bg-destructive/10"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            Logout
+                        </button>
+                    </SidebarFooter>
+                </Sidebar>
+
+                <main className="flex-1 overflow-auto">
+                    <div className="p-6 md:p-8 max-w-7xl mx-auto">
+                        {children}
                     </div>
-                    <button
-                        onClick={() => logout()}
-                        className="flex items-center w-full gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors"
-                    >
-                        <LogOut size={20} />
-                        <span>Logout</span>
-                    </button>
-                </div>
-            </aside>
-
-            <main className="flex-1 p-6 md:p-10 overflow-y-auto h-screen max-h-screen">
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                >
-                    {children}
-                </motion.div>
-            </main>
-        </div>
+                </main>
+            </div>
+            <Toaster richColors position="top-center" />
+        </SidebarProvider>
     );
 }

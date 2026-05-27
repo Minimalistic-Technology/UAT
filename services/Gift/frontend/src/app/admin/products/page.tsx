@@ -1,130 +1,318 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, ExternalLink } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import api from '@/lib/axios';
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { Plus, Pencil, Trash2, Package, Upload, AlertTriangle } from "lucide-react";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import api from "@/lib/axios";
+
+const PREDEFINED_CATEGORIES = [
+    "Electronics & Gadgets",
+    "Apparel & Fashion",
+    "Home & Living",
+    "Office & Stationery",
+    "Books & Media",
+    "Fitness & Outdoors",
+    "Food & Beverages",
+    "Beauty & Personal Care",
+    "Gift Cards & Vouchers",
+    "Kitchen & Dining",
+    "Travel & Luggage",
+    "General"
+];
 
 export default function ProductsPage() {
     const [products, setProducts] = useState<any[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState("");
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchProducts();
-    }, []);
+    // Edit Product State
+    const [selectedProduct, setSelectedProduct] = useState<any>(null);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [editDesc, setEditDesc] = useState("");
+    const [editCategory, setEditCategory] = useState("");
+    const [editPrice, setEditPrice] = useState("");
+    const [editLoading, setEditLoading] = useState(false);
+    const [editImage, setEditImage] = useState<File | null>(null);
+    const [editImagePreview, setEditImagePreview] = useState("");
+
+    // Delete confirm dialogue states
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<string | null>(null);
+
+    useEffect(() => { fetchProducts(); }, []);
 
     const fetchProducts = async () => {
         try {
-            const { data } = await api.get('/products');
+            const { data } = await api.get("/products");
             setProducts(data);
-        } catch (error) {
-            console.error('Failed to load products', error);
+        } catch { toast.error("Failed to load products"); }
+        finally { setLoading(false); }
+    };
+
+    const handleDelete = (id: string) => {
+        setProductToDelete(id);
+        setConfirmOpen(true);
+    };
+
+    const executeDelete = async () => {
+        if (!productToDelete) return;
+        try {
+            await api.delete(`/products/${productToDelete}`);
+            toast.success("Product deleted successfully!");
+            setProducts(p => p.filter(x => x._id !== productToDelete));
+        } catch {
+            toast.error("Failed to delete product");
         } finally {
-            setLoading(false);
+            setConfirmOpen(false);
+            setProductToDelete(null);
         }
     };
 
-    const deleteProduct = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this product?')) return;
-        try {
-            await api.delete(`/products/${id}`);
-            setProducts(products.filter((p) => p._id !== id));
-        } catch (error) {
-            console.error('Failed to delete product', error);
+    const openEditDialog = (product: any) => {
+        setSelectedProduct(product);
+        setEditName(product.title);
+        setEditDesc(product.description || "");
+        setEditCategory(product.category || "General");
+        setEditPrice(product.price.toString());
+        setEditImage(null);
+        setEditImagePreview(product.thumbnail || "");
+        setEditDialogOpen(true);
+    };
+
+    const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setEditImage(file);
+            setEditImagePreview(URL.createObjectURL(file));
         }
     };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editName || !editDesc || !editPrice) {
+            toast.error("Please fill all required fields");
+            return;
+        }
+
+        setEditLoading(true);
+        try {
+            const formData = new FormData();
+            formData.append("title", editName);
+            formData.append("description", editDesc);
+            formData.append("price", editPrice);
+            formData.append("category", editCategory);
+            if (editImage) {
+                formData.append("images", editImage);
+            }
+
+            await api.put(`/products/${selectedProduct._id}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            toast.success("Product updated successfully!");
+            setEditDialogOpen(false);
+            fetchProducts();
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || "Failed to update product");
+        } finally {
+            setEditLoading(false);
+        }
+    };
+
+    const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+    const filteredProducts = products.filter(p => !selectedCategory || p.category === selectedCategory);
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Products</h1>
-                    <p className="text-muted-foreground mt-1">Manage your product inventory</p>
+                    <p className="text-muted-foreground mt-1">
+                        {selectedCategory ? `${filteredProducts.length} of ${products.length} products (Filtered)` : `${products.length} products in your catalog`}
+                    </p>
                 </div>
-                <Link href="/admin/products/new">
-                    <Button className="gap-2">
-                        <Plus size={18} />
-                        Add Product
-                    </Button>
-                </Link>
+                <div className="flex items-center gap-3">
+                    <select
+                        value={selectedCategory}
+                        onChange={e => setSelectedCategory(e.target.value)}
+                        className="text-xs h-9 px-3 border border-input rounded-xl bg-background text-muted-foreground focus-visible:outline-none focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                        <option value="">All Categories</option>
+                        {categories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                    </select>
+                    <Link href="/admin/products/new">
+                        <Button className="gap-2"><Plus className="w-4 h-4" /> Add Product</Button>
+                    </Link>
+                </div>
             </div>
 
-            <div className="glass-card overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-secondary/20 border-b border-secondary/50">
-                            <tr>
-                                <th className="px-6 py-4 font-medium">Product</th>
-                                <th className="px-6 py-4 font-medium">Category</th>
-                                <th className="px-6 py-4 font-medium">Price</th>
-                                <th className="px-6 py-4 font-medium">Stock</th>
-                                <th className="px-6 py-4 font-medium sr-only">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                                        <div className="animate-pulse">Loading products...</div>
-                                    </td>
-                                </tr>
-                            ) : products.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                                        No products found. Create your first one!
-                                    </td>
-                                </tr>
-                            ) : (
-                                products.map((product, index) => (
-                                    <motion.tr
-                                        key={product._id}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.05 }}
-                                        className="border-b border-secondary/20 hover:bg-secondary/10 transition-colors"
-                                    >
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                {product.thumbnail ? (
-                                                    <img src={product.thumbnail} alt={product.title} className="w-10 h-10 rounded-lg object-cover bg-secondary" />
-                                                ) : (
-                                                    <div className="w-10 h-10 rounded-lg bg-secondary/50 flex items-center justify-center text-xs">No img</div>
-                                                )}
-                                                <div className="font-medium text-foreground">{product.title}</div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-muted-foreground">{product.category}</td>
-                                        <td className="px-6 py-4 font-medium">${product.price.toFixed(2)}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-md text-xs font-medium ${product.stock > 10 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                {product.stock} in stock
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Edit">
-                                                    <Edit size={16} />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0 text-red-500 hover:text-red-500 hover:bg-red-500/10"
-                                                    onClick={() => deleteProduct(product._id)}
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </motion.tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}
                 </div>
-            </div>
+            ) : filteredProducts.length === 0 ? (
+                <Card className="py-16 text-center">
+                    <CardContent className="flex flex-col items-center gap-3">
+                        <Package className="w-10 h-10 text-muted-foreground" />
+                        <p className="text-muted-foreground">No matching products found.</p>
+                        <Link href="/admin/products/new">
+                            <Button className="mt-2 gap-2"><Plus className="w-4 h-4" /> Add Product</Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filteredProducts.map((product, i) => (
+                        <motion.div key={product._id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
+                            <Card className="overflow-hidden hover:shadow-md transition-shadow group flex flex-col h-full rounded-2xl">
+                                <div className="relative aspect-[4/3] bg-white flex items-center justify-center p-4 border-b border-border/40 overflow-hidden">
+                                    {product.thumbnail ? (
+                                        <img src={product.thumbnail} alt={product.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500" />
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center text-muted-foreground/45">
+                                            <Package className="w-8 h-8" />
+                                        </div>
+                                    )}
+                                    {product.stock === 0 && <Badge className="absolute top-3 left-3" variant="destructive">Out of Stock</Badge>}
+                                </div>
+                                <CardContent className="p-4 flex flex-col flex-1 justify-between">
+                                    <div>
+                                        <h3 className="font-semibold text-base truncate">{product.title}</h3>
+                                        <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5 leading-relaxed">{product.description}</p>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-4 pt-1">
+                                        <span className="text-lg font-bold text-primary">${product.price?.toFixed(2)}</span>
+                                        <div className="flex gap-1">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => openEditDialog(product)}>
+                                                <Pencil className="w-3.5 h-3.5" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-destructive hover:text-destructive" onClick={() => handleDelete(product._id)}>
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
+
+            {/* Product Edit Dialog */}
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                <DialogContent className="sm:max-w-[450px]">
+                    <DialogHeader>
+                        <DialogTitle>Edit Product</DialogTitle>
+                        <DialogDescription>Make changes to product metadata and images.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleUpdate} className="space-y-4 pt-2">
+                        <div className="space-y-1">
+                            <Label htmlFor="edit-name">Product Name *</Label>
+                            <Input id="edit-name" value={editName} onChange={e => setEditName(e.target.value)} required />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="edit-desc">Description *</Label>
+                            <textarea
+                                id="edit-desc"
+                                className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors resize-none"
+                                value={editDesc}
+                                onChange={e => setEditDesc(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <Label htmlFor="edit-price">Price ($) *</Label>
+                                <Input id="edit-price" type="number" step="0.01" value={editPrice} onChange={e => setEditPrice(e.target.value)} required />
+                            </div>
+                            <div className="space-y-1">
+                                <Label htmlFor="edit-category">Category</Label>
+                                <select
+                                    id="edit-category"
+                                    value={editCategory}
+                                    onChange={e => setEditCategory(e.target.value)}
+                                    className="w-full text-xs h-9 px-3 border border-input rounded-xl bg-transparent focus-visible:outline-none focus:outline-none focus:ring-1 focus:ring-ring text-muted-foreground"
+                                >
+                                    <option value="">Select Category</option>
+                                    {PREDEFINED_CATEGORIES.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                    {editCategory && !PREDEFINED_CATEGORIES.includes(editCategory) && (
+                                        <option value={editCategory}>{editCategory}</option>
+                                    )}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Image Preview & Upload Change */}
+                        <div className="space-y-2">
+                            <Label>Product Image</Label>
+                            <div className="flex items-center gap-4">
+                                {editImagePreview && (
+                                    <img src={editImagePreview} alt="" className="w-16 h-16 object-cover rounded-lg border flex-shrink-0" />
+                                )}
+                                <label className="flex items-center justify-center flex-1 h-16 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-all gap-2 text-sm text-muted-foreground">
+                                    <Upload className="w-4 h-4" />
+                                    <span>Upload New Image</span>
+                                    <input type="file" accept="image/*" className="hidden" onChange={handleEditImageChange} />
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} disabled={editLoading}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={editLoading}>
+                                {editLoading ? "Updating..." : "Save Changes"}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <DialogContent className="max-w-md p-6 bg-card border rounded-2xl shadow-xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="w-5 h-5 animate-bounce-once" /> Confirm Deletion
+                        </DialogTitle>
+                        <DialogDescription className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                            Are you sure you want to delete this product? This action is permanent and cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="mt-6 flex justify-end gap-3">
+                        <Button variant="ghost" onClick={() => setConfirmOpen(false)} className="rounded-xl">
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={executeDelete} className="rounded-xl shadow-md">
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

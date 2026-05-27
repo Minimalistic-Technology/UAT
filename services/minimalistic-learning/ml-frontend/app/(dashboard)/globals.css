@@ -98,49 +98,7 @@ body {
   background: rgba(161, 161, 170, 0.6);
 }
 
-/* Dark Mode Quill overrides */
-.dark .quill-dark-theme-wrapper .ql-toolbar.ql-snow {
-  border-color: #27272a;
-  background-color: #09090b;
-}
 
-.dark .quill-dark-theme-wrapper .ql-container.ql-snow {
-  border-color: #27272a;
-  background-color: #09090b;
-  color: #f4f4f5;
-  font-family: inherit;
-  font-size: 1.125rem;
-}
-
-.quill-dark-theme-wrapper .ql-toolbar.ql-snow {
-  border-color: #e4e4e7;
-  background-color: #fafafa;
-  border-top-left-radius: 0.75rem;
-  border-top-right-radius: 0.75rem;
-}
-
-.quill-dark-theme-wrapper .ql-container.ql-snow {
-  border-color: #e4e4e7;
-  background-color: #ffffff;
-  border-bottom-left-radius: 0.75rem;
-  border-bottom-right-radius: 0.75rem;
-  font-family: inherit;
-  font-size: 1.125rem;
-  min-height: 400px;
-}
-
-.dark .quill-dark-theme-wrapper .ql-snow .ql-stroke {
-  stroke: #a1a1aa;
-}
-
-.dark .quill-dark-theme-wrapper .ql-snow .ql-fill,
-.dark .quill-dark-theme-wrapper .ql-snow .ql-stroke.ql-fill {
-  fill: #a1a1aa;
-}
-
-.dark .quill-dark-theme-wrapper .ql-snow .ql-picker {
-  color: #a1a1aa;
-}
 
 /* Quill Alignment Support */
 .ql-align-center {
@@ -238,30 +196,7 @@ body {
   font-family: 'Lora', serif;
 }
 
-/* Quill Toolbar Font Picker Labels */
-.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="roboto"]::before,
-.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="roboto"]::before {
-  content: "Roboto";
-  font-family: 'Roboto', sans-serif;
-}
 
-.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="playfair"]::before,
-.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="playfair"]::before {
-  content: "Playfair Display";
-  font-family: 'Playfair Display', serif;
-}
-
-.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="montserrat"]::before,
-.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="montserrat"]::before {
-  content: "Montserrat";
-  font-family: 'Montserrat', sans-serif;
-}
-
-.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="lora"]::before,
-.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="lora"]::before {
-  content: "Lora";
-  font-family: 'Lora', serif;
-}
 
 /* Horizontal Rule (Break Line) Support */
 hr {
@@ -305,42 +240,3 @@ hr {
   height: auto;
 }
 
-/* Single Blog Form — Clean Editor Styling */
-.quill-single-form .ql-toolbar.ql-snow {
-  border: 1px solid #e2e8f0;
-  border-bottom: none;
-  border-top-left-radius: 1rem;
-  border-top-right-radius: 1rem;
-  background-color: #f8fafc;
-  padding: 10px 14px;
-}
-
-/* Quill SVG Fix for Huge Icons */
-.ql-snow .ql-picker.ql-header .ql-picker-label svg,
-.ql-snow .ql-picker.ql-header .ql-picker-item svg,
-.ql-toolbar .ql-formats svg {
-  width: 18px !important;
-  height: 18px !important;
-}
-
-.quill-single-form .ql-container.ql-snow {
-  border: 1px solid #e2e8f0;
-  border-bottom-left-radius: 1rem;
-  border-bottom-right-radius: 1rem;
-  background-color: #ffffff;
-  font-family: inherit;
-  font-size: 1.05rem;
-  min-height: 400px;
-}
-
-.quill-single-form .ql-editor {
-  min-height: 400px;
-  padding: 24px;
-  line-height: 1.8;
-  color: #1e293b;
-}
-
-.quill-single-form .ql-editor.ql-blank::before {
-  color: #94a3b8;
-  font-style: normal;
-}

@@ -68,12 +68,48 @@ export const getSharedLink = async (req: Request, res: Response): Promise<void> 
 
 export const getAnalytics = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        // Analytics for a specific link or overall admin stats
-        const links = await SharedLink.find({ adminId: req.user._id });
+        // If Admin, fetch all links. If HR, only fetch links created by themselves.
+        const filter = req.user.role === 'Admin' ? {} : { adminId: req.user._id };
+
+        const links = await SharedLink.find(filter)
+            .populate('selectedProducts')
+            .populate('adminId', 'name email role');
+
         const linkIds = links.map(l => l._id);
 
         const analytics = await Analytics.find({ linkId: { $in: linkIds } }).populate('linkId');
         res.json({ links, analytics });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getMyLinks = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const links = await SharedLink.find({ isActive: true })
+            .populate('selectedProducts')
+            .populate('adminId', 'name email');
+
+        res.json(links);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const deleteSharedLink = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const link = await SharedLink.findById(req.params.id);
+        if (!link) {
+            res.status(404).json({ error: 'Shared link not found' });
+            return;
+        }
+
+        if (req.user.role === 'Admin' || link.adminId.toString() === req.user._id.toString()) {
+            await link.deleteOne();
+            res.json({ message: 'Shared link deleted successfully' });
+        } else {
+            res.status(403).json({ error: 'Not authorized to delete this link' });
+        }
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
