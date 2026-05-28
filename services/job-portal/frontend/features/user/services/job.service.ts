@@ -30,7 +30,7 @@ export const getJobs = async (filters: any = {}) => {
         ),
     ).toString();
 
-    const response = await apiClient.get<ApiSuccessResponse<GetJobsResponse>>(`/jobs?${queryString}`);
+    const response = await apiClient.get<ApiSuccessResponse<GetJobsResponse>>(`/listings?${queryString}`);
     return response.data;
 }
 

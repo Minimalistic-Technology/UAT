@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function BlogPage() {
   return (
     <main className="flex-1 w-full pt-32 pb-20">
-      <div className="w-full px-[5%]">
+      <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <header className="mb-16">
           <h1 className="text-4xl sm:text-6xl font-black text-foreground tracking-tighter uppercase italic mb-4">
             <span className="text-theme-action">Our</span> Blogs

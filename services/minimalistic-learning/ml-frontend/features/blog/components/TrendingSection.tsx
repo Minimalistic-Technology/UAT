@@ -64,6 +64,7 @@ const RANK_STYLES = [
 
 export default function TrendingSection() {
     const [posts, setPosts] = useState<TrendPost[]>([]);
+    const [homeContent, setHomeContent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -71,6 +72,10 @@ export default function TrendingSection() {
             .then(res => setPosts(res.data?.data?.items || []))
             .catch(() => { })
             .finally(() => setLoading(false));
+
+        api.get('/public/content/home')
+            .then(res => { if (res.data?.data?.hero) setHomeContent(res.data.data.hero); })
+            .catch(() => { });
     }, []);
 
     if (loading) return (
@@ -87,8 +92,8 @@ export default function TrendingSection() {
     if (!posts.length) return null;
 
     return (
-        <section className="w-full px-[5%] py-24 bg-background border-t border-theme-accent/10 relative">
-            <div className="max-w-[1200px] mx-auto relative z-10">
+        <section className="w-full px-4 sm:px-6 lg:px-8 py-24 bg-background border-t border-theme-accent/10 relative">
+            <div className="max-w-7xl mx-auto relative z-10">
 
                 {/* Section Header */}
                 <Reveal>
@@ -98,10 +103,10 @@ export default function TrendingSection() {
                                 <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
                                     <Flame size={16} className="text-orange-500" />
                                 </div>
-                                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">Trending Now</p>
+                                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">{homeContent?.trendingBadge || 'Trending Now'}</p>
                             </div>
-                            <h2 className="text-4xl sm:text-5xl font-black text-foreground tracking-tighter leading-tight">
-                                Most <span className="text-theme-action">Viewed</span> Blogs
+                            <h2 className="text-4xl sm:text-5xl font-black text-foreground tracking-tighter leading-tight relative">
+                                {homeContent?.trendingTitle || 'Most Viewed Blogs'}
                             </h2>
                         </div>
                         <Link href="/blog" className="group flex items-center gap-3 px-8 py-3.5 bg-foreground text-background rounded-full text-sm font-bold hover:scale-105 active:scale-95 shadow-md shadow-foreground/10 transition-all shrink-0">

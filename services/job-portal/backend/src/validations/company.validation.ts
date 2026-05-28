@@ -1,4 +1,4 @@
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 
 export const createCompanySchema = [
   body("email")
@@ -22,3 +22,7 @@ export const createCompanySchema = [
     .withMessage("Company description is required"),
   body("industry").trim().notEmpty().withMessage("Industry is required"),
 ];
+
+export const deleteCompanySchema = [
+  param("id").isMongoId().withMessage("Invalid company ID"),
+]

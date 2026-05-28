@@ -13,6 +13,12 @@ import {
 } from '../validators/commentValidator';
 import { verifyAccessToken } from '../utils/jwt';
 
+// SQLite array helpers (arrays stored as JSON strings)
+const parseArr = (val: string | null | undefined): string[] => {
+  try { return JSON.parse(val || '[]'); } catch { return []; }
+};
+const stringifyArr = (arr: string[]): string => JSON.stringify(arr);
+
 export const createComment = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id || (req.user as any)._id.toString();
 
@@ -78,8 +84,9 @@ export const getPostComments = asyncHandler(async (req: Request, res: Response) 
   const comments = commentsRaw.map(comment => ({ ...comment, authorId: comment.author }));
 
   const commentsResponse = comments.map(comment => {
-    const likesCount = comment.likes?.length || 0;
-    const hasLiked = currentUserId ? comment.likes?.some((id: string) => id === currentUserId) : false;
+    const likesArr = parseArr((comment as any).likes);
+    const likesCount = likesArr.length;
+    const hasLiked = currentUserId ? likesArr.includes(currentUserId) : false;
 
     const mappedComment: any = {
       ...comment,
@@ -149,20 +156,21 @@ export const likeComment = asyncHandler(async (req: Request, res: Response) => {
   const comment = await prisma.comment.findUnique({ where: { id } });
   if (!comment) throw new ApiError(StatusCodes.NOT_FOUND, "Comment not found");
 
-  const hasLiked = comment.likes.some(likeId => likeId === userId);
+  const currentLikes = parseArr((comment as any).likes);
+  const hasLiked = currentLikes.includes(userId);
 
   const updatedLikes = hasLiked
-    ? comment.likes.filter((likeId) => likeId !== userId)
-    : [...comment.likes, userId];
+    ? currentLikes.filter((likeId) => likeId !== userId)
+    : [...currentLikes, userId];
 
   const updatedComment = await prisma.comment.update({
     where: { id },
-    data: { likes: updatedLikes }
+    data: { likes: stringifyArr(updatedLikes) } as any
   });
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, {
-      likesCount: updatedComment.likes.length,
+      likesCount: updatedLikes.length,
       hasLiked: !hasLiked
     }, "Comment like toggled")
   );

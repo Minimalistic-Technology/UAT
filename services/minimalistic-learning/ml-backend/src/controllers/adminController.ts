@@ -4,17 +4,19 @@ import { prisma } from '../config/db';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
+import { sendPostApprovedEmail, sendPostRejectedEmail, sendPostDeletedEmail } from '../utils/email';
+import { env } from '../config/env';
 
-type PostStatus = 'pending' | 'published' | 'rejected';
-type NotificationType = 'post_deleted' | 'post_approved' | 'post_rejected' | 'general';
-type Role = 'admin' | 'user';
+// SQLite-compatible string constants (replaces Prisma enums)
+const POST_STATUS = { pending: 'pending', published: 'published', rejected: 'rejected' } as const;
+const NOTIFICATION_TYPE = { post_deleted: 'post_deleted', post_approved: 'post_approved', post_rejected: 'post_rejected', general: 'general' } as const;
 
 // ─── DELETE /admin/posts/:postId ──────────────────────────────────────────────
 export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = req.params;
   const { reason } = req.body;
 
-  const post = await prisma.post.findUnique({ where: { id: postId } });
+  const post = await prisma.post.findUnique({ where: { id: postId }, include: { author: true } });
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
 
   const authorId = post.authorId;
@@ -27,9 +29,13 @@ export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) 
       recipientId: authorId,
       title: 'Post Deleted by Admin',
       message: `Your post "${postTitle}" was deleted by an admin.${reason ? ` Reason: ${reason}` : ''}`,
-      type: 'post_deleted'
+      type: NOTIFICATION_TYPE.post_deleted
     }
   });
+
+  if (post.author && post.author.email) {
+    sendPostDeletedEmail(post.author.email, post.author.firstName, postTitle).catch(console.error);
+  }
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, null, 'Post deleted and user notified')
@@ -91,16 +97,19 @@ export const getPendingPosts = asyncHandler(async (req: Request, res: Response) 
 
   const [itemsRaw, total] = await Promise.all([
     prisma.post.findMany({
-      where: { status: 'pending' },
+      where: { status: POST_STATUS.pending },
       include: { author: { select: { firstName: true, lastName: true, email: true } } },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit
     }),
-    prisma.post.count({ where: { status: 'pending' } })
+    prisma.post.count({ where: { status: POST_STATUS.pending } })
   ]);
 
-  const items = itemsRaw.map(item => ({ ...item, authorId: item.author }));
+  const items = itemsRaw.map(item => {
+    const coverImageObj = item.coverImage ? JSON.parse(item.coverImage) : null;
+    return { ...item, authorId: item.author, coverImage: coverImageObj };
+  });
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, {
@@ -124,7 +133,7 @@ export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response)
 
   const filter: any = {};
   if (status && ['pending', 'published', 'rejected'].includes(String(status))) {
-    filter.status = status as PostStatus;
+    filter.status = String(status);
   }
 
   const [itemsRaw, total] = await Promise.all([
@@ -138,7 +147,10 @@ export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response)
     prisma.post.count({ where: filter })
   ]);
 
-  const items = itemsRaw.map(item => ({ ...item, authorId: item.author }));
+  const items = itemsRaw.map(item => {
+    const coverImageObj = item.coverImage ? JSON.parse(item.coverImage) : null;
+    return { ...item, authorId: item.author, coverImage: coverImageObj };
+  });
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, {
@@ -157,12 +169,12 @@ export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response)
 export const approvePost = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = req.params;
 
-  const post = await prisma.post.findUnique({ where: { id: postId } });
+  const post = await prisma.post.findUnique({ where: { id: postId }, include: { author: true } });
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
 
   const updatedPost = await prisma.post.update({
     where: { id: postId },
-    data: { status: 'published', published: true }
+    data: { status: POST_STATUS.published, published: true }
   });
 
   await prisma.notification.create({
@@ -170,9 +182,14 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
       recipientId: updatedPost.authorId,
       title: 'Post Approved! 🎉',
       message: `Great news! Your post "${updatedPost.title}" has been approved and is now live on the platform.`,
-      type: 'post_approved'
+      type: NOTIFICATION_TYPE.post_approved
     }
   });
+
+  if (post.author && post.author.email) {
+    const postUrl = `${env.corsOrigins[0] || 'http://localhost:3000'}/blog/${updatedPost.slug}`;
+    sendPostApprovedEmail(post.author.email, post.author.firstName, updatedPost.title, postUrl).catch(console.error);
+  }
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, { _id: updatedPost.id, id: updatedPost.id, status: updatedPost.status }, 'Post approved and published')
@@ -182,13 +199,14 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
 // ─── PATCH /admin/posts/:postId/reject ───────────────────────────────────────
 export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = req.params;
+  const { reason = 'Did not meet content guidelines.' } = req.body;
 
-  const post = await prisma.post.findUnique({ where: { id: postId } });
+  const post = await prisma.post.findUnique({ where: { id: postId }, include: { author: true } });
   if (!post) throw new ApiError(StatusCodes.NOT_FOUND, 'Post not found');
 
   const updatedPost = await prisma.post.update({
     where: { id: postId },
-    data: { status: 'rejected', published: false }
+    data: { status: POST_STATUS.rejected, published: false }
   });
 
   await prisma.notification.create({
@@ -196,9 +214,13 @@ export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
       recipientId: updatedPost.authorId,
       title: 'Post Rejected',
       message: `Your post "${updatedPost.title}" was not approved by the admin. Please review our guidelines and try again.`,
-      type: 'post_rejected'
+      type: NOTIFICATION_TYPE.post_rejected
     }
   });
+
+  if (post.author && post.author.email) {
+    sendPostRejectedEmail(post.author.email, post.author.firstName, updatedPost.title, reason).catch(console.error);
+  }
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, { _id: updatedPost.id, id: updatedPost.id, status: updatedPost.status }, 'Post rejected')
@@ -234,7 +256,7 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
 
   const updateData: Record<string, any> = {};
   if (role && (role === 'admin' || role === 'user')) {
-    updateData.role = role as Role;
+    updateData.role = role as string;
   }
   if (firstName !== undefined) updateData.firstName = firstName;
   if (lastName !== undefined) updateData.lastName = lastName;
@@ -296,7 +318,7 @@ export const createPermission = asyncHandler(async (req: Request, res: Response)
       path_method_role: {
         path: path.trim(),
         method: method ? method.trim() : null,
-        role: role as Role
+        role: role as string
       }
     }
   });
@@ -309,7 +331,7 @@ export const createPermission = asyncHandler(async (req: Request, res: Response)
     data: {
       path: path.trim(),
       method: method ? method.toUpperCase().trim() : null,
-      role: role as Role,
+      role: role as string,
       isActive: typeof isActive === 'boolean' ? isActive : true,
       description: description ? description.trim() : null
     }
@@ -349,3 +371,136 @@ export const deletePermission = asyncHandler(async (req: Request, res: Response)
   );
 });
 
+// ─── SITE CONTENT ENDPOINTS ──────────────────────────────────────────────────
+export const updateSiteContent = asyncHandler(async (req: Request, res: Response) => {
+  const { page, section } = req.params;
+  const { content } = req.body;
+
+  if (!content) throw new ApiError(StatusCodes.BAD_REQUEST, 'Content body is required');
+
+  const updatedContent = await (prisma as any).siteContent.upsert({
+    where: {
+      page_section: {
+        page,
+        section
+      }
+    },
+    update: { content },
+    create: {
+      page,
+      section,
+      content
+    }
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, updatedContent, 'Site content updated successfully')
+  );
+});
+
+// ─── SUBSCRIBERS ENDPOINTS ──────────────────────────────────────────────────
+export const getNewsletterSubscribers = asyncHandler(async (req: Request, res: Response) => {
+  const subscribers = await (prisma as any).subscriber.findMany({
+    orderBy: { createdAt: 'desc' }
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, subscribers, 'Subscribers fetched successfully')
+  );
+});
+
+// ─── TEAM ENDPOINTS ───────────────────────────────────────────────────────────
+export const addTeamMember = asyncHandler(async (req: Request, res: Response) => {
+  const { name, role, bio, image, github, twitter, linkedin, order } = req.body;
+
+  if (!name || !role) throw new ApiError(StatusCodes.BAD_REQUEST, 'Name and Role are required');
+
+  const newMember = await (prisma as any).teamMember.create({
+    data: { name, role, bio, image, github, twitter, linkedin, order: order || 0 }
+  });
+
+  return res.status(StatusCodes.CREATED).json(
+    new ApiResponse(StatusCodes.CREATED, newMember, 'Team member added successfully')
+  );
+});
+
+export const updateTeamMember = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, role, bio, image, github, twitter, linkedin, order } = req.body;
+
+  const existing = await (prisma as any).teamMember.findUnique({ where: { id } });
+  if (!existing) throw new ApiError(StatusCodes.NOT_FOUND, 'Team member not found');
+
+  const updatedMember = await (prisma as any).teamMember.update({
+    where: { id },
+    data: { name, role, bio, image, github, twitter, linkedin, order }
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, updatedMember, 'Team member updated successfully')
+  );
+});
+
+export const deleteTeamMember = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const existing = await (prisma as any).teamMember.findUnique({ where: { id } });
+  if (!existing) throw new ApiError(StatusCodes.NOT_FOUND, 'Team member not found');
+
+  await (prisma as any).teamMember.delete({ where: { id } });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, null, 'Team member removed successfully')
+  );
+});
+
+// ─── DATABASE STUDIO ENDPOINTS (SQLite) ───────────────────────────────────────
+export const getDatabaseTables = asyncHandler(async (req: Request, res: Response) => {
+  // Query sqlite_master to get all user tables
+  const result = await prisma.$queryRawUnsafe<{ name: string }[]>("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '_prisma_migrations';");
+
+  const tables = result.map(t => t.name);
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, { tables }, 'Database tables fetched successfully')
+  );
+});
+
+export const executeDatabaseQuery = asyncHandler(async (req: Request, res: Response) => {
+  const { query } = req.body;
+
+  if (!query || typeof query !== 'string') {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Valid SQL query string is required');
+  }
+
+  // Security check: Make sure we are an admin (though middleware should handle this)
+  const role = req.user?.role || (req.user as any)?.role;
+  if (role !== 'admin') {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Insufficient privileges to execute raw queries');
+  }
+
+  try {
+    const isSelect = query.trim().toUpperCase().startsWith('SELECT') || query.trim().toUpperCase().startsWith('PRAGMA');
+
+    let result;
+    if (isSelect) {
+      result = await prisma.$queryRawUnsafe(query);
+    } else {
+      result = await prisma.$executeRawUnsafe(query);
+      result = { affectedRows: result };
+    }
+
+    // Convert bigints to strings for JSON serialization if any
+    const processedResult = JSON.parse(
+      JSON.stringify(result, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      )
+    );
+
+    return res.status(StatusCodes.OK).json(
+      new ApiResponse(StatusCodes.OK, { result: processedResult }, 'Query executed successfully')
+    );
+  } catch (error: any) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, `Query failed: ${error.message || 'Unknown error'}`);
+  }
+});

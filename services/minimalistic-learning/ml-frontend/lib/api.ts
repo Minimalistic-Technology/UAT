@@ -3,13 +3,9 @@ import axios, { AxiosError, isAxiosError } from "axios";
 export { isAxiosError };
 export type { AxiosError };
 
-// On the server (SSR/generateMetadata), relative URLs don't work — Node.js
-// needs an absolute URL. In the browser, we keep the relative path so
-// Next.js rewrites can proxy it to the backend (solves CORS/cookie issues).
-const isServer = typeof window === "undefined";
+// Since we are using static HTML export (output: 'export'), we cannot use Next.js
+// API rewrites. Therefore, we must ALWAYS hit the exact absolute API base URL directly.
 const getBaseURL = () => {
-  if (!isServer) return "/api/v1";
-
   const rawURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
   return rawURL.endsWith("/api/v1") ? rawURL : `${rawURL}/api/v1`;
 };
@@ -97,8 +93,9 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        // Important: use the exact configured baseURL, do not fallback to localhost in production
         const refreshResponse = await axios.post(
-          `${originalRequest.baseURL || "http://localhost:5001/api/v1"}/auth/refresh-token`,
+          `${baseURL}/auth/refresh-token`,
           {},
           { withCredentials: true }
         );

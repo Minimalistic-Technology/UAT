@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -7,7 +7,7 @@ import { useToggleUserStatus } from "../hooks/use-user";
 
 const UserRoleBadge = ({ user }: { user: any }) => {
   const isOwner = user.companyRole === CompanyRole.OWNER;
-  const isAdmin = user.companyRole === CompanyRole.ADMIN;
+  const isHR = user.companyRole === CompanyRole.HR;
 
   if (isOwner)
     return (
@@ -18,7 +18,10 @@ const UserRoleBadge = ({ user }: { user: any }) => {
         Owner
       </Badge>
     );
-  if (isAdmin) return <Badge variant="secondary">Admin</Badge>;
+  if (isHR)
+    return (
+      <Badge className="bg-pink-100 text-pink-700 hover:bg-pink-100">HR</Badge>
+    );
 
   return (
     <Badge
@@ -39,9 +42,13 @@ const UserTableRow = ({ user }: { user: any }) => {
       <TableCell>
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-              {initials}
-            </AvatarFallback>
+            {user.avatar?.url ? (
+              <AvatarImage src={user.avatar.url} alt={user.name} />
+            ) : (
+              <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                {initials}
+              </AvatarFallback>
+            )}
           </Avatar>
           <div>
             <div className="text-sm font-medium">
@@ -50,11 +57,6 @@ const UserTableRow = ({ user }: { user: any }) => {
             <div className="text-muted-foreground text-xs md:hidden">
               {user.email}
             </div>
-            {user.companyRole === CompanyRole.OWNER && user.companyName && (
-              <div className="text-muted-foreground text-xs">
-                {user.companyName}
-              </div>
-            )}
           </div>
         </div>
       </TableCell>
@@ -62,7 +64,19 @@ const UserTableRow = ({ user }: { user: any }) => {
         {user.email}
       </TableCell>
       <TableCell>
-        <UserRoleBadge user={user} />
+        <div className="space-y-1">
+          <UserRoleBadge user={user} />
+          {user.companyRole === CompanyRole.HR && user.companyName && (
+            <p className="text-muted-foreground text-xs font-semibold">
+              {user.companyName}
+            </p>
+          )}
+          {user.companyRole === CompanyRole.OWNER && user.companyName && (
+            <p className="text-muted-foreground text-xs font-semibold">
+              {user.companyName}
+            </p>
+          )}
+        </div>
       </TableCell>
       <TableCell>
         <Badge

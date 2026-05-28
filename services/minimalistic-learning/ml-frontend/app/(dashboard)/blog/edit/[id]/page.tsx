@@ -1,12 +1,11 @@
-"use client";
-
 import React from "react";
-import { BlogForm } from "@/features/blog";
-import { useParams } from "next/navigation";
+import EditBlogClient from "./EditBlogClient";
 
-export default function EditBlogPage() {
-  const params = useParams();
-  const id = params.id as string;
+export async function generateStaticParams() {
+  return [{ id: 'fallback-id' }];
+}
 
-  return <BlogForm id={id} />;
+export default async function EditBlogPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  return <EditBlogClient id={resolvedParams.id} />;
 }

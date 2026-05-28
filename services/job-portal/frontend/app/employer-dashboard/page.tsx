@@ -47,11 +47,13 @@ const Page = () => {
     isFetching,
   } = useGetMyCompanyDetails();
 
-  const { data: applicationsData, isLoading: isLoadingApps } = useAllEmployerApplications({ page: 1, limit: 5 });
+  const { data: applicationsData, isLoading: isLoadingApps } =
+    useAllEmployerApplications({ page: 1, limit: 5 });
 
   const router = useRouter();
 
   const companyDetails = responseData?.data;
+  console.log("Company Details", companyDetails);
   const isUnverified = companyDetails?.isVerified === false;
   const kycStatus = companyDetails?.kycStatus;
 
@@ -120,7 +122,7 @@ const Page = () => {
 
           <Button
             variant="default"
-           disabled={isUnverified}
+            disabled={isUnverified}
             className={isUnverified ? "cursor-not-allowed opacity-50" : ""}
             onClick={() => {
               router.push("/employer-dashboard/jobs/create");
@@ -137,7 +139,7 @@ const Page = () => {
           variant="destructive"
           className="border-amber-200 bg-amber-50 text-amber-900 shadow-sm"
         >
-          <AlertCircle className="h-5 w-5 !text-amber-600" />
+          <AlertCircle className="h-5 w-5 text-amber-600!" />
           <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <AlertTitle className="font-bold text-amber-800">
@@ -165,7 +167,7 @@ const Page = () => {
 
       {isUnverified && kycStatus === "pending" && (
         <Alert className="border-blue-200 bg-blue-50 text-blue-900 shadow-sm">
-          <AlertCircle className="h-5 w-5 !text-blue-600" />
+          <AlertCircle className="h-5 w-5 text-blue-600!" />
           <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <AlertTitle className="font-bold text-blue-800">
@@ -185,7 +187,7 @@ const Page = () => {
           variant="destructive"
           className="border-red-200 bg-red-50 text-red-900 shadow-sm"
         >
-          <AlertCircle className="h-5 w-5 !text-red-600" />
+          <AlertCircle className="h-5 w-5 text-red-600!" />
           <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
               <AlertTitle className="font-bold text-red-800">
@@ -224,8 +226,8 @@ const Page = () => {
       {/* Quick Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Active Jobs"
-          value={Number(companyDetails?.activeJobs)}
+          title="Active Listings"
+          value={Number(companyDetails?.activeListings)}
           icon={Briefcase}
           description={`Total listings: ${companyDetails?.totalJobs}`}
         />
@@ -238,36 +240,37 @@ const Page = () => {
         />
 
         <StatCard
-  isPrimary
-  title="Subscription Plan"
-  value={companyDetails?.currentPlan?.name || "No Active Plan"}
-  icon={ArrowUpRight}
-  description={
-    <Link
-      href="/employer-dashboard/plans"
-      className="flex items-center gap-1 hover:underline text-sm font-medium"
-    >
-      {companyDetails?.subscription ? (
-        <>
-          <Settings className="w-3 h-3" />
-          Manage Subscription
-        </>
-      ) : (
-        <>
-          <Sparkles className="w-3 h-3" />
-          Explore & Choose a Plan
-        </>
-      )}
-    </Link>
-  }
-/>
+          isPrimary
+          title="Subscription Plan"
+          value={companyDetails?.currentPlan?.name || "No Active Plan"}
+          icon={ArrowUpRight}
+          description={
+            <Link
+              href="/employer-dashboard/plans"
+              className="flex items-center gap-1 text-sm font-medium hover:underline"
+            >
+              {companyDetails?.subscription ? (
+                <>
+                  <Settings className="h-3 w-3" />
+                  Manage Subscription
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3 w-3" />
+                  Explore & Choose a Plan
+                </>
+              )}
+            </Link>
+          }
+        />
 
         <StatCard
           title="Remaining Job Posts"
           value={
             companyDetails?.remainingJobPosts === -1
               ? "Unlimited"
-              : companyDetails?.remainingJobPosts !== undefined && companyDetails?.remainingJobPosts !== null
+              : companyDetails?.remainingJobPosts !== undefined &&
+                  companyDetails?.remainingJobPosts !== null
                 ? Number(companyDetails.remainingJobPosts)
                 : 0
           }
@@ -303,7 +306,7 @@ const Page = () => {
               ))}
             </div>
           ) : recentApplications.length === 0 ? (
-            <div className="py-10 text-center text-muted-foreground flex h-32 items-center justify-center rounded-md border-2 border-dashed">
+            <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border-2 border-dashed py-10 text-center">
               No recent applications found.
             </div>
           ) : (
@@ -314,6 +317,7 @@ const Page = () => {
                     <TableHead>Applicant</TableHead>
                     <TableHead>Job Title</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Company Name</TableHead>
                     <TableHead>Applied At</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -324,18 +328,17 @@ const Page = () => {
                         <div className="font-medium">
                           {app.jobSeeker?.firstName} {app.jobSeeker?.lastName}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           {app.jobSeeker?.email}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {app.job?.title || "Unknown Job"}
-                      </TableCell>
+                      <TableCell>{app.job?.title || "Unknown Job"}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(app.status)}>
                           {app.status.replace("_", " ").toUpperCase()}
                         </Badge>
                       </TableCell>
+                      <TableCell>{app.job?.company?.name ?? "Unknown Company"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {format(new Date(app.createdAt), "MMM d, yyyy")}
                       </TableCell>

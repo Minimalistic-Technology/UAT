@@ -20,8 +20,9 @@ import { SidebarNavItem } from "@/components/sidebar-nav-item"
 
 const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/employer-dashboard" },
-  { label: "Post a Job", icon: PlusCircle, href: "/employer-dashboard/jobs/create" },
+  { label: "Post a Job / Internship", icon: PlusCircle, href: "/employer-dashboard/jobs/create" },
   { label: "Manage Jobs", icon: Briefcase, href: "/employer-dashboard/jobs/manage" },
+  { label: "Manage Internships", icon: Briefcase, href: "/employer-dashboard/internships/manage" },
   { label: "Manage Team", icon: Users, href: "/employer-dashboard/team" },
   { label: "Settings", icon: Settings2, href: "/employer-dashboard/settings" },
   // { label: "Company Settings", icon: Building2, href: "/employer-dashboard/settings" },

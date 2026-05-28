@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import User, { GlobalRole, IUser } from "../models/User.model.js";
-import { JobStatus } from "../models/Job.model.js";
+import { JobStatus } from "../models/BaseJob.model.js";
 import Job from "../models/Job.model.js";
+import Internship from "../models/Internship.model.js";
 import CompanyMember from "../models/CompanyMember.model.js";
 import Company from "../models/Company.model.js";
 import { Types } from "mongoose";
@@ -20,7 +21,6 @@ export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
-
     const skip = (page - 1) * limit;
 
     const filter = { role: { $ne: GlobalRole.SUPER_ADMIN } };
@@ -109,24 +109,49 @@ export const getJobsByStatus = async (req: Request, res: Response) => {
     const pageSize = Math.max(1, parseInt(limit as string) || 10);
     const skip = (currentPage - 1) * pageSize;
 
-    const [jobs, totalJobs] = await Promise.all([
-      Job.find({ status: jobStatus })
-        .populate("company", "name logo") // Example population
+    const query = { status: jobStatus };
+
+    const [totalJobs, totalInternships] = await Promise.all([
+      Job.countDocuments(query),
+      Internship.countDocuments(query),
+    ]);
+
+    const totalCombined = totalJobs + totalInternships;
+    const totalPages = Math.ceil(totalCombined / pageSize);
+
+    const [jobs, internships] = await Promise.all([
+      Job.find(query)
+        .populate("company", "name logo")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(pageSize)
         .lean(),
-      Job.countDocuments({ status: jobStatus }),
+      Internship.find(query)
+        .populate("company", "name logo")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .lean(),
     ]);
 
-    const totalPages = Math.ceil(totalJobs / pageSize);
+    const taggedJobs = jobs.map((job) => ({ ...job, listingType: "job" }));
+    const taggedInternships = internships.map((internship) => ({
+      ...internship,
+      listingType: "internship",
+    }));
+
+    const merged = [...taggedJobs, ...taggedInternships]
+      .sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      .slice(0, pageSize);
 
     return res.status(200).json({
       success: true,
-      message: `Jobs with status '${jobStatus}' fetched successfully`,
+      message: `Listings with status '${jobStatus}' fetched successfully`,
       data: {
-        count: totalJobs,
-        jobs,
+        count: totalCombined,
+        listings: merged, 
         pagination: {
           totalPages,
           currentPage,

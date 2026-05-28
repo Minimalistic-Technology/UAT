@@ -72,7 +72,10 @@ const Page = () => {
             variant="outline"
             className="cursor-pointer"
             size="sm"
-            onClick={() => router.push(`/employer/jobs/${jobId}/edit`)}
+            // onClick={() => router.push(`/employer/jobs/${jobId}/edit`)}
+            onClick={() => {
+              alert("Edit functionality coming soon!")
+            }}
           >
             <Pencil className="mr-2 h-4 w-4" /> Edit Details
           </Button>

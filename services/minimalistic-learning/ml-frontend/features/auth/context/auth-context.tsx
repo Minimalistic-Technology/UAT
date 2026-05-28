@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "../services/auth-service";
 import { LoginResponse } from "../types/auth-response";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 interface AuthContextType {
   user: LoginResponse["data"]["user"] | null;
@@ -19,18 +19,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const pathname = usePathname();
 
-  // The cookie-based session is managed automatically by the browser.
-  // We just attempt to fetch the current user profile on mount.
-  const { data, isLoading, refetch, isError } = useQuery({
+  const { data, isLoading, isFetched, refetch } = useQuery({
     queryKey: ["auth-me"],
     queryFn: () => authService.getMe(),
     retry: false,
-    staleTime: 0, // Always re-verify on mount to prevent auth bypass via stale cache
+    staleTime: 5 * 60 * 1000,  // 5 minutes — prevent constant refetching
+    gcTime: 10 * 60 * 1000,    // keep cache for 10 minutes
   });
 
   const user = data?.data?.user || null;
   const isAuthenticated = !!user;
+
+  // React Client-side Route Protection (Replaces Next.js Edge Middleware for Static Export)
+  useEffect(() => {
+    if (isLoading || !isFetched) return; // wait until auth status is fully known
+
+    const PROTECTED_ROUTES = ['/dashboard', '/my-blogs', '/blog/create', '/blog/edit'];
+    const AUTH_ROUTES = ['/login', '/register', '/verify-otp'];
+
+    const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
+    const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+
+    if (isProtectedRoute && !isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+    } else if (isAuthRoute && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isLoading, isFetched, isAuthenticated, pathname, router]);
 
   const logout = async () => {
     try {
@@ -38,11 +55,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.warn("Backend logout failed, but clearing local session anyway:", error);
     } finally {
-      // ALWAYS clear local state even if server is unreachable
       queryClient.setQueryData(["auth-me"], null);
       queryClient.clear();
-      router.push("/login");
-      router.refresh();
+      // Use hard navigation to cross layout boundary (dashboard → auth layout)
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
     }
   };
 

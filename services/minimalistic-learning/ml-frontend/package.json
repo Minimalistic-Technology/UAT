@@ -3,30 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
-    "check": "npm run build && tsc",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "dev": "next dev",
-    "lint": "next lint",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "start": "next start"
-  },
-  "cloudflare": {
-    "label": "Minimalistic Learning",
-    "products": [
-      "Workers"
-    ],
-    "categories": [],
-    "preview_icon_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/05eee9e0-2c04-48fd-11bf-84e65f839000/public",
-    "preview_image_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/4e913a56-fd99-4372-0586-9f1364173100/preview",
-    "publish": true
+    "build": "next build",
+    "start": "npx serve@latest out",
+    "lint": "eslint"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "1.14.0",
     "@hookform/resolvers": "^5.2.2",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.95.2",
+    "@tiptap/extension-image": "^3.23.6",
+    "@tiptap/extension-link": "^3.23.6",
+    "@tiptap/extension-underline": "^3.23.6",
+    "@tiptap/react": "^3.23.6",
+    "@tiptap/starter-kit": "^3.23.6",
     "axios": "^1.13.6",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -37,8 +27,8 @@
     "next-themes": "^0.4.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-google-recaptcha": "^3.1.0",
     "react-hook-form": "^7.72.0",
-    "react-quill-new": "^3.8.3",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6"
@@ -48,10 +38,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-google-recaptcha": "^2.1.9",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
-    "typescript": "^5",
-   "wrangler": "4.56.0" 
+    "typescript": "^5"
   }
 }

@@ -28,6 +28,12 @@ export const createPlanSchema = [
   body("isActive").isBoolean().withMessage("isActive must be a boolean"),
   body("isDefault").isBoolean().withMessage("isDefault must be a boolean"),
   body("displayOrder").isInt().withMessage("Display order must be a number"),
+  body("allowResumeDownload")
+    .isBoolean()
+    .withMessage("allowResumeDownload must be a boolean"),
+  body("postValidityDays")
+    .isInt({ min: 1 })
+    .withMessage("Post validity is required"),
 ];
 
 export const updatePlanSchema = [
@@ -46,4 +52,12 @@ export const updatePlanSchema = [
     .optional()
     .isInt({ min: -1 })
     .withMessage("Job post limit must be at least -1"),
+  body("allowResumeDownload")
+    .optional()
+    .isBoolean()
+    .withMessage("allowResumeDownload must be a boolean"),
+  body("postValidityDays")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Post validity is required"),
 ];

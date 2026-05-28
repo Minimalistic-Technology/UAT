@@ -168,7 +168,7 @@ export default function JobSeekerDashboard() {
                           {app.job.title}
                         </h4>
                         <div className="text-muted-foreground flex items-center gap-3 text-sm">
-                          <span>{app.job.company.name}</span>
+                          <span>{app.job?.company?.name}</span>
                           <span className="h-1 w-1 rounded-full bg-slate-300" />
                           <span>
                             Applied{" "}

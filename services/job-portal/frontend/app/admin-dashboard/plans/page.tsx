@@ -31,6 +31,7 @@ const COLUMNS = [
   { key: "duration", label: "Duration", className: "hidden lg:table-cell" },
   { key: "limit", label: "Job Limit", className: "hidden xl:table-cell" },
   { key: "teamLimit", label: "Team Limit", className: "hidden xl:table-cell" },
+  { key: "listingLifespan", label: "Listing Lifespan", className: "hidden xl:table-cell" },
   { key: "status", label: "Status" },
   { key: "created", label: "Created At", className: "hidden md:table-cell" },
   { key: "actions", label: "Actions" },

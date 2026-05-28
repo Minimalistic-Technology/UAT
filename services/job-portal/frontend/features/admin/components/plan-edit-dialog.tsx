@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, Asterisk } from "lucide-react";
 
 import {
   Dialog,
@@ -66,6 +66,8 @@ export function PlanEditDialog({
       isDefault: false,
       displayOrder: 0,
       isActive: true,
+      allowResumeDownload: false,
+      postValidityDays: 30,
     },
   });
 
@@ -90,6 +92,8 @@ export function PlanEditDialog({
         isDefault: plan.isDefault,
         displayOrder: plan.displayOrder,
         isActive: plan.isActive,
+        allowResumeDownload: plan.allowResumeDownload || false,
+        postValidityDays: plan.postValidityDays || 30,
       });
     }
   }, [plan, open, reset]);
@@ -143,6 +147,7 @@ export function PlanEditDialog({
                 <Input
                   id="edit-displayOrder"
                   type="number"
+                  min={0}
                   {...register("displayOrder", { valueAsNumber: true })}
                 />
                 {errors.displayOrder && (
@@ -191,13 +196,14 @@ export function PlanEditDialog({
               </div>
             </div>
 
-            {/* Limits */}
+            {/* Durations */}
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="edit-duration">Duration (Days)</Label>
+                <Label htmlFor="edit-duration">Plan Expiry Period (In Days)</Label>
                 <Input
                   id="edit-duration"
                   type="number"
+                  min={1}
                   {...register("durationDays", { valueAsNumber: true })}
                 />
                 {errors.durationDays && (
@@ -207,6 +213,27 @@ export function PlanEditDialog({
                 )}
               </div>
 
+              {/* New Input Field: postValidityDays */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-postValidityDays" className="flex items-center gap-1">
+                  Job Post Visibility (In Days) <Asterisk className="text-destructive size-3" />
+                </Label>
+                <Input
+                  id="edit-postValidityDays"
+                  type="number"
+                  min={1}
+                  {...register("postValidityDays", { valueAsNumber: true })}
+                />
+                {errors.postValidityDays && (
+                  <p className="text-destructive text-xs">
+                    {errors.postValidityDays.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Limits */}
+            <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="edit-jobLimit">
                   Job Post Limit (-1 = Unlimited)
@@ -214,6 +241,7 @@ export function PlanEditDialog({
                 <Input
                   id="edit-jobLimit"
                   type="number"
+                  min={-1}
                   {...register("jobPostLimit", { valueAsNumber: true })}
                 />
                 {errors.jobPostLimit && (
@@ -222,9 +250,6 @@ export function PlanEditDialog({
                   </p>
                 )}
               </div>
-            </div>
-
-            <div className="grid grid-cols-1">
               <div className="space-y-2">
                 <Label htmlFor="edit-teamMemberLimit">
                   Team Member Limit (-1 = Unlimited)
@@ -232,6 +257,7 @@ export function PlanEditDialog({
                 <Input
                   id="edit-teamMemberLimit"
                   type="number"
+                  min={-1}
                   {...register("teamMemberLimit", { valueAsNumber: true })}
                 />
                 {errors.teamMemberLimit && (
@@ -243,14 +269,14 @@ export function PlanEditDialog({
             </div>
 
             {/* Toggles */}
-            <div className="bg-muted/30 grid grid-cols-1 gap-4 rounded-lg border px-4 py-4 sm:grid-cols-3">
+            <div className="bg-muted/30 grid grid-cols-1 gap-4 rounded-lg border px-4 py-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="edit-isActive"
                   checked={watch("isActive")}
                   onCheckedChange={(val) => setValue("isActive", val)}
                 />
-                <Label htmlFor="edit-isActive">Active Plan</Label>
+                <Label htmlFor="edit-isActive" className="cursor-pointer">Active Plan</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -258,7 +284,7 @@ export function PlanEditDialog({
                   checked={watch("isFeatured")}
                   onCheckedChange={(val) => setValue("isFeatured", val)}
                 />
-                <Label htmlFor="edit-isFeatured">Featured Plan</Label>
+                <Label htmlFor="edit-isFeatured" className="cursor-pointer">Featured Plan</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -266,7 +292,25 @@ export function PlanEditDialog({
                   checked={watch("isDefault")}
                   onCheckedChange={(val) => setValue("isDefault", val)}
                 />
-                <Label htmlFor="edit-isDefault">Default Plan</Label>
+                <Label htmlFor="edit-isDefault" className="cursor-pointer">Default Plan</Label>
+              </div>
+              
+              {/* New Toggle Field: allowResumeDownload */}
+              <div className="flex items-center space-x-2 border-t pt-2 sm:border-t-0 sm:pt-0">
+                <Controller
+                  name="allowResumeDownload"
+                  control={control}
+                  render={({ field }) => (
+                    <Switch
+                      id="edit-allowResumeDownload"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
+                />
+                <Label htmlFor="edit-allowResumeDownload" className="cursor-pointer font-semibold text-indigo-700 dark:text-indigo-400">
+                  Allow Resume Downloads
+                </Label>
               </div>
             </div>
 

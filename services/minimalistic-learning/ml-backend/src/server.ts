@@ -3,7 +3,9 @@ import app from "./app";
 import { connectDatabase } from './config/db';
 import { env } from './config/env';
 
-const PORT = env.PORT || 5000;
+import { connectMongoDB } from './config/mongodb';
+
+const PORT = env.PORT || 5001;
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Minimalistic Learning Backend API");
@@ -16,7 +18,8 @@ app.get("/health", (req: Request, res: Response) => {
 // Server ko Database ke baad start karein
 const startServer = async () => {
   try {
-    await connectDatabase(); // Wait for DB connection
+    await connectDatabase(); // Wait for PostgreSQL (Prisma) connection
+    await connectMongoDB(); // Optional soft connection for MongoDB (Mongoose)
     app.listen(PORT, () => {
       console.log(`[server] Service listening on port ${PORT} in ${env.NODE_ENV} mode`);
       console.log(`[server] CORS origins: ${env.corsOrigins.join(', ')}`);

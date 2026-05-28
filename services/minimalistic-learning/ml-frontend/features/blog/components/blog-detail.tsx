@@ -141,14 +141,14 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
 
             {/* Featured Image */}
             {imageUrl && (
-              <div className="w-full aspect-[16/9] md:aspect-[21/9] max-h-[600px] rounded-[2rem] overflow-hidden mb-12 shadow-sm border border-theme-accent/10 transition-transform duration-500 hover:scale-[1.01]">
+              <div className="relative w-full aspect-[16/9] md:aspect-[21/9] max-h-[600px] rounded-[2rem] overflow-hidden mb-12 shadow-sm border border-theme-accent/10 transition-transform duration-500 hover:scale-[1.01]">
                 <Image
                   src={imageUrl}
                   alt={title}
-                  width={1200}
-                  height={675}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 1200px"
                   priority
-                  className="w-full h-full object-cover"
+                  className="object-cover"
                 />
               </div>
             )}

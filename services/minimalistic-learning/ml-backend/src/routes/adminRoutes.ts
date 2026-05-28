@@ -16,6 +16,10 @@ import {
   createPermission,
   togglePermission,
   deletePermission,
+  updateSiteContent,
+  getNewsletterSubscribers,
+  getDatabaseTables,
+  executeDatabaseQuery
 } from '../controllers/adminController';
 
 const router = Router();
@@ -42,5 +46,20 @@ router.get('/permissions', checkDbPermission, listPermissions);
 router.post('/permissions', checkDbPermission, createPermission);
 router.patch('/permissions/:id/toggle', checkDbPermission, togglePermission);
 router.delete('/permissions/:id', checkDbPermission, deletePermission);
+
+// Site Content Management
+router.put('/content/:page/:section', checkDbPermission, updateSiteContent);
+
+// Subscribers Management
+router.get('/subscribers', checkDbPermission, getNewsletterSubscribers);
+
+// Team Management
+import { addTeamMember, updateTeamMember, deleteTeamMember } from '../controllers/adminController';
+router.post('/team', checkDbPermission, addTeamMember);
+router.put('/team/:id', checkDbPermission, updateTeamMember);
+router.delete('/team/:id', checkDbPermission, deleteTeamMember);
+// Database Management Studio
+router.get('/db/tables', checkDbPermission, getDatabaseTables);
+router.post('/db/query', checkDbPermission, executeDatabaseQuery);
 
 export default router;

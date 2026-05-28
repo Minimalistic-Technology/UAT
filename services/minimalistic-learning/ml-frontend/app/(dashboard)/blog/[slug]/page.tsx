@@ -5,11 +5,24 @@ import { AlertCircle, Home } from 'lucide-react';
 import Link from 'next/link';
 import { Metadata } from 'next';
 
-// Revalidate this page at most every 60 seconds (Incremental Static Regeneration)
-export const revalidate = 60;
+// Removed revalidate as it is incompatible with output: export
 
 interface Props {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateStaticParams() {
+  try {
+    const res = await blogService.getBlogs({ limit: 1000 });
+    if (res.success && res.data) {
+      return res.data.items.map((blog: any) => ({
+        slug: blog.slug,
+      }));
+    }
+  } catch (error) {
+    console.error("Failed to generate static params:", error);
+  }
+  return [{ slug: 'fallback-slug' }]; // At least one generic to satisfy export if API fails
 }
 
 // Dynamic Metadata for SEO

@@ -49,6 +49,11 @@ const NotificationDropdown = () => {
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
       toast.success("All notifications marked as read");
+
+      // Auto-remove shown notifications from dropdown after 6 seconds
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => !n.isRead));
+      }, 6000);
     } catch (error) {
       toast.error("Failed to mark notifications as read");
     }
@@ -71,6 +76,11 @@ const NotificationDropdown = () => {
       await api.patch(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => (n.id || n._id) === id ? { ...n, isRead: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
+
+      // Seen karne ke baad thodi der me auto-disappear from UI (6 seconds)
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => (n.id || n._id) !== id));
+      }, 6000);
     } catch (error) {
       console.error("Failed to mark as read", error);
     }
