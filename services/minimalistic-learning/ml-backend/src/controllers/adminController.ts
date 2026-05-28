@@ -106,7 +106,10 @@ export const getPendingPosts = asyncHandler(async (req: Request, res: Response) 
     prisma.post.count({ where: { status: POST_STATUS.pending } })
   ]);
 
-  const items = itemsRaw.map(item => ({ ...item, authorId: item.author }));
+  const items = itemsRaw.map(item => {
+    const coverImageObj = item.coverImage ? JSON.parse(item.coverImage) : null;
+    return { ...item, authorId: item.author, coverImage: coverImageObj };
+  });
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, {
@@ -144,7 +147,10 @@ export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response)
     prisma.post.count({ where: filter })
   ]);
 
-  const items = itemsRaw.map(item => ({ ...item, authorId: item.author }));
+  const items = itemsRaw.map(item => {
+    const coverImageObj = item.coverImage ? JSON.parse(item.coverImage) : null;
+    return { ...item, authorId: item.author, coverImage: coverImageObj };
+  });
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, {
