@@ -13,6 +13,7 @@ import {
 } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
+import { loginLimiter, otpLimiter } from "../middleware/rateLimiter.js";
 import { confirmRegistrationSchema, forgotPasswordSchema, googleAuthSchema, loginSchema, registerEmployerSchema, registerUserSchema, resetPasswordSchema, verifyOtpSchema } from "../validations/auth.validation.js";
 
 const router = Router();
@@ -34,6 +35,7 @@ router.post(
 // confirm registration
 router.post(
   "/register/confirm",
+  otpLimiter,
   validate(confirmRegistrationSchema),
   confirmRegistrationOTP,
 );
@@ -41,6 +43,7 @@ router.post(
 // Login
 router.post(
   "/login",
+  loginLimiter,
   validate(loginSchema),
   login,
 );
@@ -61,6 +64,7 @@ router.get("/me", protect, getMe);
 // Verify OTP
 router.post(
   "/verify-otp",
+  otpLimiter,
   validate(verifyOtpSchema),
   verifyOTP,
 );
