@@ -4,9 +4,12 @@ import { prisma } from '../config/db';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
-import { PostStatus, NotificationType, Role } from '@prisma/client';
 import { sendPostApprovedEmail, sendPostRejectedEmail, sendPostDeletedEmail } from '../utils/email';
 import { env } from '../config/env';
+
+// SQLite-compatible string constants (replaces Prisma enums)
+const POST_STATUS = { pending: 'pending', published: 'published', rejected: 'rejected' } as const;
+const NOTIFICATION_TYPE = { post_deleted: 'post_deleted', post_approved: 'post_approved', post_rejected: 'post_rejected', general: 'general' } as const;
 
 // ─── DELETE /admin/posts/:postId ──────────────────────────────────────────────
 export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) => {
@@ -26,7 +29,7 @@ export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) 
       recipientId: authorId,
       title: 'Post Deleted by Admin',
       message: `Your post "${postTitle}" was deleted by an admin.${reason ? ` Reason: ${reason}` : ''}`,
-      type: NotificationType.post_deleted
+      type: NOTIFICATION_TYPE.post_deleted
     }
   });
 
@@ -94,13 +97,13 @@ export const getPendingPosts = asyncHandler(async (req: Request, res: Response) 
 
   const [itemsRaw, total] = await Promise.all([
     prisma.post.findMany({
-      where: { status: PostStatus.pending },
+      where: { status: POST_STATUS.pending },
       include: { author: { select: { firstName: true, lastName: true, email: true } } },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit
     }),
-    prisma.post.count({ where: { status: PostStatus.pending } })
+    prisma.post.count({ where: { status: POST_STATUS.pending } })
   ]);
 
   const items = itemsRaw.map(item => ({ ...item, authorId: item.author }));
@@ -127,7 +130,7 @@ export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response)
 
   const filter: any = {};
   if (status && ['pending', 'published', 'rejected'].includes(String(status))) {
-    filter.status = status as PostStatus;
+    filter.status = String(status);
   }
 
   const [itemsRaw, total] = await Promise.all([
@@ -165,7 +168,7 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
 
   const updatedPost = await prisma.post.update({
     where: { id: postId },
-    data: { status: PostStatus.published, published: true }
+    data: { status: POST_STATUS.published, published: true }
   });
 
   await prisma.notification.create({
@@ -173,7 +176,7 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
       recipientId: updatedPost.authorId,
       title: 'Post Approved! 🎉',
       message: `Great news! Your post "${updatedPost.title}" has been approved and is now live on the platform.`,
-      type: NotificationType.post_approved
+      type: NOTIFICATION_TYPE.post_approved
     }
   });
 
@@ -197,7 +200,7 @@ export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
 
   const updatedPost = await prisma.post.update({
     where: { id: postId },
-    data: { status: PostStatus.rejected, published: false }
+    data: { status: POST_STATUS.rejected, published: false }
   });
 
   await prisma.notification.create({
@@ -205,7 +208,7 @@ export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
       recipientId: updatedPost.authorId,
       title: 'Post Rejected',
       message: `Your post "${updatedPost.title}" was not approved by the admin. Please review our guidelines and try again.`,
-      type: NotificationType.post_rejected
+      type: NOTIFICATION_TYPE.post_rejected
     }
   });
 
@@ -247,7 +250,7 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
 
   const updateData: Record<string, any> = {};
   if (role && (role === 'admin' || role === 'user')) {
-    updateData.role = role as Role;
+    updateData.role = role as string;
   }
   if (firstName !== undefined) updateData.firstName = firstName;
   if (lastName !== undefined) updateData.lastName = lastName;
@@ -309,7 +312,7 @@ export const createPermission = asyncHandler(async (req: Request, res: Response)
       path_method_role: {
         path: path.trim(),
         method: method ? method.trim() : null,
-        role: role as Role
+        role: role as string
       }
     }
   });
@@ -322,7 +325,7 @@ export const createPermission = asyncHandler(async (req: Request, res: Response)
     data: {
       path: path.trim(),
       method: method ? method.toUpperCase().trim() : null,
-      role: role as Role,
+      role: role as string,
       isActive: typeof isActive === 'boolean' ? isActive : true,
       description: description ? description.trim() : null
     }
@@ -443,4 +446,55 @@ export const deleteTeamMember = asyncHandler(async (req: Request, res: Response)
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, null, 'Team member removed successfully')
   );
+});
+
+// ─── DATABASE STUDIO ENDPOINTS (SQLite) ───────────────────────────────────────
+export const getDatabaseTables = asyncHandler(async (req: Request, res: Response) => {
+  // Query sqlite_master to get all user tables
+  const result = await prisma.$queryRawUnsafe<{ name: string }[]>("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '_prisma_migrations';");
+
+  const tables = result.map(t => t.name);
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, { tables }, 'Database tables fetched successfully')
+  );
+});
+
+export const executeDatabaseQuery = asyncHandler(async (req: Request, res: Response) => {
+  const { query } = req.body;
+
+  if (!query || typeof query !== 'string') {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Valid SQL query string is required');
+  }
+
+  // Security check: Make sure we are an admin (though middleware should handle this)
+  const role = req.user?.role || (req.user as any)?.role;
+  if (role !== 'admin') {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Insufficient privileges to execute raw queries');
+  }
+
+  try {
+    const isSelect = query.trim().toUpperCase().startsWith('SELECT') || query.trim().toUpperCase().startsWith('PRAGMA');
+
+    let result;
+    if (isSelect) {
+      result = await prisma.$queryRawUnsafe(query);
+    } else {
+      result = await prisma.$executeRawUnsafe(query);
+      result = { affectedRows: result };
+    }
+
+    // Convert bigints to strings for JSON serialization if any
+    const processedResult = JSON.parse(
+      JSON.stringify(result, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      )
+    );
+
+    return res.status(StatusCodes.OK).json(
+      new ApiResponse(StatusCodes.OK, { result: processedResult }, 'Query executed successfully')
+    );
+  } catch (error: any) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, `Query failed: ${error.message || 'Unknown error'}`);
+  }
 });

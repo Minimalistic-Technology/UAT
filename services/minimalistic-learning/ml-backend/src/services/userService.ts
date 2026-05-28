@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 export type CreateUserPayload = Prisma.UserCreateInput;
 
 export const findByEmail = (email: string) => prisma.user.findFirst({
-  where: { email: { equals: email, mode: 'insensitive' } }
+  where: { email: email.toLowerCase().trim() }
 });
 
 export const findById = (id: string) => prisma.user.findUnique({

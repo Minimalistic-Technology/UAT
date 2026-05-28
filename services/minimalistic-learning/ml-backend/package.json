@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "backup": "node scripts/backupSQLite.js",
+    "backup:watch": "node scripts/backupSQLite.js --watch"
   },
   "dependencies": {
     "@getbrevo/brevo": "^5.0.4",
