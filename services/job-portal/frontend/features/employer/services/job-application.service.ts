@@ -20,10 +20,10 @@ interface JobApplicationsResponse {
   applications: ApplicationWithUser[];
 }
 
-export const getApplicationsByJobId = async (jobId: string) => {
-  const response = await apiClient.get<
+export const getApplicationsByJobId = async (listingId: string, listingType: string) => {
+  const response = await apiClient.post<
     ApiSuccessResponse<JobApplicationsResponse>
-  >(`/applications/job/${jobId}`);
+  >(`/applications/jobs/my-applications`, { listingId, listingType });
   return response.data;
 };
 

@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { getApplicationsByJobId, getAllEmployerApplications, updateApplicationStatus } from "../services/job-application.service";
 
-export const useGetApplicationsByJobId = (jobId: string) => {
+export const useGetApplicationsByJobId = (listingId: string, listingType: string) => {
   return useQuery({
-    queryKey: ["job-applications", jobId],
-    queryFn: () => getApplicationsByJobId(jobId),
-    enabled: !!jobId, 
+    queryKey: ["job-applications", listingId, listingType],
+    queryFn: () => getApplicationsByJobId(listingId, listingType),
+    enabled: !!listingId && !!listingType, 
   });
 };
 
