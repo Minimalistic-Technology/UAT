@@ -6,6 +6,24 @@ import crypto from 'crypto';
 import { sendEmail } from '../utils/sendEmail';
 import { getOtpEmail, getWelcomeEmail, getLoginAlertEmail } from '../utils/emailTemplates';
 
+const verifyRecaptcha = async (token: string): Promise<boolean> => {
+    try {
+        const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+        if (!secretKey) {
+            console.warn('RECAPTCHA_SECRET_KEY is missing. Skipping reCAPTCHA validation.');
+            return true;
+        }
+        const response = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`, {
+            method: 'POST',
+        });
+        const data = await response.json();
+        return data.success;
+    } catch (error) {
+        console.error('reCAPTCHA Verification Error:', error);
+        return false;
+    }
+};
+
 const generateToken = (id: string, role: string) => {
     return jwt.sign({ id, role }, process.env.JWT_SECRET || 'secret', {
         expiresIn: (process.env.JWT_EXPIRE || '30d') as any,
@@ -14,7 +32,19 @@ const generateToken = (id: string, role: string) => {
 
 export const register = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, password, role, recaptchaToken } = req.body;
+
+        if (!recaptchaToken) {
+            res.status(400).json({ error: 'reCAPTCHA token is missing.' });
+            return;
+        }
+
+        const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
+        if (!isRecaptchaValid) {
+            res.status(400).json({ error: 'reCAPTCHA verification failed. Please try again.' });
+            return;
+        }
+
         let user = await User.findOne({ email });
 
         if (user && user.isVerified) {
@@ -117,7 +147,18 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
 
 export const login = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { email, password } = req.body;
+        const { email, password, recaptchaToken } = req.body;
+
+        if (!recaptchaToken) {
+            res.status(400).json({ error: 'reCAPTCHA token is missing.' });
+            return;
+        }
+
+        const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
+        if (!isRecaptchaValid) {
+            res.status(400).json({ error: 'reCAPTCHA verification failed. Please try again.' });
+            return;
+        }
 
         const user = await User.findOne({ email }).select('+password +loginAttempts +lockUntil');
         if (!user) {

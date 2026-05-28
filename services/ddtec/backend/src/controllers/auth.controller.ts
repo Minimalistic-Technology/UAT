@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import axios from 'axios';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
@@ -99,7 +100,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
                 await user.save();
             }
             return res.status(400).json({ msg: 'Invalid OTP', isValid: false });
-        }
+        } // Add closing brace for if (otpRecord.otp !== String(otp))
 
         // Reset attempts on success
         if (user) {
@@ -511,10 +512,25 @@ export const changePassword = async (req: Request | any, res: Response) => {
 
 export const checkUser = async (req: Request, res: Response) => {
     try {
-        let { identifier } = req.body;
+        let { identifier, recaptchaToken } = req.body;
         if (!identifier) {
             return res.status(400).json({ msg: 'Identifier is required' });
         }
+
+        if (!recaptchaToken) {
+            return res.status(400).json({ msg: 'ReCAPTCHA token is required' });
+        }
+
+        // Verify ReCAPTCHA
+        const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+        if (secretKey) {
+            const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
+            const recaptchaRes = await axios.post(verifyUrl);
+            if (!recaptchaRes.data.success) {
+                return res.status(400).json({ msg: 'ReCAPTCHA verification failed. Please try again.' });
+            }
+        }
+
         identifier = identifier.trim().toLowerCase();
 
         const user = await User.findOne({

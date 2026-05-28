@@ -2,6 +2,8 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const sendEmail = require('../utils/sendEmail');
+const verifyRecaptcha = require('../utils/verifyRecaptcha');
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -15,10 +17,15 @@ const signToken = (id) =>
 // @access  Public
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, handle } = req.body;
+    const { name, email, password, handle, recaptchaToken } = req.body;
 
     if (!name || !email || !password || !handle) {
       return res.status(400).json({ error: 'All fields required' });
+    }
+
+    const isHuman = await verifyRecaptcha(recaptchaToken);
+    if (!isHuman) {
+      return res.status(400).json({ error: 'Recaptcha verification failed. Please try again.' });
     }
 
     if (password.length < 8) {
@@ -40,17 +47,133 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ error: 'Handle already taken' });
     }
 
-    const user = await User.create({ name, email: email.toLowerCase(), password, handle: cleanHandle, bio: '' });
-    const token = signToken(user._id);
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      password,
+      handle: cleanHandle,
+      bio: '',
+      otpCode,
+      otpExpires: Date.now() + 10 * 60 * 1000,
+      isVerified: false
+    });
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Verify your email - Infilink',
+      htmlContent: `<p>Your verification OTP is: <strong>${otpCode}</strong>. It expires in 10 minutes.</p>`
+    });
 
     res.status(201).json({
+      requireOtp: true,
+      message: 'OTP sent to your email.'
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-otp
+// @access  Public
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ error: 'Email and OTP required' });
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (user.isVerified) {
+      return res.status(400).json({ error: 'User is already verified' });
+    }
+
+    if (user.otpLockUntil && user.otpLockUntil > Date.now()) {
+      const lockTimeRemainingMs = user.otpLockUntil.getTime() - Date.now();
+      return res.status(429).json({
+        error: 'Account locked due to too many failed OTP attempts.',
+        lockTimeMs: lockTimeRemainingMs
+      });
+    }
+
+    if (user.otpCode !== otp || !user.otpExpires || user.otpExpires < Date.now()) {
+      user.failedOtpAttempts = (user.failedOtpAttempts || 0) + 1;
+
+      if (user.failedOtpAttempts >= 3) {
+        user.otpLockUntil = Date.now() + 2 * 60 * 1000;
+        await user.save();
+        return res.status(429).json({
+          error: 'Account locked due to too many failed OTP attempts.',
+          lockTimeMs: 2 * 60 * 1000
+        });
+      }
+
+      await user.save();
+      return res.status(401).json({ error: 'Invalid or expired OTP' });
+    }
+
+    // Correct OTP
+    user.isVerified = true;
+    user.otpCode = undefined;
+    user.otpExpires = undefined;
+    user.failedOtpAttempts = 0;
+    user.otpLockUntil = undefined;
+    await user.save();
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Welcome to Infilink! Account Created',
+      htmlContent: `<p>Welcome, ${user.name}! Your account has been successfully verified and created.</p>`
+    });
+
+    const token = signToken(user._id);
+
+    res.json({
       token,
       user: {
         id: user._id, name: user.name, email: user.email, handle: user.handle,
         bio: user.bio, plan: user.plan, theme: user.theme,
-        redirectEnabled: user.redirectEnabled, redirectUrl: user.redirectUrl,
+        redirectEnabled: user.redirectEnabled, redirectUrl: user.redirectUrl
       }
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// @desc    Resend OTP
+// @route   POST /api/auth/resend-otp
+// @access  Public
+router.post('/resend-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.isVerified) return res.status(400).json({ error: 'Already verified' });
+
+    if (user.otpLockUntil && user.otpLockUntil > Date.now()) {
+      const lockTimeRemainingMs = user.otpLockUntil.getTime() - Date.now();
+      return res.status(429).json({
+        error: 'Account locked. Try again later.',
+        lockTimeMs: lockTimeRemainingMs
+      });
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otpCode = otpCode;
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Verify your email - Infilink (Resend)',
+      htmlContent: `<p>Your verification OTP is: <strong>${otpCode}</strong>. It expires in 10 minutes.</p>`
+    });
+
+    res.json({ success: true, message: 'OTP resent to email' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -61,14 +184,68 @@ router.post('/register', async (req, res) => {
 // @access  Public
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, recaptchaToken } = req.body;
+
+    const isHuman = await verifyRecaptcha(recaptchaToken);
+    if (!isHuman) {
+      return res.status(400).json({ error: 'Recaptcha verification failed. Please try again.' });
+    }
 
     const user = await User.findOne({ email }).select('+password');
-    if (!user || !(await user.matchPassword(password))) {
+    if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // Force verify except for older users who might not have had this requirement 
+    // Here we strictly check if false (so older users with undefined are not blocked blindly, or you can block all)
+    // Based on user prompt: block "new users", but it's best to check exactly false
+    if (user.isVerified === false) {
+      return res.status(403).json({
+        error: 'Email not verified. Please verify your email first.',
+        requireOtp: true
+      });
+    }
+
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const lockTimeRemainingMs = user.lockUntil.getTime() - Date.now();
+      return res.status(429).json({
+        error: 'Account locked due to too many failed attempts.',
+        lockTimeMs: lockTimeRemainingMs
+      });
+    }
+
+    if (!(await user.matchPassword(password))) {
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+
+      if (user.failedLoginAttempts >= 3) {
+        user.lockUntil = Date.now() + 2 * 60 * 1000;
+        await user.save();
+        return res.status(429).json({
+          error: 'Account locked due to too many failed attempts.',
+          lockTimeMs: 2 * 60 * 1000
+        });
+      }
+
+      await user.save();
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    if (user.failedLoginAttempts > 0 || user.lockUntil) {
+      user.failedLoginAttempts = 0;
+      user.lockUntil = undefined;
+      await user.save();
+    }
+
     const token = signToken(user._id);
+
+    // Send login alert (fire and forget)
+    if (user.email !== 'admin@gmail.com') {
+      sendEmail({
+        to: user.email,
+        subject: 'New Login Alert - Infilink',
+        htmlContent: `<p>Hello ${user.name}, we just noticed a new login to your Infilink account. If this wasn't you, please change your password immediately.</p>`
+      }).catch(() => { });
+    }
 
     res.json({
       token,

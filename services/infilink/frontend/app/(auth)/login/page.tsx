@@ -4,24 +4,103 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { useState } from 'react'
+import { api } from '@/lib/api'
+import { useState, useEffect, useRef } from 'react'
+import ReCAPTCHA from "react-google-recaptcha"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login } = useAuth()
+  const { login, verifyOtp } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [lockTimeLeft, setLockTimeLeft] = useState(0)
+  const [requireOtp, setRequireOtp] = useState(false)
+  const [otp, setOtp] = useState('')
+  const recaptchaRef = useRef<ReCAPTCHA>(null)
+
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (lockTimeLeft > 0) {
+      timer = setInterval(() => {
+        setLockTimeLeft((prev) => (prev > 1000 ? prev - 1000 : 0))
+      }, 1000)
+    }
+    return () => clearInterval(timer)
+  }, [lockTimeLeft])
+
+  const formatLockTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (lockTimeLeft > 0) return
+
+    const recaptchaToken = recaptchaRef.current?.getValue()
+    if (!recaptchaToken) {
+      setError('Please complete the recaptcha verification.')
+      return
+    }
+
     setLoading(true)
     setError('')
-    const result = await login(email, password)
+    const result = await login(email, password, recaptchaToken)
+    recaptchaRef.current?.reset()
     setLoading(false)
-    if ('error' in result && result.error) { setError(result.error); return }
+
+    if ('error' in result && result.error) {
+      if ((result as any).requireOtp) {
+        setRequireOtp(true)
+        setError(result.error)
+        return
+      }
+      if ((result as any).lockTimeMs) {
+        setLockTimeLeft((result as any).lockTimeMs)
+      }
+      setError(result.error)
+      return
+    }
     router.push('/dashboard')
+  }
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (lockTimeLeft > 0) return
+
+    setLoading(true)
+    setError('')
+    const result = await verifyOtp(email, otp)
+    setLoading(false)
+
+    if ('error' in result && result.error) {
+      if ((result as any).lockTimeMs) {
+        setLockTimeLeft((result as any).lockTimeMs)
+      }
+      setError(result.error)
+      return
+    }
+    router.push('/dashboard')
+  }
+
+  const handleResendOtp = async () => {
+    setLoading(true)
+    setError('')
+    const result = await api.resendOtp({ email })
+    setLoading(false)
+    if (result.error) {
+      setError(result.error)
+      if ((result as any).lockTimeMs) {
+        setLockTimeLeft((result as any).lockTimeMs)
+      }
+    } else {
+      setError('OTP resent to your email.')
+    }
   }
 
   return (
@@ -60,32 +139,73 @@ export default function LoginPage() {
             ∞
           </div>
 
-          <h2 className="text-[26px] md:text-[30px] font-black text-gray-900 mb-2 tracking-tight">Sign In</h2>
-          <p className="text-[14px] text-gray-500 font-medium tracking-[0.2px] mb-8">Enter your details to access your dashboard.</p>
+          <h2 className="text-[26px] md:text-[30px] font-black text-gray-900 mb-2 tracking-tight">
+            {requireOtp ? 'Verify your email' : 'Sign In'}
+          </h2>
+          <p className="text-[14px] text-gray-500 font-medium tracking-[0.2px] mb-8">
+            {requireOtp ? `We sent an OTP to ${email}` : 'Enter your details to access your dashboard.'}
+          </p>
 
-          <form onSubmit={handleLogin} className="space-y-5">
-            <Input
-              label="Email Address"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-              required
-            />
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-              required
-            />
+          <form onSubmit={requireOtp ? handleVerifyOtp : handleLogin} className="space-y-5">
+            {!requireOtp ? (
+              <>
+                <Input
+                  label="Email Address"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                  required
+                  disabled={lockTimeLeft > 0}
+                />
+                <Input
+                  label="Password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                  required
+                  disabled={lockTimeLeft > 0}
+                />
 
-            {error && <p className="text-[13px] font-bold text-red-500">{error}</p>}
+                <div className="flex justify-center my-4 overflow-hidden rounded-xl">
+                  <ReCAPTCHA
+                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                    ref={recaptchaRef}
+                  />
+                </div>
+              </>
+            ) : (
+              <Input
+                label="OTP Code"
+                type="text"
+                placeholder="123456"
+                value={otp}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtp(e.target.value)}
+                required
+                disabled={lockTimeLeft > 0}
+                maxLength={6}
+              />
+            )}
 
-            <Button type="submit" variant="purple" full loading={loading} className="mt-4 py-4 text-[15px]">
-              Login to Dashboard
+            {error && (
+              <p className="text-[13px] font-bold text-red-500">
+                {error}
+                {lockTimeLeft > 0 && ` Please try again in ${formatLockTime(lockTimeLeft)}.`}
+              </p>
+            )}
+
+            <Button type="submit" variant="purple" full loading={loading} disabled={lockTimeLeft > 0} className="mt-4 py-4 text-[15px]">
+              {lockTimeLeft > 0 ? `Locked (${formatLockTime(lockTimeLeft)})` : requireOtp ? 'Verify & Login' : 'Login to Dashboard'}
             </Button>
+
+            {requireOtp && (
+              <div className="text-center mt-3">
+                <button type="button" onClick={handleResendOtp} disabled={loading || lockTimeLeft > 0} className="text-violet-600 text-sm font-bold hover:underline">
+                  Resend OTP
+                </button>
+              </div>
+            )}
           </form>
 
           <p className="text-center text-[13.5px] font-medium text-gray-500 mt-8">

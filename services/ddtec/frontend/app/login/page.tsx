@@ -8,6 +8,7 @@ import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const LoginForm = () => {
     const { login, checkUser } = useAuth();
@@ -27,16 +28,23 @@ const LoginForm = () => {
     const [secondaryIdentifier, setSecondaryIdentifier] = useState(""); // For the "other" one
     const [isLoading, setIsLoading] = useState(false);
     const [isOtpRequired, setIsOtpRequired] = useState(true);
+    const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
     // Unified Login/Signup Step 1
     const handleCheckUser = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!recaptchaToken) {
+            showToast("Please complete the reCAPTCHA verification.", "error");
+            return;
+        }
+
         setIsLoading(true);
 
         const trimmedIdentifier = identifier.trim();
         try {
-            // 1. Check if user exists in DDTEC website
-            const res = await api.post('/auth/check-user', { identifier: trimmedIdentifier });
+            // 1. Check if user exists in DDTEC website and send recaptcha
+            const res = await api.post('/auth/check-user', { identifier: trimmedIdentifier, recaptchaToken });
 
             // Enforce signup permission set by administrator
             if (!res.data.signupAllowed && !res.data.exists) {
@@ -221,6 +229,14 @@ const LoginForm = () => {
                                         autoComplete="on"
                                     />
                                 </div>
+                            </div>
+
+                            <div className="flex justify-center my-4">
+                                <ReCAPTCHA
+                                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
+                                    onChange={(token) => setRecaptchaToken(token)}
+                                    theme="light"
+                                />
                             </div>
 
                             <button
