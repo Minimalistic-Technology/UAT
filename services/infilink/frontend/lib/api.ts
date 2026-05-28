@@ -17,9 +17,9 @@ async function request<T>(
   if (token) headers['Authorization'] = `Bearer ${token}`
 
   try {
-    const res  = await fetch(`${BASE}${path}`, { cache: 'no-store', ...options, headers })
+    const res = await fetch(`${BASE}${path}`, { cache: 'no-store', ...options, headers })
     const json = await res.json().catch(() => ({}))
-    if (!res.ok) return { error: json.error ?? 'Something went wrong', status: res.status }
+    if (!res.ok) return { error: json.error ?? 'Something went wrong', status: res.status, ...json }
     return { data: json as T, status: res.status }
   } catch {
     return { error: 'Network error — is the backend running?', status: 0 }
@@ -28,16 +28,20 @@ async function request<T>(
 
 export const api = {
   // ── Auth ──────────────────────────────────────────────────
-  register: (body: object) =>
+  register: (body: any) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-  login: (body: object) =>
+  verifyOtp: (body: object) =>
+    request('/auth/verify-otp', { method: 'POST', body: JSON.stringify(body) }),
+  resendOtp: (body: object) =>
+    request('/auth/resend-otp', { method: 'POST', body: JSON.stringify(body) }),
+  login: (body: any) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
-  me:     () => request('/auth/me'),
+  me: () => request('/auth/me'),
   logout: () => request('/auth/logout', { method: 'POST' }),
 
   // ── Links ─────────────────────────────────────────────────
   getLinks: () => request('/links'),
-  addLink:  (body: object) =>
+  addLink: (body: object) =>
     request('/links', { method: 'POST', body: JSON.stringify(body) }),
   updateLink: (id: string, body: object) =>
     request(`/links/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
@@ -47,17 +51,17 @@ export const api = {
     request('/links/reorder', { method: 'PUT', body: JSON.stringify({ order }) }),
 
   // ── Profile ───────────────────────────────────────────────
-  getProfile:    (handle: string) => request(`/profile/${handle}`),
-  updateProfile: (body: object)   =>
+  getProfile: (handle: string) => request(`/profile/${handle}`),
+  updateProfile: (body: object) =>
     request('/profile', { method: 'PATCH', body: JSON.stringify(body) }),
   setRedirect: (body: any) =>
     request('/profile', { method: 'PATCH', body: JSON.stringify({ redirectEnabled: body.enabled, redirectUrl: body.url }) }),
 
   // ── Analytics ─────────────────────────────────────────────
   getAnalytics: () => request('/analytics'),
-  recordPageView: (userId: string) => 
+  recordPageView: (userId: string) =>
     request('/analytics', { method: 'POST', body: JSON.stringify({ userId, type: 'page_view' }) }),
-  recordClick:  (userId: string, linkId: string) =>
+  recordClick: (userId: string, linkId: string) =>
     request('/analytics', { method: 'POST', body: JSON.stringify({ userId, linkId, type: 'link_click' }) }),
 
   // ── Subscribers ───────────────────────────────────────────

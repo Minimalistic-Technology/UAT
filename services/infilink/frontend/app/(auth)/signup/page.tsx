@@ -4,11 +4,12 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import ReCAPTCHA from "react-google-recaptcha"
 
 export default function SignupPage() {
   const router = useRouter()
-  const { register } = useAuth()
+  const { register, verifyOtp } = useAuth()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
   const [handle, setHandle] = useState('')
@@ -17,13 +18,63 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
+  const [otp, setOtp] = useState('')
+  const [lockTimeLeft, setLockTimeLeft] = useState(0)
+  const recaptchaRef = useRef<ReCAPTCHA>(null)
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout
+    if (lockTimeLeft > 0) {
+      timer = setInterval(() => {
+        setLockTimeLeft((prev) => (prev > 1000 ? prev - 1000 : 0))
+      }, 1000)
+    }
+    return () => clearInterval(timer)
+  }, [lockTimeLeft])
+
+  const formatLockTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  }
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const recaptchaToken = recaptchaRef.current?.getValue()
+    if (!recaptchaToken) {
+      setError('Please complete the recaptcha verification.')
+      return
+    }
+
     setLoading(true)
     setError('')
-    const result = await register({ name, email, password, handle })
+    const result = await register({ name, email, password, handle, recaptchaToken }) as any
+    recaptchaRef.current?.reset()
     setLoading(false)
-    if ('error' in result && result.error) { setError(result.error); return }
+    if (result && 'error' in result && result.error) { setError(result.error); return }
+    if (result && result.requireOtp) {
+      setStep(3);
+      return;
+    }
+    router.push('/dashboard')
+  }
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (lockTimeLeft > 0) return
+    setLoading(true)
+    setError('')
+    const result = await verifyOtp(email, otp)
+    setLoading(false)
+    if ('error' in result && result.error) {
+      if ((result as any).lockTimeMs) {
+        setLockTimeLeft((result as any).lockTimeMs)
+      }
+      setError(result.error)
+      return
+    }
     router.push('/dashboard')
   }
 
@@ -56,16 +107,17 @@ export default function SignupPage() {
           <div className="flex items-center gap-2 mb-8">
             <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? 'bg-violet-600' : 'bg-gray-200'}`} />
             <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? 'bg-violet-600' : 'bg-gray-200'}`} />
+            <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? 'bg-violet-600' : 'bg-gray-200'}`} />
           </div>
 
           <h2 className="text-[28px] md:text-[34px] font-black text-gray-900 mb-2 tracking-tight">
-            {step === 1 ? 'Claim your link' : 'Create an account'}
+            {step === 1 ? 'Claim your link' : step === 2 ? 'Create an account' : 'Verify Email'}
           </h2>
           <p className="text-[14px] text-gray-500 font-medium tracking-[0.2px] mb-8">
-            {step === 1 ? 'Choose an awesome handle for your public page.' : 'Just a few details to get your page live.'}
+            {step === 1 ? 'Choose an awesome handle for your public page.' : step === 2 ? 'Just a few details to get your page live.' : `We sent a code to ${email}`}
           </p>
 
-          <form onSubmit={step === 1 ? (e) => { e.preventDefault(); setStep(2) } : handleSignup} className="space-y-5">
+          <form onSubmit={step === 1 ? (e) => { e.preventDefault(); setStep(2) } : step === 2 ? handleSignup : handleVerifyOtp} className="space-y-5">
             {step === 1 ? (
               <>
                 <div className="relative">
@@ -82,16 +134,46 @@ export default function SignupPage() {
                 </div>
                 <Button type="submit" variant="purple" full className="mt-4 py-4 text-[15px]">Continue →</Button>
               </>
-            ) : (
+            ) : step === 2 ? (
               <>
                 <Input label="Full Name" placeholder="Alex Developer" value={name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)} required autoFocus />
                 <Input label="Email Address" type="email" placeholder="you@email.com" value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} required />
                 <Input label="Password" type="password" placeholder="Min 8 characters" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} required />
                 {error && <p className="text-[13px] font-bold text-red-500">{error}</p>}
+
+                <div className="flex justify-center my-4 overflow-hidden rounded-xl">
+                  <ReCAPTCHA
+                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                    ref={recaptchaRef}
+                  />
+                </div>
+
                 <div className="flex gap-3">
                   <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
-                  <Button type="submit" variant="purple" full loading={loading}>Create Account</Button>
+                  <Button type="submit" variant="purple" full loading={loading}>Create Account & Send OTP</Button>
                 </div>
+              </>
+            ) : (
+              <>
+                <Input
+                  label="OTP Code"
+                  placeholder="123456"
+                  value={otp}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtp(e.target.value)}
+                  required
+                  autoFocus
+                  disabled={lockTimeLeft > 0}
+                  maxLength={6}
+                />
+                {error && (
+                  <p className="text-[13px] font-bold text-red-500">
+                    {error}
+                    {lockTimeLeft > 0 && ` Please wait ${formatLockTime(lockTimeLeft)}.`}
+                  </p>
+                )}
+                <Button type="submit" variant="purple" full loading={loading} disabled={lockTimeLeft > 0}>
+                  {lockTimeLeft > 0 ? `Locked (${formatLockTime(lockTimeLeft)})` : 'Verify & Dashboard'}
+                </Button>
               </>
             )}
           </form>
