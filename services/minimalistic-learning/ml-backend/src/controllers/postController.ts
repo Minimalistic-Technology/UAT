@@ -75,7 +75,8 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
     const likesCount = likesArr.length;
     const hasLiked = currentUserId ? likesArr.includes(currentUserId) : false;
 
-    const mappedPost = { ...post, likesCount, hasLiked };
+    const coverImageObj = post.coverImage ? JSON.parse(post.coverImage) : null;
+    const mappedPost = { ...post, likesCount, hasLiked, coverImage: coverImageObj };
     delete mappedPost.likes;
     return mappedPost;
   });
@@ -119,7 +120,8 @@ export const listMyPosts = asyncHandler(async (req: Request, res: Response) => {
     const likesCount = likesArr.length;
     const hasLiked = likesArr.includes(userId);
 
-    const mappedPost = { ...post, likesCount, hasLiked };
+    const coverImageObj = post.coverImage ? JSON.parse(post.coverImage) : null;
+    const mappedPost = { ...post, likesCount, hasLiked, coverImage: coverImageObj };
     delete mappedPost.likes;
     return mappedPost;
   });
@@ -179,6 +181,8 @@ export const getPostBySlug = asyncHandler(async (req: Request, res: Response) =>
     // Ensure authorId fallback to empty object if author is null
     const authorData = post.author || { firstName: "Unknown", lastName: "Author" };
 
+    const coverImageObj = post.coverImage ? JSON.parse(post.coverImage) : null;
+
     const postResponse = {
       ...post,
       likesCount,
@@ -186,7 +190,8 @@ export const getPostBySlug = asyncHandler(async (req: Request, res: Response) =>
       likes,
       viewedBy,
       tags,
-      authorId: authorData
+      authorId: authorData,
+      coverImage: coverImageObj
     };
 
     delete postResponse.likes;
@@ -233,7 +238,8 @@ export const getPostById = asyncHandler(async (req: Request, res: Response) => {
     hasLiked = likesArr.includes(currentUserId);
   }
 
-  const postResponse = { ...post, likesCount, hasLiked };
+  const coverImageObj = post.coverImage ? JSON.parse(post.coverImage) : null;
+  const postResponse = { ...post, likesCount, hasLiked, coverImage: coverImageObj };
   delete postResponse.likes;
 
   return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, postResponse, "Post fetched successfully"));
