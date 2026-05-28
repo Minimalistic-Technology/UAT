@@ -1,5 +1,6 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
 
+type IListingType = "job" | "internship";
 
 interface GetMyApplicationsResponse {
     applications: any[];
@@ -19,7 +20,8 @@ export interface GetMyApplicationStatsResponse {
 }
 
 export interface ApplyJobPayload {
-    jobId: string;
+    listingId: string;
+    listingType: IListingType;
 }
 
 export const getMyApplications = async () => {

@@ -7,6 +7,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_ACCESS_SECRET: z.string().min(1, 'JWT_ACCESS_SECRET is required'),
   JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
+  MONGO_URI: z.string().optional(),
   ACCESS_TOKEN_EXPIRE: z.string().default('4h'),
   REFRESH_TOKEN_EXPIRE: z.string().default('7d'),
   COOKIE_SECRET: z.string().optional(),
@@ -19,6 +20,7 @@ const envSchema = z.object({
   EMAIL_PASS: z.string().min(1, 'EMAIL_PASS is required'),
   BREVO_API_KEY: z.string().optional().default('xkeysib-example-key'),
   BREVO_FROM_EMAIL: z.string().optional().default('onboarding@minimalistic.com'),
+  RECAPTCHA_SECRET_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.parse(process.env);

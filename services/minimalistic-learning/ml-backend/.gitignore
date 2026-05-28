@@ -40,3 +40,12 @@ desktop.ini
 
 # ── TypeScript Cache ─────────────────────────────────
 *.tsbuildinfo
+
+# ── SQLite Database ─────────────────────────────────
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+/backups
+/db-backups

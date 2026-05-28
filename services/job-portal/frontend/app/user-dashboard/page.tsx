@@ -165,7 +165,7 @@ export default function JobSeekerDashboard() {
                     >
                       <div className="flex flex-col gap-1">
                         <h4 className="group-hover:text-primary font-semibold text-slate-900 transition-colors">
-                          {app.job.title}
+                          {app.listing.title}
                         </h4>
                         <div className="text-muted-foreground flex items-center gap-3 text-sm">
                           <span>{app.job?.company?.name}</span>

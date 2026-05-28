@@ -10,7 +10,9 @@ import {
   Zap,
   AlertCircle,
   Tag,
-  X
+  X,
+  CalendarDays,
+  FileDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,14 +31,23 @@ import {
   formatDuration,
 } from "@/features/employer/helper/plan.helper";
 import { loadRazorpayScript } from "@/lib/razorpay-script";
-import { createOrder, verifyPayment } from "@/features/employer/services/payment.service";
+import {
+  createOrder,
+  verifyPayment,
+} from "@/features/employer/services/payment.service";
 import type { Plan } from "../types";
 import { useState } from "react";
 import { useValidateCoupon } from "../hooks/use-coupons";
 import { useRouter } from "next/navigation";
 import { APP_NAME } from "@/constants";
 
-export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boolean }) {
+export function PlanCard({
+  plan,
+  isUnverified,
+}: {
+  plan: Plan;
+  isUnverified: boolean;
+}) {
   const { data: session } = useSession();
   const companyRole = session?.user.companyRole;
   const userId = session?.user.id;
@@ -71,7 +82,8 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
           onError: (error: any) => {
             setAppliedCoupon(null);
             setDiscountedPrice(null);
-            const msg = error?.response?.data?.message || "Invalid or expired coupon";
+            const msg =
+              error?.response?.data?.message || "Invalid or expired coupon";
             toast.error(msg);
           },
         },
@@ -92,12 +104,12 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
   };
 
   const handlePayment = async () => {
-    if(companyRole !== 'owner') {
+    if (companyRole !== "owner") {
       toast.error("Only owner can buy plans");
       return;
     }
 
-     const isLoaded = await loadRazorpayScript();
+    const isLoaded = await loadRazorpayScript();
 
     if (!isLoaded) {
       toast.error("Razorpay SDK failed to load.");
@@ -113,13 +125,13 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
       };
 
       const orderData = await createOrder(payload);
-      
+
       if (orderData.data.isFree) {
         toast.success("Plan activated successfully!");
         router.push("/employer-dashboard");
         return;
       }
-      
+
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: orderData.data.order.amount,
@@ -136,10 +148,12 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
             });
             toast.success("Payment successful!");
             // window.location.href = `/employer/dashboard?payment=success&orderId=${orderData.data.order.id}`;
-            router.push("/employer-dashboard")
+            router.push("/employer-dashboard");
           } catch (error) {
             console.error("Payment verification failed", error);
-            toast.error("Payment verification failed. Please contact support if amount was deducted.");
+            toast.error(
+              "Payment verification failed. Please contact support if amount was deducted.",
+            );
           }
         },
         prefill: {
@@ -155,7 +169,9 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
       rzp.open();
     } catch (error: any) {
       console.error("Payment error:", error);
-      toast.error(error?.response?.data?.message || "Failed to initialize payment.");
+      toast.error(
+        error?.response?.data?.message || "Failed to initialize payment.",
+      );
     }
   };
 
@@ -181,7 +197,7 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
         <div className="absolute -top-1 left-0">
           <Badge
             variant="secondary"
-            className="rounded-none rounded-br-lg px-3 py-1 font-semibold bg-primary/10"
+            className="bg-primary/10 rounded-none rounded-br-lg px-3 py-1 font-semibold"
           >
             Current Default
           </Badge>
@@ -211,17 +227,31 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Badge variant="outline" className="bg-background flex gap-1.5 px-2.5 py-1">
+          <Badge
+            variant="outline"
+            className="bg-background flex gap-1.5 px-2.5 py-1"
+          >
             <Briefcase className="text-primary h-3.5 w-3.5" />
-            {formatJobLimit(plan.jobPostLimit)}
+            {formatJobLimit(plan.jobPostLimit)} Job Posts
           </Badge>
-          <Badge variant="outline" className="bg-background flex gap-1.5 px-2.5 py-1">
+          <Badge
+            variant="outline"
+            className="bg-background flex gap-1.5 px-2.5 py-1"
+          >
             {isUnlimited ? (
               <Infinity className="text-primary h-3.5 w-3.5" />
             ) : (
               <Clock className="text-primary h-3.5 w-3.5" />
             )}
-            {formatDuration(plan.durationDays)} Validity
+            {formatDuration(plan.durationDays)} Plan Expiry
+          </Badge>
+          {/* New Badge: Job Post Validity Days */}
+          <Badge
+            variant="outline"
+            className="bg-background flex gap-1.5 px-2.5 py-1"
+          >
+            <CalendarDays className="text-primary h-3.5 w-3.5" />
+            Posts live for {plan.postValidityDays} Days
           </Badge>
         </div>
       </CardHeader>
@@ -238,8 +268,12 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
                 <span className="text-2xl font-bold text-green-600">
                   {formatCurrency(discountedPrice, plan.currency)}
                 </span>
-                <Badge variant="outline" className="text-green-600 border-green-600 text-[10px] uppercase">
-                   Save {(plan.price - discountedPrice).toFixed(2)} {plan.currency}
+                <Badge
+                  variant="outline"
+                  className="border-green-600 text-[10px] text-green-600 uppercase"
+                >
+                  Save {(plan.price - discountedPrice).toFixed(2)}{" "}
+                  {plan.currency}
                 </Badge>
               </div>
             </div>
@@ -256,7 +290,7 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
             <input
               type="text"
               placeholder="Coupon Code"
-              className="border-input flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm uppercase shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-primary"
+              className="border-input focus:ring-primary flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm uppercase shadow-sm transition-colors focus:ring-1 focus:outline-none"
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value)}
               disabled={!!appliedCoupon}
@@ -285,7 +319,7 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
           </div>
 
           {appliedCoupon && (
-            <div className="flex items-center gap-2 text-xs font-medium text-green-600 animate-in fade-in slide-in-from-top-1">
+            <div className="animate-in fade-in slide-in-from-top-1 flex items-center gap-2 text-xs font-medium text-green-600">
               <Tag className="h-3 w-3" />
               <span>Coupon "{appliedCoupon.code}" Applied</span>
             </div>
@@ -293,6 +327,18 @@ export function PlanCard({ plan, isUnverified }: { plan: Plan, isUnverified: boo
         </div>
 
         <ul className="space-y-3">
+          {/* New Core Feature Check: Resume Download Access Toggles */}
+          <li className="flex items-start gap-3">
+            <div className="bg-primary/10 mt-1 rounded-full p-0.5">
+              <Check className="text-primary h-3.5 w-3.5" strokeWidth={3} />
+            </div>
+            <span className="text-foreground/80 text-sm leading-snug font-medium">
+              {plan.allowResumeDownload
+                ? "Unlimited Candidate Resume Downloads"
+                : "View Applications Online Only (No PDF Downloads)"}
+            </span>
+          </li>
+
           {plan.features.length > 0 ? (
             plan.features.map((feature, i) => (
               <li key={i} className="flex items-start gap-3">

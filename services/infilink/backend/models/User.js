@@ -12,6 +12,13 @@ const UserSchema = new mongoose.Schema(
     theme: { type: String, default: 'purple' },
     redirectEnabled: { type: Boolean, default: false },
     redirectUrl: { type: String, default: '' },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date },
+    isVerified: { type: Boolean, default: false },
+    otpCode: { type: String },
+    otpExpires: { type: Date },
+    failedOtpAttempts: { type: Number, default: 0 },
+    otpLockUntil: { type: Date },
   },
   { timestamps: true }
 );

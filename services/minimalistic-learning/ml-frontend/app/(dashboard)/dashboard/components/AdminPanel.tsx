@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Hero } from "@/components/Hero";
+import { DatabaseStudio } from "./DatabaseStudio";
 
 /* ─── Modern Switch Component ─────────────────────────────────────────── */
 const ModernSwitch = ({ checked, onChange, loading, colorClass }: { checked: boolean; onChange: () => void; loading: boolean; colorClass: string }) => (
@@ -39,7 +40,7 @@ const AdminPanel = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Tab and Advanced DB state
-  const [activeTab, setActiveTab] = useState<'system' | 'permissions' | 'users' | 'homepage' | 'subscribers' | 'team'>('system');
+  const [activeTab, setActiveTab] = useState<'system' | 'permissions' | 'users' | 'homepage' | 'subscribers' | 'team' | 'database'>('system');
   const [permissions, setPermissions] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
@@ -493,6 +494,20 @@ const AdminPanel = () => {
         >
           <UserIcon size={16} className={activeTab === 'team' ? 'text-theme-action' : 'text-foreground/45'} />
           Team Management
+        </button>
+        <button
+          onClick={() => setActiveTab('database')}
+          className={`flex items-center gap-2 pb-2 text-xs sm:text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'database'
+            ? 'text-theme-action border-b-2 border-theme-action scale-100'
+            : 'text-foreground/50 hover:text-foreground scale-95'
+            }`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={activeTab === 'database' ? 'text-theme-action' : 'text-foreground/45'}>
+            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+          </svg>
+          SQLite Studio
         </button>
       </div>
 
@@ -1339,6 +1354,11 @@ const AdminPanel = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── TAB CONTENT: SQLITE STUDIO ──────────────────────────────── */}
+      {activeTab === 'database' && (
+        <DatabaseStudio />
       )}
 
     </div>

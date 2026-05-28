@@ -11,6 +11,10 @@ import {
   CalendarIcon,
   Building2Icon,
   UsersIcon,
+  MonitorIcon,
+  GraduationCapIcon,
+  ClockIcon,
+  AwardIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,12 +34,14 @@ const Page = () => {
     isError,
   } = useGetJobDetailsById(jobId as string);
   const job = responseData?.data;
+  console.log("job", job);
 
   const { mutate: applyJob, isPending: isApplying } = useApplyJob();
 
   const handleApply = () => {
     applyJob({
-      jobId: jobId as string,
+      listingId: jobId as string,
+      listingType: job?.jobType === "internship" ? "internship" : "job"
     });
   };
 
@@ -82,17 +88,36 @@ const Page = () => {
               <div className="mt-4 flex flex-wrap gap-4">
                 <div className="text-muted-foreground flex items-center text-sm">
                   <MapPinIcon className="mr-1 h-4 w-4" />
-                  {job.location.city}, {job.location.country}{" "}
-                  {job.location.remote && "(Remote)"}
+                  {job.location?.city ? `${job.location.city}, ${job.location.country}` : "Location not specified"}
                 </div>
-                <div className="text-muted-foreground flex items-center text-sm">
-                  <WalletIcon className="mr-1 h-4 w-4" />₹
-                  {job.salary.min.toLocaleString()} - ₹
-                  {job.salary.max.toLocaleString()} / {job.salary.period}
-                </div>
-                <div className="text-muted-foreground flex items-center text-sm">
+                
+                {job.workMode && (
+                  <div className="text-muted-foreground flex items-center text-sm capitalize">
+                    <MonitorIcon className="mr-1 h-4 w-4" />
+                    {job.workMode.replace(/_/g, " ")}
+                  </div>
+                )}
+
+                {job.salary && (
+                  <div className="text-muted-foreground flex items-center text-sm">
+                    <WalletIcon className="mr-1 h-4 w-4" />
+                    {job.salary.currency || '₹'}
+                    {job.salary.min?.toLocaleString() || 0} {job.salary.max ? `- ${job.salary.currency || '₹'}${job.salary.max.toLocaleString()}` : ''} / {job.salary.period}
+                  </div>
+                )}
+
+                {job.stipend && (
+                  <div className="text-muted-foreground flex items-center text-sm capitalize">
+                    <WalletIcon className="mr-1 h-4 w-4" />
+                    {job.stipend.type === 'unpaid' 
+                      ? 'Unpaid' 
+                      : `${job.stipend.currency || '₹'}${job.stipend.amount?.toLocaleString() || 'Variable'} / ${job.stipend.period}`}
+                  </div>
+                )}
+
+                <div className="text-muted-foreground flex items-center text-sm capitalize">
                   <BriefcaseIcon className="mr-1 h-4 w-4" />
-                  {job.jobType.replace("_", " ")}
+                  {job.jobType?.replace(/_/g, " ")}
                 </div>
               </div>
             </CardContent>
@@ -102,34 +127,54 @@ const Page = () => {
             <CardContent className="space-y-6 pt-6">
               <div>
                 <h3 className="mb-3 text-lg font-semibold">Description</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
                   {job.description}
                 </p>
               </div>
 
-              <Separator />
+              {job.requirements && job.requirements.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="mb-3 text-lg font-semibold">Requirements</h3>
+                    <ul className="text-muted-foreground list-disc space-y-2 pl-5">
+                      {job.requirements.map((req: string, index: number) => (
+                        <li key={index}>{req}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              )}
 
-              <div>
-                <h3 className="mb-3 text-lg font-semibold">Requirements</h3>
-                <ul className="text-muted-foreground list-disc space-y-2 pl-5">
-                  {job.requirements.map((req: string, index: number) => (
-                    <li key={index}>{req}</li>
-                  ))}
-                </ul>
-              </div>
+              {job.skills && job.skills.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="mb-3 text-lg font-semibold">Skills Required</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {job.skills.map((skill: string) => (
+                        <Badge key={skill} variant="outline" className="px-3 py-1">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
-              <Separator />
-
-              <div>
-                <h3 className="mb-3 text-lg font-semibold">Skills Required</h3>
-                <div className="flex flex-wrap gap-2">
-                  {job.skills.map((skill: string) => (
-                    <Badge key={skill} variant="outline" className="px-3 py-1">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
+              {job.benefits && job.benefits.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="mb-3 text-lg font-semibold">Benefits</h3>
+                    <ul className="text-muted-foreground list-disc space-y-2 pl-5">
+                      {job.benefits.map((benefit: string, index: number) => (
+                        <li key={index}>{benefit}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -145,24 +190,95 @@ const Page = () => {
                 <span className="text-muted-foreground flex items-center">
                   <CalendarIcon className="mr-2 h-4 w-4" /> Posted On
                 </span>
-                <span className="font-medium">
+                <span className="font-medium text-right">
                   {new Date(job.createdAt).toLocaleDateString()}
                 </span>
               </div>
+
+              {job.applicationDeadline && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center">
+                    <ClockIcon className="mr-2 h-4 w-4" /> Deadline
+                  </span>
+                  <span className="font-medium text-right">
+                    {new Date(job.applicationDeadline).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground flex items-center">
                   <UsersIcon className="mr-2 h-4 w-4" /> Openings
                 </span>
-                <span className="font-medium">{job.openings}</span>
+                <span className="font-medium text-right">{job.openings}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground flex items-center">
-                  <BriefcaseIcon className="mr-2 h-4 w-4" /> Experience
-                </span>
-                <span className="font-medium capitalize">
-                  {job.experienceLevel}
-                </span>
-              </div>
+
+              {job.experienceLevel && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center">
+                    <BriefcaseIcon className="mr-2 h-4 w-4" /> Experience
+                  </span>
+                  <span className="font-medium capitalize text-right">
+                    {job.experienceLevel?.replace(/_/g, " ")} {job.experienceInYears !== undefined ? `(${job.experienceInYears}+ yrs)` : ''}
+                  </span>
+                </div>
+              )}
+
+              {job.duration && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center">
+                    <ClockIcon className="mr-2 h-4 w-4" /> Duration
+                  </span>
+                  <span className="font-medium capitalize text-right">
+                    {job.duration.value} {job.duration.unit}
+                  </span>
+                </div>
+              )}
+
+              {job.isPPO !== undefined && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center">
+                    <AwardIcon className="mr-2 h-4 w-4" /> PPO Offered
+                  </span>
+                  <span className="font-medium capitalize text-right">
+                    {job.isPPO ? "Yes" : "No"}
+                  </span>
+                </div>
+              )}
+
+              {job.industry && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center">
+                    <Building2Icon className="mr-2 h-4 w-4" /> Industry
+                  </span>
+                  <span className="font-medium capitalize text-right">
+                    {job.industry?.replace(/_/g, " ")}
+                  </span>
+                </div>
+              )}
+
+              {job.roleCategory && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center">
+                    <BriefcaseIcon className="mr-2 h-4 w-4" /> Role
+                  </span>
+                  <span className="font-medium capitalize text-right">
+                    {job.roleCategory?.replace(/_/g, " ")}
+                  </span>
+                </div>
+              )}
+
+              {job.education && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center">
+                    <GraduationCapIcon className="mr-2 h-4 w-4" /> Education
+                  </span>
+                  <span className="font-medium capitalize text-right">
+                    {job.education.minimumDegree?.replace(/_/g, " ")}
+                    {job.education.isRequired ? " (Req)" : ""}
+                  </span>
+                </div>
+              )}
 
               <Separator className="my-4" />
 

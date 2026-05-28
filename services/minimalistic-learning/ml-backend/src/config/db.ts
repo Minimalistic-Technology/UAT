@@ -39,6 +39,10 @@ export const seedRoutePermissions = async () => {
     { path: '/api/v1/admin/permissions/:id/toggle', method: 'PATCH', role: 'admin', description: 'Toggle user route pattern status' },
     { path: '/api/v1/admin/permissions/:id', method: 'DELETE', role: 'admin', description: 'Remove dynamic route permission rule' },
 
+    // Database Studio (Admin only)
+    { path: '/api/v1/admin/db/tables', method: 'GET', role: 'admin', description: 'Get all database tables for SQLite' },
+    { path: '/api/v1/admin/db/query', method: 'POST', role: 'admin', description: 'Execute raw query against SQLite database' },
+
     // User Actions (Active for both Admin & User by default)
     { path: '/api/v1/posts', method: 'POST', role: 'user', description: 'Create and publish new blog posts' },
     { path: '/api/v1/posts', method: 'POST', role: 'admin', description: 'Create and publish new blog posts' },
@@ -58,6 +62,17 @@ export const seedRoutePermissions = async () => {
     { path: '/api/v1/comments/:id', method: 'DELETE', role: 'admin', description: 'Remove own published comments' },
     { path: '/api/v1/comments/:id/like', method: 'POST', role: 'user', description: 'Like or unlike user comments' },
     { path: '/api/v1/comments/:id/like', method: 'POST', role: 'admin', description: 'Like or unlike user comments' },
+
+    // Website Management
+    { path: '/api/v1/admin/content/:page/:section', method: 'PUT', role: 'admin', description: 'Update site page content' },
+
+    // Subscriber Management
+    { path: '/api/v1/admin/subscribers', method: 'GET', role: 'admin', description: 'View newsletter subscribers' },
+
+    // Team Management
+    { path: '/api/v1/admin/team', method: 'POST', role: 'admin', description: 'Add new team member' },
+    { path: '/api/v1/admin/team/:id', method: 'PUT', role: 'admin', description: 'Update team member' },
+    { path: '/api/v1/admin/team/:id', method: 'DELETE', role: 'admin', description: 'Delete team member' },
   ];
 
   try {
@@ -92,7 +107,17 @@ export const connectDatabase = async (retries = 5, delayMs = 3000) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       await prisma.$connect();
-      console.log('[db] Connected to PostgreSQL (Neon) Successfully');
+
+      // Optimize SQLite for high concurrency (50k+ users)
+      if (env.DATABASE_URL.startsWith('file:')) {
+        await prisma.$queryRawUnsafe(`PRAGMA journal_mode = WAL;`);
+        await prisma.$queryRawUnsafe(`PRAGMA synchronous = NORMAL;`);
+        await prisma.$queryRawUnsafe(`PRAGMA busy_timeout = 10000;`); // 10s wait before SQLITE_BUSY
+        await prisma.$queryRawUnsafe(`PRAGMA cache_size = 20000;`); // 20k pages in RAM (~80MB)
+        await prisma.$queryRawUnsafe(`PRAGMA temp_store = MEMORY;`); // Store temp tables in RAM
+      }
+
+      console.log('[db] Connected Database Successfully via Prisma & Optimized');
       await seedRoutePermissions();
       return;
     } catch (error: any) {

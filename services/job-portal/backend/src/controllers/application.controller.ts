@@ -11,7 +11,6 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import { JobStatus } from "../models/BaseJob.model.js";
-import { Model } from "mongoose";
 
 export const createApplication = async (
   req: AuthRequest,
@@ -300,7 +299,7 @@ export const getJobApplicants = async (
     }
 
     const applications = await Application.find({
-      jlisting: listingId,
+      listing: listingId,
       listingType,
     })
       .populate(
@@ -308,7 +307,6 @@ export const getJobApplicants = async (
         "firstName lastName email phone skills experience education",
       )
       .sort("-createdAt");
-
     res
       .status(200)
       .json(

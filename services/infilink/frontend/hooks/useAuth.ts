@@ -30,19 +30,35 @@ export function useAuth() {
     })
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { data, error } = await api.login({ email, password })
-    if (error || !data) return { error: error ?? 'Login failed' }
-    const d = data as { token: string; user: UserProfile }
+  const login = useCallback(async (email: string, password: string, recaptchaToken: string) => {
+    const response = await api.login({ email, password, recaptchaToken })
+    if (response.error || !response.data) {
+      return {
+        error: response.error ?? 'Login failed',
+        lockTimeMs: (response as any).lockTimeMs
+      }
+    }
+    const d = response.data as { token: string; user: UserProfile }
     localStorage.setItem('infilink_token', d.token)
     setUser(d.user)
     return { success: true }
   }, [])
 
-  const register = useCallback(async (body: object) => {
-    const { data, error } = await api.register(body)
-    if (error || !data) return { error: error ?? 'Registration failed' }
-    const d = data as { token: string; user: UserProfile }
+  const register = useCallback(async (body: any) => {
+    const response = await api.register(body)
+    if (response.error || !response.data) return { error: response.error ?? 'Registration failed' }
+    return response.data;
+  }, [])
+
+  const verifyOtp = useCallback(async (email: string, otp: string) => {
+    const response = await api.verifyOtp({ email, otp })
+    if (response.error || !response.data) {
+      return {
+        error: response.error ?? 'Verification failed',
+        lockTimeMs: (response as any).lockTimeMs
+      }
+    }
+    const d = response.data as { token: string; user: UserProfile }
     localStorage.setItem('infilink_token', d.token)
     setUser(d.user)
     return { success: true }
@@ -58,5 +74,5 @@ export function useAuth() {
     if (data && !error) setUser(data as UserProfile)
   }, [])
 
-  return { user, loading, login, register, logout, refresh }
+  return { user, loading, login, register, logout, refresh, verifyOtp }
 }
