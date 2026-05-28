@@ -60,6 +60,26 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     );
   }
 
+  // Verify Google reCAPTCHA
+  const recaptchaSecret = env.RECAPTCHA_SECRET_KEY || "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"; // Default test secret
+  const recaptchaToken = (payload as any).recaptchaToken;
+
+  if (!recaptchaToken) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "CAPTCHA verification is required.");
+  }
+
+  try {
+    const axios = require('axios');
+    const verifyRes = await axios.post(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${recaptchaSecret}&response=${recaptchaToken}`
+    );
+    if (!verifyRes.data.success) {
+      throw new Error("CAPTCHA challenge failed");
+    }
+  } catch (error) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "CAPTCHA verification failed. Are you a robot?");
+  }
+
   const existing = await userService.findByEmail(payload.email);
   if (existing) {
     throw new ApiError(StatusCodes.CONFLICT, 'Email already in use');

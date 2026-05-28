@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "../context/auth-context";
 import { UserPlus, Mail, Lock, Phone, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const RegisterForm = () => {
   const router = useRouter();
@@ -51,6 +52,7 @@ const RegisterForm = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -237,6 +239,14 @@ const RegisterForm = () => {
             />
             {errors.confirmPassword && <p className="text-xs font-semibold text-red-500 mt-1">{errors.confirmPassword.message}</p>}
           </div>
+        </div>
+
+        <div className="flex flex-col items-center pt-2">
+          <ReCAPTCHA
+            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"} // Default to test key
+            onChange={(token) => setValue('recaptchaToken', token || "")}
+          />
+          {errors.recaptchaToken && <p className="text-xs font-semibold text-red-500 mt-2">{errors.recaptchaToken.message}</p>}
         </div>
 
         <button

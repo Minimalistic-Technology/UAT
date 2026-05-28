@@ -20,6 +20,7 @@ const envSchema = z.object({
   EMAIL_PASS: z.string().min(1, 'EMAIL_PASS is required'),
   BREVO_API_KEY: z.string().optional().default('xkeysib-example-key'),
   BREVO_FROM_EMAIL: z.string().optional().default('onboarding@minimalistic.com'),
+  RECAPTCHA_SECRET_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.parse(process.env);
