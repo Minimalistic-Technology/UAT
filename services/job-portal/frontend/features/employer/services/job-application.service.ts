@@ -12,6 +12,7 @@ export type ApplicationWithUser = Omit<Application, "jobSeeker"> & {
     skills: string[];
     experience: Experience[];
     education: Education[];
+    resume?: string
   };
 };
 

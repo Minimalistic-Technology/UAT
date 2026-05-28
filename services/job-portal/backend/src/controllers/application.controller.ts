@@ -11,6 +11,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import { JobStatus } from "../models/BaseJob.model.js";
+import Subscription from "../models/Subscription.model.js";
 
 export const createApplication = async (
   req: AuthRequest,
@@ -298,7 +299,16 @@ export const getJobApplicants = async (
       throw new ApiError(403, "Not authorized to view applicants");
     }
 
-    const applications = await Application.find({
+    const activeSubscription = await Subscription.findOne({
+      companyId: listing.company,
+      status: "active",
+      expiryDate: { $gt: new Date() },
+    }).populate("planId");
+
+    const plan = activeSubscription?.planId as any;
+    const canViewResume = plan?.allowResumeDownload === true;
+
+    const applicationsDocs = await Application.find({
       listing: listingId,
       listingType,
     })
@@ -307,6 +317,16 @@ export const getJobApplicants = async (
         "firstName lastName email phone skills experience education",
       )
       .sort("-createdAt");
+      
+    const applications = applicationsDocs.map((app) => {
+      const appObj = app.toObject();
+      if (!canViewResume) {
+        //@ts-ignore
+        delete appObj.resume;
+      }
+      return appObj;
+    });
+
     res
       .status(200)
       .json(
