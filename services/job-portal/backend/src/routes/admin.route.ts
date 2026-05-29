@@ -5,13 +5,17 @@ import {
   getAllUsers,
   getListingsByStatus,
   getStats,
-  updateUserStatus,
+  toggleUserStatus,
   getKycApplications,
   getAdminAnalytics,
-  updateKycStatus
+  updateKycStatus,
 } from "../controllers/admin.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { updateKycStatusSchema, updateUserStatusSchema, getJobsByStatusSchema } from "../validations/admin.validation.js";
+import {
+  getKycApplicationsSchema,
+  updateKycStatusSchema,
+  getJobsByStatusSchema,
+} from "../validations/admin.validation.js";
 
 const router = Router();
 
@@ -22,19 +26,21 @@ router.get("/users", getAllUsers);
 router.get("/jobs", validate(getJobsByStatusSchema), getListingsByStatus);
 router.put(
   "/users/:userId/toggle-status",
-  validate(updateUserStatusSchema),
-  updateUserStatus,
+  toggleUserStatus,
 );
-router.get("/stats", getStats)
+router.get("/stats", getStats);
 
-router.get("/kyc-applications", getKycApplications);
+router.get(
+  "/kyc-applications",
+  validate(getKycApplicationsSchema),
+  getKycApplications,
+);
 router.put(
   "/kyc-applications/:applicationId/status",
   validate(updateKycStatusSchema),
-  updateKycStatus
+  updateKycStatus,
 );
 
 router.get("/analytics", getAdminAnalytics);
-
 
 export default router;

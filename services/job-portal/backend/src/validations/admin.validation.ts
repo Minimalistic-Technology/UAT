@@ -1,21 +1,20 @@
 import { body, query } from "express-validator";
 import { ApiError } from "../utils/apiError.js";
 
-export const updateUserStatusSchema = [
-  body("isActive")
-    .exists({ checkNull: true })
-    .withMessage("isActive is required")
-    .isBoolean()
-    .withMessage("isActive must be a boolean")
-    .toBoolean(), // converts "true"/"false" → true/false
-];
-
 export const updateKycStatusSchema = [
   body("status")
     .exists({ checkNull: true })
     .withMessage("Status is required")
+    .isString()
+    .withMessage("Status must be a string")
     .isIn(["approved", "rejected"])
     .withMessage("Status must be either 'approved' or 'rejected'"),
+  body("note")
+    .optional()
+    .isString()
+    .withMessage("Note must be a string")
+    .isLength({ min: 10, max: 500 })
+    .withMessage("Note must be between 10 and 500 characters"),
 ];
 
 export const getJobsByStatusSchema = [
@@ -32,14 +31,8 @@ export const getJobsByStatusSchema = [
     .withMessage("Status must be a string")
     .isIn(["active", "closed", "pending", "rejected"])
     .withMessage(
-      "Status must be either 'active', 'closed', 'pending', or 'rejected'"
+      "Status must be either 'active', 'closed', 'pending', or 'rejected'",
     ),
 ];
 
-export const getKycApplicationsSchema = [
-  query("status")
-    .exists({ checkNull: true })
-    .withMessage("Status is required")
-    .isIn(["pending", "approved", "rejected"])
-    .withMessage("Status must be either 'pending', 'approved', or 'rejected'")
-];
+export const getKycApplicationsSchema = getJobsByStatusSchema;

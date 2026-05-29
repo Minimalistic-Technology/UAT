@@ -5,10 +5,10 @@ import {
   ToggleUserStatusResponse,
 } from "../types";
 
-export const toggleUserStatus = async (userId: string, isActive: boolean) => {
+export const toggleUserStatus = async (userId: string) => {
   const response = await apiClient.put<
     ApiSuccessResponse<ToggleUserStatusResponse>
-  >(`/admin/users/${userId}/toggle-status`, { isActive });
+  >(`/admin/users/${userId}/toggle-status`);
   return response.data;
 };
 
