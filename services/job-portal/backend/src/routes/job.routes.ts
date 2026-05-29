@@ -28,7 +28,7 @@ router.get(
 router.post(
   "/",
   protect,
-  authorize(GlobalRole.USER), // only for owner / admin
+  authorize(GlobalRole.USER), // only for owner / hr
   validate(createJobSchema),
   createJob,
 );
