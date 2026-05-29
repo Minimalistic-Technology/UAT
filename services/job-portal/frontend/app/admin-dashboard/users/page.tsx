@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import React from "react";
 import { Search } from "lucide-react";
 
 // Components
@@ -53,8 +53,8 @@ const Page = () => {
 
   if (isLoading) return <LoadingState />;
 
-  const users = responseData?.data?.users || [];
-  const pagination = responseData?.data?.pagination;
+  const users = responseData?.data.users || [];
+  const pagination = responseData?.data.pagination;
 
   // Search Logic: Filter based on Name or Email
   const filteredUsers = users.filter((user: any) => {

@@ -105,15 +105,15 @@ export enum Industry {
 }
 
 export enum ListingType {
-  JOB = 'job',
-  INTERNSHIP = 'internship',
+  JOB = "job",
+  INTERNSHIP = "internship",
 }
 
 export enum PaymentMethod {
   CARD = "card",
-  UPI = "upi", 
+  UPI = "upi",
   NET_BANKING = "net banking",
-  WALLET = "wallet"
+  WALLET = "wallet",
 }
 
 export enum InternshipDurationType {
@@ -124,12 +124,12 @@ export enum InternshipDurationType {
 export enum KycStatus {
   PENDING = "pending",
   APPROVED = "approved",
-  REJECTED = "rejected"
+  REJECTED = "rejected",
 }
 
 export enum CouponType {
   PERCENTAGE = "percentage",
-  AMOUNT = "amount"
+  AMOUNT = "amount",
 }
 
 export enum CompanyType {
@@ -166,7 +166,7 @@ export enum SubscriptionStatus {
   ACTIVE = "active",
   EXPIRED = "expired",
   DEPLETED = "depleted",
-  CANCELLED = "cancelled"
+  CANCELLED = "cancelled",
 }
 
 export enum ExperienceLevel {
@@ -176,7 +176,12 @@ export enum ExperienceLevel {
   EXPERT = "expert",
 }
 
-export enum JobType {
+export enum OpportunityType {
+  JOB = "job",
+  INTERNSHIP = "internship",
+}
+
+export enum EmploymentType {
   FULL_TIME = "full_time",
   PART_TIME = "part_time",
   CONTRACT = "contract",

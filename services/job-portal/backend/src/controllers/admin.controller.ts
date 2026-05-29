@@ -9,6 +9,7 @@ import { Types } from "mongoose";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { deleteFromCloudinary } from "../utils/cloudinary.js";
+import { getPagination } from "../utils/parse-pagination.js";
 
 type IUserWithCompany = IUser & {
   isEmployee?: boolean;
@@ -19,8 +20,7 @@ type IUserWithCompany = IUser & {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const { page, limit } = getPagination(req.query);
     const skip = (page - 1) * limit;
 
     const filter = { role: { $ne: GlobalRole.SUPER_ADMIN } };
@@ -99,14 +99,12 @@ export const getAllUsers = async (req: Request, res: Response) => {
   }
 };
 
-export const getJobsByStatus = async (req: Request, res: Response) => {
+export const getListingsByStatus = async (req: Request, res: Response) => {
   try {
-    let { status, page, limit } = req.query;
+    const status = req.query.status;
+    const jobStatus = status ?? JobStatus.PENDING;
 
-    const jobStatus = (status as string) || JobStatus.PENDING;
-
-    const currentPage = Math.max(1, parseInt(page as string) || 1);
-    const pageSize = Math.max(1, parseInt(limit as string) || 10);
+    const { page: currentPage, limit: pageSize } = getPagination(req.query);
     const skip = (currentPage - 1) * pageSize;
 
     const query = { status: jobStatus };
@@ -134,24 +132,27 @@ export const getJobsByStatus = async (req: Request, res: Response) => {
         .lean(),
     ]);
 
-    const taggedJobs = jobs.map((job) => ({ ...job, listingType: "job" }));
+    const taggedJobs = jobs.map((job) => ({ ...job, opportunityType: "job" }));
     const taggedInternships = internships.map((internship) => ({
       ...internship,
-      listingType: "internship",
+      opportunityType: "internship",
     }));
 
     const merged = [...taggedJobs, ...taggedInternships]
-      .sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      .sort(
+        (a, b) =>
+          // @ts-ignore
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       )
       .slice(0, pageSize);
+      console.log("Merged array", merged);
 
     return res.status(200).json({
       success: true,
       message: `Listings with status '${jobStatus}' fetched successfully`,
       data: {
         count: totalCombined,
-        listings: merged, 
+        listings: merged,
         pagination: {
           totalPages,
           currentPage,
@@ -310,7 +311,7 @@ export const updateKycStatus = async (
 
     kycApplication.status = status;
     if (status === "rejected" && note) {
-      console.log("Inside the block")
+      console.log("Inside the block");
       kycApplication.rejectionReason = note;
       // Also delete the assests attached to this kycApplication
       // await deleteFromCloudinary(kycApplication.photo.publicId);

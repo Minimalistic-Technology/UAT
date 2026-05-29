@@ -3,7 +3,7 @@ import { authorize, protect } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
 import {
   getAllUsers,
-  getJobsByStatus,
+  getListingsByStatus,
   getStats,
   updateUserStatus,
   getKycApplications,
@@ -19,7 +19,7 @@ router.use(protect);
 router.use(authorize(GlobalRole.SUPER_ADMIN));
 
 router.get("/users", getAllUsers);
-router.get("/jobs", validate(getJobsByStatusSchema), getJobsByStatus);
+router.get("/jobs", validate(getJobsByStatusSchema), getListingsByStatus);
 router.put(
   "/users/:userId/toggle-status",
   validate(updateUserStatusSchema),

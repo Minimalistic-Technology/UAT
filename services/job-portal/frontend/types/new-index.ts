@@ -8,7 +8,7 @@ import {
   Industry,
   InternshipDurationType,
   JobStatus,
-  JobType,
+  EmploymentType,
   KycStatus,
   ListingType,
   PaymentMethod,
@@ -16,6 +16,7 @@ import {
   RoleCategory,
   StipendType,
   WorkMode,
+  OpportunityType,
 } from "./enums";
 
 export type CloudinaryAsset = {
@@ -90,6 +91,14 @@ export type ApplicationStatusHistory = {
   note?: string;
 };
 
+export type Pagination = {
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
 export type User = {
   firstName: string;
   lastName: string;
@@ -119,7 +128,7 @@ export type BaseListing = {
   description: string;
   company: string; // mongoose.objectId
   postedBy: string; // mongoose.objectId
-  jobType: JobType;
+  employmentType: EmploymentType;
   workMode: WorkMode;
   companyType: CompanyType;
   roleCategory: RoleCategory;
@@ -135,6 +144,7 @@ export type BaseListing = {
   isFeatured: boolean;
   applicationsCount: number;
   viewsCount: number;
+  opportunityType: OpportunityType
 };
 
 export type Job = BaseListing & {
