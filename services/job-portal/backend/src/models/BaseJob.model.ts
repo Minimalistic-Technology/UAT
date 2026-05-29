@@ -163,8 +163,6 @@ export interface IBaseJob extends Document {
   isFeatured: boolean;
   applicationsCount: number;
   viewsCount: number;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export const baseJobSchemaDefinition: SchemaDefinition<

@@ -25,7 +25,7 @@ export interface IPayment extends Document {
 
   metadata: Map<string, any>;
 
-  method?: "card" | "upi" | "netbanking" | "wallet";
+  method?: "card" | "upi" | "net banking" | "wallet";
 
   failureReason?: string;
 
