@@ -100,6 +100,7 @@ export type Pagination = {
 };
 
 export type User = {
+  _id: string; // mongoose.objectId
   firstName: string;
   lastName: string;
   email: string;
@@ -148,6 +149,7 @@ export type BaseListing = {
 };
 
 export type Job = BaseListing & {
+  _id: string; // mongoose.objectId
   experienceLevel: ExperienceLevel;
   experienceInYears: number;
   salary: SalaryDetails;
@@ -156,6 +158,7 @@ export type Job = BaseListing & {
 };
 
 export type Internship = BaseListing & {
+  _id: string; // mongoose.objectId
   stipend: StipendDetails;
   duration: {
     value: number;
@@ -169,6 +172,7 @@ export type Internship = BaseListing & {
 };
 
 export type Kyc = {
+  _id: string; // mongoose.objectId
   user: string; // mongoose.objectId
   companyName: string;
   aadharNo: string;
@@ -184,6 +188,7 @@ export type Kyc = {
 };
 
 export type Plan = {
+  _id: string; // mongoose.objectId
   name: string;
   description?: string;
   price: number;
@@ -203,6 +208,7 @@ export type Plan = {
 };
 
 export type Coupon = {
+  _id: string; // mongoose.objectId
   code: string;
   type: CouponType;
   value: number;
@@ -215,6 +221,7 @@ export type Coupon = {
 };
 
 export type Company = {
+  _id: string; // mongoose.objectId
   name: string;
   description: string;
   logo?: CloudinaryAsset;
@@ -230,6 +237,7 @@ export type Company = {
 };
 
 export type Payment = {
+  _id: string; // mongoose.objectId
   userId: string; // mongoose.objectId
   amount: number; // in paise
   currency: string;
@@ -258,6 +266,7 @@ export type Payment = {
 };
 
 export type Application = {
+  _id: string; // mongoose.objectId
   listing: string; // mongoose.objectId
   listingType: ListingType;
   jobSeeker: string; // mongoose.objectId
@@ -274,6 +283,7 @@ export type Application = {
 };
 
 export type subscription = {
+  _id: string; // mongoose.objectId
   employerId: string; // mongoose.objectId
   planId: string; // mongoose.objectId
   companyId: string; // mongoose.objectId

@@ -249,7 +249,7 @@ export const getKycApplications = async (
 
     const [applications, totalApplications] = await Promise.all([
       KYC.find(filter)
-        .populate("user", "firstName lastName email phone")
+        .populate("user", "firstName lastName email")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)

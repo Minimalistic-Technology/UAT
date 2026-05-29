@@ -1,9 +1,9 @@
 import { Pagination, User } from "@/types/new-index";
 
 export type FetchAllUsersParams = {
-    page?: number;
-    limit?: number;
-}
+  page?: number;
+  limit?: number;
+};
 
 export type UserWithCompany = User & {
   _id: string;
@@ -21,4 +21,4 @@ export type FetchAllUsersResponse = {
 
 export type ToggleUserStatusResponse = {
   updateUser: User;
-}
+};

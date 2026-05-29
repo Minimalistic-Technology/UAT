@@ -26,9 +26,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { KycWithUser } from "../types/kyc.type";
 
 interface KycTableProps {
-  applications: any[];
+  applications: KycWithUser[];
   isLoading: boolean;
   isUpdating: boolean;
   onUpdateStatus: (
@@ -65,7 +66,7 @@ export const KycTable = ({
 }: KycTableProps) => {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [viewingReason, setViewingReason] = useState<string | null>(null);
+  const [viewingReason, setViewingReason] = useState<string | undefined | null >(undefined);
 
   const handleRejectConfirm = () => {
     if (rejectingId) {
@@ -311,6 +312,7 @@ export const KycTable = ({
               variant="destructive"
               onClick={handleRejectConfirm}
               disabled={!rejectReason.trim()}
+              className="cursor-pointer"
             >
               Confirm Rejection
             </Button>

@@ -35,4 +35,9 @@ export const getJobsByStatusSchema = [
     ),
 ];
 
-export const getKycApplicationsSchema = getJobsByStatusSchema;
+export const getKycApplicationsSchema = [
+  query("status")
+    .optional()
+    .isIn(["pending", "approved", "rejected"])
+    .withMessage("Status must be either 'pending', 'approved', or 'rejected'"),
+];
