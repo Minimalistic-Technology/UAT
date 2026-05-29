@@ -192,7 +192,7 @@ export type Plan = {
   name: string;
   description?: string;
   price: number;
-  currency: string;
+  currency: "INR" | "USD" | "EUR" | "GBP";
   durationDays: number;
   jobPostLimit: number;
   teamMemberLimit: number;

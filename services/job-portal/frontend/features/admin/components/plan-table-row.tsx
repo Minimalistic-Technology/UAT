@@ -18,11 +18,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Plan } from "@/types/new-index";
 
-export function PlanTableRow({ plan }: { plan: any }) {
+export function PlanTableRow({ plan }: { plan: Plan }) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { mutate: deletePlan, isPending: isDeleting } = useDeletePlan();
-  console.log("Plan", plan);
 
   return (
     <>

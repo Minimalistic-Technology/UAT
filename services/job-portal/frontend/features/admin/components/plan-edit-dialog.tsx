@@ -30,9 +30,10 @@ import {
   createPlanSchema,
 } from "@/features/admin/validations/plan.schema";
 import { useUpdatePlan } from "@/features/admin/hooks/use-plan";
+import { Plan } from "@/types/new-index";
 
 interface PlanEditDialogProps {
-  plan: any | null;
+  plan: Plan;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
