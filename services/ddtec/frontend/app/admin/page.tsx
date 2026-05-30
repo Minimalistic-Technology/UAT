@@ -424,7 +424,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings') => {
+    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes') => {
         setActiveView(view);
         if (view === 'users') fetchUsers();
         if (view === 'products' || view === 'inventory') fetchProducts();
