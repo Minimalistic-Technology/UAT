@@ -11,8 +11,8 @@ import RouteConfig from '../models/RouteConfig';
 import NotificationService from '../services/notification.service';
 import ValidationService from '../services/validation.service';
 
-// In-Memory IP Failures Tracker for non-existent users exponential backoff
-const ipFailures = new Map<string, { attempts: number; lockUntil: number }>();
+// In-Memory Failures Tracker for non-existent users exponential backoff
+const authFailures = new Map<string, { attempts: number; lockUntil: number }>();
 
 const getIp = (req: Request) => (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown').toString();
 
@@ -274,9 +274,10 @@ export const login = async (req: Request, res: Response) => {
         let { email, phone, password } = req.body;
         const identifier = (email || phone || '').trim().toLowerCase();
         const clientIp = getIp(req);
+        const lockKey = `${clientIp}_${identifier}`;
 
-        // Fetch IP Tracker state
-        let tracker = ipFailures.get(clientIp) || { attempts: 0, lockUntil: 0 };
+        // Fetch Tracker state
+        let tracker = authFailures.get(lockKey) || { attempts: 0, lockUntil: 0 };
 
         if (tracker.lockUntil > Date.now()) {
             const minutesLeft = Math.ceil((tracker.lockUntil - Date.now()) / 60000);
@@ -300,10 +301,10 @@ export const login = async (req: Request, res: Response) => {
             if (tracker.attempts >= 3) {
                 const blockMinutes = Math.pow(2, tracker.attempts - 3) * 2;
                 tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                ipFailures.set(clientIp, tracker);
+                authFailures.set(lockKey, tracker);
                 return res.status(403).json({ msg: `Access blocked due to multiple failed login attempts. Please try again after ${blockMinutes} minute(s).` });
             }
-            ipFailures.set(clientIp, tracker);
+            authFailures.set(lockKey, tracker);
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
@@ -316,7 +317,7 @@ export const login = async (req: Request, res: Response) => {
         // Validate password
         const isMatch = await bcrypt.compare(password, user.password as string);
         if (!isMatch) {
-            // Memory IP lock tracking to sync with user attempts
+            // Memory lock tracking to sync with user attempts
             tracker.attempts += 1;
 
             user.loginAttempts = (user.loginAttempts || 0) + 1;
@@ -324,21 +325,21 @@ export const login = async (req: Request, res: Response) => {
                 const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
                 user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
 
-                // Keep IP lock synced too
+                // Keep memory lock synced too
                 tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                ipFailures.set(clientIp, tracker);
+                authFailures.set(lockKey, tracker);
 
                 await user.save();
                 return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
             }
 
-            ipFailures.set(clientIp, tracker);
+            authFailures.set(lockKey, tracker);
             await user.save();
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
         // Success - Reset lock and attempts
-        ipFailures.delete(clientIp);
+        authFailures.delete(lockKey);
         user.loginAttempts = 0;
         user.lockUntil = undefined;
         await user.save();
