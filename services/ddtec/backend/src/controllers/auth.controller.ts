@@ -343,11 +343,6 @@ export const login = async (req: Request, res: Response) => {
         user.lockUntil = undefined;
         await user.save();
 
-        if (user.email) {
-            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown IP';
-            NotificationService.sendLoginAlert(user, ip.toString());
-        }
-
         // Check if user is active (bypass for admins to prevent lockout)
         if (user.role === 'user') {
             if (!user.isActive) {
