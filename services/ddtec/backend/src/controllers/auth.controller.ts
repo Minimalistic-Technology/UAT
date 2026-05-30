@@ -7,7 +7,7 @@ import axios from 'axios';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 import OTP from '../models/OTP';
-import Settings from '../models/Settings';
+import RouteConfig from '../models/RouteConfig';
 import NotificationService from '../services/notification.service';
 import ValidationService from '../services/validation.service';
 
@@ -18,16 +18,30 @@ const generateOTP = () => {
 
 export const sendOtp = async (req: Request, res: Response) => {
     try {
-        let { identifier } = req.body; // email or phone
+        let { identifier, recaptchaToken } = req.body; // email or phone
         if (!identifier) {
             return res.status(400).json({ msg: 'Identifier (email or phone) is required' });
         }
         identifier = identifier.trim();
 
-        // Check if global Signup is disabled for regular users
-        const settings = await Settings.findOne();
-        if (settings && settings.components && settings.components.Signup === false) {
-            return res.status(403).json({ msg: 'Public registration is currently disabled.' });
+        if (!recaptchaToken) {
+            return res.status(400).json({ msg: 'ReCAPTCHA token is required' });
+        }
+
+        // Verify ReCAPTCHA
+        const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+        if (secretKey) {
+            const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
+            const recaptchaRes = await axios.post(verifyUrl);
+            if (!recaptchaRes.data.success) {
+                return res.status(400).json({ msg: 'ReCAPTCHA verification failed. Please try again.' });
+            }
+        }
+
+        // Check if global Signup is disabled for regular users via RouteConfig
+        const signupRoute = await RouteConfig.findOne({ path: '/signup' });
+        if (signupRoute && !signupRoute.isActive) {
+            return res.status(403).json({ msg: 'Public registration is currently disabled by administrator.' });
         }
 
         // Check if user already exists
@@ -118,21 +132,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
 export const register = async (req: Request, res: Response) => {
     try {
-        const { firstName, lastName, email, phone, password, role, otp, recaptchaToken, accountType, employmentType, companyDetails, designation } = req.body;
-
-        if (!recaptchaToken) {
-            return res.status(400).json({ msg: 'ReCAPTCHA token is required for signup' });
-        }
-
-        // Verify ReCAPTCHA
-        const secretKey = process.env.RECAPTCHA_SECRET_KEY;
-        if (secretKey) {
-            const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
-            const recaptchaRes = await axios.post(verifyUrl);
-            if (!recaptchaRes.data.success) {
-                return res.status(400).json({ msg: 'ReCAPTCHA verification failed. Please try again.' });
-            }
-        }
+        const { firstName, lastName, email, phone, password, role, otp, accountType, employmentType, companyDetails, designation } = req.body;
 
         const disableOtp = process.env.DISABLE_OTP === 'true';
         let otpRecord = null;
@@ -141,19 +141,37 @@ export const register = async (req: Request, res: Response) => {
             // Verify OTP (Check both email and phone as potential identifiers)
             const identifiers = [email, phone].filter(Boolean);
             otpRecord = await OTP.findOne({
-                identifier: { $in: identifiers },
-                otp
-            });
+                identifier: { $in: identifiers }
+            }).sort({ createdAt: -1 });
+
             if (!otpRecord) {
-                return res.status(400).json({ msg: 'Invalid or expired OTP' });
+                return res.status(400).json({ msg: 'No OTP generated for this contact.' });
+            }
+
+            // Check if locked
+            if (otpRecord.lockUntil && otpRecord.lockUntil > Date.now()) {
+                const minutesLeft = Math.ceil((otpRecord.lockUntil - Date.now()) / 60000);
+                return res.status(403).json({ msg: `Signup is temporarily locked due to multiple failed attempts. Please try again after ${minutesLeft} minute(s).` });
+            }
+
+            if (otpRecord.otp !== String(otp)) {
+                otpRecord.attempts = (otpRecord.attempts || 0) + 1;
+                if (otpRecord.attempts >= 3) {
+                    const blockMinutes = Math.pow(2, otpRecord.attempts - 3) * 2; // 2, 4, 8...
+                    otpRecord.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                    await otpRecord.save();
+                    return res.status(403).json({ msg: `Signup is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
+                }
+                await otpRecord.save();
+                return res.status(400).json({ msg: 'Invalid OTP' });
             }
         }
 
-        // Block new user registrations if public login/signup is disabled
+        // Block new user registrations if public signup is disabled
         if (!role || role === 'user') {
-            const settings = await Settings.findOne();
-            if (settings && settings.components && settings.components.Signup === false) {
-                return res.status(403).json({ msg: 'Public registration is currently disabled.' });
+            const signupRoute = await RouteConfig.findOne({ path: '/signup' });
+            if (signupRoute && !signupRoute.isActive) {
+                return res.status(403).json({ msg: 'Public registration is currently disabled by administrator.' });
             }
         }
 
@@ -190,6 +208,10 @@ export const register = async (req: Request, res: Response) => {
         });
 
         await user.save();
+
+        if (user.email) {
+            NotificationService.sendWelcomeEmail(user.email, user.firstName || user.name || 'User');
+        }
 
         // Delete used OTP if we verified it
         if (otpRecord) {
@@ -234,6 +256,12 @@ export const login = async (req: Request, res: Response) => {
         let { email, phone, password } = req.body;
         const identifier = (email || phone || '').trim().toLowerCase();
 
+        // Check if Login is globally disabled
+        const loginRoute = await RouteConfig.findOne({ path: '/login' });
+        if (loginRoute && !loginRoute.isActive) {
+            return res.status(403).json({ msg: 'Login is temporarily disabled by administrator for maintenance.' });
+        }
+
         // Check if user exists
         const user = await User.findOne({
             $or: [{ email: identifier }, { phone: identifier }]
@@ -255,6 +283,8 @@ export const login = async (req: Request, res: Response) => {
             if (user.loginAttempts >= 3) {
                 const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
                 user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                await user.save();
+                return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
             }
             await user.save();
             return res.status(400).json({ msg: 'Invalid credentials' });
@@ -264,6 +294,11 @@ export const login = async (req: Request, res: Response) => {
         user.loginAttempts = 0;
         user.lockUntil = undefined;
         await user.save();
+
+        if (user.email) {
+            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown IP';
+            NotificationService.sendLoginAlert(user, ip.toString());
+        }
 
         // Check if user is active (bypass for admins to prevent lockout)
         if (user.role === 'user') {
@@ -537,9 +572,9 @@ export const checkUser = async (req: Request, res: Response) => {
             $or: [{ email: identifier }, { phone: identifier }]
         });
 
-        // Get admin settings to see if public signup is active
-        const settings = await Settings.findOne();
-        const signupAllowed = settings ? settings.components.Signup !== false : true;
+        // Get dynamic route config to see if public signup is active
+        const signupRoute = await RouteConfig.findOne({ path: '/signup' });
+        const signupAllowed = signupRoute ? signupRoute.isActive : true;
 
         res.json({
             exists: !!user,

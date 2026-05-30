@@ -9,6 +9,7 @@ import { AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import api from "@/lib/api";
+import { useDynamicRoutes } from "../../_context/RouteContext";
 
 interface Product {
     _id: string;
@@ -39,6 +40,7 @@ export default function ProductDetailsPage() {
     const [isProductCouponActive, setIsProductCouponActive] = useState(false);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+    const { isRouteActive } = useDynamicRoutes();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -283,23 +285,27 @@ export default function ProductDetailsPage() {
 
                             <div className="mt-auto flex flex-col gap-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <button
-                                        onClick={() => addToCart(product._id)}
-                                        disabled={product.stock === 0}
-                                        className="py-4 rounded-xl font-bold border-2 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-600 dark:hover:border-teal-500 dark:hover:text-teal-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <ShoppingBag className="size-5" /> Add to Cart
-                                    </button>
-                                    <button
-                                        onClick={async () => {
-                                            await addToCart(product._id);
-                                            router.push('/cart');
-                                        }}
-                                        disabled={product.stock === 0}
-                                        className="py-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 hover:shadow-lg hover:shadow-teal-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Buy Now
-                                    </button>
+                                    {isRouteActive('/cart') && (
+                                        <button
+                                            onClick={() => addToCart(product._id)}
+                                            disabled={product.stock === 0}
+                                            className="py-4 rounded-xl font-bold border-2 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-600 dark:hover:border-teal-500 dark:hover:text-teal-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <ShoppingBag className="size-5" /> Add to Cart
+                                        </button>
+                                    )}
+                                    {isRouteActive('/checkout') && (
+                                        <button
+                                            onClick={async () => {
+                                                await addToCart(product._id);
+                                                router.push('/cart');
+                                            }}
+                                            disabled={product.stock === 0}
+                                            className={`py-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 hover:shadow-lg hover:shadow-teal-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${!isRouteActive('/cart') ? 'col-span-2' : ''}`}
+                                        >
+                                            Buy Now
+                                        </button>
+                                    )}
                                 </div>
 
                                 <button
