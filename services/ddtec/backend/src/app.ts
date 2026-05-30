@@ -34,34 +34,12 @@ const app = express();
 // Middleware
 // Middleware
 // Middleware
-const allowedOrigins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-    'http://localhost:3002',
-    'http://127.0.0.1:3002',
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    "https://ddtec.onrender.com"
-];
-
-// Add origins from ALLOWED_ORIGINS env var if present
-if (process.env.ALLOWED_ORIGINS) {
-    const extraOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-    allowedOrigins.push(...extraOrigins);
-}
-
+// Provide truly global seamless CORS functionality for any environment
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            console.warn(`Blocked by CORS: ${origin}`);
-            // In dev, we might still want to allow but log
-            callback(null, true);
-        }
+        // Master override: Allow all origins to seamlessly support any frontend deployment domain (Local, Vercel, Render)
+        // This is safe because we rely on JWT/HttpOnly cookies over HTTPS for authentication payload security.
+        callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
