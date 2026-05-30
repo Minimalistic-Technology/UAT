@@ -11,6 +11,11 @@ import RouteConfig from '../models/RouteConfig';
 import NotificationService from '../services/notification.service';
 import ValidationService from '../services/validation.service';
 
+// In-Memory IP Failures Tracker for non-existent users exponential backoff
+const ipFailures = new Map<string, { attempts: number; lockUntil: number }>();
+
+const getIp = (req: Request) => (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown').toString();
+
 // Generate 6-digit OTP
 const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -103,20 +108,33 @@ export const verifyOtp = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'OTP expired or not sent', isValid: false });
         }
 
+        // Check if OTP block limit reached
+        if (otpRecord.lockUntil && otpRecord.lockUntil > Date.now()) {
+            const minutesLeft = Math.ceil((otpRecord.lockUntil - Date.now()) / 60000);
+            return res.status(403).json({ msg: `Verification is temporarily locked. Please try again after ${minutesLeft} minute(s).` });
+        }
+
         if (otpRecord.otp !== String(otp)) {
-            // Track failed attempts if user exists
-            if (user) {
-                user.loginAttempts = (user.loginAttempts || 0) + 1;
-                if (user.loginAttempts >= 3) {
-                    const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
-                    user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                }
-                await user.save();
+            // Track failed attempts on the OTP record directly (so new signups get locked out too)
+            otpRecord.attempts = (otpRecord.attempts || 0) + 1;
+
+            if (otpRecord.attempts >= 3) {
+                const blockMinutes = Math.pow(2, otpRecord.attempts - 3) * 2; // 2, 4, 8, 16 mins etc.
+                otpRecord.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                await otpRecord.save();
+                return res.status(403).json({ msg: `Verification is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
             }
+
+            await otpRecord.save();
             return res.status(400).json({ msg: 'Invalid OTP', isValid: false });
-        } // Add closing brace for if (otpRecord.otp !== String(otp))
+        }
 
         // Reset attempts on success
+        otpRecord.attempts = 0;
+        otpRecord.lockUntil = 0; // Removing lock
+        await otpRecord.save();
+
+        // Also reset user lock if it existed
         if (user) {
             user.loginAttempts = 0;
             user.lockUntil = undefined;
@@ -255,6 +273,15 @@ export const login = async (req: Request, res: Response) => {
     try {
         let { email, phone, password } = req.body;
         const identifier = (email || phone || '').trim().toLowerCase();
+        const clientIp = getIp(req);
+
+        // Fetch IP Tracker state
+        let tracker = ipFailures.get(clientIp) || { attempts: 0, lockUntil: 0 };
+
+        if (tracker.lockUntil > Date.now()) {
+            const minutesLeft = Math.ceil((tracker.lockUntil - Date.now()) / 60000);
+            return res.status(403).json({ msg: `Access blocked due to multiple failed login attempts. Please try again after ${minutesLeft} minute(s).` });
+        }
 
         // Check if Login is globally disabled
         const loginRoute = await RouteConfig.findOne({ path: '/login' });
@@ -266,7 +293,17 @@ export const login = async (req: Request, res: Response) => {
         const user = await User.findOne({
             $or: [{ email: identifier }, { phone: identifier }]
         });
+
         if (!user) {
+            // Exponential Backoff for IP (Non-existent user brute force protection)
+            tracker.attempts += 1;
+            if (tracker.attempts >= 3) {
+                const blockMinutes = Math.pow(2, tracker.attempts - 3) * 2;
+                tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                ipFailures.set(clientIp, tracker);
+                return res.status(403).json({ msg: `Access blocked due to multiple failed login attempts. Please try again after ${blockMinutes} minute(s).` });
+            }
+            ipFailures.set(clientIp, tracker);
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
@@ -279,18 +316,29 @@ export const login = async (req: Request, res: Response) => {
         // Validate password
         const isMatch = await bcrypt.compare(password, user.password as string);
         if (!isMatch) {
+            // Memory IP lock tracking to sync with user attempts
+            tracker.attempts += 1;
+
             user.loginAttempts = (user.loginAttempts || 0) + 1;
             if (user.loginAttempts >= 3) {
                 const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
                 user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+
+                // Keep IP lock synced too
+                tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                ipFailures.set(clientIp, tracker);
+
                 await user.save();
                 return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
             }
+
+            ipFailures.set(clientIp, tracker);
             await user.save();
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
         // Success - Reset lock and attempts
+        ipFailures.delete(clientIp);
         user.loginAttempts = 0;
         user.lockUntil = undefined;
         await user.save();
