@@ -33,18 +33,12 @@ const LoginForm = () => {
     // Unified Login/Signup Step 1
     const handleCheckUser = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!recaptchaToken) {
-            showToast("Please complete the reCAPTCHA verification.", "error");
-            return;
-        }
-
         setIsLoading(true);
 
         const trimmedIdentifier = identifier.trim();
         try {
-            // 1. Check if user exists in DDTEC website and send recaptcha
-            const res = await api.post('/auth/check-user', { identifier: trimmedIdentifier, recaptchaToken });
+            // 1. Check if user exists in DDTEC website
+            const res = await api.post('/auth/check-user', { identifier: trimmedIdentifier });
 
             // Enforce signup permission set by administrator
             if (!res.data.signupAllowed && !res.data.exists) {
@@ -132,6 +126,11 @@ const LoginForm = () => {
             return;
         }
 
+        if (!recaptchaToken) {
+            showToast("Please complete the reCAPTCHA verification.", "error");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -143,6 +142,7 @@ const LoginForm = () => {
                 phone: isPhone ? identifier : secondaryIdentifier,
                 password: password,
                 otp,
+                recaptchaToken,
                 role: 'user',
                 accountType: 'individual'
             };
@@ -229,14 +229,6 @@ const LoginForm = () => {
                                         autoComplete="on"
                                     />
                                 </div>
-                            </div>
-
-                            <div className="flex justify-center my-4">
-                                <ReCAPTCHA
-                                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
-                                    onChange={(token) => setRecaptchaToken(token)}
-                                    theme="light"
-                                />
                             </div>
 
                             <button
@@ -406,6 +398,15 @@ const LoginForm = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="flex justify-center mt-2 mb-4">
+                                <ReCAPTCHA
+                                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
+                                    onChange={(token) => setRecaptchaToken(token)}
+                                    theme="light"
+                                />
+                            </div>
+
                             {/* Error toast handles errors, no local state needed */}
                             <div className="flex gap-3">
                                 <button

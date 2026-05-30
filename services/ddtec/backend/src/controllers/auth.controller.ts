@@ -118,7 +118,21 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
 export const register = async (req: Request, res: Response) => {
     try {
-        const { firstName, lastName, email, phone, password, role, otp, accountType, employmentType, companyDetails, designation } = req.body;
+        const { firstName, lastName, email, phone, password, role, otp, recaptchaToken, accountType, employmentType, companyDetails, designation } = req.body;
+
+        if (!recaptchaToken) {
+            return res.status(400).json({ msg: 'ReCAPTCHA token is required for signup' });
+        }
+
+        // Verify ReCAPTCHA
+        const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+        if (secretKey) {
+            const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
+            const recaptchaRes = await axios.post(verifyUrl);
+            if (!recaptchaRes.data.success) {
+                return res.status(400).json({ msg: 'ReCAPTCHA verification failed. Please try again.' });
+            }
+        }
 
         const disableOtp = process.env.DISABLE_OTP === 'true';
         let otpRecord = null;
@@ -512,23 +526,9 @@ export const changePassword = async (req: Request | any, res: Response) => {
 
 export const checkUser = async (req: Request, res: Response) => {
     try {
-        let { identifier, recaptchaToken } = req.body;
+        let { identifier } = req.body;
         if (!identifier) {
             return res.status(400).json({ msg: 'Identifier is required' });
-        }
-
-        if (!recaptchaToken) {
-            return res.status(400).json({ msg: 'ReCAPTCHA token is required' });
-        }
-
-        // Verify ReCAPTCHA
-        const secretKey = process.env.RECAPTCHA_SECRET_KEY;
-        if (secretKey) {
-            const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
-            const recaptchaRes = await axios.post(verifyUrl);
-            if (!recaptchaRes.data.success) {
-                return res.status(400).json({ msg: 'ReCAPTCHA verification failed. Please try again.' });
-            }
         }
 
         identifier = identifier.trim().toLowerCase();
