@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { CompanyRole } from "@/types";
 import { useToggleUserStatus } from "../hooks/use-user";
+import { UserWithCompany } from "../types";
 
 const UserRoleBadge = ({ user }: { user: any }) => {
   const isOwner = user.companyRole === CompanyRole.OWNER;
@@ -33,7 +34,7 @@ const UserRoleBadge = ({ user }: { user: any }) => {
   );
 };
 
-const UserTableRow = ({ user }: { user: any }) => {
+const UserTableRow = ({ user }: { user: UserWithCompany }) => {
   const { mutate: toggleUserStatus, isPending } = useToggleUserStatus();
   const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`;
 
@@ -43,7 +44,7 @@ const UserTableRow = ({ user }: { user: any }) => {
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
             {user.avatar?.url ? (
-              <AvatarImage src={user.avatar.url} alt={user.name} />
+              <AvatarImage src={user.avatar.url} alt={user.firstName} />
             ) : (
               <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                 {initials}
@@ -98,7 +99,7 @@ const UserTableRow = ({ user }: { user: any }) => {
           className="cursor-pointer"
           disabled={isPending}
           onClick={() =>
-            toggleUserStatus({ userId: user._id, isActive: !user.isActive })
+            toggleUserStatus({ userId: user._id })
           }
         >
           {user.isActive ? "Deactivate" : "Activate"}

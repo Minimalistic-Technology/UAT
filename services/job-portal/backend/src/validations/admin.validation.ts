@@ -1,34 +1,43 @@
 import { body, query } from "express-validator";
-
-export const updateUserStatusSchema = [
-  body("isActive")
-    .exists({ checkNull: true })
-    .withMessage("isActive is required")
-    .isBoolean()
-    .withMessage("isActive must be a boolean")
-    .toBoolean(), // converts "true"/"false" → true/false
-];
+import { ApiError } from "../utils/apiError.js";
 
 export const updateKycStatusSchema = [
   body("status")
     .exists({ checkNull: true })
     .withMessage("Status is required")
+    .isString()
+    .withMessage("Status must be a string")
     .isIn(["approved", "rejected"])
     .withMessage("Status must be either 'approved' or 'rejected'"),
+  body("note")
+    .optional()
+    .isString()
+    .withMessage("Note must be a string")
+    .isLength({ min: 10, max: 500 })
+    .withMessage("Note must be between 10 and 500 characters"),
 ];
 
 export const getJobsByStatusSchema = [
   query("status")
     .exists({ checkNull: true })
     .withMessage("Status is required")
+    .custom((value) => {
+      if (Array.isArray(value)) {
+        throw new ApiError(400, "Status must be a single value");
+      }
+      return true;
+    })
+    .isString()
+    .withMessage("Status must be a string")
     .isIn(["active", "closed", "pending", "rejected"])
-    .withMessage("Status must be either 'active', 'closed', 'pending', or 'rejected'")
+    .withMessage(
+      "Status must be either 'active', 'closed', 'pending', or 'rejected'",
+    ),
 ];
 
 export const getKycApplicationsSchema = [
   query("status")
-    .exists({ checkNull: true })
-    .withMessage("Status is required")
+    .optional()
     .isIn(["pending", "approved", "rejected"])
-    .withMessage("Status must be either 'pending', 'approved', or 'rejected'")
+    .withMessage("Status must be either 'pending', 'approved', or 'rejected'"),
 ];

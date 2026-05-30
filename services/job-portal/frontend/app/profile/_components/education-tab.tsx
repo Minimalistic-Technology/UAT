@@ -49,7 +49,7 @@ export const EducationTab = () => {
               </div>
               <div className="space-y-2">
                 <Label>Graduation Year</Label>
-                <Input type="number" {...register(`education.${index}.graduationYear`, { valueAsNumber: true })} />
+                <Input type="number" min={1900} {...register(`education.${index}.graduationYear`, { valueAsNumber: true })} />
                 {errors.education?.[index]?.graduationYear && (
                   <p className="text-red-500 text-sm">{errors.education[index]?.graduationYear?.message}</p>
                 )}

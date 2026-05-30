@@ -191,8 +191,8 @@ const Page = () => {
               <div className="flex items-center gap-3 text-sm">
                 <IndianRupee className="text-muted-foreground h-4 w-4" />
                 <span className="font-medium">
-                  ₹{job.salary.min.toLocaleString()} - ₹
-                  {job.salary.max.toLocaleString()}
+                  ₹{job.salary?.min?.toLocaleString()} - ₹
+                  {job.salary?.max?.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">

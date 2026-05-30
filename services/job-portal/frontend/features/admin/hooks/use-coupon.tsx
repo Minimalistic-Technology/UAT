@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createCoupon, getAdminCoupons, updateCoupon, deleteCoupon } from "../services/coupon.service";
+import {
+  createCoupon,
+  getAdminCoupons,
+  updateCoupon,
+  deleteCoupon,
+} from "../services/coupon.service";
 import { toast } from "sonner";
 import { CouponFormValues } from "../validations/coupon.schema";
 import { useRouter } from "next/navigation";
@@ -20,7 +25,8 @@ export const useCreateCoupon = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error.response?.data?.message || "Failed to create coupon. Please try again."
+        error.response?.data?.message ||
+          "Failed to create coupon. Please try again.",
       );
     },
   });
@@ -37,15 +43,19 @@ export const useUpdateCoupon = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { id: string; data: Partial<CouponFormValues> }) => updateCoupon(data),
+    mutationFn: (data: { id: string; data: Partial<CouponFormValues> }) =>
+      updateCoupon(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-coupons"] });
       toast.success("Coupon updated successfully");
     },
     onError: (error: any) => {
       console.error("Failed to update coupon", error);
-      toast.error(error.response?.data?.message || "Failed to update coupon. Please try again.");
-    }
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to update coupon. Please try again.",
+      );
+    },
   });
 };
 
@@ -60,7 +70,10 @@ export const useDeleteCoupon = () => {
     },
     onError: (error: any) => {
       console.error("Failed to delete coupon", error);
-      toast.error(error.response?.data?.message || "Failed to delete coupon. Please try again.");
-    }
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to delete coupon. Please try again.",
+      );
+    },
   });
 };

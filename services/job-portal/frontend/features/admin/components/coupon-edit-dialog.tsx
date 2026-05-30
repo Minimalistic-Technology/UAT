@@ -30,9 +30,10 @@ import {
   couponSchema,
 } from "@/features/admin/validations/coupon.schema";
 import { useUpdateCoupon } from "@/features/admin/hooks/use-coupon";
+import { Coupon } from "@/types/new-index";
 
 interface CouponEditDialogProps {
-  coupon: any | null;
+  coupon: Coupon;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

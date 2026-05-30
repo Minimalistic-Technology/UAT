@@ -125,11 +125,11 @@ export default function PlansPage() {
     );
   }
 
-  const plans = responseData?.data?.plans || [];
-  const pagination = responseData?.data?.pagination;
+  const plans = responseData?.data.plans;
+  const pagination = responseData?.data.pagination;
 
   // Client-side filtering (optional, backend usually does this but we'll do simple filtering based on searchTerm)
-  const filteredPlans = plans.filter((plan: any) =>
+  const filteredPlans = plans?.filter((plan) =>
     plan.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -182,7 +182,7 @@ export default function PlansPage() {
               </TableHeader>
               <TableBody>
                 {Array.isArray(filteredPlans) && filteredPlans.length > 0 ? (
-                  filteredPlans.map((plan: any) => (
+                  filteredPlans.map((plan) => (
                     <PlanTableRow key={plan._id} plan={plan} />
                   ))
                 ) : (

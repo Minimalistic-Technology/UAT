@@ -1,8 +1,10 @@
 "use client";
 
-import * as React from "react";
+import React from "react";
 import Link from "next/link";
 import { Search, Plus } from "lucide-react";
+
+// Shadcn components
 import {
   Table,
   TableBody,
@@ -123,11 +125,11 @@ export default function CouponsPage() {
     );
   }
 
-  const coupons = responseData?.data?.data || responseData?.data?.coupons || responseData?.data || [];
-  const pagination = responseData?.data?.pagination;
+  const coupons = responseData?.data.coupons;
+  const pagination = responseData?.data.pagination;
 
   // Client-side filtering
-  const filteredCoupons = Array.isArray(coupons) ? coupons.filter((coupon: any) =>
+  const filteredCoupons = Array.isArray(coupons) ? coupons.filter((coupon) =>
     coupon.code.toLowerCase().includes(searchTerm.toLowerCase())
   ) : [];
 

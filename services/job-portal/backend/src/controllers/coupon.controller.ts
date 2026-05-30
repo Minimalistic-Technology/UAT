@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Coupon from "../models/Coupon.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import { getPagination } from "../utils/parse-pagination.js";
 
 export const createCoupon = async (
   req: Request,
@@ -45,12 +46,14 @@ export const getCoupons = async (
   next: NextFunction,
 ) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+   const { page, limit } = getPagination(req.query);
     const skip = (page - 1) * limit;
 
     const totalCoupons = await Coupon.countDocuments();
-    const coupons = await Coupon.find().sort("-createdAt").skip(skip).limit(limit);
+    const coupons = await Coupon.find()
+      .sort("-createdAt")
+      .skip(skip)
+      .limit(limit);
 
     const totalPages = Math.ceil(totalCoupons / limit);
 
@@ -227,7 +230,10 @@ export const updateCoupon = async (
 
     if (code) {
       //@ts-ignore
-      const existingCoupon = await Coupon.findOne({ code: code.toUpperCase(), _id: { $ne: id } });
+      const existingCoupon = await Coupon.findOne({
+        code: code.toUpperCase(),
+        _id: { $ne: id },
+      });
       if (existingCoupon) {
         return next(new ApiError(400, "Coupon code already exists"));
       }
@@ -241,14 +247,16 @@ export const updateCoupon = async (
       }
       coupon.value = value;
     }
-    
+
     if (isActive !== undefined) coupon.isActive = isActive;
     if (expiryDate !== undefined) coupon.expiryDate = expiryDate;
     if (maxUses !== undefined) coupon.maxUses = maxUses === -1 ? -1 : maxUses;
 
     await coupon.save();
 
-    res.status(200).json(new ApiResponse(200, coupon, "Coupon updated successfully"));
+    res
+      .status(200)
+      .json(new ApiResponse(200, coupon, "Coupon updated successfully"));
   } catch (error: any) {
     next(error);
   }
@@ -268,7 +276,9 @@ export const deleteCoupon = async (
       return next(new ApiError(404, "Coupon not found"));
     }
 
-    res.status(200).json(new ApiResponse(200, null, "Coupon deleted successfully"));
+    res
+      .status(200)
+      .json(new ApiResponse(200, null, "Coupon deleted successfully"));
   } catch (error: any) {
     next(error);
   }

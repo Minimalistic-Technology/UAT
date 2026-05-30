@@ -39,15 +39,14 @@ export default function KycManagementPage() {
     limit: 10,
     status: statusFilter === "all" ? undefined : statusFilter,
   });
-  console.log("Kyc applications", responseData);
   
   const { mutate: updateStatus, isPending: isUpdating } =
     useUpdateKycApplicationStatus();
 
-  const applications = responseData?.data?.applications || [];
-  const pagination = responseData?.data?.pagination;
+  const applications = responseData?.data.applications || [];
+  const pagination = responseData?.data.pagination;
 
-  const filteredApps = applications.filter((app: any) => {
+  const filteredApps = applications.filter((app) => {
     const search = searchTerm.toLowerCase();
     return (
       app.companyName?.toLowerCase().includes(search) ||

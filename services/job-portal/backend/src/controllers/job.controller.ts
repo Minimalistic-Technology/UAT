@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import {
   ExperienceLevel,
   JobStatus,
-  JobType,
+  EmploymentType,
 } from "../models/BaseJob.model.js";
 import Job from "../models/Job.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
@@ -15,8 +15,8 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
 
-export function isValidJobType(value: any): value is JobType {
-  return Object.values(JobType).includes(value);
+export function isValidJobType(value: any): value is EmploymentType {
+  return Object.values(EmploymentType).includes(value);
 }
 
 export function isValidExperienceType(value: any): value is ExperienceLevel {

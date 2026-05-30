@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./ml-backend
+      dockerfile: Dockerfile
+    container_name: ml-backend
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      # Note: Add the rest of your backend .env variables here OR ensure the ml-backend/.env is used.
+    env_file:
+      - ./ml-backend/.env
+    restart: always
+
+  frontend:
+    build:
+      context: ./ml-frontend
+      dockerfile: Dockerfile
+    container_name: ml-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: always

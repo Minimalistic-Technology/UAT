@@ -43,7 +43,6 @@ export default function CreateCouponForm() {
   });
 
   const onSubmit = (data: CouponFormValues) => {
-    console.log("formdata", data);
     createCoupon(data);
   };
 

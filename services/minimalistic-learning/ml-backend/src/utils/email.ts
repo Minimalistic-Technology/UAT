@@ -5,11 +5,17 @@ import { env } from '../config/env';
 
 // 1. Setup Nodemailer (The Reliable Backup)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: env.EMAIL_USER,
     pass: env.EMAIL_PASS,
   },
+  tls: {
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 10000,
 });
 
 // 2. Setup Brevo (The Professional Choice)
@@ -35,17 +41,27 @@ async function sendViaNodemailer(to: string, subject: string, html: string) {
 
 /* ─── Shared Brevo dispatcher ───────────────────────────────────────── */
 async function sendViaBrevo(to: string, subject: string, html: string) {
-  try {
-    const result = await brevo.transactionalEmails.sendTransacEmail({
-      subject: subject,
-      htmlContent: html,
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': env.BREVO_API_KEY,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
       sender: { name: 'Minimalistic Learning', email: env.BREVO_FROM_EMAIL },
       to: [{ email: to }],
-    });
-    return result;
-  } catch (error: any) {
-    throw new Error('Brevo rejected: ' + JSON.stringify(error));
+      subject: subject,
+      htmlContent: html
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error('Brevo API rejected: ' + errorData);
   }
+
+  return await response.json();
 }
 
 /* ─── Smart send: Brevo first, Nodemailer fallback ─────────────────── */

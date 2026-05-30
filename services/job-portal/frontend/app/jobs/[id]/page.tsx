@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CompanyCard } from "@/components/company-card";
 
 const Page = () => {
   const params = useParams();
@@ -41,12 +42,12 @@ const Page = () => {
   const handleApply = () => {
     applyJob({
       listingId: jobId as string,
-      listingType: job?.jobType === "internship" ? "internship" : "job"
+      listingType: job?.jobType === "internship" ? "internship" : "job",
     });
   };
 
   if (isLoading) return <JobSkeleton />;
-  
+
   if (isError || !job)
     return (
       <div className="p-10 text-center text-red-500">
@@ -63,7 +64,7 @@ const Page = () => {
         {/* Left Column: Main Details */}
         <div className="space-y-6 lg:col-span-2">
           <Card className="border-none shadow-sm">
-            <CardHeader className="pb-2">
+            <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-primary text-3xl font-bold">
@@ -88,9 +89,11 @@ const Page = () => {
               <div className="mt-4 flex flex-wrap gap-4">
                 <div className="text-muted-foreground flex items-center text-sm">
                   <MapPinIcon className="mr-1 h-4 w-4" />
-                  {job.location?.city ? `${job.location.city}, ${job.location.country}` : "Location not specified"}
+                  {job.location?.city
+                    ? `${job.location.city}, ${job.location.country}`
+                    : "Location not specified"}
                 </div>
-                
+
                 {job.workMode && (
                   <div className="text-muted-foreground flex items-center text-sm capitalize">
                     <MonitorIcon className="mr-1 h-4 w-4" />
@@ -101,17 +104,24 @@ const Page = () => {
                 {job.salary && (
                   <div className="text-muted-foreground flex items-center text-sm">
                     <WalletIcon className="mr-1 h-4 w-4" />
-                    {job.salary.currency || '₹'}
-                    {job.salary.min?.toLocaleString() || 0} {job.salary.max ? `- ${job.salary.currency || '₹'}${job.salary.max.toLocaleString()}` : ''} / {job.salary.period}
+                    {job.salary.min || job.salary.max
+                      ? `${job.salary.currency} ${
+                          job.salary.min && job.salary.max
+                            ? `${job.salary.min} - ${job.salary.max}`
+                            : job.salary.min
+                              ? `${job.salary.min}+`
+                              : `Up to ${job.salary.max}`
+                        } / ${job.salary.period}`
+                      : "Salary not disclosed"}
                   </div>
                 )}
 
                 {job.stipend && (
                   <div className="text-muted-foreground flex items-center text-sm capitalize">
                     <WalletIcon className="mr-1 h-4 w-4" />
-                    {job.stipend.type === 'unpaid' 
-                      ? 'Unpaid' 
-                      : `${job.stipend.currency || '₹'}${job.stipend.amount?.toLocaleString() || 'Variable'} / ${job.stipend.period}`}
+                    {job.stipend.type === "unpaid"
+                      ? "Unpaid"
+                      : `${job.stipend.currency || "₹"}${job.stipend.amount?.toLocaleString() || "Variable"} / ${job.stipend.period}`}
                   </div>
                 )}
 
@@ -150,10 +160,16 @@ const Page = () => {
                 <>
                   <Separator />
                   <div>
-                    <h3 className="mb-3 text-lg font-semibold">Skills Required</h3>
+                    <h3 className="mb-3 text-lg font-semibold">
+                      Skills Required
+                    </h3>
                     <div className="flex flex-wrap gap-2">
                       {job.skills.map((skill: string) => (
-                        <Badge key={skill} variant="outline" className="px-3 py-1">
+                        <Badge
+                          key={skill}
+                          variant="outline"
+                          className="px-3 py-1"
+                        >
                           {skill}
                         </Badge>
                       ))}
@@ -190,7 +206,7 @@ const Page = () => {
                 <span className="text-muted-foreground flex items-center">
                   <CalendarIcon className="mr-2 h-4 w-4" /> Posted On
                 </span>
-                <span className="font-medium text-right">
+                <span className="text-right font-medium">
                   {new Date(job.createdAt).toLocaleDateString()}
                 </span>
               </div>
@@ -200,7 +216,7 @@ const Page = () => {
                   <span className="text-muted-foreground flex items-center">
                     <ClockIcon className="mr-2 h-4 w-4" /> Deadline
                   </span>
-                  <span className="font-medium text-right">
+                  <span className="text-right font-medium">
                     {new Date(job.applicationDeadline).toLocaleDateString()}
                   </span>
                 </div>
@@ -210,7 +226,7 @@ const Page = () => {
                 <span className="text-muted-foreground flex items-center">
                   <UsersIcon className="mr-2 h-4 w-4" /> Openings
                 </span>
-                <span className="font-medium text-right">{job.openings}</span>
+                <span className="text-right font-medium">{job.openings}</span>
               </div>
 
               {job.experienceLevel && (
@@ -218,8 +234,11 @@ const Page = () => {
                   <span className="text-muted-foreground flex items-center">
                     <BriefcaseIcon className="mr-2 h-4 w-4" /> Experience
                   </span>
-                  <span className="font-medium capitalize text-right">
-                    {job.experienceLevel?.replace(/_/g, " ")} {job.experienceInYears !== undefined ? `(${job.experienceInYears}+ yrs)` : ''}
+                  <span className="text-right font-medium capitalize">
+                    {job.experienceLevel?.replace(/_/g, " ")}{" "}
+                    {job.experienceInYears !== undefined
+                      ? `(${job.experienceInYears}+ yrs)`
+                      : ""}
                   </span>
                 </div>
               )}
@@ -229,7 +248,7 @@ const Page = () => {
                   <span className="text-muted-foreground flex items-center">
                     <ClockIcon className="mr-2 h-4 w-4" /> Duration
                   </span>
-                  <span className="font-medium capitalize text-right">
+                  <span className="text-right font-medium capitalize">
                     {job.duration.value} {job.duration.unit}
                   </span>
                 </div>
@@ -240,7 +259,7 @@ const Page = () => {
                   <span className="text-muted-foreground flex items-center">
                     <AwardIcon className="mr-2 h-4 w-4" /> PPO Offered
                   </span>
-                  <span className="font-medium capitalize text-right">
+                  <span className="text-right font-medium capitalize">
                     {job.isPPO ? "Yes" : "No"}
                   </span>
                 </div>
@@ -251,7 +270,7 @@ const Page = () => {
                   <span className="text-muted-foreground flex items-center">
                     <Building2Icon className="mr-2 h-4 w-4" /> Industry
                   </span>
-                  <span className="font-medium capitalize text-right">
+                  <span className="text-right font-medium capitalize">
                     {job.industry?.replace(/_/g, " ")}
                   </span>
                 </div>
@@ -262,7 +281,7 @@ const Page = () => {
                   <span className="text-muted-foreground flex items-center">
                     <BriefcaseIcon className="mr-2 h-4 w-4" /> Role
                   </span>
-                  <span className="font-medium capitalize text-right">
+                  <span className="text-right font-medium capitalize">
                     {job.roleCategory?.replace(/_/g, " ")}
                   </span>
                 </div>
@@ -273,7 +292,7 @@ const Page = () => {
                   <span className="text-muted-foreground flex items-center">
                     <GraduationCapIcon className="mr-2 h-4 w-4" /> Education
                   </span>
-                  <span className="font-medium capitalize text-right">
+                  <span className="text-right font-medium capitalize">
                     {job.education.minimumDegree?.replace(/_/g, " ")}
                     {job.education.isRequired ? " (Req)" : ""}
                   </span>
@@ -300,20 +319,12 @@ const Page = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-primary/5 border-none shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">
-                About the Company
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm font-bold">{job.company.name}</p>
-              <p className="text-muted-foreground mt-2 text-sm">
-                {job.company.description ||
-                  "Leading the industry in IT solutions and innovation."}
-              </p>
-            </CardContent>
-          </Card>
+          <CompanyCard
+            company={{
+              ...job.company,
+              location: job.company.location,
+            }}
+          />
         </div>
       </div>
     </div>

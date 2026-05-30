@@ -13,7 +13,16 @@ import {
 } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { confirmRegistrationSchema, forgotPasswordSchema, googleAuthSchema, loginSchema, registerEmployerSchema, registerUserSchema, resetPasswordSchema, verifyOtpSchema } from "../validations/auth.validation.js";
+import {
+  confirmRegistrationSchema,
+  forgotPasswordSchema,
+  googleAuthSchema,
+  loginSchema,
+  registerEmployerSchema,
+  registerUserSchema,
+  resetPasswordSchema,
+  verifyOtpSchema,
+} from "../validations/auth.validation.js";
 
 const router = Router();
 
@@ -39,11 +48,7 @@ router.post(
 );
 
 // Login
-router.post(
-  "/login",
-  validate(loginSchema),
-  login,
-);
+router.post("/login", validate(loginSchema), login);
 
 // Logout
 router.post("/logout", protect, logout);
@@ -59,25 +64,13 @@ router.get("/me", protect, getMe);
 // );
 
 // Verify OTP
-router.post(
-  "/verify-otp",
-  validate(verifyOtpSchema),
-  verifyOTP,
-);
+router.post("/verify-otp", validate(verifyOtpSchema), verifyOTP);
 
 // Google Auth
-router.post(
-  "/google-auth",
-  validate(googleAuthSchema),
-  googleAuth,
-);
+router.post("/google-auth", validate(googleAuthSchema), googleAuth);
 
 // Forgot Password
-router.post(
-  "/forgot-password",
-  validate(forgotPasswordSchema),
-  forgotPassword,
-);
+router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
 
 // Reset Password
 router.post(

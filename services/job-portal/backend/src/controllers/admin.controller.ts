@@ -9,6 +9,7 @@ import { Types } from "mongoose";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { deleteFromCloudinary } from "../utils/cloudinary.js";
+import { getPagination } from "../utils/parse-pagination.js";
 
 type IUserWithCompany = IUser & {
   isEmployee?: boolean;
@@ -17,10 +18,13 @@ type IUserWithCompany = IUser & {
   companyName?: string | null;
 };
 
-export const getAllUsers = async (req: Request, res: Response) => {
+export const getAllUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const { page, limit } = getPagination(req.query);
     const skip = (page - 1) * limit;
 
     const filter = { role: { $ne: GlobalRole.SUPER_ADMIN } };
@@ -68,9 +72,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     });
 
     if (!users) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Failed to fetch users" });
+      throw new ApiError(400, "Failed to fetch users");
     }
 
     const totalPages = Math.ceil(totalUsers / limit);
@@ -91,22 +93,20 @@ export const getAllUsers = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getJobsByStatus = async (req: Request, res: Response) => {
+export const getListingsByStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    let { status, page, limit } = req.query;
+    const status = req.query.status;
+    const jobStatus = status ?? JobStatus.PENDING;
 
-    const jobStatus = (status as string) || JobStatus.PENDING;
-
-    const currentPage = Math.max(1, parseInt(page as string) || 1);
-    const pageSize = Math.max(1, parseInt(limit as string) || 10);
+    const { page: currentPage, limit: pageSize } = getPagination(req.query);
     const skip = (currentPage - 1) * pageSize;
 
     const query = { status: jobStatus };
@@ -134,24 +134,27 @@ export const getJobsByStatus = async (req: Request, res: Response) => {
         .lean(),
     ]);
 
-    const taggedJobs = jobs.map((job) => ({ ...job, listingType: "job" }));
+    const taggedJobs = jobs.map((job) => ({ ...job, opportunityType: "job" }));
     const taggedInternships = internships.map((internship) => ({
       ...internship,
-      listingType: "internship",
+      opportunityType: "internship",
     }));
 
     const merged = [...taggedJobs, ...taggedInternships]
-      .sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      .sort(
+        (a, b) =>
+          // @ts-ignore
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       )
       .slice(0, pageSize);
+    console.log("Merged array", merged);
 
     return res.status(200).json({
       success: true,
       message: `Listings with status '${jobStatus}' fetched successfully`,
       data: {
         count: totalCombined,
-        listings: merged, 
+        listings: merged,
         pagination: {
           totalPages,
           currentPage,
@@ -162,40 +165,34 @@ export const getJobsByStatus = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error while fetching jobs",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const updateUserStatus = async (
+export const toggleUserStatus = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   const { userId } = req.params;
-  const { isActive } = req.body;
 
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { isActive },
-      { new: true, runValidators: true },
-    ).select("-password");
+    const user = await User.findById(userId);
 
-    if (!updatedUser) {
+    if (!user) {
       throw new ApiError(404, "User not found.");
     }
+
+    user.isActive = !user.isActive;
+    await user.save();
 
     return res
       .status(200)
       .json(
         new ApiResponse(
           200,
-          updatedUser,
-          `User account has been ${isActive ? "activated" : "deactivated"} successfully.`,
+          user,
+          `User account has been ${user.isActive ? "activated" : "deactivated"} successfully.`,
         ),
       );
   } catch (error: any) {
@@ -203,7 +200,11 @@ export const updateUserStatus = async (
   }
 };
 
-export const getStats = async (req: Request, res: Response) => {
+export const getStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const [totalUsers, totalJobs, totalCompanies] = await Promise.all([
       User.countDocuments({}),
@@ -220,11 +221,7 @@ export const getStats = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch platform statistics",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    next(error);
   }
 };
 
@@ -234,9 +231,8 @@ export const getKycApplications = async (
   next: NextFunction,
 ) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
-    const status = req.query.status as string;
+    const { page, limit } = getPagination(req.query);
+    const status = req.query.status;
 
     const skip = (page - 1) * limit;
 
@@ -253,7 +249,7 @@ export const getKycApplications = async (
 
     const [applications, totalApplications] = await Promise.all([
       KYC.find(filter)
-        .populate("user", "firstName lastName email phone")
+        .populate("user", "firstName lastName email")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -290,16 +286,8 @@ export const updateKycStatus = async (
 ) => {
   const { applicationId } = req.params;
   const { status, note } = req.body;
-  console.log("Note", note);
 
   try {
-    if (!["approved", "rejected"].includes(status)) {
-      throw new ApiError(
-        400,
-        "Invalid status provided. Must be 'approved' or 'rejected'.",
-      );
-    }
-
     const KYC = (await import("../models/KYC.model.js")).default;
 
     const kycApplication = await KYC.findById(applicationId);
@@ -310,7 +298,6 @@ export const updateKycStatus = async (
 
     kycApplication.status = status;
     if (status === "rejected" && note) {
-      console.log("Inside the block")
       kycApplication.rejectionReason = note;
       // Also delete the assests attached to this kycApplication
       // await deleteFromCloudinary(kycApplication.photo.publicId);
@@ -365,7 +352,11 @@ export const updateKycStatus = async (
   }
 };
 
-export const getAdminAnalytics = async (req: Request, res: Response) => {
+export const getAdminAnalytics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const KYC = (await import("../models/KYC.model.js")).default;
     const Payment = (await import("../models/Payment.model.js")).default;
@@ -527,10 +518,6 @@ export const getAdminAnalytics = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch admin analytics",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    next(error);
   }
 };

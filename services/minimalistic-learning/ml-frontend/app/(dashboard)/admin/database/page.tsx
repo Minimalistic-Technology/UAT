@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import AdminLayout from "@/app/(dashboard)/admin/layout-client";
 import { api } from "@/lib/api";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function DatabaseStudioPage() {
     const [tables, setTables] = useState<string[]>([]);
@@ -124,7 +123,7 @@ export default function DatabaseStudioPage() {
     };
 
     return (
-        <AdminLayout>
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
             <div className="space-y-6">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-white mb-2">SQLite Studio</h1>
@@ -199,6 +198,6 @@ export default function DatabaseStudioPage() {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </div>
     );
 }
