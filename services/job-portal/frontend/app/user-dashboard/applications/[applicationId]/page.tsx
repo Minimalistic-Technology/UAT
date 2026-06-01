@@ -100,7 +100,7 @@ const ViewApplicationPage = () => {
               <span>
                 Job Type:{" "}
                 <span className="text-foreground font-medium capitalize">
-                  {job?.jobType}
+                  {job?.employmentType}
                 </span>
               </span>
             </div>

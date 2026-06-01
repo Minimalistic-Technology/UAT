@@ -140,7 +140,7 @@ const MyApplicationsPage = () => {
                           {app.listing?.title}
                         </span>
                         <span className="text-muted-foreground mt-0.5 text-[11px] font-medium uppercase">
-                          {app.listing?.jobType?.replace("_", " ")}
+                          {app.listing?.employmentType?.replace("_", " ")}
                         </span>
                       </div>
                     </TableCell>

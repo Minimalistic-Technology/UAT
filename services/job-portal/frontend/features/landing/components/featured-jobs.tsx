@@ -176,7 +176,7 @@ export const FeaturedJobs = () => {
                     locStr = job.location;
                   }
 
-                  const jobTypeStr = job.type || (job.jobType ? job.jobType.replace("_", " ") : "Full-time");
+                  const employementTypeStr = job.type || (job.employmentType ? job.employmentType.replace("_", " ") : "Full-time");
 
                   // Salary formatting
                   let salaryStr = typeof job.salary === 'object' && job.salary !== null
@@ -240,7 +240,7 @@ export const FeaturedJobs = () => {
                       <div className="flex items-center justify-between md:justify-end gap-8">
                         <div className="text-left md:text-right">
                           <div className="flex items-center md:justify-end gap-1.5 text-sm font-medium text-slate-500 mb-1">
-                            <MapPin size={14} /> {locStr} · {jobTypeStr}
+                            <MapPin size={14} /> {locStr} · {employementTypeStr}
                           </div>
                           <div className="text-sm font-black text-slate-900 tracking-tight">
                             {salaryStr}

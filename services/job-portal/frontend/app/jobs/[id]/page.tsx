@@ -42,7 +42,7 @@ const Page = () => {
   const handleApply = () => {
     applyJob({
       listingId: jobId as string,
-      listingType: job?.jobType === "internship" ? "internship" : "job",
+      listingType: job?.employmentType === "internship" ? "internship" : "job",
     });
   };
 
@@ -127,7 +127,7 @@ const Page = () => {
 
                 <div className="text-muted-foreground flex items-center text-sm capitalize">
                   <BriefcaseIcon className="mr-1 h-4 w-4" />
-                  {job.jobType?.replace(/_/g, " ")}
+                  {job.employmentType?.replace(/_/g, " ")}
                 </div>
               </div>
             </CardContent>

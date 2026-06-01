@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { JobType } from "@/types";
 import { Search, Briefcase, SlidersHorizontal } from "lucide-react";
 import { useJobFilters } from "@/hooks/use-job-filter";
 import { Skeleton } from "@/components/ui/skeleton";

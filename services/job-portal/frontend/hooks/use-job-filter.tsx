@@ -12,7 +12,7 @@ export const useJobFilters = () => {
     state: searchParams.get("state") || "",
     country: searchParams.get("country") || "",
     city: searchParams.get("city") || "",
-    jobType: searchParams.get("jobType") || "all",
+    employmentType: searchParams.get("employmentType") || "all",
     experienceLevel: searchParams.get("experienceLevel") || "",
     remote: searchParams.get("remote") === "true",
     skills: searchParams.get("skills")?.split(",").filter(Boolean) || [],

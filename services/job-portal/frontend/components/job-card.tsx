@@ -175,7 +175,7 @@ export default function JobCard({ job }: JobCardProps) {
             <div className="flex items-center gap-1.5">
               <Briefcase className="h-4 w-4" />
               <span className="capitalize">
-                {job.jobType.replace("_", " ")}
+                {job.employmentType.replace("_", " ")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
