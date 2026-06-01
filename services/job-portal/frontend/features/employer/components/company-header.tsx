@@ -1,7 +1,7 @@
-import { Company } from "@/types";
+import { Company } from "@/types/new-index";
 import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, User, CheckCircle, Clock } from "lucide-react";
-import { CompanyMetrics } from "@/features/employer/services/company.service";
+import { CompanyMetrics } from "../types/company.type";
 
 interface CompanyHeaderProps {
   company: (Omit<Company, "owner"> & CompanyMetrics) | undefined;
