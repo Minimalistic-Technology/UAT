@@ -1,6 +1,7 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
 import { Application } from "../types";
 import { Education, Experience } from "@/types";
+import { GetAllEmployerApplicationsResponse } from "../types/application.type";
 
 export type ApplicationWithUser = Omit<Application, "jobSeeker"> & {
   jobSeeker: {
@@ -34,15 +35,7 @@ export const getAllEmployerApplications = async (params?: {
   status?: string;
 }) => {
   const response = await apiClient.get<
-    ApiSuccessResponse<{
-      applications: any;
-      pagination: {
-        totalItems: number;
-        totalPages: number;
-        currentPage: number;
-        limit: number;
-      };
-    }>
+    ApiSuccessResponse<GetAllEmployerApplicationsResponse>
   >("/applications/company/all", { params });
   return response.data;
 };

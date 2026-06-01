@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button"
 import { signOut, useSession } from "next-auth/react"
 import { SidebarNavItem } from "@/components/sidebar-nav-item"
 
-const menuItems = [
+export const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/employer-dashboard" },
   { label: "Post a Job / Internship", icon: PlusCircle, href: "/employer-dashboard/jobs/create" },
   { label: "Manage Jobs", icon: Briefcase, href: "/employer-dashboard/jobs/manage" },

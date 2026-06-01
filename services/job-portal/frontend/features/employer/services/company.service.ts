@@ -1,27 +1,6 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
 import { Company } from "@/types";
-
-export interface CompanyMetrics {
-  totalJobs: number;
-  activeJobs: number;
-  activeInternships: number;
-  activeListings: number;
-  totalMembers: number;
-  currentPlan: { _id: string; name: string } | null;
-  subscription: any | null;
-}
-
-interface GetMyCompanyResponse extends Omit<Company, "owner">, CompanyMetrics {
-  owner: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  kycStatus: "pending" | "approved" | "rejected" | null;
-  kycRejectionReason: string | null;
-  remainingJobPosts: number | null;
-}
+import { GetMyCompanyResponse } from "../types/company.type";
 
 interface GetAllEmployeesResponse {
   count: number;
@@ -64,15 +43,21 @@ export const deleteEmployee = async (id: string) => {
 
 export const getEmployeeById = async (id: string) => {
   const response = await apiClient.get<ApiSuccessResponse<any>>(
-    `/company-members/${id}`
+    `/company-members/${id}`,
   );
   return response.data;
 };
 
-export const updateEmployee = async ({ id, data }: { id: string; data: any }) => {
+export const updateEmployee = async ({
+  id,
+  data,
+}: {
+  id: string;
+  data: any;
+}) => {
   const response = await apiClient.patch<ApiSuccessResponse<any>>(
     `/company-members/${id}`,
-    data
+    data,
   );
   return response.data;
 };
@@ -80,7 +65,7 @@ export const updateEmployee = async ({ id, data }: { id: string; data: any }) =>
 export const addEmployee = async (data: any) => {
   const response = await apiClient.post<ApiSuccessResponse<any>>(
     "/company-members",
-    data
+    data,
   );
   return response.data;
 };
@@ -99,7 +84,7 @@ export const submitKycData = async (formData: FormData) => {
 export const updateCompanyDetails = async (data: Partial<Company>) => {
   const response = await apiClient.put<ApiSuccessResponse<Company>>(
     "/companies/me",
-    data
+    data,
   );
   return response.data;
 };
@@ -110,7 +95,7 @@ export const uploadCompanyLogo = async (formData: FormData) => {
     formData,
     {
       headers: { "Content-Type": "multipart/form-data" },
-    }
+    },
   );
   return response.data;
 };
