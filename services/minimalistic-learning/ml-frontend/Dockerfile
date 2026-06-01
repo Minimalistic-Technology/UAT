@@ -26,9 +26,16 @@ RUN npm run build
 # # Expose port 80
 # EXPOSE 80
 
+<<<<<<< Updated upstream
 # # Start Nginx
 # CMD ["nginx", "-g", "daemon off;"]
 
 EXPOSE 3000
 
 CMD ["npm", "run", "start"]
+=======
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
+
+
+>>>>>>> Stashed changes
