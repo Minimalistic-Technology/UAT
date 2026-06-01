@@ -99,10 +99,10 @@ export const Degree_Level = [
 ];
 
 const locationSchema = z.object({
-  city: z.string().trim().min(1, "City is required"),
-  state: z.string().trim().min(1, "State is required"),
-  country: z.string().trim().min(1, "Country is required"),
-});
+  city: z.string().trim().optional().or(z.literal("")),
+  state: z.string().trim().optional().or(z.literal("")),
+  country: z.string().trim().optional().or(z.literal("")),
+}).optional();
 
 const educationSchema = z.object({
   minimumDegree: z.enum(Degree_Level, {
@@ -162,4 +162,28 @@ export const BaseListingSchema = z.object({
   openings: z.coerce.number().int().min(1, "Openings must be at least 1"),
   status: z.enum(Listing_Status).default("active"),
   isFeatured: z.boolean().default(false),
+}).superRefine((data, ctx) => {
+  if (data.workMode !== "remote") {
+    if (!data.location?.city) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["location", "city"],
+        message: "City is required for non-remote roles",
+      });
+    }
+    if (!data.location?.state) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["location", "state"],
+        message: "State is required for non-remote roles",
+      });
+    }
+    if (!data.location?.country) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["location", "country"],
+        message: "Country is required for non-remote roles",
+      });
+    }
+  }
 });

@@ -313,7 +313,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="grid gap-2">
               <Label>
-                City <Asterisk className="text-destructive inline size-3" />
+                City {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}
               </Label>
               <Input {...register("location.city")} placeholder="Mumbai" />
               {errors.location?.city && (
@@ -324,7 +324,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             </div>
             <div className="grid gap-2">
               <Label>
-                State <Asterisk className="text-destructive inline size-3" />
+                State {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}
               </Label>
               <Input
                 {...register("location.state")}
@@ -338,7 +338,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             </div>
             <div className="grid gap-2">
               <Label>
-                Country <Asterisk className="text-destructive inline size-3" />
+                Country {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}
               </Label>
               <Input {...register("location.country")} placeholder="India" />
               {errors.location?.country && (

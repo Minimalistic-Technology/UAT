@@ -134,7 +134,7 @@ export type BaseListing = {
   companyType: CompanyType;
   roleCategory: RoleCategory;
   industry: Industry;
-  location: Location;
+  location?: Location;
   education: JobEducationRequirement;
   skills: string[];
   requirements: string[];

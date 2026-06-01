@@ -24,10 +24,10 @@ export const createJobSchema = [
 
   body("openings").isInt({ min: 1 }).withMessage("Openings must be at least 1"),
 
-  // Location Object (removed location.remote)
-  body("location.city").trim().notEmpty().withMessage("City is required"),
-  body("location.state").trim().notEmpty().withMessage("State is required"),
-  body("location.country").trim().notEmpty().withMessage("Country is required"),
+  // Location Object
+  body("location.city").if((value, { req }) => req.body.workMode !== "remote").trim().notEmpty().withMessage("City is required for non-remote roles"),
+  body("location.state").if((value, { req }) => req.body.workMode !== "remote").trim().notEmpty().withMessage("State is required for non-remote roles"),
+  body("location.country").if((value, { req }) => req.body.workMode !== "remote").trim().notEmpty().withMessage("Country is required for non-remote roles"),
 
   // Education Object
   body("education.minimumDegree")

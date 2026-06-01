@@ -157,7 +157,7 @@ export interface IBaseJob extends Document {
   companyType: CompanyType;
   roleCategory: RoleCategory;
   industry: Industry;
-  location: ILocation;
+  location?: ILocation;
   education: IEducation;
   skills: string[];
   requirements: string[];
