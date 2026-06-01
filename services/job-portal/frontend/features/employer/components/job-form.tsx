@@ -48,12 +48,15 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
       requirements: [],
       isFeatured: false,
       status: "active",
+      opportunityType: "job",
     },
   });
 
   const currentSkills = watch("skills") || [];
 
-  const onSubmit: SubmitHandler<CreateJobFormData> = (data) => createJob(data);
+  const onSubmit: SubmitHandler<CreateJobFormData> = (data) => {
+    createJob(data)
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -95,7 +98,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
                 Job Type <Asterisk className="text-destructive inline size-3" />
               </Label>
               <Controller
-                name="jobType"
+                name="employmentType"
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
@@ -114,9 +117,9 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
                   </Select>
                 )}
               />
-              {errors.jobType && (
+              {errors.employmentType && (
                 <p className="text-destructive text-xs">
-                  {errors.jobType.message}
+                  {errors.employmentType.message}
                 </p>
               )}
             </div>
@@ -582,27 +585,6 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
                   {errors.applicationDeadline.message}
                 </p>
               )}
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Status</Label>
-              <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent defaultValue={"active"}>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
             </div>
           </div>
 

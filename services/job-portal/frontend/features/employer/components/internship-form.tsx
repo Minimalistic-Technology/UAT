@@ -48,7 +48,7 @@ export function InternshipForm({ onCancel }: { onCancel: () => void }) {
     defaultValues: {
       title: "",
       description: "",
-      jobType: "internship", // Pre-set to match schema enum string
+      employmentType: "internship", // Pre-set to match schema enum string
       workMode: "remote",
       companyType: "startup",
       roleCategory: "software_development",
@@ -68,6 +68,7 @@ export function InternshipForm({ onCancel }: { onCancel: () => void }) {
       benefits: [],
       status: "active",
       isFeatured: false,
+      opportunityType: "internship",
     },
   });
 

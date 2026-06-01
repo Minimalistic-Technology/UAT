@@ -3,6 +3,7 @@ import {
   ExperienceLevel,
   JobStatus,
   EmploymentType,
+  OpportunityType,
 } from "../models/BaseJob.model.js";
 import Job from "../models/Job.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
@@ -207,7 +208,7 @@ export const createJob = async (
     const jobData = {
       title: req.body.title,
       description: req.body.description,
-      jobType: req.body.jobType,
+      employmentType: req.body.employmentType,
       workMode: req.body.workMode,
       companyType: req.body.companyType,
       roleCategory: req.body.roleCategory,
@@ -217,9 +218,9 @@ export const createJob = async (
       openings: req.body.openings,
 
       location: {
-        city: req.body.location.city,
-        state: req.body.location.state,
-        country: req.body.location.country,
+        city: req.body.location?.city,
+        state: req.body.location?.state,
+        country: req.body.location?.country,
       },
 
       education: {
@@ -242,6 +243,7 @@ export const createJob = async (
       applicationDeadline: req.body.applicationDeadline,
       isFeatured: req.body.isFeatured ?? false,
       status: req.body.status ?? "active",
+      opportunityType: OpportunityType.JOB,
       postedBy: req.user.id,
       company: company._id,
     };

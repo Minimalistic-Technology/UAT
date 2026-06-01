@@ -10,6 +10,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
 import { isValidExperienceType } from "./job.controller.js";
+import { OpportunityType } from "../models/BaseJob.model.js";
 
 export const getAllInternships = async (
   req: AuthRequest,
@@ -223,10 +224,9 @@ export const createInternship = async (
     const internshipData = {
       title: req.body.title,
       description: req.body.description,
-      jobType: req.body.jobType,
+      employmentType: req.body.employmentType,
       workMode: req.body.workMode,
       companyType: req.body.companyType,
-      experienceLevel: req.body.experienceLevel,
       openings: req.body.openings,
       roleCategory: req.body.roleCategory,
       industry: req.body.industry,
@@ -250,6 +250,7 @@ export const createInternship = async (
 
       applicationDeadline: req.body.applicationDeadline,
       isFeatured: req.body.isFeatured,
+      opportunityType: OpportunityType.INTERNSHIP,
       postedBy: req.user.id,
       company: company._id,
     };

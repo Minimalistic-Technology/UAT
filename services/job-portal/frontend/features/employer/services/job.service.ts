@@ -11,6 +11,7 @@ export const getMyJobPostings = async () => {
 }
 
 export const createJobPost = async (jobData: any) => {
+    console.log("Job data", jobData);
     const response = await apiClient.post<ApiSuccessResponse<any>>("/jobs", jobData);
     return response.data;
 }

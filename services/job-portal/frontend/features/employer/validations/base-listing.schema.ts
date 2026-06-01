@@ -10,6 +10,8 @@ export const Job_Type = [
   "freelance",
 ];
 
+export const Opportunity_Type = ["job", "internship"];
+
 export const Work_Mode = [
   "work from office",
   "remote",
@@ -141,7 +143,8 @@ export const BaseListingSchema = z.object({
   description: z.string().trim().min(1, "Job description is required"),
 
   // Select values
-  jobType: z.enum(Job_Type, { error: "Job type is required" }),
+  employmentType: z.enum(Job_Type, { error: "Job type is required" }),
+  opportunityType: z.enum(Opportunity_Type, { error: "Opportunity type is required" }),
   workMode: z.enum(Work_Mode, { error: "Work mode is required" }),
   companyType: z.enum(Company_Type, { error: "Company type is required" }),
   roleCategory: z.enum(ROLE_CATEGORIES, { error: "Role category is required" }),

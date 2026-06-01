@@ -7,14 +7,16 @@ export const createJobSchema = [
     .notEmpty()
     .withMessage("Job description is required"),
 
-  body("jobType").notEmpty().withMessage("Job type is required"),
+  body("employmentType").notEmpty().withMessage("Employment type is required"),
   body("workMode").notEmpty().withMessage("Work mode is required"),
   body("companyType").notEmpty().withMessage("Company type is required"),
   body("roleCategory").notEmpty().withMessage("Role category is required"),
   body("industry").notEmpty().withMessage("Industry is required"),
   body("experienceLevel")
-    .notEmpty()
-    .withMessage("Experience level is required"),
+  .notEmpty()
+  .withMessage("Experience level is required")
+  .isIn(["entry", "intermediate", "senior", "expert"])
+  .withMessage("Invalid experience level"),
 
   body("experienceInYears")
     .notEmpty()
@@ -108,6 +110,10 @@ export const createJobSchema = [
     .isIn(["active", "inactive", "draft"])
     .withMessage("Invalid status")
     .default("active"),
+  body("opportunityType")
+    .notEmpty()
+    .withMessage("Opportunity type is required")
+    .isIn(["job", "internship"]),
 ];
 
 export const getJobByIdSchema = [
