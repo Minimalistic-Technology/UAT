@@ -65,15 +65,29 @@ export default function Navbar() {
             {isLoading ? (
               <DesktopSkeleton />
             ) : isAuthenticated ? (
-              <DesktopAuthNav
-                session={session}
-                isEmployer={isEmployer}
-                isJobSeeker={isJobSeeker}
-                isAdmin={isAdmin}
-                pathname={pathname}
-                showFindJobs={showFindJobs}
-                onLogout={handleLogout}
-              />
+              <div className="flex items-center">
+                {showFindJobs && !isAdmin && (
+                  <NavLink href="/find-jobs">Find Jobs</NavLink>
+                )}
+
+                {isJobSeeker && (
+                  <NavLink href="/user-dashboard/applications">
+                    My Applications
+                  </NavLink>
+                )}
+
+                {isEmployer && (
+                  <NavLink href="/employer-dashboard/company-profile">
+                    My Company
+                  </NavLink>
+                )}
+
+                {((showFindJobs && !isAdmin) || isJobSeeker || isEmployer) && (
+                  <div className="bg-border mx-3 h-6 w-px" />
+                )}
+
+                <UserDropdown session={session} onLogout={handleLogout} />
+              </div>
             ) : (
               <>
                 {showFindJobs && <NavLink href="/find-jobs">Find Jobs</NavLink>}
@@ -126,59 +140,6 @@ export default function Navbar() {
 
 // ─── Desktop Sub-components ───────────────────────────────────────────────────
 
-function DesktopAuthNav({
-  session,
-  isEmployer,
-  isJobSeeker,
-  isAdmin,
-  pathname,
-  showFindJobs,
-  onLogout,
-}: {
-  session: any;
-  isEmployer: boolean | undefined;
-  isJobSeeker: boolean;
-  isAdmin: boolean;
-  pathname: string;
-  showFindJobs: boolean;
-  onLogout: () => void;
-}) {
-  // Pick the right menu items based on role
-  const roleMenuItems: MenuItem[] = isAdmin
-    ? adminMenuItems
-    : isEmployer
-      ? employerMenuItems
-      : [];
-
-  return (
-    <>
-      {showFindJobs && !isAdmin && (
-        <NavLink href="/find-jobs">Find Jobs</NavLink>
-      )}
-
-      {isJobSeeker && (
-        <NavLink href="/user-dashboard/applications">My Applications</NavLink>
-      )}
-
-      {/* Role-specific sidebar items shown inline on desktop */}
-      {roleMenuItems.map(({ label, href, icon: Icon }) => (
-        <NavLink
-          key={href}
-          href={href}
-          active={pathname === href || pathname.startsWith(href + "/")}
-        >
-          <Icon className="mr-1.5 h-4 w-4" />
-          {label}
-        </NavLink>
-      ))}
-
-      <div className="bg-border mx-3 h-6 w-px" />
-
-      <UserDropdown session={session} onLogout={onLogout} />
-    </>
-  );
-}
-
 function UserDropdown({
   session,
   onLogout,
@@ -191,7 +152,7 @@ function UserDropdown({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-9 w-9 rounded-full bg-slate-100 focus-visible:ring-0"
+          className="relative h-9 w-9 cursor-pointer rounded-full bg-slate-100 focus-visible:ring-0"
         >
           <User className="h-5 w-5 text-slate-600" />
         </Button>
