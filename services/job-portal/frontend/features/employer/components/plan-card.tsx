@@ -43,10 +43,8 @@ import { APP_NAME } from "@/constants";
 
 export function PlanCard({
   plan,
-  isUnverified,
 }: {
   plan: Plan;
-  isUnverified: boolean;
 }) {
   const { data: session } = useSession();
   const companyRole = session?.user.companyRole;
@@ -366,9 +364,7 @@ export function PlanCard({
           className={cn(
             "group w-full cursor-pointer font-bold transition-all active:scale-95",
             plan.isFeatured ? "shadow-primary/20 shadow-lg" : "",
-            isUnverified ? "cursor-not-allowed opacity-50" : "",
           )}
-          disabled={isUnverified}
           variant={plan.isFeatured ? "default" : "outline"}
         >
           <Zap

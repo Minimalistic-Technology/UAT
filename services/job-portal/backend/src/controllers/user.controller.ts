@@ -9,6 +9,8 @@ import {
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import {ALLOWED_MIME_TYPES_FOR_AVATAR, ALLOWED_MIME_TYPES_FOR_RESUME} from "../constants/index.js";
+import Subscription from "../models/Subscription.model.js";
+import CompanyMember from "../models/CompanyMember.model.js";
 
 export const updateProfile = async (
   req: AuthRequest,
@@ -172,6 +174,20 @@ export const submitKyc = async (
 ) => {
   try {
     const { companyName, aadharNo, gstNo, cinNo } = req.body;
+
+    const companyMember = await CompanyMember.findOne({ user: req.user.id, isActive: true });
+    if (!companyMember) {
+      throw new ApiError(403, "You must create a company first.");
+    }
+
+    const activeSubscription = await Subscription.findOne({
+      companyId: companyMember.company,
+      status: "active",
+    });
+
+    if (!activeSubscription) {
+      throw new ApiError(403, "You must purchase a plan before submitting KYC details.");
+    }
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
