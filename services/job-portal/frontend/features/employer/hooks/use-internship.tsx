@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createInternshipPost, deleteInternshipPost, getMyInternshipPostings } from "../services/internship.service";
+import { createInternshipPost, deleteInternshipPost, getMyInternshipPostings, getInternshipPostById } from "../services/internship.service";
 
 export const useGetMyInternshipPostings = () => {
   return useQuery({
@@ -43,5 +43,13 @@ export const useDeleteMyInternshipPosting = () => {
         error?.response?.data?.message || "Failed to delete internship.";
       toast.error(errorMsg);
     },
+  });
+};
+
+export const useGetInternshipPostById = (internshipId: string) => {
+  return useQuery({
+    queryKey: ["internship-post", internshipId],
+    queryFn: () => getInternshipPostById(internshipId),
+    enabled: !!internshipId,
   });
 };
