@@ -30,11 +30,20 @@ export const profileSchema = z.object({
       z.object({
         title: z.string().trim().min(3, "Title is required"),
         company: z.string().trim().min(3, "Company is required"),
-        location: z.string().trim().min(3, "Location is required"),
+        workType: z.enum(["wfo", "hybrid", "remote", "temporary_wfh"], {
+          error: "Work type is required",
+        }),
+        location: z.string().trim().optional(),
         startDate: z.string().min(1, "Start date is required"),
         endDate: z.string().optional(),
         current: z.boolean().optional(),
         description: z.string().trim().optional(),
+      }).refine((data) => {
+        if (data.workType === "remote") return true;
+        return data.location && data.location.trim().length >= 3;
+      }, {
+        message: "Location is required unless work type is remote",
+        path: ["location"],
       }),
     )
     .optional(),

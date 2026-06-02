@@ -6,6 +6,17 @@ interface ExperienceSectionProps {
   user: User | undefined;
 }
 
+const formatWorkType = (type?: string) => {
+  if (!type) return null;
+  const map: Record<string, string> = {
+    wfo: "WFO",
+    hybrid: "Hybrid",
+    remote: "Remote",
+    temporary_wfh: "Temporary WFH",
+  };
+  return map[type] || type;
+};
+
 export const ExperienceSection = ({ user }: ExperienceSectionProps) => {
   return (
     <ProfileSectionCard icon={Briefcase} title="Experience">
@@ -22,9 +33,18 @@ export const ExperienceSection = ({ user }: ExperienceSectionProps) => {
                     <h4 className="text-xl font-semibold">{exp.title}</h4>
                     <p className="text-sm font-medium">{exp.company}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5" /> {exp.location}
-                  </p>
+                  <div className="text-sm text-muted-foreground mt-1 flex items-center gap-3">
+                    {exp.workType && (
+                      <span className="bg-muted text-foreground px-2 py-0.5 rounded-md text-xs font-medium">
+                        {formatWorkType(exp.workType)}
+                      </span>
+                    )}
+                    {exp.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5" /> {exp.location}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right text-sm text-muted-foreground whitespace-nowrap">
                   {new Date(exp.startDate).toLocaleDateString(undefined, {

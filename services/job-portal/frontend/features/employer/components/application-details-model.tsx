@@ -117,7 +117,7 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
                             <p className="text-sm font-medium text-muted-foreground">{exp.company} • {exp.location}</p>
                           </div>
                           <Badge variant="secondary" className="text-[10px]">
-                            {new Date(exp.startDate).getFullYear()} - {exp.current ? 'Present' : exp.endDate ? new Date(exp.endDate).getFullYear() : ''}
+                            {new Date(exp.startDate).toLocaleDateString()} - {exp.current ? 'Present' : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : ''}
                           </Badge>
                         </div>
                         <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">

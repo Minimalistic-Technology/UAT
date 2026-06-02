@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Upload, ExternalLink, FileText } from "lucide-react";
 import { User } from "@/types";
 import { ProfileSectionCard } from "./profile-section-card";
+import { getInlineUrl } from "@/utils";
+import Link from "next/link";
 
 interface ApplicationDocumentsProps {
   user: User | undefined;
@@ -38,14 +40,14 @@ export const ApplicationDocuments = ({
             {user?.resume?.url ? (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild>
-                  <a
-                    href={user.resume.url}
+                  <Link
+                    href={getInlineUrl(user.resume.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary flex items-center gap-1.5"
                   >
                     <ExternalLink className="h-4 w-4" /> View
-                  </a>
+                  </Link>
                 </Button>
                 <Button
                   variant="outline"
