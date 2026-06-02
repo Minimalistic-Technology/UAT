@@ -274,21 +274,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-3 mt-6">
-            {/* Device Code Login - RECOMMENDED */}
-            <button
-              onClick={startDeviceLogin}
-              className="group flex items-center gap-4 p-5 rounded-2xl border-2 border-blue-200 bg-blue-50 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all duration-200 text-blue-700 text-left shadow-sm hover:shadow-lg"
-            >
-              <div className="w-12 h-12 rounded-xl bg-blue-600 group-hover:bg-white/20 flex items-center justify-center transition-colors shrink-0">
-                <svg className="text-white" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-              </div>
-              <div>
-                <p className="font-semibold">Sign in with Code <span className="text-xs font-normal opacity-70 ml-1">(Recommended)</span></p>
-                <p className="text-xs opacity-70 mt-0.5">No redirect needed — just enter a 6-digit code</p>
-              </div>
-            </button>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
             {/* OAuth Sign In */}
             <button
               onClick={() => signIn('azure-ad')}
