@@ -8,8 +8,8 @@ interface CompanyCardProps {
     description?: string;
     industry?: string;
     companySize?: string;
-    logo?: { url: string };
-    location?: {
+    logo?: string | { url: string };
+    location?: string | {
       city?: string;
       country?: string;
     };
@@ -24,9 +24,13 @@ export const CompanyCard = ({ company }: CompanyCardProps) => {
     .slice(0, 2)
     .toUpperCase();
 
-  const location = [company.location?.city, company.location?.country]
-    .filter(Boolean)
-    .join(", ");
+  const location = typeof company.location === 'string'
+    ? company.location
+    : [company.location?.city, company.location?.country]
+        .filter(Boolean)
+        .join(", ");
+
+  const logoUrl = typeof company.logo === "string" ? company.logo : company.logo?.url;
 
   return (
     <Link
@@ -36,9 +40,9 @@ export const CompanyCard = ({ company }: CompanyCardProps) => {
       <div className="mb-3 flex items-center gap-3">
         {/* Logo / Fallback initials */}
         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/40 bg-muted">
-          {company.logo?.url ? (
+          {logoUrl ? (
             <img
-              src={company.logo.url}
+              src={logoUrl}
               alt={`${company.name} logo`}
               className="h-full w-full object-cover"
             />

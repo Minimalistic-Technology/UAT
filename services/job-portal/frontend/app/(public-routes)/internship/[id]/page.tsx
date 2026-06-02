@@ -33,7 +33,7 @@ const Page = () => {
     data: responseData,
     isLoading,
     isError,
-  } = useGetInternshipDetailsById(internshipId as string);
+  } = useGetInternshipDetailsById(String(internshipId));
   const internship = responseData?.data;
 
   const { mutate: applyJob, isPending: isApplying } = useApplyJob();
