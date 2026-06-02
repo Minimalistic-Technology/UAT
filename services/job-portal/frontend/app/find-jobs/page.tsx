@@ -344,11 +344,13 @@ function JobsPageContent() {
                     Filters
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-75 sm:w-100">
+                <SheetContent side="left" className="w-75 sm:w-100 overflow-y-auto">
                   <SheetHeader className="mb-6">
                     <SheetTitle>Filters</SheetTitle>
                   </SheetHeader>
-                  <FilterSidebar />
+                  <div className="px-2 pb-12">
+                    <FilterSidebar />
+                  </div>
                 </SheetContent>
               </Sheet>
 
