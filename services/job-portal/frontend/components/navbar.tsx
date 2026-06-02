@@ -288,7 +288,7 @@ function MobileAuthNav({
 
 function MobileGuestButtons({ onClose }: { onClose: () => void }) {
   return (
-    <div className="mt-4 flex flex-col gap-2">
+    <div className="mt-4 flex flex-col gap-2 px-4">
       <Button asChild className="w-full">
         <Link href="/register" onClick={onClose}>
           Create Account
@@ -303,6 +303,12 @@ function MobileGuestButtons({ onClose }: { onClose: () => void }) {
         <Link href="/employer-register" onClick={onClose}>
           Sign Up as Employer
         </Link>
+      </Button>
+      <div className="h-px w-full bg-muted-foreground" />
+      <Button variant={"ghost"}>
+        <MobileNavLink href="/find-jobs" onClick={onClose}>
+          Find Jobs
+        </MobileNavLink>
       </Button>
     </div>
   );
