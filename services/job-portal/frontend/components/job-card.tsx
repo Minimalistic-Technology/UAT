@@ -46,7 +46,7 @@ const CurrencyIcon = ({
 export default function JobCard({ job }: JobCardProps) {
   console.log("Job Card", job)
   return (
-    <Link href={`/${job.listingType === 'internship' ? 'internships' : 'jobs'}/${job._id}`} className="group block">
+    <Link href={`/${job.listingType === 'internship' ? 'internship' : 'job'}/${job._id}`} className="group block">
       <Card className="hover:border-primary/20 overflow-hidden border shadow-sm transition-all duration-200 hover:shadow-md">
         <CardContent className="p-5">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
