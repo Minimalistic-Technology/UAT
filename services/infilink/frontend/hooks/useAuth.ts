@@ -30,7 +30,7 @@ export function useAuth() {
     })
   }, [])
 
-  const login = useCallback(async (email: string, password: string, recaptchaToken: string) => {
+  const login = useCallback(async (email: string, password: string, recaptchaToken?: string) => {
     const response = await api.login({ email, password, recaptchaToken })
     if (response.error || !response.data) {
       return {

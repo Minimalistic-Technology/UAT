@@ -5,8 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { api } from '@/lib/api'
-import { useState, useEffect, useRef } from 'react'
-import ReCAPTCHA from "react-google-recaptcha"
+import { useState, useEffect } from 'react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -18,7 +17,6 @@ export default function LoginPage() {
   const [lockTimeLeft, setLockTimeLeft] = useState(0)
   const [requireOtp, setRequireOtp] = useState(false)
   const [otp, setOtp] = useState('')
-  const recaptchaRef = useRef<ReCAPTCHA>(null)
 
 
   useEffect(() => {
@@ -42,16 +40,9 @@ export default function LoginPage() {
     e.preventDefault()
     if (lockTimeLeft > 0) return
 
-    const recaptchaToken = recaptchaRef.current?.getValue()
-    if (!recaptchaToken) {
-      setError('Please complete the recaptcha verification.')
-      return
-    }
-
     setLoading(true)
     setError('')
-    const result = await login(email, password, recaptchaToken)
-    recaptchaRef.current?.reset()
+    const result = await login(email, password)
     setLoading(false)
 
     if ('error' in result && result.error) {
@@ -167,13 +158,6 @@ export default function LoginPage() {
                   required
                   disabled={lockTimeLeft > 0}
                 />
-
-                <div className="flex justify-center my-4 overflow-hidden rounded-xl">
-                  <ReCAPTCHA
-                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                    ref={recaptchaRef}
-                  />
-                </div>
               </>
             ) : (
               <Input

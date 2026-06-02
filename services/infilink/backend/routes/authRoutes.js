@@ -184,12 +184,7 @@ router.post('/resend-otp', async (req, res) => {
 // @access  Public
 router.post('/login', async (req, res) => {
   try {
-    const { email, password, recaptchaToken } = req.body;
-
-    const isHuman = await verifyRecaptcha(recaptchaToken);
-    if (!isHuman) {
-      return res.status(400).json({ error: 'Recaptcha verification failed. Please try again.' });
-    }
+    const { email, password } = req.body;
 
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
