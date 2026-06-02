@@ -11,6 +11,10 @@ import { ApiError } from "../utils/apiError.js";
 import { deleteFromCloudinary } from "../utils/cloudinary.js";
 import { getPagination } from "../utils/parse-pagination.js";
 
+import KYC from "../models/KYC.model.js";
+import Payment, { PaymentStatus } from "../models/Payment.model.js";
+import Application from "../models/Application.model.js"
+
 type IUserWithCompany = IUser & {
   isEmployee?: boolean;
   companyId?: Types.ObjectId | null;
@@ -241,12 +245,6 @@ export const getKycApplications = async (
       filter.status = status;
     }
 
-    // Dynamic import to avoid circular dependency if Model architecture changed,
-    // assuming KYC is exported from User.model.ts or from its own KYC.model.ts file.
-    // For safety, checking whether KYC model is injected or available.
-    // I know that KYC model was created in src/models/KYC.model.ts earlier.
-    const KYC = (await import("../models/KYC.model.js")).default;
-
     const [applications, totalApplications] = await Promise.all([
       KYC.find(filter)
         .populate("user", "firstName lastName email")
@@ -358,15 +356,30 @@ export const getAdminAnalytics = async (
   next: NextFunction,
 ) => {
   try {
-    const KYC = (await import("../models/KYC.model.js")).default;
-    const Payment = (await import("../models/Payment.model.js")).default;
-    const { PaymentStatus } = await import("../models/Payment.model.js");
-    const Application = (await import("../models/Application.model.js"))
-      .default;
-
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    // --- Exchange rates to INR (update these or fetch from a live API) ---
+    const toINR: Record<string, number> = {
+      INR: 1,
+      USD: 83.5,
+      EUR: 90.2,
+      GBP: 105.8,
+    };
+
+    // Helper: converts a currency-grouped aggregation result → INR total
+    const toINRTotal = (aggr: { _id: string; total: number }[]) =>
+      aggr.reduce((sum, { _id: currency, total }) => {
+        const rate = toINR[currency?.toUpperCase()] ?? 1;
+        return sum + (total / 100) * rate;
+      }, 0);
+
+    // Shared aggregation pipeline factory — groups by currency
+    const revenuePipeline = (matchExtra: Record<string, unknown>) => [
+      { $match: { status: PaymentStatus.CAPTURED, ...matchExtra } },
+      { $group: { _id: "$currency", total: { $sum: "$amount" } } },
+    ];
 
     const [
       currentMonthPayments,
@@ -378,28 +391,9 @@ export const getAdminAnalytics = async (
       totalCompanies,
       totalApplications,
     ] = await Promise.all([
-      Payment.aggregate([
-        {
-          $match: {
-            status: PaymentStatus.CAPTURED,
-            createdAt: { $gte: currentMonthStart },
-          },
-        },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]),
-      Payment.aggregate([
-        {
-          $match: {
-            status: PaymentStatus.CAPTURED,
-            createdAt: { $gte: lastMonthStart, $lt: currentMonthStart },
-          },
-        },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]),
-      Payment.aggregate([
-        { $match: { status: PaymentStatus.CAPTURED } },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]),
+      Payment.aggregate(revenuePipeline({ createdAt: { $gte: currentMonthStart } })),
+      Payment.aggregate(revenuePipeline({ createdAt: { $gte: lastMonthStart, $lt: currentMonthStart } })),
+      Payment.aggregate(revenuePipeline({})),
       User.countDocuments({ isActive: true, role: GlobalRole.USER }),
       Job.countDocuments({ status: JobStatus.ACTIVE }),
       KYC.countDocuments({ status: "pending" }),
@@ -407,9 +401,9 @@ export const getAdminAnalytics = async (
       Application.countDocuments({}),
     ]);
 
-    const currentRevenue = (currentMonthPayments[0]?.total || 0) / 100;
-    const lastRevenue = (lastMonthPayments[0]?.total || 0) / 100;
-    const totalRevenue = (totalRevenueAggr[0]?.total || 0) / 100;
+    const currentRevenue = toINRTotal(currentMonthPayments);
+    const lastRevenue    = toINRTotal(lastMonthPayments);
+    const totalRevenue   = toINRTotal(totalRevenueAggr);
 
     let revenueGrowth = 0;
     if (lastRevenue > 0) {
@@ -418,91 +412,91 @@ export const getAdminAnalytics = async (
       revenueGrowth = 100;
     }
 
-    // Graph Data for the last 6 months
+    // --- Graph data (last 6 months) ---
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    const [revenueGraphData, usersGraphData, jobsGraphData] = await Promise.all(
-      [
-        Payment.aggregate([
-          {
-            $match: {
-              status: PaymentStatus.CAPTURED,
-              createdAt: { $gte: sixMonthsAgo },
+    const [revenueGraphData, usersGraphData, jobsGraphData] = await Promise.all([
+      Payment.aggregate([
+        { $match: { status: PaymentStatus.CAPTURED, createdAt: { $gte: sixMonthsAgo } } },
+        {
+          $group: {
+            _id: {
+              month: { $month: "$createdAt" },
+              year:  { $year:  "$createdAt" },
+              currency: "$currency",
             },
+            total: { $sum: "$amount" },
           },
-          {
-            $group: {
-              _id: {
-                month: { $month: "$createdAt" },
-                year: { $year: "$createdAt" },
-              },
-              total: { $sum: "$amount" },
-            },
+        },
+      ]),
+      User.aggregate([
+        { $match: { createdAt: { $gte: sixMonthsAgo }, role: GlobalRole.USER } },
+        {
+          $group: {
+            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+            count: { $sum: 1 },
           },
-        ]),
-        User.aggregate([
-          {
-            $match: {
-              createdAt: { $gte: sixMonthsAgo },
-              role: GlobalRole.USER,
-            },
+        },
+      ]),
+      Job.aggregate([
+        { $match: { createdAt: { $gte: sixMonthsAgo } } },
+        {
+          $group: {
+            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+            count: { $sum: 1 },
           },
-          {
-            $group: {
-              _id: {
-                month: { $month: "$createdAt" },
-                year: { $year: "$createdAt" },
-              },
-              count: { $sum: 1 },
-            },
-          },
-        ]),
-        Job.aggregate([
-          { $match: { createdAt: { $gte: sixMonthsAgo } } },
-          {
-            $group: {
-              _id: {
-                month: { $month: "$createdAt" },
-                year: { $year: "$createdAt" },
-              },
-              count: { $sum: 1 },
-            },
-          },
-        ]),
-      ],
-    );
+        },
+      ]),
+    ]);
 
-    const formatGraphData = (data: any[], valueKey: string) => {
+    const formatRevenueChart = () => {
       const formatted = [];
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const month = d.getMonth() + 1;
-        const year = d.getFullYear();
-        const found = data.find(
+        const year  = d.getFullYear();
+
+        // Sum all currency buckets for this month → INR
+        const monthEntries = revenueGraphData.filter(
           (item: any) => item._id.month === month && item._id.year === year,
         );
+        const revenueINR = monthEntries.reduce((sum: number, item: any) => {
+          const rate = toINR[item._id.currency?.toUpperCase()] ?? 1;
+          return sum + (item.total / 100) * rate;
+        }, 0);
+
         formatted.push({
           name: d.toLocaleString("default", { month: "short" }),
-          [valueKey]: found
-            ? valueKey === "revenue"
-              ? found.total / 100
-              : found.count
-            : 0,
+          revenue: parseFloat(revenueINR.toFixed(2)),
         });
       }
       return formatted;
     };
 
-    const revenueChart = formatGraphData(revenueGraphData, "revenue");
-    const usersChart = formatGraphData(usersGraphData, "users");
-    const jobsChart = formatGraphData(jobsGraphData, "jobs");
+    const formatCountChart = (data: any[], valueKey: string) => {
+      const formatted = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const month = d.getMonth() + 1;
+        const year  = d.getFullYear();
+        const found = data.find(
+          (item: any) => item._id.month === month && item._id.year === year,
+        );
+        formatted.push({
+          name: d.toLocaleString("default", { month: "short" }),
+          [valueKey]: found?.count ?? 0,
+        });
+      }
+      return formatted;
+    };
 
     return res.status(200).json({
       success: true,
       message: "Admin analytics fetched successfully",
       data: {
         summary: {
-          totalRevenue,
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),   // always INR ₹
+          revenueCurrency: "INR",
           revenueGrowth: parseFloat(revenueGrowth.toFixed(2)),
           activeUsers,
           jobListings,
@@ -511,9 +505,9 @@ export const getAdminAnalytics = async (
           totalApplications,
         },
         graphs: {
-          revenue: revenueChart,
-          users: usersChart,
-          jobs: jobsChart,
+          revenue: formatRevenueChart(), // ₹ INR values
+          users:   formatCountChart(usersGraphData, "users"),
+          jobs:    formatCountChart(jobsGraphData, "jobs"),
         },
       },
     });

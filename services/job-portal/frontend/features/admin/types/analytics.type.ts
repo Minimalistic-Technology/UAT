@@ -13,6 +13,7 @@ export interface AdminAnalyticsSummary {
   kycPending: number;
   totalCompanies: number;
   totalApplications: number;
+  revenueCurrency: "INR" | "USD" | "EUR" | "GDP",
 }
 
 export interface AdminAnalyticsResponse {

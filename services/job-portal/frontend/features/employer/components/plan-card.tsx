@@ -38,6 +38,7 @@ import {
 import type { Plan } from "../types";
 import { useState } from "react";
 import { useValidateCoupon } from "../hooks/use-coupons";
+import { useGetMyCompanyDetails } from "../hooks/use-company";
 import { useRouter } from "next/navigation";
 import { APP_NAME } from "@/constants";
 
@@ -58,6 +59,11 @@ export function PlanCard({
   const [isValidating, setIsValidating] = useState(false);
 
   const validateMutation = useValidateCoupon();
+  const { data: companyResponse } = useGetMyCompanyDetails();
+  const companyDetails = companyResponse?.data;
+  const hasActivePlan = companyDetails?.subscription?.status === "active";
+  const remainingJobPosts = companyDetails?.remainingJobPosts;
+  const canPurchase = !hasActivePlan || remainingJobPosts === 0;
 
   function handleValidateCoupon() {
     if (!couponCode.trim()) {
@@ -358,23 +364,31 @@ export function PlanCard({
       </CardContent>
 
       <CardFooter className="px-6 pb-8">
-        <Button
-          onClick={handlePayment}
-          size="lg"
-          className={cn(
-            "group w-full cursor-pointer font-bold transition-all active:scale-95",
-            plan.isFeatured ? "shadow-primary/20 shadow-lg" : "",
-          )}
-          variant={plan.isFeatured ? "default" : "outline"}
-        >
-          <Zap
+        <div className="flex w-full flex-col gap-2">
+          <Button
+            onClick={handlePayment}
+            disabled={!canPurchase}
+            size="lg"
             className={cn(
-              "mr-2 h-4 w-4 transition-transform group-hover:scale-110",
-              plan.isFeatured ? "fill-current" : "text-primary",
+              "group w-full cursor-pointer font-bold transition-all active:scale-95",
+              plan.isFeatured ? "shadow-primary/20 shadow-lg" : "",
             )}
-          />
-          Get {plan.name}
-        </Button>
+            variant={plan.isFeatured ? "default" : "outline"}
+          >
+            <Zap
+              className={cn(
+                "mr-2 h-4 w-4 transition-transform group-hover:scale-110",
+                plan.isFeatured ? "fill-current" : "text-primary",
+              )}
+            />
+            Get {plan.name}
+          </Button>
+          {!canPurchase && (
+            <p className="text-center text-xs text-muted-foreground">
+              You already have an active plan with remaining job posts.
+            </p>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

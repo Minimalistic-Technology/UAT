@@ -66,10 +66,9 @@ const AdminDashboard = () => {
       <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatusCard
           label="Total Revenue"
-          value={`$${summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`Rs ${summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           variant="admin"
-          icon={<DollarSign />}
-          description={`${summary.revenueGrowth >= 0 ? '+' : ''}${summary.revenueGrowth}% vs last month`}
+          description={`${summary.revenueCurrency} ${summary.revenueGrowth >= 0 ? '+' : ''} ${summary.revenueGrowth}% vs last month`}
         />
         <StatusCard
           label="Active Users"
