@@ -141,7 +141,7 @@ export default function CompanyDetailsPage() {
           <h2 className="text-2xl font-bold tracking-tight">Open Positions</h2>
           {jobs.length > 0 && (
             <Badge variant="secondary" className="px-3 py-1 text-sm bg-primary/10 text-primary hover:bg-primary/20">
-              {jobs.length} Job{jobs.length === 1 ? "" : "s"}
+              {jobs.length} Position{jobs.length === 1 ? "" : "s"}
             </Badge>
           )}
         </div>

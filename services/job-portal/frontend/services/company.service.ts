@@ -26,7 +26,7 @@ export const getCompanyById = async (id: string) => {
 };
 
 export const getCompanyJobs = async (companyId: string, page = 1, limit = 10) => {
-  const response = await apiClient.get<ApiSuccessResponse<CompanyJobsResponse>>(`/jobs`, {
+  const response = await apiClient.get<ApiSuccessResponse<CompanyJobsResponse>>(`/listings`, {
     params: {
       company: companyId,
       page,
