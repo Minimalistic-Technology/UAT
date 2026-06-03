@@ -72,6 +72,7 @@ const Page = () => {
             variant="outline"
             className="cursor-pointer"
             size="sm"
+            disabled={job.status === "closed"}
             onClick={() => router.push(`/employer-dashboard/jobs/${jobId}/edit`)}
           >
             <Pencil className="mr-2 h-4 w-4" /> Edit Details

@@ -74,6 +74,7 @@ const Page = () => {
             variant="outline"
             className="cursor-pointer"
             size="sm"
+            disabled={internship.status === "closed"}
             onClick={() => {
               router.push(`/employer-dashboard/internships/${internshipId}/edit`);
             }}

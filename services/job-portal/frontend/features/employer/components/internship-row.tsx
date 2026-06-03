@@ -89,6 +89,7 @@ export function InternshipRow({ internship }: { internship: any }) {
               )}
             </DropdownMenuItem>
             <DropdownMenuItem
+              disabled={internship.status === "closed"}
               onClick={() => {
                 router.push(`/employer-dashboard/internships/${internship._id}/edit`)
               }}
