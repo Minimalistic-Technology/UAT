@@ -420,7 +420,7 @@ export const getAdminAnalytics = async (
     // --- Graph data (last 6 months) ---
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    const [revenueGraphData, usersGraphData, jobsGraphData, internshipGraphData] = await Promise.all([
+    const [revenueGraphData, usersGraphData, jobsGraphData, internshipsGraphData] = await Promise.all([
       Payment.aggregate([
         { $match: { status: PaymentStatus.CAPTURED, createdAt: { $gte: sixMonthsAgo } } },
         {
@@ -462,6 +462,8 @@ export const getAdminAnalytics = async (
         },
       ]),
     ]);
+
+    console.log("internship data", internshipsGraphData)
 
     const formatRevenueChart = () => {
       const formatted = [];
@@ -523,7 +525,7 @@ export const getAdminAnalytics = async (
           revenue: formatRevenueChart(), // ₹ INR values
           users:   formatCountChart(usersGraphData, "users"),
           jobs:    formatCountChart(jobsGraphData, "jobs"),
-          internships: formatCountChart(internshipGraphData, "internships"),
+          internships: formatCountChart(internshipsGraphData, "internships"),
         },
       },
     });

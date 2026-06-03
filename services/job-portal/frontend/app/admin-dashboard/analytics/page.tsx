@@ -10,19 +10,19 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 const chartConfig = {
   revenue: {
     label: "Revenue",
-    color: "hsl(var(--primary))",
+    color: "var(--primary)",
   },
   users: {
     label: "Users",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
   jobs: {
     label: "Jobs",
-    color: "hsl(var(--chart-3))",
+    color: "var(--chart-3)",
   },
   internships: {
     label: "Internships",
-    color: "hsl(var(--chart-4))",
+    color: "var(--chart-4)",
   },
 };
 
