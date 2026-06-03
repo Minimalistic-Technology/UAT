@@ -15,10 +15,12 @@ import {
 import { useUpdateCompany } from "@/features/employer/hooks/use-company";
 import { Loader2 } from "lucide-react";
 import { companyFormSchema, CompanyFormValues } from "@/features/employer/validations/company.schema";
+import { KycStatus } from "@/types/enums";
 
 export const CompanyInformation = ({ company }: { company: any }) => {
   const [isEditing, setIsEditing] = useState(false);
   const { mutate: updateCompany, isPending } = useUpdateCompany();
+  const isKycCompleted = company?.kycStatus === KycStatus.APPROVED;
 
   const {
     register,
@@ -115,7 +117,18 @@ export const CompanyInformation = ({ company }: { company: any }) => {
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Company Name</Label>
-                <Input id="name" placeholder="Acme Inc." {...register("name")} />
+                <Input 
+                  id="name" 
+                  placeholder="Acme Inc." 
+                  {...register("name")} 
+                  readOnly={isKycCompleted}
+                  className={isKycCompleted ? "bg-slate-50 cursor-not-allowed text-slate-500 focus-visible:ring-0" : ""}
+                />
+                {isKycCompleted && (
+                  <p className="text-xs text-slate-500">
+                    Company name cannot be changed after KYC is completed.
+                  </p>
+                )}
                 {errors.name && <p className="text-sm font-medium text-destructive">{errors.name.message}</p>}
               </div>
 
