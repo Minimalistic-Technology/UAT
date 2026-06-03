@@ -26,7 +26,8 @@ export const deleteInternshipPost = async (internshipId: string) => {
 }
 
 export const updateInternshipPostDetails = async (internshipId: string, internshipData: any) => {
-    //
+    const response = await apiClient.patch<ApiSuccessResponse<any>>(`/internships/${internshipId}`, internshipData);
+    return response.data;
 }
 
 export const getInternshipPostById = async (internshipId: string) => {

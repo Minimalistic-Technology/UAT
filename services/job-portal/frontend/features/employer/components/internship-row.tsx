@@ -90,7 +90,7 @@ export function InternshipRow({ internship }: { internship: any }) {
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
-                alert("Edit button clicked");
+                router.push(`/employer-dashboard/internships/${internship._id}/edit`)
               }}
             >
               <Edit className="mr-2 size-4" /> Edit Internship

@@ -162,7 +162,7 @@ const MyApplicationsPage = () => {
                     <TableCell>
                       <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
                         <Clock className="h-3.5 w-3.5" />
-                        {format(new Date(app.createdAt), "dd MMM yyyy")}
+                        {format(new Date(app.createdAt).toLocaleDateString(), "dd MMM yyyy")}
                       </div>
                     </TableCell>
                     <TableCell>

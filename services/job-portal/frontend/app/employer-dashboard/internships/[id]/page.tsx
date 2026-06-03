@@ -75,7 +75,7 @@ const Page = () => {
             className="cursor-pointer"
             size="sm"
             onClick={() => {
-              alert("Edit functionality coming soon!");
+              router.push(`/employer-dashboard/internships/${internshipId}/edit`);
             }}
           >
             <Pencil className="mr-2 h-4 w-4" /> Edit Details

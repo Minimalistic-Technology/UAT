@@ -20,7 +20,7 @@ import {
   createInternshipSchema,
   CreateInternshipFormData,
 } from "@/features/employer/validations/internship.schema";
-import { useCreateMyInternshipPosting } from "@/features/employer/hooks/use-internship";
+import { useCreateMyInternshipPosting, useUpdateMyInternshipPosting } from "@/features/employer/hooks/use-internship";
 import { SkillInput } from "./skill-input";
 import {
   Work_Mode,
@@ -30,9 +30,13 @@ import {
   Degree_Level,
 } from "../validations/base-listing.schema";
 
-export function InternshipForm({ onCancel }: { onCancel: () => void }) {
-  const { mutate: createInternship, isPending } =
+export function InternshipForm({ onCancel, initialData }: { onCancel: () => void, initialData?: any }) {
+  const { mutate: createInternship, isPending: isCreating } =
     useCreateMyInternshipPosting();
+  const { mutate: updateInternship, isPending: isUpdating } = 
+    useUpdateMyInternshipPosting(initialData?._id as string);
+
+  const isPending = isCreating || isUpdating;
 
   const {
     register,
@@ -45,7 +49,45 @@ export function InternshipForm({ onCancel }: { onCancel: () => void }) {
     resolver: zodResolver(
       createInternshipSchema,
     ) as Resolver<CreateInternshipFormData>,
-    defaultValues: {
+    defaultValues: initialData ? {
+      title: initialData.title,
+      description: initialData.description,
+      employmentType: initialData.employmentType as any,
+      workMode: initialData.workMode as any,
+      companyType: initialData.companyType as any,
+      roleCategory: initialData.roleCategory as any,
+      industry: initialData.industry as any,
+      location: {
+        city: initialData.location?.city || "",
+        state: initialData.location?.state || "",
+        country: initialData.location?.country || "",
+      },
+      education: {
+        minimumDegree: initialData.education?.minimumDegree as any,
+        preferredFields: initialData.education?.preferredFields || [],
+        isRequired: initialData.education?.isRequired || false,
+      },
+      stipend: {
+        type: initialData.stipend?.type as any,
+        amount: initialData.stipend?.amount,
+        currency: initialData.stipend?.currency || "INR",
+        period: initialData.stipend?.period || "monthly",
+      },
+      duration: {
+        unit: initialData.duration?.unit as any,
+        value: initialData.duration?.value,
+      },
+      startDate: initialData.startDate ? new Date(initialData.startDate).toISOString().split("T")[0] as any : undefined,
+      isPPO: initialData.isPPO || false,
+      openings: initialData.openings || 1,
+      skills: initialData.skills || [],
+      requirements: initialData.requirements || [],
+      benefits: initialData.benefits || [],
+      status: initialData.status as any,
+      isFeatured: initialData.isFeatured || false,
+      opportunityType: "internship",
+      applicationDeadline: initialData.applicationDeadline ? new Date(initialData.applicationDeadline).toISOString().split("T")[0] as any : undefined,
+    } : {
       title: "",
       description: "",
       employmentType: "internship", // Pre-set to match schema enum string
@@ -75,7 +117,11 @@ export function InternshipForm({ onCancel }: { onCancel: () => void }) {
   const currentSkills = watch("skills") || [];
 
   const onSubmit: SubmitHandler<CreateInternshipFormData> = (data) => {
-    createInternship(data);
+    if (initialData) {
+      updateInternship(data);
+    } else {
+      createInternship(data);
+    }
   };
 
   const formatLabel = (str: string) =>
@@ -542,6 +588,7 @@ export function InternshipForm({ onCancel }: { onCancel: () => void }) {
             </Label>
             <Textarea
               placeholder="Must know React basics&#10;Good communication skills..."
+              defaultValue={initialData?.requirements?.join("\n")}
               onChange={(e) =>
                 setValue(
                   "requirements",
@@ -585,6 +632,7 @@ export function InternshipForm({ onCancel }: { onCancel: () => void }) {
             <Label>Benefits (One per line)</Label>
             <Textarea
               placeholder="Free meals&#10;Transport allowance..."
+              defaultValue={initialData?.benefits?.join("\n")}
               onChange={(e) =>
                 setValue(
                   "benefits",
@@ -641,7 +689,7 @@ export function InternshipForm({ onCancel }: { onCancel: () => void }) {
           Cancel
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Posting..." : "Post Internship"}
+          {isPending ? (initialData ? "Saving..." : "Posting...") : (initialData ? "Save Changes" : "Post Internship")}
         </Button>
       </div>
     </form>
