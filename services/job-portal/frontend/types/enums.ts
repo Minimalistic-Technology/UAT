@@ -176,10 +176,7 @@ export enum ExperienceLevel {
   EXPERT = "expert",
 }
 
-export enum OpportunityType {
-  JOB = "job",
-  INTERNSHIP = "internship",
-}
+
 
 export enum EmploymentType {
   FULL_TIME = "full_time",

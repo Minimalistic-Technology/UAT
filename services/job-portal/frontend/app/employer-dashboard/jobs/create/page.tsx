@@ -6,13 +6,12 @@ import { Briefcase, GraduationCap } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JobForm } from "@/features/employer/components/job-form";
 import { InternshipForm } from "@/features/employer/components/internship-form";
-
-type ListingType = "job" | "internship";
+import { ListingType } from "@/types/enums";
 
 
 function PostListingPage() {
   const router = useRouter();
-  const [listingType, setListingType] = useState<ListingType>("job");
+  const [listingType, setListingType] = useState<ListingType>(ListingType.JOB);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -32,16 +31,16 @@ function PostListingPage() {
         className="mb-8"
       >
         <TabsList className="grid w-full max-w-xs grid-cols-2">
-          <TabsTrigger value="job" className="flex items-center gap-2">
+          <TabsTrigger value={ListingType.JOB} className="flex items-center gap-2">
             <Briefcase className="size-4" /> Job
           </TabsTrigger>
-          <TabsTrigger value="internship" className="flex items-center gap-2">
+          <TabsTrigger value={ListingType.INTERNSHIP} className="flex items-center gap-2">
             <GraduationCap className="size-4" /> Internship
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {listingType === "job" ? (
+      {listingType === ListingType.JOB ? (
         <JobForm onCancel={() => router.back()} />
       ) : (
         <InternshipForm onCancel={() => router.back()} />

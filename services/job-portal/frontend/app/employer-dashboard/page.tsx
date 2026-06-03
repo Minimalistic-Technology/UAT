@@ -69,7 +69,6 @@ const Page = () => {
   const router = useRouter();
 
   const companyDetails = responseData?.data;
-  console.log("Company Details", companyDetails);
   const isUnverified = companyDetails?.isVerified === false;
   const kycStatus = companyDetails?.kycStatus;
   const hasPlan = !!companyDetails?.currentPlan;
@@ -348,7 +347,8 @@ const Page = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Applicant</TableHead>
-                    <TableHead>Job Title</TableHead>
+                    <TableHead>Listing Title</TableHead>
+                    <TableHead>Listing Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Company Name</TableHead>
                     <TableHead>Applied At</TableHead>
@@ -365,14 +365,15 @@ const Page = () => {
                           {app.jobSeeker?.email}
                         </div>
                       </TableCell>
-                      <TableCell>{app.job?.title || "Unknown Job"}</TableCell>
+                      <TableCell>{app.listing?.title || "Unknown Title"}</TableCell>
+                      <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(app.status)}>
                           {app.status.replace("_", " ").toUpperCase()}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {app.job?.company?.name ?? "Unknown Company"}
+                        {app.listing?.company?.name ?? "Unknown Company"}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {format(new Date(app.createdAt), "MMM d, yyyy")}

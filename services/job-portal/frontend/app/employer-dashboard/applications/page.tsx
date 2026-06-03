@@ -206,7 +206,8 @@ const EmployerApplicationsPage = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Applicant</TableHead>
-                    <TableHead>Job Title</TableHead>
+                    <TableHead>Listing Title</TableHead>
+                    <TableHead>Listing Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Applied At</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -223,7 +224,8 @@ const EmployerApplicationsPage = () => {
                           {app.jobSeeker?.email}
                         </div>
                       </TableCell>
-                      <TableCell>{app.job?.title || "Unknown Job"}</TableCell>
+                      <TableCell>{app.listing?.title || "Unknown Listing Title"}</TableCell>
+                       <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(app.status)}>
                           {app.status.replace("_", " ").toUpperCase()}

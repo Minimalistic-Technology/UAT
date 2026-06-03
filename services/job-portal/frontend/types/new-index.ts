@@ -16,7 +16,6 @@ import {
   RoleCategory,
   StipendType,
   WorkMode,
-  OpportunityType,
 } from "./enums";
 
 export type CloudinaryAsset = {
@@ -145,7 +144,7 @@ export type BaseListing = {
   isFeatured: boolean;
   applicationsCount: number;
   viewsCount: number;
-  opportunityType: OpportunityType
+  opportunityType: ListingType
 };
 
 export type Job = BaseListing & {
