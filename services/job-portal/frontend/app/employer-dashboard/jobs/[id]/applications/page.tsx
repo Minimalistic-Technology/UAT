@@ -6,10 +6,14 @@ import {
   MoreHorizontal,
   Mail,
   Phone,
-  Calendar,
+  Calendar as CalendarIcon,
   CheckCircle2,
   XCircle,
 } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 
 import {
@@ -74,7 +78,8 @@ const ApplicationsPage = () => {
 
   const [interviewModalOpen, setInterviewModalOpen] = useState(false);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
-  const [interviewDate, setInterviewDate] = useState("");
+  const [interviewDate, setInterviewDate] = useState<Date | undefined>();
+  const [interviewTime, setInterviewTime] = useState("");
 
   const applications = responseData?.data?.applications || [];
 
@@ -88,12 +93,16 @@ const ApplicationsPage = () => {
   };
 
   const handleScheduleInterview = async () => {
-    if (!selectedAppId || !interviewDate) {
+    if (!selectedAppId || !interviewDate || !interviewTime) {
       toast.error("Please select a valid date and time.");
       return;
     }
 
-    if (new Date(interviewDate) <= new Date()) {
+    const [hours, minutes] = interviewTime.split(":").map(Number);
+    const finalDate = new Date(interviewDate);
+    finalDate.setHours(hours, minutes);
+
+    if (finalDate <= new Date()) {
       toast.error("Interview date and time must be in the future.");
       return;
     }
@@ -102,11 +111,12 @@ const ApplicationsPage = () => {
       await updateStatus({
         applicationId: selectedAppId,
         status: "interview",
-        interviewDate: new Date(interviewDate).toISOString(),
+        interviewDate: finalDate.toISOString(),
       });
       toast.success("Interview scheduled successfully!");
       setInterviewModalOpen(false);
-      setInterviewDate("");
+      setInterviewDate(undefined);
+      setInterviewTime("");
       setSelectedAppId(null);
     } catch (error) {
       toast.error("Failed to schedule interview.");
@@ -209,7 +219,7 @@ const ApplicationsPage = () => {
                               setInterviewModalOpen(true);
                             }}
                           >
-                            <Calendar className="mr-2 h-4 w-4" /> Schedule
+                            <CalendarIcon className="mr-2 h-4 w-4" /> Schedule
                             Interview
                           </DropdownMenuItem>
                           <DropdownMenuItem
@@ -247,7 +257,8 @@ const ApplicationsPage = () => {
           setInterviewModalOpen(open);
           if (!open) {
             setSelectedAppId(null);
-            setInterviewDate("");
+            setInterviewDate(undefined);
+            setInterviewTime("");
           }
         }}
       >
@@ -255,15 +266,44 @@ const ApplicationsPage = () => {
           <DialogHeader>
             <DialogTitle>Schedule Interview</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Interview Date and Time</Label>
+          <div className="space-y-4 p-4">
+            <div className="flex flex-col space-y-2">
+              <Label>Interview Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !interviewDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {interviewDate ? format(interviewDate, "d/M/yyyy") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={interviewDate}
+                    onSelect={setInterviewDate}
+                    disabled={(date) =>
+                      date < new Date(new Date().setHours(0, 0, 0, 0))
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex flex-col space-y-2">
+              <Label>Interview Time</Label>
               <Input
-                type="datetime-local"
-                value={interviewDate}
-                onChange={(e) => setInterviewDate(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
+                type="time"
+                value={interviewTime}
+                onChange={(e) => setInterviewTime(e.target.value)}
               />
+            </div>
+            <div>
               <p className="text-muted-foreground text-xs">
                 Select a date and time in the future.
               </p>
@@ -278,7 +318,7 @@ const ApplicationsPage = () => {
             </Button>
             <Button
               onClick={handleScheduleInterview}
-              disabled={isUpdating || !interviewDate}
+              disabled={isUpdating || !interviewDate || !interviewTime}
             >
               Schedule
             </Button>
