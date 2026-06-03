@@ -274,7 +274,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <div className="grid grid-cols-1 gap-4 mt-6">
             {/* OAuth Sign In */}
             <button
               onClick={() => signIn('azure-ad')}
@@ -289,20 +289,6 @@ export default function Dashboard() {
               <div>
                 <p className="font-semibold">Sign in with Microsoft</p>
                 <p className="text-xs opacity-70 mt-0.5">Standard OAuth login (requires redirect URI setup)</p>
-              </div>
-            </button>
-
-            {/* Demo Mode */}
-            <button
-              onClick={enterDemoMode}
-              className="group flex items-center gap-4 p-5 rounded-2xl border-2 border-dashed border-slate-200 bg-white hover:bg-slate-50 transition-all duration-200 text-slate-600 text-left hover:border-slate-300"
-            >
-              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                <svg className="text-slate-500" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" /><path d="M7 7h.01" /></svg>
-              </div>
-              <div>
-                <p className="font-semibold">Try Demo Mode</p>
-                <p className="text-xs opacity-70 mt-0.5">No login needed — explore with 8 sample files</p>
               </div>
             </button>
           </div>
