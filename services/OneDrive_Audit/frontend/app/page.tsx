@@ -33,6 +33,9 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [liveUser, setLiveUser] = useState<{ name: string; email: string } | null>(null);
 
+  // File Explorer State
+  const [currentFolder, setCurrentFolder] = useState<string>('/');
+
   // Device Code Flow state
   const [deviceSession, setDeviceSession] = useState<{ sessionId: string; userCode: string; verificationUri: string; message: string } | null>(null);
   const [devicePolling, setDevicePolling] = useState(false);
@@ -170,6 +173,45 @@ export default function Dashboard() {
     f.fileName.toLowerCase().includes(search.toLowerCase()) ||
     f.filePath.toLowerCase().includes(search.toLowerCase())
   );
+
+  const displayItems = React.useMemo(() => {
+    const items: any[] = [];
+    const folderSet = new Set<string>();
+
+    filteredFiles.forEach(f => {
+      let p = f.filePath.replace(/^\/drive\/root:?/, '');
+      if (!p || p === '') p = '/';
+
+      const isSearchMode = search.length > 0;
+
+      if (isSearchMode) {
+        items.push({ type: 'file', data: f, normalizedPath: p });
+      } else {
+        if (p === currentFolder || p + '/' === currentFolder) {
+          items.push({ type: 'file', data: f, normalizedPath: p });
+        } else if (p.startsWith(currentFolder === '/' ? '/' : currentFolder + '/')) {
+          const remainingPath = p.slice(currentFolder === '/' ? 1 : currentFolder.length + 1);
+          const childFolderName = remainingPath.split('/')[0];
+
+          if (childFolderName && !folderSet.has(childFolderName)) {
+            folderSet.add(childFolderName);
+            items.push({
+              type: 'folder',
+              name: childFolderName,
+              fullPath: currentFolder === '/' ? '/' + childFolderName : currentFolder + '/' + childFolderName
+            });
+          }
+        }
+      }
+    });
+
+    return items.sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+      const nameA = a.type === 'folder' ? a.name : a.data.fileName;
+      const nameB = b.type === 'folder' ? b.name : b.data.fileName;
+      return nameA.localeCompare(nameB);
+    });
+  }, [filteredFiles, currentFolder, search]);
 
   const duplicates = files.filter(f => f.isDuplicate).length;
   const largeFiles = files.filter(f => f.isLargeFile).length;
@@ -374,10 +416,36 @@ export default function Dashboard() {
 
       {/* File Table */}
       <section className="glass-card rounded-2xl overflow-hidden">
-        <div className="p-4 border-b border-soft-border/50 bg-white/40">
-          <div className="relative max-w-sm">
+        <div className="p-4 border-b border-soft-border/50 bg-white/40 flex flex-col sm:flex-row gap-4 justify-between items-center">
+
+          {/* Breadcrumbs */}
+          <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600 overflow-x-auto w-full">
+            <button onClick={() => { setCurrentFolder('/'); setSearch(''); }} className="hover:text-blue-600 hover:underline transition-colors shrink-0 flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+              Home
+            </button>
+            {search.length === 0 && currentFolder !== '/' && currentFolder.split('/').filter(Boolean).map((part, index, arr) => {
+              const path = '/' + arr.slice(0, index + 1).join('/');
+              return (
+                <React.Fragment key={path}>
+                  <span className="text-slate-400">/</span>
+                  <button onClick={() => setCurrentFolder(path)} className="hover:text-blue-600 hover:underline transition-colors shrink-0">
+                    {part}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+            {search.length > 0 && (
+              <>
+                <span className="text-slate-400">/</span>
+                <span className="text-slate-600 italic leading-none pt-0.5"> Search Results</span>
+              </>
+            )}
+          </div>
+
+          <div className="relative w-full sm:max-w-xs shrink-0">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-            <input value={search} onChange={e => setSearch(e.target.value)} type="text" placeholder="Search files..." className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-soft-border bg-white/70 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:outline-none transition-all placeholder:text-slate-400" />
+            <input value={search} onChange={e => setSearch(e.target.value)} type="text" placeholder="Search everywhere..." className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-soft-border bg-white/70 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:outline-none transition-all placeholder:text-slate-400" />
           </div>
         </div>
 
@@ -390,44 +458,68 @@ export default function Dashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50/70 border-b border-soft-border/50 text-left">
-                  <th className="px-4 py-3 font-medium text-slate-400 text-xs uppercase tracking-wide">File</th>
+                  <th className="px-4 py-3 font-medium text-slate-400 text-xs uppercase tracking-wide">Name</th>
                   <th className="px-4 py-3 font-medium text-slate-400 text-xs uppercase tracking-wide">Size</th>
                   <th className="px-4 py-3 font-medium text-slate-400 text-xs uppercase tracking-wide">Classification</th>
                   <th className="px-4 py-3 font-medium text-slate-400 text-xs uppercase tracking-wide">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-soft-border/40">
-                {filteredFiles.map((file) => (
-                  <tr key={file.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
+                {displayItems.map((item, idx) => {
+                  if (item.type === 'folder') {
+                    return (
+                      <tr key={`folder-${item.fullPath}`} className="hover:bg-slate-50/50 transition-colors cursor-pointer group" onClick={() => setCurrentFolder(item.fullPath)}>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0 group-hover:scale-110 transition-transform">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-1.22-1.8A2 2 0 0 0 7.53 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></svg>
+                            </div>
+                            <span className="font-semibold text-slate-700 group-hover:text-blue-600 transition-colors">{item.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-400">—</td>
+                        <td className="px-4 py-3.5 text-slate-400">—</td>
+                        <td className="px-4 py-3.5 text-slate-400">—</td>
+                      </tr>
+                    );
+                  }
+
+                  const file = item.data;
+                  return (
+                    <tr key={file.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-slate-700 truncate max-w-[200px]">{file.fileName}</p>
+                            {search.length > 0 && <p className="text-xs text-slate-400 truncate max-w-[200px]">{item.normalizedPath}</p>}
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-slate-700 truncate max-w-[200px]">{file.fileName}</p>
-                          <p className="text-xs text-slate-400 truncate max-w-[200px]">{file.filePath}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5 text-slate-500">{formatSize(file.fileSize)}</td>
-                    <td className="px-4 py-3.5">
-                      <select value={file.designation} onChange={e => handleDesignationChange(file.id, e.target.value)} className={`text-xs font-medium rounded-md px-2.5 py-1 border cursor-pointer focus:outline-none transition-colors ${badgeColor(file.designation)}`}>
-                        {DESIGNATIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${file.isDuplicate ? 'text-rose-600' : file.isLargeFile ? 'text-amber-600' : 'text-emerald-600'}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${file.isDuplicate ? 'bg-rose-500' : file.isLargeFile ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                        {file.isDuplicate ? 'Duplicate' : file.isLargeFile ? 'Large File' : 'Clean'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3.5 text-slate-500">{formatSize(file.fileSize)}</td>
+                      <td className="px-4 py-3.5">
+                        <select value={file.designation} onChange={e => handleDesignationChange(file.id, e.target.value)} className={`text-xs font-medium rounded-md px-2.5 py-1 border cursor-pointer focus:outline-none transition-colors ${badgeColor(file.designation)}`}>
+                          {DESIGNATIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${file.isDuplicate ? 'text-rose-600' : file.isLargeFile ? 'text-amber-600' : 'text-emerald-600'}`}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${file.isDuplicate ? 'bg-rose-500' : file.isLargeFile ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                          {file.isDuplicate ? 'Duplicate' : file.isLargeFile ? 'Large File' : 'Clean'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
-            {filteredFiles.length === 0 && (
-              <p className="text-center text-slate-400 py-16 text-sm">No files found.</p>
+            {displayItems.length === 0 && (
+              <div className="text-center text-slate-400 py-16 flex flex-col items-center justify-center gap-3">
+                <svg className="w-12 h-12 text-slate-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                <p className="text-sm">This folder is empty.</p>
+              </div>
             )}
           </div>
         )}
