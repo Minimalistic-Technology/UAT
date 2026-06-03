@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyCard } from "@/components/company-card";
+import { ListingType } from "@/types/enums";
 
 const Page = () => {
   const params = useParams();
@@ -42,7 +43,7 @@ const Page = () => {
   const handleApply = () => {
     applyJob({
       listingId: jobId as string,
-      listingType: job?.employmentType === "internship" ? "internship" : "job",
+      listingType: job?.employmentType === "internship" ? "internship" as ListingType : "job" as ListingType,
     });
   };
 
