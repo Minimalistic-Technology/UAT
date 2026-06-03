@@ -294,9 +294,9 @@ export const updateJob = async (
       );
     }
 
-    // Only admin and owner can update job details
+    // Only hr and owner can update job details
     if (
-      companyMember.role !== CompanyRole.ADMIN &&
+      companyMember.role !== CompanyRole.HR &&
       companyMember.role !== CompanyRole.OWNER
     ) {
       return next(new ApiError(403, "Not authorized to update this job"));

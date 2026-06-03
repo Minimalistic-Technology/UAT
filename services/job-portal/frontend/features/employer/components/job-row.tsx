@@ -89,9 +89,7 @@ export function JobRow({ job }: { job: any }) {
               )}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => {
-                alert("Edit button clicked");
-              }}
+              onClick={() => router.push(`/employer-dashboard/jobs/${job._id}/edit`)}
             >
               <Edit className="mr-2 size-4" /> Edit Job
             </DropdownMenuItem>
