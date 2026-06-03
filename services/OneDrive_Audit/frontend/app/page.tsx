@@ -128,8 +128,14 @@ export default function Dashboard() {
           const data = await fetchFiles();
           setFiles(data.files || []);
           setTotalStorageBytes(Number(data.totalStorageBytes) || 0);
-        } catch (e) {
-          console.error("Background sync error:", e);
+        } catch (e: any) {
+          if (e.response && e.response.status === 401) {
+            console.error("Token expired. Stopping auto-sync.");
+            setMode('landing');
+            setFiles([]);
+            setLiveUser(null);
+            alert("Your Microsoft session has expired. Please sign in again.");
+          }
         }
       }, 15000);
 
