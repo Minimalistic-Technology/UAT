@@ -7,6 +7,7 @@ export interface GraphData {
   revenue?: number;
   users?: number;
   jobs?: number;
+  internships?: number;
 }
 
 export interface AdminAnalyticsSummary {
@@ -27,6 +28,7 @@ export interface AdminAnalyticsResponse {
     revenue: GraphData[];
     users: GraphData[];
     jobs: GraphData[];
+    internships: GraphData[];
   };
 }
 
