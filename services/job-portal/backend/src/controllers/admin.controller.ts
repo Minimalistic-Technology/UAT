@@ -1,19 +1,22 @@
 import { NextFunction, Request, Response } from "express";
 import User, { GlobalRole, IUser } from "../models/User.model.js";
 import { JobStatus } from "../models/BaseJob.model.js";
-import Job from "../models/Job.model.js";
-import Internship from "../models/Internship.model.js";
-import CompanyMember from "../models/CompanyMember.model.js";
-import Company from "../models/Company.model.js";
 import { Types } from "mongoose";
+
+// Utils
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { deleteFromCloudinary } from "../utils/cloudinary.js";
 import { getPagination } from "../utils/parse-pagination.js";
 
+// Models
 import KYC from "../models/KYC.model.js";
 import Payment, { PaymentStatus } from "../models/Payment.model.js";
 import Application from "../models/Application.model.js"
+import Internship from "../models/Internship.model.js";
+import Job from "../models/Job.model.js";
+import CompanyMember from "../models/CompanyMember.model.js";
+import Company from "../models/Company.model.js";
 
 type IUserWithCompany = IUser & {
   isEmployee?: boolean;
@@ -387,6 +390,7 @@ export const getAdminAnalytics = async (
       totalRevenueAggr,
       activeUsers,
       jobListings,
+      internshipListings,
       kycPending,
       totalCompanies,
       totalApplications,
@@ -396,6 +400,7 @@ export const getAdminAnalytics = async (
       Payment.aggregate(revenuePipeline({})),
       User.countDocuments({ isActive: true, role: GlobalRole.USER }),
       Job.countDocuments({ status: JobStatus.ACTIVE }),
+      Internship.countDocuments({ status: JobStatus.ACTIVE }),
       KYC.countDocuments({ status: "pending" }),
       Company.countDocuments({}),
       Application.countDocuments({}),
@@ -500,6 +505,7 @@ export const getAdminAnalytics = async (
           revenueGrowth: parseFloat(revenueGrowth.toFixed(2)),
           activeUsers,
           jobListings,
+          internshipListings,
           kycPending,
           totalCompanies,
           totalApplications,

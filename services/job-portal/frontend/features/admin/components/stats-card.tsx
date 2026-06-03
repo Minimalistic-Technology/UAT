@@ -40,23 +40,23 @@ export function AdminStatusCard({
 
   return (
     <Card className={cn(statusCardVariants({ variant }), className)}>
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between space-x-4">
-          <div className="flex flex-col space-y-1">
+          <div className="flex flex-col space-y-1 flex-1 min-w-0">
             <span className={cn(
-              "text-sm font-medium uppercase tracking-wider",
+              "text-xs sm:text-sm font-medium uppercase tracking-wider truncate",
               isDefault ? "text-muted-foreground" : "text-white/70"
             )}>
               {label}
             </span>
-            <span className="text-2xl lg:text-3xl font-bold tracking-tight">
+            <span className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">
               {value}
             </span>
             {description && (
               <p className={cn(
-                "text-xs mt-1",
+                "text-xs mt-1 line-clamp-2",
                 isDefault ? "text-muted-foreground" : "text-white/60"
-              )}>
+              )} title={description}>
                 {description}
               </p>
             )}
