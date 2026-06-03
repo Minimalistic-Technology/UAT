@@ -390,7 +390,7 @@ export default function Dashboard() {
             </button>
           )}
           <button
-            onClick={mode === 'live' ? downloadExcel : (e) => { e.preventDefault(); alert('Connect your Microsoft account to export real data.'); }}
+            onClick={mode === 'live' ? () => downloadExcel(currentFolder) : (e) => { e.preventDefault(); alert('Connect your Microsoft account to export real data.'); }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-200 transition-all cursor-pointer"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>

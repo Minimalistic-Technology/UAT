@@ -23,7 +23,17 @@ export class ExportController {
                 userId = latestUser._id as mongoose.Types.ObjectId;
             }
 
-            const files = await File.find({ userId }).sort({ createdAt: -1 });
+            let files = await File.find({ userId }).sort({ createdAt: -1 });
+
+            // Apply current folder filtering matching the Frontend's logic exactly
+            const folderPath = req.query.folder as string;
+            if (folderPath) {
+                files = files.filter(f => {
+                    let p = f.filePath.replace(/^\/drive\/root:?/, '');
+                    if (!p || p === '') p = '/';
+                    return p === folderPath || p + '/' === folderPath;
+                });
+            }
 
             if (files.length === 0) {
                 return res.status(404).json({ error: 'No files found. Please sync OneDrive first.' });

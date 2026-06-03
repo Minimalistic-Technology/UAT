@@ -30,9 +30,9 @@ export const exportFilesUrl = () => {
     return `${api.defaults.baseURL}/export/excel`;
 };
 
-export const downloadExcel = async () => {
+export const downloadExcel = async (folderPath: string = '/') => {
     try {
-        const response = await api.get('/export/excel', { responseType: 'blob' });
+        const response = await api.get(`/export/excel?folder=${encodeURIComponent(folderPath)}`, { responseType: 'blob' });
 
         // Check if backend returned an error JSON (e.g., token expired → not a real file)
         const contentType = String(response.headers['content-type'] || '');
