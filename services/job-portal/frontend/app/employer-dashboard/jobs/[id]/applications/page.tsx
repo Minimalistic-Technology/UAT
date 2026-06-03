@@ -12,7 +12,11 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 
@@ -49,6 +53,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ApplicationStatus } from "@/types/enums";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -205,7 +210,15 @@ const ApplicationsPage = () => {
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={[
+                              ApplicationStatus.ACCEPTED,
+                              ApplicationStatus.REJECTED,
+                              ApplicationStatus.WITHDRAWN,
+                            ].includes(app.status?.toLowerCase())}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -275,11 +288,15 @@ const ApplicationsPage = () => {
                     variant={"outline"}
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !interviewDate && "text-muted-foreground"
+                      !interviewDate && "text-muted-foreground",
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {interviewDate ? format(interviewDate, "d/M/yyyy") : <span>Pick a date</span>}
+                    {interviewDate ? (
+                      format(interviewDate, "d/M/yyyy")
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
