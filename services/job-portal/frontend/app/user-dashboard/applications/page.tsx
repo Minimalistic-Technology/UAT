@@ -41,6 +41,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ApplicationStatus } from "@/types/enums";
 
 const MyApplicationsPage = () => {
   const {
@@ -184,7 +185,7 @@ const MyApplicationsPage = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              disabled={app.status === "withdrawn"}
+                              disabled={[ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED].includes(app.status?.toLowerCase())}
                               className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 cursor-pointer disabled:cursor-not-allowed"
                             >
                               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
