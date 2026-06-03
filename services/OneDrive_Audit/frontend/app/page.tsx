@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSession, signIn } from 'next-auth/react';
-import { fetchFiles, syncFiles, updateDesignation, setAuthToken, downloadExcel } from '../lib/api';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import { fetchFiles, syncFiles, updateDesignation, setAuthToken, downloadExcel, loginEmployee, getEmployees, createEmployee, deleteEmployee } from '../lib/api';
 import axios from 'axios';
 
 // ─── Demo Data ────────────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ const DEMO_FILES = [
 const DESIGNATIONS = ['UNCLASSIFIED', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'PUBLIC', 'INTERNAL', 'CONFIDENTIAL', 'SECRET'];
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-type AuthMode = 'landing' | 'device-login' | 'demo' | 'live';
+type AuthMode = 'landing' | 'device-login' | 'employee-login' | 'demo' | 'live';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -31,7 +31,19 @@ export default function Dashboard() {
   const [syncing, setSyncing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [liveUser, setLiveUser] = useState<{ name: string; email: string } | null>(null);
+  const [liveUser, setLiveUser] = useState<{ name: string; email: string; role?: string } | null>(null);
+
+  // Employee Auth State
+  const [empEmail, setEmpEmail] = useState('');
+  const [empPassword, setEmpPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+
+  // Admin Manage Employees State
+  const [showEmpModal, setShowEmpModal] = useState(false);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [newEmpEmail, setNewEmpEmail] = useState('');
+  const [newEmpName, setNewEmpName] = useState('');
+  const [newEmpPassword, setNewEmpPassword] = useState('');
 
   // File Explorer State
   const [currentFolder, setCurrentFolder] = useState<string>('/');
@@ -46,11 +58,56 @@ export default function Dashboard() {
     if (status === 'authenticated' && session) {
       const token = (session as any).accessToken;
       setAuthToken(token);
-      setLiveUser({ name: session.user?.name || '', email: session.user?.email || '' });
+      // NextAuth users are Admins by default
+      setLiveUser({ name: session.user?.name || '', email: session.user?.email || '', role: 'admin' });
       setMode('live');
       loadLiveFiles();
     }
   }, [status, session]);
+
+  const handleEmployeeLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    try {
+      const data = await loginEmployee({ email: empEmail, password: empPassword });
+      setAuthToken(data.token);
+      setLiveUser({ name: data.user.name, email: data.user.email, role: data.user.role });
+      setMode('live');
+      loadLiveFiles();
+    } catch (e: any) {
+      setAuthError(e?.response?.data?.error || 'Invalid credentials');
+    }
+  };
+
+  const handleFetchEmployees = async () => {
+    try {
+      const emps = await getEmployees();
+      setEmployees(emps);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCreateEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await createEmployee({ email: newEmpEmail, name: newEmpName, password: newEmpPassword });
+      setNewEmpEmail(''); setNewEmpName(''); setNewEmpPassword('');
+      handleFetchEmployees();
+    } catch (e: any) {
+      alert(e?.response?.data?.error || 'Failed to create employee');
+    }
+  };
+
+  const handleDeleteEmployee = async (id: string) => {
+    if (!confirm("Are you sure?")) return;
+    try {
+      await deleteEmployee(id);
+      handleFetchEmployees();
+    } catch (e) {
+      alert('Failed to delete employee');
+    }
+  };
 
   const enterDemoMode = () => {
     setMode('demo');
@@ -104,16 +161,25 @@ export default function Dashboard() {
         try {
           await syncFiles();
           data = await fetchFiles();
-        } catch (e) {
+        } catch (e: any) {
           console.error("Auto sync failed:", e);
+          if (e?.response?.status === 401 || e?.status === 401) {
+            throw e; // Pass to outer catch block to trigger logout
+          }
         } finally {
           setSyncing(false);
         }
       }
       setFiles(data.files || []);
       setTotalStorageBytes(Number(data.totalStorageBytes) || 0);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      if (err?.response?.status === 401 || err?.status === 401) {
+        setLiveUser(null);
+        setMode('landing');
+        signOut({ redirect: false });
+        alert("Your session has expired. Please sign in again.");
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -121,7 +187,7 @@ export default function Dashboard() {
 
   // Real-Time Background Synchronization (Silent Polling every 15s)
   useEffect(() => {
-    if (mode === 'live') {
+    if (mode === 'live' && liveUser?.role === 'admin') {
       const intervalId = setInterval(async () => {
         try {
           await syncFiles();
@@ -130,10 +196,11 @@ export default function Dashboard() {
           setTotalStorageBytes(Number(data.totalStorageBytes) || 0);
         } catch (e: any) {
           if (e.response && e.response.status === 401) {
-            console.error("Token expired. Stopping auto-sync.");
+            console.warn("Token expired. Stopping auto-sync."); // Using warn instead of error to prevent Next.js dev overlay
             setMode('landing');
             setFiles([]);
             setLiveUser(null);
+            signOut({ redirect: false });
             alert("Your Microsoft session has expired. Please sign in again.");
           }
         }
@@ -141,7 +208,7 @@ export default function Dashboard() {
 
       return () => clearInterval(intervalId);
     }
-  }, [mode]);
+  }, [mode, liveUser]);
 
   const loadLiveFilesWithToken = async (token: string) => {
     setAuthToken(token);
@@ -336,8 +403,17 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="font-semibold">Sign in with Microsoft</p>
-                <p className="text-xs opacity-70 mt-0.5">Standard OAuth login (requires redirect URI setup)</p>
+                <p className="text-xs opacity-70 mt-0.5">Admin connect and configuration (OAuth)</p>
               </div>
+            </button>
+
+            {/* Employee Login */}
+            <button
+              onClick={() => setMode('employee-login')}
+              className="group flex items-center justify-center gap-2 p-3 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-50 transition-all duration-200 text-slate-600 text-xs font-semibold"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+              Login as Employee
             </button>
           </div>
 
@@ -348,6 +424,63 @@ export default function Dashboard() {
                 {f}
               </span>
             ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Employee Login Screen ───────────────────────────────────────────────────
+  if (mode === 'employee-login') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] animate-in fade-in duration-500">
+        <div className="max-w-md w-full">
+          <div className="bg-white border text-center border-slate-200 rounded-3xl p-8 shadow-sm">
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <svg className="text-blue-600" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Employee Login</h2>
+            <p className="text-slate-500 text-sm mt-2 mb-8">
+              Access the files your admin has shared securely.
+            </p>
+
+            {authError && (
+              <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleEmployeeLogin} className="space-y-4 text-left">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 ml-1">Email Address</label>
+                <input
+                  type="email"
+                  value={empEmail}
+                  onChange={e => setEmpEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                  placeholder="name@company.com"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5 ml-1">Password</label>
+                <input
+                  type="password"
+                  value={empPassword}
+                  onChange={e => setEmpPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+              <button type="submit" className="w-full py-3 mt-2 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">
+                Sign In →
+              </button>
+            </form>
+
+            <button onClick={() => setMode('landing')} className="mt-6 text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors">
+              ← Back to Admin Login
+            </button>
           </div>
         </div>
       </div>
@@ -383,7 +516,20 @@ export default function Dashboard() {
           <p className="text-sm text-slate-500 mt-1">Review, classify, and export your OneDrive content.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {mode === 'live' && (
+          {mode === 'live' && liveUser?.role === 'admin' && (
+            <button
+              onClick={() => {
+                setShowEmpModal(true);
+                handleFetchEmployees();
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>
+              Manage Employees
+            </button>
+          )}
+
+          {mode === 'live' && liveUser?.role === 'admin' && (
             <button onClick={handleSync} disabled={syncing} className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-all disabled:opacity-50">
               <svg className={syncing ? 'animate-spin' : ''} xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" /><path d="M16 21v-5h5" /></svg>
               {syncing ? 'Syncing...' : 'Sync OneDrive'}
@@ -396,8 +542,15 @@ export default function Dashboard() {
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
             Export CSV
           </button>
-          <button onClick={() => { setMode('landing'); setFiles([]); setLiveUser(null); }} className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all">
-            ← Back
+          <button onClick={() => {
+            setMode('landing');
+            setFiles([]);
+            setLiveUser(null);
+            setAuthToken('');
+            signOut({ redirect: false });
+          }} className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:border-rose-300 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>
+            Logout
           </button>
         </div>
       </section>
@@ -530,6 +683,63 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+
+      {/* Employee Management Modal */}
+      {showEmpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-800">Manage Employees</h2>
+              <button onClick={() => setShowEmpModal(false)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col sm:flex-row gap-8">
+              {/* Add New Employee */}
+              <div className="sm:w-1/2">
+                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-4">Add New Employee</h3>
+                <form onSubmit={handleCreateEmployee} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1 ml-1">Name</label>
+                    <input type="text" value={newEmpName} onChange={e => setNewEmpName(e.target.value)} required className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none" placeholder="John Doe" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1 ml-1">Email</label>
+                    <input type="email" value={newEmpEmail} onChange={e => setNewEmpEmail(e.target.value)} required className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none" placeholder="john@company.com" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1 ml-1">Password</label>
+                    <input type="password" value={newEmpPassword} onChange={e => setNewEmpPassword(e.target.value)} required minLength={6} className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none" placeholder="••••••••" />
+                  </div>
+                  <button type="submit" className="w-full py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors">Create Employee</button>
+                </form>
+              </div>
+
+              {/* Employee List */}
+              <div className="sm:w-1/2">
+                <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-4">Active Employees ({employees.length})</h3>
+                <div className="space-y-3">
+                  {employees.length === 0 ? (
+                    <p className="text-sm text-slate-400 italic">No employees added yet.</p>
+                  ) : employees.map(emp => (
+                    <div key={emp._id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50">
+                      <div>
+                        <p className="text-sm font-bold text-slate-700">{emp.name}</p>
+                        <p className="text-xs text-slate-400">{emp.email}</p>
+                      </div>
+                      <button onClick={() => handleDeleteEmployee(emp._id)} className="w-8 h-8 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

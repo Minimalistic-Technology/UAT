@@ -70,3 +70,23 @@ export const downloadExcel = async (folderPath: string = '/') => {
     }
 };
 
+// Employee Management APIs
+export const loginEmployee = async (credentials: any) => {
+    const { data } = await api.post('/employee/login', credentials);
+    return data;
+};
+
+export const createEmployee = async (employeeData: any) => {
+    const { data } = await api.post('/employee/create', employeeData);
+    return data;
+};
+
+export const getEmployees = async () => {
+    const { data } = await api.get('/employee/list');
+    return data.employees;
+};
+
+export const deleteEmployee = async (id: string) => {
+    const { data } = await api.delete(`/employee/${id}`);
+    return data;
+};

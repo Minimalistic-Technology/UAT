@@ -8,9 +8,15 @@ export class FilesController {
 
     public getFiles = async (req: Request, res: Response) => {
         try {
-            // Mocking user for now (in real app, use req.user.id)
+            const user = (req as any).user;
+            let userIdString = user?.id;
+
+            // If the user is an employee, use their admin's ID to fetch the files
+            if (user?.role === 'employee' && user?.adminId) {
+                userIdString = user.adminId;
+            }
+
             const mockUserId = new mongoose.Types.ObjectId("664f33190a424260bd192931");
-            const userIdString = (req as any).user?.id;
             const userId = userIdString ? new mongoose.Types.ObjectId(userIdString as string) : mockUserId;
 
             const page = parseInt(req.query.page as string) || 1;
@@ -42,9 +48,15 @@ export class FilesController {
 
     public syncFiles = async (req: Request, res: Response) => {
         try {
-            // Mocking user (In real app, extract from token and check in DB)
+            const user = (req as any).user;
+
+            // SECURITY: Only Admins can sync directly with Microsoft Graph
+            if (user?.role === 'employee') {
+                return res.status(403).json({ error: 'Permission denied. Only Admins can sync files from Microsoft Graph.' });
+            }
+
             const mockUserId = new mongoose.Types.ObjectId("664f33190a424260bd192931");
-            const userIdString = (req as any).user?.id;
+            const userIdString = user?.id;
             const userId = userIdString ? new mongoose.Types.ObjectId(userIdString as string) : mockUserId;
 
             const token = (req as any).token;
@@ -88,8 +100,11 @@ export class FilesController {
             }
 
             res.status(200).json({ success: true, count: filesToUpsert.length });
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
+            if (error?.status === 401 || error?.response?.status === 401) {
+                return res.status(401).json({ error: 'Microsoft Token Expired. Please login again.' });
+            }
             res.status(500).json({ error: 'Sync failed' });
         }
     };

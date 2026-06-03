@@ -10,15 +10,21 @@ export class ExportController {
         try {
             let userId: mongoose.Types.ObjectId;
 
-            // Try to get userId from authenticated token first
-            const userIdString = (req as any).user?.id;
+            const user = (req as any).user;
+            let userIdString = user?.id;
+
+            // If employee, use admin's drive identity
+            if (user?.role === 'employee' && user?.adminId) {
+                userIdString = user.adminId;
+            }
+
             if (userIdString) {
-                userId = new mongoose.Types.ObjectId(userIdString);
+                userId = new mongoose.Types.ObjectId(userIdString as string);
             } else {
                 // Fallback: get the most recently active user from DB
-                const latestUser = await User.findOne({}).sort({ updatedAt: -1 });
+                const latestUser = await User.findOne({ role: 'admin' }).sort({ updatedAt: -1 });
                 if (!latestUser) {
-                    return res.status(404).json({ error: 'No user found. Please log in first.' });
+                    return res.status(404).json({ error: 'No admin user found. Please log in first.' });
                 }
                 userId = latestUser._id as mongoose.Types.ObjectId;
             }

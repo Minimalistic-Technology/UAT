@@ -22,9 +22,12 @@ export class GraphService {
                 url = data['@odata.nextLink'] || null;
             }
             return allFiles;
-        } catch (error) {
-            console.error('Error fetching files from Graph API:', error);
-            throw new Error('Failed to fetch files from Microsoft Graph');
+        } catch (error: any) {
+            console.error('Error fetching files from Graph API:', error.response?.data || error.message);
+            const status = error.response?.status || 500;
+            const newError = new Error('Failed to fetch files from Microsoft Graph');
+            (newError as any).status = status;
+            throw newError;
         }
     }
 

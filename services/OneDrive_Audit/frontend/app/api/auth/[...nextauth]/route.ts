@@ -12,6 +12,9 @@ export const authOptions: NextAuthOptions = {
                     scope: "openid profile email offline_access User.Read Files.Read.All",
                 },
             },
+            httpOptions: {
+                timeout: 10000, // Important: Increase timeout because Microsoft's server response can often exceed NextAuth's default 3500ms
+            }
         }),
     ],
     secret: process.env.NEXTAUTH_SECRET,
