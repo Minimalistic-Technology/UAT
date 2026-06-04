@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [newEmpEmail, setNewEmpEmail] = useState('');
   const [newEmpName, setNewEmpName] = useState('');
   const [newEmpPassword, setNewEmpPassword] = useState('');
+  const [empMessage, setEmpMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   // File Explorer State
   const [currentFolder, setCurrentFolder] = useState<string>('/');
@@ -91,12 +92,16 @@ export default function Dashboard() {
 
   const handleCreateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEmpMessage(null);
     try {
       await createEmployee({ email: newEmpEmail, name: newEmpName, password: newEmpPassword });
       setNewEmpEmail(''); setNewEmpName(''); setNewEmpPassword('');
       handleFetchEmployees();
+      setEmpMessage({ type: 'success', text: 'Employee portal created successfully!' });
+      setTimeout(() => setEmpMessage(null), 3500);
     } catch (e: any) {
-      alert(e?.response?.data?.error || 'Failed to create employee');
+      setEmpMessage({ type: 'error', text: e?.response?.data?.error || 'Failed to create employee' });
+      setTimeout(() => setEmpMessage(null), 3500);
     }
   };
 
@@ -632,6 +637,27 @@ export default function Dashboard() {
                     {/* Add Employee Form */}
                     <div className="sm:w-1/2">
                       <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-5">Add New Employee</h3>
+
+                      {empMessage && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`mb-4 px-4 py-3 rounded-xl border text-sm font-bold shadow-lg ${empMessage.type === 'success'
+                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-450 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                              : 'bg-rose-500/10 border-rose-500/30 text-rose-450 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
+                            }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {empMessage.type === 'success' ? (
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            )}
+                            {empMessage.text}
+                          </div>
+                        </motion.div>
+                      )}
+
                       <form onSubmit={handleCreateEmployee} className="space-y-4">
                         <div>
                           <label className="block text-xs font-semibold text-gray-500 mb-1.5 ml-1">Name</label>
