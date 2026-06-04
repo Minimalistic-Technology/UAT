@@ -99,3 +99,10 @@ export const uploadCompanyLogo = async (formData: FormData) => {
   );
   return response.data;
 };
+
+export const deleteCompany = async (id: string) => {
+  const response = await apiClient.delete<ApiSuccessResponse<null>>(
+    `/companies/${id}`
+  );
+  return response.data;
+};
