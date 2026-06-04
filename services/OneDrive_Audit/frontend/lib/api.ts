@@ -90,3 +90,14 @@ export const deleteEmployee = async (id: string) => {
     const { data } = await api.delete(`/employee/${id}`);
     return data;
 };
+
+// Device Authority APIs
+export const startDeviceLoginAPI = async () => {
+    const { data } = await api.post('/device-auth/start');
+    return data;
+};
+
+export const pollDeviceLoginAPI = async (sessionId: string) => {
+    const { data } = await api.post('/device-auth/poll', { sessionId });
+    return data;
+};

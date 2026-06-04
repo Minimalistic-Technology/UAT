@@ -19,6 +19,10 @@ async function run() {
 
         console.log("Found user:", user.email, user.name);
         const token = user.accessToken;
+        if (!token) {
+            console.log("No access token found for user!");
+            return;
+        }
         console.log("Attempting to fetch from Graph API...");
 
         let driveItems;
