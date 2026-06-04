@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useDeleteCompany } from "../hooks/use-company";
+import { useGetUserDetails } from "@/hooks/use-user";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,8 +20,17 @@ interface CompanyDangerZoneProps {
 
 export const CompanyDangerZone = ({ company }: CompanyDangerZoneProps) => {
   const { mutate: deleteCompany, isPending: isDeleting } = useDeleteCompany();
+  const { data: userDetailsResponse } = useGetUserDetails();
+
+  const user = userDetailsResponse?.data;
 
   if (!company) return null;
+
+  const isOwner = user && company.owner?._id === user._id;
+
+  if (!isOwner) {
+    return null;
+  }
 
   return (
     <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm space-y-6 h-full">

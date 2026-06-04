@@ -16,10 +16,17 @@ import { useUpdateCompany } from "@/features/employer/hooks/use-company";
 import { Loader2 } from "lucide-react";
 import { companyFormSchema, CompanyFormValues } from "@/features/employer/validations/company.schema";
 import { KycStatus } from "@/types/enums";
+import { useGetUserDetails } from "@/hooks/use-user";
+import { toast } from "sonner";
 
 export const CompanyInformation = ({ company }: { company: any }) => {
   const [isEditing, setIsEditing] = useState(false);
   const { mutate: updateCompany, isPending } = useUpdateCompany();
+  const { data: userDetailsResponse } = useGetUserDetails();
+  
+  const user = userDetailsResponse?.data;
+  const isOwner = user && company?.owner?._id === user._id;
+
   const isKycCompleted = company?.kycStatus === KycStatus.APPROVED;
 
   const {
@@ -103,6 +110,10 @@ export const CompanyInformation = ({ company }: { company: any }) => {
               reset();
               setIsEditing(false);
             } else {
+              if (!isOwner) {
+                toast.error("You are not authorized to update the company profile");
+                return;
+              }
               setIsEditing(true);
             }
           }}

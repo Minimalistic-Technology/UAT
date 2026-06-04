@@ -2,6 +2,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Camera, Globe, Loader2 } from "lucide-react";
 import { IconBrandFacebook, IconBrandTwitter, IconBrandLinkedin } from '@tabler/icons-react';
+import { useGetUserDetails } from "@/hooks/use-user";
+import { toast } from "sonner";
 
 interface CompanyOverviewProps {
   company: any;
@@ -14,6 +16,10 @@ export const CompanyOverview = ({
   isLogoUploading,
   logoInputRef,
 }: CompanyOverviewProps) => {
+  const { data: userDetailsResponse } = useGetUserDetails();
+  const user = userDetailsResponse?.data;
+  const isOwner = user && company?.owner?._id === user._id;
+
   if (!company) return null;
 
   return (
@@ -34,7 +40,13 @@ export const CompanyOverview = ({
             <Button
               size="icon"
               className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full border-2 border-white shadow-sm"
-              onClick={() => logoInputRef.current?.click()}
+              onClick={() => {
+                if (!isOwner) {
+                  toast.error("You are not authorized to update the company logo");
+                  return;
+                }
+                logoInputRef.current?.click();
+              }}
               disabled={isLogoUploading}
             >
               {isLogoUploading ? (
