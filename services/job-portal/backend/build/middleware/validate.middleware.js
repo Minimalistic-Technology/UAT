@@ -1,4 +1,5 @@
-import { validationResult } from 'express-validator';
+import { validationResult } from "express-validator";
+import { ApiError } from "../utils/apiError.js";
 export const validate = (validations) => {
     return async (req, res, next) => {
         // Run all validations
@@ -7,12 +8,11 @@ export const validate = (validations) => {
         if (errors.isEmpty()) {
             return next();
         }
+        console.log("Errors", errors);
         const extractedErrors = [];
-        errors.array().map((err) => extractedErrors.push({ [err.param]: err.msg }));
-        return res.status(400).json({
-            success: false,
-            message: 'Validation failed',
-            errors: extractedErrors,
-        });
+        errors.array().map((err) => extractedErrors.push(err.msg));
+        return res
+            .status(400)
+            .json(new ApiError(400, `Validation failed: ${extractedErrors[0]}`, extractedErrors));
     };
 };

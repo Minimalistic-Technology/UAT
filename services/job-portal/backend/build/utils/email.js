@@ -1,137 +1,109 @@
-import sgMail from '@sendgrid/mail';
-import nodemailer from 'nodemailer';
-import { config } from '../config/env.js';
-// Determine which email service to use based on configuration
-const useSendGridAPI = config.emailHost === 'smtp.sendgrid.net' && config.emailUser === 'apikey';
-if (useSendGridAPI) {
-    // Initialize SendGrid with API key
-    if (config.emailPass) {
-        sgMail.setApiKey(config.emailPass);
-        console.log('✅ SendGrid API initialized (using HTTP API instead of SMTP)');
-    }
-    else {
-        console.warn('⚠️ SendGrid API key missing. Email functionality will not work.');
-    }
-}
-// Legacy SMTP transporter for other email providers (Gmail, Mailgun, etc.)
+import nodemailer from "nodemailer";
+import { config } from "../config/env.js";
+const isDev = config.nodeEnv === "development";
 let transporter = null;
-const getTransporter = () => {
-    if (!transporter) {
-        // Validate required email configuration
-        if (!config.emailHost || !config.emailUser || !config.emailPass) {
-            console.error('❌ Email configuration missing:', {
-                hasHost: !!config.emailHost,
-                hasUser: !!config.emailUser,
-                hasPass: !!config.emailPass,
-            });
-            throw new Error('Email configuration is incomplete. Please check EMAIL_HOST, EMAIL_USER, and EMAIL_PASS environment variables.');
-        }
-        console.log('📧 Initializing email transporter...', {
-            host: config.emailHost,
-            port: config.emailPort,
-            user: config.emailUser,
-            secure: config.emailPort === 465,
-        });
-        transporter = nodemailer.createTransport({
-            host: config.emailHost,
-            port: config.emailPort,
-            secure: config.emailPort === 465,
-            auth: {
-                user: config.emailUser,
-                pass: config.emailPass,
-            },
-            pool: true,
-            maxConnections: 5,
-            maxMessages: 100,
-            rateDelta: 1000,
-            rateLimit: 5,
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 30000,
-            tls: {
-                rejectUnauthorized: config.nodeEnv === 'production',
-                minVersion: 'TLSv1.2',
-            },
-            debug: config.nodeEnv === 'development',
-            logger: config.nodeEnv === 'development',
-        });
-        console.log('✅ Email transporter initialized successfully');
+let resendInstance = null;
+const getResendInstance = async () => {
+    if (!resendInstance) {
+        const { Resend } = await import("resend");
+        if (!config.resendApiKey)
+            throw new Error("Resend API key missing");
+        resendInstance = new Resend(config.resendApiKey);
     }
+    return resendInstance;
+};
+const getTransporter = async () => {
+    if (transporter)
+        return transporter;
+    // Use test account only if no real email host is provided
+    if (isDev && !config.emailHost) {
+        const testAccount = await nodemailer.createTestAccount();
+        transporter = nodemailer.createTransport({
+            host: "smtp.ethereal.email",
+            port: 587,
+            secure: false,
+            auth: {
+                user: testAccount.user,
+                pass: testAccount.pass,
+            },
+        });
+        return transporter;
+    }
+    transporter = nodemailer.createTransport({
+        host: config.emailHost,
+        port: Number(config.emailPort),
+        secure: Number(config.emailPort) === 465,
+        auth: {
+            user: config.emailUser,
+            pass: config.emailPass,
+        },
+        pool: true,
+    });
     return transporter;
 };
 export const sendEmail = async (options) => {
     try {
-        // Use SendGrid API if configured
-        if (useSendGridAPI) {
-            console.log('📤 Sending email via SendGrid API to:', options.email);
-            const msg = {
-                to: options.email,
-                from: {
-                    email: config.emailFrom || 'meetsanwadkarofficial@gmail.com', // Verified sender
-                    name: 'Job Portal'
+        const fromAddress = config.emailFrom || "noreply@yourdomain.com";
+        // 1. Prioritize Brevo (Sendinblue) API if keys exist
+        if (config.brevoApiKey && config.brevoFromEmail) {
+            const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "api-key": config.brevoApiKey
                 },
-                subject: options.subject,
-                text: options.message,
-                html: `<div style="font-family: sans-serif; line-height: 1.6;">
-                     <h2>${options.subject}</h2>
-                     <p>${options.message}</p>
-                     <p>If you did not request this email, please ignore it.</p>
-                   </div>`,
-            };
-            await sgMail.send(msg);
-            console.log('✅ Email sent successfully via SendGrid API');
+                body: JSON.stringify({
+                    sender: { email: config.brevoFromEmail, name: "Job Portal" },
+                    to: [{ email: options.email }],
+                    subject: options.subject,
+                    htmlContent: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`
+                })
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Brevo Error: ${JSON.stringify(errorData)}`);
+            }
+            console.log("OTP Email successfully sent out via Brevo.");
             return;
         }
-        // Fall back to SMTP for other providers
-        const emailTransporter = getTransporter();
-        if (config.nodeEnv === 'development') {
-            await emailTransporter.verify();
-            console.log('✅ Email server is ready to send messages');
+        // 2. Fallback to Resend over SendGrid if Resend API key exists in .env
+        if (config.resendApiKey) {
+            const resend = await getResendInstance();
+            const { error } = await resend.emails.send({
+                to: options.email,
+                from: fromAddress,
+                subject: options.subject,
+                text: options.message,
+                html: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`,
+            });
+            if (error) {
+                throw new Error(`Resend Error: ${error.message}`);
+            }
+            console.log("OTP Email successfully sent out via Resend.");
+            return;
         }
+        const emailTransporter = await getTransporter();
         const mailOptions = {
-            from: `Job Portal <${config.emailUser}>`,
+            from: `"Job Portal" <${isDev && !config.emailHost ? "dev@jobportal.com" : fromAddress}>`,
             to: options.email,
             subject: options.subject,
             text: options.message,
-            html: `<div style="font-family: sans-serif; line-height: 1.6;">
-                 <h2>${options.subject}</h2>
-                 <p>${options.message}</p>
-                 <p>If you did not request this email, please ignore it.</p>
-               </div>`,
+            html: `<h3>${options.subject}</h3><p>${options.message}</p>`,
         };
         const info = await emailTransporter.sendMail(mailOptions);
-        if (config.nodeEnv === 'development') {
-            console.log('✉️  Email sent successfully:', info.messageId);
+        console.log("OTP Email successfully sent out.");
+        if (isDev && !config.emailHost) {
+            console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
         }
     }
     catch (error) {
-        console.error('❌ Email sending failed:', error.message);
-        // Log full error details for debugging
-        if (error.response) {
-            console.error('SendGrid API Error Response:', {
-                body: error.response.body,
-                statusCode: error.response.statusCode,
-            });
-        }
-        // Provide more specific error messages for debugging
-        if (error.code === 'EAUTH') {
-            throw new Error('Email authentication failed. Please verify EMAIL_USER and EMAIL_PASS credentials.');
-        }
-        else if (error.code === 'ECONNECTION') {
-            throw new Error('Could not connect to email server. Please check EMAIL_HOST and EMAIL_PORT.');
-        }
-        else if (error.code === 'ETIMEDOUT') {
-            throw new Error('Email server connection timed out. Please check your network or try again later.');
-        }
-        // Re-throw the original error if not a known case
-        throw new Error(`Failed to send email: ${error.message}`);
+        throw new Error(`Email Error: ${error.message}`);
     }
 };
-// Graceful shutdown - close connection pool when app terminates
 export const closeEmailConnection = async () => {
     if (transporter) {
         transporter.close();
         transporter = null;
-        console.log('📧 Email connection pool closed');
     }
 };

@@ -10,10 +10,21 @@ export var ApplicationStatus;
     ApplicationStatus["ACCEPTED"] = "accepted";
     ApplicationStatus["WITHDRAWN"] = "withdrawn";
 })(ApplicationStatus || (ApplicationStatus = {}));
+export var ListingType;
+(function (ListingType) {
+    ListingType["JOB"] = "job";
+    ListingType["INTERNSHIP"] = "internship";
+})(ListingType || (ListingType = {}));
 const applicationSchema = new Schema({
-    job: {
+    listing: {
         type: Schema.Types.ObjectId,
-        ref: 'Job',
+        // No static `ref` here — we use refPath for dynamic population
+        refPath: 'listingType',
+        required: true,
+    },
+    listingType: {
+        type: String,
+        enum: Object.values(ListingType),
         required: true,
     },
     jobSeeker: {
@@ -25,7 +36,6 @@ const applicationSchema = new Schema({
         type: String,
         required: true,
     },
-    coverLetter: String,
     status: {
         type: String,
         enum: Object.values(ApplicationStatus),
@@ -48,12 +58,13 @@ const applicationSchema = new Schema({
             note: String,
         },
     ],
+    interviewDate: Date,
     employerNotes: String,
 }, {
     timestamps: true,
 });
 // Prevent duplicate applications
-applicationSchema.index({ job: 1, jobSeeker: 1 }, { unique: true });
+applicationSchema.index({ listing: 1, jobSeeker: 1 }, { unique: true });
 // Add initial status to history
 applicationSchema.pre('save', async function () {
     if (this.isNew) {

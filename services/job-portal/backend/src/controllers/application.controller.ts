@@ -256,7 +256,7 @@ export const getAllCompanyApplications = async (
     const applications = applicationsDocs.map((app) => {
       const appObj = app.toObject();
       if (!canViewResume) {
-        delete appObj.resume;
+        delete (appObj as any).resume;
         if (appObj.jobSeeker) {
           delete (appObj.jobSeeker as any).resume;
         }
@@ -337,7 +337,7 @@ export const getJobApplicants = async (
         "firstName lastName email phone skills experience education",
       )
       .sort("-createdAt");
-      
+
     const applications = applicationsDocs.map((app) => {
       const appObj = app.toObject();
       if (!canViewResume) {
@@ -421,7 +421,7 @@ export const getApplicationById = async (
       const canViewResume = plan?.allowResumeDownload === true;
 
       if (!canViewResume) {
-        delete appObj.resume;
+        delete (appObj as any).resume;
         if (appObj.jobSeeker) {
           delete (appObj.jobSeeker as any).resume;
         }
@@ -497,9 +497,9 @@ export const updateApplicationStatus = async (
         listingType: application.listingType,
         status: ApplicationStatus.ACCEPTED,
       });
-      
-      const targetListing = application.listingType === ListingType.JOB 
-        ? await Job.findById(listing._id) 
+
+      const targetListing = application.listingType === ListingType.JOB
+        ? await Job.findById(listing._id)
         : await Internship.findById(listing._id);
 
       if (targetListing && acceptedCount >= targetListing.openings) {
