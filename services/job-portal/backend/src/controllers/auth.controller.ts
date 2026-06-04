@@ -14,6 +14,17 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import TempUser from "../models/TempUser.model.js";
 import { generateToken } from "../utils/jwt.js";
 
+const verifyCaptcha = async (token: string) => {
+  const secretKey = process.env.RECAPTCHA_SECRET_KEY || "dummy_secret_key";
+  const response = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`, {
+    method: "POST"
+  });
+  const data = await response.json();
+  if (!data.success) {
+    throw new ApiError(400, "Captcha verification failed. Please try again.");
+  }
+};
+
 const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
   const token = generateToken(user._id);
 
@@ -67,7 +78,9 @@ export const requestUserRegistration = async (
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const { firstName, lastName, email, password, phone } = req.body;
+    const { firstName, lastName, email, password, phone, captchaToken } = req.body;
+
+    await verifyCaptcha(captchaToken);
 
     const existingUser = await User.findOne({ email }).session(session);
 
@@ -146,7 +159,10 @@ export const requestEmployerRegistration = async (
       firstName,
       lastName,
       phone,
+      captchaToken,
     } = req.body;
+
+    await verifyCaptcha(captchaToken);
 
     let user = await User.findOne({ email }).session(session);
 
@@ -304,7 +320,7 @@ export const confirmRegistrationOTP = async (
         );
       }
       const membership = await CompanyMember.findOne({ user: user._id }).session(session);
-      
+
       userToReturn = {
         ...user.toObject(),
         isEmployee: true,

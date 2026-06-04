@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Country, State, City } from "country-state-city";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +35,8 @@ export const CompanyInformation = ({ company }: { company: any }) => {
     handleSubmit,
     reset,
     control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
@@ -83,6 +86,11 @@ export const CompanyInformation = ({ company }: { company: any }) => {
     }
   }, [company, reset]);
 
+  const selectedCountryName = watch("location.country");
+  const selectedStateName = watch("location.state");
+  const selectedCountryCode = selectedCountryName ? Country.getAllCountries().find(c => c.name === selectedCountryName)?.isoCode : "";
+  const selectedStateCode = (selectedStateName && selectedCountryCode) ? State.getStatesOfCountry(selectedCountryCode).find(s => s.name === selectedStateName)?.isoCode : "";
+
   const onSubmit = (data: CompanyFormValues) => {
     // @ts-ignore
     updateCompany(data, {
@@ -128,10 +136,10 @@ export const CompanyInformation = ({ company }: { company: any }) => {
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Company Name</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Acme Inc." 
-                  {...register("name")} 
+                <Input
+                  id="name"
+                  placeholder="Acme Inc."
+                  {...register("name")}
                   readOnly={isKycCompleted}
                   className={isKycCompleted ? "bg-slate-50 cursor-not-allowed text-slate-500 focus-visible:ring-0" : ""}
                 />
@@ -203,21 +211,80 @@ export const CompanyInformation = ({ company }: { company: any }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input id="city" placeholder="City" {...register("location.city")} />
-                  {errors.location?.city && <p className="text-sm font-medium text-destructive">{errors.location.city.message}</p>}
+                  <Label htmlFor="country">Country</Label>
+                  <Controller
+                    name="location.country"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={(val) => {
+                          field.onChange(val);
+                          setValue("location.state", "");
+                          setValue("location.city", "");
+                        }}
+                        value={field.value || ""}
+                      >
+                        <SelectTrigger id="country">
+                          <SelectValue placeholder="Select Country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Country.getAllCountries().map(country => (
+                            <SelectItem key={country.isoCode} value={country.name}>{country.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.location?.country && <p className="text-sm font-medium text-destructive">{errors.location.country.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="state">State/Province</Label>
-                  <Input id="state" placeholder="State" {...register("location.state")} />
+                  <Controller
+                    name="location.state"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={(val) => {
+                          field.onChange(val);
+                          setValue("location.city", "");
+                        }}
+                        value={field.value || ""}
+                        disabled={!selectedCountryCode}
+                      >
+                        <SelectTrigger id="state">
+                          <SelectValue placeholder="Select State" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selectedCountryCode && State.getStatesOfCountry(selectedCountryCode).map(state => (
+                            <SelectItem key={state.isoCode} value={state.name}>{state.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                   {errors.location?.state && <p className="text-sm font-medium text-destructive">{errors.location.state.message}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
-                  <Input id="country" placeholder="Country" {...register("location.country")} />
-                  {errors.location?.country && <p className="text-sm font-medium text-destructive">{errors.location.country.message}</p>}
+                  <Label htmlFor="city">City</Label>
+                  <Controller
+                    name="location.city"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value || ""} disabled={!selectedStateCode}>
+                        <SelectTrigger id="city">
+                          <SelectValue placeholder="Select City" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selectedCountryCode && selectedStateCode && City.getCitiesOfState(selectedCountryCode, selectedStateCode).map(city => (
+                            <SelectItem key={city.name} value={city.name}>{city.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.location?.city && <p className="text-sm font-medium text-destructive">{errors.location.city.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -266,7 +333,7 @@ export const CompanyInformation = ({ company }: { company: any }) => {
                 {company.description || "No description provided."}
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
               <div>
                 <h4 className="text-sm font-medium text-slate-500 mb-1">Company Size</h4>

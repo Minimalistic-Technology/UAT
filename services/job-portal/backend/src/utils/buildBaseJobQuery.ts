@@ -45,7 +45,10 @@ export const buildBaseJobQuery = (
     }
 
     if (search && typeof search === "string") {
-        query.$text = { $search: search };
+        query.$or = [
+            { title: { $regex: search, $options: "i" } },
+            { skills: { $regex: search, $options: "i" } }
+        ];
     }
 
     if (skills) {

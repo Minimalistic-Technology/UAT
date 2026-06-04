@@ -24,7 +24,8 @@ const getResendInstance = async () => {
 const getTransporter = async (): Promise<ReturnType<typeof nodemailer.createTransport>> => {
   if (transporter) return transporter;
 
-  if (isDev) {
+  // Use test account only if no real email host is provided
+  if (isDev && !config.emailHost) {
     const testAccount = await nodemailer.createTestAccount();
     transporter = nodemailer.createTransport({
       host: "smtp.ethereal.email",
@@ -56,7 +57,34 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
   try {
     const fromAddress = config.emailFrom || "noreply@yourdomain.com";
 
-    if (!isDev) {
+    // 1. Prioritize Brevo (Sendinblue) API if keys exist
+    if (config.brevoApiKey && config.brevoFromEmail) {
+      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "api-key": config.brevoApiKey
+        },
+        body: JSON.stringify({
+          sender: { email: config.brevoFromEmail, name: "Job Portal" },
+          to: [{ email: options.email }],
+          subject: options.subject,
+          htmlContent: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Brevo Error: ${JSON.stringify(errorData)}`);
+      }
+
+      console.log("OTP Email successfully sent out via Brevo.");
+      return;
+    }
+
+    // 2. Fallback to Resend over SendGrid if Resend API key exists in .env
+    if (config.resendApiKey) {
       const resend = await getResendInstance();
       const { error } = await resend.emails.send({
         to: options.email,
@@ -65,16 +93,17 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
         text: options.message,
         html: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`,
       });
-      
+
       if (error) {
-         throw new Error(`Resend Error: ${error.message}`);
+        throw new Error(`Resend Error: ${error.message}`);
       }
+      console.log("OTP Email successfully sent out via Resend.");
       return;
     }
 
     const emailTransporter = await getTransporter();
     const mailOptions = {
-      from: `"Job Portal" <${isDev ? "dev@jobportal.com" : fromAddress}>`,
+      from: `"Job Portal" <${isDev && !config.emailHost ? "dev@jobportal.com" : fromAddress}>`,
       to: options.email,
       subject: options.subject,
       text: options.message,
@@ -82,8 +111,9 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     };
 
     const info = await emailTransporter.sendMail(mailOptions);
+    console.log("OTP Email successfully sent out.");
 
-    if (isDev) {
+    if (isDev && !config.emailHost) {
       console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
     }
   } catch (error: any) {

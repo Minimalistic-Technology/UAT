@@ -13,6 +13,7 @@ import {
 } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
+import { loginLimiter, otpLimiter } from "../middleware/rateLimiter.js";
 import {
   confirmRegistrationSchema,
   forgotPasswordSchema,
@@ -43,12 +44,18 @@ router.post(
 // confirm registration
 router.post(
   "/register/confirm",
+  otpLimiter,
   validate(confirmRegistrationSchema),
   confirmRegistrationOTP,
 );
 
 // Login
-router.post("/login", validate(loginSchema), login);
+router.post(
+  "/login",
+  loginLimiter,
+  validate(loginSchema),
+  login
+);
 
 // Logout
 router.post("/logout", protect, logout);
@@ -64,7 +71,12 @@ router.get("/me", protect, getMe);
 // );
 
 // Verify OTP
-router.post("/verify-otp", validate(verifyOtpSchema), verifyOTP);
+router.post(
+  "/verify-otp",
+  otpLimiter,
+  validate(verifyOtpSchema),
+  verifyOTP
+);
 
 // Google Auth
 router.post("/google-auth", validate(googleAuthSchema), googleAuth);

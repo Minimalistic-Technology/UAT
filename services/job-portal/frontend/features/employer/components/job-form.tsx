@@ -3,6 +3,7 @@ import { Job } from "@/types/new-index";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
+import { Country, State, City } from "country-state-city";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CreateJobFormData, createJobSchema } from "../validations/job.schema";
@@ -36,7 +37,7 @@ import { Button } from "@/components/ui/button";
 export function JobForm({ onCancel, initialData }: { onCancel: () => void, initialData?: Job }) {
   const { mutate: createJob, isPending: isCreating } = useCreateMyJobPosting();
   const { mutate: updateJob, isPending: isUpdating } = useUpdateMyJobPosting(initialData?._id as string);
-  
+
   const isPending = isCreating || isUpdating;
 
   const {
@@ -96,6 +97,11 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
   });
 
   const currentSkills = watch("skills") || [];
+
+  const selectedCountryName = watch("location.country");
+  const selectedStateName = watch("location.state");
+  const selectedCountryCode = selectedCountryName ? Country.getAllCountries().find(c => c.name === selectedCountryName)?.isoCode : "";
+  const selectedStateCode = (selectedStateName && selectedCountryCode) ? State.getStatesOfCountry(selectedCountryCode).find(s => s.name === selectedStateName)?.isoCode : "";
 
   const onSubmit: SubmitHandler<CreateJobFormData> = (data) => {
     if (initialData) {
@@ -361,41 +367,84 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
+            {/* Country */}
             <div className="grid gap-2">
-              <Label>
-                City {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}
-              </Label>
-              <Input {...register("location.city")} placeholder="Mumbai" />
-              {errors.location?.city && (
-                <p className="text-destructive text-xs">
-                  {errors.location.city.message}
-                </p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label>
-                State {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}
-              </Label>
-              <Input
-                {...register("location.state")}
-                placeholder="Maharashtra"
+              <Label>Country {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}</Label>
+              <Controller
+                name="location.country"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={(val) => {
+                      field.onChange(val);
+                      setValue("location.state", "");
+                      setValue("location.city", "");
+                    }}
+                    value={field.value || ""}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Country.getAllCountries().map(country => (
+                        <SelectItem key={country.isoCode} value={country.name}>{country.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
-              {errors.location?.state && (
-                <p className="text-destructive text-xs">
-                  {errors.location.state.message}
-                </p>
-              )}
+              {errors.location?.country && <p className="text-destructive text-xs">{errors.location.country.message}</p>}
             </div>
+
+            {/* State */}
             <div className="grid gap-2">
-              <Label>
-                Country {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}
-              </Label>
-              <Input {...register("location.country")} placeholder="India" />
-              {errors.location?.country && (
-                <p className="text-destructive text-xs">
-                  {errors.location.country.message}
-                </p>
-              )}
+              <Label>State {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}</Label>
+              <Controller
+                name="location.state"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={(val) => {
+                      field.onChange(val);
+                      setValue("location.city", "");
+                    }}
+                    value={field.value || ""}
+                    disabled={!selectedCountryCode}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select State" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedCountryCode && State.getStatesOfCountry(selectedCountryCode).map(state => (
+                        <SelectItem key={state.isoCode} value={state.name}>{state.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.location?.state && <p className="text-destructive text-xs">{errors.location.state.message}</p>}
+            </div>
+
+            {/* City */}
+            <div className="grid gap-2">
+              <Label>City {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}</Label>
+              <Controller
+                name="location.city"
+                control={control}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value || ""} disabled={!selectedStateCode}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select City" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedCountryCode && selectedStateCode && City.getCitiesOfState(selectedCountryCode, selectedStateCode).map(city => (
+                        <SelectItem key={city.name} value={city.name}>{city.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.location?.city && <p className="text-destructive text-xs">{errors.location.city.message}</p>}
             </div>
           </div>
         </CardContent>

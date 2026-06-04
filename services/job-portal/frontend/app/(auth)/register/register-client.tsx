@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 
 // Individual Shadcn UI components
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export default function RegisterClient() {
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerUserSchema),
@@ -245,6 +247,18 @@ export default function RegisterClient() {
                     Terms
                   </Link>
                 </label>
+              </div>
+
+              <div className="flex flex-col items-center justify-center py-2">
+                <ReCAPTCHA
+                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "dummy_site_key"}
+                  onChange={(token) => setValue("captchaToken", token || "", { shouldValidate: true })}
+                />
+                {errors.captchaToken && (
+                  <p className="text-destructive text-xs font-medium mt-1">
+                    {errors.captchaToken.message}
+                  </p>
+                )}
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>

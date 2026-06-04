@@ -9,8 +9,8 @@ export default function UserLayout({
   return (
     <div className="flex h-full bg-slate-50/30">
       <UserSidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="h-full">
+      <main className="flex-1 overflow-y-auto flex flex-col bg-slate-50/30">
+        <div className="flex-1">
           <Container>{children}</Container>
         </div>
       </main>
