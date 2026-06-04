@@ -1,11 +1,25 @@
 import rateLimit from 'express-rate-limit';
 
+const getClientIp = (req: any): string => {
+  const cfIp = req.headers['cf-connecting-ip'];
+  if (cfIp) return Array.isArray(cfIp) ? cfIp[0] : cfIp;
+
+  const xfFor = req.headers['x-forwarded-for'];
+  if (xfFor) {
+    const list = Array.isArray(xfFor) ? xfFor[0] : xfFor;
+    if (list) return list.split(',')[0].trim();
+  }
+
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+};
+
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: getClientIp,
 });
 
 import { Request, Response, NextFunction } from 'express';
@@ -23,10 +37,7 @@ const BASE_BACKOFF_MINUTES = 1;
 
 export const createExponentialBackoffLimiter = (store: Map<string, RateLimitData>) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    // In deployment behind proxies (Render/Heroku/Nginx), req.ip is perfectly parsed
-    // because app.set("trust proxy", 1) is enabled in index.ts. 
-    // Manual x-forwarded-for parsing is dangerous as it can be a comma-separated list.
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const ip = getClientIp(req);
     const now = Date.now();
 
     if (!store.has(ip)) {
@@ -83,4 +94,14 @@ export const applicationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10, // Limit each IP to 10 applications per hour
   message: 'Too many applications submitted, please try again later',
+  keyGenerator: getClientIp,
+});
+
+export const otpRequestLimiter = rateLimit({
+  windowMs: 30 * 1000, // 30 seconds
+  max: 1, // 1 request per 30 seconds
+  message: "Please wait 30 seconds before requesting another OTP",
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: getClientIp,
 });

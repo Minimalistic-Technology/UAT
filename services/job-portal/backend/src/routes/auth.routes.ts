@@ -13,7 +13,7 @@ import {
 } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { loginLimiter, otpLimiter } from "../middleware/rateLimiter.js";
+import { loginLimiter, otpLimiter, otpRequestLimiter } from "../middleware/rateLimiter.js";
 import {
   confirmRegistrationSchema,
   forgotPasswordSchema,
@@ -30,6 +30,7 @@ const router = Router();
 // Register
 router.post(
   "/request-otp/register",
+  otpRequestLimiter,
   validate(registerUserSchema),
   requestUserRegistration,
 );
@@ -37,6 +38,7 @@ router.post(
 // Register Employer
 router.post(
   "/request-otp/employer",
+  otpRequestLimiter,
   validate(registerEmployerSchema),
   requestEmployerRegistration,
 );
