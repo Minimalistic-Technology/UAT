@@ -14,7 +14,16 @@ import {
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
 import { loginLimiter, otpLimiter } from "../middleware/rateLimiter.js";
-import { confirmRegistrationSchema, forgotPasswordSchema, googleAuthSchema, loginSchema, registerEmployerSchema, registerUserSchema, resetPasswordSchema, verifyOtpSchema } from "../validations/auth.validation.js";
+import {
+  confirmRegistrationSchema,
+  forgotPasswordSchema,
+  googleAuthSchema,
+  loginSchema,
+  registerEmployerSchema,
+  registerUserSchema,
+  resetPasswordSchema,
+  verifyOtpSchema,
+} from "../validations/auth.validation.js";
 
 const router = Router();
 
@@ -45,7 +54,7 @@ router.post(
   "/login",
   loginLimiter,
   validate(loginSchema),
-  login,
+  login
 );
 
 // Logout
@@ -66,22 +75,14 @@ router.post(
   "/verify-otp",
   otpLimiter,
   validate(verifyOtpSchema),
-  verifyOTP,
+  verifyOTP
 );
 
 // Google Auth
-router.post(
-  "/google-auth",
-  validate(googleAuthSchema),
-  googleAuth,
-);
+router.post("/google-auth", validate(googleAuthSchema), googleAuth);
 
 // Forgot Password
-router.post(
-  "/forgot-password",
-  validate(forgotPasswordSchema),
-  forgotPassword,
-);
+router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
 
 // Reset Password
 router.post(

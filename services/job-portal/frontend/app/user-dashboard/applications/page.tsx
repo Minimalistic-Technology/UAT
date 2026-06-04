@@ -41,6 +41,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ApplicationStatus } from "@/types/enums";
 
 const MyApplicationsPage = () => {
   const {
@@ -137,18 +138,18 @@ const MyApplicationsPage = () => {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-foreground group-hover:text-primary text-sm font-bold transition-colors">
-                          {app.job.title}
+                          {app.listing?.title}
                         </span>
                         <span className="text-muted-foreground mt-0.5 text-[11px] font-medium uppercase">
-                          {app.job.jobType.replace("_", " ")}
+                          {app.listing?.employmentType?.replace("_", " ")}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
                         <MapPin className="h-3.5 w-3.5" />
-                        {app.job.location.city}
-                        {app.job.location.remote && (
+                        {app.listing?.location?.city}
+                        {app.listing?.workMode === 'remote' && (
                           <Badge
                             variant="outline"
                             className="ml-1 h-4 border-blue-200 bg-blue-50 px-1 text-[10px] text-blue-600"
@@ -161,12 +162,12 @@ const MyApplicationsPage = () => {
                     <TableCell>
                       <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
                         <Clock className="h-3.5 w-3.5" />
-                        {format(new Date(app.createdAt), "dd MMM yyyy")}
+                        {format(new Date(app.createdAt).toLocaleDateString(), "dd MMM yyyy")}
                       </div>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm font-medium">
-                        {app.job?.company?.name ?? "Unknown Company"}
+                        {app.listing?.company?.name ?? "Unknown Company"}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -184,7 +185,7 @@ const MyApplicationsPage = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              disabled={app.status === "withdrawn"}
+                              disabled={[ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED].includes(app.status?.toLowerCase())}
                               className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 cursor-pointer disabled:cursor-not-allowed"
                             >
                               <Trash2 className="mr-1.5 h-3.5 w-3.5" />

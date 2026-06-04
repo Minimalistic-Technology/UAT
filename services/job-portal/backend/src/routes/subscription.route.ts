@@ -15,7 +15,7 @@ import { cancelMySubscriptionSchema, updateMySubscriptionStatusSchema } from "..
 const router = Router();
 
 router.get(
-  "/my-status",
+  "/status",
   protect,
   authorize(GlobalRole.USER),
   getMyActiveSubscription,
@@ -36,6 +36,7 @@ router.patch(
   cancelMySubscription,
 );
 
+// Super admmin routes
 router.get(
   "/",
   protect,

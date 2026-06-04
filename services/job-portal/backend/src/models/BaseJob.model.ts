@@ -5,7 +5,7 @@ import mongoose, {
   SchemaDefinitionType,
 } from "mongoose";
 
-export enum JobType {
+export enum EmploymentType {
   FULL_TIME = "full_time",
   PART_TIME = "part_time",
   CONTRACT = "contract",
@@ -142,17 +142,22 @@ export interface ILocation {
   country: string;
 }
 
+export enum OpportunityType {
+  JOB = "job",
+  INTERNSHIP = "internship",
+}
+
 export interface IBaseJob extends Document {
   title: string;
   description: string;
   company: mongoose.Types.ObjectId;
   postedBy: mongoose.Types.ObjectId;
-  jobType: JobType;
+  employmentType: EmploymentType;
   workMode: WorkMode;
   companyType: CompanyType;
   roleCategory: RoleCategory;
   industry: Industry;
-  location: ILocation;
+  location?: ILocation;
   education: IEducation;
   skills: string[];
   requirements: string[];
@@ -163,8 +168,7 @@ export interface IBaseJob extends Document {
   isFeatured: boolean;
   applicationsCount: number;
   viewsCount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  opportunityType: OpportunityType;
 }
 
 export const baseJobSchemaDefinition: SchemaDefinition<
@@ -189,9 +193,9 @@ export const baseJobSchemaDefinition: SchemaDefinition<
     ref: "User",
     required: true,
   },
-  jobType: {
+  employmentType: {
     type: String,
-    enum: Object.values(JobType),
+    enum: Object.values(EmploymentType),
     required: true,
   },
   workMode: {
@@ -258,5 +262,10 @@ export const baseJobSchemaDefinition: SchemaDefinition<
       type: Boolean,
       default: false,
     },
+  },
+  opportunityType: {
+    type: String,
+    enum: Object.values(OpportunityType),
+    required: true,
   },
 };

@@ -76,7 +76,7 @@ export default function PlansPage() {
               key={plan._id}
               className="transition-all duration-300 hover:scale-[1.02]"
             >
-              <PlanCard plan={plan} isUnverified={isUnverified} />
+              <PlanCard plan={plan} />
             </div>
           ))
         )}

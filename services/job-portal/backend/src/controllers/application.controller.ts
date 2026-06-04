@@ -11,7 +11,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import { JobStatus } from "../models/BaseJob.model.js";
-import { Model } from "mongoose";
+import Subscription from "../models/Subscription.model.js";
 
 export const createApplication = async (
   req: AuthRequest,
@@ -299,8 +299,17 @@ export const getJobApplicants = async (
       throw new ApiError(403, "Not authorized to view applicants");
     }
 
-    const applications = await Application.find({
-      jlisting: listingId,
+    const activeSubscription = await Subscription.findOne({
+      companyId: listing.company,
+      status: "active",
+      expiryDate: { $gt: new Date() },
+    }).populate("planId");
+
+    const plan = activeSubscription?.planId as any;
+    const canViewResume = plan?.allowResumeDownload === true;
+
+    const applicationsDocs = await Application.find({
+      listing: listingId,
       listingType,
     })
       .populate(
@@ -308,6 +317,15 @@ export const getJobApplicants = async (
         "firstName lastName email phone skills experience education",
       )
       .sort("-createdAt");
+      
+    const applications = applicationsDocs.map((app) => {
+      const appObj = app.toObject();
+      if (!canViewResume) {
+        //@ts-ignore
+        delete appObj.resume;
+      }
+      return appObj;
+    });
 
     res
       .status(200)
@@ -430,6 +448,25 @@ export const updateApplicationStatus = async (
     });
 
     await application.save();
+
+    // Check if the status was changed to accepted
+    if (status === ApplicationStatus.ACCEPTED) {
+      // Find all accepted applications for this listing
+      const acceptedCount = await Application.countDocuments({
+        listing: listing._id,
+        listingType: application.listingType,
+        status: ApplicationStatus.ACCEPTED,
+      });
+      
+      const targetListing = application.listingType === ListingType.JOB 
+        ? await Job.findById(listing._id) 
+        : await Internship.findById(listing._id);
+
+      if (targetListing && acceptedCount >= targetListing.openings) {
+        targetListing.status = JobStatus.CLOSED;
+        await targetListing.save();
+      }
+    }
 
     // Send notification email to job seeker
     // const jobSeeker: any = application.jobSeeker;

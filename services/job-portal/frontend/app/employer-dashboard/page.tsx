@@ -39,6 +39,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 
+const getStatusBadgeVariant = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "applied":
+    case "under_review":
+      return "secondary";
+    case "shortlisted":
+    case "selected":
+      return "default";
+    case "rejected":
+    case "withdrawn":
+      return "destructive";
+    default:
+      return "outline";
+  }
+};
+
 const Page = () => {
   const {
     data: responseData,
@@ -53,28 +69,12 @@ const Page = () => {
   const router = useRouter();
 
   const companyDetails = responseData?.data;
-  console.log("Company Details", companyDetails);
   const isUnverified = companyDetails?.isVerified === false;
   const kycStatus = companyDetails?.kycStatus;
+  const hasPlan = !!companyDetails?.currentPlan;
 
   const recentApplications = applicationsData?.data?.applications || [];
   const totalApplications = applicationsData?.data?.pagination?.totalItems || 0;
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "applied":
-      case "under_review":
-        return "secondary";
-      case "shortlisted":
-      case "selected":
-        return "default";
-      case "rejected":
-      case "withdrawn":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
 
   if ((isLoading || !companyDetails) && !isError) {
     return <DashboardSkeleton />;
@@ -122,8 +122,7 @@ const Page = () => {
 
           <Button
             variant="default"
-            disabled={isUnverified}
-            className={isUnverified ? "cursor-not-allowed opacity-50" : ""}
+            className="cursor-pointer"
             onClick={() => {
               router.push("/employer-dashboard/jobs/create");
             }}
@@ -134,7 +133,38 @@ const Page = () => {
         </div>
       </div>
 
-      {isUnverified && !kycStatus && (
+      {/* Step 1: No plan purchased yet — must buy a plan before KYC */}
+      {isUnverified && !hasPlan && (
+        <Alert className="border-amber-200 bg-amber-50 text-amber-900 shadow-sm">
+          <AlertCircle className="h-5 w-5 text-amber-600!" />
+          <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <AlertTitle className="font-bold text-amber-800">
+                Action Required: Choose a Plan
+              </AlertTitle>
+              <AlertDescription className="text-amber-700">
+                To get started, please purchase a plan first. Once you have an
+                active subscription, you will be able to complete your KYC
+                verification and post jobs.
+              </AlertDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200"
+              asChild
+            >
+              <Link href="/employer-dashboard/plans">
+                View Plans
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </Alert>
+      )}
+
+      {/* Step 2: Plan purchased but KYC not yet started */}
+      {isUnverified && hasPlan && !kycStatus && (
         <Alert
           variant="destructive"
           className="border-amber-200 bg-amber-50 text-amber-900 shadow-sm"
@@ -165,7 +195,8 @@ const Page = () => {
         </Alert>
       )}
 
-      {isUnverified && kycStatus === "pending" && (
+      {/* Step 2a: KYC submitted and under review */}
+      {isUnverified && hasPlan && kycStatus === "pending" && (
         <Alert className="border-blue-200 bg-blue-50 text-blue-900 shadow-sm">
           <AlertCircle className="h-5 w-5 text-blue-600!" />
           <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -182,7 +213,8 @@ const Page = () => {
         </Alert>
       )}
 
-      {isUnverified && kycStatus === "rejected" && (
+      {/* Step 2b: KYC rejected — re-submission required */}
+      {isUnverified && hasPlan && kycStatus === "rejected" && (
         <Alert
           variant="destructive"
           className="border-red-200 bg-red-50 text-red-900 shadow-sm"
@@ -315,7 +347,8 @@ const Page = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Applicant</TableHead>
-                    <TableHead>Job Title</TableHead>
+                    <TableHead>Listing Title</TableHead>
+                    <TableHead>Listing Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Company Name</TableHead>
                     <TableHead>Applied At</TableHead>
@@ -332,13 +365,16 @@ const Page = () => {
                           {app.jobSeeker?.email}
                         </div>
                       </TableCell>
-                      <TableCell>{app.job?.title || "Unknown Job"}</TableCell>
+                      <TableCell>{app.listing?.title || "Unknown Title"}</TableCell>
+                      <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(app.status)}>
                           {app.status.replace("_", " ").toUpperCase()}
                         </Badge>
                       </TableCell>
-                      <TableCell>{app.job?.company?.name ?? "Unknown Company"}</TableCell>
+                      <TableCell>
+                        {app.listing?.company?.name ?? "Unknown Company"}
+                      </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {format(new Date(app.createdAt), "MMM d, yyyy")}
                       </TableCell>

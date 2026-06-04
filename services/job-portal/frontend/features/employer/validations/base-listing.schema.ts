@@ -10,6 +10,8 @@ export const Job_Type = [
   "freelance",
 ];
 
+export const Opportunity_Type = ["job", "internship"];
+
 export const Work_Mode = [
   "work from office",
   "remote",
@@ -99,10 +101,10 @@ export const Degree_Level = [
 ];
 
 const locationSchema = z.object({
-  city: z.string().trim().min(1, "City is required"),
-  state: z.string().trim().min(1, "State is required"),
-  country: z.string().trim().min(1, "Country is required"),
-});
+  city: z.string().trim().optional().or(z.literal("")),
+  state: z.string().trim().optional().or(z.literal("")),
+  country: z.string().trim().optional().or(z.literal("")),
+}).optional();
 
 const educationSchema = z.object({
   minimumDegree: z.enum(Degree_Level, {
@@ -141,7 +143,8 @@ export const BaseListingSchema = z.object({
   description: z.string().trim().min(1, "Job description is required"),
 
   // Select values
-  jobType: z.enum(Job_Type, { error: "Job type is required" }),
+  employmentType: z.enum(Job_Type, { error: "Job type is required" }),
+  opportunityType: z.enum(Opportunity_Type, { error: "Opportunity type is required" }),
   workMode: z.enum(Work_Mode, { error: "Work mode is required" }),
   companyType: z.enum(Company_Type, { error: "Company type is required" }),
   roleCategory: z.enum(ROLE_CATEGORIES, { error: "Role category is required" }),
@@ -162,4 +165,28 @@ export const BaseListingSchema = z.object({
   openings: z.coerce.number().int().min(1, "Openings must be at least 1"),
   status: z.enum(Listing_Status).default("active"),
   isFeatured: z.boolean().default(false),
+}).superRefine((data, ctx) => {
+  if (data.workMode !== "remote") {
+    if (!data.location?.city) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["location", "city"],
+        message: "City is required for non-remote roles",
+      });
+    }
+    if (!data.location?.state) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["location", "state"],
+        message: "State is required for non-remote roles",
+      });
+    }
+    if (!data.location?.country) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["location", "country"],
+        message: "Country is required for non-remote roles",
+      });
+    }
+  }
 });

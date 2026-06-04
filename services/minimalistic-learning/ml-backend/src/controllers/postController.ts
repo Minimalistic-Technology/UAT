@@ -506,7 +506,9 @@ export const listTrending = asyncHandler(async (req: Request, res: Response) => 
     const likesArr = parseArr(post.likes);
     const likesCount = likesArr.length;
     const hasLiked = currentUserId ? likesArr.includes(currentUserId) : false;
-    const mapped = { ...post, likesCount, hasLiked };
+    const coverImageObj = post.coverImage ? JSON.parse(post.coverImage) : null;
+
+    const mapped = { ...post, likesCount, hasLiked, coverImage: coverImageObj };
     delete mapped.viewedBy;
     delete mapped.likes;
     return mapped;

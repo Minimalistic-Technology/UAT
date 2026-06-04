@@ -18,8 +18,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Coupon } from "@/types/new-index";
 
-export function CouponTableRow({ coupon }: { coupon: any }) {
+export function CouponTableRow({ coupon }: { coupon: Coupon }) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { mutate: deleteCoupon, isPending: isDeleting } = useDeleteCoupon();
 

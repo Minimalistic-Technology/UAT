@@ -89,4 +89,4 @@ internshipSchema.index({ roleCategory: 1 });
 internshipSchema.index({ industry: 1 });
 internshipSchema.index({ 'education.minimumDegree': 1, 'education.isRequired': 1 });
 
-export default mongoose.model<IInternship>('Internship', internshipSchema);
+export default mongoose.model<IInternship>('internship', internshipSchema);

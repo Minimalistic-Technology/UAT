@@ -70,6 +70,18 @@ export const createOrder = async (
     const plan = await Plan.findById(planId);
     if (!plan) throw new ApiError(404, "Plan not found");
 
+    // Prevent purchasing if there is an active plan with remaining posts
+    const activeSubscription = await Subscription.findOne({
+      employerId: userId,
+      status: "active",
+      expiryDate: { $gt: new Date() },
+      $or: [{ postsRemaining: { $gt: 0 } }, { postsRemaining: -1 }],
+    });
+
+    if (activeSubscription) {
+      throw new ApiError(400, "You already have an active plan with remaining job posts. Please use them before purchasing a new plan.");
+    }
+
     // Prevent claiming the free plan multiple times
     if (plan.price === 0) {
       const existingFreeSub = await Subscription.findOne({

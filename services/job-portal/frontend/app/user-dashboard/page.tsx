@@ -36,7 +36,7 @@ export default function JobSeekerDashboard() {
   const { data: session, status: authStatus } = useSession();
   const { data: applications, isLoading: applicationLoading } =
     useGetMyApplications();
-  const { data: statsData, isLoading: statsLoading } = useGetMyApplicationStats();
+  const { data: responseData, isLoading: statsLoading } = useGetMyApplicationStats();
   const { data: recommendedJobs, isLoading: jobsLoading } = useGetJobs({
     limit: 5,
   });
@@ -44,31 +44,33 @@ export default function JobSeekerDashboard() {
   if (authStatus === "loading" || applicationLoading || statsLoading)
     return <DashboardSkeleton />;
 
+  const statsData = responseData?.data;
+
   const stats = [
     {
       label: "Total Applied",
-      value: statsData?.data?.total || 0,
+      value: statsData?.total || 0,
       icon: Briefcase,
       color: "text-blue-600",
       bg: "bg-blue-50",
     },
     {
       label: "Pending",
-      value: statsData?.data?.pending || 0,
+      value: statsData?.byStatus.pending || 0,
       icon: Clock,
       color: "text-amber-600",
       bg: "bg-amber-50",
     },
     {
       label: "Shortlisted",
-      value: statsData?.data?.shortlisted || 0,
+      value: statsData?.byStatus.shortlisted || 0,
       icon: CheckCircle,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
     },
     {
       label: "Rejected",
-      value: statsData?.data?.rejected || 0,
+      value: statsData?.byStatus.rejected || 0,
       icon: XCircle,
       color: "text-rose-600",
       bg: "bg-rose-50",
@@ -165,7 +167,7 @@ export default function JobSeekerDashboard() {
                     >
                       <div className="flex flex-col gap-1">
                         <h4 className="group-hover:text-primary font-semibold text-slate-900 transition-colors">
-                          {app.job.title}
+                          {app.listing.title}
                         </h4>
                         <div className="text-muted-foreground flex items-center gap-3 text-sm">
                           <span>{app.job?.company?.name}</span>

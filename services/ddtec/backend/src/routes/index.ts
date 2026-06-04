@@ -11,6 +11,7 @@ import blogRoutes from './blog.routes';
 import categoryRoutes from './category.routes';
 import billRoutes from './bill.routes';
 import settingsRoutes from './settings';
+import dynamicRouteRoutes from './route.routes';
 
 const router = Router();
 
@@ -27,5 +28,6 @@ router.use('/blogs', blogRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/bills', billRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/dynamic-routes', dynamicRouteRoutes);
 
 export default router;

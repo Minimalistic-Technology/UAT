@@ -10,20 +10,24 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 const chartConfig = {
   revenue: {
     label: "Revenue",
-    color: "hsl(var(--primary))",
+    color: "var(--primary)",
   },
   users: {
     label: "Users",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
   jobs: {
     label: "Jobs",
-    color: "hsl(var(--chart-3))",
+    color: "var(--chart-3)",
+  },
+  internships: {
+    label: "Internships",
+    color: "var(--chart-4)",
   },
 };
 
 const AnalyticsPage = () => {
-  const { data, isLoading, error } = useAdminAnalytics();
+  const { data: responseData, isLoading, error } = useAdminAnalytics();
 
   if (isLoading) {
     return (
@@ -33,7 +37,7 @@ const AnalyticsPage = () => {
     );
   }
 
-  if (error || !data?.success) {
+  if (error || !responseData?.success) {
     return (
       <div className="flex h-[calc(100vh-100px)] items-center justify-center text-red-500">
         Failed to load analytics data.
@@ -41,7 +45,7 @@ const AnalyticsPage = () => {
     );
   }
 
-  const { summary, graphs } = data.data;
+  const { summary, graphs } = responseData.data;
 
   return (
     <div className="space-y-8">
@@ -65,7 +69,7 @@ const AnalyticsPage = () => {
           label="Active Users"
           value={summary.activeUsers.toLocaleString()}
           variant="admin"
-          icon={<Users className="text-slate-400" />}
+          icon={<Users />}
           className="bg-linear-to-tr from-blue-800 to-blue-600 xl:col-span-2"
         />
         <StatusCard
@@ -76,22 +80,32 @@ const AnalyticsPage = () => {
           className="xl:col-span-2"
         />
         <StatusCard
+          label="Internship Listings"
+          value={summary.internshipListings.toLocaleString()}
+          variant="admin"
+          icon={<Briefcase className="text-slate-400" />}
+          className="xl:col-span-2"
+        />
+        <StatusCard
           label="KYC Pending"
           value={summary.kycPending.toLocaleString()}
           variant="admin"
           icon={<ShieldCheck className="text-slate-400" />}
+          className="xl:col-span-2"
         />
         <StatusCard
           label="Total Companies"
           value={summary.totalCompanies.toLocaleString()}
           variant="admin"
           icon={<Building className="text-slate-400" />}
+          className="xl:col-span-2"
         />
         <StatusCard
           label="Total Apps"
           value={summary.totalApplications.toLocaleString()}
           variant="admin"
           icon={<FileText className="text-slate-400" />}
+          className="xl:col-span-2"
         />
       </div>
 
@@ -131,6 +145,19 @@ const AnalyticsPage = () => {
         <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
         <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
         <Line type="monotone" dataKey="jobs" stroke="var(--color-jobs)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+      </LineChart>
+    </ChartContainer>
+  </div>
+
+  {/* Internships Graph */}
+  <div className="rounded-xl border bg-white p-6 shadow-sm lg:col-span-2">
+    <h3 className="mb-4 font-semibold text-slate-800">New Internships (Last 6 Months)</h3>
+    <ChartContainer config={{ internships: chartConfig.internships }} className="h-48 w-full sm:h-64 lg:h-72">
+      <LineChart accessibilityLayer data={graphs.internships}>
+        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+        <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+        <Line type="monotone" dataKey="internships" stroke="var(--color-internships)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
       </LineChart>
     </ChartContainer>
   </div>

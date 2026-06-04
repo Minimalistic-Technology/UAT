@@ -288,7 +288,7 @@ export default function WarehouseDashboard() {
         p.name.toLowerCase().includes(productSearch.toLowerCase())
     );
 
-    if (loading || !user) {
+    if (loading || !user || user.role !== 'warehouse') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center gap-4 transition-colors">
                 <Activity className="size-10 text-teal-600 dark:text-teal-500 animate-spin" />

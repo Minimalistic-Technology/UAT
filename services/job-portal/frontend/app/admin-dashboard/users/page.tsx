@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import React from "react";
 import { Search } from "lucide-react";
 
 // Components
@@ -28,6 +28,7 @@ import { useFetchAllUsers } from "@/features/admin/hooks/use-user";
 import UserTableRow from "@/features/admin/components/user-table-row";
 import { cn } from "@/lib/utils";
 import { CompanyRole } from "@/types";
+import { UserWithCompany } from "@/features/admin/types";
 
 const COLUMNS = [
   { key: "name", label: "User" },
@@ -53,11 +54,11 @@ const Page = () => {
 
   if (isLoading) return <LoadingState />;
 
-  const users = responseData?.data?.users || [];
-  const pagination = responseData?.data?.pagination;
+  const users = responseData?.data.users || [];
+  const pagination = responseData?.data.pagination;
 
   // Search Logic: Filter based on Name or Email
-  const filteredUsers = users.filter((user: any) => {
+  const filteredUsers = users.filter((user: UserWithCompany) => {
     const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
     const email = user.email?.toLowerCase() || "";
     const search = searchTerm.toLowerCase();
@@ -157,7 +158,7 @@ const Page = () => {
                     </TableRow>
                   ))
                 ) : Array.isArray(filteredUsers) && filteredUsers.length > 0 ? (
-                  filteredUsers.map((user: any) => (
+                  filteredUsers.map((user) => (
                     <UserTableRow key={user._id} user={user} />
                   ))
                 ) : (

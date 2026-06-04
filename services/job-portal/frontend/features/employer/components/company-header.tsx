@@ -1,7 +1,7 @@
-import { Company } from "@/types";
+import { Company } from "@/types/new-index";
 import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, User, CheckCircle, Clock } from "lucide-react";
-import { CompanyMetrics } from "@/features/employer/services/company.service";
+import { CompanyMetrics } from "../types/company.type";
 
 interface CompanyHeaderProps {
   company: (Omit<Company, "owner"> & CompanyMetrics) | undefined;
@@ -71,10 +71,10 @@ export const CompanyHeader = ({ company, isLoading }: CompanyHeaderProps) => {
           <div className="mt-4 flex gap-6 rounded-lg border border-slate-100 bg-slate-50 p-3 sm:mt-0">
             <div className="flex flex-col items-center">
               <span className="text-xl font-bold text-slate-900">
-                {company.activeJobs || 0}
+                {company.activeListings || 0}
               </span>
               <span className="text-xs font-medium text-slate-500">
-                Active Jobs
+                Active Listings
               </span>
             </div>
             <div className="w-px bg-slate-200"></div>

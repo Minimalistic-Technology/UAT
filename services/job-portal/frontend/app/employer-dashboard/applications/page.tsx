@@ -58,6 +58,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { ApplicationStatus } from "@/types/enums";
 
 const EmployerApplicationsPage = () => {
   const [page, setPage] = useState(1);
@@ -206,7 +207,8 @@ const EmployerApplicationsPage = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Applicant</TableHead>
-                    <TableHead>Job Title</TableHead>
+                    <TableHead>Listing Title</TableHead>
+                    <TableHead>Listing Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Applied At</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -223,7 +225,8 @@ const EmployerApplicationsPage = () => {
                           {app.jobSeeker?.email}
                         </div>
                       </TableCell>
-                      <TableCell>{app.job?.title || "Unknown Job"}</TableCell>
+                      <TableCell>{app.listing?.title || "Unknown Listing Title"}</TableCell>
+                       <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(app.status)}>
                           {app.status.replace("_", " ").toUpperCase()}
@@ -238,7 +241,11 @@ const EmployerApplicationsPage = () => {
 
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                disabled={[ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN].includes(app.status?.toLowerCase())}
+                              >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>

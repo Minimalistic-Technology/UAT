@@ -2,7 +2,8 @@ import type { Request, Response, NextFunction } from "express";
 import {
   ExperienceLevel,
   JobStatus,
-  JobType,
+  EmploymentType,
+  OpportunityType,
 } from "../models/BaseJob.model.js";
 import Job from "../models/Job.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
@@ -15,8 +16,8 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
 
-export function isValidJobType(value: any): value is JobType {
-  return Object.values(JobType).includes(value);
+export function isValidJobType(value: any): value is EmploymentType {
+  return Object.values(EmploymentType).includes(value);
 }
 
 export function isValidExperienceType(value: any): value is ExperienceLevel {
@@ -207,7 +208,7 @@ export const createJob = async (
     const jobData = {
       title: req.body.title,
       description: req.body.description,
-      jobType: req.body.jobType,
+      employmentType: req.body.employmentType,
       workMode: req.body.workMode,
       companyType: req.body.companyType,
       roleCategory: req.body.roleCategory,
@@ -217,9 +218,9 @@ export const createJob = async (
       openings: req.body.openings,
 
       location: {
-        city: req.body.location.city,
-        state: req.body.location.state,
-        country: req.body.location.country,
+        city: req.body.location?.city,
+        state: req.body.location?.state,
+        country: req.body.location?.country,
       },
 
       education: {
@@ -242,6 +243,7 @@ export const createJob = async (
       applicationDeadline: req.body.applicationDeadline,
       isFeatured: req.body.isFeatured ?? false,
       status: req.body.status ?? "active",
+      opportunityType: OpportunityType.JOB,
       postedBy: req.user.id,
       company: company._id,
     };
@@ -292,9 +294,9 @@ export const updateJob = async (
       );
     }
 
-    // Only admin and owner can update job details
+    // Only hr and owner can update job details
     if (
-      companyMember.role !== CompanyRole.ADMIN &&
+      companyMember.role !== CompanyRole.HR &&
       companyMember.role !== CompanyRole.OWNER
     ) {
       return next(new ApiError(403, "Not authorized to update this job"));

@@ -3,15 +3,19 @@ import { authorize, protect } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
 import {
   getAllUsers,
-  getJobsByStatus,
+  getListingsByStatus,
   getStats,
-  updateUserStatus,
+  toggleUserStatus,
   getKycApplications,
   getAdminAnalytics,
-  updateKycStatus
+  updateKycStatus,
 } from "../controllers/admin.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { updateKycStatusSchema, updateUserStatusSchema, getJobsByStatusSchema } from "../validations/admin.validation.js";
+import {
+  getKycApplicationsSchema,
+  updateKycStatusSchema,
+  getJobsByStatusSchema,
+} from "../validations/admin.validation.js";
 
 const router = Router();
 
@@ -19,22 +23,24 @@ router.use(protect);
 router.use(authorize(GlobalRole.SUPER_ADMIN));
 
 router.get("/users", getAllUsers);
-router.get("/jobs", validate(getJobsByStatusSchema), getJobsByStatus);
+router.get("/jobs", validate(getJobsByStatusSchema), getListingsByStatus);
 router.put(
   "/users/:userId/toggle-status",
-  validate(updateUserStatusSchema),
-  updateUserStatus,
+  toggleUserStatus,
 );
-router.get("/stats", getStats)
+router.get("/stats", getStats);
 
-router.get("/kyc-applications", getKycApplications);
+router.get(
+  "/kyc-applications",
+  validate(getKycApplicationsSchema),
+  getKycApplications,
+);
 router.put(
   "/kyc-applications/:applicationId/status",
   validate(updateKycStatusSchema),
-  updateKycStatus
+  updateKycStatus,
 );
 
 router.get("/analytics", getAdminAnalytics);
-
 
 export default router;

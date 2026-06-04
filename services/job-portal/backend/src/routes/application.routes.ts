@@ -53,8 +53,8 @@ router.get(
   getAllCompanyApplications,
 );
 
-router.get(
-  "/job/get-applicants",
+router.post(
+  "/jobs/my-applications",
   protect,
   authorize(GlobalRole.USER), // only for employer
   validate(getJobApplicantsSchema),

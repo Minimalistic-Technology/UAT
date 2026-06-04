@@ -11,7 +11,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 const chartConfig = {
   revenue: {
     label: "Revenue",
-    color: "hsl(var(--primary))",
+    color: "var(--primary)",
   },
 };
 
@@ -63,13 +63,12 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-8 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatusCard
           label="Total Revenue"
-          value={`$${summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`Rs ${summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           variant="admin"
-          icon={<DollarSign />}
-          description={`${summary.revenueGrowth >= 0 ? '+' : ''}${summary.revenueGrowth}% vs last month`}
+          description={`${summary.revenueCurrency} ${summary.revenueGrowth >= 0 ? '+' : ''} ${summary.revenueGrowth}% vs last month`}
         />
         <StatusCard
           label="Active Users"
@@ -81,6 +80,12 @@ const AdminDashboard = () => {
         <StatusCard
           label="Job Listings"
           value={summary.jobListings.toLocaleString()}
+          variant="admin"
+          icon={<Briefcase className="text-slate-400" />}
+        />
+        <StatusCard
+          label="Internship Listings"
+          value={summary.internshipListings.toLocaleString()}
           variant="admin"
           icon={<Briefcase className="text-slate-400" />}
         />

@@ -66,7 +66,8 @@ export default function CreatePlanForm() {
   });
 
   const onSubmit = (data: CreatePlanFormValues) => {
-    createPlan(data);
+    const cleanedFeatures = data.features.filter((f) => f && f.trim().length > 0);
+    createPlan({ ...data, features: cleanedFeatures });
   };
 
   return (

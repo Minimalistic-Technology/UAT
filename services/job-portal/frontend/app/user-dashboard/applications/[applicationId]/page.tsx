@@ -26,7 +26,11 @@ import {
   Eye,
 } from "lucide-react";
 import { format } from "date-fns";
-import { getInlineUrl, getApplicationStatusColor, formatLocation } from "@/utils";
+import {
+  getInlineUrl,
+  getApplicationStatusColor,
+  formatLocation,
+} from "@/utils";
 
 const ViewApplicationPage = () => {
   const params = useParams();
@@ -47,10 +51,15 @@ const ViewApplicationPage = () => {
 
   if (isError || !application) return <ErrorState />;
 
-  const { job, status, createdAt, resume, interviewDate, statusHistory } =
-    application;
-
-    console.log(application)
+  const {
+    listing,
+    listingType,
+    status,
+    createdAt,
+    resume,
+    interviewDate,
+    statusHistory,
+  } = application;
 
   const handleWithdraw = () => {
     if (window.confirm("Are you sure you want to withdraw this application?")) {
@@ -74,15 +83,15 @@ const ViewApplicationPage = () => {
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
-              <CardTitle className="mb-2 text-2xl">{job?.title}</CardTitle>
+              <CardTitle className="mb-2 text-2xl">{listing?.title}</CardTitle>
               <CardDescription className="flex items-center gap-4 text-base">
                 <span className="flex items-center gap-1">
                   <Building2 className="h-4 w-4" />
-                  {job?.company?.name || "Company Name"}
+                  {listing?.company?.name || "Company Name"}
                 </span>
                 <span className="flex items-center gap-1">
                   <MapPin className="h-4 w-4" />
-                  {formatLocation(job?.location)}
+                  {formatLocation(listing?.location)}
                 </span>
               </CardDescription>
             </div>
@@ -100,7 +109,7 @@ const ViewApplicationPage = () => {
               <span>
                 Job Type:{" "}
                 <span className="text-foreground font-medium capitalize">
-                  {job?.jobType}
+                  {listing?.employmentType || listingType}
                 </span>
               </span>
             </div>
@@ -222,18 +231,18 @@ function TopActions({
       >
         <ArrowLeft className="mr-2 h-4 w-4" /> Back
       </Button>
-      {status !== "withdrawn" &&
-        status !== "rejected" &&
-        status !== "accepted" && (
-          <Button
-            variant="destructive"
-            onClick={handleWithdraw}
-            disabled={isWithdrawing}
-            className="cursor-pointer"
-          >
-            {isWithdrawing ? "Withdrawing..." : "Withdraw Application"}
-          </Button>
-        )}
+      {!["withdrawn", "rejected", "accepted", "selected"].includes(
+        status?.toLowerCase(),
+      ) && (
+        <Button
+          variant="destructive"
+          onClick={handleWithdraw}
+          disabled={isWithdrawing}
+          className="cursor-pointer"
+        >
+          {isWithdrawing ? "Withdrawing..." : "Withdraw Application"}
+        </Button>
+      )}
     </div>
   );
 }

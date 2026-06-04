@@ -1,4 +1,10 @@
-import { useCreateMyJobPosting } from "../hooks/use-job";
+import { useCreateMyJobPosting, useUpdateMyJobPosting } from "../hooks/use-job";
+import { Job } from "@/types/new-index";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { CreateJobFormData, createJobSchema } from "../validations/job.schema";
 import {
   Company_Type,
@@ -27,8 +33,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { SkillInput } from "./skill-input";
 import { Button } from "@/components/ui/button";
 
-export function JobForm({ onCancel }: { onCancel: () => void }) {
-  const { mutate: createJob, isPending } = useCreateMyJobPosting();
+export function JobForm({ onCancel, initialData }: { onCancel: () => void, initialData?: Job }) {
+  const { mutate: createJob, isPending: isCreating } = useCreateMyJobPosting();
+  const { mutate: updateJob, isPending: isUpdating } = useUpdateMyJobPosting(initialData?._id as string);
+  
+  const isPending = isCreating || isUpdating;
 
   const {
     register,
@@ -39,7 +48,41 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
     setValue,
   } = useForm<CreateJobFormData>({
     resolver: zodResolver(createJobSchema) as Resolver<CreateJobFormData>,
-    defaultValues: {
+    defaultValues: initialData ? {
+      title: initialData.title,
+      description: initialData.description,
+      employmentType: initialData.employmentType as any,
+      workMode: initialData.workMode as any,
+      companyType: initialData.companyType as any,
+      experienceLevel: initialData.experienceLevel as any,
+      experienceInYears: initialData.experienceInYears,
+      roleCategory: initialData.roleCategory as any,
+      industry: initialData.industry as any,
+      location: {
+        city: initialData.location?.city || "",
+        state: initialData.location?.state || "",
+        country: initialData.location?.country || "",
+      },
+      education: {
+        minimumDegree: initialData.education.minimumDegree as any,
+        preferredFields: initialData.education.preferredFields || [],
+        isRequired: initialData.education.isRequired,
+      },
+      salary: {
+        min: initialData.salary.min,
+        max: initialData.salary.max,
+        currency: initialData.salary.currency || "INR",
+        period: initialData.salary.period || "yearly",
+      },
+      skills: initialData.skills,
+      requirements: initialData.requirements,
+      openings: initialData.openings,
+      benefits: initialData.benefits || [],
+      applicationDeadline: initialData.applicationDeadline ? new Date(initialData.applicationDeadline).toISOString() as any : undefined,
+      isFeatured: initialData.isFeatured,
+      status: initialData.status as any,
+      opportunityType: "job",
+    } : {
       location: { city: "", state: "", country: "" },
       salary: { currency: "INR", period: "yearly" },
       education: { isRequired: false },
@@ -48,12 +91,19 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
       requirements: [],
       isFeatured: false,
       status: "active",
+      opportunityType: "job",
     },
   });
 
   const currentSkills = watch("skills") || [];
 
-  const onSubmit: SubmitHandler<CreateJobFormData> = (data) => createJob(data);
+  const onSubmit: SubmitHandler<CreateJobFormData> = (data) => {
+    if (initialData) {
+      updateJob(data);
+    } else {
+      createJob(data);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -95,7 +145,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
                 Job Type <Asterisk className="text-destructive inline size-3" />
               </Label>
               <Controller
-                name="jobType"
+                name="employmentType"
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
@@ -114,9 +164,9 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
                   </Select>
                 )}
               />
-              {errors.jobType && (
+              {errors.employmentType && (
                 <p className="text-destructive text-xs">
-                  {errors.jobType.message}
+                  {errors.employmentType.message}
                 </p>
               )}
             </div>
@@ -313,7 +363,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="grid gap-2">
               <Label>
-                City <Asterisk className="text-destructive inline size-3" />
+                City {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}
               </Label>
               <Input {...register("location.city")} placeholder="Mumbai" />
               {errors.location?.city && (
@@ -324,7 +374,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             </div>
             <div className="grid gap-2">
               <Label>
-                State <Asterisk className="text-destructive inline size-3" />
+                State {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}
               </Label>
               <Input
                 {...register("location.state")}
@@ -338,7 +388,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             </div>
             <div className="grid gap-2">
               <Label>
-                Country <Asterisk className="text-destructive inline size-3" />
+                Country {watch("workMode") !== "remote" && <Asterisk className="text-destructive inline size-3" />}
               </Label>
               <Input {...register("location.country")} placeholder="India" />
               {errors.location?.country && (
@@ -524,6 +574,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             </Label>
             <Textarea
               placeholder="Must have 5 years experience..."
+              defaultValue={initialData?.requirements?.join("\n")}
               onChange={(e) =>
                 setValue(
                   "requirements",
@@ -563,6 +614,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
             <Label>Benefits (one per line)</Label>
             <Textarea
               placeholder="Health Insurance..."
+              defaultValue={initialData?.benefits?.join("\n")}
               onChange={(e) =>
                 setValue("benefits", e.target.value.split("\n").filter(Boolean))
               }
@@ -572,37 +624,42 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="grid gap-2">
               <Label>Application Deadline</Label>
-              <Input
-                min={new Date().toISOString().split("T")[0]}
-                type="date"
-                {...register("applicationDeadline")}
+              <Controller
+                name="applicationDeadline"
+                control={control}
+                render={({ field }) => (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? format(new Date(field.value), "d/M/yyyy") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value ? new Date(field.value) : undefined}
+                        onSelect={(date) => field.onChange(date ? date.toISOString() : undefined)}
+                        disabled={(date) =>
+                          date < new Date(new Date().setHours(0, 0, 0, 0))
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
               />
               {errors.applicationDeadline && (
                 <p className="text-destructive text-xs">
                   {errors.applicationDeadline.message}
                 </p>
               )}
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Status</Label>
-              <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent defaultValue={"active"}>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
             </div>
           </div>
 
@@ -630,7 +687,7 @@ export function JobForm({ onCancel }: { onCancel: () => void }) {
           Cancel
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Posting..." : "Post Job"}
+          {isPending ? (initialData ? "Saving..." : "Posting...") : (initialData ? "Save Changes" : "Post Job")}
         </Button>
       </div>
     </form>

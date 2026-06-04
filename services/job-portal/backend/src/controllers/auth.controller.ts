@@ -425,22 +425,6 @@ export const login = async (
   }
 };
 
-export const getMe = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const user = await User.findById(req.user.id);
-
-    res
-      .status(200)
-      .json(new ApiResponse(200, user, "User fetched successfully"));
-  } catch (error: any) {
-    next(error);
-  }
-};
-
 export const logout = async (
   req: AuthRequest,
   res: Response,
@@ -455,6 +439,22 @@ export const logout = async (
     success: true,
     message: "User logged out successfully",
   });
+};
+
+export const getMe = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, user, "User fetched successfully"));
+  } catch (error: any) {
+    next(error);
+  }
 };
 
 // @desc    Send OTP to phone

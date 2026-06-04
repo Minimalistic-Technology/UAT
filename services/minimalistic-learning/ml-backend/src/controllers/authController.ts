@@ -69,14 +69,18 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   }
 
   try {
-    const axios = require('axios');
-    const verifyRes = await axios.post(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${recaptchaSecret}&response=${recaptchaToken}`
+    const verifyRes = await fetch(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${recaptchaSecret}&response=${recaptchaToken}`,
+      { method: 'POST' }
     );
-    if (!verifyRes.data.success) {
-      throw new Error("CAPTCHA challenge failed");
+    const verifyData = await verifyRes.json();
+
+    if (!verifyData.success) {
+      console.error("CAPTCHA Google Response:", verifyData);
+      throw new Error(`CAPTCHA challenge failed: ${verifyData['error-codes']?.join(', ') || 'Unknown error'}`);
     }
-  } catch (error) {
+  } catch (error: any) {
+    console.error("CAPTCHA Catch Block Error:", error.message || error);
     throw new ApiError(StatusCodes.BAD_REQUEST, "CAPTCHA verification failed. Are you a robot?");
   }
 
@@ -94,10 +98,20 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     hashedPassword = await bcrypt.hash(payload.password, salt);
   }
 
+  const pendingUserData = {
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    contactNumber: payload.contactNumber,
+    email: payload.email,
+    password: hashedPassword,
+    otp,
+    otpExpires: new Date(otpExpires)
+  };
+
   await prisma.pendingUser.upsert({
     where: { email: payload.email },
-    update: { ...payload, password: hashedPassword, otp, otpExpires: new Date(otpExpires) },
-    create: { ...payload, password: hashedPassword, otp, otpExpires: new Date(otpExpires) }
+    update: pendingUserData,
+    create: pendingUserData
   });
 
   sendOTP(payload.email, otp).catch((err) => {

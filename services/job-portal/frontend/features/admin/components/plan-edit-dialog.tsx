@@ -30,9 +30,10 @@ import {
   createPlanSchema,
 } from "@/features/admin/validations/plan.schema";
 import { useUpdatePlan } from "@/features/admin/hooks/use-plan";
+import { Plan } from "@/types/new-index";
 
 interface PlanEditDialogProps {
-  plan: any | null;
+  plan: Plan;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -100,8 +101,9 @@ export function PlanEditDialog({
 
   const onSubmit = (data: CreatePlanFormValues) => {
     if (!plan?._id) return;
+    const cleanedFeatures = data.features.filter((f) => f && f.trim().length > 0);
     updatePlan(
-      { id: plan._id, data },
+      { id: plan._id, data: { ...data, features: cleanedFeatures } },
       {
         onSuccess: () => {
           onOpenChange(false);

@@ -72,10 +72,8 @@ const Page = () => {
             variant="outline"
             className="cursor-pointer"
             size="sm"
-            // onClick={() => router.push(`/employer/jobs/${jobId}/edit`)}
-            onClick={() => {
-              alert("Edit functionality coming soon!")
-            }}
+            disabled={job.status === "closed"}
+            onClick={() => router.push(`/employer-dashboard/jobs/${jobId}/edit`)}
           >
             <Pencil className="mr-2 h-4 w-4" /> Edit Details
           </Button>
@@ -191,14 +189,14 @@ const Page = () => {
               <div className="flex items-center gap-3 text-sm">
                 <IndianRupee className="text-muted-foreground h-4 w-4" />
                 <span className="font-medium">
-                  ₹{job.salary.min.toLocaleString()} - ₹
-                  {job.salary.max.toLocaleString()}
+                  ₹{job.salary?.min?.toLocaleString()} - ₹
+                  {job.salary?.max?.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Briefcase className="text-muted-foreground h-4 w-4" />
                 <span className="capitalize">
-                  {job.jobType.replace("_", " ")}
+                  {job.employmentType.replace("_", " ")}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">

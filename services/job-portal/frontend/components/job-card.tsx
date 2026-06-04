@@ -44,8 +44,9 @@ const CurrencyIcon = ({
 };
 
 export default function JobCard({ job }: JobCardProps) {
+  console.log("Job Card", job)
   return (
-    <Link href={`/${job.listingType === 'internship' ? 'internships' : 'jobs'}/${job._id}`} className="group block">
+    <Link href={`/${job.listingType === 'internship' ? 'internship' : 'job'}/${job._id}`} className="group block">
       <Card className="hover:border-primary/20 overflow-hidden border shadow-sm transition-all duration-200 hover:shadow-md">
         <CardContent className="p-5">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
@@ -116,7 +117,7 @@ export default function JobCard({ job }: JobCardProps) {
               ) : (
                 <div className="hidden flex-col items-end md:flex">
                   <span className="text-muted-foreground text-sm font-medium capitalize">
-                    {job.stipend?.type?.replace("_", " ")} Stipend
+                    {job.stipend?.type} Stipend
                   </span>
                 </div>
               )
@@ -175,7 +176,7 @@ export default function JobCard({ job }: JobCardProps) {
             <div className="flex items-center gap-1.5">
               <Briefcase className="h-4 w-4" />
               <span className="capitalize">
-                {job.jobType.replace("_", " ")}
+                {job.employmentType?.replace("_", " ")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -196,7 +197,7 @@ export default function JobCard({ job }: JobCardProps) {
                 </div>
               ) : (
                 <div className="text-muted-foreground flex items-center text-sm font-medium capitalize md:hidden">
-                  {job.stipend?.type?.replace("_", " ")} Stipend
+                  {job.stipend?.type} Stipend
                 </div>
               )
             ) : job.salary?.min || job.salary?.max ? (
