@@ -10,7 +10,7 @@ export const buildBaseJobQuery = (
     const { search, jobType, skills, city, state, country, workMode } =
         queryParams;
 
-    const query: Record<string, any> = { status: JobStatus.ACTIVE };
+    const query: Record<string, any> = { status: JobStatus.ACTIVE, isDeleted: { $ne: true } };
 
     if (jobType && jobType !== "all") {
         const jobTypeArray = Array.isArray(jobType) ? jobType : jobType.split(",");

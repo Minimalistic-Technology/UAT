@@ -62,8 +62,8 @@ export default function JobSeekerDashboard() {
       bg: "bg-amber-50",
     },
     {
-      label: "Shortlisted",
-      value: statsData?.byStatus.shortlisted || 0,
+      label: "Selected",
+      value: (statsData?.byStatus.shortlisted || 0) + (statsData?.byStatus.accepted || 0),
       icon: CheckCircle,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
@@ -170,7 +170,7 @@ export default function JobSeekerDashboard() {
                           {app.listing.title}
                         </h4>
                         <div className="text-muted-foreground flex items-center gap-3 text-sm">
-                          <span>{app.job?.company?.name}</span>
+                          <span>{app.listing.company?.name || "Unknown Company"}</span>
                           <span className="h-1 w-1 rounded-full bg-slate-300" />
                           <span>
                             Applied{" "}

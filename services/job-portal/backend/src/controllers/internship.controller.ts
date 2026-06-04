@@ -10,7 +10,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
 import { isValidExperienceType } from "./job.controller.js";
-import { OpportunityType } from "../models/BaseJob.model.js";
+import { JobStatus, OpportunityType } from "../models/BaseJob.model.js";
 
 export const getAllInternships = async (
   req: AuthRequest,
@@ -114,7 +114,7 @@ export const getMyInternships = async (
       companyMember.role === CompanyRole.HR ||
       companyMember.role === CompanyRole.OWNER
     ) {
-      const internships = await Internship.find({ company: companyMember.company })
+      const internships = await Internship.find({ company: companyMember.company, isDeleted: { $ne: true } })
         .populate("company", "name logo")
         .populate("postedBy", "firstName lastName");
 
@@ -348,7 +348,10 @@ export const deleteInternship = async (
       return next(new ApiError(403, "You're not authorized to delete the internship"));
     }
 
-    await internship.deleteOne();
+    // Soft delete the internship so that job seekers who applied don't lose the listing details
+    internship.isDeleted = true;
+    internship.status = JobStatus.CLOSED; // Ensure it's not active anymore
+    await internship.save();
 
     res.status(200).json(new ApiResponse(200, {}, "Internship deleted successfully"));
   } catch (error: any) {

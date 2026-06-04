@@ -169,6 +169,7 @@ export interface IBaseJob extends Document {
   applicationsCount: number;
   viewsCount: number;
   opportunityType: OpportunityType;
+  isDeleted: boolean;
 }
 
 export const baseJobSchemaDefinition: SchemaDefinition<
@@ -267,5 +268,9 @@ export const baseJobSchemaDefinition: SchemaDefinition<
     type: String,
     enum: Object.values(OpportunityType),
     required: true,
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
   },
 };

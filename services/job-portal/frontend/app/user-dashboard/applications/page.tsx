@@ -138,18 +138,18 @@ const MyApplicationsPage = () => {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="text-foreground group-hover:text-primary text-sm font-bold transition-colors">
-                          {app.listing?.title}
+                          {app.listing.title}
                         </span>
                         <span className="text-muted-foreground mt-0.5 text-[11px] font-medium uppercase">
-                          {app.listing?.employmentType?.replace("_", " ")}
+                          {app.listing.employmentType?.replace("_", " ")}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
                         <MapPin className="h-3.5 w-3.5" />
-                        {app.listing?.location?.city}
-                        {app.listing?.workMode === 'remote' && (
+                        {app.listing.location?.city || "Location Not Specified"}
+                        {app.listing.workMode === 'remote' && (
                           <Badge
                             variant="outline"
                             className="ml-1 h-4 border-blue-200 bg-blue-50 px-1 text-[10px] text-blue-600"
@@ -167,7 +167,7 @@ const MyApplicationsPage = () => {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm font-medium">
-                        {app.listing?.company?.name ?? "Unknown Company"}
+                        {app.listing.company?.name || "Unknown Company"}
                       </span>
                     </TableCell>
                     <TableCell>

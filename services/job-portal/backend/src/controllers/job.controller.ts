@@ -346,7 +346,10 @@ export const deleteJob = async (
       return next(new ApiError(403, "You're not authorized to delete the job"));
     }
 
-    await job.deleteOne();
+    // Soft delete the job so that job seekers who applied don't lose the listing details
+    job.isDeleted = true;
+    job.status = JobStatus.CLOSED; // Ensure it's not active anymore
+    await job.save();
 
     res.status(200).json(new ApiResponse(200, {}, "Job deleted successfully"));
   } catch (error: any) {
@@ -370,7 +373,7 @@ export const getMyJobs = async (
       companyMember.role === CompanyRole.HR ||
       companyMember.role === CompanyRole.OWNER
     ) {
-      const jobs = await Job.find({ company: companyMember.company })
+      const jobs = await Job.find({ company: companyMember.company, isDeleted: { $ne: true } })
         .populate("company", "name logo")
         .populate("postedBy", "firstName lastName");
 
