@@ -104,6 +104,7 @@ export default function UserSidebar({ className }: { className?: string }) {
           </div>
         </div>
 
+        {/* 
         <Button
           variant="ghost"
           onClick={handleLogout}
@@ -112,6 +113,7 @@ export default function UserSidebar({ className }: { className?: string }) {
           <LogOut className="mr-3 h-4 w-4" />
           <span className="text-sm font-medium">Logout</span>
         </Button>
+        */}
       </div>
     </div>
   );

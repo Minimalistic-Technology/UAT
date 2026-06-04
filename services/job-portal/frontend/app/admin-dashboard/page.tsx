@@ -1,8 +1,8 @@
 "use client";
 
-import { AdminStatusCard as StatusCard  } from "@/features/admin/components/stats-card";
+import { AdminStatusCard as StatusCard } from "@/features/admin/components/stats-card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Plus, Users, Briefcase, ShieldCheck, Loader2 } from "lucide-react";
+import { DollarSign, Plus, Users, Briefcase, ShieldCheck, Loader2, Building2 } from "lucide-react";
 import Link from "next/link";
 import { useAdminAnalytics } from "@/features/admin/hooks/use-analytics";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
@@ -63,7 +63,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="mb-8 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="mb-8 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <StatusCard
           label="Total Revenue"
           value={`Rs ${summary.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -82,6 +82,12 @@ const AdminDashboard = () => {
           value={summary.jobListings.toLocaleString()}
           variant="admin"
           icon={<Briefcase className="text-slate-400" />}
+        />
+        <StatusCard
+          label="Companies Registered"
+          value={summary.totalCompanies.toLocaleString()}
+          variant="admin"
+          icon={<Building2 className="text-slate-400" />}
         />
         <StatusCard
           label="Internship Listings"
@@ -106,7 +112,7 @@ const AdminDashboard = () => {
               <Link href="/admin-dashboard/analytics">View All Analytics</Link>
             </Button>
           </div>
-          
+
           <ChartContainer config={chartConfig} className="h-48 w-full md:h-64">
             <BarChart accessibilityLayer data={graphs.revenue}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />

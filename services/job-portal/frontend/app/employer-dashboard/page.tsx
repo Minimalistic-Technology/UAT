@@ -93,7 +93,7 @@ const Page = () => {
   }
 
   return (
-    <div className="flex flex-col gap-8 p-6 lg:p-10">
+    <div className="flex flex-col gap-8 w-full">
       {/* Header Section */}
       <div className="flex flex-col justify-between gap-4 border-b pb-6 md:flex-row md:items-center">
         <div>
@@ -302,7 +302,7 @@ const Page = () => {
             companyDetails?.remainingJobPosts === -1
               ? "Unlimited"
               : companyDetails?.remainingJobPosts !== undefined &&
-                  companyDetails?.remainingJobPosts !== null
+                companyDetails?.remainingJobPosts !== null
                 ? Number(companyDetails.remainingJobPosts)
                 : 0
           }
@@ -394,7 +394,7 @@ export default Page;
 
 export const DashboardSkeleton = () => {
   return (
-    <div className="flex flex-col gap-8 p-6 lg:p-10">
+    <div className="flex flex-col gap-8 w-full">
       {/* Header Section Skeleton */}
       <div className="flex flex-col justify-between gap-4 border-b pb-6 md:flex-row md:items-center">
         <div className="space-y-2">

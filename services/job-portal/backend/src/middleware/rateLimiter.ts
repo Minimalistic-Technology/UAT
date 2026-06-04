@@ -23,7 +23,10 @@ const BASE_BACKOFF_MINUTES = 1;
 
 export const createExponentialBackoffLimiter = (store: Map<string, RateLimitData>) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const ip = (req.headers['x-forwarded-for'] as string) || req.ip || req.socket.remoteAddress || 'unknown';
+    // In deployment behind proxies (Render/Heroku/Nginx), req.ip is perfectly parsed
+    // because app.set("trust proxy", 1) is enabled in index.ts. 
+    // Manual x-forwarded-for parsing is dangerous as it can be a comma-separated list.
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const now = Date.now();
 
     if (!store.has(ip)) {
@@ -56,6 +59,15 @@ export const createExponentialBackoffLimiter = (store: Map<string, RateLimitData
           const exponent = record.attempts - MAX_ATTEMPTS;
           const delayMs = Math.pow(2, exponent) * BASE_BACKOFF_MINUTES * 60 * 1000;
           record.blockedUntil = Date.now() + delayMs;
+
+          // Prevent memory leaks in production by automatically clearing the ban map 
+          // when the blocked period expires, if they haven't tried again.
+          setTimeout(() => {
+            const currentRec = store.get(ip);
+            if (currentRec && currentRec.blockedUntil && Date.now() >= currentRec.blockedUntil) {
+              store.delete(ip);
+            }
+          }, delayMs).unref();
         }
       }
     });

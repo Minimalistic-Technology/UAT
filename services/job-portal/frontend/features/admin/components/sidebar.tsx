@@ -2,12 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  LayoutDashboard, 
-  Users, 
-  Briefcase, 
-  BarChart3, 
-  ShieldCheck, 
+import {
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  BarChart3,
+  ShieldCheck,
   Settings,
   LogOut,
   Ticket,
@@ -23,8 +23,8 @@ export const menuItems = [
   { label: "User Management", icon: Users, href: "/admin-dashboard/users" },
   { label: "KYC Applications", icon: ShieldCheck, href: "/admin-dashboard/kyc" },
   { label: "Analytics", icon: BarChart3, href: "/admin-dashboard/analytics" },
-  {label: "Coupons", icon: Ticket, href: "/admin-dashboard/coupons"},
-  {label: "Plans", icon: Notebook, href: "/admin-dashboard/plans"},
+  { label: "Coupons", icon: Ticket, href: "/admin-dashboard/coupons" },
+  { label: "Plans", icon: Notebook, href: "/admin-dashboard/plans" },
   { label: "System Settings", icon: Settings, href: "/admin-dashboard/settings" },
 ]
 
@@ -59,12 +59,14 @@ export function Sidebar({ className }: { className?: string }) {
       </div>
 
       <div className="border-t p-4 bg-white">
+        {/* 
         <Button 
         onClick={handleLogout}
         variant="ghost" className="w-full justify-start text-slate-500 hover:text-red-600 hover:bg-red-50 cursor-pointer">
           <LogOut className="mr-3 h-4 w-4" />
           Logout
         </Button>
+        */}
       </div>
     </div>
   )

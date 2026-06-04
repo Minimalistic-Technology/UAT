@@ -2,12 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  LayoutDashboard, 
-  Users, 
-  Briefcase, 
-  FileText, 
-  Building2, 
+import {
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  FileText,
+  Building2,
   Settings,
   LogOut,
   PlusCircle,
@@ -32,7 +32,7 @@ export const menuItems = [
 export default function EmployerSidebar({ className }: { className?: string }) {
   const pathname = usePathname()
   const handleLogout = () => signOut({ callbackUrl: "/login" });
-  const {data: session, status} = useSession();
+  const { data: session, status } = useSession();
 
   const userDetails = session?.user;
   const companyRole = userDetails?.companyRole;
@@ -66,10 +66,12 @@ export default function EmployerSidebar({ className }: { className?: string }) {
       </div>
 
       <div className="border-t p-4 bg-white">
+        {/* 
         <Button onClick={handleLogout} variant="ghost" className="w-full justify-start text-slate-500 hover:text-red-600 hover:bg-red-50 cursor-pointer">
           <LogOut className="mr-3 h-4 w-4" />
           Logout
         </Button>
+        */}
       </div>
     </div>
   )

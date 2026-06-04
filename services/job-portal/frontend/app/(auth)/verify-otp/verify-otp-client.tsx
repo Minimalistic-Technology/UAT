@@ -27,6 +27,16 @@ export default function VerifyOtpClient() {
 
   const [otp, setOtp] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [timer, setTimer] = useState<number>(30);
+
+  useEffect(() => {
+    if (timer > 0) {
+      const intervalId = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(intervalId);
+    }
+  }, [timer]);
 
   // Redirect if no email is present
   useEffect(() => {
@@ -110,15 +120,22 @@ export default function VerifyOtpClient() {
           </Button>
 
           <div className="text-center text-sm">
-            <p className="text-muted-foreground">
-              Didn&apos;t receive a code?{" "}
-              <Link
-                href="/register"
-                className="text-primary hover:underline font-medium"
-              >
-                Try again
-              </Link>
-            </p>
+            {timer > 0 ? (
+              <p className="text-muted-foreground font-medium">
+                Resend code in <span className="text-primary font-bold">00:{timer < 10 ? `0${timer}` : timer}</span>
+              </p>
+            ) : (
+              <p className="text-muted-foreground font-medium">
+                Didn&apos;t receive a code?{" "}
+                <Link
+                  href="/register"
+                  className="text-primary hover:underline font-bold"
+                  onClick={() => setTimer(30)}
+                >
+                  Resend / Try again
+                </Link>
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
