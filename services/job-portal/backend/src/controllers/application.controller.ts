@@ -227,7 +227,16 @@ export const getAllCompanyApplications = async (
       query.listingType = listingType;
     }
 
-    const [applications, totalApplications] = await Promise.all([
+    const activeSubscription = await Subscription.findOne({
+      companyId: companyId,
+      status: "active",
+      expiryDate: { $gt: new Date() },
+    }).populate("planId");
+
+    const plan = activeSubscription?.planId as any;
+    const canViewResume = plan?.allowResumeDownload === true;
+
+    const [applicationsDocs, totalApplications] = await Promise.all([
       Application.find(query)
         .populate({
           path: "listing",
@@ -237,12 +246,23 @@ export const getAllCompanyApplications = async (
             select: "name",
           },
         })
-        .populate("jobSeeker", "firstName lastName email")
+        .populate("jobSeeker", "firstName lastName email phone resume skills experience education portfolio urls")
         .sort("-createdAt")
         .skip(skip)
         .limit(limit),
       Application.countDocuments(query),
     ]);
+
+    const applications = applicationsDocs.map((app) => {
+      const appObj = app.toObject();
+      if (!canViewResume) {
+        delete appObj.resume;
+        if (appObj.jobSeeker) {
+          delete (appObj.jobSeeker as any).resume;
+        }
+      }
+      return appObj;
+    });
 
     const totalPages = Math.ceil(totalApplications / limit);
 
@@ -388,10 +408,30 @@ export const getApplicationById = async (
       throw new ApiError(403, "Not authorized to view this application");
     }
 
+    const appObj = application.toObject();
+
+    if (!isJobSeeker && (isEmployer || isCompanyMember)) {
+      const activeSubscription = await Subscription.findOne({
+        companyId: listing.company,
+        status: "active",
+        expiryDate: { $gt: new Date() },
+      }).populate("planId");
+
+      const plan = activeSubscription?.planId as any;
+      const canViewResume = plan?.allowResumeDownload === true;
+
+      if (!canViewResume) {
+        delete appObj.resume;
+        if (appObj.jobSeeker) {
+          delete (appObj.jobSeeker as any).resume;
+        }
+      }
+    }
+
     res
       .status(200)
       .json(
-        new ApiResponse(200, application, "Application fetched successfully"),
+        new ApiResponse(200, appObj, "Application fetched successfully"),
       );
   } catch (error: any) {
     next(error);

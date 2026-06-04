@@ -294,7 +294,7 @@ const EmployerApplicationsPage = () => {
           )}
 
           {/* Server Side Pagination Controls */}
-          {pagination && pagination.totalPages > 1 && (
+          {pagination && pagination.totalPages >= 1 && (
             <div className="flex items-center justify-between pt-4">
               <div className="text-muted-foreground text-sm">
                 Showing page {pagination.currentPage} of {pagination.totalPages}

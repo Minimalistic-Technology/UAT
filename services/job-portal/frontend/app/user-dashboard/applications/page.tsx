@@ -43,13 +43,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ApplicationStatus } from "@/types/enums";
 
+import { useState } from "react";
+import { ChevronLeft } from "lucide-react";
+
 const MyApplicationsPage = () => {
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+
   const {
     data: responseData,
     isLoading,
     isError,
     refetch: refetchMyApplication,
-  } = useGetMyApplications();
+  } = useGetMyApplications({ page, limit });
 
   const { mutate: withdrawApplication, isPending } =
     useWithdrawJobApplication();
@@ -86,7 +92,14 @@ const MyApplicationsPage = () => {
   }
 
   const applications = responseData?.data.applications || [];
-  console.log("My applications", applications);
+  const pagination = responseData?.data.pagination;
+
+  const handlePrevious = () => setPage((p) => Math.max(1, p - 1));
+  const handleNext = () => {
+    if (pagination?.totalPages && page < pagination.totalPages) {
+      setPage((p) => p + 1);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
@@ -101,7 +114,7 @@ const MyApplicationsPage = () => {
         <CardHeader className="bg-muted/30 border-b px-6 py-4">
           <CardTitle className="flex items-center gap-2 text-sm font-medium">
             <Briefcase className="text-primary h-4 w-4" />
-            Active Submissions ({applications.length})
+            Active Submissions ({pagination?.totalItems || applications.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -214,7 +227,7 @@ const MyApplicationsPage = () => {
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
-                      </AlertDialog>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -222,7 +235,7 @@ const MyApplicationsPage = () => {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="text-muted-foreground h-24 text-center"
                   >
                     No applications found.
@@ -231,6 +244,35 @@ const MyApplicationsPage = () => {
               )}
             </TableBody>
           </Table>
+          
+          {/* Server Side Pagination Controls */}
+          {pagination && pagination.totalPages >= 1 && (
+            <div className="flex items-center justify-between p-4 border-t bg-muted/5">
+              <div className="text-muted-foreground text-sm">
+                Showing page {pagination.currentPage} of {pagination.totalPages}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevious}
+                  disabled={page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="sr-only">Previous</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNext}
+                  disabled={page >= pagination.totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="sr-only">Next</span>
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
