@@ -1,0 +1,301 @@
+
+> frontend@0.1.0 test
+> jest app/admin-dashboard/users/__tests__/page.test.tsx
+
+FAIL app/admin-dashboard/users/__tests__/page.test.tsx
+  Admin User Management Page
+    ✓ renders loading state initially (34 ms)
+    ✓ renders error state when fetch fails (7 ms)
+    ✓ renders users when fetch succeeds (10 ms)
+    ✓ filters users when search term is entered (12 ms)
+    ✓ triggers CSV export when Export CSV is clicked (17 ms)
+    ✓ handles empty results and shows 'No results found.' (5 ms)
+    ✓ disables previous and next buttons correctly based on pagination (10 ms)
+    ✓ shows 'No results found.' when search yields no matches (9 ms)
+    ✓ filters users when searching by email (7 ms)
+    ✓ performs case-insensitive search (15 ms)
+    ✓ navigates between pages using pagination buttons (10 ms)
+    ✕ validates CSV content correctly (5 ms)
+    ✓ handles invalid or incomplete user data gracefully (4 ms)
+    ✕ meets basic accessibility standards (68 ms)
+
+  ● Admin User Management Page › validates CSV content correctly
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "\"Admin\""
+    Received string:    "User,Email,Role,Status,Joined
+    \"John Doe\",\"john@example.com\",\"Job Seeker\",\"Active\",\"1/1/2023\""
+
+      347 |     expect(blobContent[0]).toContain('"John Doe"');
+      348 |     expect(blobContent[0]).toContain('"john@example.com"');
+    > 349 |     expect(blobContent[0]).toContain('"Admin"');
+          |                            ^
+      350 |     expect(blobContent[0]).toContain('"Active"');
+      351 |
+      352 |     // Restore Blob
+
+      at Object.toContain (app/admin-dashboard/users/__tests__/page.test.tsx:349:28)
+
+  ● Admin User Management Page › meets basic accessibility standards
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "heading" and name "User Management"
+
+    Here are the accessible roles:
+
+      textbox:
+
+      Name "":
+      [36m<input[39m
+        [33mclass[39m=[32m"h-8 w-full min-w-0 rounded-lg border border-input px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 bg-background pl-9"[39m
+        [33mdata-slot[39m=[32m"input"[39m
+        [33mplaceholder[39m=[32m"Search users..."[39m
+        [33mvalue[39m=[32m""[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      button:
+
+      Name "Export CSV":
+      [36m<button[39m
+        [33mclass[39m=[32m"group/button inline-flex shrink-0 items-center justify-center rounded-lg border bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 cursor-pointer"[39m
+        [33mdata-size[39m=[32m"default"[39m
+        [33mdata-slot[39m=[32m"button"[39m
+        [33mdata-variant[39m=[32m"outline"[39m
+      [36m/>[39m
+
+      Name "Previous":
+      [36m<button[39m
+        [33mclass[39m=[32m"group/button inline-flex shrink-0 items-center justify-center border bg-clip-padding font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5 cursor-pointer"[39m
+        [33mdata-size[39m=[32m"sm"[39m
+        [33mdata-slot[39m=[32m"button"[39m
+        [33mdata-variant[39m=[32m"outline"[39m
+        [33mdisabled[39m=[32m""[39m
+      [36m/>[39m
+
+      Name "Next":
+      [36m<button[39m
+        [33mclass[39m=[32m"group/button inline-flex shrink-0 items-center justify-center border bg-clip-padding font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5 cursor-pointer"[39m
+        [33mdata-size[39m=[32m"sm"[39m
+        [33mdata-slot[39m=[32m"button"[39m
+        [33mdata-variant[39m=[32m"outline"[39m
+        [33mdisabled[39m=[32m""[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      table:
+
+      Name "":
+      [36m<table[39m
+        [33mclass[39m=[32m"w-full caption-bottom text-sm"[39m
+        [33mdata-slot[39m=[32m"table"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      rowgroup:
+
+      Name "":
+      [36m<thead[39m
+        [33mclass[39m=[32m"[&_tr]:border-b"[39m
+        [33mdata-slot[39m=[32m"table-header"[39m
+      [36m/>[39m
+
+      Name "":
+      [36m<tbody[39m
+        [33mclass[39m=[32m"[&_tr:last-child]:border-0"[39m
+        [33mdata-slot[39m=[32m"table-body"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      row:
+
+      Name "User Email Role Status Joined Actions":
+      [36m<tr[39m
+        [33mclass[39m=[32m"border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted bg-muted/30"[39m
+        [33mdata-slot[39m=[32m"table-row"[39m
+      [36m/>[39m
+
+      Name "John Doe john@example.com":
+      [36m<tr[39m
+        [33mdata-testid[39m=[32m"user-row"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      columnheader:
+
+      Name "User":
+      [36m<th[39m
+        [33mclass[39m=[32m"h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0"[39m
+        [33mdata-slot[39m=[32m"table-head"[39m
+      [36m/>[39m
+
+      Name "Email":
+      [36m<th[39m
+        [33mclass[39m=[32m"h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 hidden md:table-cell"[39m
+        [33mdata-slot[39m=[32m"table-head"[39m
+      [36m/>[39m
+
+      Name "Role":
+      [36m<th[39m
+        [33mclass[39m=[32m"h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0"[39m
+        [33mdata-slot[39m=[32m"table-head"[39m
+      [36m/>[39m
+
+      Name "Status":
+      [36m<th[39m
+        [33mclass[39m=[32m"h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0"[39m
+        [33mdata-slot[39m=[32m"table-head"[39m
+      [36m/>[39m
+
+      Name "Joined":
+      [36m<th[39m
+        [33mclass[39m=[32m"h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0"[39m
+        [33mdata-slot[39m=[32m"table-head"[39m
+      [36m/>[39m
+
+      Name "Actions":
+      [36m<th[39m
+        [33mclass[39m=[32m"h-10 px-2 align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 text-right"[39m
+        [33mdata-slot[39m=[32m"table-head"[39m
+      [36m/>[39m
+
+      --------------------------------------------------
+      cell:
+
+      Name "John Doe":
+      [36m<td />[39m
+
+      Name "john@example.com":
+      [36m<td />[39m
+
+      --------------------------------------------------
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"space-y-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center justify-between gap-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"relative max-w-sm flex-1"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-search text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m21 21-4.34-4.34"[39m
+                [36m/>[39m
+                [36m<circle[39m
+                  [33mcx[39m=[32m"11"[39m
+                  [33mcy[39m=[32m"11"[39m
+                  [33mr[39m=[32m"8"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"h-8 w-full min-w-0 rounded-lg border border-input px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 bg-background pl-9"[39m
+                [33mdata-slot[39m=[32m"input"[39m
+                [33mplaceholder[39m=[32m"Search users..."[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+            [36m</div>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"group/button inline-flex shrink-0 items-center justify-center rounded-lg border bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 cursor-pointer"[39m
+              [33mdata-size[39m=[32m"default"[39m
+              [33mdata-slot[39m=[32m"button"[39m
+              [33mdata-variant[39m=[32m"outline"[39m
+            [36m>[39m
+              [0mExport CSV[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl"[39m
+            [33mdata-size[39m=[32m"default"[39m
+            [33mdata-slot[39m=[32m"card"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-4 group-data-[size=sm]/card:px-3 has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-4 group-data-[size=sm]/card:[.border-b]:pb-3 pb-3"[39m
+              [33mdata-slot[39m=[32m"card-header"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm"[39m
+                [33mdata-slot[39m=[32m"card-title"[39m
+              [36m>[39m
+                [0mUser Management[0m
+              [36m</div>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"text-sm text-muted-foreground"[39m
+                [33mdata-slot[39m=[32m"card-description"[39m
+              [36m>[39m
+                [0mA list of all users in your organization and their current status.[0m
+              [36m</div>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"px-4 group-data-[size=sm]/card:px-3"[39m
+              [33mdata-slot[39m=[32m"card-content"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"rounded-md border"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"relative w-full overflow-x-auto"[39m
+                  [33mdata-slot[39m=[32m"table-container"[39m
+                [36m>[39m
+                  [36m<table[39m
+                    [33mclass[39m=[32m"w-full caption-bottom text-sm"[39m
+                    [33mdata-slot[39m=[32m"table"[39m
+                  [36m>[39m
+                    [36m<thead[39m
+                      [33mclass[39m=[32m"[&_tr]:border-b"[39m
+                      [33mdata-slot[39m=[32m"table-header"[39m
+                    [36m>[39m
+                      [36m<tr[39m
+                        [33mclass[39m=[32m"border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted bg-muted/30"[39m
+                        [33mdata-slot[39m=[32m"table-row"[39m
+                      [36m>[39m
+                        [36m<th[39m
+                          [33mclass[39m=[32m"h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0"[39m
+                          [33mdata-slot[39m=[32m"table-head"[39m
+                        [36m>[39m
+                          [0mUser[0m
+                        [36m</th>[39m
+                        [36m<th[39m
+                          [33mclass[39m=[32m"h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 hidden md:table-cell"[39m
+                          [33mdata-slot[39m=[32m"table-head"[39m
+                        [36m>[39m
+                          [0mEmail[0m
+                        [36m</th>[39m
+                        [36m<th[39m
+                          [33mclass[39m=[32m"h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&...
+
+      395 |     render(<Page />);
+      396 |     
+    > 397 |     expect(screen.getByRole("heading", { name: "User Management" })).toBeInTheDocument();
+          |                   ^
+      398 |     expect(screen.getByRole("table")).toBeInTheDocument();
+      399 |     expect(screen.getByRole("button", { name: "Export CSV" })).toBeInTheDocument();
+      400 |     expect(screen.getByRole("button", { name: "Previous" })).toBeInTheDocument();
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByRole (app/admin-dashboard/users/__tests__/page.test.tsx:397:19)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 12 passed, 14 total
+Snapshots:   0 total
+Time:        0.83 s, estimated 1 s
+Ran all test suites matching app/admin-dashboard/users/__tests__/page.test.tsx.
