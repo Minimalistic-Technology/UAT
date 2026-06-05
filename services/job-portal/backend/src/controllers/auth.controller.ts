@@ -13,6 +13,8 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import TempUser from "../models/TempUser.model.js";
 import { generateToken } from "../utils/jwt.js";
+import Feature, { FeatureStatus } from "../models/Feature.model.js";
+import FeaturePermission from "../models/FeaturePermission.model.js";
 
 const verifyCaptcha = async (token: string) => {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY || "dummy_secret_key";
@@ -448,10 +450,35 @@ export const getMe = async (
 ) => {
   try {
     const user = await User.findById(req.user.id);
+    if (!user) throw new ApiError(404, "User not found");
+
+    const membership = await CompanyMember.findOne({ user: user._id });
+
+    // 1. Get strictly "public" features
+    const publicFeatures = await Feature.find({ status: FeatureStatus.PUBLIC }).select("slug");
+    const allowedSlugs = new Set(publicFeatures.map(f => f.slug));
+
+    // 2. Get specific "beta" features this user (or their company) has been granted
+    const userPermissions = await FeaturePermission.find({
+      $or: [
+        { user: user._id },
+        ...(membership ? [{ company: membership.company }] : [])
+      ]
+    }).populate("feature", "slug status");
+
+    userPermissions.forEach(perm => {
+      const f: any = perm.feature;
+      if (f && f.status === FeatureStatus.BETA) {
+        allowedSlugs.add(f.slug);
+      }
+    });
+
+    const userObj = user.toObject();
+    (userObj as any).allowedFeatures = Array.from(allowedSlugs);
 
     res
       .status(200)
-      .json(new ApiResponse(200, user, "User fetched successfully"));
+      .json(new ApiResponse(200, userObj, "User fetched successfully"));
   } catch (error: any) {
     next(error);
   }
