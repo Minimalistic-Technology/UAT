@@ -3,16 +3,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { updateProfile, UpdateProfilePayload } from "@/services/user.service"
 import { toast } from "sonner"
 
-export const useGetUserDetails = () => {
-    const response = useQuery({
-        queryKey: ["user-details"],
-        queryFn: async () => {
-            const response = await apiClient.get<ApiSuccessResponse<any>>("/auth/me");
-            return response.data;
-        }
-    })
+export const useGetUserDetails = (enabled: boolean = true) => {
+  const response = useQuery({
+    queryKey: ["user-details"],
+    queryFn: async () => {
+      const response = await apiClient.get<ApiSuccessResponse<any>>("/auth/me");
+      return response.data;
+    },
+    enabled,
+  })
 
-    return response;
+  return response;
 }
 
 export const useUpdateProfile = () => {

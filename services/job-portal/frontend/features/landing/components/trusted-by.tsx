@@ -23,7 +23,7 @@ export const TrustedBy = () => {
   return (
     <section
       id="companies"
-      className="py-16 md:py-24 border-y border-slate-200 bg-slate-50/50 overflow-hidden"
+      className="py-16 md:py-24 border-y border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 overflow-hidden transition-colors duration-300"
       aria-label="Trusted by"
     >
       <motion.div
@@ -65,8 +65,8 @@ export const TrustedBy = () => {
         </motion.div>
 
         {/* Improved Edge Fades */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-slate-50 to-transparent z-10" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-slate-50 to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-10" />
       </div>
     </section>
   );

@@ -20,11 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className + " bg-white dark:bg-[#09090b] text-slate-900 dark:text-slate-100 transition-colors duration-300"}>
         <Providers>
           <Navbar />
-          <div className="pt-16 h-full min-h-screen bg-gray-50">
+          <div className="pt-16 h-full min-h-screen bg-gray-50 dark:bg-[#09090b] transition-colors duration-300">
             {children}
           </div>
           <Toaster position="top-right" />

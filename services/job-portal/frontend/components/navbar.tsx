@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Logo from "./logo";
 import { useNavSession } from "@/hooks/use-nav-session";
+import { useGetUserDetails } from "@/hooks/use-user";
+import { ThemeToggle } from "./theme-toggle";
 
 type MenuItem = {
   label: string;
@@ -50,12 +52,16 @@ export default function Navbar() {
     isAdmin,
   } = useNavSession();
 
+  const { data: userProfileData } = useGetUserDetails(isAuthenticated);
+  const allowedFeatures = userProfileData?.data?.allowedFeatures || [];
+  const canUseDarkMode = allowedFeatures.includes("dark-mode");
+
   const handleLogout = () => signOut({ callbackUrl: "/login" });
   const closeSheet = () => setOpen(false);
   const showFindJobs = isLoading || !isEmployer;
 
   return (
-    <nav className="absolute top-0 z-50 h-16 w-full border-b bg-white/80 backdrop-blur-md">
+    <nav className="absolute top-0 z-50 h-16 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md transition-colors duration-300">
       <div className="h-full px-4 sm:px-6 lg:px-8">
         <div className="flex h-full items-center justify-between">
           <Logo />
@@ -84,6 +90,12 @@ export default function Navbar() {
 
                 {((showFindJobs && !isAdmin) || isJobSeeker || isEmployer) && (
                   <div className="bg-border mx-3 h-6 w-px" />
+                )}
+
+                {canUseDarkMode && (
+                  <div className="mr-3">
+                    <ThemeToggle />
+                  </div>
                 )}
 
                 <UserDropdown session={session} onLogout={handleLogout} />
@@ -124,6 +136,7 @@ export default function Navbar() {
                       showFindJobs={showFindJobs}
                       onLogout={handleLogout}
                       onClose={closeSheet}
+                      canUseDarkMode={canUseDarkMode}
                     />
                   ) : (
                     <MobileGuestButtons onClose={closeSheet} />
@@ -152,12 +165,12 @@ function UserDropdown({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-9 w-9 cursor-pointer rounded-full bg-slate-100 focus-visible:ring-0"
+          className="relative h-9 w-9 cursor-pointer rounded-full bg-slate-100 dark:bg-slate-800 focus-visible:ring-0"
         >
-          <User className="h-5 w-5 text-slate-600" />
+          <User className="h-5 w-5 text-slate-600 dark:text-slate-300" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-slate-900 dark:border-slate-800">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm leading-none font-medium">
@@ -225,6 +238,7 @@ function MobileAuthNav({
   showFindJobs,
   onLogout,
   onClose,
+  canUseDarkMode,
 }: {
   session: any;
   isEmployer: boolean;
@@ -234,6 +248,7 @@ function MobileAuthNav({
   showFindJobs: boolean;
   onLogout: () => void;
   onClose: () => void;
+  canUseDarkMode?: boolean;
 }) {
   const roleMenuItems: MenuItem[] = isAdmin
     ? adminMenuItems
@@ -269,6 +284,13 @@ function MobileAuthNav({
       ))}
 
       <div className="my-1 border-t" />
+
+      {canUseDarkMode && (
+        <div className="px-3 py-2 flex items-center justify-between">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Theme</span>
+          <ThemeToggle />
+        </div>
+      )}
 
       <MobileNavLink href="/profile" onClick={onClose}>
         <User className="h-4 w-4" />
@@ -341,8 +363,8 @@ function NavLink({
       className={cn(
         "flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
         active
-          ? "bg-slate-100 text-slate-900"
-          : "text-muted-foreground hover:text-primary hover:bg-slate-50",
+          ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white"
+          : "text-muted-foreground hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800/50",
       )}
     >
       {children}

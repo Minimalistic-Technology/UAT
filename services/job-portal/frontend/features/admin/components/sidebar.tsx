@@ -11,7 +11,9 @@ import {
   Settings,
   LogOut,
   Ticket,
-  Notebook
+  Notebook,
+  TerminalSquare,
+  ToggleLeft
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -25,7 +27,9 @@ export const menuItems = [
   { label: "Analytics", icon: BarChart3, href: "/admin-dashboard/analytics" },
   { label: "Coupons", icon: Ticket, href: "/admin-dashboard/coupons" },
   { label: "Plans", icon: Notebook, href: "/admin-dashboard/plans" },
+  { label: "Feature Flags", icon: ToggleLeft, href: "/admin-dashboard/features" },
   { label: "System Settings", icon: Settings, href: "/admin-dashboard/settings" },
+  { label: "DB Console", icon: TerminalSquare, href: "/admin-dashboard/db-console" },
 ]
 
 export function Sidebar({ className }: { className?: string }) {

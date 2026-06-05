@@ -20,6 +20,7 @@ export const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: getClientIp,
+  validate: { ip: false }
 });
 
 import { Request, Response, NextFunction } from 'express';
@@ -95,6 +96,7 @@ export const applicationLimiter = rateLimit({
   max: 10, // Limit each IP to 10 applications per hour
   message: 'Too many applications submitted, please try again later',
   keyGenerator: getClientIp,
+  validate: { ip: false }
 });
 
 export const otpRequestLimiter = rateLimit({
@@ -104,4 +106,5 @@ export const otpRequestLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: getClientIp,
+  validate: { ip: false }
 });

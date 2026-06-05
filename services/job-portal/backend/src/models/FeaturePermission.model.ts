@@ -16,7 +16,13 @@ const FeaturePermissionSchema: Schema = new Schema(
 );
 
 // A user/company shouldn't be mapped to the same feature twice
-FeaturePermissionSchema.index({ feature: 1, user: 1 }, { unique: true, sparse: true });
-FeaturePermissionSchema.index({ feature: 1, company: 1 }, { unique: true, sparse: true });
+FeaturePermissionSchema.index(
+    { feature: 1, user: 1 },
+    { unique: true, partialFilterExpression: { user: { $exists: true, $type: "objectId" } } }
+);
+FeaturePermissionSchema.index(
+    { feature: 1, company: 1 },
+    { unique: true, partialFilterExpression: { company: { $exists: true, $type: "objectId" } } }
+);
 
 export default mongoose.model<IFeaturePermission>("FeaturePermission", FeaturePermissionSchema);

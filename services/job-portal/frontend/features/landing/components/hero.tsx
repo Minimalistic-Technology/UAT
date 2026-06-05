@@ -47,7 +47,7 @@ export const Hero = () => {
   return (
     <section
       id="top"
-      className="relative pt-32 md:pt-40 pb-20 md:pb-28 overflow-hidden bg-white"
+      className="relative pt-32 md:pt-40 pb-20 md:pb-28 overflow-hidden bg-white dark:bg-slate-950 transition-colors duration-300"
       data-testid="hero-section"
     >
       {/* Decorative Orbs */}
@@ -85,7 +85,7 @@ export const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: "easeIn", delay: 0.05 }}
-              className="text-5xl md:text-6xl lg:text-[5rem] font-bold leading-[1.1] text-slate-900 mt-6 tracking-tight"
+              className="text-5xl md:text-6xl lg:text-[5rem] font-bold leading-[1.1] text-slate-900 dark:text-white mt-6 tracking-tight"
               data-testid="hero-headline"
             >
               The career platform that <br className="hidden md:block" />
@@ -116,7 +116,7 @@ export const Hero = () => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeIn", delay: 0.2 }}
-              className="mt-8 text-lg md:text-xl text-slate-600 max-w-xl leading-relaxed"
+              className="mt-8 text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed"
               data-testid="hero-subheadline"
             >
               Search 12k+ vetted roles from companies that care about craft.
@@ -133,7 +133,7 @@ export const Hero = () => {
             >
               <form
                 onSubmit={handleSearchSubmit}
-                className="flex flex-col md:flex-row items-stretch bg-white border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-50 rounded-2xl overflow-hidden transition-all duration-300 shadow-xl"
+                className="flex flex-col md:flex-row items-stretch bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-50 dark:focus-within:ring-indigo-900/50 rounded-2xl overflow-hidden transition-all duration-300 shadow-xl"
                 data-testid="hero-search"
               >
                 <div className="flex items-center gap-3 flex-1 px-5 py-4 border-b md:border-b-0 md:border-r border-slate-100">
@@ -141,7 +141,7 @@ export const Hero = () => {
                   <input
                     type="text"
                     placeholder="Job title, skill, or company"
-                    className="w-full bg-transparent outline-none text-slate-900 placeholder:text-slate-400 text-base"
+                    className="w-full bg-transparent outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-base"
                     data-testid="search-title-input"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -152,7 +152,7 @@ export const Hero = () => {
                   <input
                     type="text"
                     placeholder="Remote, or city"
-                    className="w-full bg-transparent outline-none text-slate-900 placeholder:text-slate-400 text-base"
+                    className="w-full bg-transparent outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-base"
                     data-testid="search-location-input"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
@@ -179,7 +179,7 @@ export const Hero = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.5 + i * 0.06, ease: "easeIn" }}
                     onClick={() => handleChipClick(chip)}
-                    className="px-3 py-1.5 text-sm rounded-full bg-white border border-slate-200 text-slate-600 hover:border-indigo-600 hover:text-indigo-600 hover:-translate-y-0.5 transition-all duration-200 shadow-sm"
+                    className="px-3 py-1.5 text-sm rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-indigo-600 hover:text-indigo-600 transition-all duration-200 shadow-sm"
                   >
                     {chip}
                   </motion.button>
@@ -208,13 +208,13 @@ export const Hero = () => {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.7, ease: "easeIn" }}
-                className="absolute -left-4 md:-left-10 top-10 bg-white/90 backdrop-blur-md border border-slate-200 rounded-2xl p-5 shadow-2xl w-56"
+                className="absolute -left-4 md:-left-10 top-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl w-56"
               >
                 <div className="flex items-center gap-2 text-indigo-600 text-[10px] font-bold tracking-widest uppercase">
                   <Sparkles size={14} /> matched
                 </div>
-                <div className="mt-1 text-3xl font-bold text-slate-900">94%</div>
-                <p className="text-xs text-slate-500 mt-1 leading-tight">
+                <div className="mt-1 text-3xl font-bold text-slate-900 dark:text-white">94%</div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-tight">
                   Fit score based on your unique skills and career goals.
                 </p>
               </motion.div>
@@ -224,18 +224,18 @@ export const Hero = () => {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.9, ease: "easeIn" }}
-                className="absolute -right-4 md:-right-6 bottom-8 bg-white border border-slate-200 rounded-2xl p-5 shadow-2xl w-64"
+                className="absolute -right-4 md:-right-6 bottom-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl w-64"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center font-bold text-indigo-600">
                     L
                   </div>
                   <div>
-                    <div className="font-bold text-slate-900 text-sm">Linear</div>
+                    <div className="font-bold text-slate-900 dark:text-white text-sm">Linear</div>
                     <div className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Remote · Full-time</div>
                   </div>
                 </div>
-                <div className="mt-3 text-sm font-semibold text-slate-900">
+                <div className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-200">
                   Senior Product Designer
                 </div>
                 <div className="mt-3 flex items-center justify-between border-t border-slate-50 pt-3">
