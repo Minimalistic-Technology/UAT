@@ -94,6 +94,7 @@ export const applyCoupon = async (
       {
         code: code.toUpperCase(),
         isActive: true,
+        usedBy: { $ne: (req as any).user?._id },
         $or: [
           { expiryDate: { $gt: new Date() } },
           { expiryDate: null },
@@ -106,6 +107,7 @@ export const applyCoupon = async (
       },
       {
         $inc: { usageCount: 1 },
+        $addToSet: { usedBy: (req as any).user?._id },
       },
       { new: true, session },
     );
@@ -113,7 +115,7 @@ export const applyCoupon = async (
     if (!coupon) {
       throw new ApiError(
         400,
-        "Coupon is invalid, expired, or has reached its usage limit",
+        "Coupon is invalid, expired, or has already been used by you",
       );
     }
 
@@ -165,6 +167,7 @@ export const validateCoupon = async (
     const coupon = await Coupon.findOne({
       code: code.toUpperCase(),
       isActive: true,
+      usedBy: { $ne: (req as any).user?._id },
       $or: [
         { expiryDate: { $gt: new Date() } },
         { expiryDate: null },
@@ -179,7 +182,7 @@ export const validateCoupon = async (
     if (!coupon) {
       throw new ApiError(
         400,
-        "Coupon is invalid, expired, or has reached its usage limit",
+        "Coupon is invalid, expired, or has already been used by you",
       );
     }
 

@@ -104,6 +104,7 @@ export const createOrder = async (
         {
           code: couponCode.toUpperCase(),
           isActive: true,
+          usedBy: { $ne: userId },
           $or: [
             { expiryDate: { $gt: new Date() } },
             { expiryDate: null },
@@ -114,12 +115,15 @@ export const createOrder = async (
             { $expr: { $lt: ["$usageCount", "$maxUses"] } },
           ],
         },
-        { $inc: { usageCount: 1 } },
+        { 
+          $inc: { usageCount: 1 },
+          $addToSet: { usedBy: userId },
+        },
         { new: true, session },
       );
 
       if (!appliedCoupon) {
-        throw new ApiError(400, "Coupon is invalid or expired");
+        throw new ApiError(400, "Coupon is invalid, expired, or has already been used by you");
       }
 
       // Calculate Discount
