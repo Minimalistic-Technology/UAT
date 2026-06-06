@@ -27,11 +27,11 @@ export const Footer = () => {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     if (!email) return;
-    
+
     setStatus("loading");
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     setStatus("success");
     setEmail("");
     setTimeout(() => setStatus("idle"), 5000);
@@ -47,7 +47,7 @@ export const Footer = () => {
           {/* Brand & Newsletter Column */}
           <div className="lg:col-span-5">
             <Logo />
-            
+
             <p className="mt-6 text-slate-500 max-w-sm leading-relaxed text-lg">
               The career platform for people who care about the work. Join
               120,000+ professionals finding roles they actually want.
@@ -89,7 +89,7 @@ export const Footer = () => {
                     )}
                   </button>
                 </div>
-                
+
                 <AnimatePresence>
                   {status === "success" && (
                     <motion.div
@@ -136,7 +136,7 @@ export const Footer = () => {
           <div className="text-sm font-medium text-slate-400">
             © {new Date().getFullYear()} Hireloop Technologies, Inc. Built with love for builders.
           </div>
-          
+
           <div className="flex items-center gap-6 text-slate-400">
             {[
               { icon: IconBrandTwitter, label: "Twitter", href: "https://twitter.com" },

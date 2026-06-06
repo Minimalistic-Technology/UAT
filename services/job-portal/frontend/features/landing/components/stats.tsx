@@ -73,7 +73,7 @@ export const Stats = () => {
       
       {/* Decorative Orbs - Using Tailwind instead of missing custom classes */}
       <div
-        className="absolute rounded-full blur-[120px] bg-indigo-600/20 w-[480px] h-[480px] -top-40 left-1/4"
+        className="absolute rounded-full blur-[120px] bg-blue-600/20 w-[480px] h-[480px] -top-40 left-1/4"
         aria-hidden="true"
       />
       <div

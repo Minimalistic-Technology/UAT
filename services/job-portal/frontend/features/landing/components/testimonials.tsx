@@ -49,8 +49,8 @@ export const Testimonials = () => {
               <span className="text-indigo-600">hires & hiring teams.</span>
             </h2>
           </div>
-          
-          <div 
+
+          <div
             className="flex items-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100"
             aria-label="Rated 4.9 stars by 2100 users"
           >

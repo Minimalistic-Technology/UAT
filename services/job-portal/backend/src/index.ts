@@ -31,7 +31,9 @@ import developerRoutes from './routes/developer.route.js';
 const app: Application = express();
 const PORT = config.port;
 
-connectDB();
+if (process.env.NODE_ENV !== "test") {
+  connectDB();
+}
 
 app.set('trust proxy', 1);
 
@@ -43,11 +45,12 @@ app.use(
     credentials: true,
   })
 );
+const jsonParser = express.json({ limit: "10mb" });
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/webhook/razorpay') {
     next(); // Skip JSON parsing for the webhook route
   } else {
-    express.json({ limit: "10mb" })(req, res, next);
+    jsonParser(req, res, next);
   }
 });
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
