@@ -19,7 +19,7 @@ export interface AdminAnalyticsSummary {
   kycPending: number;
   totalCompanies: number;
   totalApplications: number;
-  revenueCurrency: "INR" | "USD" | "EUR" | "GDP",
+  revenueCurrency: "INR" | "USD" | "EUR" | "GBP",
 }
 
 export interface AdminAnalyticsResponse {
@@ -30,6 +30,8 @@ export interface AdminAnalyticsResponse {
     jobs: GraphData[];
     internships: GraphData[];
   };
+  recentEmployers: any[];
+  topCoupons: any[];
 }
 
 

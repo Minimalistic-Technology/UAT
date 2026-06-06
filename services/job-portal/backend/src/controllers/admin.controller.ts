@@ -17,6 +17,7 @@ import Internship from "../models/Internship.model.js";
 import Job from "../models/Job.model.js";
 import CompanyMember from "../models/CompanyMember.model.js";
 import Company from "../models/Company.model.js";
+import Coupon from "../models/Coupon.model.js";
 
 type IUserWithCompany = IUser & {
   isEmployee?: boolean;
@@ -394,6 +395,8 @@ export const getAdminAnalytics = async (
       kycPending,
       totalCompanies,
       totalApplications,
+      recentEmployersAggr,
+      topCouponsData
     ] = await Promise.all([
       Payment.aggregate(revenuePipeline({ createdAt: { $gte: currentMonthStart } })),
       Payment.aggregate(revenuePipeline({ createdAt: { $gte: lastMonthStart, $lt: currentMonthStart } })),
@@ -404,11 +407,26 @@ export const getAdminAnalytics = async (
       KYC.countDocuments({ status: "pending" }),
       Company.countDocuments({}),
       Application.countDocuments({}),
+      Company.aggregate([
+        { $sort: { createdAt: -1 } },
+        { $limit: 5 },
+        { $lookup: { from: "kycs", localField: "owner", foreignField: "user", as: "kyc" } },
+        { $unwind: { path: "$kyc", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            name: 1,
+            createdAt: 1,
+            isVerified: 1,
+            kycStatus: { $ifNull: ["$kyc.status", "pending"] },
+          }
+        }
+      ]),
+      Coupon.find({ usageCount: { $gt: 0 } }).sort({ usageCount: -1 }).limit(3).lean()
     ]);
 
     const currentRevenue = toINRTotal(currentMonthPayments);
-    const lastRevenue    = toINRTotal(lastMonthPayments);
-    const totalRevenue   = toINRTotal(totalRevenueAggr);
+    const lastRevenue = toINRTotal(lastMonthPayments);
+    const totalRevenue = toINRTotal(totalRevenueAggr);
 
     let revenueGrowth = 0;
     if (lastRevenue > 0) {
@@ -427,7 +445,7 @@ export const getAdminAnalytics = async (
           $group: {
             _id: {
               month: { $month: "$createdAt" },
-              year:  { $year:  "$createdAt" },
+              year: { $year: "$createdAt" },
               currency: "$currency",
             },
             total: { $sum: "$amount" },
@@ -470,7 +488,7 @@ export const getAdminAnalytics = async (
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const month = d.getMonth() + 1;
-        const year  = d.getFullYear();
+        const year = d.getFullYear();
 
         // Sum all currency buckets for this month → INR
         const monthEntries = revenueGraphData.filter(
@@ -494,7 +512,7 @@ export const getAdminAnalytics = async (
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const month = d.getMonth() + 1;
-        const year  = d.getFullYear();
+        const year = d.getFullYear();
         const found = data.find(
           (item: any) => item._id.month === month && item._id.year === year,
         );
@@ -523,10 +541,12 @@ export const getAdminAnalytics = async (
         },
         graphs: {
           revenue: formatRevenueChart(), // ₹ INR values
-          users:   formatCountChart(usersGraphData, "users"),
-          jobs:    formatCountChart(jobsGraphData, "jobs"),
+          users: formatCountChart(usersGraphData, "users"),
+          jobs: formatCountChart(jobsGraphData, "jobs"),
           internships: formatCountChart(internshipsGraphData, "internships"),
         },
+        recentEmployers: recentEmployersAggr,
+        topCoupons: topCouponsData,
       },
     });
   } catch (error) {
