@@ -48,7 +48,7 @@ export function Sidebar({ className }: { className?: string }) {
   const handleLogout = () => signOut({ callbackUrl: "/login" });
 
   return (
-    <div className={cn("fixed left-0 top-0 bottom-0 min-h-screen w-64 flex-col border-r bg-background/80 backdrop-blur-xl hidden lg:flex shadow-sm z-40", className)}>
+    <div className={cn("flex flex-col border-r bg-background/80 backdrop-blur-xl shadow-sm", className)}>
       <div className="flex h-16 items-center px-6 border-b border-border/50">
         <Logo />
       </div>
