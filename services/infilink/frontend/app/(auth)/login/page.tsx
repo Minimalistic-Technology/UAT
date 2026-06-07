@@ -179,7 +179,8 @@ export default function LoginPage() {
               </p>
             )}
 
-            <Button type="submit" variant="purple" full loading={loading} disabled={lockTimeLeft > 0} className="mt-4 py-4 text-[15px]">
+            {/* Sample Button - Functionality Disabled as requested */}
+            <Button type="button" variant="purple" full className="mt-4 py-4 text-[15px]" onClick={(e) => { e.preventDefault(); alert("Button is in sample mode and temporarily disabled."); }}>
               {lockTimeLeft > 0 ? `Locked (${formatLockTime(lockTimeLeft)})` : requireOtp ? 'Verify & Login' : 'Login to Dashboard'}
             </Button>
 
