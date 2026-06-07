@@ -135,9 +135,8 @@ export default function CreateCouponForm() {
               <Input
                 id="maxUses"
                 {...register("maxUses", {
-                  valueAsNumber: true,
                   setValueAs: (v) =>
-                    v === "" || v === null ? undefined : Number(v),
+                    v === "" || v === null || Number.isNaN(Number(v)) ? undefined : Number(v),
                 })}
                 type="number"
                 min={-1}
