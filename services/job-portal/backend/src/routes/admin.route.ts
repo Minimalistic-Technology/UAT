@@ -10,6 +10,7 @@ import {
   getAdminAnalytics,
   updateKycStatus,
 } from "../controllers/admin.controller.js";
+import { chatWithAi } from "../controllers/ai.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
 import {
   getKycApplicationsSchema,
@@ -42,5 +43,8 @@ router.put(
 );
 
 router.get("/analytics", getAdminAnalytics);
+
+// AI Assistant Route
+router.post("/chat", chatWithAi);
 
 export default router;

@@ -3,16 +3,14 @@
 import { useSession } from "next-auth/react";
 import {
   Briefcase,
-  Check,
+  CheckCircle2,
   Clock,
   Infinity,
-  Star,
   Zap,
   AlertCircle,
   Tag,
   X,
   CalendarDays,
-  FileDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -100,7 +98,6 @@ export function PlanCard({
     }
   }
 
-  // Helper to remove coupon
   const removeCoupon = () => {
     setAppliedCoupon(null);
     setDiscountedPrice(null);
@@ -151,13 +148,10 @@ export function PlanCard({
               razorpay_signature: response.razorpay_signature,
             });
             toast.success("Payment successful!");
-            // window.location.href = `/employer/dashboard?payment=success&orderId=${orderData.data.order.id}`;
             router.push("/employer-dashboard");
           } catch (error) {
             console.error("Payment verification failed", error);
-            toast.error(
-              "Payment verification failed. Please contact support if amount was deducted.",
-            );
+            toast.error("Payment verification failed. Please contact support.");
           }
         },
         prefill: {
@@ -165,7 +159,7 @@ export function PlanCard({
           email: session?.user?.email || "",
         },
         theme: {
-          color: plan.isFeatured ? "#7c3aed" : "#2563eb",
+          color: plan.isFeatured ? "#2563eb" : "#0f172a",
         },
       };
 
@@ -173,128 +167,67 @@ export function PlanCard({
       rzp.open();
     } catch (error: any) {
       console.error("Payment error:", error);
-      toast.error(
-        error?.response?.data?.message || "Failed to initialize payment.",
-      );
+      toast.error(error?.response?.data?.message || "Failed to initialize payment.");
     }
   };
+
+  const isFeatured = plan.isFeatured;
 
   return (
     <Card
       className={cn(
-        "relative flex h-full flex-col border-2 transition-all duration-300",
-        plan.isFeatured
-          ? "border-primary shadow-primary/10 z-10 scale-[1.02] shadow-xl"
-          : "border-border hover:shadow-lg",
+        "relative flex h-full flex-col border shadow-sm transition-all duration-300 rounded-3xl overflow-hidden",
+        isFeatured
+          ? "border-primary/50 shadow-2xl lg:-translate-y-4 bg-gradient-to-b from-[#e3ecff] to-[#e4deff] dark:from-blue-950 dark:to-indigo-950"
+          : "border-border hover:shadow-lg bg-card dark:bg-card"
       )}
     >
-      <div className="absolute top-0 right-0 flex">
-        {plan.isFeatured && (
-          <Badge className="bg-primary text-primary-foreground rounded-none rounded-bl-lg px-3 py-1 font-bold">
-            <Star className="mr-1 h-3 w-3 fill-current" />
+      <div className="absolute top-0 inset-x-0 flex justify-center">
+        {isFeatured && (
+          <Badge className="bg-[#2563eb] text-white hover:bg-[#2563eb] rounded-b-lg rounded-t-none px-4 py-1.5 font-bold shadow-md uppercase tracking-wider text-[10px]">
             Most Popular
           </Badge>
         )}
       </div>
 
-      {plan.isDefault && (
-        <div className="absolute -top-1 left-0">
-          <Badge
-            variant="secondary"
-            className="bg-primary/10 rounded-none rounded-br-lg px-3 py-1 font-semibold"
-          >
-            Current Default
-          </Badge>
-        </div>
-      )}
-
-      <CardHeader
-        className={cn(
-          "px-6 pt-10 pb-6",
-          plan.isFeatured ? "bg-primary/5" : "bg-muted/30",
-        )}
-      >
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight">{plan.name}</h2>
-          <p className="text-muted-foreground line-clamp-2 text-sm">
-            {plan.description || "Tailored hiring solutions for your business."}
+      <CardHeader className={cn("px-8 pt-10 pb-6", isFeatured ? "pt-12" : "pt-10")}>
+        <div className="space-y-2">
+          <h2 className={cn("text-2xl font-bold font-heading", isFeatured ? "text-slate-900 dark:text-white" : "text-foreground")}>
+            {plan.name}
+          </h2>
+          <p className={cn("text-sm", isFeatured ? "text-slate-700 dark:text-slate-300" : "text-muted-foreground")}>
+            {plan.description || "Tailored hiring solutions for your business demands."}
           </p>
         </div>
 
         <div className="mt-6 flex items-baseline gap-1">
-          <span className="text-4xl font-black">
-            {formatCurrency(plan.price, plan.currency)}
+          <span className={cn("text-5xl font-black font-heading", isFeatured ? "text-slate-900 dark:text-white" : "text-foreground")}>
+            {discountedPrice !== null ? formatCurrency(discountedPrice, plan.currency) : formatCurrency(plan.price, plan.currency)}
           </span>
-          <span className="text-muted-foreground text-sm font-medium">
-            /{formatDuration(plan.durationDays)}
+          <span className={cn("text-sm font-semibold", isFeatured ? "text-slate-600 dark:text-slate-400" : "text-muted-foreground")}>
+            /month
           </span>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Badge
-            variant="outline"
-            className="bg-background flex gap-1.5 px-2.5 py-1"
-          >
-            <Briefcase className="text-primary h-3.5 w-3.5" />
-            {formatJobLimit(plan.jobPostLimit)} Job Posts
-          </Badge>
-          <Badge
-            variant="outline"
-            className="bg-background flex gap-1.5 px-2.5 py-1"
-          >
-            {isUnlimited ? (
-              <Infinity className="text-primary h-3.5 w-3.5" />
-            ) : (
-              <Clock className="text-primary h-3.5 w-3.5" />
-            )}
-            {formatDuration(plan.durationDays)} Plan Expiry
-          </Badge>
-          {/* New Badge: Job Post Validity Days */}
-          <Badge
-            variant="outline"
-            className="bg-background flex gap-1.5 px-2.5 py-1"
-          >
-            <CalendarDays className="text-primary h-3.5 w-3.5" />
-            Posts live for {plan.postValidityDays} Days
-          </Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 px-6">
-        {/* Price Section */}
-        <div className="mb-4">
-          {discountedPrice !== null ? (
-            <div className="flex flex-col">
-              <span className="text-muted-foreground text-sm line-through">
-                {formatCurrency(plan.price, plan.currency)}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-green-600">
-                  {formatCurrency(discountedPrice, plan.currency)}
-                </span>
-                <Badge
-                  variant="outline"
-                  className="border-green-600 text-[10px] text-green-600 uppercase"
-                >
-                  Save {(plan.price - discountedPrice).toFixed(2)}{" "}
-                  {plan.currency}
-                </Badge>
-              </div>
-            </div>
-          ) : (
-            <span className="text-2xl font-bold">
+      <CardContent className="flex-1 px-8 space-y-6">
+        {discountedPrice !== null && (
+          <div className="flex items-center gap-2 mb-4 -mt-2">
+            <span className="text-muted-foreground text-sm line-through">
               {formatCurrency(plan.price, plan.currency)}
             </span>
-          )}
-        </div>
+            <Badge variant="outline" className="border-green-600 text-[10px] text-green-600 uppercase bg-green-50 dark:bg-green-950">
+              Save {(plan.price - discountedPrice).toFixed(2)} {plan.currency}
+            </Badge>
+          </div>
+        )}
 
-        {/* Coupon Input & Applied State */}
-        <div className="mb-6 flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <div className="flex gap-2">
             <input
               type="text"
               placeholder="Coupon Code"
-              className="border-input focus:ring-primary flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm uppercase shadow-sm transition-colors focus:ring-1 focus:outline-none"
+              className={cn("border-input focus:ring-primary flex h-10 w-full rounded-lg border bg-white/50 dark:bg-black/20 px-3 py-1 text-sm shadow-sm transition-colors focus:ring-1 focus:outline-none backdrop-blur-sm", isFeatured && "border-blue-200 dark:border-blue-800")}
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value)}
               disabled={!!appliedCoupon}
@@ -306,6 +239,7 @@ export function PlanCard({
                 size="sm"
                 onClick={handleValidateCoupon}
                 disabled={isValidating || !couponCode}
+                className="h-10 rounded-lg px-4"
               >
                 Apply
               </Button>
@@ -315,77 +249,84 @@ export function PlanCard({
                 variant="ghost"
                 size="sm"
                 onClick={removeCoupon}
-                className="text-destructive hover:bg-destructive/10"
+                className="text-destructive hover:bg-destructive/10 h-10 px-3"
               >
                 <X className="h-4 w-4" />
               </Button>
             )}
           </div>
-
           {appliedCoupon && (
-            <div className="animate-in fade-in slide-in-from-top-1 flex items-center gap-2 text-xs font-medium text-green-600">
+            <div className="animate-in fade-in flex items-center gap-2 text-xs font-semibold text-green-600">
               <Tag className="h-3 w-3" />
               <span>Coupon "{appliedCoupon.code}" Applied</span>
             </div>
           )}
         </div>
 
-        <ul className="space-y-3">
-          {/* New Core Feature Check: Resume Download Access Toggles */}
+        <ul className="space-y-4">
+          {/* Static Details disguised as features */}
           <li className="flex items-start gap-3">
-            <div className="bg-primary/10 mt-1 rounded-full p-0.5">
-              <Check className="text-primary h-3.5 w-3.5" strokeWidth={3} />
-            </div>
-            <span className="text-foreground/80 text-sm leading-snug font-medium">
-              {plan.allowResumeDownload
-                ? "Unlimited Candidate Resume Downloads"
-                : "View Applications Online Only (No PDF Downloads)"}
+            <CheckCircle2 className={cn("mt-0.5 h-5 w-5 shrink-0", isFeatured ? "text-[#2563eb]" : "text-[#2563eb]")} />
+            <span className={cn("text-sm font-medium", isFeatured ? "text-slate-800 dark:text-slate-200" : "text-muted-foreground")}>
+              <strong className={cn(isFeatured ? "text-slate-900 dark:text-white" : "text-foreground")}>{isUnlimited ? "Unlimited" : formatJobLimit(plan.jobPostLimit)}</strong> Active Job Posts
             </span>
           </li>
+          <li className="flex items-start gap-3">
+            <CheckCircle2 className={cn("mt-0.5 h-5 w-5 shrink-0", isFeatured ? "text-[#2563eb]" : "text-[#2563eb]")} />
+            <span className={cn("text-sm font-medium", isFeatured ? "text-slate-800 dark:text-slate-200" : "text-muted-foreground")}>
+              Unlimited Pipeline Management
+            </span>
+          </li>
+          <li className="flex items-start gap-3">
+            <CheckCircle2 className={cn("mt-0.5 h-5 w-5 shrink-0", isFeatured ? "text-[#2563eb]" : "text-[#2563eb]")} />
+            <span className={cn("text-sm font-medium", isFeatured ? "text-slate-800 dark:text-slate-200" : "text-muted-foreground")}>
+              Posts live for <strong className={cn(isFeatured ? "text-slate-900 dark:text-white" : "text-foreground")}>{plan.postValidityDays} Days</strong>
+            </span>
+          </li>
+          {plan.allowResumeDownload && (
+            <li className="flex items-start gap-3">
+              <CheckCircle2 className={cn("mt-0.5 h-5 w-5 shrink-0", isFeatured ? "text-[#2563eb]" : "text-[#2563eb]")} />
+              <span className={cn("text-sm font-medium", isFeatured ? "text-slate-800 dark:text-slate-200" : "text-muted-foreground")}>
+                Full Resume PDF Downloads
+              </span>
+            </li>
+          )}
 
           {plan.features.length > 0 ? (
             plan.features.map((feature, i) => (
               <li key={i} className="flex items-start gap-3">
-                <div className="bg-primary/10 mt-1 rounded-full p-0.5">
-                  <Check className="text-primary h-3.5 w-3.5" strokeWidth={3} />
-                </div>
-                <span className="text-foreground/80 text-sm leading-snug">
+                <CheckCircle2 className={cn("mt-0.5 h-5 w-5 shrink-0", isFeatured ? "text-[#2563eb]" : "text-slate-400 dark:text-slate-500")} />
+                <span className={cn("text-sm font-medium", isFeatured ? "text-slate-800 dark:text-slate-200" : "text-muted-foreground")}>
                   {feature}
                 </span>
               </li>
             ))
           ) : (
-            <li className="text-muted-foreground flex items-center gap-2 text-sm italic">
-              <AlertCircle className="h-4 w-4" />
-              Standard features included
+            <li className="flex items-start gap-3 italic">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+              <span className="text-sm font-medium text-muted-foreground">Standard support included</span>
             </li>
           )}
         </ul>
       </CardContent>
 
-      <CardFooter className="px-6 pb-8">
-        <div className="flex w-full flex-col gap-2">
+      <CardFooter className="px-8 pb-10">
+        <div className="flex w-full flex-col gap-3">
           <Button
             onClick={handlePayment}
             disabled={!canPurchase}
             size="lg"
             className={cn(
-              "group w-full cursor-pointer font-bold transition-all active:scale-95",
-              plan.isFeatured ? "shadow-primary/20 shadow-lg" : "",
+              "group w-full cursor-pointer font-bold transition-all h-12 rounded-xl text-sm active:scale-95",
+              isFeatured ? "bg-[#2563eb] text-white hover:bg-blue-700 shadow-xl shadow-blue-500/20" : "bg-white text-slate-900 border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 dark:bg-transparent dark:text-white dark:border-slate-700 dark:hover:bg-slate-800"
             )}
-            variant={plan.isFeatured ? "default" : "outline"}
+            variant={isFeatured ? "default" : "outline"}
           >
-            <Zap
-              className={cn(
-                "mr-2 h-4 w-4 transition-transform group-hover:scale-110",
-                plan.isFeatured ? "fill-current" : "text-primary",
-              )}
-            />
-            Get {plan.name}
+            {isFeatured ? "Start " + plan.name + " Plan" : "Get " + plan.name}
           </Button>
           {!canPurchase && (
-            <p className="text-center text-xs text-muted-foreground">
-              You already have an active plan with remaining job posts.
+            <p className="text-center text-xs font-semibold text-destructive">
+              Active plan prevents override.
             </p>
           )}
         </div>

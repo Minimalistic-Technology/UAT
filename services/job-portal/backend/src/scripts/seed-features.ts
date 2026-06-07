@@ -14,10 +14,10 @@ const seedFeatures = async () => {
     // 1. Create Base Features
     const features = await Feature.insertMany([
         {
-            name: "Job Portal AI Chat",
-            slug: "ai-chat-beta",
-            description: "Allow users to chat with our AI for job recommendations.",
-            status: FeatureStatus.BETA, // Only selected users
+            name: "AI Admin Assistant",
+            slug: "ai-admin-bot",
+            description: "AI powered admin assistant chatbot.",
+            status: FeatureStatus.BETA, // Keep it beta so we can test table permissions
         },
         {
             name: "Premium Analytics Dashboard",

@@ -12,6 +12,9 @@ import {
   Settings,
   Sparkles,
   FileText,
+  Building2,
+  ShieldAlert,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,8 +24,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { StatCard } from "@/features/employer/components/employer-stats-card";
+import { AdminStatusCard as StatCard } from "@/features/admin/components/stats-card";
 import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
 import { useAllEmployerApplications } from "@/features/employer/hooks/use-applications";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -84,48 +86,46 @@ const Page = () => {
 
   if (isError) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-red-500">
-          Failed to load company details. Please try again later.
-        </p>
+      <div className="flex h-96 flex-col items-center justify-center text-destructive">
+        <AlertCircle className="mb-4 size-8 opacity-50" />
+        <p className="font-semibold text-lg">Failed to load payload</p>
+        <p className="text-sm opacity-80">Company details could not be established.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8 w-full">
+    <div className="flex flex-col w-full text-foreground max-w-7xl mx-auto">
       {/* Header Section */}
-      <div className="flex flex-col justify-between gap-4 border-b pb-6 md:flex-row md:items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Employer Dashboard
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between w-full">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-3xl font-bold font-heading text-foreground tracking-tight">
+            Employer Overview
           </h1>
-          <div className="mt-1 flex items-center gap-2 text-sm font-medium">
-            <span className="text-slate-700">{companyDetails?.name}</span>
-            <span className="text-slate-300">•</span>
-            <span className="text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
+            <span className="text-primary font-bold px-2.5 py-0.5 rounded-full bg-primary/10">
+              {companyDetails?.name}
+            </span>
+            <span className="text-muted-foreground opacity-50">•</span>
+            <span className="text-muted-foreground flex items-center">
+              <Building2 className="mr-1.5 h-3.5 w-3.5" />
               {companyDetails?.industry}
             </span>
           </div>
-          <p className="text-muted-foreground mt-1">
-            Overview of your active listings and candidate pipeline.
-          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" asChild>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" asChild className="rounded-full h-10 px-5 font-semibold text-xs border-primary/20 hover:bg-primary/5 text-primary">
             <Link href="/employer-dashboard/plans">
               <CreditCard className="mr-2 h-4 w-4" />
-              Plans
+              Manage Plan
             </Link>
           </Button>
 
           <Button
-            variant="default"
-            className="cursor-pointer"
-            onClick={() => {
-              router.push("/employer-dashboard/jobs/create");
-            }}
+            size="sm"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full shadow-sm h-10 px-6 text-sm transition-all hover:scale-105 active:scale-95"
+            onClick={() => router.push("/employer-dashboard/jobs/create")}
           >
             <Plus className="mr-2 h-4 w-4" />
             Post New Job
@@ -133,259 +133,218 @@ const Page = () => {
         </div>
       </div>
 
-      {/* Step 1: No plan purchased yet — must buy a plan before KYC */}
-      {isUnverified && !hasPlan && (
-        <Alert className="border-amber-200 bg-amber-50 text-amber-900 shadow-sm">
-          <AlertCircle className="h-5 w-5 text-amber-600!" />
-          <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <AlertTitle className="font-bold text-amber-800">
-                Action Required: Choose a Plan
-              </AlertTitle>
-              <AlertDescription className="text-amber-700">
-                To get started, please purchase a plan first. Once you have an
-                active subscription, you will be able to complete your KYC
-                verification and post jobs.
-              </AlertDescription>
+      <div className="space-y-4 mb-8">
+        {/* Step 1: No plan purchased yet */}
+        {isUnverified && !hasPlan && (
+          <div className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 sm:p-5 shadow-sm">
+            <div className="flex items-start gap-4 flex-1">
+              <div className="rounded-full bg-amber-500/20 p-2 text-amber-500">
+                <AlertCircle className="size-5" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <h3 className="font-bold text-amber-700 dark:text-amber-500 text-sm sm:text-base">Action Required: Choose a Subscription</h3>
+                <p className="text-xs sm:text-sm text-amber-700/80 dark:text-amber-500/80">To get started, please purchase a plan first. Once subscribed, you will be able to complete KYC and post jobs.</p>
+              </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0 border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200"
-              asChild
-            >
+            <Button size="sm" asChild className="ml-4 shrink-0 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg shadow-amber-500/20 shadow-lg">
               <Link href="/employer-dashboard/plans">
-                View Plans
-                <ChevronRight className="ml-2 h-4 w-4" />
+                View Plans <ChevronRight className="ml-1 h-3 w-3" />
               </Link>
             </Button>
           </div>
-        </Alert>
-      )}
+        )}
 
-      {/* Step 2: Plan purchased but KYC not yet started */}
-      {isUnverified && hasPlan && !kycStatus && (
-        <Alert
-          variant="destructive"
-          className="border-amber-200 bg-amber-50 text-amber-900 shadow-sm"
-        >
-          <AlertCircle className="h-5 w-5 text-amber-600!" />
-          <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <AlertTitle className="font-bold text-amber-800">
-                Action Required: Verify Your Business
-              </AlertTitle>
-              <AlertDescription className="text-amber-700">
-                Your account is currently unverified. To post jobs and view full
-                applicant profiles, please complete your KYC verification.
-              </AlertDescription>
+        {/* Step 2: Plan purchased but KYC not yet started */}
+        {isUnverified && hasPlan && !kycStatus && (
+          <div className="flex items-center justify-between rounded-xl border border-destructive/30 bg-destructive/10 p-4 sm:p-5 shadow-sm">
+            <div className="flex items-start gap-4 flex-1">
+              <div className="rounded-full bg-destructive/20 p-2 text-destructive">
+                <ShieldAlert className="size-5" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <h3 className="font-bold text-destructive text-sm sm:text-base">Business Verification Required</h3>
+                <p className="text-xs sm:text-sm text-destructive/80">Your account is currently unverified. To activate job posts and unlock full access, please complete your KYC document verification.</p>
+              </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0 border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200"
-              asChild
-            >
+            <Button size="sm" variant="destructive" asChild className="ml-4 shrink-0 font-bold rounded-lg shadow-destructive/20 shadow-lg">
               <Link href="/employer-dashboard/settings/verify">
-                Complete KYC
-                <ChevronRight className="ml-2 h-4 w-4" />
+                Complete KYC <ChevronRight className="ml-1 h-3 w-3" />
               </Link>
             </Button>
           </div>
-        </Alert>
-      )}
+        )}
 
-      {/* Step 2a: KYC submitted and under review */}
-      {isUnverified && hasPlan && kycStatus === "pending" && (
-        <Alert className="border-blue-200 bg-blue-50 text-blue-900 shadow-sm">
-          <AlertCircle className="h-5 w-5 text-blue-600!" />
-          <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <AlertTitle className="font-bold text-blue-800">
-                KYC Verification Pending
-              </AlertTitle>
-              <AlertDescription className="text-blue-700">
-                Your KYC documents are currently under review. We will notify
-                you once your account is verified.
-              </AlertDescription>
+        {/* Step 2a: KYC submitted and under review */}
+        {isUnverified && hasPlan && kycStatus === "pending" && (
+          <div className="flex items-center justify-between rounded-xl border border-secondary/30 bg-secondary/10 p-4 sm:p-5 shadow-sm">
+            <div className="flex items-start gap-4 flex-1">
+              <div className="rounded-full bg-secondary/20 p-2 text-secondary">
+                <Loader2 className="size-5 animate-spin" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <h3 className="font-bold text-secondary text-sm sm:text-base">Verification in Progress</h3>
+                <p className="text-xs sm:text-sm text-secondary/80">Your KYC documents are currently under priority review. We will notify you once verification is complete.</p>
+              </div>
             </div>
           </div>
-        </Alert>
-      )}
+        )}
 
-      {/* Step 2b: KYC rejected — re-submission required */}
-      {isUnverified && hasPlan && kycStatus === "rejected" && (
-        <Alert
-          variant="destructive"
-          className="border-red-200 bg-red-50 text-red-900 shadow-sm"
-        >
-          <AlertCircle className="h-5 w-5 text-red-600!" />
-          <div className="flex w-full flex-col justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <AlertTitle className="font-bold text-red-800">
-                KYC Verification Rejected
-              </AlertTitle>
-              <AlertDescription className="mt-1 text-red-700">
-                Your recent KYC submission was rejected. Please review the
-                requirements and submit again.
-                {companyDetails?.kycRejectionReason && (
-                  <div className="mt-3 rounded-md bg-red-100 p-3 text-sm text-red-900 shadow-inner">
-                    <span className="block font-bold">
-                      Reason for Rejection:
-                    </span>
-                    <span className="mt-1 block text-base leading-relaxed">
-                      {companyDetails.kycRejectionReason}
-                    </span>
-                  </div>
-                )}
-              </AlertDescription>
+        {/* Step 2b: KYC rejected */}
+        {isUnverified && hasPlan && kycStatus === "rejected" && (
+          <div className="flex flex-col gap-4 rounded-xl border border-destructive/30 bg-destructive/10 p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-4 flex-1">
+                <div className="rounded-full bg-destructive/20 p-2 text-destructive">
+                  <ShieldAlert className="size-5" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <h3 className="font-bold text-destructive text-sm sm:text-base">KYC Rejected</h3>
+                  <p className="text-xs sm:text-sm text-destructive/80">Your recent submission was rejected. Re-submit your documents referencing the feedback provided below.</p>
+                </div>
+              </div>
+              <Button size="sm" variant="destructive" asChild className="ml-4 shrink-0 font-bold rounded-lg shadow-destructive/20 shadow-lg">
+                <Link href="/employer-dashboard/settings/verify">
+                  Re-submit Details
+                </Link>
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0 border-red-300 bg-red-100 text-red-900 hover:bg-red-200"
-              asChild
-            >
-              <Link href="/employer-dashboard/settings/verify">
-                Re-submit KYC
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+            {companyDetails?.kycRejectionReason && (
+              <div className="ml-14 rounded-lg bg-destructive/5 border border-destructive/10 p-3">
+                <span className="block text-xs font-bold text-destructive uppercase tracking-wider mb-1">Feedback</span>
+                <span className="text-sm font-medium text-destructive/90">{companyDetails.kycRejectionReason}</span>
+              </div>
+            )}
           </div>
-        </Alert>
-      )}
+        )}
+      </div>
 
       {/* Quick Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard
-          title="Active Listings"
+          label="Active Listings"
           value={Number(companyDetails?.activeListings)}
-          icon={Briefcase}
+          icon={<Briefcase />}
           description={`Total listings: ${companyDetails?.totalJobs}`}
+          variant="default"
+          className="border-primary/20 bg-card/50 hover:bg-card transition-colors duration-300"
         />
 
         <StatCard
-          title="Team Members"
+          label="Team Members"
           value={Number(companyDetails?.totalMembers)}
-          icon={Users}
-          description="Members with dashboard access"
+          icon={<Users />}
+          description="Members with CMS access"
+          variant="default"
+          className="border-secondary/20 bg-card/50 hover:bg-card transition-colors duration-300"
         />
 
         <StatCard
-          isPrimary
-          title="Subscription Plan"
-          value={companyDetails?.currentPlan?.name || "No Active Plan"}
-          icon={ArrowUpRight}
-          description={
-            <Link
-              href="/employer-dashboard/plans"
-              className="flex items-center gap-1 text-sm font-medium hover:underline"
-            >
-              {companyDetails?.subscription ? (
-                <>
-                  <Settings className="h-3 w-3" />
-                  Manage Subscription
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-3 w-3" />
-                  Explore & Choose a Plan
-                </>
-              )}
-            </Link>
-          }
+          label="Subscription"
+          value={companyDetails?.currentPlan?.name || "No Plan"}
+          icon={<Sparkles />}
+          description="Active running tier"
+          variant="warning"
+          className="bg-premium/5 ring-1 ring-premium/10 shadow-[0_0_20px_rgba(var(--premium-rgb),0.1)] transition-colors duration-300"
         />
 
         <StatCard
-          title="Remaining Job Posts"
+          label="Remaining Job Posts"
           value={
             companyDetails?.remainingJobPosts === -1
               ? "Unlimited"
               : companyDetails?.remainingJobPosts !== undefined &&
                 companyDetails?.remainingJobPosts !== null
-                ? Number(companyDetails.remainingJobPosts)
-                : 0
+                ? Number(companyDetails.remainingJobPosts).toString()
+                : "0"
           }
-          icon={FileText}
+          icon={<FileText />}
           description={
             companyDetails?.remainingJobPosts === -1
-              ? "Post as many jobs as you want"
-              : "Posts available in current plan"
+              ? "Post infinitely"
+              : "Posts left in cycle"
           }
+          variant="default"
+          className="border-primary/20 bg-card/50 hover:bg-card transition-colors duration-300"
         />
       </div>
 
       {/* Recent Applications Table */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Recent Applications</CardTitle>
-            <CardDescription>
-              You have {totalApplications} applications across all jobs.
-            </CardDescription>
+      <div className="rounded-2xl border border-secondary/20 bg-card p-6 shadow-sm overflow-hidden relative">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col">
+            <h3 className="text-lg font-bold font-heading text-foreground">Recent Candidate Pipeline</h3>
+            <span className="text-xs text-muted-foreground mt-0.5">Tracking {totalApplications} total applications.</span>
           </div>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="link" className="text-primary font-semibold hover:no-underline" asChild>
             <Link href="/employer-dashboard/applications">
-              View All Applications
+              Pipeline Hub <ArrowUpRight className="ml-1.5 size-4" />
             </Link>
           </Button>
-        </CardHeader>
-        <CardContent>
+        </div>
+
+        <div className="overflow-x-auto">
           {isLoadingApps ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+            <div className="space-y-4">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-xl opacity-50" />
               ))}
             </div>
           ) : recentApplications.length === 0 ? (
-            <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border-2 border-dashed py-10 text-center">
-              No recent applications found.
+            <div className="flex h-32 flex-col items-center justify-center rounded-xl border border-dashed border-border/50 bg-background/50 text-center">
+              <span className="text-sm font-semibold text-muted-foreground mb-1">No active pipeline candidates.</span>
+              <span className="text-xs text-muted-foreground/60">Jobs posted will gather applications here.</span>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Applicant</TableHead>
-                    <TableHead>Listing Title</TableHead>
-                    <TableHead>Listing Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Company Name</TableHead>
-                    <TableHead>Applied At</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentApplications.map((app: any) => (
-                    <TableRow key={app._id}>
-                      <TableCell>
-                        <div className="font-medium">
-                          {app.jobSeeker?.firstName} {app.jobSeeker?.lastName}
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/50 text-left text-xs uppercase text-muted-foreground tracking-wider font-bold">
+                  <th className="pb-3 pr-4">Candidate</th>
+                  <th className="pb-3 px-4">Position</th>
+                  <th className="pb-3 px-4">Type</th>
+                  <th className="pb-3 px-4">State</th>
+                  <th className="pb-3 pl-4 text-right">Applied Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentApplications.map((app: any) => {
+                  const initials = app.jobSeeker?.firstName ? app.jobSeeker.firstName.charAt(0) : "U";
+                  return (
+                    <tr key={app._id} className="border-b border-border/30 last:border-0 hover:bg-muted/10 transition-colors">
+                      <td className="py-4 pr-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`size-9 rounded-full flex items-center justify-center font-bold text-xs bg-primary/10 text-primary ring-2 ring-background shadow-xs`}>
+                            {initials}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-foreground text-sm max-w-[150px] truncate">{app.jobSeeker?.firstName} {app.jobSeeker?.lastName}</span>
+                            <span className="text-xs text-muted-foreground font-medium max-w-[150px] truncate">{app.jobSeeker?.email}</span>
+                          </div>
                         </div>
-                        <div className="text-muted-foreground text-xs">
-                          {app.jobSeeker?.email}
-                        </div>
-                      </TableCell>
-                      <TableCell>{app.listing?.title || "Unknown Title"}</TableCell>
-                      <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(app.status)}>
+                      </td>
+                      <td className="py-4 px-4 font-semibold text-foreground max-w-[150px] truncate">
+                        {app.listing?.title || "Unknown Title"}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          {app.listingType || "Unknown"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <Badge variant={getStatusBadgeVariant(app.status)} className="font-bold cursor-default">
                           {app.status.replace("_", " ").toUpperCase()}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {app.listing?.company?.name ?? "Unknown Company"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
+                      </td>
+                      <td className="py-4 pl-4 text-right text-xs font-medium text-muted-foreground">
                         {format(new Date(app.createdAt), "MMM d, yyyy")}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
@@ -394,46 +353,23 @@ export default Page;
 
 export const DashboardSkeleton = () => {
   return (
-    <div className="flex flex-col gap-8 w-full">
-      {/* Header Section Skeleton */}
+    <div className="flex flex-col gap-8 w-full max-w-7xl mx-auto">
       <div className="flex flex-col justify-between gap-4 border-b pb-6 md:flex-row md:items-center">
-        <div className="space-y-2">
-          <Skeleton className="h-9 w-64" /> {/* Title */}
-          <Skeleton className="h-5 w-80" /> {/* Subtitle */}
+        <div className="space-y-3">
+          <Skeleton className="h-10 w-64 rounded-lg" />
+          <Skeleton className="h-5 w-80 rounded-lg" />
         </div>
-
         <div className="flex flex-wrap items-center gap-3">
-          <Skeleton className="h-10 w-24" /> {/* Button 1 */}
-          <Skeleton className="h-10 w-32" /> {/* Button 2 */}
+          <Skeleton className="h-10 w-28 rounded-full" />
+          <Skeleton className="h-10 w-36 rounded-full" />
         </div>
       </div>
-
-      {/* Quick Stats Grid Skeleton */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <Skeleton className="h-4 w-24" /> {/* Card Title */}
-              <Skeleton className="h-4 w-4 rounded-full" /> {/* Icon */}
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="mb-2 h-8 w-16" /> {/* Value */}
-              <Skeleton className="h-4 w-32" /> {/* Description */}
-            </CardContent>
-          </Card>
+          <Skeleton key={i} className="h-32 w-full rounded-2xl" />
         ))}
       </div>
-
-      {/* Main Card Skeleton */}
-      <Card>
-        <CardHeader className="space-y-2">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-72" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-40 w-full rounded-md border-2 border-dashed" />
-        </CardContent>
-      </Card>
+      <Skeleton className="h-80 w-full rounded-2xl" />
     </div>
   );
 };

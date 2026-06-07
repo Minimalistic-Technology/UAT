@@ -5,6 +5,8 @@ import Providers from "./providers";
 import { Toaster } from "sonner";
 import Navbar from "@/components/navbar";
 import { APP_NAME } from "@/constants";
+import { AiChatbot } from "@/features/admin/components/ai-chatbot";
+import MainWrapper from "@/components/main-wrapper";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,10 +34,11 @@ export default function RootLayout({
       <body className="font-sans bg-background text-foreground transition-colors duration-300">
         <Providers>
           <Navbar />
-          <div className="pt-16 h-full min-h-screen transition-colors duration-300">
+          <MainWrapper>
             {children}
-          </div>
+          </MainWrapper>
           <Toaster position="top-right" />
+          <AiChatbot />
         </Providers>
       </body>
     </html>

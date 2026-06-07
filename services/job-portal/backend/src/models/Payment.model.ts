@@ -141,7 +141,6 @@ PaymentSchema.index(
   { unique: true, sparse: true },
 );
 
-PaymentSchema.index({ razorpayPaymentId: 1 });
 
 export default mongoose.models.Payment ||
   mongoose.model<IPayment>("Payment", PaymentSchema);

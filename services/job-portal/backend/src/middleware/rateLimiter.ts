@@ -1,16 +1,22 @@
 import rateLimit from 'express-rate-limit';
 
 const getClientIp = (req: any): string => {
-  const cfIp = req.headers['cf-connecting-ip'];
-  if (cfIp) return Array.isArray(cfIp) ? cfIp[0] : cfIp;
+  let ipStr = 'unknown';
 
-  const xfFor = req.headers['x-forwarded-for'];
-  if (xfFor) {
-    const list = Array.isArray(xfFor) ? xfFor[0] : xfFor;
-    if (list) return list.split(',')[0].trim();
+  const cfIp = req.headers['cf-connecting-ip'];
+  if (cfIp) {
+    ipStr = Array.isArray(cfIp) ? cfIp[0] : cfIp;
+  } else {
+    const xfFor = req.headers['x-forwarded-for'];
+    if (xfFor) {
+      const list = Array.isArray(xfFor) ? xfFor[0] : xfFor;
+      if (list) ipStr = list.split(',')[0].trim();
+    } else {
+      ipStr = req.ip || req.socket?.remoteAddress || 'unknown';
+    }
   }
 
-  return req.ip || req.socket?.remoteAddress || 'unknown';
+  return typeof ipStr === 'string' ? ipStr.replace(/:/g, '_') : 'unknown';
 };
 
 export const generalLimiter = rateLimit({
@@ -20,7 +26,7 @@ export const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: getClientIp,
-  validate: { ip: false }
+  validate: false
 });
 
 import { Request, Response, NextFunction } from 'express';
@@ -96,7 +102,7 @@ export const applicationLimiter = rateLimit({
   max: 10, // Limit each IP to 10 applications per hour
   message: 'Too many applications submitted, please try again later',
   keyGenerator: getClientIp,
-  validate: { ip: false }
+  validate: false
 });
 
 export const otpRequestLimiter = rateLimit({
@@ -106,5 +112,5 @@ export const otpRequestLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: getClientIp,
-  validate: { ip: false }
+  validate: false
 });

@@ -27,6 +27,8 @@ import subscriptionRoutes from './routes/subscription.route.js';
 import demoRoutes from './routes/demo.routes.js';
 import listingRoutes from './routes/listing.routes.js';
 import developerRoutes from './routes/developer.route.js';
+import featureRoutes from './routes/feature.route.js';
+import aiRoutes from './routes/ai.routes.js';
 
 const app: Application = express();
 const PORT = config.port;
@@ -84,6 +86,8 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/demo", demoRoutes);
 app.use("/api/listings", listingRoutes);
+app.use("/api/features", featureRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {

@@ -42,7 +42,7 @@ export const authOptions: NextAuthOptions = {
               role: user.role,
               token: user.token,
               isEmployee: user.isEmployee ?? false,
-              companyId: user.companyId ? user.companyId.toString() :  null,
+              companyId: user.companyId ? user.companyId.toString() : null,
               companyRole: user.companyRole ?? null,
             };
           }
@@ -128,6 +128,7 @@ export const authOptions: NextAuthOptions = {
 
           if (response.data.success) {
             const payload = response.data.data;
+            token.id = payload.id || payload._id;
             token.role = payload.role;
             token.accessToken = payload.token;
             token.isEmployee = payload.isEmployee;
@@ -142,7 +143,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
 
-   // session runs immediately after the jwt callback during sign-in
+    // session runs immediately after the jwt callback during sign-in
     async session({ session, token }: any) {
       if (session.user) {
         session.user.id = token.id as string;

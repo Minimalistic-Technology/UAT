@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { Menu, User, LogOut } from "lucide-react";
+import { Menu, User, LogOut, Building2, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -60,7 +60,7 @@ export default function Navbar() {
   const closeSheet = () => setOpen(false);
   const showFindJobs = isLoading || !isEmployer;
 
-  if (pathname.startsWith("/admin-dashboard")) {
+  if (pathname.startsWith("/admin-dashboard") || pathname.startsWith("/employer-dashboard")) {
     return null;
   }
 
@@ -89,13 +89,7 @@ export default function Navbar() {
                   </NavLink>
                 )}
 
-                {isEmployer && (
-                  <NavLink href="/employer-dashboard/company-profile" active={pathname.includes("/employer-dashboard")}>
-                    My Dashboard
-                  </NavLink>
-                )}
-
-                {((showFindJobs && !isAdmin) || isJobSeeker || isEmployer) && (
+                {((showFindJobs && !isAdmin) || isJobSeeker) && (
                   <div className="bg-border h-6 w-px" />
                 )}
 
@@ -105,7 +99,7 @@ export default function Navbar() {
                   </div>
                 )}
 
-                <UserDropdown session={session} onLogout={handleLogout} />
+                <UserDropdown session={session} onLogout={handleLogout} isEmployer={isEmployer} />
               </div>
             ) : (
               <GuestButtons />
@@ -159,9 +153,11 @@ export default function Navbar() {
 
 function UserDropdown({
   session,
+  isEmployer,
   onLogout,
 }: {
   session: any;
+  isEmployer?: boolean;
   onLogout: () => void;
 }) {
   return (
@@ -187,10 +183,26 @@ function UserDropdown({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/profile" className="flex cursor-pointer items-center">
-            <User className="mr-2 h-4 w-4" /> Profile
+          <Link href="/profile" className="flex cursor-pointer items-center font-medium">
+            <User className="mr-2 h-4 w-4" /> My Profile
           </Link>
         </DropdownMenuItem>
+
+        {isEmployer && (
+          <DropdownMenuItem asChild>
+            <Link href="/employer-dashboard" className="flex cursor-pointer items-center text-foreground font-medium">
+              <LayoutDashboard className="mr-2 h-4 w-4" /> My Dashboard
+            </Link>
+          </DropdownMenuItem>
+        )}
+
+        {isEmployer && (
+          <DropdownMenuItem asChild>
+            <Link href="/employer-dashboard/company-profile" className="flex cursor-pointer items-center text-primary font-medium">
+              <Building2 className="mr-2 h-4 w-4" /> My Company
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           onClick={onLogout}
           className="text-destructive focus:bg-destructive/10 flex cursor-pointer items-center"

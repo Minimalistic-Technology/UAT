@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
-import ReCAPTCHA from "react-google-recaptcha";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -312,9 +312,9 @@ export default function EmployerRegisterPage() {
               </div>
 
               <div className="flex flex-col items-center justify-center py-2">
-                <ReCAPTCHA
-                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "dummy_site_key"}
-                  onChange={(token) => setValue("captchaToken", token || "", { shouldValidate: true })}
+                <Turnstile
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "dummy_site_key"}
+                  onSuccess={(token) => setValue("captchaToken", token || "", { shouldValidate: true })}
                 />
                 {errors.captchaToken && (
                   <p className="text-destructive text-xs font-medium mt-1">

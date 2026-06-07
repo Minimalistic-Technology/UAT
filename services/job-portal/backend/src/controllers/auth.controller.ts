@@ -17,13 +17,19 @@ import Feature, { FeatureStatus } from "../models/Feature.model.js";
 import FeaturePermission from "../models/FeaturePermission.model.js";
 
 const verifyCaptcha = async (token: string) => {
-  const secretKey = process.env.RECAPTCHA_SECRET_KEY || "dummy_secret_key";
-  const response = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`, {
-    method: "POST"
+  const secretKey = process.env.TURNSTILE_SECRET_KEY || "dummy_secret_key";
+
+  const formData = new URLSearchParams();
+  formData.append('secret', secretKey);
+  formData.append('response', token);
+
+  const response = await fetch(`https://challenges.cloudflare.com/turnstile/v0/siteverify`, {
+    method: "POST",
+    body: formData
   });
   const data = await response.json();
   if (!data.success) {
-    throw new ApiError(400, "Captcha verification failed. Please try again.");
+    throw new ApiError(400, "Security validation failed. Please try again.");
   }
 };
 
