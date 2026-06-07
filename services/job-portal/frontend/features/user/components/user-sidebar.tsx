@@ -1,77 +1,52 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { signOut, useSession } from "next-auth/react"
 import {
   LayoutDashboard,
   Search,
   Briefcase,
-  FileText,
-  Bookmark,
-  Settings,
+  User as UserIcon,
   LogOut,
-  User,
-  Bell,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SidebarNavItem } from "@/components/sidebar-nav-item";
+  Sparkles
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { SidebarNavItem } from "@/components/sidebar-nav-item"
+import Logo from "@/components/logo"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
 
-const userMenuItems = [
+export const userMenuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/user-dashboard" },
-  { label: "Find Jobs", icon: Search, href: "/find-jobs" },
-  {
-    label: "My Applications",
-    icon: Briefcase,
-    href: "/user-dashboard/applications",
-  },
-  // { label: "Saved Jobs", icon: Bookmark, href: "/user-dashboard/saved-jobs" },
-  // {
-  //   label: "My Resume",
-  //   icon: FileText,
-  //   href: "/user-dashboard/profile/resume",
-  // },
-  // { label: "Notifications", icon: Bell, href: "/user-dashboard/notifications" },
-  // { label: "Settings", icon: Settings, href: "/user-dashboard/settings" },
-];
+  { label: "Find Jobs", icon: Search, href: "/user-dashboard/find-jobs" },
+  { label: "My Applications", icon: Briefcase, href: "/user-dashboard/applications" },
+]
 
 export default function UserSidebar({ className }: { className?: string }) {
-  const pathname = usePathname();
-  const { data: session } = useSession();
+  const pathname = usePathname()
   const handleLogout = () => signOut({ callbackUrl: "/login" });
+  const { data: session } = useSession();
 
-  // Get initials for avatar fallback
-  const initials =
-    session?.user?.name
-      ?.split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase() || "U";
+  const userDetails = session?.user;
 
   return (
-    <div
-      className={cn(
-        "hidden h-[calc(100vh-4rem)] w-64 flex-col border-r bg-white lg:flex",
-        className,
-      )}
-    >
-      {/* Brand Section */}
-      <div className="flex gap-2 h-16 items-center border-b px-6">
-        <div className="flex size-8 items-center justify-center rounded-md bg-indigo-600">
-          <User className="h-5 w-5 text-white" />
-        </div>
-        <span className="text-xl font-bold tracking-tight text-slate-900">
-          User Panel
-        </span>
+    <div className={cn("flex flex-col border-r bg-background/80 backdrop-blur-xl shadow-sm", className)}>
+      <div className="flex h-16 items-center px-6 border-b border-border/50">
+        <Logo />
       </div>
 
-      {/* Navigation Section */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 flex flex-col overflow-y-auto py-6 px-3">
         <nav className="space-y-1">
           {userMenuItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href
             return (
               <SidebarNavItem
                 key={item.href}
@@ -80,41 +55,54 @@ export default function UserSidebar({ className }: { className?: string }) {
                 icon={item.icon}
                 isActive={isActive}
               />
-            );
+            )
           })}
         </nav>
+
       </div>
 
-      {/* User Profile & Logout Section */}
-      <div className="border-t bg-slate-50/50 p-4">
-        <div className="mb-4 flex items-center gap-3 px-2">
-          <Avatar className="h-9 w-9 border border-white shadow-sm">
-            <AvatarImage src={session?.user?.image || ""} />
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-semibold text-slate-900">
-              {session?.user?.name || "User"}
-            </span>
-            <span className="truncate text-xs text-slate-500">
-              {session?.user?.email}
-            </span>
-          </div>
+      {session?.user && (
+        <div className="border-t border-border/50 p-4 z-10 bg-background/80 backdrop-blur-md shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors border border-transparent hover:border-primary/10">
+                <div className="flex items-center gap-3">
+                  <div className="size-9 rounded-full bg-primary/20 flex flex-shrink-0 items-center justify-center text-primary font-bold text-sm ring-2 ring-background">
+                    {session.user.name ? session.user.name.charAt(0).toUpperCase() : "U"}
+                  </div>
+                  <div className="flex flex-col truncate w-[130px]">
+                    <span className="text-sm font-bold text-foreground leading-tight truncate">{session.user.name || "User"}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider truncate">
+                      Job Seeker
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[230px] ml-4 mb-2 bg-white dark:bg-slate-900 border-border shadow-2xl rounded-xl z-50">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1.5 p-1">
+                  <p className="text-sm font-bold leading-none">{session.user.name}</p>
+                  <p className="text-muted-foreground text-xs leading-none break-all">{session.user.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="cursor-pointer py-2 text-sm font-medium">
+                <Link href="/profile" className="flex items-center text-foreground cursor-pointer w-full">
+                  <UserIcon className="mr-2 h-4 w-4 text-muted-foreground" /> My Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-destructive font-bold focus:bg-destructive/10 flex cursor-pointer items-center py-2"
+              >
+                <LogOut className="mr-2 h-4 w-4" /> Logout Account
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-
-        {/* 
-        <Button
-          variant="ghost"
-          onClick={handleLogout}
-          className="hover:text-destructive hover:bg-destructive/10 h-9 w-full justify-start text-slate-500 cursor-pointer"
-        >
-          <LogOut className="mr-3 h-4 w-4" />
-          <span className="text-sm font-medium">Logout</span>
-        </Button>
-        */}
-      </div>
+      )}
     </div>
-  );
+  )
 }

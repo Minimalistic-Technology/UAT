@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // hooks
 import { useGetJobs } from "@/features/user/hooks/use-job";
 import { useGetMyApplications, useGetMyApplicationStats } from "@/features/user/hooks/use-job-application";
-import { StatCard } from "@/features/employer/components/employer-stats-card";
+import { AdminStatusCard } from "@/features/admin/components/stats-card";
 import { getApplicationStatusColor } from "@/utils";
 
 export default function JobSeekerDashboard() {
@@ -50,51 +50,47 @@ export default function JobSeekerDashboard() {
     {
       label: "Total Applied",
       value: statsData?.total || 0,
-      icon: Briefcase,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      icon: <Briefcase />,
+      variant: "default" as const,
     },
     {
       label: "Pending",
       value: statsData?.byStatus.pending || 0,
-      icon: Clock,
-      color: "text-amber-600",
-      bg: "bg-amber-50",
+      icon: <Clock />,
+      variant: "warning" as const,
     },
     {
-      label: "Selected",
+      label: "Selected / Shortlisted",
       value: (statsData?.byStatus.shortlisted || 0) + (statsData?.byStatus.accepted || 0),
-      icon: CheckCircle,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
+      icon: <CheckCircle className="text-success" />,
+      variant: "success" as const,
     },
     {
       label: "Rejected",
       value: statsData?.byStatus.rejected || 0,
-      icon: XCircle,
-      color: "text-rose-600",
-      bg: "bg-rose-50",
+      icon: <XCircle className="text-destructive" />,
+      variant: "default" as const,
     },
   ];
 
   return (
-    <div className="animate-in fade-in container mx-auto space-y-8 p-6 duration-500">
+    <div className="animate-in fade-in container mx-auto space-y-8 p-6 lg:p-10 duration-500">
       {/* Welcome Header */}
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 font-heading">
             Welcome back, {session?.user.name?.split(" ")[0]}!
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm font-medium">
             You have applied to{" "}
-            <span className="font-medium text-slate-900">
+            <span className="font-bold text-[#2563eb]">
               {stats[0].value} jobs
             </span>{" "}
             so far.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/find-jobs">
+        <Button asChild className="h-10 px-6 font-bold rounded-xl shadow-lg shadow-primary/20">
+          <Link href="/user-dashboard/find-jobs">
             <Search className="mr-2 h-4 w-4" /> Browse Jobs
           </Link>
         </Button>
@@ -103,23 +99,12 @@ export default function JobSeekerDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat, index) => (
-          <StatCard
+          <AdminStatusCard
             key={stat.label}
-            title={stat.label}
+            label={stat.label}
             value={stat.value}
             icon={stat.icon}
-            // We'll make the first card (Total Applied) the Primary one
-            isPrimary={index === 0}
-            // You can pass dynamic descriptions based on the stat type
-            description={
-              stat.label === "Pending"
-                ? "Awaiting recruiter review"
-                : stat.label === "Shortlisted"
-                  ? "Ready for interview"
-                  : "Updated recently"
-            }
-            // Custom icon colors for non-primary cards
-            iconClassName={!(index === 0) ? stat.color : ""}
+            variant={stat.variant}
             className="border-none shadow-sm transition-shadow duration-200 hover:shadow-md"
           />
         ))}
@@ -156,7 +141,7 @@ export default function JobSeekerDashboard() {
                       You haven't applied to any jobs yet.
                     </p>
                     <Button variant="link" asChild>
-                      <Link href="/find-jobs">Start searching</Link>
+                      <Link href="/user-dashboard/find-jobs">Start searching</Link>
                     </Button>
                   </div>
                 ) : (
@@ -276,7 +261,7 @@ export default function JobSeekerDashboard() {
             </CardContent>
           </Card> */}
         </div>
-        
+
       </div>
     </div>
   );

@@ -6,13 +6,10 @@ import { cn } from "@/lib/utils";
 export default function MainWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
 
-    const isDashboard =
-        pathname?.startsWith("/admin-dashboard") ||
-        pathname?.startsWith("/employer-dashboard") ||
-        pathname?.startsWith("/user-dashboard");
+    const isLandingPage = pathname === "/";
 
     return (
-        <div className={cn("h-full min-h-screen transition-colors duration-300", !isDashboard && "pt-16")}>
+        <div className={cn("h-full min-h-screen transition-colors duration-300", isLandingPage && "pt-16")}>
             {children}
         </div>
     );

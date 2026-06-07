@@ -1,6 +1,6 @@
 "use client";
 
-import Container from "@/components/container";
+
 import { Sidebar } from "@/features/admin/components/sidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";

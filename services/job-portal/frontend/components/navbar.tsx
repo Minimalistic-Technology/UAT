@@ -60,7 +60,7 @@ export default function Navbar() {
   const closeSheet = () => setOpen(false);
   const showFindJobs = isLoading || !isEmployer;
 
-  if (pathname.startsWith("/admin-dashboard") || pathname.startsWith("/employer-dashboard")) {
+  if (pathname !== "/") {
     return null;
   }
 
@@ -80,7 +80,7 @@ export default function Navbar() {
             ) : isAuthenticated ? (
               <div className="flex items-center h-full gap-8">
                 {showFindJobs && !isAdmin && (
-                  <NavLink href="/find-jobs" active={pathname === "/find-jobs" || pathname === "/"}>Find Jobs</NavLink>
+                  <NavLink href="/find-jobs" active={pathname === "/"}>Find Jobs</NavLink>
                 )}
 
                 {isJobSeeker && (
