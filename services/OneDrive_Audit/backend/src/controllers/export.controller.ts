@@ -4,6 +4,7 @@ import User from '../models/User';
 import ExportLog from '../models/ExportLog';
 import { ExcelService } from '../services/excel.service';
 import mongoose from 'mongoose';
+import Notification from '../models/Notification';
 
 export class ExportController {
     public exportExcel = async (req: Request, res: Response) => {
@@ -55,6 +56,19 @@ export class ExportController {
                 fileName,
                 fileCount: files.length
             });
+
+            // NOTIFICATION LOGIC: If a restricted user (employee) exports, notify the Admin
+            if (user?.role === 'employee' && user?.adminId) {
+                const folderQuery = req.query.folder as string;
+                const displayFolder = (!folderQuery || folderQuery === '/') ? 'Home' : folderQuery;
+
+                await Notification.create({
+                    adminId: user.adminId,
+                    employeeName: user.name || user.email || 'An Employee',
+                    message: `${user.name || 'An Employee'} exported a CSV report containing ${files.length} items from folder "${displayFolder}"`,
+                    type: 'EXPORT'
+                });
+            }
 
             // Execute stream download (files mapped to plain objects)
             await ExcelService.generateExport(files.map(f => f.toJSON()), res);

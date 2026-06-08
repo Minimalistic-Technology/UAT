@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { fetchFiles, syncFiles, updateDesignation, setAuthToken, downloadExcel, loginEmployee, getEmployees, createEmployee, deleteEmployee, startDeviceLoginAPI, pollDeviceLoginAPI } from '../lib/api';
+import { fetchFiles, syncFiles, updateDesignation, setAuthToken, downloadExcel, loginEmployee, getEmployees, createEmployee, deleteEmployee, startDeviceLoginAPI, pollDeviceLoginAPI, fetchNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/api';
 import LandingPage from '../components/LandingPage';
 import DeviceLogin from '../components/DeviceLogin';
 import EmployeeLogin from '../components/EmployeeLogin';
@@ -34,6 +34,11 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [liveUser, setLiveUser] = useState<{ name: string; email: string; role?: string } | null>(null);
 
+  // Notifications State
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+
   // Employee Auth State
   const [empEmail, setEmpEmail] = useState('');
   const [empPassword, setEmpPassword] = useState('');
@@ -55,6 +60,55 @@ export default function Dashboard() {
   const [devicePolling, setDevicePolling] = useState(false);
   const [deviceError, setDeviceError] = useState('');
 
+  // Notify Background Loader
+  const loadNotifications = async () => {
+    try {
+      const data = await fetchNotifications();
+      setNotifications(data.notifications || []);
+      setUnreadNotifCount(data.unreadCount || 0);
+    } catch (e) {
+      console.error("Failed to load notifications:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (mode === 'live' && liveUser?.role === 'admin') {
+      loadNotifications();
+      const intId = setInterval(loadNotifications, 15000);
+      return () => clearInterval(intId);
+    }
+  }, [mode, liveUser]);
+
+  const handleReadNotification = async (id: string, isRead: boolean) => {
+    if (isRead) return;
+    try {
+      await markNotificationRead(id);
+      loadNotifications();
+    } catch (e) { }
+  };
+
+  const handleToggleNotifications = () => {
+    if (showNotifDropdown && unreadNotifCount > 0) {
+      // Mark all remaining as read in the backend. 
+      // Do NOT clear setNotifications([]) instantly. Let them stay visible for 1 minute as requested!
+      markAllNotificationsRead().then(() => {
+        setUnreadNotifCount(0);
+        loadNotifications(); // Reload to get fresh state (they will remain visible for 1 min due to backend logic)
+      }).catch(console.error);
+    }
+    setShowNotifDropdown(!showNotifDropdown);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('uat_token');
+    localStorage.removeItem('uat_user');
+    setMode('landing');
+    setFiles([]);
+    setLiveUser(null);
+    setAuthToken('');
+    signOut({ redirect: false });
+  };
+
   // Live session via NextAuth
   useEffect(() => {
     if (status === 'authenticated' && session) {
@@ -67,13 +121,35 @@ export default function Dashboard() {
     }
   }, [status, session]);
 
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      const savedToken = localStorage.getItem('uat_token');
+      const savedUserStr = localStorage.getItem('uat_user');
+      if (savedToken && savedUserStr) {
+        try {
+          const userObj = JSON.parse(savedUserStr);
+          setAuthToken(savedToken);
+          setLiveUser(userObj);
+          setMode('live');
+          loadLiveFiles();
+        } catch (e) { }
+      }
+    }
+  }, [status]);
+
   const handleEmployeeLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
     try {
       const data = await loginEmployee({ email: empEmail, password: empPassword });
       setAuthToken(data.token);
-      setLiveUser({ name: data.user.name, email: data.user.email, role: data.user.role });
+
+      const userPayload = { name: data.user.name, email: data.user.email, role: data.user.role };
+      setLiveUser(userPayload);
+
+      localStorage.setItem('uat_token', data.token);
+      localStorage.setItem('uat_user', JSON.stringify(userPayload));
+
       setMode('live');
       loadLiveFiles();
     } catch (e: any) {
@@ -335,7 +411,7 @@ export default function Dashboard() {
 
           <div className="space-y-1.5">
             <p className="px-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Auditing Actions</p>
-            {mode === 'live' && liveUser?.role === 'admin' && (
+            {mode === 'live' && (
               <button
                 onClick={handleSync}
                 disabled={syncing}
@@ -381,7 +457,7 @@ export default function Dashboard() {
               </div>
             </div>
             <button
-              onClick={() => { setMode('landing'); setFiles([]); setLiveUser(null); setAuthToken(''); signOut({ redirect: false }); }}
+              onClick={handleLogout}
               className="flex w-full items-center justify-center gap-2 py-2 rounded-xl text-[11px] font-bold border border-white/8 bg-white/3 text-gray-400 hover:bg-rose-500/20 hover:text-rose-450 hover:border-rose-500/30 transition-all"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>
@@ -404,20 +480,29 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2">
-            {mode === 'live' && liveUser?.role === 'admin' && (
+            {mode === 'live' && (
               <button onClick={handleSync} disabled={syncing}
                 className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 transition-all disabled:opacity-40">
                 <svg className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" /><path d="M16 21v-5h5" /></svg>
               </button>
             )}
             {mode === 'live' && liveUser?.role === 'admin' && (
-              <button onClick={() => { setShowEmpModal(true); handleFetchEmployees(); }}
-                className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
-              </button>
+              <>
+                <div className="relative">
+                  <button onClick={handleToggleNotifications}
+                    className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+                    {unreadNotifCount > 0 && <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white shadow">{unreadNotifCount}</span>}
+                  </button>
+                </div>
+                <button onClick={() => { setShowEmpModal(true); handleFetchEmployees(); }}
+                  className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+                </button>
+              </>
             )}
             <button
-              onClick={() => { setMode('landing'); setFiles([]); setLiveUser(null); setAuthToken(''); signOut({ redirect: false }); }}
+              onClick={handleLogout}
               className="flex items-center justify-center w-8 h-8 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-455 hover:bg-rose-500 transition-all"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>
@@ -426,7 +511,7 @@ export default function Dashboard() {
         </header>
 
         {/* Global Workspace Banner / Topbar */}
-        <div className="h-16 border-b border-white/8 bg-[#030014]/50 backdrop-blur-md hidden lg:flex items-center justify-between px-8 shrink-0">
+        <div className="relative z-[100] h-16 border-b border-white/8 bg-[#030014]/50 backdrop-blur-md hidden lg:flex items-center justify-between px-8 shrink-0">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Active Workspace:</span>
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300">
@@ -435,6 +520,31 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2">
+            {mode === 'live' && liveUser?.role === 'admin' && (
+              <div className="relative">
+                <button onClick={handleToggleNotifications}
+                  className="flex items-center justify-center w-9 h-9 rounded-xl border border-white/5 bg-white/2 text-gray-400 hover:bg-white/5 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+                  {unreadNotifCount > 0 && <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-lg shadow-rose-500/50">{unreadNotifCount}</span>}
+                </button>
+
+                {showNotifDropdown && (
+                  <div className="absolute right-0 top-12 w-80 max-h-96 overflow-y-auto bg-[#050505] border border-white/10 rounded-2xl shadow-[0_10px_50px_rgba(0,0,0,0.8)] z-[999] p-2 text-white scrollbar-hide">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-3 py-2 border-b border-white/10 mb-2">Notifications</h3>
+                    {notifications.length === 0 ? (
+                      <p className="text-sm text-gray-500 p-4 text-center">No new notifications</p>
+                    ) : (
+                      notifications.map(n => (
+                        <div key={n.id} onClick={() => handleReadNotification(n.id, n.isRead)} className={`p-3 rounded-xl mb-1 cursor-pointer transition-colors ${n.isRead ? 'bg-transparent hover:bg-white/5 opacity-60' : 'bg-white/5 hover:bg-white/10 border border-white/5'}`}>
+                          <p className="text-xs font-semibold text-gray-300">{n.message}</p>
+                          <p className="text-[10px] text-gray-500 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/5 bg-white/2 text-gray-400 text-xs font-bold font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-450 animate-pulse" />
               Connected: {liveUser?.email}

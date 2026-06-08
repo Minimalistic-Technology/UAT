@@ -49,17 +49,22 @@ export class FilesController {
     public syncFiles = async (req: Request, res: Response) => {
         try {
             const user = (req as any).user;
+            let targetUserIdString = user?.id;
+            let token = (req as any).token;
 
-            // SECURITY: Only Admins can sync directly with Microsoft Graph
-            if (user?.role === 'employee') {
-                return res.status(403).json({ error: 'Permission denied. Only Admins can sync files from Microsoft Graph.' });
+            // If employee, sync from their admin's Microsoft identity
+            if (user?.role === 'employee' && user?.adminId) {
+                targetUserIdString = user.adminId;
+                const adminUser = await User.findById(user.adminId);
+                if (!adminUser || !adminUser.accessToken) {
+                    return res.status(403).json({ error: 'Cannot sync: Admin has no active Microsoft connection.' });
+                }
+                token = adminUser.accessToken;
             }
 
             const mockUserId = new mongoose.Types.ObjectId("664f33190a424260bd192931");
-            const userIdString = user?.id;
-            const userId = userIdString ? new mongoose.Types.ObjectId(userIdString as string) : mockUserId;
+            const userId = targetUserIdString ? new mongoose.Types.ObjectId(targetUserIdString as string) : mockUserId;
 
-            const token = (req as any).token;
             if (!token) return res.status(401).json({ error: 'Missing access token for Graph API' });
 
             // Fetch files from Graph

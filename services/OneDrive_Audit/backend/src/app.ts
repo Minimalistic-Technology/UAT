@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.routes';
 import filesRoutes from './routes/files.routes';
 import exportRoutes from './routes/export.routes';
 import employeeRoutes from './routes/employee.routes';
+import notificationRoutes from './routes/notification.routes';
 import { connectDB } from './config/db';
 
 dotenv.config();
@@ -45,6 +46,7 @@ app.use('/api/device-auth', deviceAuthRoutes);
 app.use('/api/files', filesRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/employee', employeeRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date() });
