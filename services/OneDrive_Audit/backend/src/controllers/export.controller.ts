@@ -5,6 +5,7 @@ import ExportLog from '../models/ExportLog';
 import { ExcelService } from '../services/excel.service';
 import mongoose from 'mongoose';
 import Notification from '../models/Notification';
+import { EmailService } from '../services/email.service';
 
 export class ExportController {
     public exportExcel = async (req: Request, res: Response) => {
@@ -68,6 +69,21 @@ export class ExportController {
                     message: `${user.name || 'An Employee'} exported a CSV report containing ${files.length} items from folder "${displayFolder}"`,
                     type: 'EXPORT'
                 });
+
+                // ALSO Dispatch an Email via BREVO
+                try {
+                    const adminUser = await User.findById(user.adminId);
+                    if (adminUser && adminUser.email) {
+                        EmailService.sendExportNotification(
+                            adminUser.email,
+                            user.name || user.email || 'An Employee',
+                            displayFolder,
+                            files.length
+                        ).catch(console.error); // Fire & Forget
+                    }
+                } catch (e) {
+                    console.error('Failed to trigger email notification logic', e);
+                }
             }
 
             // Execute stream download (files mapped to plain objects)
