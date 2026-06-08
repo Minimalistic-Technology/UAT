@@ -31,13 +31,15 @@ export class ExportController {
 
             let files = await File.find({ userId }).sort({ createdAt: -1 });
 
-            // Apply current folder filtering matching the Frontend's logic exactly
+            // Apply folder filtering to simulate exporting all files under a path
             const folderPath = req.query.folder as string;
-            if (folderPath) {
+            if (folderPath && folderPath !== '/') {
                 files = files.filter(f => {
                     let p = f.filePath.replace(/^\/drive\/root:?/, '');
                     if (!p || p === '') p = '/';
-                    return p === folderPath || p + '/' === folderPath;
+
+                    // Include any file that is within this directory or its subdirectories
+                    return p === folderPath || p.startsWith(folderPath + '/');
                 });
             }
 
