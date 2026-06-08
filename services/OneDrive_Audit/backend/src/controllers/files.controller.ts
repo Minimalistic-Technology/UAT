@@ -67,26 +67,27 @@ export class FilesController {
 
             const seen = new Set();
 
-            const filesToUpsert = driveItems.filter((i: any) => i.file).map((item: any) => {
-                const uniqueKey = `${item.name}-${item.size}`;
+            const filesToUpsert = driveItems.filter((i: any) => !i.deleted).map((item: any) => {
+                const uniqueKey = `${item.id}`; // using item.id directly to be absolutely safe
                 const isDuplicate = seen.has(uniqueKey);
                 seen.add(uniqueKey);
 
                 const isLargeFile = item.size > 50 * 1024 * 1024;
-                const ext = item.name.split('.').pop() || 'unknown';
+                const isFolder = !!item.folder;
+                const ext = isFolder ? 'folder' : (item.name.split('.').pop() || 'unknown');
 
                 return {
                     userId,
                     driveItemId: item.id,
                     fileName: item.name,
                     filePath: item.parentReference?.path || '/',
-                    fileSize: item.size,
+                    fileSize: item.size || 0,
                     fileType: ext.toLowerCase(),
-                    mimeType: item.file.mimeType,
+                    mimeType: isFolder ? 'application/vnd.microsoft.folder' : item.file?.mimeType,
                     webUrl: item.webUrl,
-                    downloadUrl: item['@microsoft.graph.downloadUrl'],
-                    createdAt: new Date(item.createdDateTime),
-                    modifiedAt: new Date(item.lastModifiedDateTime),
+                    downloadUrl: item['@microsoft.graph.downloadUrl'] || null,
+                    createdAt: new Date(item.createdDateTime || Date.now()),
+                    modifiedAt: new Date(item.lastModifiedDateTime || Date.now()),
                     isDuplicate,
                     isLargeFile,
                     designation: 'UNCLASSIFIED'
