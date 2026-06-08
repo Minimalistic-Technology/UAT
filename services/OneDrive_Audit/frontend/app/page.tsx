@@ -191,30 +191,8 @@ export default function Dashboard() {
     }
   };
 
-  // Real-Time Background Synchronization (Silent Polling every 15s)
-  useEffect(() => {
-    if (mode === 'live' && liveUser?.role === 'admin') {
-      const intervalId = setInterval(async () => {
-        try {
-          await syncFiles();
-          const data = await fetchFiles();
-          setFiles(data.files || []);
-          setTotalStorageBytes(Number(data.totalStorageBytes) || 0);
-        } catch (e: any) {
-          if (e.response && e.response.status === 401) {
-            console.warn("Token expired. Stopping auto-sync."); // Using warn instead of error to prevent Next.js dev overlay
-            setMode('landing');
-            setFiles([]);
-            setLiveUser(null);
-            signOut({ redirect: false });
-            alert("Your Microsoft session has expired. Please sign in again.");
-          }
-        }
-      }, 15000);
-
-      return () => clearInterval(intervalId);
-    }
-  }, [mode, liveUser]);
+  // Real-Time Background Synchronization has been REMOVED per user request to stop auto-refresh spam.
+  // Users will rely on the manual "Sync" button in the dashboard topbar.
 
   const loadLiveFilesWithToken = async (token: string) => {
     setAuthToken(token);
@@ -643,8 +621,8 @@ export default function Dashboard() {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           className={`mb-4 px-4 py-3 rounded-xl border text-sm font-bold shadow-lg ${empMessage.type === 'success'
-                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-450 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                              : 'bg-rose-500/10 border-rose-500/30 text-rose-450 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-450 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                            : 'bg-rose-500/10 border-rose-500/30 text-rose-450 shadow-[0_0_15px_rgba(244,63,94,0.2)]'
                             }`}
                         >
                           <div className="flex items-center gap-2">
