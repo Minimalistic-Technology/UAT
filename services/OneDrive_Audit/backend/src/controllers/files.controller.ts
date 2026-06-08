@@ -29,7 +29,7 @@ export class FilesController {
 
             const total = await File.countDocuments({ userId });
             const storageAgg = await File.aggregate([
-                { $match: { userId } },
+                { $match: { userId, fileType: { $ne: 'folder' } } },
                 { $group: { _id: null, totalSize: { $sum: '$fileSize' } } }
             ]);
             const storage = storageAgg.length > 0 ? storageAgg[0].totalSize : 0;
