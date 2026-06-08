@@ -29,7 +29,6 @@ const Page = () => {
   const { data: responseData, isLoading, isError } = useGetMyJobPostings();
 
   const myJobPostings = responseData?.data?.jobPosts || [];
-  console.log(myJobPostings)
 
   if (isLoading) {
     return <JobTableSkeleton />;

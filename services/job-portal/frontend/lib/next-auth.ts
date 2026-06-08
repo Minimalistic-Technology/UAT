@@ -16,7 +16,6 @@ export const authOptions: NextAuthOptions = {
       // This function executes immediately after a user submits the form
       async authorize(credentials) {
         try {
-          console.log("Credentials", credentials);
           let response;
           if (credentials?.otp) {
             response = await axios.post(`${API_URL}/auth/register/confirm`, {
@@ -30,7 +29,6 @@ export const authOptions: NextAuthOptions = {
             });
           }
 
-          console.log("Response", response);
 
           if (response.data.success) {
             const user = response.data.data;
@@ -48,7 +46,6 @@ export const authOptions: NextAuthOptions = {
           }
           return null;
         } catch (error: unknown) {
-          console.log("error response", error);
 
           let message: string | undefined;
 
@@ -105,7 +102,6 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     // jwt runs immediately after a successful sign-in
     async jwt({ token, user, account }: any) {
-      console.log("jwt callback started", token, user, account);
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;

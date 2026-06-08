@@ -36,7 +36,6 @@ const Page = () => {
     isError,
   } = useGetJobDetailsById(jobId as string);
   const job = responseData?.data;
-  console.log("job", job);
 
   const { mutate: applyJob, isPending: isApplying } = useApplyJob();
 

@@ -274,7 +274,6 @@ export const confirmRegistrationOTP = async (
     let isNewUser = true;
 
     if (tempUser.isEmployer) {
-      console.log(tempUser.isEmployer)
       let user = await User.findOne({ email }).session(session);
       isNewUser = !user;
 

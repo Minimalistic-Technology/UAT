@@ -52,7 +52,6 @@ const provisionSubscription = async (userId: string, planId: string, razorpayOrd
     orderId: razorpayOrderId,
   });
 
-  console.log(`Successfully created subscription for user ${userId} with plan ${planId}`);
 };
 
 export const createOrder = async (
@@ -235,7 +234,6 @@ export const handleRazorpayWebhook = async (
   res: Response,
   next: NextFunction,
 ) => {
-  console.log("Hook started")
   const secret = config.razorpayWebhookSecret;
   const signature = req.headers["x-razorpay-signature"] as string;
   const eventId = req.headers["x-razorpay-event-id"] as string;
@@ -353,7 +351,6 @@ export const handleRazorpayWebhook = async (
         break;
 
       default:
-        console.log(`Unhandled event: ${event}`);
     }
 
     /**

@@ -27,7 +27,6 @@ const Page = () => {
   const { mutate: mutateResume, isPending: isResumeUploading } = useUploadResume();
 
   const user = userDetails?.data;
-  console.log("user", user);
   const initials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`;
 
   const isDataLoading = isUserLoading || status === "loading";
@@ -51,7 +50,6 @@ const Page = () => {
 
   // Logic for Job Seeker specific documents (Role is 'user' and not an employee)
   const isJobSeeker = user?.role === "user" && !session?.user?.isEmployee;
-  console.log("Is Job Seeker: ", isJobSeeker);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
