@@ -57,3 +57,17 @@ export const resetPassword = async (
   );
   return response.data;
 };
+
+export interface ResendOtpInput {
+  email: string;
+}
+
+export const resendRegistrationOTP = async (
+  data: ResendOtpInput,
+): Promise<ApiSuccessResponse<null>> => {
+  const response = await apiClient.post<ApiSuccessResponse<null>>(
+    "/auth/resend-otp",
+    data,
+  );
+  return response.data;
+};

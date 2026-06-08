@@ -63,3 +63,7 @@ export const verifyOtpSchema = [
     .isLength({ min: 4, max: 6 })
     .withMessage("OTP must be 4-6 digits"),
 ];
+
+export const resendRegistrationOtpSchema = [
+  body("email").isEmail().withMessage("Valid email is required"),
+];
