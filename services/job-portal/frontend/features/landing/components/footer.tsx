@@ -1,28 +1,15 @@
 "use client"
 import { useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { IconBrandGithub, IconBrandTwitter, IconBrandLinkedin } from '@tabler/icons-react';
 import Logo from "@/components/logo";
-
-const FOOTER_COLS = [
-  {
-    title: "For candidates",
-    links: ["Find jobs", "Browse companies", "Salary explorer", "Career stories", "Remote jobs"],
-  },
-  {
-    title: "For employers",
-    links: ["Post a job", "Source candidates", "Pricing", "Enterprise", "ATS integrations"],
-  },
-  {
-    title: "Company",
-    links: ["About", "Careers", "Press", "Privacy", "Terms"],
-  },
-];
+import { FOOTER_COLS, SocialLinks } from "../config";
+import { APP_NAME } from "@/constants";
 
 export const Footer = () => {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | loading | success
+  const [status, setStatus] = useState<"idle" | "loading" | "success">("idle"); // idle | loading | success
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -42,7 +29,7 @@ export const Footer = () => {
       className="bg-white border-t border-slate-200"
       data-testid="site-footer"
     >
-      <div className="max-w-[88rem] mx-auto px-6 md:px-12 py-20 md:py-28">
+      <div className="max-w-352 mx-auto px-6 md:px-12 py-20 md:py-28">
         <div className="grid lg:grid-cols-12 gap-16 lg:gap-12">
           {/* Brand & Newsletter Column */}
           <div className="lg:col-span-5">
@@ -116,13 +103,13 @@ export const Footer = () => {
                 <ul className="mt-6 space-y-4">
                   {col.links.map((link) => (
                     <li key={link}>
-                      <a
+                      <Link
                         href={`/${link.toLowerCase().replace(/\s+/g, "-")}`}
                         className="text-slate-500 hover:text-indigo-600 font-medium text-sm transition-colors duration-200"
                         data-testid={`footer-link-${link.toLowerCase().replace(/\s+/g, "-")}`}
                       >
                         {link}
-                      </a>
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -134,16 +121,12 @@ export const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-20 pt-10 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="text-sm font-medium text-slate-400">
-            © {new Date().getFullYear()} Hireloop Technologies, Inc. Built with love for builders.
+            © {new Date().getFullYear()} {APP_NAME}. Built with love for builders.
           </div>
 
           <div className="flex items-center gap-6 text-slate-400">
-            {[
-              { icon: IconBrandTwitter, label: "Twitter", href: "https://twitter.com" },
-              { icon: IconBrandLinkedin, label: "LinkedIn", href: "https://linkedin.com" },
-              { icon: IconBrandGithub, label: "Github", href: "https://github.com" }
-            ].map((social) => (
-              <a
+            {SocialLinks.map((social) => (
+              <Link
                 key={social.label}
                 href={social.href}
                 target="_blank"
@@ -152,7 +135,7 @@ export const Footer = () => {
                 aria-label={social.label}
               >
                 <social.icon size={20} />
-              </a>
+              </Link>
             ))}
           </div>
         </div>
