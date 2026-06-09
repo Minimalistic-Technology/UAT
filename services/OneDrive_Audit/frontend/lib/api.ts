@@ -97,7 +97,26 @@ export const startDeviceLoginAPI = async () => {
     return data;
 };
 
-export const pollDeviceLoginAPI = async (sessionId: string) => {
-    const { data } = await api.post('/device-auth/poll', { sessionId });
+export const pollDeviceLoginAPI = async (deviceCode: string) => {
+    const { data } = await api.post('/device-auth/poll', { deviceCode });
+    return data;
+};
+
+// ==========================================
+// Notifications API
+// ==========================================
+
+export const fetchNotifications = async () => {
+    const { data } = await api.get('/notifications');
+    return data;
+};
+
+export const markNotificationRead = async (id: string) => {
+    const { data } = await api.put(`/notifications/${id}/read`);
+    return data;
+};
+
+export const markAllNotificationsRead = async () => {
+    const { data } = await api.put(`/notifications/read-all`);
     return data;
 };

@@ -102,7 +102,6 @@ export const useSubmitKyc = () => {
       router.push("/employer-dashboard");
     },
     onError: (error: any) => {
-      console.log("error", error?.response?.data?.errors);
       const errorMsg = error?.response?.data?.message || "Failed to submit KYC";
 
       if(errorMsg === 'Validation failed'){

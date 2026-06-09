@@ -1,5 +1,5 @@
 import { FindJobsView } from "@/features/user/components/find-jobs-view";
 
-export default function JobsPage() {
-  return <FindJobsView />;
+export default function PublicFindJobsPage() {
+    return <FindJobsView />;
 }

@@ -155,7 +155,6 @@ export const getListingsByStatus = async (
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       )
       .slice(0, pageSize);
-    console.log("Merged array", merged);
 
     return res.status(200).json({
       success: true,
@@ -481,7 +480,6 @@ export const getAdminAnalytics = async (
       ]),
     ]);
 
-    console.log("internship data", internshipsGraphData)
 
     const formatRevenueChart = () => {
       const formatted = [];

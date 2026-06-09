@@ -274,7 +274,6 @@ export const confirmRegistrationOTP = async (
     let isNewUser = true;
 
     if (tempUser.isEmployer) {
-      console.log(tempUser.isEmployer)
       let user = await User.findOne({ email }).session(session);
       isNewUser = !user;
 
@@ -363,6 +362,56 @@ export const confirmRegistrationOTP = async (
     await session.commitTransaction();
 
     return sendTokenResponse(userToReturn, isNewUser ? 201 : 200, res);
+  } catch (error: any) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    next(error);
+  } finally {
+    session.endSession();
+  }
+};
+
+export const resendRegistrationOTP = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { email } = req.body;
+
+    const tempUser = await TempUser.findOne({ email }).session(session);
+
+    if (!tempUser) {
+      throw new ApiError(
+        404,
+        "Registration session expired or not found. Please start over.",
+      );
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const salt = crypto.randomBytes(16).toString("hex");
+    const hashedOtp = crypto
+      .createHmac("sha256", config.otpSecret!)
+      .update(otp)
+      .digest("hex");
+
+    tempUser.otp = `${salt}:${hashedOtp}`;
+    tempUser.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // extend by 10 mins
+
+    await tempUser.save({ session, validateBeforeSave: true });
+
+    await sendEmail({
+      email,
+      subject: "Verify your email - Resend OTP",
+      message: `Your new registration OTP is ${otp}. It expires in 10 minutes.`,
+    });
+
+    await session.commitTransaction();
+    res.status(200).json(new ApiResponse(200, null, "OTP resent to email"));
   } catch (error: any) {
     if (session.inTransaction()) {
       await session.abortTransaction();

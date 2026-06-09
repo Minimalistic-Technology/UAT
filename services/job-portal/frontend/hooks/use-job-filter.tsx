@@ -33,7 +33,6 @@ export const useJobFilters = () => {
   }), [searchParams]);
 
   const updateParams = useCallback((newParams: Record<string, any>) => {
-    console.log("new params: ", newParams);
     const params = new URLSearchParams(searchParams.toString());
 
     Object.entries(newParams).forEach(([key, value]) => {

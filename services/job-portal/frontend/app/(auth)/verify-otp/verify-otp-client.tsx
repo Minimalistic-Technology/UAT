@@ -19,6 +19,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { useRedirectAsPerRole } from "@/hooks/use-redirect";
+import { useResendRegistrationOtp } from "@/features/auth/hooks/use-resend-otp";
 
 export default function VerifyOtpClient() {
   const router = useRouter();
@@ -28,6 +29,8 @@ export default function VerifyOtpClient() {
   const [otp, setOtp] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [timer, setTimer] = useState<number>(30);
+
+  const { mutateAsync: resendOtp, isPending: isResending } = useResendRegistrationOtp();
 
   useEffect(() => {
     if (timer > 0) {
@@ -48,6 +51,17 @@ export default function VerifyOtpClient() {
 
   // Handle Role-Based Redirection after successful login
   useRedirectAsPerRole();
+
+  const handleResendOtp = async () => {
+    if (!email) return;
+    try {
+      await resendOtp({ email });
+      toast.success("OTP resent successfully.");
+      setTimer(30);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to resend OTP.");
+    }
+  };
 
   const onSubmit = async () => {
     if (otp.length !== 6) {
@@ -125,15 +139,15 @@ export default function VerifyOtpClient() {
                 Resend code in <span className="text-primary font-bold">00:{timer < 10 ? `0${timer}` : timer}</span>
               </p>
             ) : (
-              <p className="text-muted-foreground font-medium">
+              <p className="text-muted-foreground font-medium flex items-center justify-center gap-1">
                 Didn&apos;t receive a code?{" "}
-                <Link
-                  href="/register"
-                  className="text-primary hover:underline font-bold"
-                  onClick={() => setTimer(30)}
+                <button
+                  onClick={handleResendOtp}
+                  disabled={isResending}
+                  className="text-primary hover:underline font-bold disabled:opacity-50"
                 >
-                  Resend / Try again
-                </Link>
+                  {isResending ? "Resending..." : "Resend / Try again"}
+                </button>
               </p>
             )}
           </div>

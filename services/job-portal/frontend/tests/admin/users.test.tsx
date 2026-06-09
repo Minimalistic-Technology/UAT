@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import Page from "../page";
+import Page from "@/app/admin-dashboard/users/page";
 import { useFetchAllUsers } from "@/features/admin/hooks/use-user";
 import "@testing-library/jest-dom";
 

@@ -4,6 +4,8 @@ import User from '../models/User';
 import ExportLog from '../models/ExportLog';
 import { ExcelService } from '../services/excel.service';
 import mongoose from 'mongoose';
+import Notification from '../models/Notification';
+import { EmailService } from '../services/email.service';
 
 export class ExportController {
     public exportExcel = async (req: Request, res: Response) => {
@@ -31,13 +33,15 @@ export class ExportController {
 
             let files = await File.find({ userId }).sort({ createdAt: -1 });
 
-            // Apply current folder filtering matching the Frontend's logic exactly
+            // Apply folder filtering to simulate exporting all files under a path
             const folderPath = req.query.folder as string;
-            if (folderPath) {
+            if (folderPath && folderPath !== '/') {
                 files = files.filter(f => {
                     let p = f.filePath.replace(/^\/drive\/root:?/, '');
                     if (!p || p === '') p = '/';
-                    return p === folderPath || p + '/' === folderPath;
+
+                    // Include any file that is within this directory or its subdirectories
+                    return p === folderPath || p.startsWith(folderPath + '/');
                 });
             }
 
@@ -53,6 +57,34 @@ export class ExportController {
                 fileName,
                 fileCount: files.length
             });
+
+            // NOTIFICATION LOGIC: If a restricted user (employee) exports, notify the Admin
+            if (user?.role === 'employee' && user?.adminId) {
+                const folderQuery = req.query.folder as string;
+                const displayFolder = (!folderQuery || folderQuery === '/') ? 'Home' : folderQuery;
+
+                await Notification.create({
+                    adminId: user.adminId,
+                    employeeName: user.name || user.email || 'An Employee',
+                    message: `${user.name || 'An Employee'} exported a CSV report containing ${files.length} items from folder "${displayFolder}"`,
+                    type: 'EXPORT'
+                });
+
+                // ALSO Dispatch an Email via BREVO
+                try {
+                    const adminUser = await User.findById(user.adminId);
+                    if (adminUser && adminUser.email) {
+                        EmailService.sendExportNotification(
+                            adminUser.email,
+                            user.name || user.email || 'An Employee',
+                            displayFolder,
+                            files.length
+                        ).catch(console.error); // Fire & Forget
+                    }
+                } catch (e) {
+                    console.error('Failed to trigger email notification logic', e);
+                }
+            }
 
             // Execute stream download (files mapped to plain objects)
             await ExcelService.generateExport(files.map(f => f.toJSON()), res);

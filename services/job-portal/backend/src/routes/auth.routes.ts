@@ -10,6 +10,7 @@ import {
   requestUserRegistration,
   requestEmployerRegistration,
   confirmRegistrationOTP,
+  resendRegistrationOTP,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
@@ -23,6 +24,7 @@ import {
   registerUserSchema,
   resetPasswordSchema,
   verifyOtpSchema,
+  resendRegistrationOtpSchema,
 } from "../validations/auth.validation.js";
 
 const router = Router();
@@ -49,6 +51,14 @@ router.post(
   otpLimiter,
   validate(confirmRegistrationSchema),
   confirmRegistrationOTP,
+);
+
+// Resend OTP
+router.post(
+  "/resend-otp",
+  otpRequestLimiter,
+  validate(resendRegistrationOtpSchema),
+  resendRegistrationOTP,
 );
 
 // Login

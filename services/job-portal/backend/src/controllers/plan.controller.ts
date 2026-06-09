@@ -221,7 +221,6 @@ export const deletePlan = async (
 
     // Check if the plan is in use
     const isPlanInUse = await Subscription.exists({ plan: id });
-    console.log(isPlanInUse);
 
     if (isPlanInUse) {
       // Soft delete instead

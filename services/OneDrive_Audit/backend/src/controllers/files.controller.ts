@@ -29,7 +29,7 @@ export class FilesController {
 
             const total = await File.countDocuments({ userId });
             const storageAgg = await File.aggregate([
-                { $match: { userId } },
+                { $match: { userId, fileType: { $ne: 'folder' } } },
                 { $group: { _id: null, totalSize: { $sum: '$fileSize' } } }
             ]);
             const storage = storageAgg.length > 0 ? storageAgg[0].totalSize : 0;
@@ -49,17 +49,22 @@ export class FilesController {
     public syncFiles = async (req: Request, res: Response) => {
         try {
             const user = (req as any).user;
+            let targetUserIdString = user?.id;
+            let token = (req as any).token;
 
-            // SECURITY: Only Admins can sync directly with Microsoft Graph
-            if (user?.role === 'employee') {
-                return res.status(403).json({ error: 'Permission denied. Only Admins can sync files from Microsoft Graph.' });
+            // If employee, sync from their admin's Microsoft identity
+            if (user?.role === 'employee' && user?.adminId) {
+                targetUserIdString = user.adminId;
+                const adminUser = await User.findById(user.adminId);
+                if (!adminUser || !adminUser.accessToken) {
+                    return res.status(403).json({ error: 'Cannot sync: Admin has no active Microsoft connection.' });
+                }
+                token = adminUser.accessToken;
             }
 
             const mockUserId = new mongoose.Types.ObjectId("664f33190a424260bd192931");
-            const userIdString = user?.id;
-            const userId = userIdString ? new mongoose.Types.ObjectId(userIdString as string) : mockUserId;
+            const userId = targetUserIdString ? new mongoose.Types.ObjectId(targetUserIdString as string) : mockUserId;
 
-            const token = (req as any).token;
             if (!token) return res.status(401).json({ error: 'Missing access token for Graph API' });
 
             // Fetch files from Graph
@@ -67,26 +72,27 @@ export class FilesController {
 
             const seen = new Set();
 
-            const filesToUpsert = driveItems.filter((i: any) => i.file).map((item: any) => {
-                const uniqueKey = `${item.name}-${item.size}`;
+            const filesToUpsert = driveItems.filter((i: any) => !i.deleted).map((item: any) => {
+                const uniqueKey = `${item.id}`; // using item.id directly to be absolutely safe
                 const isDuplicate = seen.has(uniqueKey);
                 seen.add(uniqueKey);
 
                 const isLargeFile = item.size > 50 * 1024 * 1024;
-                const ext = item.name.split('.').pop() || 'unknown';
+                const isFolder = !!item.folder;
+                const ext = isFolder ? 'folder' : (item.name.split('.').pop() || 'unknown');
 
                 return {
                     userId,
                     driveItemId: item.id,
                     fileName: item.name,
                     filePath: item.parentReference?.path || '/',
-                    fileSize: item.size,
+                    fileSize: item.size || 0,
                     fileType: ext.toLowerCase(),
-                    mimeType: item.file.mimeType,
+                    mimeType: isFolder ? 'application/vnd.microsoft.folder' : item.file?.mimeType,
                     webUrl: item.webUrl,
-                    downloadUrl: item['@microsoft.graph.downloadUrl'],
-                    createdAt: new Date(item.createdDateTime),
-                    modifiedAt: new Date(item.lastModifiedDateTime),
+                    downloadUrl: item['@microsoft.graph.downloadUrl'] || null,
+                    createdAt: new Date(item.createdDateTime || Date.now()),
+                    modifiedAt: new Date(item.lastModifiedDateTime || Date.now()),
                     isDuplicate,
                     isLargeFile,
                     designation: 'UNCLASSIFIED'
