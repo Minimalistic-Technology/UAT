@@ -2,10 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, MapPin, Bookmark, Flame } from "lucide-react";
+import { ArrowRight, MapPin, Flame } from "lucide-react";
 import { useGetJobs } from "@/features/user/hooks/use-job";
-import { useSession } from "next-auth/react";
-import { toast } from "sonner";
 
 const JOBS = [
   {
@@ -85,35 +83,12 @@ const EASE = [0.22, 1, 0.36, 1];
 export const FeaturedJobs = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("All");
-  const [savedJobs, setSavedJobs] = useState<Set<any>>(new Set());
 
   // Dynamic Query from Database
   const { data: responseData, isLoading } = useGetJobs({
     limit: 6,
     search: activeTab === "All" ? undefined : activeTab,
   });
-
-  const { data: session } = useSession();
-
-  const toggleSave = (e: any, id: string | number) => {
-    e.preventDefault(); // Stop navigation
-    e.stopPropagation();
-
-    if (!session) {
-      toast.info("Please login to bookmark jobs!");
-      return;
-    }
-
-    const newSaved = new Set(savedJobs);
-    if (newSaved.has(id)) {
-      newSaved.delete(id);
-      toast.success("Job removed from bookmarks");
-    } else {
-      newSaved.add(id);
-      toast.success("Job bookmarked successfully!");
-    }
-    setSavedJobs(newSaved);
-  };
 
   const dbJobs = responseData?.data?.jobs || [];
   const filteredMockJobs = JOBS.filter(
@@ -258,16 +233,6 @@ export const FeaturedJobs = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <button
-                            onClick={(e) => toggleSave(e, jobId)}
-                            className={`p-2.5 rounded-full border transition-all duration-300 ${savedJobs.has(jobId)
-                              ? "bg-indigo-600 border-indigo-600 text-white"
-                              : "bg-white border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200"
-                              }`}
-                            aria-label="Save job"
-                          >
-                            <Bookmark size={18} fill={savedJobs.has(jobId) ? "currentColor" : "none"} />
-                          </button>
                           <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:bg-indigo-600 transition-colors group-hover:translate-x-1 duration-300">
                             <ArrowRight size={18} />
                           </div>

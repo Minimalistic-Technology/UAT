@@ -63,8 +63,9 @@ export default function Navbar() {
 
   const isPublicFindJobs = pathname?.startsWith("/find-jobs") || pathname?.startsWith("/job/");
   const isProfilePage = pathname?.startsWith("/profile");
+  const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/employer-register";
 
-  if (pathname !== "/" && !isPublicFindJobs && !isProfilePage) {
+  if (pathname !== "/" && !isPublicFindJobs && !isProfilePage && !isAuthPage) {
     return null;
   }
 

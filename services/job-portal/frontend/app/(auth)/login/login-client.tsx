@@ -73,7 +73,7 @@ export default function LoginClient() {
   const isLoading = isMutationLoading || isAuthChecking;
 
   return (
-    <div className="flex h-screen w-full bg-slate-50/50 overflow-hidden">
+    <div className="flex h-[calc(100vh-72px)] w-full bg-slate-50/50 overflow-hidden">
       <div className="hidden h-full w-1/2 lg:block relative shrink-0">
         <Image
           src="/login-page-img.png"

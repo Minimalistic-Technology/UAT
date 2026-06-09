@@ -73,7 +73,7 @@ export default function RegisterClient() {
   const isLoading = registerMutation.isPending;
 
   return (
-    <div className="flex h-screen w-full bg-slate-50/50 overflow-hidden">
+    <div className="flex h-[calc(100vh-72px)] w-full bg-slate-50/50 overflow-hidden">
       <div className="hidden h-full w-1/2 lg:block relative shrink-0">
         <Image
           src="/signup-page-img.png"
@@ -83,9 +83,9 @@ export default function RegisterClient() {
           className="object-cover object-right"
         />
       </div>
-      <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:px-8">
-        <Card className="m-auto w-full max-w-sm space-y-3 border-none shadow-lg sm:border shrink-0">
-          <CardHeader className="space-y-1 text-center">
+      <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
+        <Card className="m-auto w-full max-w-md border-none shadow-lg sm:border shrink-0">
+          <CardHeader className="text-center pb-2 pt-4">
             <CardTitle className="text-2xl font-bold">
               Create an account
             </CardTitle>
@@ -93,11 +93,11 @@ export default function RegisterClient() {
               Enter your details below to create your account
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+          <CardContent className="pb-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3">
               {/* Name Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
                   <Label required htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
@@ -112,7 +112,7 @@ export default function RegisterClient() {
                     </p>
                   )}
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-1.5">
                   <Label required htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
@@ -129,106 +129,107 @@ export default function RegisterClient() {
                 </div>
               </div>
 
-              {/* Email */}
-              <div className="grid gap-2">
-                <Label required htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  {...register("email")}
-                  className={errors.email ? "border-destructive" : ""}
-                  disabled={isLoading}
-                />
-                {errors.email && (
-                  <p className="text-destructive text-xs font-medium">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Phone */}
-              <div className="grid gap-2">
-                <Label required htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="123456789"
-                  {...register("phone")}
-                  className={errors.phone ? "border-destructive" : ""}
-                  disabled={isLoading}
-                />
-                {errors.phone && (
-                  <p className="text-destructive text-xs font-medium">
-                    {errors.phone.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div className="grid gap-2">
-                <Label required htmlFor="password">Password</Label>
-                <div className="relative">
+              {/* Contact Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label required htmlFor="email">Email</Label>
                   <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    {...register("password")}
-                    className={
-                      errors.password ? "border-destructive pr-10" : "pr-10"
-                    }
+                    id="email"
+                    type="email"
+                    placeholder="m@example.com"
+                    {...register("email")}
+                    className={errors.email ? "border-destructive" : ""}
                     disabled={isLoading}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+                  {errors.email && (
+                    <p className="text-destructive text-xs font-medium">
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
-                {errors.password && (
-                  <p className="text-destructive text-xs font-medium">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Confirm Password */}
-              <div className="grid gap-2">
-                <Label required htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
+                <div className="grid gap-1.5">
+                  <Label required htmlFor="phone">Phone</Label>
                   <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    {...register("confirmPassword")}
-                    className={
-                      errors.confirmPassword
-                        ? "border-destructive pr-10"
-                        : "pr-10"
-                    }
+                    id="phone"
+                    type="tel"
+                    placeholder="123456789"
+                    {...register("phone")}
+                    className={errors.phone ? "border-destructive" : ""}
                     disabled={isLoading}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+                  {errors.phone && (
+                    <p className="text-destructive text-xs font-medium">
+                      {errors.phone.message}
+                    </p>
+                  )}
                 </div>
-                {errors.confirmPassword && (
-                  <p className="text-destructive text-xs font-medium">
-                    {errors.confirmPassword.message}
-                  </p>
-                )}
+              </div>
+
+              {/* Security Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label required htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      {...register("password")}
+                      className={
+                        errors.password ? "border-destructive pr-10" : "pr-10"
+                      }
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-destructive text-xs font-medium">
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label required htmlFor="confirmPassword">Confirm</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      {...register("confirmPassword")}
+                      className={
+                        errors.confirmPassword
+                          ? "border-destructive pr-10"
+                          : "pr-10"
+                      }
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-destructive text-xs font-medium">
+                      {errors.confirmPassword.message}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Terms */}
@@ -248,11 +249,15 @@ export default function RegisterClient() {
                 </label>
               </div>
 
-              <div className="flex flex-col items-center justify-center py-2">
-                <Turnstile
-                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "dummy_site_key"}
-                  onSuccess={(token) => setValue("captchaToken", token || "", { shouldValidate: true })}
-                />
+              <div className="flex flex-col items-center justify-center pt-1 w-full">
+                <div className="w-full">
+                  <Turnstile
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "dummy_site_key"}
+                    onSuccess={(token) => setValue("captchaToken", token || "", { shouldValidate: true })}
+                    options={{ size: "flexible" }}
+                    style={{ width: "100%" }}
+                  />
+                </div>
                 {errors.captchaToken && (
                   <p className="text-destructive text-xs font-medium mt-1">
                     {errors.captchaToken.message}
@@ -265,7 +270,7 @@ export default function RegisterClient() {
               </Button>
             </form>
 
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-2 text-center text-sm">
               Already have an account?{" "}
               <Link
                 href="/login"

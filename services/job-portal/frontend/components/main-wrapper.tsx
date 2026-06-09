@@ -11,9 +11,10 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
     const isLandingPage = pathname === "/";
     const isPublicFindJobs = pathname?.startsWith("/find-jobs") || pathname?.startsWith("/job/");
     const isProfilePage = pathname?.startsWith("/profile");
+    const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/employer-register";
 
     return (
-        <div className={cn("h-full min-h-screen transition-colors duration-300", (isLandingPage || isPublicFindJobs || isProfilePage) && "pt-[72px]")}>
+        <div className={cn("h-full min-h-screen transition-colors duration-300", (isLandingPage || isPublicFindJobs || isProfilePage || isAuthPage) && "pt-[72px]")}>
             {children}
         </div>
     );
