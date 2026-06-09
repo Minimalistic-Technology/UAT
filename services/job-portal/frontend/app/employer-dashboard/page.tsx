@@ -224,7 +224,7 @@ const Page = () => {
           label="Active Listings"
           value={Number(companyDetails?.activeListings)}
           icon={<Briefcase />}
-          description={`Total listings: ${companyDetails?.totalJobs}`}
+
           variant="default"
           className="border-primary/20 bg-card/50 hover:bg-card transition-colors duration-300"
         />
@@ -233,7 +233,7 @@ const Page = () => {
           label="Team Members"
           value={Number(companyDetails?.totalMembers)}
           icon={<Users />}
-          description="Members with CMS access"
+
           variant="default"
           className="border-secondary/20 bg-card/50 hover:bg-card transition-colors duration-300"
         />
@@ -242,7 +242,7 @@ const Page = () => {
           label="Subscription"
           value={companyDetails?.currentPlan?.name || "No Plan"}
           icon={<Sparkles />}
-          description="Active running tier"
+
           variant="warning"
           className="bg-premium/5 ring-1 ring-premium/10 shadow-[0_0_20px_rgba(var(--premium-rgb),0.1)] transition-colors duration-300"
         />
@@ -258,11 +258,7 @@ const Page = () => {
                 : "0"
           }
           icon={<FileText />}
-          description={
-            companyDetails?.remainingJobPosts === -1
-              ? "Post infinitely"
-              : "Posts left in cycle"
-          }
+
           variant="default"
           className="border-primary/20 bg-card/50 hover:bg-card transition-colors duration-300"
         />

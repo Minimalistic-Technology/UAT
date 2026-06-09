@@ -98,19 +98,18 @@ export default function EmployerRegisterPage() {
   const isLoading = registerMutation.isPending;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
-      <div className="hidden h-full w-1/2 lg:block">
+    <div className="flex h-screen w-full bg-slate-50/50 overflow-hidden">
+      <div className="hidden h-full w-1/2 lg:block relative shrink-0">
         <Image
           src="/employer-signup-page-img.png"
           alt="employer-signup-image"
-          height={1000}
-          width={1000}
+          fill
           priority
-          className="h-full w-full object-cover object-right"
+          className="object-cover object-right"
         />
       </div>
-      <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-sm space-y-3 border-none shadow-lg sm:border">
+      <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:px-8">
+        <Card className="m-auto w-full max-w-sm space-y-3 border-none shadow-lg sm:border shrink-0">
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-3xl font-bold">
               Create Employer Account
@@ -129,7 +128,7 @@ export default function EmployerRegisterPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="firstName">First Name</Label>
+                    <Label required htmlFor="firstName">First Name</Label>
                     <Input
                       id="firstName"
                       placeholder="John"
@@ -143,7 +142,7 @@ export default function EmployerRegisterPage() {
                     )}
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="lastName">Last Name</Label>
+                    <Label required htmlFor="lastName">Last Name</Label>
                     <Input
                       id="lastName"
                       placeholder="Doe"
@@ -165,7 +164,7 @@ export default function EmployerRegisterPage() {
                   Company Details
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="companyName">Company Name</Label>
+                  <Label required htmlFor="companyName">Company Name</Label>
                   <Input
                     id="companyName"
                     placeholder="Acme Inc."
@@ -228,7 +227,7 @@ export default function EmployerRegisterPage() {
               {/* Credentials */}
               <div className="space-y-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label required htmlFor="email">Email Address</Label>
                   <Input
                     id="email"
                     type="email"
@@ -245,7 +244,7 @@ export default function EmployerRegisterPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label required htmlFor="password">Password</Label>
                     <div className="relative">
                       <Input
                         id="password"
@@ -275,7 +274,7 @@ export default function EmployerRegisterPage() {
                     )}
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="confirmPassword">Confirm</Label>
+                    <Label required htmlFor="confirmPassword">Confirm</Label>
                     <div className="relative">
                       <Input
                         id="confirmPassword"

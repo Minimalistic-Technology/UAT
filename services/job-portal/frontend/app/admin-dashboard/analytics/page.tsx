@@ -2,7 +2,8 @@
 
 import React from "react";
 import { AdminStatusCard as StatusCard } from "@/features/admin/components/stats-card";
-import { IndianRupee, Users, Briefcase, ShieldCheck, Building, FileText, Loader2 } from "lucide-react";
+import { IndianRupee, Users, Briefcase, ShieldCheck, Building, FileText, Loader2, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAdminAnalytics } from "@/features/admin/hooks/use-analytics";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Line, LineChart, Area, AreaChart } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -97,38 +98,26 @@ const AnalyticsPage = () => {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 pb-12">
-      {/* 🚀 Ultra-Premium Thin Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-[#0A0F1C] p-6 lg:px-8 lg:py-6 border border-slate-800/60 shadow-xl">
-        {/* Abstract Background Elements */}
-        {/* Noise overlay for texture */}
-        <div className="absolute inset-0 bg-transparent opacity-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")', mixBlendMode: 'overlay' }}></div>
-
-        {/* Glowing Orbs */}
-        <div className="absolute top-0 right-0 -mt-24 -mr-24 h-96 w-96 rounded-full bg-primary/40 blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 left-32 -mb-24 -ml-24 h-64 w-64 rounded-full bg-secondary/30 blur-[100px] pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-col">
-            {/* Title & Copy */}
-            <h1 className="text-2xl md:text-3xl font-black font-heading tracking-tight text-white mb-1">
-              Advanced Intelligence
-            </h1>
-            <p className="text-slate-400 font-medium max-w-2xl text-xs md:text-sm">
-              Real-time multi-dimensional view of platform economics, user acquisition, and corporate engagement.
-            </p>
-          </div>
-
-          {/* Contextual Actions */}
-          <div className="flex items-center mt-2 md:mt-0 flex-shrink-0">
-            <button
-              onClick={handleExportReport}
-              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold backdrop-blur-md border border-white/10 transition-all text-sm flex items-center gap-2 shadow-lg hover:shadow-white/5 active:scale-95 cursor-pointer"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
-              Export Report
-            </button>
-          </div>
+    <div className="space-y-8 pb-12">
+      {/* Standard Header */}
+      <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between w-full">
+        <div>
+          <h1 className="text-2xl font-bold font-heading text-foreground">
+            Advanced Intelligence
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Real-time multi-dimensional view of platform economics, user acquisition, and corporate engagement.
+          </p>
+        </div>
+        <div className="flex items-center mt-4 md:mt-0">
+          <Button
+            onClick={handleExportReport}
+            variant="outline"
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export Report
+          </Button>
         </div>
       </div>
 

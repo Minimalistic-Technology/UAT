@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 import { menuItems as adminMenuItems } from "@/features/admin/components/sidebar";
 import { menuItems as employerMenuItems } from "@/features/employer/components/employer-sidebar";
+import { userMenuItems } from "@/features/user/components/user-sidebar";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,7 +61,10 @@ export default function Navbar() {
   const closeSheet = () => setOpen(false);
   const showFindJobs = isLoading || !isEmployer;
 
-  if (pathname !== "/") {
+  const isPublicFindJobs = pathname?.startsWith("/find-jobs") || pathname?.startsWith("/job/");
+  const isProfilePage = pathname?.startsWith("/profile");
+
+  if (pathname !== "/" && !isPublicFindJobs && !isProfilePage) {
     return null;
   }
 
@@ -99,7 +103,7 @@ export default function Navbar() {
                   </div>
                 )}
 
-                <UserDropdown session={session} onLogout={handleLogout} isEmployer={isEmployer} />
+                <UserDropdown session={session} onLogout={handleLogout} isEmployer={isEmployer} isAdmin={isAdmin} isJobSeeker={isJobSeeker} />
               </div>
             ) : (
               <GuestButtons />
@@ -114,7 +118,7 @@ export default function Navbar() {
                   <Menu className="w-6 h-6 text-slate-800 dark:text-slate-200" strokeWidth={2.5} />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-72">
+              <SheetContent side="right" className="w-72 bg-white dark:bg-[#0A0F1C] border-l dark:border-slate-800">
                 <SheetHeader className="border-b pb-4 text-left">
                   <SheetTitle>
                     <Logo />
@@ -154,10 +158,14 @@ export default function Navbar() {
 function UserDropdown({
   session,
   isEmployer,
+  isAdmin,
+  isJobSeeker,
   onLogout,
 }: {
   session: any;
   isEmployer?: boolean;
+  isAdmin?: boolean;
+  isJobSeeker?: boolean;
   onLogout: () => void;
 }) {
   return (
@@ -188,9 +196,25 @@ function UserDropdown({
           </Link>
         </DropdownMenuItem>
 
+        {isAdmin && (
+          <DropdownMenuItem asChild>
+            <Link href="/admin-dashboard" className="flex cursor-pointer items-center text-foreground font-medium">
+              <LayoutDashboard className="mr-2 h-4 w-4" /> My Dashboard
+            </Link>
+          </DropdownMenuItem>
+        )}
+
         {isEmployer && (
           <DropdownMenuItem asChild>
             <Link href="/employer-dashboard" className="flex cursor-pointer items-center text-foreground font-medium">
+              <LayoutDashboard className="mr-2 h-4 w-4" /> My Dashboard
+            </Link>
+          </DropdownMenuItem>
+        )}
+
+        {isJobSeeker && (
+          <DropdownMenuItem asChild>
+            <Link href="/user-dashboard" className="flex cursor-pointer items-center text-foreground font-medium">
               <LayoutDashboard className="mr-2 h-4 w-4" /> My Dashboard
             </Link>
           </DropdownMenuItem>
@@ -220,13 +244,13 @@ function GuestButtons() {
       <Link href="/find-jobs" className="text-[15px] font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors mr-3">
         Find Jobs
       </Link>
-      <Button variant="outline" asChild className="border-slate-200 text-[#2563eb] hover:text-[#1d4ed8] hover:bg-slate-50 font-semibold px-5 shadow-sm">
+      <Button variant="outline" asChild>
         <Link href="/login">Login</Link>
       </Button>
-      <Button asChild className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold px-5 shadow-sm">
+      <Button asChild>
         <Link href="/register">Sign Up</Link>
       </Button>
-      <Button asChild className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold px-5 shadow-sm">
+      <Button asChild>
         <Link href="/employer-register">Sign Up as Employer</Link>
       </Button>
     </div>
@@ -271,7 +295,9 @@ function MobileAuthNav({
     ? adminMenuItems
     : isEmployer
       ? employerMenuItems
-      : [];
+      : isJobSeeker
+        ? userMenuItems
+        : [];
 
   return (
     <>
@@ -331,17 +357,17 @@ function MobileGuestButtons({ onClose }: { onClose: () => void }) {
       <MobileNavLink href="/find-jobs" onClick={onClose} className="justify-center border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200">
         Find Jobs
       </MobileNavLink>
-      <Button variant="outline" asChild className="w-full border-slate-200 text-[#2563eb] hover:text-[#1d4ed8] hover:bg-slate-50 font-semibold shadow-sm">
+      <Button variant="outline" asChild className="w-full">
         <Link href="/login" onClick={onClose}>
           Login
         </Link>
       </Button>
-      <Button asChild className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold shadow-sm">
+      <Button asChild className="w-full">
         <Link href="/register" onClick={onClose}>
           Sign Up
         </Link>
       </Button>
-      <Button asChild className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold shadow-sm">
+      <Button asChild className="w-full">
         <Link href="/employer-register" onClick={onClose}>
           Sign Up as Employer
         </Link>

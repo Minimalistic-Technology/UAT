@@ -11,14 +11,20 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import TempUser from "../models/TempUser.model.js";
 import { generateToken } from "../utils/jwt.js";
+import Feature, { FeatureStatus } from "../models/Feature.model.js";
+import FeaturePermission from "../models/FeaturePermission.model.js";
 const verifyCaptcha = async (token) => {
-    const secretKey = process.env.RECAPTCHA_SECRET_KEY || "dummy_secret_key";
-    const response = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`, {
-        method: "POST"
+    const secretKey = process.env.TURNSTILE_SECRET_KEY || "dummy_secret_key";
+    const formData = new URLSearchParams();
+    formData.append('secret', secretKey);
+    formData.append('response', token);
+    const response = await fetch(`https://challenges.cloudflare.com/turnstile/v0/siteverify`, {
+        method: "POST",
+        body: formData
     });
     const data = await response.json();
     if (!data.success) {
-        throw new ApiError(400, "Captcha verification failed. Please try again.");
+        throw new ApiError(400, "Security validation failed. Please try again.");
     }
 };
 const sendTokenResponse = (user, statusCode, res) => {
@@ -321,9 +327,30 @@ export const logout = async (req, res, next) => {
 export const getMe = async (req, res, next) => {
     try {
         const user = await User.findById(req.user.id);
+        if (!user)
+            throw new ApiError(404, "User not found");
+        const membership = await CompanyMember.findOne({ user: user._id });
+        // 1. Get strictly "public" features
+        const publicFeatures = await Feature.find({ status: FeatureStatus.PUBLIC }).select("slug");
+        const allowedSlugs = new Set(publicFeatures.map(f => f.slug));
+        // 2. Get specific "beta" features this user (or their company) has been granted
+        const userPermissions = await FeaturePermission.find({
+            $or: [
+                { user: user._id },
+                ...(membership ? [{ company: membership.company }] : [])
+            ]
+        }).populate("feature", "slug status");
+        userPermissions.forEach(perm => {
+            const f = perm.feature;
+            if (f && f.status === FeatureStatus.BETA) {
+                allowedSlugs.add(f.slug);
+            }
+        });
+        const userObj = user.toObject();
+        userObj.allowedFeatures = Array.from(allowedSlugs);
         res
             .status(200)
-            .json(new ApiResponse(200, user, "User fetched successfully"));
+            .json(new ApiResponse(200, userObj, "User fetched successfully"));
     }
     catch (error) {
         next(error);

@@ -130,7 +130,7 @@ export default function FeatureFlagsPage() {
                         <select
                             value={assignFeatureId}
                             onChange={e => setAssignFeatureId(e.target.value)}
-                            className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="w-full h-11 px-4 border border-slate-200 rounded-full text-sm bg-slate-50 focus:ring-2 focus:ring-primary outline-none"
                             required
                         >
                             <option value="" disabled>-- Choose a Feature --</option>
@@ -145,7 +145,7 @@ export default function FeatureFlagsPage() {
                         <select
                             value={assignType}
                             onChange={e => setAssignType(e.target.value as "user" | "company")}
-                            className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="w-full h-11 px-4 border border-slate-200 rounded-full text-sm bg-slate-50 focus:ring-2 focus:ring-primary outline-none"
                         >
                             <option value="user">Specific User</option>
                             <option value="company">Entire Company</option>
@@ -159,7 +159,7 @@ export default function FeatureFlagsPage() {
                         <select
                             value={assignTargetId}
                             onChange={e => setAssignTargetId(e.target.value)}
-                            className="w-full h-10 px-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"
+                            className="w-full h-11 px-4 border border-slate-200 rounded-full text-sm focus:ring-2 focus:ring-primary outline-none bg-slate-50"
                             required
                         >
                             <option value="" disabled>-- Select a Target --</option>
@@ -170,7 +170,7 @@ export default function FeatureFlagsPage() {
                         </select>
                     </div>
 
-                    <Button type="submit" disabled={assigning || !assignFeatureId} className="h-10 w-full md:w-auto px-6 whitespace-nowrap">
+                    <Button type="submit" disabled={assigning} className="w-full md:w-auto px-8 whitespace-nowrap">
                         {assigning ? "Assigning..." : "Add Permission"}
                     </Button>
                 </form>

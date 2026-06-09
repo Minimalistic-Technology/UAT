@@ -143,18 +143,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="mb-8 flex items-center gap-4 rounded-xl border border-success/30 bg-success/5 p-4 sm:p-5 shadow-sm">
-        <div className="rounded-full bg-success/20 p-2 text-success flex-shrink-0">
-          <ShieldCheck className="size-5" />
-        </div>
-        <div className="flex flex-col flex-1">
-          <h3 className="font-semibold text-foreground text-sm sm:text-base">System Health: All Systems Operational</h3>
-          <p className="text-xs sm:text-sm text-muted-foreground">Last checked 2 minutes ago. All global nodes are performing at optimal capacity.</p>
-        </div>
-        <Button variant="link" className="ml-auto text-primary px-0 text-sm hidden sm:flex font-semibold hover:no-underline">
-          View Status Page <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1 opacity-70"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-        </Button>
-      </div>
+
 
       <div className="mb-8 grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         <StatusCard
@@ -163,7 +152,7 @@ const AdminDashboard = () => {
           variant="default"
           icon={<IndianRupee />}
           className="border-primary/30"
-          description={`${summary.revenueGrowth >= 0 ? '+' : ''}${summary.revenueGrowth}%`}
+
         />
         <StatusCard
           label="Subscriptions"
@@ -171,7 +160,7 @@ const AdminDashboard = () => {
           variant="default"
           icon={<Users />}
           className="border-secondary/30"
-          description="+50 new"
+
         />
         <StatusCard
           label="Pending KYC"
@@ -179,7 +168,7 @@ const AdminDashboard = () => {
           variant="warning"
           icon={<ShieldCheck />}
           className="border-premium/30"
-          description="High Priority"
+
         />
         <StatusCard
           label="Job Listings"

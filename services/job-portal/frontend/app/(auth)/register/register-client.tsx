@@ -73,19 +73,18 @@ export default function RegisterClient() {
   const isLoading = registerMutation.isPending;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
-      <div className="hidden h-full w-1/2 lg:block">
+    <div className="flex h-screen w-full bg-slate-50/50 overflow-hidden">
+      <div className="hidden h-full w-1/2 lg:block relative shrink-0">
         <Image
           src="/signup-page-img.png"
           alt="signup-image"
-          height={1000}
-          width={1000}
+          fill
           priority
-          className="h-full w-full object-cover object-right"
+          className="object-cover object-right"
         />
       </div>
-      <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-sm space-y-3 border-none shadow-lg sm:border">
+      <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:px-8">
+        <Card className="m-auto w-full max-w-sm space-y-3 border-none shadow-lg sm:border shrink-0">
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-bold">
               Create an account
@@ -99,7 +98,7 @@ export default function RegisterClient() {
               {/* Name Row */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label required htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
                     placeholder="Max"
@@ -114,7 +113,7 @@ export default function RegisterClient() {
                   )}
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label required htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
                     placeholder="Robinson"
@@ -132,7 +131,7 @@ export default function RegisterClient() {
 
               {/* Email */}
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label required htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -150,11 +149,11 @@ export default function RegisterClient() {
 
               {/* Phone */}
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label required htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+123456789"
+                  placeholder="123456789"
                   {...register("phone")}
                   className={errors.phone ? "border-destructive" : ""}
                   disabled={isLoading}
@@ -168,7 +167,7 @@ export default function RegisterClient() {
 
               {/* Password */}
               <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
+                <Label required htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -200,7 +199,7 @@ export default function RegisterClient() {
 
               {/* Confirm Password */}
               <div className="grid gap-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label required htmlFor="confirmPassword">Confirm Password</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"

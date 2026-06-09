@@ -2,9 +2,15 @@
 import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('theme') === 'system') {
+      localStorage.setItem('theme', 'light');
+      window.dispatchEvent(new Event('storage'));
+    }
+  }, []);
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -12,6 +18,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
           queries: {
             staleTime: 60 * 1000,
             refetchOnWindowFocus: false,
+            retry: 1,
           },
         },
       }),

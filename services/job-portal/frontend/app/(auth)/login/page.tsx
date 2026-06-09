@@ -12,7 +12,7 @@ export default function LoginPage() {
 
 const LoginPageSkeleton = () => {
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
+    <div className="flex min-h-screen w-full bg-slate-50/50">
       <div className="hidden lg:block h-full w-1/2">
         <Skeleton className="h-full w-full rounded-none" />
       </div>

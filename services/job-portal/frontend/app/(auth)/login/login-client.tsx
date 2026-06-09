@@ -73,17 +73,18 @@ export default function LoginClient() {
   const isLoading = isMutationLoading || isAuthChecking;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
-      <Image
-        src="/login-page-img.png"
-        alt="login-image"
-        height={1000}
-        width={1000}
-        priority
-        className="hidden h-full w-1/2 object-cover lg:block"
-      />
-      <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-sm space-y-3 border-none shadow-lg sm:border">
+    <div className="flex h-screen w-full bg-slate-50/50 overflow-hidden">
+      <div className="hidden h-full w-1/2 lg:block relative shrink-0">
+        <Image
+          src="/login-page-img.png"
+          alt="login-image"
+          fill
+          priority
+          className="object-cover"
+        />
+      </div>
+      <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:px-8">
+        <Card className="m-auto w-full max-w-sm space-y-3 border-none shadow-lg sm:border shrink-0">
           <CardHeader className="space-y-0.5 text-center">
             <CardTitle className="text-3xl font-bold tracking-tight">
               Welcome Back
@@ -96,7 +97,7 @@ export default function LoginClient() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {/* Email Field */}
               <div className="grid gap-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label required htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
@@ -115,7 +116,7 @@ export default function LoginClient() {
               {/* Password Field */}
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label required htmlFor="password">Password</Label>
                   <Link
                     href="/forgot-password"
                     className="text-primary text-xs underline-offset-4 hover:underline"
@@ -153,16 +154,7 @@ export default function LoginClient() {
                 )}
               </div>
 
-              {/* Remember Me */}
-              <div className="flex items-center space-x-2">
-                <Checkbox id="remember" disabled={isLoading} />
-                <label
-                  htmlFor="remember"
-                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Remember me
-                </label>
-              </div>
+
 
               {/* Submit Button */}
               <Button type="submit" className="w-full" disabled={isLoading}>
@@ -174,7 +166,7 @@ export default function LoginClient() {
                 {isMutationLoading ? "Signing in..." : "Sign In with Email"}
               </Button>
 
-              {/* Divider */}
+              {/* Divider (Commented for now)
               <div className="relative py-2">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
@@ -186,7 +178,7 @@ export default function LoginClient() {
                 </div>
               </div>
 
-              {/* Google Button */}
+              {/* Google Button 
               <Button
                 type="button"
                 variant="outline"
@@ -201,6 +193,7 @@ export default function LoginClient() {
                 )}
                 Google
               </Button>
+              */}
             </form>
 
             <div className="text-muted-foreground mt-6 text-center text-sm">

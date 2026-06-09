@@ -27,7 +27,7 @@ export const useJobFilters = () => {
     durationMonths: searchParams.get("durationMonths")?.split(",").filter(Boolean) || [],
     salaryRanges: searchParams.get("salaryRanges")?.split(",").filter(Boolean) || [],
     stipendRanges: searchParams.get("stipendRanges")?.split(",").filter(Boolean) || [],
-    experienceYears: searchParams.has("experienceYears") ? searchParams.get("experienceYears") : "Any",
+    experienceRanges: searchParams.get("experienceRanges")?.split(",").filter(Boolean) || [],
     page: Number(searchParams.get("page")) || 1,
     limit: Number(searchParams.get("limit")) || 10,
   }), [searchParams]);

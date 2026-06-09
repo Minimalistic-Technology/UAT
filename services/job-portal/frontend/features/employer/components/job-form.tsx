@@ -710,23 +710,26 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
                 </p>
               )}
             </div>
-          </div>
 
-          <div className="flex h-9 items-center gap-3 rounded-md border px-3">
-            <Controller
-              name="isFeatured"
-              control={control}
-              render={({ field }) => (
-                <Checkbox
-                  id="isFeatured"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
+            <div className="grid gap-2">
+              <Label>Visibility</Label>
+              <div className="flex h-11 items-center gap-3 rounded-lg border px-4">
+                <Controller
+                  name="isFeatured"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox
+                      id="isFeatured"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  )}
                 />
-              )}
-            />
-            <Label htmlFor="isFeatured" className="cursor-pointer font-normal">
-              Feature this listing
-            </Label>
+                <Label htmlFor="isFeatured" className="cursor-pointer font-normal">
+                  Feature this listing
+                </Label>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

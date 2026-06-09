@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, MapPin, Bookmark, Flame } from "lucide-react";
 import { useGetJobs } from "@/features/user/hooks/use-job";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 const JOBS = [
   {
@@ -91,12 +93,25 @@ export const FeaturedJobs = () => {
     search: activeTab === "All" ? undefined : activeTab,
   });
 
+  const { data: session } = useSession();
+
   const toggleSave = (e: any, id: string | number) => {
     e.preventDefault(); // Stop navigation
     e.stopPropagation();
+
+    if (!session) {
+      toast.info("Please login to bookmark jobs!");
+      return;
+    }
+
     const newSaved = new Set(savedJobs);
-    if (newSaved.has(id)) newSaved.delete(id);
-    else newSaved.add(id);
+    if (newSaved.has(id)) {
+      newSaved.delete(id);
+      toast.success("Job removed from bookmarks");
+    } else {
+      newSaved.add(id);
+      toast.success("Job bookmarked successfully!");
+    }
     setSavedJobs(newSaved);
   };
 
@@ -146,12 +161,7 @@ export const FeaturedJobs = () => {
         <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
           <motion.div layout className="divide-y divide-slate-100">
             <AnimatePresence mode="popLayout">
-              {isLoading ? (
-                <div className="p-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
-                  <p className="font-bold text-sm tracking-wide">Loading featured roles...</p>
-                </div>
-              ) : displayJobs.length === 0 ? (
+              {displayJobs.length === 0 ? (
                 <div className="p-16 text-center text-slate-400">
                   <p className="font-bold text-lg">No active jobs found</p>
                   <p className="text-sm mt-1">Check back later or post your first job vacancy!</p>
@@ -198,7 +208,7 @@ export const FeaturedJobs = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.98 }}
                       transition={{ duration: 0.4, ease: "easeIn" }}
-                      href={`/jobs/${jobId}`}
+                      href={`/job/${jobId}`}
                       key={String(jobId)}
                       className="group relative flex flex-col md:flex-row md:items-center gap-6 px-6 md:px-10 py-8 hover:bg-indigo-50/30 transition-colors cursor-pointer"
                     >
@@ -212,11 +222,6 @@ export const FeaturedJobs = () => {
                             <span className="text-sm font-bold text-slate-400 uppercase tracking-tight">
                               {companyName}
                             </span>
-                            {isHot && (
-                              <span className="flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 tracking-wider uppercase">
-                                <Flame size={10} fill="currentColor" /> Hot
-                              </span>
-                            )}
                           </div>
                           <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
                             {roleName}
@@ -225,15 +230,20 @@ export const FeaturedJobs = () => {
                       </div>
 
                       {/* Middle: Tags (Visible on Tablet/Desktop) */}
-                      <div className="hidden lg:flex flex-wrap gap-2 flex-1">
-                        {jobTags.slice(0, 3).map((t: string) => (
-                          <span
-                            key={t}
-                            className="px-3 py-1 bg-slate-50 text-slate-500 text-xs font-semibold rounded-lg border border-slate-100 group-hover:bg-white group-hover:border-indigo-100 transition-colors"
-                          >
-                            {t}
-                          </span>
-                        ))}
+                      <div className="hidden lg:flex flex-col justify-center flex-1 gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          Required Skills
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {jobTags.slice(0, 3).map((t: string) => (
+                            <span
+                              key={t}
+                              className="px-3 py-1 bg-slate-50 text-slate-500 text-[11px] font-semibold rounded-lg border border-slate-100 group-hover:bg-white group-hover:border-indigo-100 transition-colors"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
                       </div>
 
                       {/* Right: Meta & Actions */}

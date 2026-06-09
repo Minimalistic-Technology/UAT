@@ -5,6 +5,9 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { CompanyRole } from "@/types";
 import { useToggleUserStatus } from "../hooks/use-user";
 import { UserWithCompany } from "../types";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { UserMinus, UserCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const UserRoleBadge = ({ user }: { user: any }) => {
   const isOwner = user.companyRole === CompanyRole.OWNER;
@@ -93,17 +96,32 @@ const UserTableRow = ({ user }: { user: UserWithCompany }) => {
         })}
       </TableCell>
       <TableCell className="text-right">
-        <Button
-          size="sm"
-          variant={user.isActive ? "destructive" : "outline"}
-          className="cursor-pointer"
-          disabled={isPending}
-          onClick={() =>
-            toggleUserStatus({ userId: user._id })
-          }
-        >
-          {user.isActive ? "Deactivate" : "Activate"}
-        </Button>
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className={cn(
+                  "cursor-pointer rounded-full transition-colors",
+                  user.isActive
+                    ? "hover:bg-red-100 hover:text-red-700 text-slate-400 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                    : "hover:bg-green-100 hover:text-green-700 text-slate-400 border border-dashed border-slate-300 dark:border-slate-800 dark:hover:bg-green-900/30 dark:hover:text-green-400"
+                )}
+                disabled={isPending}
+                onClick={() =>
+                  toggleUserStatus({ userId: user._id })
+                }
+              >
+                {user.isActive ? <UserMinus className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                <span className="sr-only">{user.isActive ? "Deactivate User" : "Activate User"}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left" align="center" className="bg-foreground text-background font-semibold">
+              <p>{user.isActive ? "Deactivate User" : "Activate User"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </TableCell>
     </TableRow>
   );

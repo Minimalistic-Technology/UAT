@@ -3,6 +3,7 @@ import type { Application, NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import mongoose from 'mongoose';
 import { connectDB } from './config/database.js';
 // Trigger nodemon restart to clear rate limiter RAM
 import { config } from './config/env.js';
@@ -29,6 +30,7 @@ import listingRoutes from './routes/listing.routes.js';
 import developerRoutes from './routes/developer.route.js';
 import featureRoutes from './routes/feature.route.js';
 import aiRoutes from './routes/ai.routes.js';
+import testimonialRoutes from './routes/testimonial.routes.js';
 
 const app: Application = express();
 const PORT = config.port;
@@ -88,16 +90,35 @@ app.use("/api/demo", demoRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/features", featureRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/testimonials", testimonialRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
-  res.status(200).json(new ApiResponse(200, null, "Server is running"));
+  const isDbConnected = mongoose.connection.readyState === 1;
+  const status = isDbConnected ? 'operational' : 'degraded';
+
+  res.status(isDbConnected ? 200 : 503).json(new ApiResponse(
+    isDbConnected ? 200 : 503,
+    {
+      server: 'operational',
+      database: isDbConnected ? 'operational' : 'disconnected',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    },
+    `System is ${status}`
+  ));
 });
 
 // Error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(err.statusCode || 500).json({
+  const statusCode = err.statusCode || 500;
+  if (statusCode >= 500) {
+    console.error(err.stack);
+  } else {
+    console.warn(`[API Error ${statusCode}]: ${err.message}`);
+  }
+
+  res.status(statusCode).json({
     success: false,
     message: err.message || 'Server Error',
   });

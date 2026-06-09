@@ -226,7 +226,7 @@ const EmployerApplicationsPage = () => {
                         </div>
                       </TableCell>
                       <TableCell>{app.listing?.title || "Unknown Listing Title"}</TableCell>
-                       <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
+                      <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(app.status)}>
                           {app.status.replace("_", " ").toUpperCase()}
@@ -241,15 +241,15 @@ const EmployerApplicationsPage = () => {
 
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="icon"
                                 disabled={[ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN].includes(app.status?.toLowerCase())}
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-border z-50">
                               <DropdownMenuLabel>
                                 Quick Actions
                               </DropdownMenuLabel>

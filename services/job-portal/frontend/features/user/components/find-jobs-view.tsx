@@ -13,7 +13,7 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Briefcase, SlidersHorizontal } from "lucide-react";
+import { Search, Briefcase, SlidersHorizontal, MapPin } from "lucide-react";
 import { useJobFilters } from "@/hooks/use-job-filter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getJobs } from "@/features/user/services/job.service";
@@ -100,6 +100,24 @@ function JobsPageContent() {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-lg">All Filters</h3>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-primary h-auto p-0 font-semibold hover:bg-transparent hover:text-primary/80 cursor-pointer text-sm"
+                        onClick={() => {
+                            updateParams({
+                                workMode: [],
+                                experienceRanges: [],
+                                roleCategory: [],
+                                companyType: [],
+                                durationMonths: [],
+                                salaryRanges: [],
+                                stipendRanges: []
+                            });
+                        }}
+                    >
+                        Clear All
+                    </Button>
                 </div>
                 <Accordion type="multiple" defaultValue={["workMode", "experience", "department", "salary", "companyType", "stipend", "duration"]} className="w-full">
                     <AccordionItem value="workMode">
@@ -110,7 +128,7 @@ function JobsPageContent() {
                                     { label: "Work from office", value: "work from office" },
                                     { label: "Hybrid", value: "hybrid" },
                                     { label: "Remote", value: "remote" },
-                                    { label: "Temp. WFH due to...", value: "temporary work from home" }
+                                    { label: "Temporary Work from Home", value: "temporary work from home" }
                                 ].map((item) => (
                                     <div key={item.value} className="flex items-center space-x-3">
                                         <Checkbox
@@ -130,21 +148,25 @@ function JobsPageContent() {
                     <AccordionItem value="experience">
                         <AccordionTrigger className="text-sm font-semibold hover:no-underline">Experience</AccordionTrigger>
                         <AccordionContent>
-                            <div className="px-2 pt-4 pb-2">
-                                <Slider
-                                    min={0}
-                                    max={10}
-                                    step={1}
-                                    value={[filters.experienceYears === "Any" ? 10 : Number(filters.experienceYears)]}
-                                    onValueChange={(vals) => {
-                                        const val = vals[0];
-                                        updateParams({ experienceYears: val === 10 ? "Any" : val.toString() });
-                                    }}
-                                />
-                                <div className="flex justify-between mt-3 text-xs text-muted-foreground font-medium">
-                                    <span>0 Yrs</span>
-                                    <span>{filters.experienceYears === "Any" ? "Any" : `${filters.experienceYears} Yrs`}</span>
-                                </div>
+                            <div className="space-y-3 pt-1">
+                                {[
+                                    { label: "0-2 Years", value: "0-2" },
+                                    { label: "2-4 Years", value: "2-4" },
+                                    { label: "4-6 Years", value: "4-6" },
+                                    { label: "6-8 Years", value: "6-8" },
+                                    { label: "8+ Years", value: "8-20" },
+                                ].map((item) => (
+                                    <div key={item.value} className="flex items-center space-x-3">
+                                        <Checkbox
+                                            id={`exp-${item.value}`}
+                                            checked={filters.experienceRanges?.includes(item.value)}
+                                            onCheckedChange={() => toggleArrayFilter('experienceRanges', item.value)}
+                                        />
+                                        <label htmlFor={`exp-${item.value}`} className="text-sm font-medium leading-none cursor-pointer">
+                                            {item.label}
+                                        </label>
+                                    </div>
+                                ))}
                             </div>
                         </AccordionContent>
                     </AccordionItem>
@@ -307,6 +329,23 @@ function JobsPageContent() {
                                 className="h-11 pl-9 border-secondary/20 shadow-sm"
                                 value={filters.search}
                                 onChange={(e) => updateParams({ search: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="relative flex-1">
+                            <MapPin className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
+                            <Input
+                                placeholder="City, state, or 'Remote'"
+                                className="h-11 pl-9 border-secondary/20 shadow-sm"
+                                value={filters.remote ? "Remote" : filters.city || ""}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val.toLowerCase() === 'remote') {
+                                        updateParams({ remote: "true", city: "" });
+                                    } else {
+                                        updateParams({ city: val, remote: "false" });
+                                    }
+                                }}
                             />
                         </div>
 
