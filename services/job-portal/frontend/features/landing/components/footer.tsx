@@ -47,35 +47,33 @@ export const Footer = () => {
               </h4>
               <form
                 onSubmit={handleSubmit}
-                className="relative group"
+                className="relative flex flex-col sm:flex-row items-stretch gap-3 sm:gap-0 w-full mt-4"
                 data-testid="newsletter-form"
               >
-                <div className="flex items-stretch bg-white border border-slate-200 focus-within:border-indigo-600 focus-within:ring-4 focus-within:ring-indigo-50 rounded-2xl overflow-hidden transition-all duration-300 shadow-sm">
-                  <input
-                    type="email"
-                    required
-                    disabled={status === "success"}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@work.com"
-                    className="flex-1 px-5 py-4 bg-transparent outline-none text-slate-900 placeholder:text-slate-400 font-medium"
-                    data-testid="newsletter-email-input"
-                  />
-                  <button
-                    type="submit"
-                    disabled={status !== "idle"}
-                    className="px-6 bg-slate-950 hover:bg-indigo-600 disabled:bg-indigo-600 text-white font-bold transition-all flex items-center gap-2"
-                    data-testid="newsletter-submit-btn"
-                  >
-                    {status === "loading" ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : status === "success" ? (
-                      "Joined"
-                    ) : (
-                      <>Subscribe <ArrowRight size={18} /></>
-                    )}
-                  </button>
-                </div>
+                <input
+                  type="email"
+                  required
+                  disabled={status === "success"}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@work.com"
+                  className="flex-1 w-full px-5 py-4 bg-white border border-slate-200 sm:border-r-0 focus:border-primary focus:ring-4 focus:ring-primary/10 sm:rounded-l-2xl sm:rounded-r-none rounded-xl outline-none text-slate-900 placeholder:text-slate-400 font-medium transition-all shadow-sm sm:shadow-none z-10 hover:z-20 focus:z-20 relative"
+                  data-testid="newsletter-email-input"
+                />
+                <button
+                  type="submit"
+                  disabled={status !== "idle"}
+                  className="w-full sm:w-auto px-6 py-4 sm:py-0 shrink-0 bg-slate-950 hover:bg-primary disabled:bg-primary text-white font-bold transition-all flex items-center justify-center gap-2 sm:rounded-r-2xl sm:rounded-l-none rounded-xl relative shadow-sm"
+                  data-testid="newsletter-submit-btn"
+                >
+                  {status === "loading" ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : status === "success" ? (
+                    "Joined"
+                  ) : (
+                    <>Subscribe <ArrowRight size={18} /></>
+                  )}
+                </button>
 
                 <AnimatePresence>
                   {status === "success" && (
@@ -105,7 +103,7 @@ export const Footer = () => {
                     <li key={link}>
                       <Link
                         href={`/${link.toLowerCase().replace(/\s+/g, "-")}`}
-                        className="text-slate-500 hover:text-indigo-600 font-medium text-sm transition-colors duration-200"
+                        className="text-slate-500 hover:text-primary font-medium text-sm transition-colors duration-200"
                         data-testid={`footer-link-${link.toLowerCase().replace(/\s+/g, "-")}`}
                       >
                         {link}
@@ -131,7 +129,7 @@ export const Footer = () => {
                 href={social.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-indigo-600 transition-colors p-2 hover:bg-slate-50 rounded-lg"
+                className="hover:text-primary transition-colors p-2 hover:bg-slate-50 rounded-lg"
                 aria-label={social.label}
               >
                 <social.icon size={20} />

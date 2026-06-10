@@ -96,8 +96,8 @@ export const EmployerCTA = () => {
             style={{ backgroundImage: `url(${BG_URL})` }}
             aria-hidden="true"
           />
-          <div className="absolute inset-0 bg-linear-to-br from-white via-white/95 to-indigo-50/30" aria-hidden="true" />
-          <div className="absolute inset-0 opacity-[0.05] [background-image:radial-gradient(#4F46E5_1px,transparent_1px)] [background-size:24px_24px]" aria-hidden="true" />
+          <div className="absolute inset-0 bg-linear-to-br from-white via-white/95 to-blue-50/30" aria-hidden="true" />
+          <div className="absolute inset-0 opacity-[0.05] [background-image:radial-gradient(var(--color-primary)_1px,transparent_1px)] [background-size:24px_24px]" aria-hidden="true" />
 
           <div className="relative grid lg:grid-cols-12 gap-12 p-8 md:p-16 lg:p-20 items-center">
             {/* Left Content */}
@@ -123,7 +123,7 @@ export const EmployerCTA = () => {
                   >
                     <CheckCircle2
                       size={22}
-                      className="text-indigo-600 shrink-0"
+                      className="text-primary shrink-0"
                     />
                     {perk}
                   </li>
@@ -134,7 +134,7 @@ export const EmployerCTA = () => {
                 <Button
                   size="lg"
                   onClick={handlePostJob}
-                  className="group px-8 h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all duration-300 shadow-xl shadow-indigo-200 hover:-translate-y-0.5 flex items-center gap-2"
+                  className="group px-8 h-14 font-bold transition-all duration-300 shadow-xl shadow-primary/20 hover:-translate-y-0.5 flex items-center gap-2 rounded-xl"
                   data-testid="post-job-cta-button"
                 >
                   Post a job — free
@@ -146,10 +146,10 @@ export const EmployerCTA = () => {
                     <Button
                       variant="outline"
                       size="lg"
-                      className="px-8 h-14 bg-white text-slate-900 border-2 border-slate-200 hover:border-indigo-600 hover:text-indigo-600 hover:bg-white font-bold rounded-2xl transition-all duration-300 flex items-center gap-2"
+                      className="group px-8 h-14 font-bold transition-all duration-300 flex items-center gap-2 rounded-xl border-2 hover:border-primary hover:text-primary"
                       data-testid="talk-to-sales-button"
                     >
-                      <PhoneCall size={18} />
+                      <PhoneCall size={18} className="group-hover:-translate-y-0.5 transition-transform" />
                       Talk to sales
                     </Button>
                   </DialogTrigger>
@@ -170,7 +170,7 @@ export const EmployerCTA = () => {
                           <div>
                             <div className="flex justify-between mb-4">
                               <span className="text-sm font-bold text-slate-700">Planned hires this year</span>
-                              <span className="text-sm font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">{hiresPerYear[0]}</span>
+                              <span className="text-sm font-black text-primary bg-primary/10 px-2 py-0.5 rounded-md">{hiresPerYear[0]}</span>
                             </div>
                             <Slider
                               defaultValue={[10]}
@@ -205,7 +205,7 @@ export const EmployerCTA = () => {
                           <TrendingDown size={140} />
                         </div>
                         <div className="relative z-10">
-                          <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-6 border border-indigo-500/30">
+                          <div className="w-12 h-12 rounded-2xl bg-primary/20 text-blue-400 flex items-center justify-center mb-6 border border-primary/30">
                             <Calendar size={24} />
                           </div>
                           <h3 className="text-xl font-bold mb-3">Enterprise Plans</h3>
@@ -219,7 +219,7 @@ export const EmployerCTA = () => {
                               placeholder="Your Work Email"
                               value={demoEmail}
                               onChange={(e) => setDemoEmail(e.target.value)}
-                              className="w-full px-4 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-white placeholder-indigo-300/60 focus:outline-none focus:border-indigo-400 text-sm"
+                              className="w-full px-4 py-3 rounded-xl bg-primary/10 border border-primary/20 text-white placeholder-blue-200/60 focus:outline-none focus:border-primary/50 text-sm"
                             />
                             <div className="grid grid-cols-2 gap-3">
                               <input
@@ -227,14 +227,14 @@ export const EmployerCTA = () => {
                                 value={demoDate}
                                 onChange={(e) => setDemoDate(e.target.value)}
                                 style={{ colorScheme: "dark" }}
-                                className="w-full px-4 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-white focus:outline-none focus:border-indigo-400 text-sm"
+                                className="w-full px-4 py-3 rounded-xl bg-primary/10 border border-primary/20 text-white focus:outline-none focus:border-primary/50 text-sm"
                               />
                               <input
                                 type="time"
                                 value={demoTime}
                                 onChange={(e) => setDemoTime(e.target.value)}
                                 style={{ colorScheme: "dark" }}
-                                className="w-full px-4 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-white focus:outline-none focus:border-indigo-400 text-sm"
+                                className="w-full px-4 py-3 rounded-xl bg-primary/10 border border-primary/20 text-white focus:outline-none focus:border-primary/50 text-sm"
                               />
                             </div>
                           </div>
@@ -242,7 +242,7 @@ export const EmployerCTA = () => {
                           <Button
                             disabled={isBooking}
                             onClick={handleBookDemo}
-                            className="w-full h-12 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2"
+                            className="w-full h-12 font-bold transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 rounded-xl"
                           >
                             {isBooking ? "Booking..." : "Book a Demo Call"}
                             {!isBooking && <ArrowRight size={16} />}
@@ -284,7 +284,7 @@ export const EmployerCTA = () => {
                 </blockquote>
 
                 <div className="mt-10 pt-8 border-t border-slate-800 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center font-bold text-xl shadow-lg">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center font-bold text-xl shadow-lg">
                     R
                   </div>
                   <div>

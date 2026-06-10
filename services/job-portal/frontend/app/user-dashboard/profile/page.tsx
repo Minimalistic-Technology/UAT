@@ -1,0 +1,105 @@
+"use client";
+
+import React, { useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
+import { UserProfileForm } from "@/features/user/components/profile-form";
+import { UserProfileCard } from "@/features/user/components/profile/user-profile-card";
+import { UserQuickStats } from "@/features/user/components/profile/user-quick-stats";
+import { UserPersonalInfo } from "@/features/user/components/profile/user-personal-info";
+import { useGetUserDetails } from "@/features/user/hooks/use-user";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Edit, X } from "lucide-react";
+
+export default function UserProfilePage() {
+    const { data: session } = useSession();
+    const userId = session?.user?.id;
+    const { data: userData, isLoading } = useGetUserDetails(userId);
+    const [isEditing, setIsEditing] = useState(false);
+
+    const user = userData?.data;
+
+    const profileStrength = useMemo(() => {
+        if (!user) return 0;
+        let strength = 0;
+        if (user.firstName && user.lastName) strength += 15;
+        if (user.email) strength += 10;
+        if (user.phone) strength += 15;
+        if (user.location?.city || user.location?.country) strength += 10;
+        if (user.skills && user.skills.length > 0) strength += 15;
+        if (user.experience && user.experience.length > 0) strength += 15;
+        if (user.education && user.education.length > 0) strength += 10;
+        if (user.resume?.url || user.resumeOriginalName) strength += 10;
+        return strength;
+    }, [user]);
+
+    if (isLoading) {
+        return (
+            <div className="w-full space-y-6">
+                <div className="flex items-center justify-between border-b pb-5">
+                    <Skeleton className="h-8 w-40" />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="space-y-6">
+                        <Skeleton className="h-64 rounded-xl" />
+                        <Skeleton className="h-40 rounded-xl" />
+                    </div>
+                    <div className="lg:col-span-2 space-y-6">
+                        <Skeleton className="h-[500px] rounded-xl" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="w-full space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-border/50 pb-5">
+                <h1 className="text-[1.4rem] font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                    My Profile
+                </h1>
+
+                {!isEditing ? (
+                    <Button onClick={() => setIsEditing(true)} size="sm" className="font-semibold shadow-sm">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Profile
+                    </Button>
+                ) : (
+                    <Button onClick={() => setIsEditing(false)} size="sm" variant="outline" className="font-semibold border-secondary/20 shadow-sm">
+                        <X className="w-4 h-4 mr-2" />
+                        Cancel Editing
+                    </Button>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column */}
+                <div className="space-y-6">
+                    <UserProfileCard
+                        firstName={user?.firstName || session?.user?.name?.split(" ")[0] || ""}
+                        lastName={user?.lastName || session?.user?.name?.split(" ").slice(1).join(" ") || ""}
+                        email={user?.email || session?.user?.email || ""}
+                        avatarUrl={typeof user?.avatar === "string" ? user.avatar : user?.avatar?.url || ""}
+                        profileStrength={profileStrength}
+                    />
+                    <UserQuickStats />
+                </div>
+
+                {/* Right Column */}
+                <div className="lg:col-span-2 space-y-6">
+                    {isEditing ? (
+                        <div className="animate-in fade-in zoom-in-95 duration-200">
+                            <UserProfileForm />
+                        </div>
+                    ) : (
+                        <div className="animate-in fade-in zoom-in-95 duration-200">
+                            <UserPersonalInfo user={user} />
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+

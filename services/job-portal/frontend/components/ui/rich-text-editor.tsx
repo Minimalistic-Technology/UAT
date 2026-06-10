@@ -139,6 +139,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     const editor = useEditor({
         extensions: [StarterKit, Underline],
         content: value || "",
+        immediatelyRender: false,
         editorProps: {
             attributes: {
                 class:

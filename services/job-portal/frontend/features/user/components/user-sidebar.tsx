@@ -88,7 +88,7 @@ export default function UserSidebar({ className }: { className?: string }) {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="cursor-pointer py-2 text-sm font-medium">
-                <Link href="/profile" className="flex items-center text-foreground cursor-pointer w-full">
+                <Link href="/user-dashboard/profile" className="flex items-center text-foreground cursor-pointer w-full">
                   <UserIcon className="mr-2 h-4 w-4 text-muted-foreground" /> My Profile
                 </Link>
               </DropdownMenuItem>

@@ -1,50 +1,51 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import Link from "next/link";
-import {
-  Briefcase,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Eye,
-  Search,
-  TrendingUp,
-  ArrowUpRight,
-  FileText,
-} from "lucide-react";
-import { ApplicationStatus } from "@/types";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Briefcase, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // hooks
 import { useGetJobs } from "@/features/user/hooks/use-job";
 import { useGetMyApplications, useGetMyApplicationStats } from "@/features/user/hooks/use-job-application";
+
+// global components
 import { AdminStatusCard } from "@/features/admin/components/stats-card";
-import { getApplicationStatusColor } from "@/utils";
+import { UserProfileCard } from "@/features/user/components/profile/user-profile-card";
+
+// local components
+import { UserWelcomeHeader } from "@/features/user/components/dashboard/user-welcome-header";
+import { RecentApplicationsCard } from "@/features/user/components/dashboard/recent-applications-card";
+import { RecommendedJobsCard } from "@/features/user/components/dashboard/recommended-jobs-card";
+import { useGetUserDetails } from "@/features/user/hooks/use-user";
 
 export default function JobSeekerDashboard() {
   const { data: session, status: authStatus } = useSession();
-  const { data: applications, isLoading: applicationLoading } =
-    useGetMyApplications();
+  const userId = session?.user?.id;
+
+  const { data: applications, isLoading: applicationLoading } = useGetMyApplications();
   const { data: responseData, isLoading: statsLoading } = useGetMyApplicationStats();
-  const { data: recommendedJobs, isLoading: jobsLoading } = useGetJobs({
-    limit: 5,
-  });
+  const { data: recommendedJobs, isLoading: jobsLoading } = useGetJobs({ limit: 5 });
+  const { data: userData } = useGetUserDetails(userId);
 
-  if (authStatus === "loading" || applicationLoading || statsLoading)
+  if (authStatus === "loading" || applicationLoading || statsLoading) {
     return <DashboardSkeleton />;
+  }
 
+  const user = userData?.data;
   const statsData = responseData?.data;
+
+  // Profile strength logic ported for immediate dashboard view
+  let profileStrength = 0;
+  if (user) {
+    if (user.firstName && user.lastName) profileStrength += 15;
+    if (user.email) profileStrength += 10;
+    if (user.phone) profileStrength += 15;
+    if (user.location?.city || user.location?.country) profileStrength += 10;
+    if (user.skills && user.skills.length > 0) profileStrength += 15;
+    if (user.experience && user.experience.length > 0) profileStrength += 15;
+    if (user.education && user.education.length > 0) profileStrength += 10;
+    if (user.resume?.url || user.resumeOriginalName) profileStrength += 10;
+  }
 
   const stats = [
     {
@@ -55,19 +56,19 @@ export default function JobSeekerDashboard() {
     },
     {
       label: "Pending",
-      value: statsData?.byStatus.pending || 0,
+      value: statsData?.byStatus?.pending || 0,
       icon: <Clock />,
       variant: "warning" as const,
     },
     {
       label: "Selected / Shortlisted",
-      value: (statsData?.byStatus.shortlisted || 0) + (statsData?.byStatus.accepted || 0),
+      value: (statsData?.byStatus?.shortlisted || 0) + (statsData?.byStatus?.accepted || 0),
       icon: <CheckCircle className="text-success" />,
       variant: "success" as const,
     },
     {
       label: "Rejected",
-      value: statsData?.byStatus.rejected || 0,
+      value: statsData?.byStatus?.rejected || 0,
       icon: <XCircle className="text-destructive" />,
       variant: "default" as const,
     },
@@ -76,29 +77,14 @@ export default function JobSeekerDashboard() {
   return (
     <div className="animate-in fade-in container mx-auto space-y-8 p-6 lg:p-10 duration-500">
       {/* Welcome Header */}
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 font-heading">
-            Welcome back, {session?.user.name?.split(" ")[0]}!
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm font-medium">
-            You have applied to{" "}
-            <span className="font-bold text-[#2563eb]">
-              {stats[0].value} jobs
-            </span>{" "}
-            so far.
-          </p>
-        </div>
-        <Button asChild className="h-10 px-6 font-bold rounded-xl shadow-lg shadow-primary/20">
-          <Link href="/user-dashboard/find-jobs">
-            <Search className="mr-2 h-4 w-4" /> Browse Jobs
-          </Link>
-        </Button>
-      </div>
+      <UserWelcomeHeader
+        userName={session?.user?.name?.split(" ")[0] || "Guest"}
+        totalApplied={statsData?.total || 0}
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {stats.map((stat, index) => (
+        {stats.map((stat) => (
           <AdminStatusCard
             key={stat.label}
             label={stat.label}
@@ -110,158 +96,23 @@ export default function JobSeekerDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-12">
+      <div className="grid gap-8 lg:grid-cols-12 items-start">
         {/* Main Content: Recent Applications */}
         <div className="space-y-6 lg:col-span-8">
-          <Card className="shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Recent Applications</CardTitle>
-                <CardDescription>
-                  Status updates for your latest submissions
-                </CardDescription>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="text-primary hover:text-primary hover:bg-primary/5"
-              >
-                <Link href="/user-dashboard/applications">
-                  View All <ArrowUpRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {applications?.data.applications.length === 0 ? (
-                  <div className="rounded-xl border-2 border-dashed py-12 text-center">
-                    <Briefcase className="mx-auto mb-3 h-12 w-12 text-slate-300" />
-                    <p className="text-slate-500">
-                      You haven't applied to any jobs yet.
-                    </p>
-                    <Button variant="link" asChild>
-                      <Link href="/user-dashboard/find-jobs">Start searching</Link>
-                    </Button>
-                  </div>
-                ) : (
-                  applications?.data.applications.slice(0, 4).map((app) => (
-                    <div
-                      key={app._id}
-                      className="group bg-card hover:border-primary/30 flex items-center justify-between rounded-xl border p-4 transition-all"
-                    >
-                      <div className="flex flex-col gap-1">
-                        <h4 className="group-hover:text-primary font-semibold text-slate-900 transition-colors">
-                          {app.listing.title}
-                        </h4>
-                        <div className="text-muted-foreground flex items-center gap-3 text-sm">
-                          <span>{app.listing.company?.name || "Unknown Company"}</span>
-                          <span className="h-1 w-1 rounded-full bg-slate-300" />
-                          <span>
-                            Applied{" "}
-                            {new Date(app.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <Badge
-                          variant="outline"
-                          className={`px-3 py-1 font-medium capitalize border-none ${getApplicationStatusColor(app.status)}`}
-                        >
-                          {app.status.toLowerCase().replace("_", " ")}
-                        </Badge>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="rounded-full"
-                          asChild
-                        >
-                          <Link href={`/user-dashboard/applications/${app._id}`}>
-                            <Eye className="h-4 w-4 text-slate-500" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <RecentApplicationsCard applications={applications?.data?.applications || []} />
         </div>
 
         {/* Sidebar Components */}
-        <div className="space-y-6 lg:col-span-4">
-          {/* Profile Card */}
-          {/* <Card className="relative overflow-hidden border-none bg-slate-900 text-white">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <TrendingUp className="h-24 w-24" />
-            </div>
-            <CardHeader>
-              <CardTitle className="text-lg">Profile Strength</CardTitle>
-              <CardDescription className="text-slate-400">
-                Complete your profile to get 3x more views
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Progress</span>
-                  <span className="font-bold">75%</span>
-                </div>
-                <Progress
-                  value={75}
-                  className="h-2 bg-slate-700"
-                  //   indicatorClassName="bg-primary"
-                />
-              </div>
-              <Button className="w-full bg-white text-slate-900" asChild>
-                <Link href="/profile">Edit Profile</Link>
-              </Button>
-            </CardContent>
-          </Card> */}
-
-          {/* Recommended Jobs */}
-          {/* <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Recommended for You</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-80 px-6">
-                <div className="space-y-6 pb-6">
-                  {recommendedJobs?.data?.jobs?.map((job) => (
-                    <Link
-                      key={job._id}
-                      href={`/jobs/${job._id}`}
-                      className="group block"
-                    >
-                      <div className="space-y-1">
-                        <h4 className="group-hover:text-primary text-sm font-semibold transition-colors">
-                          {job.title}
-                        </h4>
-                        <p className="text-muted-foreground text-xs">
-                          {job.company?.name}
-                        </p>
-                        <div className="flex items-center gap-2 pt-1">
-                          <Badge
-                            variant="outline"
-                            className="px-2 text-[10px] font-normal"
-                          >
-                            {job.jobType.replace("_", " ")}
-                          </Badge>
-                          <span className="flex items-center text-[10px] text-slate-400">
-                            <MapPin className="mr-0.5 h-3 w-3" />{" "}
-                            {job.location.city}
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card> */}
+        <div className="space-y-6 lg:col-span-4 self-stretch">
+          <UserProfileCard
+            firstName={user?.firstName || session?.user?.name?.split(" ")[0] || ""}
+            lastName={user?.lastName || session?.user?.name?.split(" ").slice(1).join(" ") || ""}
+            email={user?.email || session?.user?.email || ""}
+            avatarUrl={typeof user?.avatar === "string" ? user.avatar : user?.avatar?.url || ""}
+            profileStrength={profileStrength}
+          />
+          <RecommendedJobsCard jobs={recommendedJobs?.data?.jobs || []} />
         </div>
-
       </div>
     </div>
   );
@@ -271,8 +122,8 @@ function DashboardSkeleton() {
   return (
     <div className="container mx-auto space-y-8 p-10">
       <div className="flex justify-between">
-        <Skeleton className="h-10 w-75" />
-        <Skeleton className="h-10 w-37.5" />
+        <Skeleton className="h-10 w-[300px]" />
+        <Skeleton className="h-10 w-[150px]" />
       </div>
       <div className="grid gap-4 md:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
@@ -280,8 +131,8 @@ function DashboardSkeleton() {
         ))}
       </div>
       <div className="grid gap-8 lg:grid-cols-12">
-        <Skeleton className="h-125 rounded-xl lg:col-span-8" />
-        <Skeleton className="h-125 rounded-xl lg:col-span-4" />
+        <Skeleton className="h-[500px] rounded-xl lg:col-span-8" />
+        <Skeleton className="h-[500px] rounded-xl lg:col-span-4" />
       </div>
     </div>
   );

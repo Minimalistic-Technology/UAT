@@ -108,12 +108,12 @@ export const FeaturedJobs = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-12">
           <div>
-            <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-blue-600">
+            <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-primary">
               Handpicked
             </span>
             <h2 className="text-4xl md:text-5xl lg:text-6xl mt-3 text-slate-900 font-bold leading-tight tracking-tight max-w-3xl">
               Featured roles, updated <br className="hidden md:block" />
-              <span className="text-blue-600">every hour.</span>
+              <span className="text-primary">every hour.</span>
             </h2>
           </div>
 
@@ -171,9 +171,9 @@ export const FeaturedJobs = () => {
                     : (job.salary || "N/A");
 
                   // Logo logic
-                  let logoEl = <span className="font-bold text-2xl text-indigo-600">{companyName?.charAt(0) || "J"}</span>;
+                  let logoEl = <span className="font-bold text-2xl text-primary">{companyName?.charAt(0) || "J"}</span>;
                   if (job.logo) {
-                    logoEl = <span className="font-bold text-2xl text-indigo-600">{job.logo}</span>;
+                    logoEl = <span className="font-bold text-2xl text-primary">{job.logo}</span>;
                   } else if (typeof job.company === 'object' && job.company?.logo) {
                     logoEl = <img src={job.company.logo.url} alt={companyName} className="w-full h-full object-cover rounded-2xl" />;
                   }
@@ -187,11 +187,11 @@ export const FeaturedJobs = () => {
                       transition={{ duration: 0.4, ease: "easeIn" }}
                       href={`/job/${jobId}`}
                       key={String(jobId)}
-                      className="group relative flex flex-col md:flex-row md:items-center gap-6 px-6 md:px-10 py-8 hover:bg-indigo-50/30 transition-colors cursor-pointer"
+                      className="group relative flex flex-col md:flex-row md:items-center gap-6 px-6 md:px-10 py-8 hover:bg-primary/5 transition-colors cursor-pointer"
                     >
                       {/* Left: Brand */}
                       <div className="flex items-center gap-5 flex-1">
-                        <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center font-bold text-2xl text-indigo-600 group-hover:scale-110 group-hover:bg-white transition-all duration-300 overflow-hidden">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center font-bold text-2xl text-primary group-hover:scale-110 group-hover:bg-white transition-all duration-300 overflow-hidden">
                           {logoEl}
                         </div>
                         <div>
@@ -200,7 +200,7 @@ export const FeaturedJobs = () => {
                               {companyName}
                             </span>
                           </div>
-                          <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                          <h3 className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors">
                             {roleName}
                           </h3>
                         </div>
@@ -215,7 +215,7 @@ export const FeaturedJobs = () => {
                           {jobTags.slice(0, 3).map((t: string) => (
                             <span
                               key={t}
-                              className="px-3 py-1 bg-slate-50 text-slate-500 text-[11px] font-semibold rounded-lg border border-slate-100 group-hover:bg-white group-hover:border-indigo-100 transition-colors"
+                              className="px-3 py-1 bg-slate-50 text-slate-500 text-[11px] font-semibold rounded-lg border border-slate-100 group-hover:bg-white group-hover:border-primary/20 transition-colors"
                             >
                               {t}
                             </span>
@@ -235,7 +235,7 @@ export const FeaturedJobs = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:bg-indigo-600 transition-colors group-hover:translate-x-1 duration-300">
+                          <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center group-hover:bg-primary transition-colors group-hover:translate-x-1 duration-300">
                             <ArrowRight size={18} />
                           </div>
                         </div>
@@ -253,7 +253,7 @@ export const FeaturedJobs = () => {
             size="lg"
             variant="outline"
             onClick={() => router.push("/find-jobs")}
-            className="group px-8 h-14 bg-white border-2 border-slate-200 hover:border-indigo-600 text-slate-900 hover:text-indigo-600 rounded-2xl font-bold transition-all duration-300 flex items-center gap-3 shadow-sm hover:shadow-xl hover:shadow-indigo-100 hover:bg-white"
+            className="group px-8 h-14 bg-white border-2 border-slate-200 hover:border-primary text-slate-900 hover:text-primary rounded-2xl font-bold transition-all duration-300 flex items-center gap-3 shadow-sm hover:shadow-xl hover:shadow-primary/20 hover:bg-white"
           >
             Browse all 12,804 jobs
             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />

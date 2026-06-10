@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Search, MapPin, ArrowRight } from "lucide-react";
@@ -11,6 +11,18 @@ export const Hero = () => {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,15 +129,21 @@ export const Hero = () => {
               onSubmit={handleSearchSubmit}
               className="relative flex flex-col md:flex-row items-stretch bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/20 dark:border-slate-800 focus-within:border-[#2563eb]/50 focus-within:ring-4 focus-within:ring-[#2563eb]/10 rounded-[2rem] overflow-hidden transition-all shadow-xl shadow-[#2563eb]/[0.03] p-1.5"
             >
-              <div className="flex items-center gap-3 flex-1 px-5 py-4 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80">
+              <div className="relative flex items-center gap-3 flex-1 px-5 py-4 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80">
                 <Search size={22} className="text-[#2563eb] dark:text-[#60a5fa] shrink-0" />
                 <input
+                  ref={searchInputRef}
                   type="text"
                   placeholder="Job title, skill, or keyword"
-                  className="w-full bg-transparent outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-[17px] font-medium"
+                  className="w-full bg-transparent outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-[17px] font-medium pr-12"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex">
+                  <kbd className="pointer-events-none inline-flex h-6 select-none items-center gap-1 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 font-mono text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    <span className="text-xs">⌘</span>K
+                  </kbd>
+                </div>
               </div>
               <div className="flex items-center gap-3 flex-1 px-5 py-4">
                 <MapPin size={22} className="text-[#2563eb] dark:text-[#60a5fa] shrink-0" />
