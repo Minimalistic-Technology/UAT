@@ -115,7 +115,7 @@ const Page = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" asChild className="rounded-full h-10 px-5 font-semibold text-xs border-primary/20 hover:bg-primary/5 text-primary">
+          <Button variant="outline" asChild size="sm">
             <Link href="/employer-dashboard/plans">
               <CreditCard className="mr-2 h-4 w-4" />
               Manage Plan
@@ -124,7 +124,6 @@ const Page = () => {
 
           <Button
             size="sm"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-full shadow-sm h-10 px-6 text-sm transition-all hover:scale-105 active:scale-95"
             onClick={() => router.push("/employer-dashboard/jobs/create")}
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -265,7 +264,7 @@ const Page = () => {
       </div>
 
       {/* Recent Applications Table */}
-      <div className="rounded-2xl border border-secondary/20 bg-card p-6 shadow-sm overflow-hidden relative">
+      <div className="rounded-[20px] border-0 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] overflow-hidden relative">
         <div className="flex items-center justify-between mb-6">
           <div className="flex flex-col">
             <h3 className="text-lg font-bold font-heading text-foreground">Recent Candidate Pipeline</h3>

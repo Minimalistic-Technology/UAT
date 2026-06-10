@@ -24,8 +24,7 @@ interface AdminEditProfileModalProps {
         state: string;
         country: string;
     };
-    handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-    handleSave: () => void;
+    handleSave: (data: any) => void;
 }
 
 export function AdminEditProfileModal({
@@ -36,9 +35,21 @@ export function AdminEditProfileModal({
     avatarUrl,
     onImageUpload,
     formData,
-    handleChange,
     handleSave,
 }: AdminEditProfileModalProps) {
+    const [localData, setLocalData] = React.useState(formData);
+
+    React.useEffect(() => {
+        if (isEditing) {
+            setLocalData(formData);
+        }
+    }, [isEditing, formData]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setLocalData((prev) => ({ ...prev, [name]: value }));
+    };
+
     return (
         <Dialog open={isEditing} onOpenChange={setIsEditing}>
             <DialogContent className="max-w-xl p-0 gap-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl sm:rounded-[24px]">
@@ -61,7 +72,7 @@ export function AdminEditProfileModal({
                         <div className="flex-shrink-0 scale-90 origin-left">
                             <ImageUpload
                                 value={avatarUrl}
-                                initials={`${formData.firstName.charAt(0)}${formData.lastName.charAt(0)}`}
+                                initials={`${localData.firstName.charAt(0)}${localData.lastName.charAt(0)}`}
                                 onChange={(file) => onImageUpload && onImageUpload(file)}
                             />
                         </div>
@@ -70,7 +81,7 @@ export function AdminEditProfileModal({
                                 <ShieldCheck className="w-3.5 h-3.5 mr-1 text-blue-500" /> Super Admin
                             </div>
                             <h4 className="text-[17px] font-bold text-slate-800 dark:text-white leading-none">
-                                {`${formData.firstName} ${formData.lastName}`}
+                                {`${localData.firstName} ${localData.lastName}`}
                             </h4>
                             <p className="text-[12px] text-slate-500 max-w-sm leading-snug">
                                 Manage the HireFlow ecosystem with global administrative permissions.
@@ -87,7 +98,7 @@ export function AdminEditProfileModal({
                                 <Label className="text-[12px] font-semibold text-slate-600 dark:text-slate-400">First Name</Label>
                                 <Input
                                     name="firstName"
-                                    value={formData.firstName}
+                                    value={localData.firstName}
                                     onChange={handleChange}
                                     className="h-[2.35rem] bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 rounded-lg text-sm"
                                 />
@@ -96,7 +107,7 @@ export function AdminEditProfileModal({
                                 <Label className="text-[12px] font-semibold text-slate-600 dark:text-slate-400">Last Name</Label>
                                 <Input
                                     name="lastName"
-                                    value={formData.lastName}
+                                    value={localData.lastName}
                                     onChange={handleChange}
                                     className="h-[2.35rem] bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 rounded-lg text-sm"
                                 />
@@ -120,10 +131,10 @@ export function AdminEditProfileModal({
                             <div className="space-y-1.5">
                                 <Label className="text-[12px] font-semibold text-slate-600 dark:text-slate-400">Phone Number</Label>
                                 <div className="flex h-[2.35rem]">
-                                    <CountryCodeSelector name="countryCode" value={formData.countryCode} onChange={handleChange} />
+                                    <CountryCodeSelector name="countryCode" value={localData.countryCode} onChange={handleChange} />
                                     <Input
                                         name="phone"
-                                        value={formData.phone}
+                                        value={localData.phone}
                                         onChange={handleChange}
                                         className="h-full flex-1 rounded-l-none bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 rounded-r-lg text-sm px-3"
                                     />
@@ -137,9 +148,9 @@ export function AdminEditProfileModal({
                             Location Details
                         </h5>
                         <LocationSelector
-                            city={formData.city}
-                            state={formData.state}
-                            country={formData.country}
+                            city={localData.city}
+                            state={localData.state}
+                            country={localData.country}
                             onChange={(name, value) => {
                                 // Simulate event object for existing handleChange
                                 handleChange({ target: { name, value } } as any);
@@ -159,7 +170,7 @@ export function AdminEditProfileModal({
                     </Button>
                     <Button
                         disabled={isLoading}
-                        onClick={handleSave}
+                        onClick={() => handleSave(localData)}
                         className="bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-500/20 text-sm font-medium gap-2 h-9 px-5"
                     >
                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}

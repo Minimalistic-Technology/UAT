@@ -4,13 +4,13 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-lg border px-2.5 py-2 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
+  "group/alert relative grid w-full gap-0.5 rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] px-4 py-4 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-3 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
-        default: "bg-card text-card-foreground",
+        default: "bg-white dark:bg-slate-900 border-0 text-slate-800 dark:text-slate-200",
         destructive:
-          "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+          "bg-white dark:bg-slate-900 border border-red-100 dark:border-red-900/40 text-red-600 dark:text-red-500 *:data-[slot=alert-description]:text-red-600/90 dark:*:data-[slot=alert-description]:text-red-500/90 *:[svg]:text-current",
       },
     },
     defaultVariants: {

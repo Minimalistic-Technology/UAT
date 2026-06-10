@@ -240,6 +240,8 @@ export const createJob = async (
       skills: req.body.skills,
       requirements: req.body.requirements,
       benefits: req.body.benefits,
+      genderPreference: req.body.genderPreference,
+      englishFluency: req.body.englishFluency,
 
       applicationDeadline: req.body.applicationDeadline,
       isFeatured: req.body.isFeatured ?? false,

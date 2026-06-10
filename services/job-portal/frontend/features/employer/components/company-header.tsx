@@ -12,7 +12,7 @@ export const CompanyHeader = ({ company, isLoading }: CompanyHeaderProps) => {
   if (isLoading || !company) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="relative overflow-hidden rounded-[20px] border-0 bg-white dark:bg-slate-900 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
       {/* Background Banner */}
       <div className="h-32 bg-linear-to-r from-indigo-500 to-purple-600"></div>
 

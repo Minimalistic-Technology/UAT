@@ -12,6 +12,10 @@ export const Job_Type = [
 
 export const Opportunity_Type = ["job", "internship"];
 
+export const Gender_Preference = ["any", "male", "female"];
+
+export const English_Fluency = ["none", "basic", "intermediate", "fluent"];
+
 export const Work_Mode = [
   "work from office",
   "remote",
@@ -149,6 +153,9 @@ export const BaseListingSchema = z.object({
   companyType: z.enum(Company_Type, { error: "Company type is required" }),
   roleCategory: z.enum(ROLE_CATEGORIES, { error: "Role category is required" }),
   industry: z.enum(INDUSTRIES, { error: "Industry is required" }),
+
+  genderPreference: z.enum(Gender_Preference).default("any"),
+  englishFluency: z.enum(English_Fluency).default("none"),
 
   location: locationSchema,
   education: educationSchema,

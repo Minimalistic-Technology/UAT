@@ -1,5 +1,19 @@
 export function FormattedDescription({ text }: { text: string }) {
-  // Split on numbered points like "1. ", "2. ", etc.
+  if (!text) return null;
+
+  // Check if text is HTML (saved by RichTextEditor)
+  const isHtml = /<\/?[a-z][\s\S]*>/i.test(text);
+
+  if (isHtml) {
+    return (
+      <div
+        className="text-muted-foreground space-y-2 text-[15px] leading-relaxed [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-slate-900 dark:[&>h1]:text-white [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-slate-800 dark:[&>h2]:text-slate-100 [&>h3]:text-lg [&>h3]:font-bold [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:pl-5 [&>ol]:pl-5 [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul>li]:mb-1 [&>ol>li]:mb-1"
+        dangerouslySetInnerHTML={{ __html: text }}
+      />
+    );
+  }
+
+  // Split on numbered points like "1. ", "2. ", etc. (fallback for legacy plaintext)
   const numberedPattern = /(?=\d+\.\s)/;
   const parts = text.split(numberedPattern).filter(Boolean);
 

@@ -53,15 +53,16 @@ export default function ForgotPasswordClient() {
   const isMutationLoading = forgotPasswordMutation.isPending;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
-      <Image
-        src="/login-page-img.png"
-        alt="forgot-password-image"
-        height={1000}
-        width={1000}
-        priority
-        className="hidden h-full w-1/2 object-cover lg:block"
-      />
+    <div className="flex h-[calc(100vh-72px)] w-full bg-slate-50/50 overflow-hidden">
+      <div className="hidden h-full w-1/2 lg:block relative shrink-0">
+        <Image
+          src="/login-page-img.png"
+          alt="forgot-password-image"
+          fill
+          priority
+          className="object-cover"
+        />
+      </div>
       <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-slate-50 relative">
         <Card className="w-full max-w-[400px] border-0 sm:border shadow-2xl sm:border-slate-100 rounded-[24px] overflow-hidden bg-white/70 backdrop-blur-xl supports-backdrop-filter:bg-white/50 relative z-10 p-2 sm:p-4">
           <CardHeader className="space-y-1.5 text-center pb-8 pt-6">

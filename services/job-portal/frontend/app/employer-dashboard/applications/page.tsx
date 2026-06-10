@@ -147,21 +147,21 @@ const EmployerApplicationsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Applications</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">All Applications</h1>
+          <p className="text-slate-500 text-sm mt-1">
             Manage all the applications received across your company's jobs.
           </p>
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Recent Applications</CardTitle>
-            <CardDescription>
+      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+        <CardHeader className="flex flex-row items-center justify-between pb-4 pt-6 px-7">
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Recent Applications</CardTitle>
+            <CardDescription className="text-sm text-slate-500">
               {pagination?.totalItems || 0} total applications
             </CardDescription>
           </div>
@@ -173,7 +173,7 @@ const EmployerApplicationsPage = () => {
                 setPage(1);
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -186,7 +186,7 @@ const EmployerApplicationsPage = () => {
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-7 pb-6">
           {isLoading ? (
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => (

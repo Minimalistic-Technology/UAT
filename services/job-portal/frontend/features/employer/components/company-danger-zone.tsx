@@ -33,7 +33,7 @@ export const CompanyDangerZone = ({ company }: CompanyDangerZoneProps) => {
   }
 
   return (
-    <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm space-y-6 h-full">
+    <div className="rounded-[20px] border-0 bg-red-50 dark:bg-red-950/20 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] space-y-6 h-full">
       <h3 className="text-lg font-semibold text-red-700 flex items-center gap-2">
         <AlertTriangle className="w-5 h-5" />
         Danger Zone

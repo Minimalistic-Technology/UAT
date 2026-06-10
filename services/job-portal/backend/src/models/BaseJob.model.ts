@@ -27,6 +27,19 @@ export enum JobStatus {
   REJECTED = "rejected",
 }
 
+export enum GenderPreference {
+  ANY = "any",
+  MALE = "male",
+  FEMALE = "female",
+}
+
+export enum EnglishFluency {
+  NONE = "none",
+  BASIC = "basic",
+  INTERMEDIATE = "intermediate",
+  FLUENT = "fluent",
+}
+
 export enum WorkMode {
   WORKFROMOFFICE = "work from office",
   REMOTE = "remote",
@@ -162,6 +175,8 @@ export interface IBaseJob extends Document {
   skills: string[];
   requirements: string[];
   benefits?: string[];
+  genderPreference: GenderPreference;
+  englishFluency: EnglishFluency;
   applicationDeadline?: Date;
   openings: number;
   status: JobStatus;
@@ -217,6 +232,16 @@ export const baseJobSchemaDefinition: SchemaDefinition<
   skills: [String],
   requirements: [String],
   benefits: [String],
+  genderPreference: {
+    type: String,
+    enum: Object.values(GenderPreference),
+    default: GenderPreference.ANY,
+  },
+  englishFluency: {
+    type: String,
+    enum: Object.values(EnglishFluency),
+    default: EnglishFluency.NONE,
+  },
   applicationDeadline: Date,
   openings: {
     type: Number,

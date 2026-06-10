@@ -174,19 +174,19 @@ export default function PlansPage() {
         <div className="mt-32 max-w-5xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-10 text-slate-900 dark:text-white font-heading">Frequently Asked Questions</h2>
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-white dark:bg-card p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
               <h4 className="font-bold text-[#2563eb] mb-2">Can I change plans at any time?</h4>
               <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Yes, you can upgrade or downgrade your plan at any time from your dashboard settings. If you upgrade, the change is immediate.</p>
             </div>
-            <div className="bg-white dark:bg-card p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
               <h4 className="font-bold text-[#2563eb] mb-2">How does the Resume Ranking work?</h4>
               <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Our AI analyzes candidate resumes against your job description requirements, scoring them on skills to surface top talent faster.</p>
             </div>
-            <div className="bg-white dark:bg-card p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
               <h4 className="font-bold text-[#2563eb] mb-2">Do you offer a free trial?</h4>
               <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Absolutely. Select plans come with a 14-day free trial. No credit card is required to start exploring the premium recruitment features.</p>
             </div>
-            <div className="bg-white dark:bg-card p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
               <h4 className="font-bold text-[#2563eb] mb-2">What kind of support do you provide?</h4>
               <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Starter users get email support. Professional users receive 24/7 priority chat support. Enterprise clients have a dedicated success manager.</p>
             </div>
@@ -223,9 +223,9 @@ export default function PlansPage() {
 
 function EmptyState() {
   return (
-    <Card className="col-span-full border-dashed bg-transparent py-20">
+    <Card className="col-span-full border-dashed bg-slate-50/50 dark:bg-slate-900/50 py-20 rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
       <CardContent className="flex flex-col items-center justify-center space-y-4 text-center">
-        <div className="rounded-full bg-slate-100 p-4">
+        <div className="rounded-full bg-white dark:bg-slate-800 p-4 shadow-sm">
           <Briefcase className="h-10 w-10 text-slate-400" />
         </div>
         <div className="space-y-2">
@@ -241,7 +241,7 @@ function EmptyState() {
 
 function PlanSkeleton() {
   return (
-    <Card className="flex h-[36rem] flex-col rounded-3xl border border-slate-100">
+    <Card className="flex h-[36rem] flex-col rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900">
       <CardHeader className="space-y-4 pt-10 px-8">
         <Skeleton className="h-6 w-1/3" />
         <Skeleton className="h-10 w-1/2" />

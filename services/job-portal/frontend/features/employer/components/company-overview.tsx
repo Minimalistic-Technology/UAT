@@ -1,9 +1,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Camera, Globe, Loader2 } from "lucide-react";
 import { IconBrandFacebook, IconBrandTwitter, IconBrandLinkedin } from '@tabler/icons-react';
 import { useGetUserDetails } from "@/hooks/use-user";
 import { toast } from "sonner";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface CompanyOverviewProps {
   company: any;
@@ -24,49 +25,42 @@ export const CompanyOverview = ({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-[20px] border-0 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
         <h3 className="mb-6 text-lg font-semibold text-slate-900">
           Company Logo
         </h3>
 
         <div className="flex flex-col items-center justify-center space-y-4">
           <div className="relative">
-            <Avatar className="h-32 w-32 border-4 border-white shadow-lg rounded-xl">
-              <AvatarImage src={company?.logo?.url || ""} className="object-cover rounded-xl" />
-              <AvatarFallback className="bg-indigo-50 text-indigo-600 text-3xl font-bold rounded-xl">
-                {company.name?.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <Button
-              size="icon"
-              className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full border-2 border-white shadow-sm"
-              onClick={() => {
+            <ImageUpload
+              value={company?.logo?.url}
+              initials={company.name?.charAt(0).toUpperCase()}
+              disabled={!isOwner || isLogoUploading}
+              onChange={(file) => {
                 if (!isOwner) {
                   toast.error("You are not authorized to update the company logo");
                   return;
                 }
-                logoInputRef.current?.click();
+                if (logoInputRef.current) {
+                  const dataTransfer = new DataTransfer();
+                  dataTransfer.items.add(file);
+                  logoInputRef.current.files = dataTransfer.files;
+                  logoInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                }
               }}
-              disabled={isLogoUploading}
-            >
-              {isLogoUploading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Camera className="h-4 w-4" />
-              )}
-            </Button>
+            />
           </div>
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-slate-500 mt-2">
             Allowed formats: JPEG, PNG. Max size: 5MB
           </p>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+      <div className="rounded-[20px] border-0 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] space-y-6">
         <h3 className="text-lg font-semibold text-slate-900">
           Links & Social
         </h3>
-        
+
         <div className="space-y-4">
           {company.website ? (
             <div className="flex items-center gap-3">

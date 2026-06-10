@@ -77,26 +77,26 @@ export default function UpdateTeamMemberPage() {
           variant="ghost"
           size="icon"
           onClick={() => router.push("/employer-dashboard/team")}
-          className="rounded-full"
+          className="rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Update Team Member</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Update Team Member</h1>
+          <p className="text-slate-500 text-sm mt-1">
             Modify the details and status of this team member.
           </p>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Member Details</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+        <CardHeader className="pb-4 pt-6 px-7">
+          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Member Details</CardTitle>
+          <CardDescription className="text-sm text-slate-500">
             Update the employee's name and activity status.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-7 pb-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">

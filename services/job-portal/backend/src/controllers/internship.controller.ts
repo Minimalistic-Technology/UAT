@@ -33,9 +33,9 @@ export const getAllInternships = async (
       if (minStipend) query["stipend.amount"].$gte = Number(minStipend);
       if (maxStipend) query["stipend.amount"].$lte = Number(maxStipend);
     }
-    
+
     if (stipendType) {
-        query["stipend.type"] = stipendType;
+      query["stipend.type"] = stipendType;
     }
 
     const { page, limit } = req.query;
@@ -247,6 +247,8 @@ export const createInternship = async (
       skills: req.body.skills,
       requirements: req.body.requirements,
       benefits: req.body.benefits,
+      genderPreference: req.body.genderPreference,
+      englishFluency: req.body.englishFluency,
 
       applicationDeadline: req.body.applicationDeadline,
       isFeatured: req.body.isFeatured,

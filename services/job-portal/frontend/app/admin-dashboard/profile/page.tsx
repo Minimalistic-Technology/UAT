@@ -23,22 +23,17 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
-  // Provide stable defaults
-  const name = session?.user?.name || "Super Admin";
-  const email = session?.user?.email || "admin@jobsmadeeasy.com";
-  const nameParts = name.split(" ");
-  const fallbackFirst = nameParts[0] || "Super";
-  const fallbackLast = nameParts.slice(1).join(" ") || "Admin";
-
   const [formData, setFormData] = useState({
-    firstName: fallbackFirst,
-    lastName: fallbackLast,
-    phone: "555-0123",
-    countryCode: "+1",
-    city: "San Francisco",
-    state: "California",
-    country: "United States"
+    firstName: "",
+    lastName: "",
+    phone: "",
+    countryCode: "+91",
+    city: "",
+    state: "",
+    country: ""
   });
+
+  const email = session?.user?.email || "";
 
   // Fetch real profile data immediately when session has loaded
   useEffect(() => {
@@ -48,43 +43,47 @@ export default function ProfilePage() {
           const res = await apiClient.get(`/users/${session.user.id}`);
           if (res.data?.success) {
             const dbUser = res.data.data;
+            let finalPhone = "";
+            let finalCountryCode = "+91";
+            if (dbUser.phone) {
+              const possibleCodes = ["+1", "+7", "+20", "+27", "+33", "+34", "+39", "+44", "+49", "+52", "+55", "+60", "+61", "+64", "+65", "+81", "+82", "+86", "+91", "+92", "+94", "+98", "+254", "+353", "+358", "+880", "+971", "+972", "+977"];
+              const matched = possibleCodes.filter(c => dbUser.phone.startsWith(c)).sort((a, b) => b.length - a.length)[0];
+              if (matched) {
+                finalCountryCode = matched;
+                finalPhone = dbUser.phone.slice(matched.length).trim();
+              } else {
+                finalPhone = dbUser.phone; // fallback
+              }
+            }
+
             setFormData((prev) => ({
               ...prev,
-              firstName: dbUser.firstName || prev.firstName,
-              lastName: dbUser.lastName || prev.lastName,
-              // Attempt to extract countryCode and phone if saved directly
-              phone: dbUser.phone?.replace(/^\+\d+\s?/, "") || prev.phone,
-              countryCode: dbUser.phone?.match(/^\+\d+/)?.[0] || prev.countryCode,
-              city: dbUser.location?.city || prev.city,
-              state: dbUser.location?.state || prev.state,
-              country: dbUser.location?.country || prev.country,
+              firstName: dbUser.firstName || "",
+              lastName: dbUser.lastName || "",
+              phone: finalPhone,
+              countryCode: finalCountryCode,
+              city: dbUser.location?.city || "",
+              state: dbUser.location?.state || "",
+              country: dbUser.location?.country || "",
             }));
-            if (dbUser.avatar) {
-              setAvatarUrl(dbUser.avatar);
+            if (dbUser.avatar?.url || dbUser.avatar) {
+              setAvatarUrl(dbUser.avatar?.url || dbUser.avatar);
             }
           }
         } catch (error) {
           console.error("Failed to fetch fresh profile data:", error);
         }
-      } else if (session?.user?.name) {
-        // Fallback to basic session sync
-        const parts = session.user.name.split(" ");
-        setFormData((prev) => ({
-          ...prev,
-          firstName: parts[0] || prev.firstName,
-          lastName: parts.slice(1).join(" ") || prev.lastName,
-        }));
       }
     }
     fetchProfile();
-  }, [session?.user?.id, session?.user?.name]);
+  }, [session?.user?.id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = async () => {
+  const handleSave = async (updatedData: any) => {
     try {
       setIsLoading(true);
 
@@ -102,19 +101,23 @@ export default function ProfilePage() {
 
       // Update profile details
       await apiClient.put("/users/profile", {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: `${formData.countryCode}${formData.phone}`,
+        firstName: updatedData.firstName,
+        lastName: updatedData.lastName,
+        phone: `${updatedData.countryCode}${updatedData.phone}`,
         location: {
-          city: formData.city,
-          state: formData.state,
-          country: formData.country,
+          city: updatedData.city,
+          state: updatedData.state,
+          country: updatedData.country,
         }
       });
 
       if (update) {
-        await update({ name: `${formData.firstName} ${formData.lastName}` });
+        await update({ name: `${updatedData.firstName} ${updatedData.lastName}` });
       }
+
+      // Update local state to reflect instantly on main UI
+      setFormData(updatedData);
+
       setIsEditing(false);
       toast.success("Profile updated successfully!");
     } catch (error) {
@@ -166,7 +169,6 @@ export default function ProfilePage() {
         email={email}
         avatarUrl={avatarUrl}
         formData={formData}
-        handleChange={handleChange}
         handleSave={handleSave}
         onImageUpload={(file) => {
           const previewUrl = URL.createObjectURL(file);

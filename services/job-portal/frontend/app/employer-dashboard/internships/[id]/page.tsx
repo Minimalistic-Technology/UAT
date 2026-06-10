@@ -114,8 +114,8 @@ const Page = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column: Internship Info */}
         <div className="space-y-6 lg:col-span-2">
-          <Card>
-            <CardHeader>
+          <Card className="rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900 border-0 overflow-hidden">
+            <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b pb-6">
               <div className="mb-2 flex items-center gap-2">
                 <Badge variant="secondary" className="capitalize">
                   {internship.status.replace("_", " ").toLowerCase()}
@@ -165,9 +165,9 @@ const Page = () => {
         {/* Right Column: Stats & Meta */}
         <div className="space-y-6">
           {/* Quick Stats Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">
+          <Card className="rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900 border-0">
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
                 Post Performance
               </CardTitle>
             </CardHeader>
@@ -185,9 +185,9 @@ const Page = () => {
           </Card>
 
           {/* Internship Details Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">
+          <Card className="rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900 border-0">
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
                 Listing Details
               </CardTitle>
             </CardHeader>
@@ -198,8 +198,8 @@ const Page = () => {
                   {internship.stipend.type === "fixed" && internship.stipend.amount
                     ? `₹${internship.stipend.amount.toLocaleString()} / ${internship.stipend.period}`
                     : internship.stipend.type === "unpaid"
-                    ? "Unpaid"
-                    : "Performance Based"}
+                      ? "Unpaid"
+                      : "Performance Based"}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
@@ -263,16 +263,16 @@ function InternshipSkeleton() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
       <div className="flex justify-between">
-        <Skeleton className="h-9 w-24" />
-        <Skeleton className="h-9 w-40" />
+        <Skeleton className="h-9 w-24 rounded-full" />
+        <Skeleton className="h-9 w-40 rounded-full" />
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Skeleton className="h-[600px] w-full" />
+          <Skeleton className="h-[600px] w-full rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)]" />
         </div>
         <div className="space-y-6">
-          <Skeleton className="h-[200px] w-full" />
-          <Skeleton className="h-[300px] w-full" />
+          <Skeleton className="h-[200px] w-full rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)]" />
+          <Skeleton className="h-[300px] w-full rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)]" />
         </div>
       </div>
     </div>

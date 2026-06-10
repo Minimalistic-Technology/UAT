@@ -130,9 +130,12 @@ const ApplicationsPage = () => {
 
   if (isLoading)
     return (
-      <div className="p-8">
-        <Skeleton className="mb-4 h-20 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
+        <div className="flex justify-between items-center mb-4">
+          <Skeleton className="h-10 w-48 rounded-md" />
+          <Skeleton className="h-8 w-24 rounded-full" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)]" />
       </div>
     );
 
@@ -150,7 +153,7 @@ const ApplicationsPage = () => {
         </Badge>
       </div>
 
-      <div className="rounded-md border bg-white">
+      <div className="rounded-[20px] border-0 bg-white dark:bg-slate-900 shadow-[0_2px_15px_rgba(0,0,0,0.04)] overflow-hidden p-6 mx-auto">
         <Table>
           <TableHeader>
             <TableRow>

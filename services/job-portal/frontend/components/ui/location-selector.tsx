@@ -8,6 +8,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Country, State, City } from "country-state-city";
+import { Asterisk } from "lucide-react";
 
 interface LocationSelectorProps {
     city: string;
@@ -64,14 +65,14 @@ export function LocationSelector({ city, state, country, onChange }: LocationSel
     };
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             {/* Country Dropdown */}
-            <div className="space-y-1.5 sm:col-span-2">
-                <Label className="text-[12px] font-semibold text-slate-600 dark:text-slate-400">
-                    Country
+            <div className="grid gap-2">
+                <Label className="flex items-center gap-1">
+                    Country <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Select value={country} onValueChange={handleCountryChange}>
-                    <SelectTrigger className="h-[2.35rem] bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus:ring-blue-500 rounded-lg text-sm truncate">
+                    <SelectTrigger className="truncate">
                         <SelectValue placeholder="Select your country" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-100 dark:border-slate-800 shadow-xl max-h-60">
@@ -85,16 +86,16 @@ export function LocationSelector({ city, state, country, onChange }: LocationSel
             </div>
 
             {/* State / Province Dropdown */}
-            <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-600 dark:text-slate-400">
-                    State / Province
+            <div className="grid gap-2">
+                <Label className="flex items-center gap-1">
+                    State / Province <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Select
                     value={state}
                     onValueChange={handleStateChange}
                     disabled={!activeCountry || states.length === 0}
                 >
-                    <SelectTrigger className="h-[2.35rem] bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus:ring-blue-500 rounded-lg text-sm truncate disabled:opacity-50">
+                    <SelectTrigger className="truncate">
                         <SelectValue placeholder="Select state" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-100 dark:border-slate-800 shadow-xl max-h-60">
@@ -108,16 +109,16 @@ export function LocationSelector({ city, state, country, onChange }: LocationSel
             </div>
 
             {/* City Dropdown */}
-            <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-600 dark:text-slate-400">
-                    City
+            <div className="grid gap-2">
+                <Label className="flex items-center gap-1">
+                    City <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Select
                     value={city}
                     onValueChange={handleCityChange}
                     disabled={!activeState || cities.length === 0}
                 >
-                    <SelectTrigger className="h-[2.35rem] bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus:ring-blue-500 rounded-lg text-sm truncate disabled:opacity-50">
+                    <SelectTrigger className="truncate">
                         <SelectValue placeholder="Select city" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-slate-100 dark:border-slate-800 shadow-xl max-h-60">

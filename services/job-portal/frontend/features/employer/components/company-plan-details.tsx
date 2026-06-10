@@ -6,12 +6,12 @@ interface CompanyPlanDetailsProps {
 
 export const CompanyPlanDetails = ({ company }: CompanyPlanDetailsProps) => {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-6 h-full">
+    <div className="rounded-[20px] border-0 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] space-y-6 h-full">
       <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
         <CreditCard className="w-5 h-5" />
         Plan Details
       </h3>
-      
+
       {company.subscription ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -20,7 +20,7 @@ export const CompanyPlanDetails = ({ company }: CompanyPlanDetailsProps) => {
               {company.currentPlan?.name || "Active Plan"}
             </span>
           </div>
-          
+
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-slate-500 flex items-center gap-1">
               <Calendar className="w-4 h-4" />
