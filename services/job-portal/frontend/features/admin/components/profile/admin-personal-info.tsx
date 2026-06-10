@@ -13,6 +13,7 @@ interface AdminPersonalInfoProps {
         countryCode: string;
         city: string;
         state: string;
+        country: string;
     };
     email: string;
 }
@@ -70,7 +71,7 @@ export function AdminPersonalInfo({ formData, email }: AdminPersonalInfoProps) {
                     <div className="space-y-2">
                         <Label className="text-[13px] font-medium text-slate-500 dark:text-slate-400">Location</Label>
                         <Input
-                            value={`${formData.city}, ${formData.state}`}
+                            value={`${formData.city}, ${formData.state}, ${formData.country}`}
                             readOnly
                             className="bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 h-10 rounded-xl text-slate-700 dark:text-slate-200 pointer-events-none"
                         />

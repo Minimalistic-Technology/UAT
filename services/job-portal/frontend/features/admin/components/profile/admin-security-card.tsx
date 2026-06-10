@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { KeyRound } from "lucide-react";
@@ -23,12 +24,14 @@ export function AdminSecurityCard() {
                             <p className="text-[13px] text-slate-500">Last changed 45 days ago.</p>
                         </div>
                     </div>
-                    <Button
-                        variant="outline"
-                        className="w-full sm:w-auto h-10 px-6 rounded-xl border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold bg-white dark:bg-transparent shadow-sm"
-                    >
-                        Update
-                    </Button>
+                    <Link href="/forgot-password" className="w-full sm:w-auto">
+                        <Button
+                            variant="outline"
+                            className="w-full sm:w-auto h-10 px-6 rounded-xl border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-semibold bg-white dark:bg-transparent shadow-sm"
+                        >
+                            Update
+                        </Button>
+                    </Link>
                 </div>
             </CardContent>
         </Card>

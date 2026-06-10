@@ -4,13 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CountryCodeSelector } from "@/components/ui/country-code-selector";
-import { UserSquare2, ShieldCheck, MapPin, Lock, Loader2, CheckCircle2 } from "lucide-react";
+import { LocationSelector } from "@/components/ui/location-selector";
+import { UserSquare2, ShieldCheck, Lock, Loader2, CheckCircle2 } from "lucide-react";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface AdminEditProfileModalProps {
     isEditing: boolean;
     setIsEditing: (open: boolean) => void;
     isLoading: boolean;
     email: string;
+    avatarUrl?: string;
+    onImageUpload?: (file: File) => void;
     formData: {
         firstName: string;
         lastName: string;
@@ -29,6 +33,8 @@ export function AdminEditProfileModal({
     setIsEditing,
     isLoading,
     email,
+    avatarUrl,
+    onImageUpload,
     formData,
     handleChange,
     handleSave,
@@ -52,15 +58,16 @@ export function AdminEditProfileModal({
                     </DialogHeader>
 
                     <div className="flex items-center gap-5 pb-6 border-b border-slate-100 dark:border-slate-800/60">
-                        <div className="relative">
-                            <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden text-2xl font-bold text-slate-500 ring-4 ring-white shadow-sm">
-                                {formData.firstName.charAt(0)}
-                                {formData.lastName.charAt(0)}
-                            </div>
+                        <div className="flex-shrink-0 scale-90 origin-left">
+                            <ImageUpload
+                                value={avatarUrl}
+                                initials={`${formData.firstName.charAt(0)}${formData.lastName.charAt(0)}`}
+                                onChange={(file) => onImageUpload && onImageUpload(file)}
+                            />
                         </div>
                         <div className="space-y-1.5 flex-1">
-                            <div className="inline-flex items-center px-2.5 py-0.5 bg-[#8b5cf6] text-white rounded-full text-[10px] font-bold uppercase tracking-wider mb-0.5 shadow-sm">
-                                <ShieldCheck className="w-3 h-3 mr-1" /> Super Admin
+                            <div className="inline-flex items-center text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">
+                                <ShieldCheck className="w-3.5 h-3.5 mr-1 text-blue-500" /> Super Admin
                             </div>
                             <h4 className="text-[17px] font-bold text-slate-800 dark:text-white leading-none">
                                 {`${formData.firstName} ${formData.lastName}`}
@@ -97,7 +104,7 @@ export function AdminEditProfileModal({
                             <div className="space-y-1.5">
                                 <div className="flex items-center justify-between">
                                     <Label className="text-[12px] font-semibold text-slate-600 dark:text-slate-400">Email Address</Label>
-                                    <span className="text-[9px] font-bold text-[#8b5cf6] flex items-center gap-0.5 uppercase tracking-wide">
+                                    <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 uppercase tracking-wide">
                                         <ShieldCheck className="w-[10px] h-[10px]" /> Verified
                                     </span>
                                 </div>
@@ -129,44 +136,15 @@ export function AdminEditProfileModal({
                         <h5 className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mt-2">
                             Location Details
                         </h5>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label className="text-[12px] font-semibold text-slate-600 dark:text-slate-400">City</Label>
-                                <div className="relative">
-                                    <MapPin className="w-3.5 h-3.5 absolute left-3 top-[10px] text-slate-400" />
-                                    <Input
-                                        name="city"
-                                        value={formData.city}
-                                        onChange={handleChange}
-                                        className="h-[2.35rem] bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 rounded-lg text-sm pl-9"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[12px] font-semibold text-slate-600 dark:text-slate-400">State / Province</Label>
-                                <Input
-                                    name="state"
-                                    value={formData.state}
-                                    onChange={handleChange}
-                                    className="h-[2.35rem] bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 focus-visible:ring-blue-500 rounded-lg text-sm"
-                                />
-                            </div>
-                            <div className="space-y-1.5 sm:col-span-2">
-                                <Label className="text-[12px] font-semibold text-slate-600 dark:text-slate-400">Country</Label>
-                                <select
-                                    name="country"
-                                    value={formData.country}
-                                    onChange={handleChange}
-                                    className="w-full h-[2.35rem] bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus-visible:outline-none focus:ring-1 focus:ring-blue-500 rounded-lg text-sm px-3 text-slate-800 dark:text-slate-200"
-                                >
-                                    <option value="United States">United States</option>
-                                    <option value="Canada">Canada</option>
-                                    <option value="United Kingdom">United Kingdom</option>
-                                    <option value="India">India</option>
-                                    <option value="Australia">Australia</option>
-                                </select>
-                            </div>
-                        </div>
+                        <LocationSelector
+                            city={formData.city}
+                            state={formData.state}
+                            country={formData.country}
+                            onChange={(name, value) => {
+                                // Simulate event object for existing handleChange
+                                handleChange({ target: { name, value } } as any);
+                            }}
+                        />
                     </div>
                 </div>
 

@@ -6,6 +6,7 @@ import { useNavSession } from "@/hooks/use-nav-session";
 import apiClient from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
+import { toast } from "sonner";
 
 // Import our new admin profile components
 import { AdminProfileCard } from "@/features/admin/components/profile/admin-profile-card";
@@ -19,6 +20,8 @@ export default function ProfilePage() {
   const { update } = useSession();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   // Provide stable defaults
   const name = session?.user?.name || "Super Admin";
@@ -37,17 +40,44 @@ export default function ProfilePage() {
     country: "United States"
   });
 
-  // Keep state synced if session loads late
+  // Fetch real profile data immediately when session has loaded
   useEffect(() => {
-    if (session?.user?.name) {
-      const parts = session.user.name.split(" ");
-      setFormData(prev => ({
-        ...prev,
-        firstName: parts[0] || prev.firstName,
-        lastName: parts.slice(1).join(" ") || prev.lastName
-      }));
+    async function fetchProfile() {
+      if (session?.user?.id) {
+        try {
+          const res = await apiClient.get(`/users/${session.user.id}`);
+          if (res.data?.success) {
+            const dbUser = res.data.data;
+            setFormData((prev) => ({
+              ...prev,
+              firstName: dbUser.firstName || prev.firstName,
+              lastName: dbUser.lastName || prev.lastName,
+              // Attempt to extract countryCode and phone if saved directly
+              phone: dbUser.phone?.replace(/^\+\d+\s?/, "") || prev.phone,
+              countryCode: dbUser.phone?.match(/^\+\d+/)?.[0] || prev.countryCode,
+              city: dbUser.location?.city || prev.city,
+              state: dbUser.location?.state || prev.state,
+              country: dbUser.location?.country || prev.country,
+            }));
+            if (dbUser.avatar) {
+              setAvatarUrl(dbUser.avatar);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch fresh profile data:", error);
+        }
+      } else if (session?.user?.name) {
+        // Fallback to basic session sync
+        const parts = session.user.name.split(" ");
+        setFormData((prev) => ({
+          ...prev,
+          firstName: parts[0] || prev.firstName,
+          lastName: parts.slice(1).join(" ") || prev.lastName,
+        }));
+      }
     }
-  }, [session?.user?.name]);
+    fetchProfile();
+  }, [session?.user?.id, session?.user?.name]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -57,6 +87,20 @@ export default function ProfilePage() {
   const handleSave = async () => {
     try {
       setIsLoading(true);
+
+      // Upload avatar if a new file was selected
+      if (avatarFile) {
+        const avatarFormData = new FormData();
+        avatarFormData.append("avatar", avatarFile);
+        await apiClient.put("/users/avatar", avatarFormData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        setAvatarFile(null); // Clear after successful upload
+      }
+
+      // Update profile details
       await apiClient.put("/users/profile", {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -72,10 +116,10 @@ export default function ProfilePage() {
         await update({ name: `${formData.firstName} ${formData.lastName}` });
       }
       setIsEditing(false);
-      alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!");
     } catch (error) {
       console.error(error);
-      alert("Failed to update profile. Please try again.");
+      toast.error("Failed to update profile. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -102,11 +146,8 @@ export default function ProfilePage() {
             firstName={formData.firstName}
             lastName={formData.lastName}
             email={email}
+            avatarUrl={avatarUrl}
             onEdit={() => setIsEditing(true)}
-            onImageUpload={(file) => {
-              console.log("File ready to upload:", file);
-              // Handle your backend API call here
-            }}
           />
           <AdminQuickStats />
         </div>
@@ -123,9 +164,16 @@ export default function ProfilePage() {
         setIsEditing={setIsEditing}
         isLoading={isLoading}
         email={email}
+        avatarUrl={avatarUrl}
         formData={formData}
         handleChange={handleChange}
         handleSave={handleSave}
+        onImageUpload={(file) => {
+          const previewUrl = URL.createObjectURL(file);
+          setAvatarUrl(previewUrl);
+          setAvatarFile(file);
+          toast.info("Image selected! Click Save to upload to Cloud.");
+        }}
       />
     </div>
   );

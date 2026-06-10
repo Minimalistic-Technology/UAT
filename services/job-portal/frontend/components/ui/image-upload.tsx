@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 interface ImageUploadProps {
     value?: string;
     initials?: string;
-    onChange: (file: File) => void;
+    onChange?: (file: File) => void;
     disabled?: boolean;
     className?: string;
     icon?: React.ReactNode;
@@ -35,13 +35,13 @@ export function ImageUpload({
 
         const objectUrl = URL.createObjectURL(file);
         setPreviewUrl(objectUrl);
-        onChange(file);
+        onChange?.(file);
     };
 
     const displayUrl = previewUrl || value;
 
     return (
-        <div className={cn("relative group cursor-pointer inline-block", className)} onClick={handleClick}>
+        <div className={cn("relative inline-block", !disabled && "cursor-pointer group", className)} onClick={handleClick}>
             <input
                 type="file"
                 ref={fileInputRef}
