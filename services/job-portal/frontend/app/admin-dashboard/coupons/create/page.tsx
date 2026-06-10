@@ -58,7 +58,7 @@ export default function CreateCouponForm() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+      <div className="rounded-[20px] border-0 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] md:p-8">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-2">
@@ -103,7 +103,7 @@ export default function CreateCouponForm() {
                 {...register("value", { valueAsNumber: true })}
                 type="number"
                 min={0}
-                max={selectedType === "percentage" ? 100 : undefined}  
+                max={selectedType === "percentage" ? 100 : undefined}
                 step={selectedType === "percentage" ? "1" : "0.01"}
                 placeholder="0"
               />
@@ -161,7 +161,7 @@ export default function CreateCouponForm() {
             <Button
               type="submit"
               disabled={isPending}
-              className="w-full cursor-pointer bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed sm:w-auto"
+              className="w-full h-12 bg-[#2563eb] font-semibold text-white hover:bg-blue-700 rounded-xl shadow-sm disabled:opacity-50 sm:w-auto px-8"
             >
               {isPending ? (
                 <>

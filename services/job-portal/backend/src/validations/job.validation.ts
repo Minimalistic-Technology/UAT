@@ -13,10 +13,10 @@ export const createJobSchema = [
   body("roleCategory").notEmpty().withMessage("Role category is required"),
   body("industry").notEmpty().withMessage("Industry is required"),
   body("experienceLevel")
-  .notEmpty()
-  .withMessage("Experience level is required")
-  .isIn(["entry", "intermediate", "senior", "expert"])
-  .withMessage("Invalid experience level"),
+    .notEmpty()
+    .withMessage("Experience level is required")
+    .isIn(["entry", "intermediate", "senior", "expert"])
+    .withMessage("Invalid experience level"),
 
   body("experienceInYears")
     .notEmpty()
@@ -51,6 +51,7 @@ export const createJobSchema = [
     .default(false),
 
   // Salary Object
+
   body("salary.min")
     .optional({ values: "falsy" }) // treats empty string as absent
     .isNumeric()

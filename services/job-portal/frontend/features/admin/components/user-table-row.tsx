@@ -15,23 +15,19 @@ const UserRoleBadge = ({ user }: { user: any }) => {
 
   if (isOwner)
     return (
-      <Badge
-        variant="outline"
-        className="border-amber-200 bg-amber-50 text-amber-700"
-      >
+      <Badge variant="secondary" className="bg-amber-100/50 text-amber-700 hover:bg-amber-100 uppercase tracking-widest text-[9px] font-bold">
         Owner
       </Badge>
     );
   if (isHR)
     return (
-      <Badge className="bg-pink-100 text-pink-700 hover:bg-pink-100">HR</Badge>
+      <Badge variant="secondary" className="bg-pink-100/50 text-pink-700 hover:bg-pink-100 uppercase tracking-widest text-[9px] font-bold">
+        HR
+      </Badge>
     );
 
   return (
-    <Badge
-      variant="outline"
-      className="border-indigo-200 bg-indigo-50 text-indigo-700"
-    >
+    <Badge variant="secondary" className="bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 uppercase tracking-widest text-[9px] font-bold">
       User
     </Badge>
   );

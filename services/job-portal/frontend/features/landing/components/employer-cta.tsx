@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
 
 const BG_URL =
   "https://static.prod-images.emergentagent.com/jobs/87777c5c-7e2c-4061-8282-ba379018b5d9/images/d502f0b7342dfdd8180285c187d04afae3a471f4d2c6560b7c4943fac5d7492d.png";
@@ -106,12 +107,12 @@ export const EmployerCTA = () => {
           <div className="relative grid lg:grid-cols-12 gap-12 p-8 md:p-16 lg:p-20 items-center">
             {/* Left Content */}
             <div className="lg:col-span-7">
-              <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-indigo-600">
+              <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-blue-600">
                 For Employers
               </span>
               <h2 className="text-4xl md:text-5xl lg:text-6xl mt-4 text-slate-900 font-bold leading-[1.1] tracking-tight">
                 Hire people <br />
-                who do the <span className="text-indigo-600">work.</span>
+                who do the <span className="text-blue-600">work.</span>
               </h2>
               <p className="mt-8 text-lg md:text-xl text-slate-600 max-w-xl leading-relaxed">
                 Skip the 400-resume pile. Our matching engine surfaces the top
@@ -135,26 +136,27 @@ export const EmployerCTA = () => {
               </ul>
 
               <div className="mt-12 flex flex-wrap gap-4">
-                <button
-                  type="button"
+                <Button
+                  size="lg"
                   onClick={handlePostJob}
-                  className="group px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all duration-300 shadow-xl shadow-indigo-200 hover:shadow-indigo-300 hover:-translate-y-0.5 flex items-center gap-2"
+                  className="group px-8 h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all duration-300 shadow-xl shadow-indigo-200 hover:-translate-y-0.5 flex items-center gap-2"
                   data-testid="post-job-cta-button"
                 >
                   Post a job — free
                   <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                </button>
+                </Button>
 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <button
-                      type="button"
-                      className="px-8 py-4 bg-white text-slate-900 border-2 border-slate-200 hover:border-indigo-600 hover:text-indigo-600 font-bold rounded-2xl transition-all duration-300 flex items-center gap-2"
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="px-8 h-14 bg-white text-slate-900 border-2 border-slate-200 hover:border-indigo-600 hover:text-indigo-600 hover:bg-white font-bold rounded-2xl transition-all duration-300 flex items-center gap-2"
                       data-testid="talk-to-sales-button"
                     >
                       <PhoneCall size={18} />
                       Talk to sales
-                    </button>
+                    </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-slate-50">
                     <div className="grid md:grid-cols-2">
@@ -242,15 +244,14 @@ export const EmployerCTA = () => {
                             </div>
                           </div>
 
-                          <button
-                            type="button"
+                          <Button
                             disabled={isBooking}
                             onClick={handleBookDemo}
-                            className="w-full py-3.5 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-70 text-white font-bold rounded-xl transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2"
+                            className="w-full h-12 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2"
                           >
                             {isBooking ? "Booking..." : "Book a Demo Call"}
                             {!isBooking && <ArrowRight size={16} />}
-                          </button>
+                          </Button>
                           <div className="mt-4 flex items-center justify-center gap-2 text-xs font-medium text-slate-500">
                             <Building2 size={14} /> Prefer email? sales@hireloop.com
                           </div>

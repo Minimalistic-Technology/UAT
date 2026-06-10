@@ -6,12 +6,13 @@ import {
 
 const salarySchema = z
   .object({
+
     min: z.preprocess(
       (val) =>
         val === "" ||
-        val === undefined ||
-        val === null ||
-        (typeof val === "number" && Number.isNaN(val))
+          val === undefined ||
+          val === null ||
+          (typeof val === "number" && Number.isNaN(val))
           ? undefined
           : Number(val),
       z.number().min(0, "Min salary must be positive").optional(),
@@ -19,9 +20,9 @@ const salarySchema = z
     max: z.preprocess(
       (val) =>
         val === "" ||
-        val === undefined ||
-        val === null ||
-        (typeof val === "number" && Number.isNaN(val))
+          val === undefined ||
+          val === null ||
+          (typeof val === "number" && Number.isNaN(val))
           ? undefined
           : Number(val),
       z.number().min(0, "Max salary must be positive").optional(),

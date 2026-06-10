@@ -230,6 +230,7 @@ export const createJob = async (
       },
 
       salary: {
+
         min: req.body.salary?.min,
         max: req.body.salary?.max,
         currency: req.body.salary?.currency,

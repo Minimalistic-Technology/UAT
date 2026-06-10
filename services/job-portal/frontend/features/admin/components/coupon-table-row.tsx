@@ -52,7 +52,7 @@ export function CouponTableRow({ coupon }: { coupon: Coupon }) {
           </Badge>
         </TableCell>
         <TableCell className="text-muted-foreground tabular-nums hidden md:table-cell">
-          {coupon.expiryDate 
+          {coupon.expiryDate
             ? new Date(coupon.expiryDate).toLocaleDateString(undefined, { dateStyle: "medium" })
             : "No Expiry"}
         </TableCell>
@@ -66,7 +66,7 @@ export function CouponTableRow({ coupon }: { coupon: Coupon }) {
             >
               <Pencil className="h-4 w-4" />
             </Button>
-            
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -78,23 +78,25 @@ export function CouponTableRow({ coupon }: { coupon: Coupon }) {
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the 
-                    coupon "{coupon.code}" and remove it from the system.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogContent className="p-0 gap-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl sm:rounded-[24px]">
+                <div className="p-6 sm:p-8 space-y-4">
+                  <AlertDialogHeader className="px-0">
+                    <AlertDialogTitle className="text-xl font-bold">Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-slate-500">
+                      This action cannot be undone. This will permanently delete the
+                      coupon "{coupon.code}" and remove it from the system.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-800/50 px-8 py-5 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                  <AlertDialogCancel className="mt-0 rounded-xl">Cancel</AlertDialogCancel>
                   <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className="bg-red-600 text-white hover:bg-red-700 rounded-xl shadow-sm font-semibold"
                     onClick={() => deleteCoupon(coupon._id)}
                   >
                     Delete Coupon
                   </AlertDialogAction>
-                </AlertDialogFooter>
+                </div>
               </AlertDialogContent>
             </AlertDialog>
           </div>

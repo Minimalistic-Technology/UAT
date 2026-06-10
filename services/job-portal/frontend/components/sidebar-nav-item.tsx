@@ -16,8 +16,8 @@ export function SidebarNavItem({ href, label, icon: Icon, isActive }: SidebarNav
       className={cn(
         "group flex items-center justify-between px-3 py-2 text-sm font-medium transition-all duration-200",
         isActive
-          ? "bg-primary/10 text-primary border-l-4 border-l-primary rounded-r-md"
-          : "text-muted-foreground border-l-4 border-l-transparent hover:bg-muted hover:text-foreground rounded-r-md"
+          ? "bg-[#2563eb]/10 text-[#2563eb] border-l-4 border-l-[#2563eb] rounded-r-xl font-bold"
+          : "text-slate-500 dark:text-slate-400 border-l-4 border-l-transparent hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white rounded-r-xl"
       )}
     >
       <div className="flex items-center gap-3">

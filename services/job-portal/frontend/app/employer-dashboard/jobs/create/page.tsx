@@ -8,15 +8,14 @@ import { JobForm } from "@/features/employer/components/job-form";
 import { InternshipForm } from "@/features/employer/components/internship-form";
 import { ListingType } from "@/types/enums";
 
-
 function PostListingPage() {
   const router = useRouter();
   const [listingType, setListingType] = useState<ListingType>(ListingType.JOB);
 
   return (
-    <div className="w-full max-w-5xl">
-      <div className="mb-8">
-        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
+    <div className="w-full px-[3px] py-4">
+      <div className="mb-8 border-b pb-6">
+        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
           Post a New Listing
         </h1>
         <p className="text-muted-foreground mt-2 text-lg">

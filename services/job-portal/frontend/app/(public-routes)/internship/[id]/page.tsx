@@ -60,10 +60,10 @@ const Page = () => {
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-10">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <div className="flex flex-col lg:grid gap-6 lg:gap-8 lg:grid-cols-3">
         {/* Left Column: Main Details */}
-        <div className="space-y-6 lg:col-span-2">
-          <Card className="border-none shadow-sm">
+        <div className="contents lg:block lg:col-span-2 lg:space-y-6">
+          <Card className="border-none shadow-sm order-1 lg:order-none">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
@@ -118,7 +118,7 @@ const Page = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm">
+          <Card className="border-none shadow-sm order-3 lg:order-none">
             <CardContent className="space-y-6 pt-6">
               <div>
                 <h3 className="mb-3 text-lg font-semibold">Description</h3>
@@ -181,8 +181,8 @@ const Page = () => {
         </div>
 
         {/* Right Column: Sidebar Actions */}
-        <div className="space-y-6">
-          <Card className="border-none shadow-sm">
+        <div className="contents lg:block lg:space-y-6">
+          <Card className="border-none shadow-sm order-2 lg:order-none">
             <CardHeader>
               <CardTitle className="text-xl">Internship Overview</CardTitle>
             </CardHeader>
@@ -280,22 +280,30 @@ const Page = () => {
                 >
                   {isApplying ? "Applying..." : "Apply Now"}
                 </Button>
+              ) : !session ? (
+                <Button
+                  variant="outline"
+                  className="h-12 w-full cursor-pointer text-[13px] sm:text-sm font-semibold whitespace-nowrap border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/5"
+                  onClick={() => window.location.href = "/login"}
+                >
+                  Please login to apply for this internship.
+                </Button>
               ) : (
-                <div className="bg-muted text-muted-foreground rounded-md p-3 text-center text-sm">
-                  {!session
-                    ? "Please login to apply for this internship."
-                    : "You are not eligible to apply for this role."}
+                <div className="bg-muted text-destructive rounded-md p-3 text-center text-sm font-medium">
+                  You are not eligible to apply for this role.
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <CompanyCard
-            company={{
-              ...internship.company,
-              location: internship.company.location,
-            }}
-          />
+          <div className="order-4 lg:order-none">
+            <CompanyCard
+              company={{
+                ...internship.company,
+                location: internship.company.location,
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

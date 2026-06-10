@@ -84,12 +84,12 @@ export default function LoginClient() {
         />
       </div>
       <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:px-8">
-        <Card className="m-auto w-full max-w-sm space-y-3 border-none shadow-lg sm:border shrink-0">
-          <CardHeader className="space-y-0.5 text-center">
+        <Card className="m-auto w-full max-w-sm space-y-3 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2">
+          <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-3xl font-bold tracking-tight">
               Welcome Back
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-slate-500">
               Enter your email to sign in to your account
             </CardDescription>
           </CardHeader>

@@ -34,9 +34,9 @@ export const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin-dashboard" },
   { label: "User Management", icon: Users, href: "/admin-dashboard/users" },
   { label: "KYC Applications", icon: ShieldCheck, href: "/admin-dashboard/kyc" },
-  { label: "Analytics", icon: BarChart3, href: "/admin-dashboard/analytics" },
   { label: "Coupons", icon: Ticket, href: "/admin-dashboard/coupons" },
   { label: "Plans", icon: Notebook, href: "/admin-dashboard/plans" },
+  { label: "Analytics", icon: BarChart3, href: "/admin-dashboard/analytics" },
   { label: "Feature Flags", icon: ToggleLeft, href: "/admin-dashboard/features" },
   { label: "System Settings", icon: Settings, href: "/admin-dashboard/settings" },
   { label: "DB Console", icon: TerminalSquare, href: "/admin-dashboard/db-console" },
@@ -94,7 +94,7 @@ export function Sidebar({ className }: { className?: string }) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/profile" className="flex cursor-pointer items-center">
+              <Link href="/admin-dashboard/profile" className="flex cursor-pointer items-center">
                 <User className="mr-2 h-4 w-4" /> Profile
               </Link>
             </DropdownMenuItem>

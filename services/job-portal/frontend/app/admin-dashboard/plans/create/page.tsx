@@ -79,14 +79,14 @@ export default function CreatePlanForm() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-bold">Plan Configuration</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+        <CardHeader className="px-8 pt-7 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <CardTitle className="font-bold text-xl">Plan Configuration</CardTitle>
+          <CardDescription className="text-slate-500">
             Configure pricing, limits, and visibility.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-8 pt-6 pb-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Basic Info */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -327,7 +327,7 @@ export default function CreatePlanForm() {
               <Button
                 type="submit"
                 disabled={isPending}
-                className="w-full min-w-37.5 cursor-pointer bg-indigo-700 sm:w-auto"
+                className="w-full min-w-[150px] h-12 bg-[#2563eb] text-white hover:bg-blue-700 shadow-sm rounded-xl font-semibold sm:w-auto px-8"
               >
                 {isPending ? (
                   <>

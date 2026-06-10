@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
+import { Button } from "@/components/ui/button";
 import { ArrowRight, MapPin, Flame } from "lucide-react";
 import { useGetJobs } from "@/features/user/hooks/use-job";
 
@@ -107,27 +108,28 @@ export const FeaturedJobs = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-12">
           <div>
-            <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-indigo-600">
+            <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-blue-600">
               Handpicked
             </span>
             <h2 className="text-4xl md:text-5xl lg:text-6xl mt-3 text-slate-900 font-bold leading-tight tracking-tight max-w-3xl">
               Featured roles, updated <br className="hidden md:block" />
-              <span className="text-indigo-600">every hour.</span>
+              <span className="text-blue-600">every hour.</span>
             </h2>
           </div>
 
           <div className="flex flex-wrap gap-2 p-1 bg-white border border-slate-200 rounded-2xl w-fit">
             {FILTERS.map((f) => (
-              <button
+              <Button
                 key={f}
+                variant="ghost"
                 onClick={() => setActiveTab(f)}
-                className={`px-5 py-2 text-sm font-bold rounded-xl transition-all duration-300 ${activeTab === f
-                  ? "bg-slate-900 text-white shadow-md shadow-slate-200"
-                  : "text-slate-500 hover:text-slate-900"
+                className={`px-5 py-2 text-sm font-bold rounded-xl h-10 transition-all duration-300 ${activeTab === f
+                  ? "bg-slate-900 text-white shadow-md shadow-slate-200 hover:bg-slate-800 hover:text-white"
+                  : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
                   }`}
               >
                 {f}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -246,15 +248,16 @@ export const FeaturedJobs = () => {
           </motion.div>
         </div>
 
-        {/* Footer CTA */}
         <div className="mt-12 flex justify-center">
-          <button
+          <Button
+            size="lg"
+            variant="outline"
             onClick={() => router.push("/find-jobs")}
-            className="group px-8 py-4 bg-white border-2 border-slate-200 hover:border-indigo-600 text-slate-900 hover:text-indigo-600 rounded-2xl font-bold transition-all duration-300 flex items-center gap-3 shadow-sm hover:shadow-xl hover:shadow-indigo-100"
+            className="group px-8 h-14 bg-white border-2 border-slate-200 hover:border-indigo-600 text-slate-900 hover:text-indigo-600 rounded-2xl font-bold transition-all duration-300 flex items-center gap-3 shadow-sm hover:shadow-xl hover:shadow-indigo-100 hover:bg-white"
           >
             Browse all 12,804 jobs
             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </button>
+          </Button>
         </div>
       </div>
     </section>

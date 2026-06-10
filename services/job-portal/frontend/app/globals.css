@@ -57,7 +57,8 @@
   --foreground: #111827;
   --card: #FFFFFF;
   --card-foreground: #111827;
-  --popover: rgba(255, 255, 255, 0.8);
+  --popover: #FFFFFF;
+  --radix-select-content-bg: #FFFFFF;
   --popover-foreground: #111827;
   --primary: #2563eb;
   --primary-foreground: #FFFFFF;
@@ -97,9 +98,9 @@
 .dark {
   --background: #0B0F19;
   --foreground: #f9f9ff;
-  --card: rgba(17, 24, 39, 0.8);
+  --card: #111827;
   --card-foreground: #f9f9ff;
-  --popover: rgba(17, 24, 39, 0.8);
+  --popover: #111827;
   --popover-foreground: #f9f9ff;
   --primary: #2563eb;
   /* Slightly lighter deep blue for dark mode readability */

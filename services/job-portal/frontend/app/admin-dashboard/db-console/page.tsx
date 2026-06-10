@@ -7,8 +7,9 @@ import { Play, Database, Table as TableIcon, RefreshCw, TerminalSquare, Code, La
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const DBConsolePage = () => {
+export default function DBConsolePage() {
     const [collections, setCollections] = useState<string[]>([]);
     const [selectedCollection, setSelectedCollection] = useState<string>("");
     const [operation, setOperation] = useState<string>("find");
@@ -18,60 +19,31 @@ const DBConsolePage = () => {
     const [loading, setLoading] = useState(false);
     const [viewMode, setViewMode] = useState<"table" | "json">("table");
 
-    const fetchCollections = async () => {
-        try {
-            const res = await api.get("/admin/developer/collections");
-            setCollections(res.data.data);
-            if (res.data.data.length > 0) {
-                setSelectedCollection(res.data.data[0]);
-            }
-        } catch (e: any) {
-            toast.error(e?.response?.data?.message || "Failed to load collections");
-        }
-    };
-
     useEffect(() => {
-        fetchCollections();
+        api.get("/admin/developer/collections")
+            .then(res => {
+                setCollections(res.data.data);
+                if (res.data.data.length > 0) setSelectedCollection(res.data.data[0]);
+            })
+            .catch(e => toast.error(e?.response?.data?.message || "Failed to load collections"));
     }, []);
 
-    // Automatically fetch data when a collection is selected
     useEffect(() => {
-        if (selectedCollection) {
-            // Temporarily set operation to 'find' and query to empty 
-            // so it cleanly loads all records without using old queries
-            setOperation("find");
-            setQuery("{}");
-
-            const fetchInitialData = async () => {
-                setLoading(true);
-                setResult(null);
-                try {
-                    const res = await api.post("/admin/developer/query", {
-                        collectionName: selectedCollection,
-                        operation: "find",
-                        query: "{}"
-                    });
-                    setResult(res.data.data);
-                } catch (e: any) {
-                    setResult(e?.response?.data || { error: e.message });
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchInitialData();
-        }
+        if (!selectedCollection) return;
+        setOperation("find"); setQuery("{}");
+        setLoading(true);
+        api.post("/admin/developer/query", { collectionName: selectedCollection, operation: "find", query: "{}" })
+            .then(res => setResult(res.data.data))
+            .catch(e => setResult(e?.response?.data || { error: e.message }))
+            .finally(() => setLoading(false));
     }, [selectedCollection]);
 
     const handleRunQuery = async () => {
         if (!selectedCollection) return toast.error("Please select a collection");
-
         setLoading(true);
-        setResult(null);
         try {
             const res = await api.post("/admin/developer/query", {
-                collectionName: selectedCollection,
-                operation,
-                query,
+                collectionName: selectedCollection, operation, query,
                 updateData: ["updateOne", "updateMany", "create"].includes(operation) ? updateData : undefined
             });
             setResult(res.data.data);
@@ -86,172 +58,77 @@ const DBConsolePage = () => {
 
     return (
         <div className="flex flex-col h-[calc(100vh-100px)] overflow-hidden gap-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <Database className="w-6 h-6 text-indigo-600" />
-                        Developer DB Console
-                    </h1>
-                    <p className="text-sm text-slate-500">Run raw queries across your database directly from the admin panel.</p>
-                </div>
+            <div>
+                <h1 className="text-2xl font-bold flex items-center gap-2"><Database className="w-6 h-6 text-[#2563eb]" />Developer DB Console</h1>
+                <p className="text-sm text-slate-500">Run raw queries across your database directly from the admin panel.</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+                <Card className="shadow-sm rounded-[20px] flex flex-col overflow-hidden border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+                    <CardHeader className="bg-slate-50 dark:bg-slate-800/50 pb-4 border-b">
+                        <CardTitle className="text-sm flex items-center gap-2"><TerminalSquare className="w-4 h-4" /> Query Builder</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 flex flex-col gap-4 overflow-y-auto">
+                        <Select value={selectedCollection} onValueChange={setSelectedCollection}>
+                            <SelectTrigger className="rounded-xl border-slate-200"><SelectValue placeholder="Target Collection" /></SelectTrigger>
+                            <SelectContent>{collections.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                        </Select>
 
-                {/* LEFT PANEL: Query Builder */}
-                <div className="lg:col-span-1 bg-white border rounded-lg shadow-sm flex flex-col overflow-hidden">
-                    <div className="p-4 border-b bg-slate-50 font-semibold flex items-center gap-2">
-                        <TerminalSquare className="w-4 h-4" /> Query Builder
-                    </div>
+                        <Select value={operation} onValueChange={setOperation}>
+                            <SelectTrigger className="rounded-xl border-slate-200"><SelectValue placeholder="Operation" /></SelectTrigger>
+                            <SelectContent>
+                                {["find", "findOne", "updateOne", "updateMany", "create", "deleteOne", "deleteMany"].map(op => (
+                                    <SelectItem key={op} value={op}>{op}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
-                    <div className="p-4 flex flex-col gap-4 overflow-y-auto">
-                        {/* Collection Select */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
-                                <LayoutList className="w-3 h-3" /> Target Collection
-                            </label>
-                            <Select value={selectedCollection} onValueChange={setSelectedCollection}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Table..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {collections.map(c => (
-                                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Operation Select */}
-                        <div className="flex flex-col gap-1.5">
-                            <label className="text-xs font-semibold text-slate-600">Db Operation</label>
-                            <Select value={operation} onValueChange={setOperation}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="find">find (Fetch Multiple)</SelectItem>
-                                    <SelectItem value="findOne">findOne (Fetch Single)</SelectItem>
-                                    <SelectItem value="updateOne">updateOne (Modify Single)</SelectItem>
-                                    <SelectItem value="updateMany">updateMany (Modify Multiple)</SelectItem>
-                                    <SelectItem value="create">create (Insert New)</SelectItem>
-                                    <SelectItem value="deleteOne">deleteOne (Remove Single)</SelectItem>
-                                    <SelectItem value="deleteMany">deleteMany (Remove Multiple)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Query Filter Area */}
                         {operation !== "create" && (
-                            <div className="flex flex-col gap-1.5 flex-1">
-                                <label className="text-xs font-semibold text-slate-600">JSON Filter Query (e.g., {`{"_id": "123"}`})</label>
-                                <Textarea
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    className="font-mono text-sm bg-slate-900 text-green-400 h-32"
-                                />
-                            </div>
+                            <Textarea value={query} onChange={e => setQuery(e.target.value)} className="font-mono text-sm bg-slate-900 text-green-400 h-32 rounded-xl" placeholder="JSON Filter Query..." />
                         )}
 
-                        {/* Update / Insert Data Area */}
                         {["updateOne", "updateMany", "create"].includes(operation) && (
-                            <div className="flex flex-col gap-1.5 flex-1">
-                                <label className="text-xs font-semibold text-slate-600">JSON Data Payload</label>
-                                <Textarea
-                                    value={updateData}
-                                    onChange={(e) => setUpdateData(e.target.value)}
-                                    className="font-mono text-sm bg-slate-900 text-blue-400 h-32"
-                                />
-                            </div>
+                            <Textarea value={updateData} onChange={e => setUpdateData(e.target.value)} className="font-mono text-sm bg-slate-900 text-blue-400 h-32 rounded-xl" placeholder="JSON Update Payload..." />
                         )}
 
-                        <Button
-                            onClick={handleRunQuery}
-                            disabled={loading}
-                            className="mt-2 bg-indigo-600 hover:bg-indigo-700 w-full"
-                        >
-                            {loading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-                            Execute Query
+                        <Button onClick={handleRunQuery} disabled={loading} className="w-full rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-semibold shadow-sm">
+                            {loading ? <RefreshCw className="w-5 h-5 mr-2 animate-spin" /> : <Play className="w-5 h-5 mr-2" />} Execute Query
                         </Button>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
-                {/* RIGHT PANEL: Results */}
-                <div className="lg:col-span-2 bg-[#1e1e1e] border rounded-lg shadow-sm flex flex-col overflow-hidden">
-                    <div className="p-3 border-b border-slate-700 bg-[#2d2d2d] font-semibold flex items-center justify-between">
-                        <span className="text-slate-200">Query Results</span>
-                        <div className="flex items-center gap-2">
-                            <div className="flex bg-[#1e1e1e] p-1 rounded-md border border-slate-700">
-                                <button
-                                    onClick={() => setViewMode("table")}
-                                    className={`px-3 py-1 text-xs font-medium rounded flex items-center gap-1.5 transition-colors ${viewMode === "table" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"}`}
-                                >
-                                    <TableIcon className="w-3.5 h-3.5" /> Table
-                                </button>
-                                <button
-                                    onClick={() => setViewMode("json")}
-                                    className={`px-3 py-1 text-xs font-medium rounded flex items-center gap-1.5 transition-colors ${viewMode === "json" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"}`}
-                                >
-                                    <Code className="w-3.5 h-3.5" /> JSON
-                                </button>
-                            </div>
+                <Card className="lg:col-span-2 shadow-sm rounded-[20px] bg-[#1e1e1e] flex flex-col overflow-hidden border border-slate-800">
+                    <div className="p-3 border-b border-slate-800 bg-[#2d2d2d] font-semibold flex justify-between">
+                        <span className="text-slate-200 pl-2">Results Frame</span>
+                        <div className="flex bg-[#1e1e1e] p-1 rounded-lg border border-slate-700">
+                            <button onClick={() => setViewMode("table")} className={`px-3 py-1 text-xs rounded-md font-semibold transition ${viewMode === "table" ? "bg-[#2563eb] text-white" : "text-slate-400"}`}><TableIcon className="w-3.5 h-3.5 inline mr-1" />Table</button>
+                            <button onClick={() => setViewMode("json")} className={`px-3 py-1 text-xs rounded-md font-semibold transition ${viewMode === "json" ? "bg-[#2563eb] text-white" : "text-slate-400"}`}><Code className="w-3.5 h-3.5 inline mr-1" />JSON</button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-auto">
-                        {result ? (
-                            viewMode === "json" ? (
-                                <div className="p-4">
-                                    <pre className="text-sm font-mono text-[#d4d4d4] whitespace-pre-wrap">
-                                        {JSON.stringify(result, null, 2)}
-                                    </pre>
-                                </div>
-                            ) : (
-                                Array.isArray(result) && result.length > 0 ? (
-                                    <table className="w-full text-sm text-left whitespace-nowrap">
-                                        <thead className="text-xs uppercase bg-[#252526] text-slate-400 sticky top-0">
-                                            <tr>
-                                                {Array.from(new Set(result.flatMap(item => Object.keys(item)))).filter(k => k !== '__v').map(col => (
-                                                    <th key={col} className="px-4 py-3 border-b border-slate-700 font-medium">{col}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {result.map((row, i) => (
-                                                <tr key={i} className="border-b border-slate-700 hover:bg-[#2d2d2d] text-[#cccccc] font-mono text-[13px]">
-                                                    {Array.from(new Set(result.flatMap(item => Object.keys(item)))).filter(k => k !== '__v').map(col => {
-                                                        let value = row[col];
-                                                        if (value === null || value === undefined) value = "-";
-                                                        else if (typeof value === "object") value = JSON.stringify(value);
-                                                        else if (typeof value === "boolean") value = value.toString();
-
-                                                        return (
-                                                            <td key={col} className="px-4 py-2.5 max-w-[200px] truncate" title={String(value)}>
-                                                                {String(value)}
-                                                            </td>
-                                                        )
-                                                    })}
-                                                </tr>
+                    <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+                        {result && viewMode === "json" ? (
+                            <pre className="text-[13px] font-mono text-[#d4d4d4] whitespace-pre-wrap leading-relaxed">{JSON.stringify(result, null, 2)}</pre>
+                        ) : result && Array.isArray(result) && result.length > 0 ? (
+                            <table className="w-full text-sm text-left border-collapse">
+                                <thead className="text-xs uppercase text-slate-400 bg-[#252526] sticky top-0">
+                                    <tr>{Array.from(new Set(result.flatMap(item => Object.keys(item)))).filter(k => k !== '__v').map(col => <th key={col} className="p-3">{col}</th>)}</tr>
+                                </thead>
+                                <tbody>
+                                    {result.map((row, i) => (
+                                        <tr key={i} className="border-b border-slate-800 text-[#cccccc] font-mono hover:bg-[#2d2d2d] transition-colors">
+                                            {Array.from(new Set(result.flatMap(item => Object.keys(item)))).filter(k => k !== '__v').map(col => (
+                                                <td key={col} className="p-3 max-w-[200px] truncate" title={String(row[col] ?? "-")}>{String(row[col] ?? "-")}</td>
                                             ))}
-                                        </tbody>
-                                    </table>
-                                ) : (
-                                    <div className="p-4 flex flex-col items-center justify-center h-full text-slate-500 font-mono text-sm">
-                                        <TableIcon className="w-8 h-8 mb-2 opacity-50" />
-                                        Data is not an array. Please use JSON view.
-                                    </div>
-                                )
-                            )
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-slate-600 font-mono text-sm px-4 text-center">
-                                // Run a query to see results here
-                            </div>
+                            <div className="text-slate-500 font-mono text-sm flex flex-col items-center justify-center h-full">No valid table data output</div>
                         )}
                     </div>
-                </div>
-
+                </Card>
             </div>
         </div>
     );
-};
-
-export default DBConsolePage;
+}

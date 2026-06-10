@@ -53,6 +53,7 @@ export type JobEducationRequirement = {
 };
 
 export type SalaryDetails = {
+
   min?: number;
   max?: number;
   currency: string;

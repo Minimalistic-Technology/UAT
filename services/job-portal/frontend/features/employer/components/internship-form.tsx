@@ -141,13 +141,14 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-10 bg-card rounded-3xl border border-border/50 p-6 sm:p-10 shadow-md">
       {/* Basic Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 border-b pb-10 border-border/70">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Basic Information</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Provide the foundational details for the internship securely down below.</p>
+        </div>
+        <div className="space-y-6">
           <div className="grid gap-2">
             <Label className="flex items-center gap-1">
               Internship Title <Asterisk className="text-destructive size-3" />
@@ -292,15 +293,16 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Duration & Stipend */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Duration & Stipend</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 border-b pb-10 border-border/70">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Duration & Stipend</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Establish base compensation and time period details to attract applicants.</p>
+        </div>
+        <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-2">
               <Label className="flex items-center gap-1">
@@ -387,60 +389,64 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
               )}
             </div>
 
-            <div className="grid gap-2">
-              <Label>Amount (optional if unpaid)</Label>
-              <Input
-                type="number"
-                min={0}
-                {...register("stipend.amount", { valueAsNumber: true })}
-                placeholder="e.g. 15000"
-              />
-              {errors.stipend?.amount && (
-                <p className="text-destructive text-xs">
-                  {errors.stipend.amount.message}
-                </p>
-              )}
-            </div>
+            {watch("stipend.type") !== "unpaid" && (
+              <>
+                <div className="grid gap-2">
+                  <Label>Amount</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    {...register("stipend.amount", { valueAsNumber: true })}
+                    placeholder="e.g. 15000"
+                  />
+                  {errors.stipend?.amount && (
+                    <p className="text-destructive text-xs">
+                      {errors.stipend.amount.message}
+                    </p>
+                  )}
+                </div>
 
-            <div className="grid gap-2">
-              <Label>Currency</Label>
-              <Controller
-                name="stipend.currency"
-                control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="INR">INR</SelectItem>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-          </div>
+                <div className="grid gap-2">
+                  <Label>Currency</Label>
+                  <Controller
+                    name="stipend.currency"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="INR">INR</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
 
-          <div className="grid gap-2">
-            <Label>Stipend Period</Label>
-            <Controller
-              name="stipend.period"
-              control={control}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
+                <div className="grid gap-2">
+                  <Label>Stipend Period</Label>
+                  <Controller
+                    name="stipend.period"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <div className="flex flex-col gap-3 rounded-lg border p-4">
@@ -461,15 +467,16 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
               </Label>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Location */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Location</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 border-b pb-10 border-border/70">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Location Details</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Specify the exact location, or skip if remote.</p>
+        </div>
+        <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
             {/* Country */}
             <div className="grid gap-2">
@@ -551,15 +558,16 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
               {errors.location?.city && <p className="text-destructive text-xs">{errors.location.city.message}</p>}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Education Criteria */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Education Requirements</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 border-b pb-10 border-border/70">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Education Requirements</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Define what academic background the candidate needs.</p>
+        </div>
+        <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-2">
               <Label>
@@ -617,15 +625,16 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
               Education criteria is strictly mandatory
             </Label>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Skills & Requirements */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Skills & Requirements</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 border-b pb-10 border-border/70">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Skills & Requirements</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Select specialized skills and concrete necessities.</p>
+        </div>
+        <div className="space-y-6">
           <SkillInput
             currentSkills={currentSkills}
             onChange={(skills) =>
@@ -672,15 +681,16 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
               </p>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Publishing */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Publishing Options</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 pb-2">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Publishing & Perks</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Dates, visibility settings, and added benefits.</p>
+        </div>
+        <div className="space-y-6">
           <div className="grid gap-2">
             <Label>Benefits (One per line)</Label>
             <Textarea
@@ -734,14 +744,14 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <div className="flex justify-end gap-4">
+      <div className="mt-4 flex items-center justify-end gap-4 border-t pt-8">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending} className="px-8 py-2">
           {isPending ? (initialData ? "Saving..." : "Posting...") : (initialData ? "Save Changes" : "Post Internship")}
         </Button>
       </div>

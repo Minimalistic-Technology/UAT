@@ -9,7 +9,7 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
     const { status } = useSession();
 
     const isLandingPage = pathname === "/";
-    const isPublicFindJobs = pathname?.startsWith("/find-jobs") || pathname?.startsWith("/job/");
+    const isPublicFindJobs = pathname?.startsWith("/find-jobs") || pathname?.startsWith("/job/") || pathname?.startsWith("/internship/");
     const isProfilePage = pathname?.startsWith("/profile");
     const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/employer-register";
 

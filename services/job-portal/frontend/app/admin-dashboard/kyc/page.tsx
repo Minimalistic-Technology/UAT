@@ -39,7 +39,7 @@ export default function KycManagementPage() {
     limit: 10,
     status: statusFilter === "all" ? undefined : statusFilter,
   });
-  
+
   const { mutate: updateStatus, isPending: isUpdating } =
     useUpdateKycApplicationStatus();
 
@@ -100,17 +100,17 @@ export default function KycManagementPage() {
         </Select>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-xl font-bold">
-            <FileText className="text-primary h-5 w-5" />
+      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+        <CardHeader className="pb-4 pt-6 px-7">
+          <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
+            <FileText className="text-[#2563eb] h-5 w-5" />
             Employer KYC Applications
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm text-slate-500">
             Review credentials for employer verification.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-7 pb-6">
           <KycTable
             applications={filteredApps}
             isLoading={isLoading}

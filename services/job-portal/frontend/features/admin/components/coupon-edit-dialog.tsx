@@ -90,10 +90,10 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle>Edit Coupon</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden p-0 gap-0 border-0 shadow-2xl sm:rounded-[24px] bg-white dark:bg-slate-900">
+        <DialogHeader className="border-b px-8 py-5 border-slate-100 dark:border-slate-800">
+          <DialogTitle className="text-xl font-bold">Edit Coupon</DialogTitle>
+          <DialogDescription className="text-slate-500">
             Update discount type, value, and limits for this coupon.
           </DialogDescription>
         </DialogHeader>
@@ -197,12 +197,13 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
             </div>
           </form>
         </ScrollArea>
-        <div className="p-6 border-t bg-muted/20 flex justify-end gap-3">
+        <div className="bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 border-t px-8 py-5 border-slate-100 dark:border-slate-800">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
+            className="rounded-xl"
           >
             Cancel
           </Button>
@@ -210,12 +211,11 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
             type="submit"
             form="coupon-edit-form"
             disabled={isPending}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed"
+            className="bg-[#2563eb] hover:bg-blue-700 text-white shadow-sm rounded-xl px-6 font-semibold"
           >
             {isPending ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
-                Saving...
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
               </>
             ) : (
               "Save Changes"

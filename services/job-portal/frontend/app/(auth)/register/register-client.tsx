@@ -84,12 +84,12 @@ export default function RegisterClient() {
         />
       </div>
       <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
-        <Card className="m-auto w-full max-w-md border-none shadow-lg sm:border shrink-0">
+        <Card className="m-auto w-full max-w-md space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2 mt-4 sm:mt-auto">
           <CardHeader className="text-center pb-2 pt-4">
             <CardTitle className="text-2xl font-bold">
               Create an account
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-slate-500">
               Enter your details below to create your account
             </CardDescription>
           </CardHeader>

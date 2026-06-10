@@ -2,7 +2,7 @@
 
 
 import { Sidebar } from "@/features/admin/components/sidebar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import Logo from "@/components/logo";
@@ -28,6 +28,8 @@ export default function AdminLayout({
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-64 sm:w-72 border-r z-50">
+              <SheetTitle className="sr-only">Admin Navigation</SheetTitle>
+              <SheetDescription className="sr-only">Navigate the admin panel efficiently using this sidebar mapping.</SheetDescription>
               <Sidebar className="h-full w-full min-h-screen" />
             </SheetContent>
           </Sheet>

@@ -61,7 +61,7 @@ export default function Navbar() {
   const closeSheet = () => setOpen(false);
   const showFindJobs = isLoading || !isEmployer;
 
-  const isPublicFindJobs = pathname?.startsWith("/find-jobs") || pathname?.startsWith("/job/");
+  const isPublicFindJobs = pathname?.startsWith("/find-jobs") || pathname?.startsWith("/job/") || pathname?.startsWith("/internship/");
   const isProfilePage = pathname?.startsWith("/profile");
   const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/employer-register";
 
@@ -404,7 +404,7 @@ function NavLink({
       className={cn(
         "flex h-full items-center text-sm font-bold transition-all border-b-[3px]",
         active
-          ? "border-[#0b5cff] text-[#0b5cff] dark:border-blue-500 dark:text-blue-500"
+          ? "border-[#2563eb] text-[#2563eb] dark:border-[#3b82f6] dark:text-[#3b82f6]"
           : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
       )}
     >
@@ -433,8 +433,8 @@ function MobileNavLink({
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
         active
-          ? "bg-slate-100 text-slate-900"
-          : "text-muted-foreground hover:text-primary hover:bg-slate-50",
+          ? "bg-slate-100 dark:bg-slate-800 text-[#2563eb] dark:text-[#3b82f6] font-bold"
+          : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50",
         className,
       )}
     >

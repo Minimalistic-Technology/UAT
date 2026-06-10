@@ -3,6 +3,7 @@ import { TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProfileFormValues } from "@/validations";
+import { CountryCodeSelector } from "@/components/ui/country-code-selector";
 
 export const BasicInfoTab = () => {
   const { register, formState: { errors } } = useFormContext<ProfileFormValues>();
@@ -22,7 +23,13 @@ export const BasicInfoTab = () => {
         </div>
         <div className="space-y-2">
           <Label>Phone</Label>
-          <Input {...register("phone")} />
+          <div className="flex h-10 shadow-sm rounded-md">
+            <CountryCodeSelector
+              className="h-full border-input border-r-0 bg-transparent text-foreground rounded-l-md w-[80px]"
+              defaultValue="+1"
+            />
+            <Input {...register("phone")} className="rounded-l-none border-input h-full flex-1" />
+          </div>
           {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
         </div>
       </div>

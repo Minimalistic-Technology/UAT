@@ -70,6 +70,7 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
         isRequired: initialData.education.isRequired,
       },
       salary: {
+
         min: initialData.salary.min,
         max: initialData.salary.max,
         currency: initialData.salary.currency || "INR",
@@ -112,13 +113,14 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-10 bg-card rounded-3xl border border-border/50 p-6 sm:p-10 shadow-md">
       {/* Basic Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 border-b pb-10 border-border/70">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Basic Information</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Provide the foundational details for the job securely down below.</p>
+        </div>
+        <div className="space-y-6">
           <div className="grid gap-2">
             <Label className="flex items-center gap-1">
               Job Title <Asterisk className="text-destructive size-3" />
@@ -144,7 +146,7 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2">
             {/* Job Type */}
             <div className="grid gap-2">
               <Label>
@@ -273,7 +275,7 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2">
             {/* Years of Experience */}
             <div className="grid gap-2">
               <Label className="flex items-center gap-1">
@@ -357,15 +359,16 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Location */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Location</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 border-b pb-10 border-border/70">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Location Details</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Specify the exact location, or skip if remote.</p>
+        </div>
+        <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
             {/* Country */}
             <div className="grid gap-2">
@@ -447,15 +450,16 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
               {errors.location?.city && <p className="text-destructive text-xs">{errors.location.city.message}</p>}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Education */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Education Requirements</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 border-b pb-10 border-border/70">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Education Requirements</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Define what academic background the candidate needs.</p>
+        </div>
+        <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-2">
               <Label>
@@ -527,15 +531,16 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
               Education qualification is mandatory
             </Label>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Salary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Salary Range</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-4">
+      <section className="space-y-6 border-b pb-10 border-border/70">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Salary Range</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Establish base compensation details to attract applicants.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
           {/* No valueAsNumber — preprocess handles coercion */}
           <div className="grid gap-2">
             <Label>Min</Label>
@@ -600,15 +605,16 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
               {errors.salary.max.message}
             </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Skills & Requirements */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Skills & Requirements</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 border-b pb-10 border-border/70">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Skills & Requirements</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Select specialized skills and concrete necessities.</p>
+        </div>
+        <div className="space-y-6">
           <SkillInput
             currentSkills={currentSkills}
             onChange={(skills) =>
@@ -650,15 +656,16 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
               </p>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Publishing */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Publishing Options</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <section className="space-y-6 pb-2">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Publishing & Perks</h2>
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Dates, visibility settings, and added benefits.</p>
+        </div>
+        <div className="space-y-6">
           <div className="grid gap-2">
             <Label>Benefits (one per line)</Label>
             <Textarea
@@ -731,14 +738,14 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <div className="flex justify-end gap-4">
+      <div className="mt-4 flex items-center justify-end gap-4 border-t pt-8">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending} className="px-8 py-2">
           {isPending ? (initialData ? "Saving..." : "Posting...") : (initialData ? "Save Changes" : "Post Job")}
         </Button>
       </div>
