@@ -5,6 +5,7 @@ import { AdminStatusCard as StatusCard } from "@/features/admin/components/stats
 import { IndianRupee, Users, Briefcase, ShieldCheck, Building, FileText, Loader2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminAnalytics } from "@/features/admin/hooks/use-analytics";
+import { getAnalyticsStatusCardsConfig } from "@/features/admin/config/admin-analytics.config";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Line, LineChart, Area, AreaChart } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
@@ -160,11 +161,16 @@ const AnalyticsPage = () => {
 
       {/* 📊 Secondary KPIs Mesh */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-        <StatusCard label="Active Jobs" value={summary.jobListings.toLocaleString()} variant="default" icon={<Briefcase />} className="border-border hover:border-primary/40 transition-colors" />
-        <StatusCard label="Internships" value={summary.internshipListings.toLocaleString()} variant="default" icon={<Briefcase />} className="border-border hover:border-secondary/40 transition-colors" />
-        <StatusCard label="Companies" value={summary.totalCompanies.toLocaleString()} variant="default" icon={<Building />} className="border-border hover:border-primary/40 transition-colors" />
-        <StatusCard label="Total Apps" value={summary.totalApplications.toLocaleString()} variant="default" icon={<FileText />} className="border-border hover:border-secondary/40 transition-colors" />
-        <StatusCard label="KYC Tasks" value={summary.kycPending.toLocaleString()} variant="warning" icon={<ShieldCheck />} className="md:col-span-1 col-span-2 shadow-md border-premium/40 bg-premium/5" />
+        {getAnalyticsStatusCardsConfig(summary).map((card, index) => (
+          <StatusCard
+            key={index}
+            label={card.label}
+            value={card.value}
+            variant={card.variant}
+            icon={card.icon}
+            className={card.className}
+          />
+        ))}
       </div>
 
       {/* 📈 Graphical Insights Engine */}

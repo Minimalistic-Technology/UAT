@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { AdminStatusCard as StatusCard } from "@/features/admin/components/stats-card";
-import { IndianRupee, Users, Briefcase, ShieldCheck, Loader2, Building2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAdminAnalytics } from "@/features/admin/hooks/use-analytics";
 
 import { AdminDashboardHeader } from "@/features/admin/components/dashboard/admin-dashboard-header";
 import { AdminDashboardCharts } from "@/features/admin/components/dashboard/admin-dashboard-charts";
 import { AdminRecentEmployers } from "@/features/admin/components/dashboard/admin-recent-employers";
 import { AdminTopCoupons } from "@/features/admin/components/dashboard/admin-top-coupons";
+import { getStatusCardsConfig } from "@/features/admin/config/admin-dashboard.config";
 
 const AdminDashboard = () => {
   const { data, isLoading, error } = useAdminAnalytics();
@@ -42,48 +43,16 @@ const AdminDashboard = () => {
       />
 
       <div className="mb-8 grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-        <StatusCard
-          label="Total Revenue"
-          value={`₹${summary.totalRevenue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
-          variant="default"
-          icon={<IndianRupee />}
-          className="border-[#2563eb]/20 shadow-[0_2px_15px_rgba(0,0,0,0.03)]"
-        />
-        <StatusCard
-          label="Subscriptions"
-          value={summary.activeUsers.toLocaleString()}
-          variant="default"
-          icon={<Users />}
-          className="border-[#8b5cf6]/20 shadow-[0_2px_15px_rgba(0,0,0,0.03)]"
-        />
-        <StatusCard
-          label="Pending KYC"
-          value={summary.kycPending.toLocaleString()}
-          variant="warning"
-          icon={<ShieldCheck />}
-          className="border-rose-500/20 shadow-[0_2px_15px_rgba(0,0,0,0.03)]"
-        />
-        <StatusCard
-          label="Job Listings"
-          value={summary.jobListings.toLocaleString()}
-          variant="default"
-          icon={<Briefcase />}
-          className="border-[#2563eb]/20 shadow-[0_2px_15px_rgba(0,0,0,0.03)]"
-        />
-        <StatusCard
-          label="Companies"
-          value={summary.totalCompanies.toLocaleString()}
-          variant="default"
-          icon={<Building2 />}
-          className="border-[#2563eb]/20 shadow-[0_2px_15px_rgba(0,0,0,0.03)]"
-        />
-        <StatusCard
-          label="Internships"
-          value={summary.internshipListings.toLocaleString()}
-          variant="default"
-          icon={<Briefcase />}
-          className="border-[#2563eb]/20 shadow-[0_2px_15px_rgba(0,0,0,0.03)]"
-        />
+        {getStatusCardsConfig(summary).map((card, index) => (
+          <StatusCard
+            key={index}
+            label={card.label}
+            value={card.value}
+            variant={card.variant}
+            icon={card.icon}
+            className={card.className}
+          />
+        ))}
       </div>
 
       <AdminDashboardCharts
