@@ -528,7 +528,7 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
               )}
             />
             <Label htmlFor="educationRequired" className="cursor-pointer">
-              Education qualification is mandatory
+               Education criteria should be strictly mandatory ?
             </Label>
           </div>
         </div>

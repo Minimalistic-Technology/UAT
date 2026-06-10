@@ -622,7 +622,7 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
               )}
             />
             <Label htmlFor="edu-required" className="cursor-pointer">
-              Education criteria is strictly mandatory
+              Education criteria should be strictly mandatory ?
             </Label>
           </div>
         </div>
