@@ -14,18 +14,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
+
+import { APP_NAME } from "@/constants";
+import { PERKS } from "../config";
 import { Button } from "@/components/ui/button";
 
 const BG_URL =
   "https://static.prod-images.emergentagent.com/jobs/87777c5c-7e2c-4061-8282-ba379018b5d9/images/d502f0b7342dfdd8180285c187d04afae3a471f4d2c6560b7c4943fac5d7492d.png";
-
-const PERKS = [
-  "Get qualified applicants in 48 hours",
-  "Cut time-to-hire by up to 41%",
-  "Free to post. Pay only on hires.",
-];
-
-const EASE = [0.22, 1, 0.36, 1];
 
 export const EmployerCTA = () => {
   const router = useRouter();
@@ -87,7 +82,7 @@ export const EmployerCTA = () => {
       className="py-24 md:py-32 bg-slate-50"
       data-testid="employer-cta-section"
     >
-      <div className="max-w-[88rem] mx-auto px-6 md:px-12">
+      <div className="max-w-352 mx-auto px-6 md:px-12">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -101,7 +96,7 @@ export const EmployerCTA = () => {
             style={{ backgroundImage: `url(${BG_URL})` }}
             aria-hidden="true"
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-white via-white/95 to-indigo-50/30" aria-hidden="true" />
+          <div className="absolute inset-0 bg-linear-to-br from-white via-white/95 to-indigo-50/30" aria-hidden="true" />
           <div className="absolute inset-0 opacity-[0.05] [background-image:radial-gradient(#4F46E5_1px,transparent_1px)] [background-size:24px_24px]" aria-hidden="true" />
 
           <div className="relative grid lg:grid-cols-12 gap-12 p-8 md:p-16 lg:p-20 items-center">
@@ -253,7 +248,7 @@ export const EmployerCTA = () => {
                             {!isBooking && <ArrowRight size={16} />}
                           </Button>
                           <div className="mt-4 flex items-center justify-center gap-2 text-xs font-medium text-slate-500">
-                            <Building2 size={14} /> Prefer email? sales@hireloop.com
+                            <Building2 size={14} /> Prefer email? sales@{APP_NAME}.com
                           </div>
                         </div>
                       </div>

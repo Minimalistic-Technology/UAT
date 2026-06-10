@@ -1,59 +1,38 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface ITestimonial extends Document {
-    name: string;
-    role: string;
-    company?: string;
-    content: string;
-    avatarUrl?: string;
-    rating?: number;
-    isActive: boolean;
-    isFeatured: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+  user: mongoose.Types.ObjectId;
+  content: string;
+  rating?: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const TestimonialSchema = new Schema(
-    {
-        name: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-        role: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-        company: {
-            type: String,
-            trim: true,
-        },
-        content: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-        avatarUrl: {
-            type: String,
-            default: "",
-        },
-        rating: {
-            type: Number,
-            min: 1,
-            max: 5,
-            default: 5,
-        },
-        isActive: {
-            type: Boolean,
-            default: true,
-        },
-        isFeatured: {
-            type: Boolean,
-            default: false,
-        },
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
-    { timestamps: true }
+    content: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: [10, "Content must be at least 10 characters long"],
+      maxlength: [1000, "Content cannot exceed 1000 characters"],
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      default: 5,
+    },
+  },
+  { timestamps: true },
 );
 
-export const Testimonial = mongoose.model<ITestimonial>("Testimonial", TestimonialSchema);
+export const Testimonial = mongoose.model<ITestimonial>(
+  "Testimonial",
+  TestimonialSchema,
+);

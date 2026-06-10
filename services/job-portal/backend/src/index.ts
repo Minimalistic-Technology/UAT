@@ -32,7 +32,19 @@ import featureRoutes from './routes/feature.route.js';
 import aiRoutes from './routes/ai.routes.js';
 import testimonialRoutes from './routes/testimonial.routes.js';
 
+// Graphql imports
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from '@as-integrations/express5';
+import { typeDefs, resolvers } from "./graphql/index.js";
+import { createContext } from "./graphql/context.js";
+
 const app: Application = express();
+const apolloServer = new ApolloServer({
+  typeDefs,
+  resolvers,
+  introspection: process.env.NODE_ENV !== 'production',
+  csrfPrevention: false,
+});
 const PORT = config.port;
 
 if (process.env.NODE_ENV !== "test") {
@@ -71,6 +83,12 @@ app.post(
   express.raw({ type: 'application/json' }),
   handleRazorpayWebhook
 );
+
+// NOTE: Add a general rate-limter for graphql routes too
+await apolloServer.start();
+app.use("/graphql", expressMiddleware(apolloServer, {
+  context: createContext
+}))
 
 // Routes
 app.use('/api/auth', authRoutes);

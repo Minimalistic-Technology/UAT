@@ -20,3 +20,9 @@ export const FOOTER_COLS = [
     links: ["About", "Careers", "Press", "Privacy", "Terms"],
   },
 ];
+
+export const PERKS = [
+  "Get qualified applicants in 48 hours",
+  "Cut time-to-hire by up to 41%",
+  "Free to post. Pay only on hires.",
+];

@@ -13,8 +13,8 @@ const router = Router();
 // Public routes
 router.get("/", getTestimonials);
 
-// Admin only routes
-router.use(protect, authorize(GlobalRole.SUPER_ADMIN));
+// Authenticated routes
+router.use(protect);
 
 router.post("/", createTestimonial);
 router.put("/:id", updateTestimonial);
