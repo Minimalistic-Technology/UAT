@@ -73,7 +73,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
       `https://www.google.com/recaptcha/api/siteverify?secret=${recaptchaSecret}&response=${recaptchaToken}`,
       { method: 'POST' }
     );
-    const verifyData = await verifyRes.json();
+    const verifyData:any = await verifyRes.json();
 
     if (!verifyData.success) {
       console.error("CAPTCHA Google Response:", verifyData);
