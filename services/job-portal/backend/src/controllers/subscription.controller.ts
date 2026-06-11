@@ -15,31 +15,40 @@ export const getMyActiveSubscription = async (
   next: NextFunction,
 ) => {
   try {
-    const employerId = req.user.id;
+    const member = await CompanyMember.findOne({ user: req.user.id });
 
-    const company = await Company.findOne({ owner: employerId });
-
-    if (!company) {
-      throw new ApiError(404, "Company not found");
+    if (!member) {
+      throw new ApiError(404, "Company member not found");
     }
 
-    const isCompanyMember = await CompanyMember.findOne({
-      company: company._id,
-      user: employerId,
+    const isAuthorized = await CompanyMember.findOne({
+      company: member.company,
+      user: req.user.id,
       role: {
-        $in: [CompanyRole.OWNER, CompanyRole.ADMIN],
+        $in: [CompanyRole.OWNER, CompanyRole.HR],
       },
     });
 
-    if (!isCompanyMember) {
-      throw new ApiError(403, "You are not a member of this company");
+    if (!isAuthorized) {
+      throw new ApiError(
+        403,
+        "You are not authorized to view this subscription",
+      );
     }
 
     const subscription = await Subscription.findOne({
-      employerId,
+      companyId: member.company,
       status: "active",
       expiryDate: { $gt: new Date() },
-    }).populate("planId");
+    }).populate("planId", "name currency price jobPostLimit durationDays");
+
+    if (!subscription) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, null, "You don't have any active subscription"),
+        );
+    }
 
     // If there's an active one but posts are depleted, isValid will be false, but the doc is returned.
     // We can just return it. The frontend handles showing "Depleted" or similar.
@@ -64,11 +73,38 @@ export const getMySubscriptionHistory = async (
   next: NextFunction,
 ) => {
   try {
-    const employerId = req.user.id;
+    const member = await CompanyMember.findOne({ user: req.user.id });
 
-    const subscriptions = await Subscription.find({ employerId })
-      .populate("planId")
+    if (!member) {
+      throw new ApiError(404, "Company member not found");
+    }
+
+    const isAuthorized = await CompanyMember.findOne({
+      company: member.company,
+      user: req.user.id,
+      role: {
+        $in: [CompanyRole.OWNER, CompanyRole.HR],
+      },
+    });
+
+    if (!isAuthorized) {
+      throw new ApiError(
+        403,
+        "You are not authorized to view the history of this subscription",
+      );
+    }
+
+    const subscriptions = await Subscription.find({ companyId: member.company })
+      .populate("planId", "name currency price jobPostLimit durationDays")
       .sort({ createdAt: -1 });
+
+    if (!subscriptions) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, null, "You didn't bought any subscription yet"),
+        );
+    }
 
     res
       .status(200)
@@ -90,13 +126,34 @@ export const cancelMySubscription = async (
   next: NextFunction,
 ) => {
   try {
-    const employerId = req.user.id;
-    const { id } = req.params;
+    const { id: subscriptionId } = req.params;
+    const member = await CompanyMember.findOne({ user: req.user.id });
 
-    const subscription = await Subscription.findOne({ _id: id, employerId });
+    if (!member) {
+      throw new ApiError(404, "Company member not found");
+    }
+
+    const isAuthorized = await CompanyMember.findOne({
+      company: member.company,
+      user: req.user.id,
+      role: CompanyRole.OWNER,
+    });
+
+    if (!isAuthorized) {
+      throw new ApiError(
+        403,
+        "You are not authorized to cance; this subscription",
+      );
+    }
+
+    const subscription = await Subscription.findOne({
+      _id: subscriptionId,
+      employerId: req.user.id,
+      status: "active"
+    });
 
     if (!subscription) {
-      throw new ApiError(404, "Subscription not found or unauthorized");
+      throw new ApiError(404, "You don't have any active subscription");
     }
 
     if (subscription.status !== "active") {
@@ -106,12 +163,26 @@ export const cancelMySubscription = async (
       );
     }
 
-    const postsUsed = subscription.totalPostsGranted - subscription.postsRemaining;
+    const postsUsed =
+      subscription.totalPostsGranted - subscription.postsRemaining;
 
     let refundProcessed = false;
     if (postsUsed === 0 && subscription.orderId) {
       // Find the corresponding payment to get razorpayPaymentId
-      const payment = await Payment.findOne({ razorpayOrderId: subscription.orderId });
+      const payment = await Payment.findOne({
+        razorpayOrderId: subscription.orderId,
+      });
+
+      if (!payment) {
+        throw new ApiError(
+          404,
+          "Payment record not found, please contact support",
+        );
+      }
+
+      if (!payment.razorpayPaymentId) {
+        throw new ApiError(400, "Payment ID missing, please contact support");
+      }
 
       if (payment && payment.razorpayPaymentId) {
         const refundAmount = Math.round(payment.amount * 0.5);
@@ -123,13 +194,16 @@ export const cancelMySubscription = async (
 
           // Mark payment as refunded locally
           payment.status = PaymentStatus.REFUNDED;
-          payment.refundAmount = payment.amount;
+          payment.refundAmount = refundAmount;
           await payment.save();
 
           refundProcessed = true;
         } catch (razorpayError) {
           console.error("Razorpay Refund Error:", razorpayError);
-          throw new ApiError(500, "Failed to process refund from payment gateway");
+          throw new ApiError(
+            500,
+            "Failed to process refund from payment gateway",
+          );
         }
       }
     }
@@ -144,7 +218,7 @@ export const cancelMySubscription = async (
           200,
           subscription,
           refundProcessed
-            ? "Subscription cancelled and 100% refund initiated successfully"
+            ? "Subscription cancelled and 50% refund initiated successfully"
             : "Subscription cancelled successfully",
         ),
       );

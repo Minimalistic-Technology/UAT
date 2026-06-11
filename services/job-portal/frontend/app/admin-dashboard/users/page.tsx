@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import React from "react";
 import { Search } from "lucide-react";
 
 // Components
@@ -28,6 +28,7 @@ import { useFetchAllUsers } from "@/features/admin/hooks/use-user";
 import UserTableRow from "@/features/admin/components/user-table-row";
 import { cn } from "@/lib/utils";
 import { CompanyRole } from "@/types";
+import { UserWithCompany } from "@/features/admin/types";
 
 const COLUMNS = [
   { key: "name", label: "User" },
@@ -53,11 +54,11 @@ const Page = () => {
 
   if (isLoading) return <LoadingState />;
 
-  const users = responseData?.data?.users || [];
-  const pagination = responseData?.data?.pagination;
+  const users = responseData?.data.users || [];
+  const pagination = responseData?.data.pagination;
 
   // Search Logic: Filter based on Name or Email
-  const filteredUsers = users.filter((user: any) => {
+  const filteredUsers = users.filter((user: UserWithCompany) => {
     const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
     const email = user.email?.toLowerCase() || "";
     const search = searchTerm.toLowerCase();
@@ -101,10 +102,10 @@ const Page = () => {
       {/* Search and Filters Area */}
       <div className="flex items-center justify-between gap-4">
         <div className="relative max-w-sm flex-1">
-          <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+          <Search className="text-slate-400 absolute top-3 left-3 h-4 w-4" />
           <Input
-            placeholder="Search users..."
-            className="bg-background pl-9"
+            placeholder="Search users by name or email..."
+            className="h-10 pl-9 rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus-visible:ring-[#2563eb]"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -112,20 +113,20 @@ const Page = () => {
         <Button
           variant="outline"
           onClick={handleExportCSV}
-          className="cursor-pointer"
+          className="rounded-xl border-[#2563eb]/20 text-[#2563eb] hover:bg-[#2563eb]/5 font-semibold h-10 px-5"
         >
           Export CSV
         </Button>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>User Management</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+        <CardHeader className="pb-4 pt-6 px-7">
+          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">User Management</CardTitle>
+          <CardDescription className="text-sm text-slate-500">
             A list of all users in your organization and their current status.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-7 pb-6">
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -157,7 +158,7 @@ const Page = () => {
                     </TableRow>
                   ))
                 ) : Array.isArray(filteredUsers) && filteredUsers.length > 0 ? (
-                  filteredUsers.map((user: any) => (
+                  filteredUsers.map((user) => (
                     <UserTableRow key={user._id} user={user} />
                   ))
                 ) : (

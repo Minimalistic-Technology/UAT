@@ -14,14 +14,14 @@ export function SidebarNavItem({ href, label, icon: Icon, isActive }: SidebarNav
     <Link
       href={href}
       className={cn(
-        "group flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium transition-colors",
-        isActive 
-          ? "bg-white text-indigo-600 shadow-sm border border-slate-200" 
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+        "group flex items-center justify-between px-3 py-2 text-sm font-medium transition-all duration-200",
+        isActive
+          ? "bg-[#2563eb]/10 text-[#2563eb] border-l-4 border-l-[#2563eb] rounded-r-xl font-bold"
+          : "text-slate-500 dark:text-slate-400 border-l-4 border-l-transparent hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white rounded-r-xl"
       )}
     >
       <div className="flex items-center gap-3">
-        <Icon className={cn("h-4 w-4", isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600")} />
+        <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
         {label}
       </div>
     </Link>

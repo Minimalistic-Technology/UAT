@@ -52,7 +52,6 @@ const provisionSubscription = async (userId: string, planId: string, razorpayOrd
     orderId: razorpayOrderId,
   });
 
-  console.log(`Successfully created subscription for user ${userId} with plan ${planId}`);
 };
 
 export const createOrder = async (
@@ -69,6 +68,18 @@ export const createOrder = async (
     // 1. Fetch the actual Plan from DB
     const plan = await Plan.findById(planId);
     if (!plan) throw new ApiError(404, "Plan not found");
+
+    // Prevent purchasing if there is an active plan with remaining posts
+    const activeSubscription = await Subscription.findOne({
+      employerId: userId,
+      status: "active",
+      expiryDate: { $gt: new Date() },
+      $or: [{ postsRemaining: { $gt: 0 } }, { postsRemaining: -1 }],
+    });
+
+    if (activeSubscription) {
+      throw new ApiError(400, "You already have an active plan with remaining job posts. Please use them before purchasing a new plan.");
+    }
 
     // Prevent claiming the free plan multiple times
     if (plan.price === 0) {
@@ -92,6 +103,7 @@ export const createOrder = async (
         {
           code: couponCode.toUpperCase(),
           isActive: true,
+          usedBy: { $ne: userId },
           $or: [
             { expiryDate: { $gt: new Date() } },
             { expiryDate: null },
@@ -102,12 +114,15 @@ export const createOrder = async (
             { $expr: { $lt: ["$usageCount", "$maxUses"] } },
           ],
         },
-        { $inc: { usageCount: 1 } },
+        { 
+          $inc: { usageCount: 1 },
+          $addToSet: { usedBy: userId },
+        },
         { new: true, session },
       );
 
       if (!appliedCoupon) {
-        throw new ApiError(400, "Coupon is invalid or expired");
+        throw new ApiError(400, "Coupon is invalid, expired, or has already been used by you");
       }
 
       // Calculate Discount
@@ -219,7 +234,6 @@ export const handleRazorpayWebhook = async (
   res: Response,
   next: NextFunction,
 ) => {
-  console.log("Hook started")
   const secret = config.razorpayWebhookSecret;
   const signature = req.headers["x-razorpay-signature"] as string;
   const eventId = req.headers["x-razorpay-event-id"] as string;
@@ -337,7 +351,6 @@ export const handleRazorpayWebhook = async (
         break;
 
       default:
-        console.log(`Unhandled event: ${event}`);
     }
 
     /**

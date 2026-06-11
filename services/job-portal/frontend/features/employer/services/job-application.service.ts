@@ -1,6 +1,7 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
 import { Application } from "../types";
 import { Education, Experience } from "@/types";
+import { GetAllEmployerApplicationsResponse } from "../types/application.type";
 
 export type ApplicationWithUser = Omit<Application, "jobSeeker"> & {
   jobSeeker: {
@@ -12,6 +13,7 @@ export type ApplicationWithUser = Omit<Application, "jobSeeker"> & {
     skills: string[];
     experience: Experience[];
     education: Education[];
+    resume?: string
   };
 };
 
@@ -20,10 +22,10 @@ interface JobApplicationsResponse {
   applications: ApplicationWithUser[];
 }
 
-export const getApplicationsByJobId = async (jobId: string) => {
-  const response = await apiClient.get<
+export const getApplicationsByJobId = async (listingId: string, listingType: string) => {
+  const response = await apiClient.post<
     ApiSuccessResponse<JobApplicationsResponse>
-  >(`/applications/job/${jobId}`);
+  >(`/applications/jobs/my-applications`, { listingId, listingType });
   return response.data;
 };
 
@@ -33,15 +35,7 @@ export const getAllEmployerApplications = async (params?: {
   status?: string;
 }) => {
   const response = await apiClient.get<
-    ApiSuccessResponse<{
-      applications: any;
-      pagination: {
-        totalItems: number;
-        totalPages: number;
-        currentPage: number;
-        limit: number;
-      };
-    }>
+    ApiSuccessResponse<GetAllEmployerApplicationsResponse>
   >("/applications/company/all", { params });
   return response.data;
 };

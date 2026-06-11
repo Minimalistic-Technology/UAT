@@ -25,7 +25,7 @@ export interface IPayment extends Document {
 
   metadata: Map<string, any>;
 
-  method?: "card" | "upi" | "netbanking" | "wallet";
+  method?: "card" | "upi" | "net banking" | "wallet";
 
   failureReason?: string;
 
@@ -141,7 +141,6 @@ PaymentSchema.index(
   { unique: true, sparse: true },
 );
 
-PaymentSchema.index({ razorpayPaymentId: 1 });
 
 export default mongoose.models.Payment ||
   mongoose.model<IPayment>("Payment", PaymentSchema);

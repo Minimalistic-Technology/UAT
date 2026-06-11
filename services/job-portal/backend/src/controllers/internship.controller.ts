@@ -10,6 +10,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
 import { isValidExperienceType } from "./job.controller.js";
+import { JobStatus, OpportunityType } from "../models/BaseJob.model.js";
 
 export const getAllInternships = async (
   req: AuthRequest,
@@ -32,9 +33,9 @@ export const getAllInternships = async (
       if (minStipend) query["stipend.amount"].$gte = Number(minStipend);
       if (maxStipend) query["stipend.amount"].$lte = Number(maxStipend);
     }
-    
+
     if (stipendType) {
-        query["stipend.type"] = stipendType;
+      query["stipend.type"] = stipendType;
     }
 
     const { page, limit } = req.query;
@@ -113,7 +114,7 @@ export const getMyInternships = async (
       companyMember.role === CompanyRole.HR ||
       companyMember.role === CompanyRole.OWNER
     ) {
-      const internships = await Internship.find({ company: companyMember.company })
+      const internships = await Internship.find({ company: companyMember.company, isDeleted: { $ne: true } })
         .populate("company", "name logo")
         .populate("postedBy", "firstName lastName");
 
@@ -223,10 +224,9 @@ export const createInternship = async (
     const internshipData = {
       title: req.body.title,
       description: req.body.description,
-      jobType: req.body.jobType,
+      employmentType: req.body.employmentType,
       workMode: req.body.workMode,
       companyType: req.body.companyType,
-      experienceLevel: req.body.experienceLevel,
       openings: req.body.openings,
       roleCategory: req.body.roleCategory,
       industry: req.body.industry,
@@ -247,9 +247,12 @@ export const createInternship = async (
       skills: req.body.skills,
       requirements: req.body.requirements,
       benefits: req.body.benefits,
+      genderPreference: req.body.genderPreference,
+      englishFluency: req.body.englishFluency,
 
       applicationDeadline: req.body.applicationDeadline,
       isFeatured: req.body.isFeatured,
+      opportunityType: OpportunityType.INTERNSHIP,
       postedBy: req.user.id,
       company: company._id,
     };
@@ -347,7 +350,10 @@ export const deleteInternship = async (
       return next(new ApiError(403, "You're not authorized to delete the internship"));
     }
 
-    await internship.deleteOne();
+    // Soft delete the internship so that job seekers who applied don't lose the listing details
+    internship.isDeleted = true;
+    internship.status = JobStatus.CLOSED; // Ensure it's not active anymore
+    await internship.save();
 
     res.status(200).json(new ApiResponse(200, {}, "Internship deleted successfully"));
   } catch (error: any) {

@@ -25,7 +25,8 @@ export const deleteJobPost = async (jobId: string) => {
 }
 
 export const updateJobPostDetails = async (jobId: string, jobData: any) => {
-    //
+    const response = await apiClient.patch<ApiSuccessResponse<any>>(`/jobs/${jobId}`, jobData);
+    return response.data;
 }
 
 export const getJobPostById = async (jobId: string) => {

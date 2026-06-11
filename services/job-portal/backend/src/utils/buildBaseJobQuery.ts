@@ -10,7 +10,7 @@ export const buildBaseJobQuery = (
     const { search, jobType, skills, city, state, country, workMode } =
         queryParams;
 
-    const query: Record<string, any> = { status: JobStatus.ACTIVE };
+    const query: Record<string, any> = { status: JobStatus.ACTIVE, isDeleted: { $ne: true } };
 
     if (jobType && jobType !== "all") {
         const jobTypeArray = Array.isArray(jobType) ? jobType : jobType.split(",");
@@ -26,6 +26,8 @@ export const buildBaseJobQuery = (
         if (validWorkModes.length > 0) {
             query.workMode = { $in: validWorkModes };
         }
+    } else if (queryParams.remote === "true" || queryParams.remote === true) {
+        query.workMode = { $in: ["remote", "temporary work from home"] };
     }
 
     const { roleCategory, companyType } = queryParams;
@@ -45,12 +47,42 @@ export const buildBaseJobQuery = (
     }
 
     if (search && typeof search === "string") {
-        query.$text = { $search: search };
+        query.$or = [
+            { title: { $regex: search, $options: "i" } },
+            { skills: { $regex: search, $options: "i" } }
+        ];
     }
 
     if (skills) {
         const skillArray = Array.isArray(skills) ? skills : [skills];
         query.skills = { $in: skillArray };
+    }
+
+    if (queryParams.experienceRanges) {
+        const experienceRangesArray = Array.isArray(queryParams.experienceRanges)
+            ? queryParams.experienceRanges
+            : queryParams.experienceRanges.split(",");
+
+        const validRanges = experienceRangesArray.filter((r: string) => r && r.trim() !== "");
+
+        if (validRanges.length > 0) {
+            const expConditions = validRanges.map((range: string) => {
+                const parts = range.split("-");
+                const min = parseInt(parts[0]) || 0;
+                const max = parseInt(parts[1]) || 20;
+                return { experienceInYears: { $gte: min, $lte: max } };
+            });
+            // If query.$or already exists from search, we must merge them with $and
+            if (query.$or) {
+                const existingOr = query.$or;
+                delete query.$or;
+                query.$and = [{ $or: existingOr }, { $or: expConditions }];
+            } else if (query.$and) {
+                query.$and.push({ $or: expConditions });
+            } else {
+                query.$or = expConditions;
+            }
+        }
     }
 
     if (city) query["location.city"] = { $regex: city, $options: "i" };

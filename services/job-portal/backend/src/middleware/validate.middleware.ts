@@ -13,13 +13,19 @@ export const validate = (validations: ValidationChain[]) => {
       return next();
     }
 
+    console.log("Errors", errors);
+
     const extractedErrors: any[] = [];
-    errors
-      .array()
-      .map((err: any) => extractedErrors.push({ [err.param]: err.msg }));
+    errors.array().map((err: any) => extractedErrors.push(err.msg));
 
     return res
       .status(400)
-      .json(new ApiError(400, "Validation failed", extractedErrors));
+      .json(
+        new ApiError(
+          400,
+          `Validation failed: ${extractedErrors[0]}`,
+          extractedErrors,
+        ),
+      );
   };
 };

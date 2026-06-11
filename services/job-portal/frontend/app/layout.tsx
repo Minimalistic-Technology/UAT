@@ -1,12 +1,22 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import { Toaster } from "sonner";
 import Navbar from "@/components/navbar";
 import { APP_NAME } from "@/constants";
+import { AiChatbot } from "@/features/admin/components/ai-chatbot";
+import MainWrapper from "@/components/main-wrapper";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-heading",
+});
 
 export const metadata: Metadata = {
   title: `${APP_NAME} - Find Your Dream Job`,
@@ -20,14 +30,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${plusJakartaSans.variable}`}>
+      <body className="font-sans bg-background text-foreground transition-colors duration-300">
         <Providers>
           <Navbar />
-          <div className="pt-16 h-full min-h-screen bg-gray-50">
+          <MainWrapper>
             {children}
-          </div>
+          </MainWrapper>
           <Toaster position="top-right" />
+          <AiChatbot />
         </Providers>
       </body>
     </html>

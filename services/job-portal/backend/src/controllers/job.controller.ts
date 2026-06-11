@@ -2,7 +2,8 @@ import type { Request, Response, NextFunction } from "express";
 import {
   ExperienceLevel,
   JobStatus,
-  JobType,
+  EmploymentType,
+  OpportunityType,
 } from "../models/BaseJob.model.js";
 import Job from "../models/Job.model.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
@@ -15,8 +16,8 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
 
-export function isValidJobType(value: any): value is JobType {
-  return Object.values(JobType).includes(value);
+export function isValidJobType(value: any): value is EmploymentType {
+  return Object.values(EmploymentType).includes(value);
 }
 
 export function isValidExperienceType(value: any): value is ExperienceLevel {
@@ -207,7 +208,7 @@ export const createJob = async (
     const jobData = {
       title: req.body.title,
       description: req.body.description,
-      jobType: req.body.jobType,
+      employmentType: req.body.employmentType,
       workMode: req.body.workMode,
       companyType: req.body.companyType,
       roleCategory: req.body.roleCategory,
@@ -217,9 +218,9 @@ export const createJob = async (
       openings: req.body.openings,
 
       location: {
-        city: req.body.location.city,
-        state: req.body.location.state,
-        country: req.body.location.country,
+        city: req.body.location?.city,
+        state: req.body.location?.state,
+        country: req.body.location?.country,
       },
 
       education: {
@@ -229,6 +230,7 @@ export const createJob = async (
       },
 
       salary: {
+
         min: req.body.salary?.min,
         max: req.body.salary?.max,
         currency: req.body.salary?.currency,
@@ -238,10 +240,13 @@ export const createJob = async (
       skills: req.body.skills,
       requirements: req.body.requirements,
       benefits: req.body.benefits,
+      genderPreference: req.body.genderPreference,
+      englishFluency: req.body.englishFluency,
 
       applicationDeadline: req.body.applicationDeadline,
       isFeatured: req.body.isFeatured ?? false,
       status: req.body.status ?? "active",
+      opportunityType: OpportunityType.JOB,
       postedBy: req.user.id,
       company: company._id,
     };
@@ -292,9 +297,9 @@ export const updateJob = async (
       );
     }
 
-    // Only admin and owner can update job details
+    // Only hr and owner can update job details
     if (
-      companyMember.role !== CompanyRole.ADMIN &&
+      companyMember.role !== CompanyRole.HR &&
       companyMember.role !== CompanyRole.OWNER
     ) {
       return next(new ApiError(403, "Not authorized to update this job"));
@@ -344,7 +349,10 @@ export const deleteJob = async (
       return next(new ApiError(403, "You're not authorized to delete the job"));
     }
 
-    await job.deleteOne();
+    // Soft delete the job so that job seekers who applied don't lose the listing details
+    job.isDeleted = true;
+    job.status = JobStatus.CLOSED; // Ensure it's not active anymore
+    await job.save();
 
     res.status(200).json(new ApiResponse(200, {}, "Job deleted successfully"));
   } catch (error: any) {
@@ -368,7 +376,7 @@ export const getMyJobs = async (
       companyMember.role === CompanyRole.HR ||
       companyMember.role === CompanyRole.OWNER
     ) {
-      const jobs = await Job.find({ company: companyMember.company })
+      const jobs = await Job.find({ company: companyMember.company, isDeleted: { $ne: true } })
         .populate("company", "name logo")
         .populate("postedBy", "firstName lastName");
 

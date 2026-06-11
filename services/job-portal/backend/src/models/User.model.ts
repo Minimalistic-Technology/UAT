@@ -25,7 +25,8 @@ export interface IUser extends Document {
   experience?: Array<{
     title: string;
     company: string;
-    location: string;
+    workType?: string;
+    location?: string;
     startDate: Date;
     endDate?: Date;
     current: boolean;
@@ -115,6 +116,7 @@ const userSchema = new Schema<IUser>(
       {
         title: String,
         company: String,
+        workType: String,
         location: String,
         startDate: Date,
         endDate: Date,

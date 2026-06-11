@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { config } from "../config/env.js";
 import User from "../models/User.model.js";
+import { ApiError } from "../utils/apiError.js";
 export const protect = async (req, res, next) => {
     try {
         let token;
@@ -13,34 +14,22 @@ export const protect = async (req, res, next) => {
             token = req.cookies.token;
         }
         if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: "Not authorized to access this route",
-            });
+            return next(new ApiError(401, "Not authorized to access this route"));
         }
         // Verify token
         const decoded = jwt.verify(token, config.jwtSecret);
         // Get user from token
         req.user = await User.findById(decoded.id);
         if (!req.user) {
-            return res.status(401).json({
-                success: false,
-                message: "User not found",
-            });
+            return next(new ApiError(401, "User not found"));
         }
         if (!req.user.isActive) {
-            return res.status(401).json({
-                success: false,
-                message: "User account is deactivated",
-            });
+            return next(new ApiError(403, "User account is deactivated"));
         }
         next();
     }
     catch (error) {
-        return res.status(401).json({
-            success: false,
-            message: "Not authorized to access this route",
-        });
+        return next(new ApiError(401, error.message ?? "Not authorized to access this route"));
     }
 };
 // Optional auth middleware: Populates req.user if token exists, but doesn't block if not
@@ -72,10 +61,7 @@ export const optionalAuth = async (req, res, next) => {
 export const authorize = (...roles) => {
     return (req, res, next) => {
         if (!roles.includes(req.user.role)) {
-            return res.status(403).json({
-                success: false,
-                message: `User role '${req.user.role}' is not authorized to access this route`,
-            });
+            return next(new ApiError(403, `User role '${req.user.role}' is not authorized to access this route`));
         }
         next();
     };

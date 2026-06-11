@@ -2,6 +2,16 @@ import Company from "../models/Company.model.js";
 import User, { GlobalRole } from "../models/User.model.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import mongoose from "mongoose";
+import { ApiError } from "../utils/apiError.js";
+import { ApiResponse } from "../utils/apiResponse.js";
+import { JobStatus } from "../models/BaseJob.model.js";
+import Job from "../models/Job.model.js";
+import Internship from "../models/Internship.model.js";
+import Subscription from "../models/Subscription.model.js";
+import KYC from "../models/KYC.model.js";
+import Application, { ListingType } from "../models/Application.model.js";
+import { uploadToCloudinary, deleteFromCloudinary, } from "../utils/cloudinary.js";
+import { ALLOWED_MIME_TYPES_FOR_AVATAR } from "../constants/index.js";
 // @desc    Create new company
 // @route   POST /api/companies
 // @access  Super_Admin
@@ -125,83 +135,109 @@ export const getCompanies = async (req, res, next) => {
         });
     }
 };
-// @desc    Get single company
-// @route   GET /api/companies/:id
-// @access  Public
 export const getCompany = async (req, res, next) => {
     try {
         const company = await Company.findById(req.params.id).populate("owner", "firstName lastName email");
         if (!company) {
-            return res.status(404).json({
-                success: false,
-                message: "Company not found",
-            });
+            throw new ApiError(404, "Company not found");
         }
-        res.status(200).json({
-            success: true,
-            data: company,
+        const totalJobs = await Job.countDocuments({ company: company._id });
+        const activeJobs = await Job.countDocuments({
+            company: company._id,
+            status: JobStatus.ACTIVE,
         });
+        const totalMembers = await CompanyMember.countDocuments({
+            company: company._id,
+            isActive: true,
+        });
+        const currentSubscription = await Subscription.findOne({
+            companyId: company._id,
+            status: "active",
+        }).populate("planId");
+        const companyData = {
+            ...company.toObject(),
+            totalJobs,
+            activeJobs,
+            totalMembers,
+            currentPlan: currentSubscription ? currentSubscription.planId : null,
+            subscription: currentSubscription,
+            remainingJobPosts: currentSubscription
+                ? currentSubscription.postsRemaining
+                : null,
+        };
+        res
+            .status(200)
+            .json(new ApiResponse(200, companyData, "Company fetched successfully"));
     }
     catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error fetching company",
-            error: error.message,
-        });
+        next(error);
     }
 };
-// @desc    Get current user's company
-// @route   GET /api/companies/me
-// @access  Private (Employer)
 export const getMyCompany = async (req, res, next) => {
     try {
-        const company = await Company.findOne({ owner: req.user.id });
-        if (!company) {
-            return res.status(404).json({
-                success: false,
-                message: "You have not created a company yet",
-            });
+        const companyMember = await CompanyMember.findOne({ user: req.user._id });
+        if (!companyMember) {
+            return next(new ApiError(400, "Company member not found"));
         }
-        res.status(200).json({
-            success: true,
-            data: company,
-        });
+        const company = await Company.findById(companyMember.company).populate("owner", "firstName lastName email");
+        if (!company) {
+            throw new ApiError(404, "You have not created a company yet");
+        }
+        const [totalJobs, activeJobs, totalInternships, activeInternships, totalMembers, currentSubscription, kyc,] = await Promise.all([
+            Job.countDocuments({ company: company._id }),
+            Job.countDocuments({ company: company._id, status: JobStatus.ACTIVE }),
+            Internship.countDocuments({ company: company._id }),
+            Internship.countDocuments({
+                company: company._id,
+                status: JobStatus.ACTIVE,
+            }),
+            CompanyMember.countDocuments({ company: company._id, isActive: true }),
+            Subscription.findOne({
+                companyId: company._id,
+                status: "active",
+            }).populate("planId", "name"),
+            KYC.findOne({ user: req.user.id }),
+        ]);
+        const companyData = {
+            ...company.toObject(),
+            totalJobs,
+            activeJobs,
+            totalInternships,
+            activeInternships,
+            totalListings: totalJobs + totalInternships,
+            activeListings: activeJobs + activeInternships,
+            totalMembers,
+            currentPlan: currentSubscription ? currentSubscription.planId : null,
+            subscription: currentSubscription,
+            remainingJobPosts: currentSubscription
+                ? currentSubscription.postsRemaining
+                : null,
+            kycStatus: kyc ? kyc.status : null,
+            kycRejectionReason: kyc?.rejectionReason || null,
+        };
+        res
+            .status(200)
+            .json(new ApiResponse(200, companyData, "Company fetched successfully"));
     }
     catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error fetching your company",
-            error: error.message,
-        });
+        next(error);
     }
 };
-// @desc    Update company
-// @route   PUT /api/companies/me
-// @access  Private (Employer - Owner only)
 export const updateCompany = async (req, res, next) => {
     try {
-        let company = await Company.findOne({ owner: req.user.id });
+        const isCompanyOwner = await CompanyMember.findOne({
+            user: req.user._id,
+            role: CompanyRole.OWNER,
+            isActive: true,
+        });
+        if (!isCompanyOwner) {
+            return next(new ApiError(403, "You are not authorized to update the company profile"));
+        }
+        let company = await Company.findById(isCompanyOwner.company);
         if (!company) {
             return res.status(404).json({
                 success: false,
                 message: "Company not found",
-            });
-        }
-        const companyMember = await CompanyMember.findOne({
-            user: req.user.id,
-        });
-        if (!companyMember) {
-            return res.status(404).json({
-                success: false,
-                message: `${req.user.firstName} ${req.user.lastName} is not a memeber of the company ${company.name}`,
-            });
-        }
-        // Make sure user is company owner
-        if (company.owner.toString() !== req.user.id &&
-            companyMember.role !== CompanyRole.OWNER) {
-            return res.status(403).json({
-                success: false,
-                message: "Not authorized to update this company",
             });
         }
         // Use company._id instead of req.params.id since this is the /me route
@@ -222,50 +258,113 @@ export const updateCompany = async (req, res, next) => {
         });
     }
 };
-// @desc    Delete company
-// @route   DELETE /api/companies/:id
-// @access  Private (Employer - Owner only)
 export const deleteCompany = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
-        const company = await Company.findById(req.params.id);
+        const isCompanyOwner = await CompanyMember.findOne({
+            user: req.user._id,
+            role: CompanyRole.OWNER,
+            isActive: true,
+        }).session(session);
+        if (!isCompanyOwner) {
+            await session.abortTransaction();
+            session.endSession();
+            return next(new ApiError(403, "You are not authorized to delete this company"));
+        }
+        const company = await Company.findById(req.params.id).session(session);
         if (!company) {
+            await session.abortTransaction();
+            session.endSession();
             return res.status(404).json({
                 success: false,
                 message: "Company not found",
             });
         }
-        const companyMember = await CompanyMember.findOne({
-            user: req.user.id,
-        });
-        if (!companyMember) {
-            return res.status(404).json({
-                success: false,
-                message: `${req.user.firstName} ${req.user.lastName} is not a memeber of the company ${company.name}`,
-            });
-        }
-        // Make sure user is company owner
-        if (company.owner.toString() !== req.user.id &&
-            companyMember.role !== CompanyRole.OWNER) {
-            return res.status(403).json({
-                success: false,
-                message: "Not authorized to update this company",
-            });
-        }
-        await company.deleteOne();
-        // Remove company from user
-        await User.findByIdAndUpdate(req.user.id, {
-            $unset: { company: 1 },
-        });
+        // Find all members
+        const members = await CompanyMember.find({ company: company._id }).session(session);
+        const userIds = members.map((m) => m.user);
+        // Unset company from all members' users
+        await User.updateMany({ _id: { $in: userIds } }, { $unset: { company: 1 } }).session(session);
+        // Find all jobs and internships for the company in parallel
+        const [jobs, internships] = await Promise.all([
+            Job.find({ company: company._id }, "_id").session(session),
+            Internship.find({ company: company._id }, "_id").session(session),
+        ]);
+        const jobIds = jobs.map((j) => j._id);
+        const internshipIds = internships.map((i) => i._id);
+        // Delete all applications for both using listingType to scope correctly
+        await Promise.all([
+            jobIds.length > 0 &&
+                Application.deleteMany({
+                    listing: { $in: jobIds },
+                    listingType: ListingType.JOB,
+                }).session(session),
+            internshipIds.length > 0 &&
+                Application.deleteMany({
+                    listing: { $in: internshipIds },
+                    listingType: ListingType.INTERNSHIP,
+                }).session(session),
+            // Delete the listings themselves
+            Job.deleteMany({ company: company._id }).session(session),
+            Internship.deleteMany({ company: company._id }).session(session),
+        ]);
+        // Delete all members
+        await CompanyMember.deleteMany({ company: company._id }).session(session);
+        // Delete company
+        await Company.deleteOne({ _id: company._id }).session(session);
+        await session.commitTransaction();
+        session.endSession();
         res.status(200).json({
             success: true,
             message: "Company deleted successfully",
         });
     }
     catch (error) {
+        await session.abortTransaction();
+        session.endSession();
         res.status(500).json({
             success: false,
             message: "Error deleting company",
             error: error.message,
         });
+    }
+};
+export const uploadCompanyLogo = async (req, res, next) => {
+    try {
+        const isCompanyOwner = await CompanyMember.findOne({
+            user: req.user._id,
+            role: CompanyRole.OWNER,
+            isActive: true,
+        });
+        if (!isCompanyOwner) {
+            return next(new ApiError(403, "You are not authorized to update the logo of this company"));
+        }
+        if (!req.file) {
+            throw new ApiError(400, "Please upload a file");
+        }
+        if (!ALLOWED_MIME_TYPES_FOR_AVATAR.includes(req.file.mimetype)) {
+            throw new ApiError(400, "Only images are allowed");
+        }
+        let company = await Company.findById(isCompanyOwner.company);
+        if (!company) {
+            throw new ApiError(404, "Company not found");
+        }
+        if (company?.logo?.publicId) {
+            await deleteFromCloudinary(company.logo?.publicId);
+        }
+        const result = await uploadToCloudinary(req.file.buffer, "job_portal/company_logos", "image", `logo-${company._id}-${Date.now()}`);
+        company = await Company.findByIdAndUpdate(company._id, {
+            logo: {
+                url: result.secure_url,
+                publicId: result.public_id,
+            },
+        }, { new: true, runValidators: true });
+        res
+            .status(200)
+            .json(new ApiResponse(200, { logoUrl: company?.logo }, "Company logo uploaded successfully"));
+    }
+    catch (error) {
+        next(error);
     }
 };

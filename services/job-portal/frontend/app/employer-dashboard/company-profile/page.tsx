@@ -6,6 +6,8 @@ import { CompanyHeader } from "../../../features/employer/components/company-hea
 import { CompanyOverview } from "../../../features/employer/components/company-overview";
 import { CompanyInformation } from "../../../features/employer/components/company-information";
 import { CompanyProfileSkeleton } from "../../../features/employer/components/company-skeleton";
+import { CompanyPlanDetails } from "../../../features/employer/components/company-plan-details";
+import { CompanyDangerZone } from "../../../features/employer/components/company-danger-zone";
 
 const CompanyProfilePage = () => {
   const { data: companyResponse, isLoading: isCompanyLoading } = useGetMyCompanyDetails();
@@ -40,7 +42,7 @@ const CompanyProfilePage = () => {
 
       <CompanyHeader company={company} isLoading={isCompanyLoading} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-start">
         <CompanyOverview
           company={company}
           isLogoUploading={isLogoUploading}
@@ -49,6 +51,11 @@ const CompanyProfilePage = () => {
 
         <div className="space-y-6 lg:col-span-2">
           <CompanyInformation company={company} />
+          
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <CompanyPlanDetails company={company} />
+            <CompanyDangerZone company={company} />
+          </div>
         </div>
       </div>
     </div>

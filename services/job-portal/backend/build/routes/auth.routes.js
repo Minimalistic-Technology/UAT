@@ -1,24 +1,18 @@
 import { Router } from "express";
-import { register, login, logout, getMe, verifyOTP, googleAuth, forgotPassword, verifyResetOTP, resetPassword, } from "../controllers/auth.controller.js";
+import { login, logout, getMe, verifyOTP, googleAuth, forgotPassword, resetPassword, requestUserRegistration, requestEmployerRegistration, confirmRegistrationOTP, } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { body } from "express-validator";
+import { loginLimiter, otpLimiter, otpRequestLimiter } from "../middleware/rateLimiter.js";
+import { confirmRegistrationSchema, forgotPasswordSchema, googleAuthSchema, loginSchema, registerEmployerSchema, registerUserSchema, resetPasswordSchema, verifyOtpSchema, } from "../validations/auth.validation.js";
 const router = Router();
 // Register
-router.post("/register", validate([
-    body("firstName").trim().notEmpty().withMessage("First name is required"),
-    body("lastName").trim().notEmpty().withMessage("Last name is required"),
-    body("email").isEmail().withMessage("Valid email is required"),
-    body("password")
-        .isLength({ min: 6 })
-        .withMessage("Password must be at least 6 characters"),
-    body("role").isIn(["super_admin", "user"]).withMessage("Invalid role"),
-]), register);
+router.post("/request-otp/register", otpRequestLimiter, validate(registerUserSchema), requestUserRegistration);
+// Register Employer
+router.post("/request-otp/employer", otpRequestLimiter, validate(registerEmployerSchema), requestEmployerRegistration);
+// confirm registration
+router.post("/register/confirm", otpLimiter, validate(confirmRegistrationSchema), confirmRegistrationOTP);
 // Login
-router.post("/login", validate([
-    body("email").isEmail().withMessage("Valid email is required"),
-    body("password").notEmpty().withMessage("Password is required"),
-]), login);
+router.post("/login", loginLimiter, validate(loginSchema), login);
 // Logout
 router.post("/logout", protect, logout);
 // Get current user
@@ -30,23 +24,11 @@ router.get("/me", protect, getMe);
 //   sendPhoneOTP
 // );
 // Verify OTP
-router.post("/verify-otp", validate([
-    body("phone").isMobilePhone("any").withMessage("Valid phone number is required"),
-    body("otp").isLength({ min: 4, max: 6 }).withMessage("OTP must be 4-6 digits"),
-]), verifyOTP);
+router.post("/verify-otp", otpLimiter, validate(verifyOtpSchema), verifyOTP);
 // Google Auth
-router.post("/google-auth", validate([body("token").notEmpty().withMessage("Google token is required")]), googleAuth);
+router.post("/google-auth", validate(googleAuthSchema), googleAuth);
 // Forgot Password
-router.post("/forgot-password", validate([body("email").isEmail().withMessage("Valid email is required")]), forgotPassword);
-// Verify Reset OTP
-router.post("/verify-reset-otp", validate([
-    body("email").isEmail().withMessage("Valid email is required"),
-    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digits"),
-]), verifyResetOTP);
+router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
 // Reset Password
-router.post("/reset-password", validate([
-    body("email").isEmail().withMessage("Valid email is required"),
-    body("otp").isLength({ min: 6, max: 6 }).withMessage("OTP must be 6 digits"),
-    body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
-]), resetPassword);
+router.post("/reset-password/:token", validate(resetPasswordSchema), resetPassword);
 export default router;

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addEmployee, deleteEmployee, getAllEmployees, getMyCompany, submitKycData, updateCompanyDetails, uploadCompanyLogo, getEmployeeById, updateEmployee } from "../services/company.service";
+import { addEmployee, deleteEmployee, getAllEmployees, getMyCompany, submitKycData, updateCompanyDetails, uploadCompanyLogo, getEmployeeById, updateEmployee, deleteCompany } from "../services/company.service";
 import { toast } from "sonner";
 import {useRouter} from "next/navigation"
 import { getValidationErrorMessage } from "@/lib/validation-error";
@@ -102,7 +102,6 @@ export const useSubmitKyc = () => {
       router.push("/employer-dashboard");
     },
     onError: (error: any) => {
-      console.log("error", error?.response?.data?.errors);
       const errorMsg = error?.response?.data?.message || "Failed to submit KYC";
 
       if(errorMsg === 'Validation failed'){
@@ -143,6 +142,24 @@ export const useUploadCompanyLogo = () => {
     },
     onError: (error: any) => {
       const errorMsg = error?.response?.data?.message || "Failed to upload company logo";
+      toast.error(errorMsg);
+    },
+  });
+};
+
+export const useDeleteCompany = () => {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteCompany(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-company-details"] });
+      toast.success("Company deleted successfully");
+      router.push("/employer-dashboard"); // or maybe /login or some setup page if company is required
+    },
+    onError: (error: any) => {
+      const errorMsg = error?.response?.data?.message || "Failed to delete company";
       toast.error(errorMsg);
     },
   });

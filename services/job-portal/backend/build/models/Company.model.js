@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+import { cloudinaryAssetSchema } from './KYC.model.js';
 const companySchema = new Schema({
     name: {
         type: String,
@@ -7,9 +8,9 @@ const companySchema = new Schema({
     },
     description: {
         type: String,
-        required: [true, 'Company description is required'],
+        default: ""
     },
-    logo: String,
+    logo: cloudinaryAssetSchema,
     website: String,
     industry: {
         type: String,
@@ -17,7 +18,7 @@ const companySchema = new Schema({
     },
     companySize: {
         type: String,
-        enum: ['1-10', '11-50', '51-200', '201-500', '501-1000', '1000+'],
+        enum: ['', '1-10', '11-50', '51-200', '201-500', '501-1000', '1000+'],
     },
     location: {
         address: String,

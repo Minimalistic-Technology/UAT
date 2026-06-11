@@ -1,0 +1,40 @@
+import { useFormContext } from "react-hook-form";
+import { CreateJobFormData } from "@/features/employer/validations/job.schema";
+import { LocationSelector } from "@/components/ui/location-selector";
+
+export function JobLocation() {
+    const { watch, setValue, formState: { errors } } = useFormContext<CreateJobFormData>();
+
+    return (
+        <section className="space-y-6 border-b pb-10 border-border/70">
+            <div>
+                <h2 className="text-xl font-bold tracking-tight">Location Details</h2>
+                <p className="text-muted-foreground text-sm mt-2 leading-relaxed">Specify the exact location, or skip if remote.</p>
+            </div>
+            <div className="space-y-6">
+                <div className="space-y-4 md:col-span-3">
+                    <LocationSelector
+                        city={watch("location.city") || ""}
+                        state={watch("location.state") || ""}
+                        country={watch("location.country") || ""}
+                        onChange={(name, value) => {
+                            if (name === "country") {
+                                setValue("location.country", value, { shouldValidate: true });
+                                setValue("location.state", "");
+                                setValue("location.city", "");
+                            } else if (name === "state") {
+                                setValue("location.state", value, { shouldValidate: true });
+                                setValue("location.city", "");
+                            } else if (name === "city") {
+                                setValue("location.city", value, { shouldValidate: true });
+                            }
+                        }}
+                    />
+                    {(errors.location?.country || errors.location?.state || errors.location?.city) && (
+                        <p className="text-sm font-medium text-destructive">Please complete all location fields if the position is not remote.</p>
+                    )}
+                </div>
+            </div>
+        </section>
+    );
+}

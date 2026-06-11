@@ -8,13 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { createTeamMemberSchema, type CreateTeamMemberSchema } from "@/features/employer/validations/team.schema";
 
 export default function AddTeamMemberPage() {
   const router = useRouter();
   const createEmployeeMutation = useCreateEmployee();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -41,26 +43,26 @@ export default function AddTeamMemberPage() {
           variant="ghost"
           size="icon"
           onClick={() => router.push("/employer-dashboard/team")}
-          className="rounded-full"
+          className="rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Add Team Member</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Add Team Member</h1>
+          <p className="text-slate-500 text-sm mt-1">
             Invite a new member to your company workspace
           </p>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Member Details</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+        <CardHeader className="pb-4 pt-6 px-7">
+          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Member Details</CardTitle>
+          <CardDescription className="text-sm text-slate-500">
             Enter the details of the employee you want to add to your team.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-7 pb-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -103,12 +105,26 @@ export default function AddTeamMemberPage() {
 
             <div className="space-y-2">
               <Label htmlFor="password">Temporary Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="******"
-                {...register("password")}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="******"
+                  {...register("password")}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-sm text-destructive">{errors.password.message}</p>
               )}

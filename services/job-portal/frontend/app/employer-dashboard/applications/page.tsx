@@ -58,6 +58,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { ApplicationStatus } from "@/types/enums";
 
 const EmployerApplicationsPage = () => {
   const [page, setPage] = useState(1);
@@ -146,21 +147,21 @@ const EmployerApplicationsPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Applications</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">All Applications</h1>
+          <p className="text-slate-500 text-sm mt-1">
             Manage all the applications received across your company's jobs.
           </p>
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Recent Applications</CardTitle>
-            <CardDescription>
+      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+        <CardHeader className="flex flex-row items-center justify-between pb-4 pt-6 px-7">
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Recent Applications</CardTitle>
+            <CardDescription className="text-sm text-slate-500">
               {pagination?.totalItems || 0} total applications
             </CardDescription>
           </div>
@@ -172,7 +173,7 @@ const EmployerApplicationsPage = () => {
                 setPage(1);
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -185,7 +186,7 @@ const EmployerApplicationsPage = () => {
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-7 pb-6">
           {isLoading ? (
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => (
@@ -206,7 +207,8 @@ const EmployerApplicationsPage = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Applicant</TableHead>
-                    <TableHead>Job Title</TableHead>
+                    <TableHead>Listing Title</TableHead>
+                    <TableHead>Listing Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Applied At</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -223,7 +225,8 @@ const EmployerApplicationsPage = () => {
                           {app.jobSeeker?.email}
                         </div>
                       </TableCell>
-                      <TableCell>{app.job?.title || "Unknown Job"}</TableCell>
+                      <TableCell>{app.listing?.title || "Unknown Listing Title"}</TableCell>
+                      <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(app.status)}>
                           {app.status.replace("_", " ").toUpperCase()}
@@ -238,11 +241,15 @@ const EmployerApplicationsPage = () => {
 
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={[ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN].includes(app.status?.toLowerCase())}
+                              >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-border z-50">
                               <DropdownMenuLabel>
                                 Quick Actions
                               </DropdownMenuLabel>
@@ -287,7 +294,7 @@ const EmployerApplicationsPage = () => {
           )}
 
           {/* Server Side Pagination Controls */}
-          {pagination && pagination.totalPages > 1 && (
+          {pagination && pagination.totalPages >= 1 && (
             <div className="flex items-center justify-between pt-4">
               <div className="text-muted-foreground text-sm">
                 Showing page {pagination.currentPage} of {pagination.totalPages}

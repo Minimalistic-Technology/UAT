@@ -35,7 +35,7 @@ const Logo = () => {
           strokeWidth={2.5}
         />
       </div>
-      <span className="text-xl font-bold tracking-tight text-slate-900">
+      <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white transition-colors duration-300">
         {APP_NAME}
       </span>
     </Link>

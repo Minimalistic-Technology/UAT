@@ -45,7 +45,7 @@ const CurrencyIcon = ({
 
 export default function JobCard({ job }: JobCardProps) {
   return (
-    <Link href={`/${job.listingType === 'internship' ? 'internships' : 'jobs'}/${job._id}`} className="group block">
+    <Link href={`/${job.listingType === 'internship' ? 'internship' : 'job'}/${job._id}`} className="group block">
       <Card className="hover:border-primary/20 overflow-hidden border shadow-sm transition-all duration-200 hover:shadow-md">
         <CardContent className="p-5">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
@@ -116,7 +116,7 @@ export default function JobCard({ job }: JobCardProps) {
               ) : (
                 <div className="hidden flex-col items-end md:flex">
                   <span className="text-muted-foreground text-sm font-medium capitalize">
-                    {job.stipend?.type?.replace("_", " ")} Stipend
+                    {job.stipend?.type} Stipend
                   </span>
                 </div>
               )
@@ -175,7 +175,7 @@ export default function JobCard({ job }: JobCardProps) {
             <div className="flex items-center gap-1.5">
               <Briefcase className="h-4 w-4" />
               <span className="capitalize">
-                {job.jobType.replace("_", " ")}
+                {job.employmentType?.replace("_", " ")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -196,7 +196,7 @@ export default function JobCard({ job }: JobCardProps) {
                 </div>
               ) : (
                 <div className="text-muted-foreground flex items-center text-sm font-medium capitalize md:hidden">
-                  {job.stipend?.type?.replace("_", " ")} Stipend
+                  {job.stipend?.type} Stipend
                 </div>
               )
             ) : job.salary?.min || job.salary?.max ? (
@@ -224,21 +224,30 @@ export default function JobCard({ job }: JobCardProps) {
           </p>
 
           {/* Skills Row */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {job.skills.slice(0, 4).map((skill: any, index: number) => (
-              <Badge
-                key={index}
-                variant="secondary"
-                className="bg-muted/50 hover:bg-muted rounded-md border-transparent px-2.5 py-0.5 text-xs font-medium"
-              >
-                {skill}
-              </Badge>
-            ))}
-            {job.skills.length > 4 && (
-              <span className="text-muted-foreground ml-1 self-center text-xs">
-                +{job.skills.length - 4} more
-              </span>
-            )}
+          <div className="mt-4 border-t pt-4">
+            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Required Skills</h4>
+            <div className="flex flex-wrap gap-2">
+              {job.skills?.length > 0 ? (
+                <>
+                  {job.skills.slice(0, 4).map((skill: any, index: number) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-md border-transparent px-2.5 py-0.5 text-xs font-semibold"
+                    >
+                      {skill}
+                    </Badge>
+                  ))}
+                  {job.skills.length > 4 && (
+                    <span className="text-slate-500 ml-1 self-center text-[11px] font-bold">
+                      +{job.skills.length - 4} more
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-slate-400 text-xs italic">No specific skills listed</span>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

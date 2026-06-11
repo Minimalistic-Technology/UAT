@@ -2,56 +2,29 @@
 
 import {
   useGetMyApplications,
-  useWithdrawJobApplication,
 } from "@/features/user/hooks/use-job-application";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Briefcase,
-  MapPin,
-  Clock,
-  Trash2,
-  Loader2,
-  ChevronRight,
-  RefreshCcw,
   AlertCircle,
-  Eye,
+  RefreshCcw,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ApplicationCard } from "@/features/user/components/application-card";
 
 const MyApplicationsPage = () => {
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+
   const {
     data: responseData,
     isLoading,
     isError,
     refetch: refetchMyApplication,
-  } = useGetMyApplications();
-
-  const { mutate: withdrawApplication, isPending } =
-    useWithdrawJobApplication();
+  } = useGetMyApplications({ page, limit });
 
   if (isLoading) {
     return <ApplicationsSkeleton />;
@@ -60,8 +33,8 @@ const MyApplicationsPage = () => {
   if (isError) {
     return (
       <div className="mx-auto max-w-6xl p-6">
-        <Card className="border-destructive/20 bg-destructive/5">
-          <CardContent className="flex flex-col items-center justify-center space-y-4 py-10">
+        <Card className="border-destructive/20 bg-destructive/5 rounded-2xl">
+          <CardContent className="flex flex-col items-center justify-center space-y-4 py-16">
             <AlertCircle className="text-destructive/80 h-10 w-10" />
             <div className="text-center">
               <h2 className="text-lg font-semibold">
@@ -85,153 +58,76 @@ const MyApplicationsPage = () => {
   }
 
   const applications = responseData?.data.applications || [];
-  console.log("My applications", applications);
+  const pagination = responseData?.data.pagination;
+
+  const handlePrevious = () => setPage((p) => Math.max(1, p - 1));
+  const handleNext = () => {
+    if (pagination?.totalPages && page < pagination.totalPages) {
+      setPage((p) => p + 1);
+    }
+  };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">My Applications</h1>
-        <p className="text-muted-foreground text-sm">
-          Manage your active job applications and track their progress.
+    <div className="mx-auto max-w-6xl space-y-8 p-6 lg:p-10">
+      <div className="flex flex-col gap-1.5 md:mb-6">
+        <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl lg:text-4xl font-heading">
+          My Applications
+        </h1>
+        <p className="text-muted-foreground font-medium max-w-2xl text-sm md:text-base">
+          Track and manage your {pagination?.totalItems || applications.length} active job applications all in one place.
         </p>
       </div>
 
-      <Card className="border-muted/40 overflow-hidden shadow-sm">
-        <CardHeader className="bg-muted/30 border-b px-6 py-4">
-          <CardTitle className="flex items-center gap-2 text-sm font-medium">
-            <Briefcase className="text-primary h-4 w-4" />
-            Active Submissions ({applications.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-muted/10">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="text-xs font-semibold tracking-wider uppercase">
-                  Job Details
-                </TableHead>
-                <TableHead className="text-xs font-semibold tracking-wider uppercase">
-                  Location
-                </TableHead>
-                <TableHead className="text-xs font-semibold tracking-wider uppercase">
-                  Applied Date
-                </TableHead>
-                <TableHead className="text-xs font-semibold tracking-wider uppercase">
-                  Company
-                </TableHead>
-                <TableHead className="text-xs font-semibold tracking-wider uppercase">
-                  Status
-                </TableHead>
-                <TableHead className="text-right text-xs font-semibold tracking-wider uppercase">
-                  Action
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {applications.length > 0 ? (
-                applications.map((app: any) => (
-                  <TableRow
-                    key={app._id}
-                    className="group hover:bg-muted/5 transition-colors"
-                  >
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-foreground group-hover:text-primary text-sm font-bold transition-colors">
-                          {app.job.title}
-                        </span>
-                        <span className="text-muted-foreground mt-0.5 text-[11px] font-medium uppercase">
-                          {app.job.jobType.replace("_", " ")}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {app.job.location.city}
-                        {app.job.location.remote && (
-                          <Badge
-                            variant="outline"
-                            className="ml-1 h-4 border-blue-200 bg-blue-50 px-1 text-[10px] text-blue-600"
-                          >
-                            Remote
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                        <Clock className="h-3.5 w-3.5" />
-                        {format(new Date(app.createdAt), "dd MMM yyyy")}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-medium">
-                        {app.job?.company?.name ?? "Unknown Company"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={app.status} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Link href={`/user-dashboard/applications/${app._id}`}>
-                          <Button variant="outline" size="icon" className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-primary">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={app.status === "withdrawn"}
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 cursor-pointer disabled:cursor-not-allowed"
-                            >
-                              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                              Withdraw
-                            </Button>
-                          </AlertDialogTrigger>
+      <div className="space-y-4">
+        {applications.length > 0 ? (
+          applications.map((app: any) => (
+            <ApplicationCard key={app._id} application={app} />
+          ))
+        ) : (
+          <Card className="border-dashed shadow-none rounded-2xl bg-slate-50/50">
+            <CardContent className="flex flex-col items-center justify-center p-16 text-center">
+              <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+                <Briefcase className="h-10 w-10 text-slate-400" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">No Applications Yet</h3>
+              <p className="text-muted-foreground mt-2 max-w-sm text-sm">
+                You haven't applied to any jobs yet. Start exploring and apply to jobs that match your skills!
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
-                          <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Are you absolutely sure?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will
-                              permanently withdraw your application for this
-                              position.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => withdrawApplication(app._id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
-                            >
-                              Withdraw Application
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-muted-foreground h-24 text-center"
-                  >
-                    No applications found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Server Side Pagination Controls */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between pt-6 border-t mt-8">
+          <div className="text-muted-foreground text-sm font-medium">
+            Showing page {pagination.currentPage} of {pagination.totalPages}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrevious}
+              disabled={page === 1}
+              className="rounded-lg font-semibold"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNext}
+              disabled={page >= pagination.totalPages}
+              className="rounded-lg font-semibold"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -240,61 +136,17 @@ export default MyApplicationsPage;
 
 const ApplicationsSkeleton = () => {
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
-      <div className="space-y-2">
-        <Skeleton className="h-7 w-40" />
-        <Skeleton className="h-4 w-60" />
+    <div className="mx-auto max-w-6xl space-y-8 p-6 lg:p-10">
+      <div className="space-y-3 mb-10">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-5 w-[350px]" />
       </div>
 
-      {/* Simplified Table Skeleton */}
-      <div className="border-muted/40 overflow-hidden rounded-xl border">
-        <Table>
-          <TableBody>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <TableRow key={i} className="hover:bg-transparent">
-                <TableCell className="py-5">
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-20 opacity-50" />
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-24" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-16" />
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end">
-                    <Skeleton className="h-8 w-24 rounded-md" />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="space-y-5">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+        ))}
       </div>
     </div>
-  );
-};
-
-const StatusBadge = ({ status }: { status: string }) => {
-  const variants: Record<string, string> = {
-    pending: "bg-amber-50 text-amber-700 border-amber-200",
-    accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    rejected: "bg-rose-50 text-rose-700 border-rose-200",
-    withdrawn: "bg-slate-100 text-slate-600 border-slate-300",
-  };
-
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "border px-2 py-0 text-[11px] font-semibold capitalize shadow-none",
-        variants[status] || variants.pending,
-      )}
-    >
-      {status}
-    </Badge>
   );
 };

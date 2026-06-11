@@ -8,6 +8,7 @@ export interface ICoupon extends Document {
   expiryDate?: Date;
   maxUses?: number;
   usageCount: number;
+  usedBy: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 
@@ -59,6 +60,11 @@ const couponSchema = new Schema<ICoupon>(
       type: Number,
       default: 0,
       min: 0,
+    },
+    usedBy: {
+      type: [Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
     },
   },
   {

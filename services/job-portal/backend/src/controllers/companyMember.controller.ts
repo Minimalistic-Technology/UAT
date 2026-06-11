@@ -295,12 +295,10 @@ export const removeMember = async (
       throw new ApiError(403, "Unauthorized: Access denied.");
     }
 
-    console.log("memberId", memberId);
 
     const memberToRemove =
       await CompanyMember.findById(memberId).session(session);
 
-    console.log("Member to remove: ", memberToRemove);
 
     if (!memberToRemove) {
       throw new ApiError(404, "Member record not found.");

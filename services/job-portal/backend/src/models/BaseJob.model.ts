@@ -5,7 +5,7 @@ import mongoose, {
   SchemaDefinitionType,
 } from "mongoose";
 
-export enum JobType {
+export enum EmploymentType {
   FULL_TIME = "full_time",
   PART_TIME = "part_time",
   CONTRACT = "contract",
@@ -25,6 +25,19 @@ export enum JobStatus {
   CLOSED = "closed",
   PENDING = "pending",
   REJECTED = "rejected",
+}
+
+export enum GenderPreference {
+  ANY = "any",
+  MALE = "male",
+  FEMALE = "female",
+}
+
+export enum EnglishFluency {
+  NONE = "none",
+  BASIC = "basic",
+  INTERMEDIATE = "intermediate",
+  FLUENT = "fluent",
 }
 
 export enum WorkMode {
@@ -142,29 +155,36 @@ export interface ILocation {
   country: string;
 }
 
+export enum OpportunityType {
+  JOB = "job",
+  INTERNSHIP = "internship",
+}
+
 export interface IBaseJob extends Document {
   title: string;
   description: string;
   company: mongoose.Types.ObjectId;
   postedBy: mongoose.Types.ObjectId;
-  jobType: JobType;
+  employmentType: EmploymentType;
   workMode: WorkMode;
   companyType: CompanyType;
   roleCategory: RoleCategory;
   industry: Industry;
-  location: ILocation;
+  location?: ILocation;
   education: IEducation;
   skills: string[];
   requirements: string[];
   benefits?: string[];
+  genderPreference: GenderPreference;
+  englishFluency: EnglishFluency;
   applicationDeadline?: Date;
   openings: number;
   status: JobStatus;
   isFeatured: boolean;
   applicationsCount: number;
   viewsCount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  opportunityType: OpportunityType;
+  isDeleted: boolean;
 }
 
 export const baseJobSchemaDefinition: SchemaDefinition<
@@ -189,9 +209,9 @@ export const baseJobSchemaDefinition: SchemaDefinition<
     ref: "User",
     required: true,
   },
-  jobType: {
+  employmentType: {
     type: String,
-    enum: Object.values(JobType),
+    enum: Object.values(EmploymentType),
     required: true,
   },
   workMode: {
@@ -212,6 +232,16 @@ export const baseJobSchemaDefinition: SchemaDefinition<
   skills: [String],
   requirements: [String],
   benefits: [String],
+  genderPreference: {
+    type: String,
+    enum: Object.values(GenderPreference),
+    default: GenderPreference.ANY,
+  },
+  englishFluency: {
+    type: String,
+    enum: Object.values(EnglishFluency),
+    default: EnglishFluency.NONE,
+  },
   applicationDeadline: Date,
   openings: {
     type: Number,
@@ -258,5 +288,14 @@ export const baseJobSchemaDefinition: SchemaDefinition<
       type: Boolean,
       default: false,
     },
+  },
+  opportunityType: {
+    type: String,
+    enum: Object.values(OpportunityType),
+    required: true,
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
   },
 };

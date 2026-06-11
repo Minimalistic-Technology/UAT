@@ -7,14 +7,16 @@ export const createJobSchema = [
     .notEmpty()
     .withMessage("Job description is required"),
 
-  body("jobType").notEmpty().withMessage("Job type is required"),
+  body("employmentType").notEmpty().withMessage("Employment type is required"),
   body("workMode").notEmpty().withMessage("Work mode is required"),
   body("companyType").notEmpty().withMessage("Company type is required"),
   body("roleCategory").notEmpty().withMessage("Role category is required"),
   body("industry").notEmpty().withMessage("Industry is required"),
   body("experienceLevel")
     .notEmpty()
-    .withMessage("Experience level is required"),
+    .withMessage("Experience level is required")
+    .isIn(["entry", "intermediate", "senior", "expert"])
+    .withMessage("Invalid experience level"),
 
   body("experienceInYears")
     .notEmpty()
@@ -24,10 +26,10 @@ export const createJobSchema = [
 
   body("openings").isInt({ min: 1 }).withMessage("Openings must be at least 1"),
 
-  // Location Object (removed location.remote)
-  body("location.city").trim().notEmpty().withMessage("City is required"),
-  body("location.state").trim().notEmpty().withMessage("State is required"),
-  body("location.country").trim().notEmpty().withMessage("Country is required"),
+  // Location Object
+  body("location.city").if((value, { req }) => req.body.workMode !== "remote").trim().notEmpty().withMessage("City is required for non-remote roles"),
+  body("location.state").if((value, { req }) => req.body.workMode !== "remote").trim().notEmpty().withMessage("State is required for non-remote roles"),
+  body("location.country").if((value, { req }) => req.body.workMode !== "remote").trim().notEmpty().withMessage("Country is required for non-remote roles"),
 
   // Education Object
   body("education.minimumDegree")
@@ -49,6 +51,7 @@ export const createJobSchema = [
     .default(false),
 
   // Salary Object
+
   body("salary.min")
     .optional({ values: "falsy" }) // treats empty string as absent
     .isNumeric()
@@ -108,6 +111,10 @@ export const createJobSchema = [
     .isIn(["active", "inactive", "draft"])
     .withMessage("Invalid status")
     .default("active"),
+  body("opportunityType")
+    .notEmpty()
+    .withMessage("Opportunity type is required")
+    .isIn(["job", "internship"]),
 ];
 
 export const getJobByIdSchema = [

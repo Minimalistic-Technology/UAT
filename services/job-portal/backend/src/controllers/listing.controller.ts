@@ -6,6 +6,7 @@ import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
 import { isValidExperienceType } from "./job.controller.js";
 import Job from "../models/Job.model.js";
+import mongoose from "mongoose";
 
 export const getListings = async (
   req: AuthRequest,
@@ -15,6 +16,12 @@ export const getListings = async (
   try {
     const jobQuery = buildBaseJobQuery(req.query as Record<string, any>);
     const internshipQuery = buildBaseJobQuery(req.query as Record<string, any>);
+
+    if (req.query.company) {
+      const companyId = new mongoose.Types.ObjectId(req.query.company as string);
+      jobQuery.company = companyId;
+      internshipQuery.company = companyId;
+    }
 
     const { experienceLevel, minSalary, maxSalary, minStipend, maxStipend, stipendType } = req.query;
 

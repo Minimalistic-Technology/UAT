@@ -41,16 +41,16 @@ export const Testimonials = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-16">
           <div className="max-w-2xl">
-            <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-indigo-600">
+            <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-blue-600">
               Loved by both sides
             </span>
             <h2 className="text-4xl md:text-5xl lg:text-6xl mt-4 text-slate-900 font-bold tracking-tight leading-[1.1]">
               Stories from real <br className="hidden md:block" />
-              <span className="text-indigo-600">hires & hiring teams.</span>
+              <span className="text-blue-600">hires & hiring teams.</span>
             </h2>
           </div>
-          
-          <div 
+
+          <div
             className="flex items-center gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100"
             aria-label="Rated 4.9 stars by 2100 users"
           >

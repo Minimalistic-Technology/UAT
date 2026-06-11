@@ -1,14 +1,23 @@
 import { NextFunction, Request, Response } from "express";
 import User, { GlobalRole, IUser } from "../models/User.model.js";
 import { JobStatus } from "../models/BaseJob.model.js";
-import Job from "../models/Job.model.js";
-import Internship from "../models/Internship.model.js";
-import CompanyMember from "../models/CompanyMember.model.js";
-import Company from "../models/Company.model.js";
 import { Types } from "mongoose";
+
+// Utils
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { deleteFromCloudinary } from "../utils/cloudinary.js";
+import { getPagination } from "../utils/parse-pagination.js";
+
+// Models
+import KYC from "../models/KYC.model.js";
+import Payment, { PaymentStatus } from "../models/Payment.model.js";
+import Application from "../models/Application.model.js"
+import Internship from "../models/Internship.model.js";
+import Job from "../models/Job.model.js";
+import CompanyMember from "../models/CompanyMember.model.js";
+import Company from "../models/Company.model.js";
+import Coupon from "../models/Coupon.model.js";
 
 type IUserWithCompany = IUser & {
   isEmployee?: boolean;
@@ -17,10 +26,13 @@ type IUserWithCompany = IUser & {
   companyName?: string | null;
 };
 
-export const getAllUsers = async (req: Request, res: Response) => {
+export const getAllUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const { page, limit } = getPagination(req.query);
     const skip = (page - 1) * limit;
 
     const filter = { role: { $ne: GlobalRole.SUPER_ADMIN } };
@@ -68,9 +80,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     });
 
     if (!users) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Failed to fetch users" });
+      throw new ApiError(400, "Failed to fetch users");
     }
 
     const totalPages = Math.ceil(totalUsers / limit);
@@ -91,22 +101,20 @@ export const getAllUsers = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const getJobsByStatus = async (req: Request, res: Response) => {
+export const getListingsByStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    let { status, page, limit } = req.query;
+    const status = req.query.status;
+    const jobStatus = status ?? JobStatus.PENDING;
 
-    const jobStatus = (status as string) || JobStatus.PENDING;
-
-    const currentPage = Math.max(1, parseInt(page as string) || 1);
-    const pageSize = Math.max(1, parseInt(limit as string) || 10);
+    const { page: currentPage, limit: pageSize } = getPagination(req.query);
     const skip = (currentPage - 1) * pageSize;
 
     const query = { status: jobStatus };
@@ -134,15 +142,17 @@ export const getJobsByStatus = async (req: Request, res: Response) => {
         .lean(),
     ]);
 
-    const taggedJobs = jobs.map((job) => ({ ...job, listingType: "job" }));
+    const taggedJobs = jobs.map((job) => ({ ...job, opportunityType: "job" }));
     const taggedInternships = internships.map((internship) => ({
       ...internship,
-      listingType: "internship",
+      opportunityType: "internship",
     }));
 
     const merged = [...taggedJobs, ...taggedInternships]
-      .sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      .sort(
+        (a, b) =>
+          // @ts-ignore
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       )
       .slice(0, pageSize);
 
@@ -151,7 +161,7 @@ export const getJobsByStatus = async (req: Request, res: Response) => {
       message: `Listings with status '${jobStatus}' fetched successfully`,
       data: {
         count: totalCombined,
-        listings: merged, 
+        listings: merged,
         pagination: {
           totalPages,
           currentPage,
@@ -162,40 +172,34 @@ export const getJobsByStatus = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error while fetching jobs",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const updateUserStatus = async (
+export const toggleUserStatus = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
   const { userId } = req.params;
-  const { isActive } = req.body;
 
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { isActive },
-      { new: true, runValidators: true },
-    ).select("-password");
+    const user = await User.findById(userId);
 
-    if (!updatedUser) {
+    if (!user) {
       throw new ApiError(404, "User not found.");
     }
+
+    user.isActive = !user.isActive;
+    await user.save();
 
     return res
       .status(200)
       .json(
         new ApiResponse(
           200,
-          updatedUser,
-          `User account has been ${isActive ? "activated" : "deactivated"} successfully.`,
+          user,
+          `User account has been ${user.isActive ? "activated" : "deactivated"} successfully.`,
         ),
       );
   } catch (error: any) {
@@ -203,7 +207,11 @@ export const updateUserStatus = async (
   }
 };
 
-export const getStats = async (req: Request, res: Response) => {
+export const getStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const [totalUsers, totalJobs, totalCompanies] = await Promise.all([
       User.countDocuments({}),
@@ -220,11 +228,7 @@ export const getStats = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch platform statistics",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    next(error);
   }
 };
 
@@ -234,9 +238,8 @@ export const getKycApplications = async (
   next: NextFunction,
 ) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
-    const status = req.query.status as string;
+    const { page, limit } = getPagination(req.query);
+    const status = req.query.status;
 
     const skip = (page - 1) * limit;
 
@@ -245,15 +248,9 @@ export const getKycApplications = async (
       filter.status = status;
     }
 
-    // Dynamic import to avoid circular dependency if Model architecture changed,
-    // assuming KYC is exported from User.model.ts or from its own KYC.model.ts file.
-    // For safety, checking whether KYC model is injected or available.
-    // I know that KYC model was created in src/models/KYC.model.ts earlier.
-    const KYC = (await import("../models/KYC.model.js")).default;
-
     const [applications, totalApplications] = await Promise.all([
       KYC.find(filter)
-        .populate("user", "firstName lastName email phone")
+        .populate("user", "firstName lastName email")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -290,16 +287,8 @@ export const updateKycStatus = async (
 ) => {
   const { applicationId } = req.params;
   const { status, note } = req.body;
-  console.log("Note", note);
 
   try {
-    if (!["approved", "rejected"].includes(status)) {
-      throw new ApiError(
-        400,
-        "Invalid status provided. Must be 'approved' or 'rejected'.",
-      );
-    }
-
     const KYC = (await import("../models/KYC.model.js")).default;
 
     const kycApplication = await KYC.findById(applicationId);
@@ -310,7 +299,6 @@ export const updateKycStatus = async (
 
     kycApplication.status = status;
     if (status === "rejected" && note) {
-      console.log("Inside the block")
       kycApplication.rejectionReason = note;
       // Also delete the assests attached to this kycApplication
       // await deleteFromCloudinary(kycApplication.photo.publicId);
@@ -365,17 +353,36 @@ export const updateKycStatus = async (
   }
 };
 
-export const getAdminAnalytics = async (req: Request, res: Response) => {
+export const getAdminAnalytics = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const KYC = (await import("../models/KYC.model.js")).default;
-    const Payment = (await import("../models/Payment.model.js")).default;
-    const { PaymentStatus } = await import("../models/Payment.model.js");
-    const Application = (await import("../models/Application.model.js"))
-      .default;
-
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    // --- Exchange rates to INR (update these or fetch from a live API) ---
+    const toINR: Record<string, number> = {
+      INR: 1,
+      USD: 83.5,
+      EUR: 90.2,
+      GBP: 105.8,
+    };
+
+    // Helper: converts a currency-grouped aggregation result → INR total
+    const toINRTotal = (aggr: { _id: string; total: number }[]) =>
+      aggr.reduce((sum, { _id: currency, total }) => {
+        const rate = toINR[currency?.toUpperCase()] ?? 1;
+        return sum + (total / 100) * rate;
+      }, 0);
+
+    // Shared aggregation pipeline factory — groups by currency
+    const revenuePipeline = (matchExtra: Record<string, unknown>) => [
+      { $match: { status: PaymentStatus.CAPTURED, ...matchExtra } },
+      { $group: { _id: "$currency", total: { $sum: "$amount" } } },
+    ];
 
     const [
       currentMonthPayments,
@@ -383,42 +390,42 @@ export const getAdminAnalytics = async (req: Request, res: Response) => {
       totalRevenueAggr,
       activeUsers,
       jobListings,
+      internshipListings,
       kycPending,
       totalCompanies,
       totalApplications,
+      recentEmployersAggr,
+      topCouponsData
     ] = await Promise.all([
-      Payment.aggregate([
-        {
-          $match: {
-            status: PaymentStatus.CAPTURED,
-            createdAt: { $gte: currentMonthStart },
-          },
-        },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]),
-      Payment.aggregate([
-        {
-          $match: {
-            status: PaymentStatus.CAPTURED,
-            createdAt: { $gte: lastMonthStart, $lt: currentMonthStart },
-          },
-        },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]),
-      Payment.aggregate([
-        { $match: { status: PaymentStatus.CAPTURED } },
-        { $group: { _id: null, total: { $sum: "$amount" } } },
-      ]),
+      Payment.aggregate(revenuePipeline({ createdAt: { $gte: currentMonthStart } })),
+      Payment.aggregate(revenuePipeline({ createdAt: { $gte: lastMonthStart, $lt: currentMonthStart } })),
+      Payment.aggregate(revenuePipeline({})),
       User.countDocuments({ isActive: true, role: GlobalRole.USER }),
       Job.countDocuments({ status: JobStatus.ACTIVE }),
+      Internship.countDocuments({ status: JobStatus.ACTIVE }),
       KYC.countDocuments({ status: "pending" }),
       Company.countDocuments({}),
       Application.countDocuments({}),
+      Company.aggregate([
+        { $sort: { createdAt: -1 } },
+        { $limit: 5 },
+        { $lookup: { from: "kycs", localField: "owner", foreignField: "user", as: "kyc" } },
+        { $unwind: { path: "$kyc", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            name: 1,
+            createdAt: 1,
+            isVerified: 1,
+            kycStatus: { $ifNull: ["$kyc.status", "pending"] },
+          }
+        }
+      ]),
+      Coupon.find({ usageCount: { $gt: 0 } }).sort({ usageCount: -1 }).limit(3).lean()
     ]);
 
-    const currentRevenue = (currentMonthPayments[0]?.total || 0) / 100;
-    const lastRevenue = (lastMonthPayments[0]?.total || 0) / 100;
-    const totalRevenue = (totalRevenueAggr[0]?.total || 0) / 100;
+    const currentRevenue = toINRTotal(currentMonthPayments);
+    const lastRevenue = toINRTotal(lastMonthPayments);
+    const totalRevenue = toINRTotal(totalRevenueAggr);
 
     let revenueGrowth = 0;
     if (lastRevenue > 0) {
@@ -427,61 +434,78 @@ export const getAdminAnalytics = async (req: Request, res: Response) => {
       revenueGrowth = 100;
     }
 
-    // Graph Data for the last 6 months
+    // --- Graph data (last 6 months) ---
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    const [revenueGraphData, usersGraphData, jobsGraphData] = await Promise.all(
-      [
-        Payment.aggregate([
-          {
-            $match: {
-              status: PaymentStatus.CAPTURED,
-              createdAt: { $gte: sixMonthsAgo },
+    const [revenueGraphData, usersGraphData, jobsGraphData, internshipsGraphData] = await Promise.all([
+      Payment.aggregate([
+        { $match: { status: PaymentStatus.CAPTURED, createdAt: { $gte: sixMonthsAgo } } },
+        {
+          $group: {
+            _id: {
+              month: { $month: "$createdAt" },
+              year: { $year: "$createdAt" },
+              currency: "$currency",
             },
+            total: { $sum: "$amount" },
           },
-          {
-            $group: {
-              _id: {
-                month: { $month: "$createdAt" },
-                year: { $year: "$createdAt" },
-              },
-              total: { $sum: "$amount" },
-            },
+        },
+      ]),
+      User.aggregate([
+        { $match: { createdAt: { $gte: sixMonthsAgo }, role: GlobalRole.USER } },
+        {
+          $group: {
+            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+            count: { $sum: 1 },
           },
-        ]),
-        User.aggregate([
-          {
-            $match: {
-              createdAt: { $gte: sixMonthsAgo },
-              role: GlobalRole.USER,
-            },
+        },
+      ]),
+      Job.aggregate([
+        { $match: { createdAt: { $gte: sixMonthsAgo } } },
+        {
+          $group: {
+            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+            count: { $sum: 1 },
           },
-          {
-            $group: {
-              _id: {
-                month: { $month: "$createdAt" },
-                year: { $year: "$createdAt" },
-              },
-              count: { $sum: 1 },
-            },
+        },
+      ]),
+      Internship.aggregate([
+        { $match: { createdAt: { $gte: sixMonthsAgo } } },
+        {
+          $group: {
+            _id: { month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+            count: { $sum: 1 },
           },
-        ]),
-        Job.aggregate([
-          { $match: { createdAt: { $gte: sixMonthsAgo } } },
-          {
-            $group: {
-              _id: {
-                month: { $month: "$createdAt" },
-                year: { $year: "$createdAt" },
-              },
-              count: { $sum: 1 },
-            },
-          },
-        ]),
-      ],
-    );
+        },
+      ]),
+    ]);
 
-    const formatGraphData = (data: any[], valueKey: string) => {
+
+    const formatRevenueChart = () => {
+      const formatted = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const month = d.getMonth() + 1;
+        const year = d.getFullYear();
+
+        // Sum all currency buckets for this month → INR
+        const monthEntries = revenueGraphData.filter(
+          (item: any) => item._id.month === month && item._id.year === year,
+        );
+        const revenueINR = monthEntries.reduce((sum: number, item: any) => {
+          const rate = toINR[item._id.currency?.toUpperCase()] ?? 1;
+          return sum + (item.total / 100) * rate;
+        }, 0);
+
+        formatted.push({
+          name: d.toLocaleString("default", { month: "short" }),
+          revenue: parseFloat(revenueINR.toFixed(2)),
+        });
+      }
+      return formatted;
+    };
+
+    const formatCountChart = (data: any[], valueKey: string) => {
       const formatted = [];
       for (let i = 5; i >= 0; i--) {
         const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -492,45 +516,38 @@ export const getAdminAnalytics = async (req: Request, res: Response) => {
         );
         formatted.push({
           name: d.toLocaleString("default", { month: "short" }),
-          [valueKey]: found
-            ? valueKey === "revenue"
-              ? found.total / 100
-              : found.count
-            : 0,
+          [valueKey]: found?.count ?? 0,
         });
       }
       return formatted;
     };
-
-    const revenueChart = formatGraphData(revenueGraphData, "revenue");
-    const usersChart = formatGraphData(usersGraphData, "users");
-    const jobsChart = formatGraphData(jobsGraphData, "jobs");
 
     return res.status(200).json({
       success: true,
       message: "Admin analytics fetched successfully",
       data: {
         summary: {
-          totalRevenue,
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),   // always INR ₹
+          revenueCurrency: "INR",
           revenueGrowth: parseFloat(revenueGrowth.toFixed(2)),
           activeUsers,
           jobListings,
+          internshipListings,
           kycPending,
           totalCompanies,
           totalApplications,
         },
         graphs: {
-          revenue: revenueChart,
-          users: usersChart,
-          jobs: jobsChart,
+          revenue: formatRevenueChart(), // ₹ INR values
+          users: formatCountChart(usersGraphData, "users"),
+          jobs: formatCountChart(jobsGraphData, "jobs"),
+          internships: formatCountChart(internshipsGraphData, "internships"),
         },
+        recentEmployers: recentEmployersAggr,
+        topCoupons: topCouponsData,
       },
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch admin analytics",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    next(error);
   }
 };

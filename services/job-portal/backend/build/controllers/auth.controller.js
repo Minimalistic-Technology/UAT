@@ -1,18 +1,32 @@
-import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import User, { GlobalRole } from "../models/User.model.js";
 import { config } from "../config/env.js";
 import { sendEmail } from "../utils/email.js";
 // import { sendOTP } from '../utils/sms.js';
 import CompanyMember from "../models/CompanyMember.model.js";
-// Generate JWT Token
-const generateToken = (id) => {
-    const jwtOptions = {
-        expiresIn: (config.jwtExpire || "7d"),
-    };
-    return jwt.sign({ id }, config.jwtSecret, jwtOptions);
+import Company from "../models/Company.model.js";
+import mongoose from "mongoose";
+import { ApiError } from "../utils/apiError.js";
+import { ApiResponse } from "../utils/apiResponse.js";
+import TempUser from "../models/TempUser.model.js";
+import { generateToken } from "../utils/jwt.js";
+import Feature, { FeatureStatus } from "../models/Feature.model.js";
+import FeaturePermission from "../models/FeaturePermission.model.js";
+const verifyCaptcha = async (token) => {
+    const secretKey = process.env.TURNSTILE_SECRET_KEY || "dummy_secret_key";
+    const formData = new URLSearchParams();
+    formData.append('secret', secretKey);
+    formData.append('response', token);
+    const response = await fetch(`https://challenges.cloudflare.com/turnstile/v0/siteverify`, {
+        method: "POST",
+        body: formData
+    });
+    const data = await response.json();
+    if (!data.success) {
+        throw new ApiError(400, "Security validation failed. Please try again.");
+    }
 };
-// Send token response
 const sendTokenResponse = (user, statusCode, res) => {
     const token = generateToken(user._id);
     const options = {
@@ -30,6 +44,7 @@ const sendTokenResponse = (user, statusCode, res) => {
             email: user.email,
             role: user.role,
             avatar: user.avatar,
+            token,
         };
     }
     if (user.role === GlobalRole.USER) {
@@ -43,91 +58,239 @@ const sendTokenResponse = (user, statusCode, res) => {
             isEmployee: user.isEmployee,
             companyId: user.companyId,
             companyRole: user.companyRole,
+            token,
         };
     }
-    res.status(statusCode).cookie("token", token, options).json({
-        success: true,
-        token,
-        user: payload,
-    });
+    res
+        .status(statusCode)
+        .cookie("token", token, options)
+        .json(new ApiResponse(statusCode, payload, "Login successful"));
 };
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
-export const register = async (req, res) => {
+export const requestUserRegistration = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
-        const { firstName, lastName, email, password, role, phone } = req.body;
-        // Check if user exists
-        const existingUser = await User.findOne({ email });
+        const { firstName, lastName, email, password, phone, captchaToken } = req.body;
+        await verifyCaptcha(captchaToken);
+        const existingUser = await User.findOne({ email }).session(session);
         if (existingUser) {
-            return res.status(400).json({
-                success: false,
-                message: "User already exists with this email",
-            });
+            const companyOwner = await Company.findOne({
+                owner: existingUser._id,
+            }).session(session);
+            if (companyOwner) {
+                return next(new ApiError(400, "You're register as employer with us. you can't create a normal job seeker account with the same email. please use different email"));
+            }
+            return next(new ApiError(400, "User already exists with this email"));
         }
-        const normalizedRole = role === "super_admin" ? GlobalRole.SUPER_ADMIN : GlobalRole.USER;
-        // Create user
-        const user = await User.create({
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const salt = crypto.randomBytes(16).toString("hex");
+        const hashedOtp = crypto
+            .createHmac("sha256", config.otpSecret)
+            .update(otp)
+            .digest("hex");
+        const hashedPassword = await bcrypt.hash(password, 12);
+        await TempUser.findOneAndUpdate({ email }, {
             firstName,
             lastName,
             email,
-            password,
-            role: normalizedRole,
+            password: hashedPassword,
+            role: GlobalRole.USER,
             phone,
+            otp: `${salt}:${hashedOtp}`,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+        }, { upsert: true, session, runValidators: true }).session(session);
+        await sendEmail({
+            email,
+            subject: "Verify your email - Registration OTP",
+            message: `Your registration OTP is ${otp}. It expires in 10 minutes.`,
         });
-        // Send verification email
-        // const verificationToken = crypto.randomBytes(32).toString('hex');
-        // Store token in DB (you'll need to add this field to User model)
-        // await sendEmail({
-        //   email: user.email,
-        //   subject: 'Verify your email',
-        //   message: `Click here to verify: ${config.clientUrl}/verify-email/${verificationToken}`,
-        // });
-        sendTokenResponse(user, 201, res);
+        await session.commitTransaction();
+        res.status(200).json(new ApiResponse(200, null, "OTP sent to email"));
     }
     catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error registering user",
-            error: error.message,
-        });
+        await session.abortTransaction();
+        next(error);
+    }
+    finally {
+        session.endSession();
     }
 };
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
+export const requestEmployerRegistration = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const { email, companyName, role, industry, password, firstName, lastName, phone, captchaToken, } = req.body;
+        await verifyCaptcha(captchaToken);
+        let user = await User.findOne({ email }).session(session);
+        if (user) {
+            const existingCompany = await Company.findOne({
+                owner: user._id,
+                name: { $regex: new RegExp(`^${companyName}$`, "i") },
+            }).session(session);
+            if (existingCompany) {
+                throw new ApiError(400, "You are already registered with this company or email");
+            }
+        }
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const salt = crypto.randomBytes(16).toString("hex");
+        const hashedOtp = crypto
+            .createHmac("sha256", config.otpSecret)
+            .update(otp)
+            .digest("hex");
+        let hashedPassword = undefined;
+        if (password) {
+            hashedPassword = await bcrypt.hash(password, 12);
+        }
+        await TempUser.findOneAndUpdate({ email }, {
+            firstName,
+            lastName,
+            email,
+            password: hashedPassword,
+            role: GlobalRole.USER,
+            phone,
+            isEmployer: true,
+            companyName,
+            companyRole: role,
+            industry,
+            otp: `${salt}:${hashedOtp}`,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+        }, { upsert: true, session, runValidators: true }).session(session);
+        await sendEmail({
+            email,
+            subject: "Verify your email - Employer Registration OTP",
+            message: `Your registration OTP is ${otp}. It expires in 10 minutes.`,
+        });
+        await session.commitTransaction();
+        res.status(200).json(new ApiResponse(200, null, "OTP sent to email"));
+    }
+    catch (error) {
+        await session.abortTransaction();
+        console.error("Registration Error:", error);
+        next(error);
+    }
+    finally {
+        session.endSession();
+    }
+};
+export const confirmRegistrationOTP = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const { email, otp } = req.body;
+        const tempUser = await TempUser.findOne({ email })
+            .select("+password")
+            .session(session);
+        if (!tempUser) {
+            throw new ApiError(404, "Registration session expired or not found. Please register again.");
+        }
+        const [salt, storedHash] = tempUser.otp.split(":");
+        const computedHash = crypto
+            .createHmac("sha256", config.otpSecret)
+            .update(otp)
+            .digest("hex");
+        const storedHashBuffer = Buffer.from(storedHash);
+        const computedHashBuffer = Buffer.from(computedHash);
+        if (storedHashBuffer.length !== computedHashBuffer.length ||
+            !crypto.timingSafeEqual(storedHashBuffer, computedHashBuffer)) {
+            throw new ApiError(401, "Invalid OTP code");
+        }
+        let userToReturn;
+        let isNewUser = true;
+        if (tempUser.isEmployer) {
+            console.log(tempUser.isEmployer);
+            let user = await User.findOne({ email }).session(session);
+            isNewUser = !user;
+            if (isNewUser) {
+                user = await User.create([
+                    {
+                        firstName: tempUser.firstName,
+                        lastName: tempUser.lastName,
+                        email: tempUser.email,
+                        password: tempUser.password,
+                        phone: tempUser.phone,
+                        role: tempUser.role,
+                        isVerified: true,
+                    },
+                ], { session }).then((res) => res[0]);
+            }
+            if (!user) {
+                throw new ApiError(500, "Failed to create user");
+            }
+            const existingCompany = await Company.findOne({
+                owner: user._id,
+                name: { $regex: new RegExp(`^${tempUser.companyName}$`, "i") },
+            }).session(session);
+            if (!existingCompany) {
+                const [company] = await Company.create([
+                    {
+                        name: tempUser.companyName,
+                        industry: tempUser.industry,
+                        owner: user._id,
+                    },
+                ], { session });
+                await CompanyMember.create([
+                    {
+                        user: user._id,
+                        company: company._id,
+                        role: tempUser.companyRole,
+                    },
+                ], { session });
+            }
+            const membership = await CompanyMember.findOne({ user: user._id }).session(session);
+            userToReturn = {
+                ...user.toObject(),
+                isEmployee: true,
+                companyId: membership?.company || null,
+                companyRole: membership?.role || null,
+            };
+        }
+        else {
+            const [newUser] = await User.create([
+                {
+                    firstName: tempUser.firstName,
+                    lastName: tempUser.lastName,
+                    email: tempUser.email,
+                    password: tempUser.password,
+                    phone: tempUser.phone,
+                    role: tempUser.role,
+                    isVerified: true,
+                },
+            ], { session });
+            userToReturn = {
+                ...newUser.toObject(),
+                isEmployee: false,
+                companyId: null,
+                companyRole: null,
+            };
+        }
+        await TempUser.deleteOne({ _id: tempUser._id }).session(session);
+        await session.commitTransaction();
+        return sendTokenResponse(userToReturn, isNewUser ? 201 : 200, res);
+    }
+    catch (error) {
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
+        next(error);
+    }
+    finally {
+        session.endSession();
+    }
+};
 export const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        // Validate input
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Please provide email and password",
-            });
-        }
-        // Check for user
         let user = await User.findOne({ email }).select("+password");
         if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid credentials",
-            });
+            return next(new ApiError(401, "Invalid credentials"));
         }
-        // Check password
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
-            return res.status(401).json({
-                success: false,
-                message: "Invalid credentials",
-            });
+            return next(new ApiError(401, "Invalid credentials"));
         }
         const isActive = user.isActive;
         if (!isActive) {
-            return res.status(403).json({
-                success: false,
-                message: "Access denied. This account has been deactivated. Please contact support.",
-            });
+            return next(new ApiError(403, "Access denied. This account has been deactivated. Please contact support."));
         }
         if (user.role === GlobalRole.SUPER_ADMIN) {
             sendTokenResponse(user, 200, res);
@@ -148,35 +311,9 @@ export const login = async (req, res, next) => {
         }
     }
     catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error logging in",
-            error: error.message,
-        });
+        next(error);
     }
 };
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
-export const getMe = async (req, res, next) => {
-    try {
-        const user = await User.findById(req.user.id);
-        res.status(200).json({
-            success: true,
-            data: user,
-        });
-    }
-    catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Error fetching user",
-            error: error.message,
-        });
-    }
-};
-// @desc    Logout user / clear cookie
-// @route   POST /api/auth/logout
-// @access  Private
 export const logout = async (req, res, next) => {
     res.cookie("token", "none", {
         expires: new Date(Date.now() + 10 * 1000),
@@ -186,6 +323,38 @@ export const logout = async (req, res, next) => {
         success: true,
         message: "User logged out successfully",
     });
+};
+export const getMe = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user)
+            throw new ApiError(404, "User not found");
+        const membership = await CompanyMember.findOne({ user: user._id });
+        // 1. Get strictly "public" features
+        const publicFeatures = await Feature.find({ status: FeatureStatus.PUBLIC }).select("slug");
+        const allowedSlugs = new Set(publicFeatures.map(f => f.slug));
+        // 2. Get specific "beta" features this user (or their company) has been granted
+        const userPermissions = await FeaturePermission.find({
+            $or: [
+                { user: user._id },
+                ...(membership ? [{ company: membership.company }] : [])
+            ]
+        }).populate("feature", "slug status");
+        userPermissions.forEach(perm => {
+            const f = perm.feature;
+            if (f && f.status === FeatureStatus.BETA) {
+                allowedSlugs.add(f.slug);
+            }
+        });
+        const userObj = user.toObject();
+        userObj.allowedFeatures = Array.from(allowedSlugs);
+        res
+            .status(200)
+            .json(new ApiResponse(200, userObj, "User fetched successfully"));
+    }
+    catch (error) {
+        next(error);
+    }
 };
 // @desc    Send OTP to phone
 // @route   POST /api/auth/send-otp
@@ -247,9 +416,6 @@ export const verifyOTP = async (req, res, next) => {
         });
     }
 };
-// @desc    Google OAuth callback
-// @route   POST /api/auth/google
-// @access  Public
 export const googleAuth = async (req, res, next) => {
     try {
         const { googleId, email, firstName, lastName, avatar } = req.body;
@@ -264,7 +430,23 @@ export const googleAuth = async (req, res, next) => {
                 isVerified: true,
             });
         }
-        sendTokenResponse(user, 200, res);
+        let isEmployee = false;
+        let companyId = null;
+        let companyRole = null;
+        if (user.role === GlobalRole.USER) {
+            const membership = await CompanyMember.findOne({ user: user._id });
+            if (membership) {
+                isEmployee = true;
+                companyId = membership.company;
+                companyRole = membership.role;
+            }
+        }
+        sendTokenResponse({
+            ...user.toObject(),
+            isEmployee,
+            companyId,
+            companyRole,
+        }, 200, res);
     }
     catch (error) {
         res.status(500).json({
@@ -274,149 +456,80 @@ export const googleAuth = async (req, res, next) => {
         });
     }
 };
-// @desc    Forgot Password - Send OTP
-// @route   POST /api/auth/forgot-password
-// @access  Public
 export const forgotPassword = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
         const { email } = req.body;
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).session(session);
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "There is no user with that email",
-            });
+            await session.commitTransaction();
+            return res
+                .status(200)
+                .json(new ApiResponse(200, null, "If the user exists, an OTP has been sent."));
         }
-        // Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        // Hash OTP. Format: salt:hash
-        const salt = crypto.randomBytes(16).toString("hex");
-        const hash = crypto.createHmac("sha256", salt).update(otp).digest("hex");
-        const otpToSave = `${salt}:${hash}`;
-        // Save to user
-        user.resetPasswordOtp = otpToSave;
-        user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-        await user.save({ validateBeforeSave: false });
-        // Send email
-        const message = `Your password reset OTP is ${otp}. It is valid for 10 minutes.`;
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const hashedToken = crypto
+            .createHmac("sha256", config.otpSecret)
+            .update(resetToken)
+            .digest("hex");
+        user.resetPasswordOtp = hashedToken;
+        user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+        await user.save({ session, validateBeforeSave: false });
         try {
+            const resetUrl = `${config.clientUrl}/reset-password/${resetToken}`;
             await sendEmail({
                 email: user.email,
-                subject: "Password Reset Valid for 10 mins",
-                message,
+                subject: "Your Password Reset Link",
+                message: `You requested a password reset. Please click on the following link to reset your password:\n\n${resetUrl}\n\nThis link is valid for 10 minutes. If you did not request this, please ignore this email.`,
             });
-            res.status(200).json({
-                success: true,
-                message: "Email sent",
-            });
+            await session.commitTransaction();
+            return res
+                .status(200)
+                .json(new ApiResponse(200, null, "If the user exists, a password reset link has been sent."));
         }
-        catch (err) {
-            // Log the actual error for debugging
-            console.error("🚨 Error sending password reset email:", err);
-            console.error("Error details:", {
-                message: err.message,
-                code: err.code,
-                command: err.command,
-                response: err.response,
-                responseCode: err.responseCode,
-            });
-            user.resetPasswordOtp = undefined;
-            user.resetPasswordExpires = undefined;
-            await user.save({ validateBeforeSave: false });
-            return res.status(500).json({
-                success: false,
-                message: "Email could not be sent",
-                // Include error details in development/staging for debugging
-                ...(config.nodeEnv !== "production" && {
-                    error: err.message,
-                    errorCode: err.code,
-                }),
-            });
+        catch (emailError) {
+            await session.abortTransaction();
+            console.error("Email Delivery Failed:", emailError);
+            throw new ApiError(500, "Failed to send email. Please try again later.");
         }
     }
     catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Server Error",
-            error: error.message,
-        });
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
+        next(error);
+    }
+    finally {
+        session.endSession();
     }
 };
-// @desc    Verify Reset OTP
-// @route   POST /api/auth/verify-reset-otp
-// @access  Public
-export const verifyResetOTP = async (req, res, next) => {
-    try {
-        const { email, otp } = req.body;
-        const user = await User.findOne({
-            email,
-            resetPasswordExpires: { $gt: Date.now() },
-        });
-        if (!user || !user.resetPasswordOtp) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid OTP or expired",
-            });
-        }
-        const [salt, hash] = user.resetPasswordOtp.split(":");
-        const newHash = crypto.createHmac("sha256", salt).update(otp).digest("hex");
-        if (hash !== newHash) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid OTP",
-            });
-        }
-        res.status(200).json({
-            success: true,
-            message: "OTP Verified",
-        });
-    }
-    catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Server Error",
-            error: error.message,
-        });
-    }
-};
-// @desc    Reset Password
-// @route   POST /api/auth/reset-password
-// @access  Public
 export const resetPassword = async (req, res, next) => {
     try {
-        const { email, otp, password } = req.body;
-        // Find user by email first, then check expiration manually or in query
+        const { token } = req.params;
+        const { password } = req.body;
+        if (!token) {
+            return next(new ApiError(400, "Reset token is missing"));
+        }
+        const hashedToken = crypto
+            .createHmac("sha256", config.otpSecret)
+            .update(token)
+            .digest("hex");
         const user = await User.findOne({
-            email,
+            resetPasswordOtp: hashedToken,
             resetPasswordExpires: { $gt: Date.now() },
         }).select("+password");
-        if (!user || !user.resetPasswordOtp) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid OTP or expired",
-            });
+        if (!user) {
+            return next(new ApiError(400, "Invalid or expired reset token"));
         }
-        // Verify OTP
-        const [salt, hash] = user.resetPasswordOtp.split(":");
-        const newHash = crypto.createHmac("sha256", salt).update(otp).digest("hex");
-        if (hash !== newHash) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid OTP",
-            });
-        }
-        // Set new password
-        user.password = password;
+        const hashedPassword = await bcrypt.hash(password, 12);
+        user.password = hashedPassword;
         user.resetPasswordOtp = undefined;
         user.resetPasswordExpires = undefined;
         await user.save();
         sendTokenResponse(user, 200, res);
     }
     catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Server Error",
-            error: error.message,
-        });
+        next(error);
     }
 };

@@ -10,16 +10,29 @@ import {
   requestUserRegistration,
   requestEmployerRegistration,
   confirmRegistrationOTP,
+  resendRegistrationOTP,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { confirmRegistrationSchema, forgotPasswordSchema, googleAuthSchema, loginSchema, registerEmployerSchema, registerUserSchema, resetPasswordSchema, verifyOtpSchema } from "../validations/auth.validation.js";
+import { loginLimiter, otpLimiter, otpRequestLimiter } from "../middleware/rateLimiter.js";
+import {
+  confirmRegistrationSchema,
+  forgotPasswordSchema,
+  googleAuthSchema,
+  loginSchema,
+  registerEmployerSchema,
+  registerUserSchema,
+  resetPasswordSchema,
+  verifyOtpSchema,
+  resendRegistrationOtpSchema,
+} from "../validations/auth.validation.js";
 
 const router = Router();
 
 // Register
 router.post(
   "/request-otp/register",
+  otpRequestLimiter,
   validate(registerUserSchema),
   requestUserRegistration,
 );
@@ -27,6 +40,7 @@ router.post(
 // Register Employer
 router.post(
   "/request-otp/employer",
+  otpRequestLimiter,
   validate(registerEmployerSchema),
   requestEmployerRegistration,
 );
@@ -34,15 +48,25 @@ router.post(
 // confirm registration
 router.post(
   "/register/confirm",
+  otpLimiter,
   validate(confirmRegistrationSchema),
   confirmRegistrationOTP,
+);
+
+// Resend OTP
+router.post(
+  "/resend-otp",
+  otpRequestLimiter,
+  validate(resendRegistrationOtpSchema),
+  resendRegistrationOTP,
 );
 
 // Login
 router.post(
   "/login",
+  loginLimiter,
   validate(loginSchema),
-  login,
+  login
 );
 
 // Logout
@@ -61,23 +85,16 @@ router.get("/me", protect, getMe);
 // Verify OTP
 router.post(
   "/verify-otp",
+  otpLimiter,
   validate(verifyOtpSchema),
-  verifyOTP,
+  verifyOTP
 );
 
 // Google Auth
-router.post(
-  "/google-auth",
-  validate(googleAuthSchema),
-  googleAuth,
-);
+router.post("/google-auth", validate(googleAuthSchema), googleAuth);
 
 // Forgot Password
-router.post(
-  "/forgot-password",
-  validate(forgotPasswordSchema),
-  forgotPassword,
-);
+router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
 
 // Reset Password
 router.post(

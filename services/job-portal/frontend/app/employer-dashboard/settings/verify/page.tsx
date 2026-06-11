@@ -14,6 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
+import Link from "next/link";
 
 interface KycFormValues {
   companyName: string;
@@ -25,6 +27,10 @@ interface KycFormValues {
 }
 
 const VerifyPage = () => {
+  const { data: companyResponse, isLoading: isLoadingCompany } = useGetMyCompanyDetails();
+  const companyDetails = companyResponse?.data;
+  const hasPlan = !!companyDetails?.currentPlan;
+
   const { mutate: submitKyc, isPending } = useSubmitKyc();
   
   const {
@@ -63,7 +69,21 @@ const VerifyPage = () => {
         </CardHeader>
         
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {isLoadingCompany ? (
+            <div className="flex justify-center p-8">Loading...</div>
+          ) : !hasPlan ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+              <AlertCircle className="w-12 h-12 text-amber-500" />
+              <h3 className="text-xl font-bold">Active Plan Required</h3>
+              <p className="text-muted-foreground">
+                You need an active subscription plan before you can submit your KYC details.
+              </p>
+              <Button asChild className="mt-4">
+                <Link href="/employer-dashboard/plans">View Pricing Plans</Link>
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Text Inputs */}
               <div className="space-y-2">
@@ -159,6 +179,7 @@ const VerifyPage = () => {
               {isPending ? "Processing..." : "Submit KYC Details"}
             </Button>
           </form>
+          )}
         </CardContent>
       </Card>
     </div>

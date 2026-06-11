@@ -18,11 +18,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Plan } from "@/types/new-index";
 
-export function PlanTableRow({ plan }: { plan: any }) {
+export function PlanTableRow({ plan }: { plan: Plan }) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { mutate: deletePlan, isPending: isDeleting } = useDeletePlan();
-  console.log("Plan", plan);
 
   return (
     <>
@@ -32,12 +32,12 @@ export function PlanTableRow({ plan }: { plan: any }) {
             {plan.name}
           </div>
           {plan.isFeatured && (
-            <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 text-[10px] mt-1">
+            <Badge variant="secondary" className="bg-amber-100/50 text-amber-700 hover:bg-amber-100 uppercase tracking-widest text-[9px] font-bold mt-1">
               Featured
             </Badge>
           )}
           {plan.isDefault && (
-            <Badge variant="outline" className="border-indigo-200 bg-indigo-50 text-indigo-700 text-[10px] mt-1 ml-1">
+            <Badge variant="secondary" className="bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 uppercase tracking-widest text-[9px] font-bold mt-1 ml-1">
               Default
             </Badge>
           )}
@@ -80,7 +80,7 @@ export function PlanTableRow({ plan }: { plan: any }) {
             >
               <Pencil className="h-4 w-4" />
             </Button>
-            
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -92,23 +92,25 @@ export function PlanTableRow({ plan }: { plan: any }) {
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the 
-                    plan "{plan.name}" and remove it from the system.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogContent className="p-0 gap-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl sm:rounded-[24px]">
+                <div className="p-6 sm:p-8 space-y-4">
+                  <AlertDialogHeader className="px-0">
+                    <AlertDialogTitle className="text-xl font-bold">Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-slate-500">
+                      This action cannot be undone. This will permanently delete the
+                      plan "{plan.name}" and remove it from the system.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-800/50 px-8 py-5 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                  <AlertDialogCancel className="mt-0 rounded-xl">Cancel</AlertDialogCancel>
                   <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className="bg-red-600 text-white hover:bg-red-700 rounded-xl shadow-sm font-semibold"
                     onClick={() => deletePlan(plan._id)}
                   >
                     Delete Plan
                   </AlertDialogAction>
-                </AlertDialogFooter>
+                </div>
               </AlertDialogContent>
             </AlertDialog>
           </div>

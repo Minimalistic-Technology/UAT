@@ -30,9 +30,10 @@ import {
   createPlanSchema,
 } from "@/features/admin/validations/plan.schema";
 import { useUpdatePlan } from "@/features/admin/hooks/use-plan";
+import { Plan } from "@/types/new-index";
 
 interface PlanEditDialogProps {
-  plan: any | null;
+  plan: Plan;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -100,8 +101,9 @@ export function PlanEditDialog({
 
   const onSubmit = (data: CreatePlanFormValues) => {
     if (!plan?._id) return;
+    const cleanedFeatures = data.features.filter((f) => f && f.trim().length > 0);
     updatePlan(
-      { id: plan._id, data },
+      { id: plan._id, data: { ...data, features: cleanedFeatures } },
       {
         onSuccess: () => {
           onOpenChange(false);
@@ -112,10 +114,10 @@ export function PlanEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden p-0">
-        <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle>Edit Plan</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden p-0 gap-0 border-0 shadow-2xl sm:rounded-[24px] bg-white dark:bg-slate-900">
+        <DialogHeader className="border-b px-8 py-5 border-slate-100 dark:border-slate-800">
+          <DialogTitle className="text-xl font-bold">Edit Plan</DialogTitle>
+          <DialogDescription className="text-slate-500">
             Update pricing, limits, and features for this plan.
           </DialogDescription>
         </DialogHeader>
@@ -294,7 +296,7 @@ export function PlanEditDialog({
                 />
                 <Label htmlFor="edit-isDefault" className="cursor-pointer">Default Plan</Label>
               </div>
-              
+
               {/* New Toggle Field: allowResumeDownload */}
               <div className="flex items-center space-x-2 border-t pt-2 sm:border-t-0 sm:pt-0">
                 <Controller
@@ -360,12 +362,13 @@ export function PlanEditDialog({
             </div>
           </form>
         </ScrollArea>
-        <div className="bg-muted/20 flex justify-end gap-3 border-t p-6">
+        <div className="bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 border-t px-8 py-5 border-slate-100 dark:border-slate-800">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
+            className="rounded-xl"
           >
             Cancel
           </Button>
@@ -373,7 +376,7 @@ export function PlanEditDialog({
             type="submit"
             form="plan-edit-form"
             disabled={isPending}
-            className="bg-indigo-700 hover:bg-indigo-800"
+            className="bg-[#2563eb] hover:bg-blue-700 text-white shadow-sm rounded-xl px-6 font-semibold"
           >
             {isPending ? (
               <>

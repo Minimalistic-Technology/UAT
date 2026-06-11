@@ -2,7 +2,7 @@ import z from "zod";
 import { BaseListingSchema } from "./base-listing.schema";
 
 const Duration_Type = ["weeks", "months"];
-const Stipend_Type = ["fixed", "performance", "unpaid"]
+const Stipend_Type = ["fixed", "performance_based", "unpaid"] as const;
 
 const stipendSchema = z
   .object({

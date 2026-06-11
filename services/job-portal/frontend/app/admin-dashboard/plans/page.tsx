@@ -103,9 +103,8 @@ export default function PlansPage() {
                           className={col.className || ""}
                         >
                           <Skeleton
-                            className={`h-5 ${
-                              col.key === "actions" ? "ml-auto w-20" : "w-full"
-                            }`}
+                            className={`h-5 ${col.key === "actions" ? "ml-auto w-20" : "w-full"
+                              }`}
                           />
                         </TableCell>
                       ))}
@@ -125,11 +124,11 @@ export default function PlansPage() {
     );
   }
 
-  const plans = responseData?.data?.plans || [];
-  const pagination = responseData?.data?.pagination;
+  const plans = responseData?.data.plans;
+  const pagination = responseData?.data.pagination;
 
   // Client-side filtering (optional, backend usually does this but we'll do simple filtering based on searchTerm)
-  const filteredPlans = plans.filter((plan: any) =>
+  const filteredPlans = plans?.filter((plan) =>
     plan.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -138,30 +137,30 @@ export default function PlansPage() {
       {/* Search and Filters Area */}
       <div className="flex items-center justify-between gap-4">
         <div className="relative max-w-sm flex-1">
-          <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+          <Search className="text-slate-400 absolute top-3 left-3 h-4 w-4" />
           <Input
             placeholder="Search plans..."
-            className="bg-background pl-9"
+            className="h-10 pl-9 rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus-visible:ring-[#2563eb]"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
+
         <Link href="/admin-dashboard/plans/create">
-          <Button className="cursor-pointer bg-indigo-700 hover:bg-indigo-800">
+          <Button className="rounded-xl h-10 px-5 bg-[#2563eb] text-white hover:bg-blue-700 shadow-sm font-semibold">
             <Plus className="mr-2 h-4 w-4" /> Create Plan
           </Button>
         </Link>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Plans Management</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+        <CardHeader className="pb-4 pt-6 px-7">
+          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Plans Management</CardTitle>
+          <CardDescription className="text-sm text-slate-500">
             Manage subscription plans, pricing, limits, and visibility.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-7 pb-6">
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -182,7 +181,7 @@ export default function PlansPage() {
               </TableHeader>
               <TableBody>
                 {Array.isArray(filteredPlans) && filteredPlans.length > 0 ? (
-                  filteredPlans.map((plan: any) => (
+                  filteredPlans.map((plan) => (
                     <PlanTableRow key={plan._id} plan={plan} />
                   ))
                 ) : (

@@ -13,6 +13,25 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import TempUser from "../models/TempUser.model.js";
 import { generateToken } from "../utils/jwt.js";
+import Feature, { FeatureStatus } from "../models/Feature.model.js";
+import FeaturePermission from "../models/FeaturePermission.model.js";
+
+const verifyCaptcha = async (token: string) => {
+  const secretKey = process.env.TURNSTILE_SECRET_KEY || "dummy_secret_key";
+
+  const formData = new URLSearchParams();
+  formData.append('secret', secretKey);
+  formData.append('response', token);
+
+  const response = await fetch(`https://challenges.cloudflare.com/turnstile/v0/siteverify`, {
+    method: "POST",
+    body: formData
+  });
+  const data = await response.json();
+  if (!data.success) {
+    throw new ApiError(400, "Security validation failed. Please try again.");
+  }
+};
 
 const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
   const token = generateToken(user._id);
@@ -67,7 +86,9 @@ export const requestUserRegistration = async (
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const { firstName, lastName, email, password, phone } = req.body;
+    const { firstName, lastName, email, password, phone, captchaToken } = req.body;
+
+    await verifyCaptcha(captchaToken);
 
     const existingUser = await User.findOne({ email }).session(session);
 
@@ -146,7 +167,10 @@ export const requestEmployerRegistration = async (
       firstName,
       lastName,
       phone,
+      captchaToken,
     } = req.body;
+
+    await verifyCaptcha(captchaToken);
 
     let user = await User.findOne({ email }).session(session);
 
@@ -250,7 +274,6 @@ export const confirmRegistrationOTP = async (
     let isNewUser = true;
 
     if (tempUser.isEmployer) {
-      console.log(tempUser.isEmployer)
       let user = await User.findOne({ email }).session(session);
       isNewUser = !user;
 
@@ -304,7 +327,7 @@ export const confirmRegistrationOTP = async (
         );
       }
       const membership = await CompanyMember.findOne({ user: user._id }).session(session);
-      
+
       userToReturn = {
         ...user.toObject(),
         isEmployee: true,
@@ -339,6 +362,56 @@ export const confirmRegistrationOTP = async (
     await session.commitTransaction();
 
     return sendTokenResponse(userToReturn, isNewUser ? 201 : 200, res);
+  } catch (error: any) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    next(error);
+  } finally {
+    session.endSession();
+  }
+};
+
+export const resendRegistrationOTP = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { email } = req.body;
+
+    const tempUser = await TempUser.findOne({ email }).session(session);
+
+    if (!tempUser) {
+      throw new ApiError(
+        404,
+        "Registration session expired or not found. Please start over.",
+      );
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const salt = crypto.randomBytes(16).toString("hex");
+    const hashedOtp = crypto
+      .createHmac("sha256", config.otpSecret!)
+      .update(otp)
+      .digest("hex");
+
+    tempUser.otp = `${salt}:${hashedOtp}`;
+    tempUser.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // extend by 10 mins
+
+    await tempUser.save({ session, validateBeforeSave: true });
+
+    await sendEmail({
+      email,
+      subject: "Verify your email - Resend OTP",
+      message: `Your new registration OTP is ${otp}. It expires in 10 minutes.`,
+    });
+
+    await session.commitTransaction();
+    res.status(200).json(new ApiResponse(200, null, "OTP resent to email"));
   } catch (error: any) {
     if (session.inTransaction()) {
       await session.abortTransaction();
@@ -409,22 +482,6 @@ export const login = async (
   }
 };
 
-export const getMe = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const user = await User.findById(req.user.id);
-
-    res
-      .status(200)
-      .json(new ApiResponse(200, user, "User fetched successfully"));
-  } catch (error: any) {
-    next(error);
-  }
-};
-
 export const logout = async (
   req: AuthRequest,
   res: Response,
@@ -439,6 +496,47 @@ export const logout = async (
     success: true,
     message: "User logged out successfully",
   });
+};
+
+export const getMe = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) throw new ApiError(404, "User not found");
+
+    const membership = await CompanyMember.findOne({ user: user._id });
+
+    // 1. Get strictly "public" features
+    const publicFeatures = await Feature.find({ status: FeatureStatus.PUBLIC }).select("slug");
+    const allowedSlugs = new Set(publicFeatures.map(f => f.slug));
+
+    // 2. Get specific "beta" features this user (or their company) has been granted
+    const userPermissions = await FeaturePermission.find({
+      $or: [
+        { user: user._id },
+        ...(membership ? [{ company: membership.company }] : [])
+      ]
+    }).populate("feature", "slug status");
+
+    userPermissions.forEach(perm => {
+      const f: any = perm.feature;
+      if (f && f.status === FeatureStatus.BETA) {
+        allowedSlugs.add(f.slug);
+      }
+    });
+
+    const userObj = user.toObject();
+    (userObj as any).allowedFeatures = Array.from(allowedSlugs);
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, userObj, "User fetched successfully"));
+  } catch (error: any) {
+    next(error);
+  }
 };
 
 // @desc    Send OTP to phone

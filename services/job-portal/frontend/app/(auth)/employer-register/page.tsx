@@ -12,7 +12,7 @@ export default function RegisterPage() {
 
 const EmployerRegisterPageSkeleton = () => {
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
+    <div className="flex min-h-screen w-full bg-slate-50/50">
       <div className="hidden lg:block h-full w-1/2">
         <Skeleton className="h-full w-full rounded-none" />
       </div>
@@ -36,7 +36,7 @@ const EmployerRegisterPageSkeleton = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <Skeleton className="h-3 w-1/3" />
               <div className="space-y-2">
@@ -48,7 +48,7 @@ const EmployerRegisterPageSkeleton = () => {
                 <Skeleton className="h-10 w-full" />
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <div className="space-y-2">
                 <Skeleton className="h-4 w-1/3" />
@@ -65,7 +65,7 @@ const EmployerRegisterPageSkeleton = () => {
                 </div>
               </div>
             </div>
-            
+
             <Skeleton className="h-10 w-full" />
             <div className="flex justify-center mt-4">
               <Skeleton className="h-4 w-2/3" />

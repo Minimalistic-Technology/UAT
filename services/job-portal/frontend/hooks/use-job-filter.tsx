@@ -12,7 +12,7 @@ export const useJobFilters = () => {
     state: searchParams.get("state") || "",
     country: searchParams.get("country") || "",
     city: searchParams.get("city") || "",
-    jobType: searchParams.get("jobType") || "all",
+    employmentType: searchParams.get("employmentType") || "all",
     experienceLevel: searchParams.get("experienceLevel") || "",
     remote: searchParams.get("remote") === "true",
     skills: searchParams.get("skills")?.split(",").filter(Boolean) || [],
@@ -27,13 +27,12 @@ export const useJobFilters = () => {
     durationMonths: searchParams.get("durationMonths")?.split(",").filter(Boolean) || [],
     salaryRanges: searchParams.get("salaryRanges")?.split(",").filter(Boolean) || [],
     stipendRanges: searchParams.get("stipendRanges")?.split(",").filter(Boolean) || [],
-    experienceYears: searchParams.has("experienceYears") ? searchParams.get("experienceYears") : "Any",
+    experienceRanges: searchParams.get("experienceRanges")?.split(",").filter(Boolean) || [],
     page: Number(searchParams.get("page")) || 1,
     limit: Number(searchParams.get("limit")) || 10,
   }), [searchParams]);
 
   const updateParams = useCallback((newParams: Record<string, any>) => {
-    console.log("new params: ", newParams);
     const params = new URLSearchParams(searchParams.toString());
 
     Object.entries(newParams).forEach(([key, value]) => {

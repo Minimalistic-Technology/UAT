@@ -26,9 +26,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { KycWithUser } from "../types/kyc.type";
 
 interface KycTableProps {
-  applications: any[];
+  applications: KycWithUser[];
   isLoading: boolean;
   isUpdating: boolean;
   onUpdateStatus: (
@@ -65,7 +66,7 @@ export const KycTable = ({
 }: KycTableProps) => {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [viewingReason, setViewingReason] = useState<string | null>(null);
+  const [viewingReason, setViewingReason] = useState<string | undefined | null>(undefined);
 
   const handleRejectConfirm = () => {
     if (rejectingId) {
@@ -283,23 +284,27 @@ export const KycTable = ({
         open={!!rejectingId}
         onOpenChange={(open) => !open && setRejectingId(null)}
       >
-        <DialogContent className="px-4">
-          <DialogHeader className="px-0">
-            <DialogTitle>Reject KYC Application</DialogTitle>
-            <DialogDescription>
-              Please provide a reason for rejecting this KYC application. The
-              employer will see this reason on their dashboard.
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="e.g. The document uploaded is blurry and illegible."
-            rows={4}
-          />
-          <DialogFooter>
+        <DialogContent className="p-0 gap-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl sm:rounded-[24px]">
+          <div className="p-6 sm:p-8 space-y-6">
+            <DialogHeader className="px-0">
+              <DialogTitle className="text-xl font-bold">Reject KYC Application</DialogTitle>
+              <DialogDescription className="text-slate-500">
+                Please provide a reason for rejecting this KYC application. The
+                employer will see this reason on their dashboard.
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="e.g. The document uploaded is blurry and illegible."
+              rows={4}
+              className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-800 rounded-xl"
+            />
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/50 px-8 py-5 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
             <Button
-              variant="outline"
+              variant="ghost"
+              className="rounded-xl"
               onClick={() => {
                 setRejectingId(null);
                 setRejectReason("");
@@ -309,12 +314,13 @@ export const KycTable = ({
             </Button>
             <Button
               variant="destructive"
+              className="rounded-xl shadow-sm"
               onClick={handleRejectConfirm}
               disabled={!rejectReason.trim()}
             >
               Confirm Rejection
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -322,16 +328,20 @@ export const KycTable = ({
         open={!!viewingReason}
         onOpenChange={(open) => !open && setViewingReason(null)}
       >
-        <DialogContent className="px-4">
-          <DialogHeader className="px-0">
-            <DialogTitle>Rejection Reason</DialogTitle>
-          </DialogHeader>
-          <div className="bg-muted/50 rounded-md p-4 text-sm whitespace-pre-wrap">
-            {viewingReason}
+        <DialogContent className="p-0 gap-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl sm:rounded-[24px]">
+          <div className="p-6 sm:p-8 space-y-6">
+            <DialogHeader className="px-0">
+              <DialogTitle className="text-xl font-bold">Rejection Reason</DialogTitle>
+            </DialogHeader>
+            <div className="bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 rounded-xl p-5 text-sm whitespace-pre-wrap border border-rose-100 dark:border-rose-900/50">
+              {viewingReason}
+            </div>
           </div>
-          <DialogFooter>
-            <Button onClick={() => setViewingReason(null)}>Close</Button>
-          </DialogFooter>
+          <div className="bg-slate-50 dark:bg-slate-800/50 px-8 py-5 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+            <Button onClick={() => setViewingReason(null)} className="rounded-xl px-8 bg-[#2563eb] text-white hover:bg-blue-700">
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

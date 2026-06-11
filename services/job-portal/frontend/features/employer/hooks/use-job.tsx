@@ -5,6 +5,7 @@ import {
   getMyJobPostings,
   deleteJobPost,
   GetMyJobPostingsResponse,
+  updateJobPostDetails,
 } from "../services/job.service";
 import { ApiSuccessResponse } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -56,6 +57,26 @@ export const useDeleteMyJobPosting = () => {
     onError: (error: any) => {
       console.error("Error deleting job:", error);
       const errorMsg = error?.response?.data?.message || "Failed to delete job. Please try again.";
+      toast.error(errorMsg);
+    },
+  });
+};
+
+export const useUpdateMyJobPosting = (jobId: string) => {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (jobData: any) => updateJobPostDetails(jobId, jobData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-job-postings"] });
+      queryClient.invalidateQueries({ queryKey: ["job-post", jobId] });
+      toast.success("Job updated successfully!");
+      router.push(`/employer-dashboard/jobs/${jobId}`);
+    },
+    onError: (error: any) => {
+      console.error("Error updating job:", error);
+      const errorMsg = error?.response?.data?.message || "Failed to update job. Please try again.";
       toast.error(errorMsg);
     },
   });

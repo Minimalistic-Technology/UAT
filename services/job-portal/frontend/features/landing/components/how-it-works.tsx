@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const STEPS = [
   {
@@ -49,12 +50,12 @@ export const HowItWorks = () => {
 
       <div className="relative max-w-[88rem] mx-auto px-6 md:px-12">
         <div className="max-w-2xl mb-20">
-          <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-indigo-600">
+          <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-blue-600">
             How it works
           </span>
           <h2 className="text-4xl md:text-5xl lg:text-6xl mt-4 text-slate-900 font-bold tracking-tight leading-[1.1]">
             Three steps. <br />
-            <span className="text-indigo-600">Zero recruiter noise.</span>
+            <span className="text-blue-600">Zero recruiter noise.</span>
           </h2>
         </div>
 
@@ -115,9 +116,9 @@ export const HowItWorks = () => {
 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <button className="mt-6 flex items-center gap-2 text-indigo-600 font-bold text-sm opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300 cursor-pointer hover:underline focus:outline-none">
+                    <Button variant="link" className="mt-6 flex items-center gap-2 text-indigo-600 font-bold text-sm opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0 transition-all duration-300 cursor-pointer p-0 h-auto">
                       Learn more <ArrowRight size={16} />
-                    </button>
+                    </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md md:max-w-lg p-0 overflow-hidden">
                     <DialogHeader className="bg-slate-50 border-b border-slate-100 p-6">

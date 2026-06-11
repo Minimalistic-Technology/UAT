@@ -2,13 +2,19 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import axios from 'axios';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 import OTP from '../models/OTP';
-import Settings from '../models/Settings';
+import RouteConfig from '../models/RouteConfig';
 import NotificationService from '../services/notification.service';
 import ValidationService from '../services/validation.service';
+
+// In-Memory Failures Tracker for non-existent users exponential backoff
+const authFailures = new Map<string, { attempts: number; lockUntil: number }>();
+
+const getIp = (req: Request) => (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown').toString();
 
 // Generate 6-digit OTP
 const generateOTP = () => {
@@ -17,16 +23,30 @@ const generateOTP = () => {
 
 export const sendOtp = async (req: Request, res: Response) => {
     try {
-        let { identifier } = req.body; // email or phone
+        let { identifier, recaptchaToken } = req.body; // email or phone
         if (!identifier) {
             return res.status(400).json({ msg: 'Identifier (email or phone) is required' });
         }
         identifier = identifier.trim();
 
-        // Check if global Signup is disabled for regular users
-        const settings = await Settings.findOne();
-        if (settings && settings.components && settings.components.Signup === false) {
-            return res.status(403).json({ msg: 'Public registration is currently disabled.' });
+        if (!recaptchaToken) {
+            return res.status(400).json({ msg: 'ReCAPTCHA token is required' });
+        }
+
+        // Verify ReCAPTCHA
+        const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+        if (secretKey) {
+            const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
+            const recaptchaRes = await axios.post(verifyUrl);
+            if (!recaptchaRes.data.success) {
+                return res.status(400).json({ msg: 'ReCAPTCHA verification failed. Please try again.' });
+            }
+        }
+
+        // Check if global Signup is disabled for regular users via RouteConfig
+        const signupRoute = await RouteConfig.findOne({ path: '/signup' });
+        if (signupRoute && !signupRoute.isActive) {
+            return res.status(403).json({ msg: 'Public registration is currently disabled by administrator.' });
         }
 
         // Check if user already exists
@@ -88,20 +108,33 @@ export const verifyOtp = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'OTP expired or not sent', isValid: false });
         }
 
+        // Check if OTP block limit reached
+        if (otpRecord.lockUntil && otpRecord.lockUntil > Date.now()) {
+            const minutesLeft = Math.ceil((otpRecord.lockUntil - Date.now()) / 60000);
+            return res.status(403).json({ msg: `Verification is temporarily locked. Please try again after ${minutesLeft} minute(s).` });
+        }
+
         if (otpRecord.otp !== String(otp)) {
-            // Track failed attempts if user exists
-            if (user) {
-                user.loginAttempts = (user.loginAttempts || 0) + 1;
-                if (user.loginAttempts >= 3) {
-                    const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
-                    user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                }
-                await user.save();
+            // Track failed attempts on the OTP record directly (so new signups get locked out too)
+            otpRecord.attempts = (otpRecord.attempts || 0) + 1;
+
+            if (otpRecord.attempts >= 3) {
+                const blockMinutes = Math.pow(2, otpRecord.attempts - 3) * 2; // 2, 4, 8, 16 mins etc.
+                otpRecord.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                await otpRecord.save();
+                return res.status(403).json({ msg: `Verification is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
             }
+
+            await otpRecord.save();
             return res.status(400).json({ msg: 'Invalid OTP', isValid: false });
         }
 
         // Reset attempts on success
+        otpRecord.attempts = 0;
+        otpRecord.lockUntil = 0; // Removing lock
+        await otpRecord.save();
+
+        // Also reset user lock if it existed
         if (user) {
             user.loginAttempts = 0;
             user.lockUntil = undefined;
@@ -126,19 +159,37 @@ export const register = async (req: Request, res: Response) => {
             // Verify OTP (Check both email and phone as potential identifiers)
             const identifiers = [email, phone].filter(Boolean);
             otpRecord = await OTP.findOne({
-                identifier: { $in: identifiers },
-                otp
-            });
+                identifier: { $in: identifiers }
+            }).sort({ createdAt: -1 });
+
             if (!otpRecord) {
-                return res.status(400).json({ msg: 'Invalid or expired OTP' });
+                return res.status(400).json({ msg: 'No OTP generated for this contact.' });
+            }
+
+            // Check if locked
+            if (otpRecord.lockUntil && otpRecord.lockUntil > Date.now()) {
+                const minutesLeft = Math.ceil((otpRecord.lockUntil - Date.now()) / 60000);
+                return res.status(403).json({ msg: `Signup is temporarily locked due to multiple failed attempts. Please try again after ${minutesLeft} minute(s).` });
+            }
+
+            if (otpRecord.otp !== String(otp)) {
+                otpRecord.attempts = (otpRecord.attempts || 0) + 1;
+                if (otpRecord.attempts >= 3) {
+                    const blockMinutes = Math.pow(2, otpRecord.attempts - 3) * 2; // 2, 4, 8...
+                    otpRecord.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                    await otpRecord.save();
+                    return res.status(403).json({ msg: `Signup is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
+                }
+                await otpRecord.save();
+                return res.status(400).json({ msg: 'Invalid OTP' });
             }
         }
 
-        // Block new user registrations if public login/signup is disabled
+        // Block new user registrations if public signup is disabled
         if (!role || role === 'user') {
-            const settings = await Settings.findOne();
-            if (settings && settings.components && settings.components.Signup === false) {
-                return res.status(403).json({ msg: 'Public registration is currently disabled.' });
+            const signupRoute = await RouteConfig.findOne({ path: '/signup' });
+            if (signupRoute && !signupRoute.isActive) {
+                return res.status(403).json({ msg: 'Public registration is currently disabled by administrator.' });
             }
         }
 
@@ -175,6 +226,10 @@ export const register = async (req: Request, res: Response) => {
         });
 
         await user.save();
+
+        if (user.email) {
+            NotificationService.sendWelcomeEmail(user.email, user.firstName || user.name || 'User');
+        }
 
         // Delete used OTP if we verified it
         if (otpRecord) {
@@ -218,12 +273,38 @@ export const login = async (req: Request, res: Response) => {
     try {
         let { email, phone, password } = req.body;
         const identifier = (email || phone || '').trim().toLowerCase();
+        const clientIp = getIp(req);
+        const lockKey = `${clientIp}_${identifier}`;
+
+        // Fetch Tracker state
+        let tracker = authFailures.get(lockKey) || { attempts: 0, lockUntil: 0 };
+
+        if (tracker.lockUntil > Date.now()) {
+            const minutesLeft = Math.ceil((tracker.lockUntil - Date.now()) / 60000);
+            return res.status(403).json({ msg: `Access blocked due to multiple failed login attempts. Please try again after ${minutesLeft} minute(s).` });
+        }
+
+        // Check if Login is globally disabled
+        const loginRoute = await RouteConfig.findOne({ path: '/login' });
+        if (loginRoute && !loginRoute.isActive) {
+            return res.status(403).json({ msg: 'Login is temporarily disabled by administrator for maintenance.' });
+        }
 
         // Check if user exists
         const user = await User.findOne({
             $or: [{ email: identifier }, { phone: identifier }]
         });
+
         if (!user) {
+            // Exponential Backoff for IP (Non-existent user brute force protection)
+            tracker.attempts += 1;
+            if (tracker.attempts >= 3) {
+                const blockMinutes = Math.pow(2, tracker.attempts - 3) * 2;
+                tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                authFailures.set(lockKey, tracker);
+                return res.status(403).json({ msg: `Access blocked due to multiple failed login attempts. Please try again after ${blockMinutes} minute(s).` });
+            }
+            authFailures.set(lockKey, tracker);
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
@@ -236,16 +317,29 @@ export const login = async (req: Request, res: Response) => {
         // Validate password
         const isMatch = await bcrypt.compare(password, user.password as string);
         if (!isMatch) {
+            // Memory lock tracking to sync with user attempts
+            tracker.attempts += 1;
+
             user.loginAttempts = (user.loginAttempts || 0) + 1;
             if (user.loginAttempts >= 3) {
                 const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
                 user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+
+                // Keep memory lock synced too
+                tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                authFailures.set(lockKey, tracker);
+
+                await user.save();
+                return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
             }
+
+            authFailures.set(lockKey, tracker);
             await user.save();
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
         // Success - Reset lock and attempts
+        authFailures.delete(lockKey);
         user.loginAttempts = 0;
         user.lockUntil = undefined;
         await user.save();
@@ -515,15 +609,16 @@ export const checkUser = async (req: Request, res: Response) => {
         if (!identifier) {
             return res.status(400).json({ msg: 'Identifier is required' });
         }
+
         identifier = identifier.trim().toLowerCase();
 
         const user = await User.findOne({
             $or: [{ email: identifier }, { phone: identifier }]
         });
 
-        // Get admin settings to see if public signup is active
-        const settings = await Settings.findOne();
-        const signupAllowed = settings ? settings.components.Signup !== false : true;
+        // Get dynamic route config to see if public signup is active
+        const signupRoute = await RouteConfig.findOne({ path: '/signup' });
+        const signupAllowed = signupRoute ? signupRoute.isActive : true;
 
         res.json({
             exists: !!user,

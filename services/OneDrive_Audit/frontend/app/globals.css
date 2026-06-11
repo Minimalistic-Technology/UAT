@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+
+  --color-soft-bg: #f8fafc;
+  --color-soft-surface: #ffffff;
+  --color-soft-border: #e2e8f0;
+  --color-soft-text: #334155;
+  --color-soft-heading: #0f172a;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-soft-border);
+  }
+
+  body {
+    background-color: var(--color-soft-bg);
+    color: var(--color-soft-text);
+  }
+
+  button,
+  [role="button"],
+  a,
+  select {
+    cursor: pointer !important;
+  }
+}
+
+/* Absolute Global Cursors - Non-Tailwind Override */
+button,
+[role="button"],
+input[type="submit"],
+label,
+a {
+  cursor: pointer !important;
+}
+
+@layer utilities {
+  .soft-shadow {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+}

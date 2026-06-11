@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { X } from "lucide-react";
+import { X, Asterisk } from "lucide-react";
 import { useState } from "react";
 
 const PREDEFINED_SKILLS = [
@@ -68,7 +68,7 @@ export function SkillInput({
 
   return (
     <div className="space-y-2">
-      <Label>Skills</Label>
+      <Label className="flex items-center gap-1">Skills <Asterisk className="text-destructive size-3" /></Label>
       <div className="relative">
         <div className="focus-within:ring-ring bg-background flex flex-wrap gap-2 rounded-md border p-2 focus-within:ring-2">
           {currentSkills.map((skill) => (

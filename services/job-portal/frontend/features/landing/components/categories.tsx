@@ -35,16 +35,16 @@ export const Categories = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14">
           <div className="max-w-2xl">
-            <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-indigo-600">
+            <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-blue-600">
               Explore
             </span>
             <h2 className="text-4xl md:text-5xl lg:text-6xl mt-3 text-slate-900 font-bold tracking-tight leading-[1.1]">
-              Browse jobs by <span className="text-indigo-600">category.</span>
+              Browse jobs by <span className="text-blue-600">category.</span>
             </h2>
           </div>
           <a
             href="/find-jobs"
-            className="group inline-flex items-center gap-2 text-sm font-bold text-slate-900 transition-colors hover:text-indigo-600"
+            className="group inline-flex items-center gap-2 text-sm font-bold text-slate-900 transition-colors hover:text-blue-600"
             data-testid="view-all-categories"
           >
             View all categories
@@ -86,7 +86,7 @@ export const Categories = () => {
                 {/* Icon Container */}
                 <div
                   className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${isPurple
-                      ? "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white"
+                      ? "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white"
                       : "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white"
                     }`}
                 >
@@ -104,7 +104,7 @@ export const Categories = () => {
 
                 {/* Hover Reveal Arrow */}
                 <div className="absolute top-6 right-6 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                  <ArrowUpRight size={20} className="text-indigo-600" />
+                  <ArrowUpRight size={20} className="text-blue-600" />
                 </div>
               </motion.a>
             );

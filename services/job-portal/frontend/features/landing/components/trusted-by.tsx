@@ -2,18 +2,18 @@
 import { motion } from "motion/react";
 
 const COMPANIES = [
-  "Linear",
-  "Vercel",
-  "Figma",
-  "Stripe",
-  "Notion",
-  "Ramp",
-  "Shopify",
-  "Airbnb",
-  "Retool",
-  "Plaid",
-  "Intercom",
-  "Mercury",
+  { name: "Linear", slug: "linear" },
+  { name: "Vercel", slug: "vercel" },
+  { name: "Figma", slug: "figma" },
+  { name: "Stripe", slug: "stripe" },
+  { name: "Notion", slug: "notion" },
+  { name: "Shopify", slug: "shopify" },
+  { name: "Airbnb", slug: "airbnb" },
+  { name: "GitHub", slug: "github" },
+  { name: "Slack", slug: "slack" },
+  { name: "Discord", slug: "discord" },
+  { name: "Spotify", slug: "spotify" },
+  { name: "Netflix", slug: "netflix" },
 ];
 
 export const TrustedBy = () => {
@@ -23,7 +23,7 @@ export const TrustedBy = () => {
   return (
     <section
       id="companies"
-      className="py-16 md:py-24 border-y border-slate-200 bg-slate-50/50 overflow-hidden"
+      className="py-16 md:py-24 border-y border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 overflow-hidden transition-colors duration-300"
       aria-label="Trusted by"
     >
       <motion.div
@@ -53,20 +53,33 @@ export const TrustedBy = () => {
         >
           {duplicatedCompanies.map((company, i) => (
             <div
-              key={`${company}-${i}`}
-              className="flex items-center gap-3 shrink-0 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-default"
+              key={`${company.name}-${i}`}
+              className="flex items-center gap-3 shrink-0 cursor-default group/logo"
             >
-              <div className="w-2 h-2 rounded-full bg-indigo-600" aria-hidden="true" />
-              <span className="text-2xl md:text-3xl font-bold text-slate-500 tracking-tighter">
-                {company}
+              <div
+                className="w-10 h-10 bg-slate-400 dark:bg-slate-600 group-hover/logo:bg-[#2563eb] transition-colors duration-500"
+                style={{
+                  maskImage: `url(https://cdn.simpleicons.org/${company.slug})`,
+                  WebkitMaskImage: `url(https://cdn.simpleicons.org/${company.slug})`,
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskPosition: 'center',
+                  WebkitMaskPosition: 'center',
+                  maskSize: 'contain',
+                  WebkitMaskSize: 'contain',
+                }}
+                aria-hidden="true"
+              />
+              <span className="text-2xl md:text-3xl font-bold text-slate-500 group-hover/logo:text-[#2563eb] transition-colors tracking-tighter">
+                {company.name}
               </span>
             </div>
           ))}
         </motion.div>
 
         {/* Improved Edge Fades */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-slate-50 to-transparent z-10" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-slate-50 to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-24 md:w-32 bg-gradient-to-r from-slate-50/90 dark:from-slate-950/90 to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-24 md:w-32 bg-gradient-to-l from-slate-50/90 dark:from-slate-950/90 to-transparent z-10" />
       </div>
     </section>
   );

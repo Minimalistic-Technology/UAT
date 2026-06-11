@@ -4,6 +4,7 @@ import Cart from '../models/Cart';
 import Product from '../models/Product';
 import User from '../models/User';
 import Bill from '../models/Bill';
+import RouteConfig from '../models/RouteConfig';
 import NotificationService from '../services/notification.service';
 
 // Create a new order
@@ -12,6 +13,12 @@ export const createOrder = async (req: Request | any, res: Response) => {
         const { items, totalAmount, shippingInfo, paymentMethod } = req.body;
         // User is optional
         const userId = (req as any).user ? (req as any).user.id : undefined;
+
+        // Dynamic Route Check
+        const checkoutRoute = await RouteConfig.findOne({ path: '/checkout' });
+        if (checkoutRoute && !checkoutRoute.isActive) {
+            return res.status(403).json({ msg: 'Order checkout is temporarily offline.' });
+        }
 
         if (!items || items.length === 0) {
             res.status(400).json({ msg: 'No items in order' });

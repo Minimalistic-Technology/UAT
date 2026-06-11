@@ -209,6 +209,10 @@ export default function Navbar() {
     return currentHash === id;
   };
 
+  if (pathname === '/login' || pathname === '/signup') {
+    return <LoadingBar />;
+  }
+
   return (
     <>
       <LoadingBar />
@@ -406,17 +410,30 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
               ) : (
-                <Link
-                  href="/login"
-                  className={cn(
-                    "hidden md:flex px-4 py-2 rounded-full text-sm font-bold transition-all items-center gap-2",
-                    scrolled
-                      ? "bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-                      : "bg-white text-slate-900 hover:bg-slate-100 shadow-lg"
-                  )}
-                >
-                  <User className="size-4" /> Login
-                </Link>
+                <div className="hidden md:flex items-center gap-3">
+                  <Link
+                    href="/login"
+                    className={cn(
+                      "flex px-5 py-2 rounded-full text-sm font-bold transition-all items-center gap-2 border",
+                      scrolled
+                        ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+                        : "border-white/20 bg-white/10 backdrop-blur-md text-slate-900 dark:text-white hover:bg-white/20"
+                    )}
+                  >
+                    <User className="size-4" /> Login
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className={cn(
+                      "flex px-5 py-2 rounded-full text-sm font-bold transition-all items-center gap-2",
+                      scrolled
+                        ? "bg-teal-600 text-white hover:bg-teal-700"
+                        : "bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-500/30"
+                    )}
+                  >
+                    Sign Up
+                  </Link>
+                </div>
               )
             )}
 
@@ -487,13 +504,22 @@ export default function Navbar() {
                     <LogOut className="size-5" /> Logout
                   </button>
                 ) : (
-                  <Link
-                    href="/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-xl font-semibold"
-                  >
-                    <User className="size-5" /> Login / Signup
-                  </Link>
+                  <div className="flex flex-col gap-3">
+                    <Link
+                      href="/login"
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-bold"
+                    >
+                      <User className="size-5" /> Login
+                    </Link>
+                    <Link
+                      href="/signup"
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg shadow-teal-500/20"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
                 )}
               </div>
 

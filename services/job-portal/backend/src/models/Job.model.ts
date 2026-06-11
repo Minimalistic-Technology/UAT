@@ -51,4 +51,4 @@ jobSchema.index({ roleCategory: 1 });
 jobSchema.index({ industry: 1 });
 jobSchema.index({ 'education.minimumDegree': 1, 'education.isRequired': 1 });
 
-export default mongoose.model<IJob>('Job', jobSchema);
+export default mongoose.model<IJob>('job', jobSchema);

@@ -29,7 +29,6 @@ const Page = () => {
   const { data: responseData, isLoading, isError } = useGetMyJobPostings();
 
   const myJobPostings = responseData?.data?.jobPosts || [];
-  console.log(myJobPostings)
 
   if (isLoading) {
     return <JobTableSkeleton />;
@@ -40,55 +39,72 @@ const Page = () => {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <div className="space-y-1">
-          <CardTitle className="text-xl font-bold">Your Job Listings</CardTitle>
-          <CardDescription>
-            Manage status, edit jobs and track performance
-          </CardDescription>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative max-w-sm flex-1">
+          <input
+            type="text"
+            placeholder="Search job listings..."
+            className="h-10 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus-visible:outline-none focus:ring-1 focus:ring-blue-500 w-full text-sm"
+          />
+          <Briefcase className="text-slate-400 absolute top-3 left-3 h-4 w-4" />
         </div>
-        <Button asChild size="sm" className="h-9 gap-1">
+        <Button asChild size="sm">
           <Link href="/employer-dashboard/jobs/create">
-            <Plus className="h-4 w-4" />
-            <span>Post Job</span>
+            <Plus className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Post Job</span>
           </Link>
         </Button>
-      </CardHeader>
+      </div>
 
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-62.5 font-semibold">Job Title</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold">Applications</TableHead>
-              <TableHead className="font-semibold">Posted By</TableHead>
-              <TableHead className="font-semibold">Posted</TableHead>
-              <TableHead className="text-right font-semibold">
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {myJobPostings.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
-                  <EmptyState />
-                </TableCell>
-              </TableRow>
-            ) : (
-              myJobPostings.map((job: any) => (
-                <JobRow
-                  key={job._id}
-                  job={job}
-                />
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+        <CardHeader className="pb-4 pt-6 px-7">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Your Job Listings</CardTitle>
+              <CardDescription className="text-sm text-slate-500">
+                Manage status, edit jobs and track performance.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="px-7 pb-6">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="w-62.5 font-semibold">Job Title</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold">Applications</TableHead>
+                  <TableHead className="font-semibold">Posted By</TableHead>
+                  <TableHead className="font-semibold">Posted</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {myJobPostings.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      <EmptyState />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  myJobPostings.map((job: any) => (
+                    <JobRow
+                      key={job._id}
+                      job={job}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
@@ -96,8 +112,8 @@ export default Page;
 
 function JobTableSkeleton() {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-6">
+    <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] mt-14">
+      <CardHeader className="pb-4 pt-6 px-7 flex flex-row justify-between">
         <div className="space-y-2">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-4 w-60" />
@@ -105,8 +121,8 @@ function JobTableSkeleton() {
         <Skeleton className="h-10 w-28" />
       </CardHeader>
 
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="px-7 pb-6">
+        <div className="space-y-4 rounded-md border p-4">
           {/* Header Row Placeholder */}
           <Skeleton className="h-10 w-full" />
 

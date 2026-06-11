@@ -16,7 +16,6 @@ export const authOptions: NextAuthOptions = {
       // This function executes immediately after a user submits the form
       async authorize(credentials) {
         try {
-          console.log("Credentials", credentials);
           let response;
           if (credentials?.otp) {
             response = await axios.post(`${API_URL}/auth/register/confirm`, {
@@ -30,7 +29,6 @@ export const authOptions: NextAuthOptions = {
             });
           }
 
-          console.log("Response", response);
 
           if (response.data.success) {
             const user = response.data.data;
@@ -42,13 +40,12 @@ export const authOptions: NextAuthOptions = {
               role: user.role,
               token: user.token,
               isEmployee: user.isEmployee ?? false,
-              companyId: user.companyId ? user.companyId.toString() :  null,
+              companyId: user.companyId ? user.companyId.toString() : null,
               companyRole: user.companyRole ?? null,
             };
           }
           return null;
         } catch (error: unknown) {
-          console.log("error response", error);
 
           let message: string | undefined;
 
@@ -105,7 +102,6 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     // jwt runs immediately after a successful sign-in
     async jwt({ token, user, account }: any) {
-      console.log("jwt callback started", token, user, account);
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
@@ -128,6 +124,7 @@ export const authOptions: NextAuthOptions = {
 
           if (response.data.success) {
             const payload = response.data.data;
+            token.id = payload.id || payload._id;
             token.role = payload.role;
             token.accessToken = payload.token;
             token.isEmployee = payload.isEmployee;
@@ -142,7 +139,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
 
-   // session runs immediately after the jwt callback during sign-in
+    // session runs immediately after the jwt callback during sign-in
     async session({ session, token }: any) {
       if (session.user) {
         session.user.id = token.id as string;

@@ -1,7 +1,7 @@
-import { Company } from "@/types";
+import { Company } from "@/types/new-index";
 import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, User, CheckCircle, Clock } from "lucide-react";
-import { CompanyMetrics } from "@/features/employer/services/company.service";
+import { CompanyMetrics } from "../types/company.type";
 
 interface CompanyHeaderProps {
   company: (Omit<Company, "owner"> & CompanyMetrics) | undefined;
@@ -12,7 +12,7 @@ export const CompanyHeader = ({ company, isLoading }: CompanyHeaderProps) => {
   if (isLoading || !company) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="relative overflow-hidden rounded-[20px] border-0 bg-white dark:bg-slate-900 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
       {/* Background Banner */}
       <div className="h-32 bg-linear-to-r from-indigo-500 to-purple-600"></div>
 
@@ -71,10 +71,10 @@ export const CompanyHeader = ({ company, isLoading }: CompanyHeaderProps) => {
           <div className="mt-4 flex gap-6 rounded-lg border border-slate-100 bg-slate-50 p-3 sm:mt-0">
             <div className="flex flex-col items-center">
               <span className="text-xl font-bold text-slate-900">
-                {company.activeJobs || 0}
+                {company.activeListings || 0}
               </span>
               <span className="text-xs font-medium text-slate-500">
-                Active Jobs
+                Active Listings
               </span>
             </div>
             <div className="w-px bg-slate-200"></div>

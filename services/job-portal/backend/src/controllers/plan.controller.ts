@@ -4,6 +4,7 @@ import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import mongoose from "mongoose";
 import Subscription from "../models/Subscription.model.js";
+import { getPagination } from "../utils/parse-pagination.js";
 
 export const createPlan = async (
   req: Request,
@@ -24,11 +25,11 @@ export const createPlan = async (
       features,
       isActive,
       allowResumeDownload,
-      postValidityDays
+      postValidityDays,
     } = req.body;
 
-    const existingPlan = await Plan.findOne({ 
-      name: { $regex: new RegExp(`^${name.trim()}$`, "i") } // Case-insensitive check
+    const existingPlan = await Plan.findOne({
+      name: { $regex: new RegExp(`^${name.trim()}$`, "i") }, // Case-insensitive check
     });
 
     if (existingPlan) {
@@ -53,7 +54,7 @@ export const createPlan = async (
       features: features || [],
       isActive: isActive !== undefined ? isActive : true,
       allowResumeDownload,
-      postValidityDays
+      postValidityDays,
     });
 
     return res
@@ -95,17 +96,32 @@ export const getAllAdminPlans = async (
   next: NextFunction,
 ) => {
   try {
-    const plans = await Plan.find().sort({ displayOrder: 1, createdAt: -1 });
+    const { page, limit } = getPagination(req.query);
 
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          { count: plans.length, plans },
-          "All plans fetched successfully for admin",
-        ),
-      );
+    const totalPlans = await Plan.countDocuments();
+
+    const plans = await Plan.find()
+      .sort({ displayOrder: 1, createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          plans,
+          pagination: {
+            currentPage: page,
+            totalPages: Math.ceil(totalPlans / limit),
+            totalItems: totalPlans,
+            itemsPerPage: limit,
+            hasNextPage: page < Math.ceil(totalPlans / limit),
+            hasPreviousPage: page > 1,
+          },
+        },
+        "All plans fetched successfully for admin",
+      ),
+    );
   } catch (error: any) {
     next(error);
   }
@@ -205,7 +221,6 @@ export const deletePlan = async (
 
     // Check if the plan is in use
     const isPlanInUse = await Subscription.exists({ plan: id });
-    console.log(isPlanInUse);
 
     if (isPlanInUse) {
       // Soft delete instead
@@ -227,7 +242,7 @@ export const deletePlan = async (
 
     return res
       .status(200)
-      .json(new ApiResponse(200, {}, "Plan deleted successfully"));
+      .json(new ApiResponse(200, null, "Plan deleted successfully"));
   } catch (error: any) {
     return next(error);
   }
