@@ -112,7 +112,7 @@ const locationSchema = z.object({
 
 const educationSchema = z.object({
   minimumDegree: z.enum(Degree_Level, {
-    error: "Minimum degree is required",
+    error: "Minimum qualification is required",
   }),
   preferredFields: z
     .array(z.string().trim().min(1, "Preferred field cannot be empty"))

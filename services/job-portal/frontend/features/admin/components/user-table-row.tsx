@@ -6,7 +6,7 @@ import { CompanyRole } from "@/types";
 import { useToggleUserStatus } from "../hooks/use-user";
 import { UserWithCompany } from "../types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { UserMinus, UserCheck } from "lucide-react";
+import { UserMinus, UserCheck, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const UserRoleBadge = ({ user }: { user: any }) => {
@@ -79,12 +79,13 @@ const UserTableRow = ({ user }: { user: UserWithCompany }) => {
         </div>
       </TableCell>
       <TableCell>
-        <Badge
-          variant={user.isActive ? "default" : "destructive"}
-          className="font-medium"
-        >
-          {user.isActive ? "Active" : "Inactive"}
-        </Badge>
+        <div className="flex items-center justify-center w-8">
+          {user.isActive ? (
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+          ) : (
+            <XCircle className="h-5 w-5 text-red-500" />
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-muted-foreground tabular-nums">
         {new Date(user.createdAt).toLocaleDateString(undefined, {

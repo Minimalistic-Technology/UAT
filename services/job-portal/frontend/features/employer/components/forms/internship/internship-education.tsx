@@ -21,13 +21,13 @@ export function InternshipEducation() {
             <div className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                     <div className="grid gap-2">
-                        <Label>Minimum Degree Level <Asterisk className="text-destructive size-3" /></Label>
+                        <Label>Minimum Qualification <Asterisk className="text-destructive size-3" /></Label>
                         <Controller
                             name="education.minimumDegree"
                             control={control}
                             render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger><SelectValue placeholder="Select minimum degree" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder="Select minimum qualification" /></SelectTrigger>
                                     <SelectContent>
                                         {Degree_Level.map((lvl) => (
                                             <SelectItem key={lvl} value={lvl}>{formatLabel(lvl)}</SelectItem>

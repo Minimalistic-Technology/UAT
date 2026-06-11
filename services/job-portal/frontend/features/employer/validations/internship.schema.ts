@@ -9,7 +9,16 @@ const stipendSchema = z
     type: z.enum(Stipend_Type, {
       error: "Stipend type is required",
     }),
-    amount: z.number().min(0, "Stipend amount cannot be negative").optional(),
+    amount: z.preprocess(
+      (val) =>
+        val === "" ||
+          val === undefined ||
+          val === null ||
+          (typeof val === "number" && Number.isNaN(val))
+          ? undefined
+          : Number(val),
+      z.number().min(0, "Stipend amount cannot be negative").optional(),
+    ),
     currency: z.string().default("INR"),
     period: z.enum(["monthly", "weekly"]).default("monthly"),
   })
@@ -22,9 +31,18 @@ const stipendSchema = z
   );
 
 const durationSchema = z.object({
-  value: z
-    .number({ error: "Duration is required" })
-    .min(1, "Duration must be at least 1"),
+  value: z.preprocess(
+    (val) =>
+      val === "" ||
+        val === undefined ||
+        val === null ||
+        (typeof val === "number" && Number.isNaN(val))
+        ? undefined
+        : Number(val),
+    z
+      .number({ error: "Duration is required" })
+      .min(1, "Duration must be at least 1")
+  ),
   unit: z.enum(Duration_Type, {
     error: "Duration unit is required",
   }),

@@ -59,46 +59,55 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
 
     // 1. Prioritize Brevo (Sendinblue) API if keys exist
     if (config.brevoApiKey && config.brevoFromEmail) {
-      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          "api-key": config.brevoApiKey
-        },
-        body: JSON.stringify({
-          sender: { email: config.brevoFromEmail, name: "Job Portal" },
-          to: [{ email: options.email }],
-          subject: options.subject,
-          htmlContent: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`
-        })
-      });
+      try {
+        const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "api-key": config.brevoApiKey
+          },
+          body: JSON.stringify({
+            sender: { email: config.brevoFromEmail, name: "Job Portal" },
+            to: [{ email: options.email }],
+            subject: options.subject,
+            htmlContent: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`
+          })
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Brevo Error: ${JSON.stringify(errorData)}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.warn(`Brevo Error: ${JSON.stringify(errorData)}. Falling back to next provider...`);
+        } else {
+          console.log("OTP Email successfully sent out via Brevo.");
+          return;
+        }
+      } catch (err: any) {
+        console.warn(`Brevo Exception: ${err.message}. Falling back to next provider...`);
       }
-
-      console.log("OTP Email successfully sent out via Brevo.");
-      return;
     }
 
     // 2. Fallback to Resend over SendGrid if Resend API key exists in .env
     if (config.resendApiKey) {
-      const resend = await getResendInstance();
-      const { error } = await resend.emails.send({
-        to: options.email,
-        from: fromAddress,
-        subject: options.subject,
-        text: options.message,
-        html: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`,
-      });
+      try {
+        const resend = await getResendInstance();
+        const { error } = await resend.emails.send({
+          to: options.email,
+          from: fromAddress,
+          subject: options.subject,
+          text: options.message,
+          html: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`,
+        });
 
-      if (error) {
-        throw new Error(`Resend Error: ${error.message}`);
+        if (error) {
+          console.warn(`Resend Error: ${error.message}. Falling back to SMTP...`);
+        } else {
+          console.log("OTP Email successfully sent out via Resend.");
+          return;
+        }
+      } catch (err: any) {
+        console.warn(`Resend Exception: ${err.message}. Falling back to SMTP...`);
       }
-      console.log("OTP Email successfully sent out via Resend.");
-      return;
     }
 
     const emailTransporter = await getTransporter();

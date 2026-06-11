@@ -22,7 +22,7 @@ const getClientIp = (req: any): string => {
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: process.env.NODE_ENV === "production" ? 1000 : 5000, // Generous limit to prevent 429 during dev
-  message: 'Too many requests from this IP, please try again later',
+  message: { success: false, message: 'Too many requests from this IP, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: getClientIp,
@@ -100,15 +100,15 @@ export const otpLimiter = createExponentialBackoffLimiter(otpStore);
 export const applicationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 10, // Limit each IP to 10 applications per hour
-  message: 'Too many applications submitted, please try again later',
+  message: { success: false, message: 'Too many applications submitted, please try again later' },
   keyGenerator: getClientIp,
   validate: false
 });
 
 export const otpRequestLimiter = rateLimit({
-  windowMs: 30 * 1000, // 30 seconds
-  max: 1, // 1 request per 30 seconds
-  message: "Please wait 30 seconds before requesting another OTP",
+  windowMs: 60 * 1000, // 60 seconds
+  max: 3, // 3 requests per minute
+  message: { success: false, message: "Please wait before requesting another OTP. Too many requests." },
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: getClientIp,
