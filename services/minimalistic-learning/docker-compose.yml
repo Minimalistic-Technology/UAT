@@ -12,10 +12,9 @@ services:
     env_file:
       - ./ml-backend/.env
     restart: always
-    deploy:
-      resources:
-        reservations:
-          cpus: "0.1"
+    cpus: 0.1
+    volumes:
+      - ./prisma-data:/ml-backend/prisma
 
   frontend:
     build:
@@ -27,7 +26,5 @@ services:
     depends_on:
       - backend
     restart: always
-    deploy:
-      resources:
-        reservations:
-          cpus: "0.1"
+    cpus: 0.1
+
