@@ -16,7 +16,7 @@ export function RecommendedJobsCard({ jobs }: RecommendedJobsCardProps) {
                 <CardTitle className="text-lg font-bold">Recommended for You</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                <ScrollArea className="h-[320px] px-6">
+                <div className="px-6 lg:max-h-[320px] overflow-visible lg:overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-200 dark:[&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full">
                     <div className="space-y-6 pb-6 mt-2">
                         {!jobs || jobs.length === 0 ? (
                             <div className="text-center text-sm text-slate-500 pt-10">
@@ -38,8 +38,8 @@ export function RecommendedJobsCard({ jobs }: RecommendedJobsCardProps) {
                                                     .replace(/_/g, " ")
                                                     .replace(/\b\w/g, (c: string) => c.toUpperCase())}
                                             </Badge>
-                                            <span className="flex items-center text-[10px] text-slate-400 font-medium">
-                                                <MapPin className="mr-0.5 h-3 w-3 text-primary/60" />{" "}
+                                            <span className="flex items-center text-[10px] text-slate-400 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                                                <MapPin className="mr-0.5 h-3 w-3 text-primary/60 shrink-0" />{" "}
                                                 {job.location?.city || "Remote"}
                                             </span>
                                         </div>
@@ -48,7 +48,7 @@ export function RecommendedJobsCard({ jobs }: RecommendedJobsCardProps) {
                             ))
                         )}
                     </div>
-                </ScrollArea>
+                </div>
             </CardContent>
         </Card>
     );
