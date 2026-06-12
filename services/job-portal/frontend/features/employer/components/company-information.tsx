@@ -7,6 +7,7 @@ import { companyFormSchema, CompanyFormValues } from "@/features/employer/valida
 import { KycStatus } from "@/types/enums";
 import { useGetUserDetails } from "@/hooks/use-user";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CompanyInfoForm } from "./company-info-form";
 import { CompanyInfoView } from "./company-info-view";
 
@@ -87,36 +88,39 @@ export const CompanyInformation = ({ company }: { company: any }) => {
           </p>
         </div>
         <Button
-          variant={isEditing ? "outline" : "default"}
+          variant="default"
           onClick={() => {
-            if (isEditing) {
-              form.reset();
-              setIsEditing(false);
-            } else {
-              if (!isOwner) {
-                toast.error("You are not authorized to update the company profile");
-                return;
-              }
-              setIsEditing(true);
+            if (!isOwner) {
+              toast.error("You are not authorized to update the company profile");
+              return;
             }
+            setIsEditing(true);
           }}
         >
-          {isEditing ? "Cancel" : "Edit Details"}
+          Edit Details
         </Button>
       </div>
 
       <div className="p-6">
-        {isEditing ? (
-          <CompanyInfoForm
-            form={form}
-            onSubmit={onSubmit}
-            isPending={isPending}
-            isKycCompleted={isKycCompleted}
-          />
-        ) : (
-          <CompanyInfoView company={company} />
-        )}
+        <CompanyInfoView company={company} />
       </div>
+
+      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Company Information</DialogTitle>
+            <DialogDescription>Update the details and location of your company here.</DialogDescription>
+          </DialogHeader>
+          <div className="mt-2">
+            <CompanyInfoForm
+              form={form}
+              onSubmit={onSubmit}
+              isPending={isPending}
+              isKycCompleted={isKycCompleted}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

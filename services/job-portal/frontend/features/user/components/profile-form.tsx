@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
-export function UserProfileForm() {
+export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
     const { data: session } = useSession();
     const userId = session?.user?.id;
 
@@ -89,7 +89,11 @@ export function UserProfileForm() {
     };
 
     const onSubmit = (data: UserProfileFormValues) => {
-        updateProfileMutation.mutate(data);
+        updateProfileMutation.mutate(data, {
+            onSuccess: () => {
+                if (onSuccess) onSuccess();
+            }
+        });
     };
 
     if (isFetching) {
