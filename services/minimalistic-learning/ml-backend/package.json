@@ -8,7 +8,11 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "backup": "node scripts/backupSQLite.js",
-    "backup:watch": "node scripts/backupSQLite.js --watch"
+    "backup:watch": "node scripts/backupSQLite.js --watch",
+    "setup": "npm install && npx prisma generate && npx prisma db push && npx prisma db seed"
+  },
+  "prisma": {
+    "seed": "ts-node-dev --transpile-only prisma/seed.ts"
   },
   "dependencies": {
     "@getbrevo/brevo": "^5.0.4",
@@ -32,6 +36,7 @@
     "multer": "^2.1.1",
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^8.0.7",
+    "pg": "^8.21.0",
     "winston": "^3.19.0",
     "zod": "^4.3.6"
   },
