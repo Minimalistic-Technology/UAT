@@ -47,6 +47,7 @@ export default function CouponsPage() {
     isError,
     refetch,
   } = useFetchAdminCoupons(page, 10);
+  console.log("responseData", responseData)
 
   if (isError) {
     return (
