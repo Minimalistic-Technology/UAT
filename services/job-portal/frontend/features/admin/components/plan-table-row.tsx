@@ -66,7 +66,7 @@ export function PlanTableRow({ plan }: { plan: Plan }) {
           </Badge>
         </TableCell>
         <TableCell className="text-muted-foreground tabular-nums hidden md:table-cell">
-          {new Date(plan.createdAt).toLocaleDateString(undefined, {
+          {new Date(Number(plan.createdAt)).toLocaleDateString(undefined, {
             dateStyle: "medium",
           })}
         </TableCell>

@@ -68,64 +68,6 @@ export const createPlan = async (
   }
 };
 
-export const getPlans = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const plans = await Plan.find({ isActive: true }).sort({ displayOrder: 1 });
-
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          { count: plans.length, plans },
-          "Active plans fetched successfully",
-        ),
-      );
-  } catch (error: any) {
-    next(error);
-  }
-};
-
-export const getAllAdminPlans = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { page, limit } = getPagination(req.query);
-
-    const totalPlans = await Plan.countDocuments();
-
-    const plans = await Plan.find()
-      .sort({ displayOrder: 1, createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
-
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        {
-          plans,
-          pagination: {
-            currentPage: page,
-            totalPages: Math.ceil(totalPlans / limit),
-            totalItems: totalPlans,
-            itemsPerPage: limit,
-            hasNextPage: page < Math.ceil(totalPlans / limit),
-            hasPreviousPage: page > 1,
-          },
-        },
-        "All plans fetched successfully for admin",
-      ),
-    );
-  } catch (error: any) {
-    next(error);
-  }
-};
 
 export const updatePlan = async (
   req: Request,

@@ -2,8 +2,6 @@ import { Router } from "express";
 import { validate } from "../middleware/validate.middleware.js";
 import {
   createPlan,
-  getPlans,
-  getAllAdminPlans,
   updatePlan,
   deletePlan,
 } from "../controllers/plan.controller.js";
@@ -13,14 +11,9 @@ import { createPlanSchema, updatePlanSchema } from "../validations/plan.validati
 
 const router = Router();
 
-// Public route to get active plans
-router.get("/", getPlans);
-
 // Protected routes for super admins
 router.use(protect);
 router.use(authorize(GlobalRole.SUPER_ADMIN));
-
-router.get("/admin", getAllAdminPlans); // This route will fetch all the plans (Inactive one's too)
 
 router.post(
   "/",
