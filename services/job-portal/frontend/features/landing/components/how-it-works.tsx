@@ -84,25 +84,23 @@ export const HowItWorks = () => {
               >
                 {/* Connector line for desktop */}
                 {i < STEPS.length - 1 && (
-                  <div className="hidden md:block absolute top-12 left-full w-full h-[2px] bg-slate-100 -z-10">
+                  <div className="hidden md:block absolute top-7 left-20 w-[calc(100%-3rem)] h-[2px] bg-slate-100 -z-10">
                     <motion.div
                       initial={{ width: 0 }}
                       whileInView={{ width: "100%" }}
                       transition={{ duration: 1, delay: 0.5 }}
-                      className="h-full bg-indigo-100"
+                      className="h-full bg-blue-100"
                     />
                   </div>
                 )}
 
-                <div className="flex items-center justify-between mb-8">
-                  <div className="relative">
-                    <span className="text-6xl font-black text-slate-50 group-hover:text-indigo-50 transition-colors duration-500 select-none">
-                      {step.n}
-                    </span>
-                    <div className="absolute top-1/2 left-0 -translate-y-1/2 w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform duration-300">
-                      <Icon size={24} />
-                    </div>
+                <div className="flex items-center gap-5 mb-8">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-xl shadow-blue-200 transition-transform group-hover:scale-110 group-hover:-rotate-3 duration-300 relative z-10">
+                    <Icon size={28} />
                   </div>
+                  <span className="text-5xl font-black text-slate-300 group-hover:text-blue-300 transition-colors duration-300 select-none">
+                    {step.n}
+                  </span>
                 </div>
 
                 <div className="p-2">
