@@ -4,6 +4,7 @@ export const testimonialTypeDefs = `#graphql
     firstName: String!
     lastName: String!
     avatarUrl: String
+    role: String
   }
 
   type Testimonial {

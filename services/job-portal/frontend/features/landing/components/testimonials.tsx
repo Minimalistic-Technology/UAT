@@ -1,37 +1,17 @@
 "use client"
 import { motion } from "motion/react";
 import { Quote, Star } from "lucide-react";
+import { useFetchTestimonials } from "../hooks/use-testimonial";
 
-const TESTIMONIALS = [
-  {
-    name: "Maya Iyer",
-    role: "Senior PM at Vercel",
-    img: "https://images.unsplash.com/photo-1617726341532-11680535062e?auto=format&fit=crop&q=80&w=150&h=150",
-    quote:
-      "I stopped using every other job board two weeks into Hireloop. The matches were embarrassingly good — I heard back on 8 of 10 apps.",
-    accent: "indigo",
-  },
-  {
-    name: "Daniel Oduya",
-    role: "Staff Engineer, Ramp",
-    img: "https://images.unsplash.com/photo-1617726341472-ffff3dd33ee0?auto=format&fit=crop&q=80&w=150&h=150",
-    quote:
-      "Clean listings. Real salaries. Zero recruiter spam. Signed my offer 19 days after creating my profile.",
-    accent: "blue",
-  },
-  {
-    name: "Priya Sharma",
-    role: "Head of Talent, Linear",
-    img: "https://images.unsplash.com/photo-1617726341407-e61fff6868fc?auto=format&fit=crop&q=80&w=150&h=150",
-    quote:
-      "Our time-to-hire dropped by 41% in the first quarter. The candidate quality speaks for itself.",
-    accent: "indigo",
-  },
-];
 
-const EASE = [0.22, 1, 0.36, 1];
 
 export const Testimonials = () => {
+  const { data: testimonials, isLoading, isError } = useFetchTestimonials(3);
+
+  if (isError) {
+    return null; // Handle error gracefully (hide section)
+  }
+
   return (
     <section
       className="py-24 md:py-32 bg-white"
@@ -78,41 +58,86 @@ export const Testimonials = () => {
           variants={{ show: { transition: { staggerChildren: 0.1 } } }}
           className="grid md:grid-cols-3 gap-8"
         >
-          {TESTIMONIALS.map((t, i) => (
-            <motion.article
-              key={t.name}
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeIn" } },
-              }}
-              className="group relative flex flex-col p-8 md:p-10 bg-white border border-slate-200 rounded-[2rem] hover:border-indigo-600 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-300"
-              data-testid={`testimonial-${i}`}
-            >
-              <div className={`mb-6 ${t.accent === "indigo" ? "text-indigo-600" : "text-blue-600"}`}>
-                <Quote size={32} fill="currentColor" className="opacity-20" />
-              </div>
-
-              <blockquote className="flex-grow">
-                <p className="text-lg md:text-xl text-slate-900 leading-relaxed font-semibold tracking-tight">
-                  “{t.quote}”
-                </p>
-              </blockquote>
-
-              <div className="mt-10 pt-8 border-t border-slate-50 flex items-center gap-4">
-                <img
-                  src={t.img}
-                  alt={`Portrait of ${t.name}`}
-                  className="w-12 h-12 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 ring-2 ring-transparent group-hover:ring-indigo-100"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-                <div>
-                  <div className="font-bold text-slate-900">{t.name}</div>
-                  <div className="text-sm font-medium text-slate-500 tracking-tight">{t.role}</div>
+          {isLoading
+            ? [...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col p-8 md:p-10 bg-white border border-slate-200 rounded-[2rem] animate-pulse h-80"
+                >
+                  <div className="mb-6 w-12 h-12 bg-slate-200 rounded-full" />
+                  <div className="flex-grow space-y-3">
+                    <div className="h-4 bg-slate-200 rounded w-full" />
+                    <div className="h-4 bg-slate-200 rounded w-5/6" />
+                    <div className="h-4 bg-slate-200 rounded w-4/6" />
+                  </div>
+                  <div className="mt-10 pt-8 border-t border-slate-50 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-200 rounded-full" />
+                    <div className="space-y-2">
+                      <div className="h-3 bg-slate-200 rounded w-24" />
+                      <div className="h-2 bg-slate-200 rounded w-32" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </motion.article>
-          ))}
+              ))
+            : testimonials?.map((t: any, i: number) => {
+                const name = `${t.user.firstName} ${t.user.lastName}`;
+                const role = t.user.role || "User";
+                const img =
+                  t.user.avatarUrl ||
+                  `https://api.dicebear.com/7.x/initials/svg?seed=${name}`;
+                const quote = t.content;
+                const accent = i % 2 === 0 ? "indigo" : "blue";
+
+                return (
+                  <motion.article
+                    key={t.id}
+                    variants={{
+                      hidden: { opacity: 0, y: 20 },
+                      show: {
+                        opacity: 1,
+                        y: 0,
+                        transition: { duration: 0.6, ease: "easeIn" },
+                      },
+                    }}
+                    className="group relative flex flex-col p-8 md:p-10 bg-white border border-slate-200 rounded-[2rem] hover:border-indigo-600 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-300"
+                    data-testid={`testimonial-${i}`}
+                  >
+                    <div
+                      className={`mb-6 ${
+                        accent === "indigo" ? "text-indigo-600" : "text-blue-600"
+                      }`}
+                    >
+                      <Quote
+                        size={32}
+                        fill="currentColor"
+                        className="opacity-20"
+                      />
+                    </div>
+
+                    <blockquote className="flex-grow">
+                      <p className="text-lg md:text-xl text-slate-900 leading-relaxed font-semibold tracking-tight">
+                        “{quote}”
+                      </p>
+                    </blockquote>
+
+                    <div className="mt-10 pt-8 border-t border-slate-50 flex items-center gap-4">
+                      <img
+                        src={img}
+                        alt={`Portrait of ${name}`}
+                        className="w-12 h-12 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 ring-2 ring-transparent group-hover:ring-indigo-100"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div>
+                        <div className="font-bold text-slate-900">{name}</div>
+                        <div className="text-sm font-medium text-slate-500 tracking-tight">
+                          {role}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.article>
+                );
+              })}
         </motion.div>
       </div>
     </section>

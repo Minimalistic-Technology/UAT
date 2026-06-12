@@ -1,32 +1,8 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import { Testimonial } from "../models/Testimonial.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import { GlobalRole } from "../models/User.model.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
-
-export const getTestimonials = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const limit = parseInt(req.query.limit as string) || 10;
-
-    const testimonials = await Testimonial.find()
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .populate("user");
-
-    res
-      .status(200)
-      .json(
-        new ApiResponse(200, testimonials, "Testimonials fetched successfully"),
-      );
-  } catch (error) {
-    next(error);
-  }
-};
 
 export const createTestimonial = async (
   req: AuthRequest,
