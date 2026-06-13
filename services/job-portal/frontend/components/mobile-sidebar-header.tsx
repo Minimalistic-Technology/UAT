@@ -9,7 +9,7 @@ import { Menu } from "lucide-react";
 export function MobileSidebarHeader({
     SidebarComponent
 }: {
-    SidebarComponent: React.ComponentType<{ className?: string }>;
+    SidebarComponent: React.ComponentType<{ className?: string, forceExpanded?: boolean }>;
 }) {
     return (
         <div className="lg:hidden flex items-center justify-between h-16 px-4 border-b bg-background sticky top-0 z-30 shadow-sm">
@@ -25,7 +25,7 @@ export function MobileSidebarHeader({
                         <SheetTitle>Navigation Menu</SheetTitle>
                         <SheetDescription>Navigate using the sidebar menu</SheetDescription>
                     </SheetHeader>
-                    <SidebarComponent className="h-full w-full min-h-screen" />
+                    <SidebarComponent className="h-full w-full min-h-screen" forceExpanded />
                 </SheetContent>
             </Sheet>
         </div>

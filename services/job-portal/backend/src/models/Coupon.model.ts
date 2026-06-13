@@ -82,14 +82,14 @@ couponSchema.methods.canBeUsed = function (): boolean {
   return true;
 };
 
-couponSchema.pre("save", function (this: ICoupon, next) {
+couponSchema.pre("save", function (this: ICoupon, next: any) {
   if (this.expiryDate && this.expiryDate < new Date()) {
     this.isActive = false;
   }
   next();
 });
 
-couponSchema.pre("findOneAndUpdate", function (next) {
+couponSchema.pre("findOneAndUpdate", function (next: any) {
   const update: any = this.getUpdate();
 
   if (update?.expiryDate && update.expiryDate < new Date()) {

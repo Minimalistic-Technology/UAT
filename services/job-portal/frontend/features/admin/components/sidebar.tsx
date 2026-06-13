@@ -44,25 +44,26 @@ export const menuItems = [
   { label: "DB Console", icon: TerminalSquare, href: "/admin-dashboard/db-console" },
 ]
 
-export function Sidebar({ className }: { className?: string }) {
+export function Sidebar({ className, forceExpanded }: { className?: string; forceExpanded?: boolean }) {
   const pathname = usePathname();
   const { session } = useNavSession();
   const handleLogout = () => signOut({ callbackUrl: "/login" });
   const { isCollapsed, toggleCollapse } = useSidebar();
+  const effectiveCollapsed = forceExpanded ? false : isCollapsed;
 
   return (
-    <div className={cn("flex flex-col border-r bg-background/80 backdrop-blur-xl shadow-sm transition-all duration-300 relative", isCollapsed ? "w-[80px]" : "w-64", className)}>
+    <div className={cn("flex flex-col border-r bg-background/80 backdrop-blur-xl shadow-sm transition-all duration-300 relative", effectiveCollapsed ? "w-[80px]" : "w-64", className)}>
       <Button
         variant="outline"
         size="icon"
-        className={cn("absolute -right-4 top-5 h-8 w-8 rounded-full border-border bg-background shadow-md z-50 hidden lg:flex", isCollapsed && "rotate-180")}
+        className={cn("absolute -right-4 top-5 h-8 w-8 rounded-full border-border bg-background shadow-md z-50 hidden lg:flex", effectiveCollapsed && "rotate-180")}
         onClick={toggleCollapse}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
-      <div className={cn("flex h-16 items-center px-6 border-b border-border/50", isCollapsed && "justify-center px-0")}>
-        {!isCollapsed ? (
+      <div className={cn("flex h-16 items-center px-6 border-b border-border/50", effectiveCollapsed && "justify-center px-0")}>
+        {!effectiveCollapsed ? (
           <Logo />
         ) : (
           <span className="font-bold text-2xl text-primary bg-primary/10 w-10 h-10 flex items-center justify-center rounded-xl border border-primary/20">
@@ -82,6 +83,7 @@ export function Sidebar({ className }: { className?: string }) {
                 label={item.label}
                 icon={item.icon}
                 isActive={isActive}
+                forceExpanded={forceExpanded}
               />
             )
           })}
@@ -92,11 +94,11 @@ export function Sidebar({ className }: { className?: string }) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors">
-              <div className={cn("flex items-center gap-2", isCollapsed && "justify-center w-full")}>
+              <div className={cn("flex items-center gap-2", effectiveCollapsed && "justify-center w-full")}>
                 <div className="size-8 rounded-full bg-primary/20 flex flex-shrink-0 items-center justify-center text-primary font-bold text-xs ring-2 ring-background">
                   {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "SA"}
                 </div>
-                {!isCollapsed && (
+                {!effectiveCollapsed && (
                   <div className="flex flex-col truncate w-[130px]">
                     <span className="text-sm font-semibold text-foreground leading-tight truncate">{session?.user?.name || "Super Admin"}</span>
                     <span className="text-[10px] text-muted-foreground uppercase font-medium truncate">{session?.user?.email || "Administrator"}</span>
