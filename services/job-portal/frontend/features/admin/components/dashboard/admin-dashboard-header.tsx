@@ -11,6 +11,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GlobalSearch } from "@/features/admin/components/global-search";
+import { CreatePlanDialog } from "@/features/admin/components/create-plan-dialog";
 
 interface AdminDashboardHeaderProps {
     hasNotifications: boolean;
@@ -23,13 +24,15 @@ export function AdminDashboardHeader({
     summary,
     recentEmployers,
 }: AdminDashboardHeaderProps) {
+    const [createPlanOpen, setCreatePlanOpen] = React.useState(false);
+
     return (
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between w-full">
             <h1 className="text-[1.4rem] font-bold text-slate-900 dark:text-white">
                 Overview
             </h1>
             <div className="flex flex-1 items-center justify-end gap-4">
-                <GlobalSearch />
+                <GlobalSearch onCreatePlan={() => setCreatePlanOpen(true)} />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button
@@ -99,13 +102,14 @@ export function AdminDashboardHeader({
                     >
                         <Link href="/admin-dashboard/coupons/create">Create Coupon</Link>
                     </Button>
-                    <Button
-                        size="sm"
-                        asChild
-                        className="rounded-xl h-10 px-5 text-sm font-semibold shadow-sm shadow-blue-500/20"
-                    >
-                        <Link href="/admin-dashboard/plans/create">Create Plan</Link>
-                    </Button>
+                    <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen}>
+                        <Button
+                            size="sm"
+                            className="rounded-xl h-10 px-5 text-sm font-semibold shadow-sm shadow-blue-500/20"
+                        >
+                            Create Plan
+                        </Button>
+                    </CreatePlanDialog>
                 </div>
             </div>
         </div>

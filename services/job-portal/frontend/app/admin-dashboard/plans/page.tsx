@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { Search, Plus } from "lucide-react";
 import {
   Table,
@@ -24,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { useFetchAdminPlans } from "@/features/admin/hooks/use-plan";
 import { PlanTableRow } from "@/features/admin/components/plan-table-row";
+import { CreatePlanDialog } from "@/features/admin/components/create-plan-dialog";
 
 const COLUMNS = [
   { key: "plan", label: "Plan Name" },
@@ -146,11 +146,11 @@ export default function PlansPage() {
           />
         </div>
 
-        <Link href="/admin-dashboard/plans/create">
+        <CreatePlanDialog>
           <Button className="rounded-xl h-10 px-5 bg-[#2563eb] text-white hover:bg-blue-700 shadow-sm font-semibold">
             <Plus className="mr-2 h-4 w-4" /> Create Plan
           </Button>
-        </Link>
+        </CreatePlanDialog>
       </div>
 
       <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">

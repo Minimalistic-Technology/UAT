@@ -1,14 +1,13 @@
 "use client";
 
-import Link from "next/link";
+import React, { useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2, ArrowLeft, Loader2, Asterisk } from "lucide-react";
+import { Plus, Trash2, Loader2, Asterisk } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -17,12 +16,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 import {
   CreatePlanFormValues,
@@ -30,8 +30,37 @@ import {
 } from "@/features/admin/validations/plan.schema";
 import { useCreatePlan } from "@/features/admin/hooks/use-plan";
 
-export default function CreatePlanForm() {
-  const { mutate: createPlan, isPending } = useCreatePlan();
+interface CreatePlanDialogProps {
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function CreatePlanDialog({
+  children,
+  open,
+  onOpenChange,
+}: CreatePlanDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const isControlled = open !== undefined;
+  const dialogOpen = isControlled ? open : internalOpen;
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(newOpen);
+    }
+    if (onOpenChange) {
+      onOpenChange(newOpen);
+    }
+    if (!newOpen) {
+      resetForm();
+    }
+  };
+
+  const { mutate: createPlan, isPending } = useCreatePlan(() => {
+    handleOpenChange(false);
+  });
 
   const {
     register,
@@ -39,6 +68,8 @@ export default function CreatePlanForm() {
     handleSubmit,
     setValue,
     watch,
+    reset,
+    setFocus,
     formState: { errors },
   } = useForm<CreatePlanFormValues>({
     resolver: zodResolver(createPlanSchema),
@@ -59,6 +90,24 @@ export default function CreatePlanForm() {
     },
   });
 
+  const resetForm = () => {
+    reset({
+      name: "",
+      price: 0,
+      currency: "INR",
+      durationDays: 30,
+      postValidityDays: 30,
+      jobPostLimit: -1,
+      teamMemberLimit: -1,
+      features: [""],
+      isFeatured: false,
+      isDefault: false,
+      displayOrder: 0,
+      isActive: true,
+      allowResumeDownload: false,
+    });
+  };
+
   const { fields, append, remove } = useFieldArray({
     control,
     //@ts-ignore
@@ -66,32 +115,36 @@ export default function CreatePlanForm() {
   });
 
   const onSubmit = (data: CreatePlanFormValues) => {
-    const cleanedFeatures = data.features.filter((f) => f && f.trim().length > 0);
+    const cleanedFeatures = data.features.filter(
+      (f) => f && f.trim().length > 0,
+    );
     createPlan({ ...data, features: cleanedFeatures });
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Create New Plan</h1>
-        <p className="text-muted-foreground mt-2">
-          Add a new subscription plan for employers.
-        </p>
-      </div>
+    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
+      <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden px-4 pb-4 sm:max-w-3xl">
+        <DialogHeader className="shrink-0">
+          <DialogTitle className="text-2xl font-bold">
+            Create New Plan
+          </DialogTitle>
+          <DialogDescription>
+            Add a new subscription plan for employers.
+          </DialogDescription>
+        </DialogHeader>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="px-8 pt-7 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <CardTitle className="font-bold text-xl">Plan Configuration</CardTitle>
-          <CardDescription className="text-slate-500">
-            Configure pricing, limits, and visibility.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-8 pt-6 pb-8">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-1 flex-col overflow-hidden"
+        >
+          <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {/* Basic Info */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Plan Name</Label>
+                <Label htmlFor="name" className="flex items-center gap-1">
+                  Plan Name <Asterisk className="text-destructive size-3" />
+                </Label>
                 <Input
                   id="name"
                   {...register("name")}
@@ -105,7 +158,9 @@ export default function CreatePlanForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="displayOrder">Display Order</Label>
+                <Label htmlFor="displayOrder" className="flex items-center gap-1">
+                  Display Order <Asterisk className="text-destructive size-3" />
+                </Label>
                 <Input
                   id="displayOrder"
                   type="number"
@@ -123,7 +178,9 @@ export default function CreatePlanForm() {
             {/* Pricing */}
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="price">Price</Label>
+                <Label htmlFor="price" className="flex items-center gap-1">
+                  Price <Asterisk className="text-destructive size-3" />
+                </Label>
                 <Input
                   id="price"
                   type="number"
@@ -139,7 +196,9 @@ export default function CreatePlanForm() {
               </div>
 
               <div className="space-y-2">
-                <Label>Currency</Label>
+                <Label className="flex items-center gap-1">
+                  Currency <Asterisk className="text-destructive size-3" />
+                </Label>
                 <Select
                   onValueChange={(val) =>
                     setValue("currency", val as "INR" | "USD" | "EUR" | "GBP")
@@ -162,7 +221,9 @@ export default function CreatePlanForm() {
             {/* Durations */}
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="duration">Plan Expiry Period (In Days)</Label>
+                <Label htmlFor="duration" className="flex items-center gap-1">
+                  Plan Expiry Period (In Days) <Asterisk className="text-destructive size-3" />
+                </Label>
                 <Input
                   id="duration"
                   type="number"
@@ -176,10 +237,13 @@ export default function CreatePlanForm() {
                 )}
               </div>
 
-              {/* New Input Field: postValidityDays */}
               <div className="space-y-2">
-                <Label htmlFor="postValidityDays" className="flex items-center gap-1">
-                  Job Post Visibility (In Days) <Asterisk className="text-destructive size-3" />
+                <Label
+                  htmlFor="postValidityDays"
+                  className="flex items-center gap-1"
+                >
+                  Job Post Visibility (In Days){" "}
+                  <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Input
                   id="postValidityDays"
@@ -198,8 +262,8 @@ export default function CreatePlanForm() {
             {/* Platform Resource Limits */}
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="jobLimit">
-                  Job Post Limit (-1 = Unlimited)
+                <Label htmlFor="jobLimit" className="flex items-center gap-1">
+                  Job Post Limit (-1 = Unlimited) <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Input
                   id="jobLimit"
@@ -215,8 +279,8 @@ export default function CreatePlanForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="teamMemberLimit">
-                  Team Member Limit (-1 = Unlimited)
+                <Label htmlFor="teamMemberLimit" className="flex items-center gap-1">
+                  Team Member Limit (-1 = Unlimited) <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Input
                   id="teamMemberLimit"
@@ -240,7 +304,9 @@ export default function CreatePlanForm() {
                   checked={watch("isActive")}
                   onCheckedChange={(val) => setValue("isActive", val)}
                 />
-                <Label htmlFor="isActive" className="cursor-pointer">Active Plan</Label>
+                <Label htmlFor="isActive" className="cursor-pointer">
+                  Active Plan
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -248,7 +314,9 @@ export default function CreatePlanForm() {
                   checked={watch("isFeatured")}
                   onCheckedChange={(val) => setValue("isFeatured", val)}
                 />
-                <Label htmlFor="isFeatured" className="cursor-pointer">Featured Plan</Label>
+                <Label htmlFor="isFeatured" className="cursor-pointer">
+                  Featured Plan
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -256,10 +324,11 @@ export default function CreatePlanForm() {
                   checked={watch("isDefault")}
                   onCheckedChange={(val) => setValue("isDefault", val)}
                 />
-                <Label htmlFor="isDefault" className="cursor-pointer">Default Plan</Label>
+                <Label htmlFor="isDefault" className="cursor-pointer">
+                  Default Plan
+                </Label>
               </div>
 
-              {/* New Toggle Field: allowResumeDownload */}
               <div className="flex items-center space-x-2 border-t pt-2 sm:border-t-0 sm:pt-0">
                 <Controller
                   name="allowResumeDownload"
@@ -272,7 +341,10 @@ export default function CreatePlanForm() {
                     />
                   )}
                 />
-                <Label htmlFor="allowResumeDownload" className="cursor-pointer font-semibold text-indigo-700 dark:text-indigo-400">
+                <Label
+                  htmlFor="allowResumeDownload"
+                  className="cursor-pointer font-semibold text-indigo-700 dark:text-indigo-400"
+                >
                   Allow Resume Downloads
                 </Label>
               </div>
@@ -286,7 +358,10 @@ export default function CreatePlanForm() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => append("" as any)}
+                  onClick={() => {
+                    append("" as any);
+                    setTimeout(() => setFocus(`features.${fields.length}` as const), 0);
+                  }}
                 >
                   <Plus className="mr-1 h-4 w-4" /> Add Feature
                 </Button>
@@ -322,26 +397,32 @@ export default function CreatePlanForm() {
                 ))}
               </div>
             </div>
+          </div>
 
-            <div className="pt-6">
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="w-full min-w-[150px] h-12 bg-[#2563eb] text-white hover:bg-blue-700 shadow-sm rounded-xl font-semibold sm:w-auto px-8"
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
-                    Creating...
-                  </>
-                ) : (
-                  "Create Plan"
-                )}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="bg-muted/20 mt-auto flex shrink-0 justify-end gap-3 border-t px-6 py-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="min-w-[150px] bg-[#2563eb] px-8 font-semibold text-white shadow-sm hover:bg-blue-700"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...
+                </>
+              ) : (
+                "Create Plan"
+              )}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
