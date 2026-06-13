@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GlobalSearch } from "@/features/admin/components/global-search";
 import { CreatePlanDialog } from "@/features/admin/components/create-plan-dialog";
+import { CreateCouponDialog } from "@/features/admin/components/create-coupon-dialog";
 import { useNavSession } from "@/hooks/use-nav-session";
 import { useGetUserDetails } from "@/hooks/use-user";
 
@@ -104,14 +105,15 @@ export function AdminDashboardHeader({
                     </DropdownMenu>
                 )}
                 <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                        className="rounded-xl h-10 px-4 font-semibold text-xs border-[#2563eb]/20 text-[#2563eb] hover:bg-[#2563eb]/5"
-                    >
-                        <Link href="/admin-dashboard/coupons/create">Create Coupon</Link>
-                    </Button>
+                    <CreateCouponDialog>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-xl h-10 px-4 font-semibold text-xs border-[#2563eb]/20 text-[#2563eb] hover:bg-[#2563eb]/5"
+                        >
+                            Create Coupon
+                        </Button>
+                    </CreateCouponDialog>
                     <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen}>
                         <Button
                             size="sm"
