@@ -10,7 +10,6 @@ const COMPANIES = [
   { name: "Shopify", slug: "shopify" },
   { name: "Airbnb", slug: "airbnb" },
   { name: "GitHub", slug: "github" },
-  { name: "Slack", slug: "slack" },
   { name: "Discord", slug: "discord" },
   { name: "Spotify", slug: "spotify" },
   { name: "Netflix", slug: "netflix" },

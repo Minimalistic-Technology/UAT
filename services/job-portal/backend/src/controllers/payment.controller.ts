@@ -69,9 +69,20 @@ export const createOrder = async (
     const plan = await Plan.findById(planId);
     if (!plan) throw new ApiError(404, "Plan not found");
 
-    // Prevent purchasing if there is an active plan with remaining posts
+    // Fetch the company to ensure we're checking the subscription for this specific company
+    const companyMember = await CompanyMember.findOne({
+      user: userId,
+      role: { $in: [CompanyRole.OWNER, CompanyRole.ADMIN] },
+    });
+
+    if (!companyMember) {
+      throw new ApiError(400, "You must be part of a company to purchase a plan.");
+    }
+
+    // Prevent purchasing if there is an active plan with remaining posts for this company
     const activeSubscription = await Subscription.findOne({
       employerId: userId,
+      companyId: companyMember.company,
       status: "active",
       expiryDate: { $gt: new Date() },
       $or: [{ postsRemaining: { $gt: 0 } }, { postsRemaining: -1 }],
@@ -114,7 +125,7 @@ export const createOrder = async (
             { $expr: { $lt: ["$usageCount", "$maxUses"] } },
           ],
         },
-        { 
+        {
           $inc: { usageCount: 1 },
           $addToSet: { usedBy: userId },
         },
@@ -142,7 +153,7 @@ export const createOrder = async (
     // 3. Handle free plan or 100% discount
     if (finalAmount === 0) {
       const internalOrderIdString = internalOrderId || `FREE_${Date.now()}`;
-      
+
       await Payment.create(
         [
           {
@@ -157,7 +168,7 @@ export const createOrder = async (
         ],
         { session }
       );
-      
+
       await session.commitTransaction();
 
       // Provision Subscription for free plan
@@ -395,7 +406,7 @@ export const verifyPayment = async (
     }
 
     const payment = await Payment.findOne({ razorpayOrderId: razorpay_order_id });
-    
+
     if (!payment) {
       return next(new ApiError(404, "Payment record not found"));
     }

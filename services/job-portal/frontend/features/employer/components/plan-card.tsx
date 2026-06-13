@@ -57,11 +57,11 @@ export function PlanCard({
   const [isValidating, setIsValidating] = useState(false);
 
   const validateMutation = useValidateCoupon();
-  const { data: companyResponse } = useGetMyCompanyDetails();
+  const { data: companyResponse, isLoading: isCompanyLoading } = useGetMyCompanyDetails();
   const companyDetails = companyResponse?.data;
   const hasActivePlan = companyDetails?.subscription?.status === "active";
   const remainingJobPosts = companyDetails?.remainingJobPosts;
-  const canPurchase = !hasActivePlan || remainingJobPosts === 0;
+  const canPurchase = !isCompanyLoading && (!hasActivePlan || remainingJobPosts === 0);
 
   function handleValidateCoupon() {
     if (!couponCode.trim()) {

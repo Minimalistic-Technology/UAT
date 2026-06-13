@@ -10,6 +10,7 @@ import { useGetUserDetails } from "@/features/user/hooks/use-user";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Edit, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function UserProfilePage() {
     const { data: session } = useSession();
@@ -60,18 +61,25 @@ export default function UserProfilePage() {
                     My Profile
                 </h1>
 
-                {!isEditing ? (
-                    <Button onClick={() => setIsEditing(true)} size="sm" className="font-semibold shadow-sm">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Profile
-                    </Button>
-                ) : (
-                    <Button onClick={() => setIsEditing(false)} size="sm" variant="outline" className="font-semibold border-secondary/20 shadow-sm">
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel Editing
-                    </Button>
-                )}
+                <Button onClick={() => setIsEditing(true)} size="sm" className="font-semibold shadow-sm">
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Profile
+                </Button>
             </div>
+
+            <Dialog open={isEditing} onOpenChange={setIsEditing}>
+                <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl sm:rounded-[24px]">
+                    <DialogHeader className="p-6 sm:p-8 pb-0 text-left border-b border-border/50 bg-slate-50/50 dark:bg-slate-900/50">
+                        <DialogTitle className="text-xl font-bold tracking-tight">Edit Your Profile</DialogTitle>
+                        <DialogDescription className="text-sm mt-1 mb-4 text-slate-500">
+                            Update your resume, personal information, skills, and experience.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="p-6 sm:p-8 max-h-[75vh] overflow-y-auto">
+                        <UserProfileForm onSuccess={() => setIsEditing(false)} />
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column */}
@@ -88,15 +96,9 @@ export default function UserProfilePage() {
 
                 {/* Right Column */}
                 <div className="lg:col-span-2 space-y-6">
-                    {isEditing ? (
-                        <div className="animate-in fade-in zoom-in-95 duration-200">
-                            <UserProfileForm />
-                        </div>
-                    ) : (
-                        <div className="animate-in fade-in zoom-in-95 duration-200">
-                            <UserPersonalInfo user={user} />
-                        </div>
-                    )}
+                    <div className="animate-in fade-in zoom-in-95 duration-200">
+                        <UserPersonalInfo user={user} />
+                    </div>
                 </div>
             </div>
         </div>

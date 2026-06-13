@@ -21,6 +21,8 @@ import { signOut, useSession } from "next-auth/react"
 import { SidebarNavItem } from "@/components/sidebar-nav-item"
 import Logo from "@/components/logo"
 import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company"
+import { useSidebar } from "@/components/ui/sidebar-context"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,12 +53,29 @@ export default function EmployerSidebar({ className }: { className?: string }) {
   const { data: responseData } = useGetMyCompanyDetails();
   const planName = responseData?.data?.currentPlan?.name || "Free Tier";
 
+  const { isCollapsed, toggleCollapse } = useSidebar();
+
   const roleBasedItems = companyRole === "owner" ? menuItems : menuItems.filter(item => item.label !== "Manage Team");
 
   return (
-    <div className={cn("flex flex-col border-r bg-background/80 backdrop-blur-xl shadow-sm", className)}>
-      <div className="flex h-16 items-center px-6 border-b border-border/50">
-        <Logo />
+    <div className={cn("flex flex-col border-r bg-background/80 backdrop-blur-xl shadow-sm transition-all duration-300 relative", isCollapsed ? "w-[80px]" : "w-64", className)}>
+      <Button
+        variant="outline"
+        size="icon"
+        className={cn("absolute -right-4 top-5 h-8 w-8 rounded-full border-border bg-background shadow-md z-50 hidden lg:flex", isCollapsed && "rotate-180")}
+        onClick={toggleCollapse}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+
+      <div className={cn("flex h-16 items-center px-6 border-b border-border/50", isCollapsed && "justify-center px-0")}>
+        {!isCollapsed ? (
+          <Logo />
+        ) : (
+          <span className="font-bold text-2xl text-primary bg-primary/10 w-10 h-10 flex items-center justify-center rounded-xl border border-primary/20">
+            J
+          </span>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col overflow-y-auto py-6 px-3">
@@ -74,20 +93,28 @@ export default function EmployerSidebar({ className }: { className?: string }) {
             )
           })}
         </nav>
-        <div className="px-4 py-4 mt-auto">
-          <div className="rounded-xl bg-[#2563eb] p-4 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] space-y-3 relative overflow-hidden transition-all hover:shadow-[0_4px_25px_rgba(37,99,235,0.5)] hover:-translate-y-0.5">
-            <div className="absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-            <div className="relative z-10 flex flex-col gap-1">
-              <span className="text-[10px] font-extrabold text-blue-100 uppercase tracking-widest drop-shadow-sm">{planName}</span>
-              <span className="text-lg font-bold leading-tight font-heading">Upgrade to Pro</span>
-            </div>
-            <Button variant="secondary" size="sm" asChild className="w-full relative z-10 rounded-lg font-bold text-[#2563eb] bg-white hover:bg-slate-50 shadow-sm cursor-pointer h-9 px-0">
-              <Link href="/employer-dashboard/plans">
-                Get Access
-              </Link>
-            </Button>
+        {isCollapsed ? (
+          <div className="px-2 mt-auto">
+            <Link href="/employer-dashboard/plans" className="flex items-center justify-center w-full aspect-square bg-[#2563eb] rounded-xl text-white hover:bg-blue-700 transition">
+              <Sparkles className="h-5 w-5" />
+            </Link>
           </div>
-        </div>
+        ) : (
+          <div className="px-4 py-4 mt-auto">
+            <div className="rounded-xl bg-[#2563eb] p-4 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] space-y-3 relative overflow-hidden transition-all hover:shadow-[0_4px_25px_rgba(37,99,235,0.5)] hover:-translate-y-0.5">
+              <div className="absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+              <div className="relative z-10 flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold text-blue-100 uppercase tracking-widest drop-shadow-sm">{planName}</span>
+                <span className="text-lg font-bold leading-tight font-heading">Upgrade to Pro</span>
+              </div>
+              <Button variant="secondary" size="sm" asChild className="w-full relative z-10 rounded-lg font-bold text-[#2563eb] bg-white hover:bg-slate-50 shadow-sm cursor-pointer h-9 px-0">
+                <Link href="/employer-dashboard/plans">
+                  Get Access
+                </Link>
+              </Button>
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -96,16 +123,18 @@ export default function EmployerSidebar({ className }: { className?: string }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors border border-transparent hover:border-primary/10">
-                <div className="flex items-center gap-3">
+                <div className={cn("flex items-center gap-3", isCollapsed && "justify-center w-full")}>
                   <div className="size-9 rounded-full bg-primary/20 flex flex-shrink-0 items-center justify-center text-primary font-bold text-sm ring-2 ring-background">
                     {session.user.name ? session.user.name.charAt(0).toUpperCase() : "E"}
                   </div>
-                  <div className="flex flex-col truncate w-[130px]">
-                    <span className="text-sm font-bold text-foreground leading-tight truncate">{session.user.name || "Employer"}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider truncate">
-                      {companyRole === 'owner' ? 'Owner / Admin' : 'Member'}
-                    </span>
-                  </div>
+                  {!isCollapsed && (
+                    <div className="flex flex-col truncate w-[130px]">
+                      <span className="text-sm font-bold text-foreground leading-tight truncate">{session.user.name || "Employer"}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider truncate">
+                        {companyRole === 'owner' ? 'Owner / Admin' : 'Member'}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </DropdownMenuTrigger>

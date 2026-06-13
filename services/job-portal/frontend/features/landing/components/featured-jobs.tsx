@@ -189,25 +189,25 @@ export const FeaturedJobs = () => {
                       key={String(jobId)}
                       className="group relative flex flex-col md:flex-row md:items-center gap-6 px-6 md:px-10 py-8 hover:bg-primary/5 transition-colors cursor-pointer"
                     >
-                      {/* Left: Brand */}
-                      <div className="flex items-center gap-5 flex-1">
-                        <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center font-bold text-2xl text-primary group-hover:scale-110 group-hover:bg-white transition-all duration-300 overflow-hidden">
+                      {/* Left: Brand — fixed width 40% */}
+                      <div className="flex items-center gap-5 md:w-[40%] min-w-0">
+                        <div className="w-14 h-14 shrink-0 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center font-bold text-2xl text-primary group-hover:scale-110 group-hover:bg-white transition-all duration-300 overflow-hidden">
                           {logoEl}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-bold text-slate-400 uppercase tracking-tight">
+                            <span className="text-sm font-bold text-slate-400 uppercase tracking-tight truncate">
                               {companyName}
                             </span>
                           </div>
-                          <h3 className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors">
+                          <h3 className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-2">
                             {roleName}
                           </h3>
                         </div>
                       </div>
 
-                      {/* Middle: Tags (Visible on Tablet/Desktop) */}
-                      <div className="hidden lg:flex flex-col justify-center flex-1 gap-2">
+                      {/* Middle: Tags — fixed width 30%, always aligned */}
+                      <div className="hidden lg:flex flex-col justify-center md:w-[30%] gap-2">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           Required Skills
                         </span>
@@ -223,8 +223,8 @@ export const FeaturedJobs = () => {
                         </div>
                       </div>
 
-                      {/* Right: Meta & Actions */}
-                      <div className="flex items-center justify-between md:justify-end gap-8">
+                      {/* Right: Meta & Actions — fixed width 30% */}
+                      <div className="flex items-center justify-between md:justify-end md:w-[30%] gap-6 shrink-0">
                         <div className="text-left md:text-right">
                           <div className="flex items-center md:justify-end gap-1.5 text-sm font-medium text-slate-500 mb-1">
                             <MapPin size={14} /> {locStr} · {employementTypeStr}

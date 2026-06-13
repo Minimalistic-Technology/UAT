@@ -3,20 +3,32 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useCreateEmployee } from "@/features/employer/hooks/use-company";
+import { useCreateEmployee, useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createTeamMemberSchema, type CreateTeamMemberSchema } from "@/features/employer/validations/team.schema";
+import { toast } from "sonner";
 
 export default function AddTeamMemberPage() {
   const router = useRouter();
   const createEmployeeMutation = useCreateEmployee();
+  const { data: companyRes, isLoading } = useGetMyCompanyDetails();
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && companyRes) {
+      const hasPlan = !!companyRes.data?.currentPlan;
+      if (!hasPlan) {
+        toast.error("Please purchase a subscription plan to add team members.");
+        router.replace("/employer-dashboard/plans");
+      }
+    }
+  }, [companyRes, isLoading, router]);
 
   const {
     register,

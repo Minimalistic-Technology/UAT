@@ -123,13 +123,13 @@ export const Hero = () => {
             transition={{ duration: 0.7, ease: "easeOut", delay: 0.3 }}
             className="mt-14 w-full max-w-4xl mx-auto relative group"
           >
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#2563eb] to-[#00d4ff] rounded-[2rem] blur opacity-[0.15] group-hover:opacity-30 transition duration-500"></div>
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#2563eb] to-[#00d4ff] rounded-[1.25rem] blur opacity-[0.15] group-hover:opacity-30 transition duration-500"></div>
 
             <form
               onSubmit={handleSearchSubmit}
-              className="relative flex flex-col md:flex-row items-stretch bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/20 dark:border-slate-800 focus-within:border-[#2563eb]/50 focus-within:ring-4 focus-within:ring-[#2563eb]/10 rounded-[2rem] overflow-hidden transition-all shadow-xl shadow-[#2563eb]/[0.03] p-1.5"
+              className="relative flex flex-col md:flex-row items-stretch bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-800 focus-within:border-[#2563eb]/50 focus-within:ring-4 focus-within:ring-[#2563eb]/10 rounded-xl overflow-hidden transition-all shadow-xl shadow-[#2563eb]/[0.03] p-1.5"
             >
-              <div className="relative flex items-center gap-3 flex-1 px-5 py-4 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80">
+              <div className="relative flex items-center gap-3 flex-1 px-5 py-3 md:py-0 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800/80">
                 <Search size={22} className="text-[#2563eb] dark:text-[#60a5fa] shrink-0" />
                 <input
                   ref={searchInputRef}
@@ -145,7 +145,7 @@ export const Hero = () => {
                   </kbd>
                 </div>
               </div>
-              <div className="flex items-center gap-3 flex-1 px-5 py-4">
+              <div className="flex items-center gap-3 flex-1 px-5 py-3 md:py-0">
                 <MapPin size={22} className="text-[#2563eb] dark:text-[#60a5fa] shrink-0" />
                 <input
                   type="text"
@@ -158,10 +158,10 @@ export const Hero = () => {
               <Button
                 type="submit"
                 size="lg"
-                className="m-1 md:my-1 md:ml-0 md:mr-1 h-14 px-10 text-[17px] font-bold rounded-full"
+                className="w-full md:w-auto m-1 md:my-1 md:ml-0 md:mr-1"
               >
                 Search Now
-                <ArrowRight size={20} />
+                <ArrowRight size={18} />
               </Button>
             </form>
           </motion.div>

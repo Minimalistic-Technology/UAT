@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   useDeleteEmployee,
   useGetAllEmployees,
+  useGetMyCompanyDetails,
 } from "@/features/employer/hooks/use-company";
 import { Loader2, Trash2, UserPlus, Users, Pencil } from "lucide-react";
 import {
@@ -32,17 +33,20 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const Page = () => {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const { data: responseData, isLoading, isError, error } = useGetAllEmployees();
+  const { data: companyRes, isLoading: companyLoading } = useGetMyCompanyDetails();
   const deleteMutation = useDeleteEmployee();
   const router = useRouter();
 
   const employees = responseData?.data?.members || [];
   const getInitials = (first: string, last: string) => `${first[0]}${last[0]}`;
+  const hasPlan = !!companyRes?.data?.currentPlan;
 
-  if (isLoading) {
+  if (isLoading || companyLoading) {
     return (
       <div className="space-y-4 p-8">
         <Skeleton className="h-10 w-50" />
@@ -62,7 +66,7 @@ const Page = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Team Management</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -70,7 +74,14 @@ const Page = () => {
           </p>
         </div>
         <Button
-          onClick={() => router.push("/employer-dashboard/team/add")}
+          onClick={() => {
+            if (!hasPlan) {
+              toast.error("Please purchase a subscription plan to add team members.");
+              router.push("/employer-dashboard/plans");
+              return;
+            }
+            router.push("/employer-dashboard/team/add");
+          }}
           className="rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-500/20 font-semibold h-10 px-5 gap-2"
         >
           <UserPlus className="size-4" strokeWidth={2} />
