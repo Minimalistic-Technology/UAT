@@ -128,9 +128,9 @@ export default function Navbar() {
                   <div className="p-4 pt-10"><MobileSkeleton /></div>
                 ) : isAuthenticated ? (
                   <>
-                    {isAdmin && <Sidebar className="h-full w-full min-h-screen" forceExpanded />}
-                    {isEmployer && <EmployerSidebar className="h-full w-full min-h-screen" forceExpanded />}
-                    {isJobSeeker && <UserSidebar className="h-full w-full min-h-screen" forceExpanded />}
+                    {isAdmin && <Sidebar className="h-full w-full" forceExpanded />}
+                    {isEmployer && <EmployerSidebar className="h-full w-full" forceExpanded />}
+                    {isJobSeeker && <UserSidebar className="h-full w-full" forceExpanded />}
                   </>
                 ) : (
                   <div className="flex flex-col gap-1 p-4 pt-10">

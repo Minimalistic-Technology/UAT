@@ -25,7 +25,7 @@ export function MobileSidebarHeader({
                         <SheetTitle>Navigation Menu</SheetTitle>
                         <SheetDescription>Navigate using the sidebar menu</SheetDescription>
                     </SheetHeader>
-                    <SidebarComponent className="h-full w-full min-h-screen" forceExpanded />
+                    <SidebarComponent className="h-full w-full" forceExpanded />
                 </SheetContent>
             </Sheet>
         </div>

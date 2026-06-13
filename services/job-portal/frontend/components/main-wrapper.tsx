@@ -14,7 +14,7 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
     const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/employer-register";
 
     return (
-        <div className={cn("h-full min-h-screen transition-colors duration-300", (isLandingPage || isPublicFindJobs || isProfilePage || isAuthPage) && "pt-[72px]")}>
+        <div className={cn("h-full min-h-[100dvh] transition-colors duration-300", (isLandingPage || isPublicFindJobs || isProfilePage || isAuthPage) && "pt-[72px]")}>
             {children}
         </div>
     );
