@@ -77,8 +77,15 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
 
   const onSubmit = (data: CouponFormValues) => {
     if (!coupon?._id) return;
+
+    const payload = {
+      ...data,
+      expiryDate: data.expiryDate === "" ? null : data.expiryDate,
+      maxUses: data.maxUses === "" ? null : data.maxUses,
+    };
+
     updateCoupon(
-      { id: coupon._id, data },
+      { id: coupon._id, data: payload as Partial<CouponFormValues> },
       {
         onSuccess: () => {
           onOpenChange(false);

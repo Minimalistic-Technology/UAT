@@ -214,8 +214,20 @@ export const updateCoupon = async (
     }
 
     if (isActive !== undefined) coupon.isActive = isActive;
-    if (expiryDate !== undefined) coupon.expiryDate = expiryDate;
-    if (maxUses !== undefined) coupon.maxUses = maxUses === -1 ? -1 : maxUses;
+    if (expiryDate !== undefined) {
+      if (expiryDate === "" || expiryDate === null) {
+        coupon.expiryDate = undefined;
+      } else {
+        coupon.expiryDate = new Date(expiryDate);
+      }
+    }
+    if (maxUses !== undefined) {
+      if (maxUses === null || maxUses === "") {
+        coupon.maxUses = -1;
+      } else {
+        coupon.maxUses = maxUses === -1 ? -1 : typeof maxUses === "string" ? parseInt(maxUses) : maxUses;
+      }
+    }
 
     await coupon.save();
 
