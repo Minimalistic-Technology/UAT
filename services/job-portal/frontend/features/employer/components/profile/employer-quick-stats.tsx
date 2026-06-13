@@ -4,15 +4,17 @@ import { Briefcase, UserCheck, CreditCard, Loader2 } from "lucide-react";
 import { useGetMyJobPostings } from "@/features/employer/hooks/use-job";
 import { useAllEmployerApplications } from "@/features/employer/hooks/use-applications";
 import { useNavSession } from "@/hooks/use-nav-session";
+import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
 
 export function EmployerQuickStats() {
     const { session } = useNavSession();
+    const { data: companyResponse } = useGetMyCompanyDetails();
     const { data: jobsResponse, isLoading: isLoadingJobs } = useGetMyJobPostings();
     const { data: appsResponse, isLoading: isLoadingApps } = useAllEmployerApplications();
 
     const jobsCount = jobsResponse?.data?.count ?? jobsResponse?.data?.jobPosts?.length ?? 0;
     const applicationsCount = appsResponse?.data?.count ?? appsResponse?.data?.applications?.length ?? 0;
-    const currentPlan = session?.user?.plan || "Free";
+    const currentPlan = companyResponse?.data?.currentPlan?.name || "Free";
 
     return (
         <div className="space-y-4">
