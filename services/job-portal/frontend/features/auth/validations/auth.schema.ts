@@ -22,7 +22,6 @@ export const registerUserSchema = z.object({
     .optional()
     .or(z.literal("")),
   role: z.enum([GlobalRole.USER]).default(GlobalRole.USER),
-  captchaToken: z.string().min(1, "Captcha is required"),
 });
 
 export type RegisterUserInput = z.infer<typeof registerUserSchema>;
@@ -53,8 +52,7 @@ export const registerEmployerSchema = z.object({
     .max(30, "Password at max can have 30 characters"),
   phone: z.string().optional(),
   role: z.enum([CompanyRole.OWNER]).default(CompanyRole.OWNER),
-  captchaToken: z.string().min(1, "Captcha is required"),
-})
+});
 
 export type EmployerRegisterInput = z.infer<typeof registerEmployerSchema>;
 

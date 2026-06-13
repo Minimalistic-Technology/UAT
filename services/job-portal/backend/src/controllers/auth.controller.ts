@@ -16,23 +16,6 @@ import { generateToken } from "../utils/jwt.js";
 import Feature, { FeatureStatus } from "../models/Feature.model.js";
 import FeaturePermission from "../models/FeaturePermission.model.js";
 
-const verifyCaptcha = async (token: string) => {
-  const secretKey = process.env.TURNSTILE_SECRET_KEY || "dummy_secret_key";
-
-  const formData = new URLSearchParams();
-  formData.append('secret', secretKey);
-  formData.append('response', token);
-
-  const response = await fetch(`https://challenges.cloudflare.com/turnstile/v0/siteverify`, {
-    method: "POST",
-    body: formData
-  });
-  const data = await response.json();
-  if (!data.success) {
-    throw new ApiError(400, "Security validation failed. Please try again.");
-  }
-};
-
 const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
   const token = generateToken(user._id);
 
@@ -86,9 +69,7 @@ export const requestUserRegistration = async (
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const { firstName, lastName, email, password, phone, captchaToken } = req.body;
-
-    await verifyCaptcha(captchaToken);
+    const { firstName, lastName, email, password, phone } = req.body;
 
     const existingUser = await User.findOne({ email }).session(session);
 
@@ -167,10 +148,7 @@ export const requestEmployerRegistration = async (
       firstName,
       lastName,
       phone,
-      captchaToken,
     } = req.body;
-
-    await verifyCaptcha(captchaToken);
 
     let user = await User.findOne({ email }).session(session);
 

@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { Turnstile } from "@marsidev/react-turnstile";
 
 // Individual Shadcn UI components
 import { Button } from "@/components/ui/button";
@@ -249,20 +248,7 @@ export default function RegisterClient() {
                 </label>
               </div>
 
-              <div className="flex flex-col items-center justify-center pt-1 w-full">
-                <div className="w-full">
-                  <Turnstile
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "dummy_site_key"}
-                    onSuccess={(token) => setValue("captchaToken", token || "", { shouldValidate: true })}
-                    options={{ size: "flexible" }}
-                    style={{ width: "100%" }}
-                  />
-                </div>
-                {errors.captchaToken && (
-                  <p className="text-destructive text-xs font-medium mt-1">
-                    {errors.captchaToken.message}
-                  </p>
-                )}
+              <div className="flex flex-col items-center justify-center w-full">
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>

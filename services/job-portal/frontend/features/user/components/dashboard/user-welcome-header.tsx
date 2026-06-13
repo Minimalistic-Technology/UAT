@@ -24,7 +24,7 @@ export function UserWelcomeHeader({ userName, totalApplied }: UserWelcomeHeaderP
                 </p>
             </div>
             <Button asChild className="h-10 px-6 font-bold rounded-xl shadow-lg shadow-primary/20">
-                <Link href="/user-dashboard/find-jobs">
+                <Link href="/find-jobs">
                     <Search className="mr-2 h-4 w-4" /> Browse Jobs
                 </Link>
             </Button>

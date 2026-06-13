@@ -28,7 +28,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react"
 
 export const userMenuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/user-dashboard" },
-  { label: "Find Jobs", icon: Search, href: "/user-dashboard/find-jobs" },
+  { label: "Find Jobs", icon: Search, href: "/find-jobs" },
   { label: "My Applications", icon: Briefcase, href: "/user-dashboard/applications" },
 ]
 
