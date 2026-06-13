@@ -81,7 +81,7 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
     const payload = {
       ...data,
       expiryDate: data.expiryDate === "" ? null : data.expiryDate,
-      maxUses: data.maxUses === "" ? null : data.maxUses,
+      maxUses: data.maxUses === undefined ? null : data.maxUses,
     };
 
     updateCoupon(
