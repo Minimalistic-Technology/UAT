@@ -160,7 +160,7 @@ const AnalyticsPage = () => {
       </div>
 
       {/* 📊 Secondary KPIs Mesh */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {getAnalyticsStatusCardsConfig(summary).map((card, index) => (
           <StatusCard
             key={index}
