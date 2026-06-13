@@ -57,12 +57,13 @@ const Page = () => {
   const users = responseData?.data.users || [];
   const pagination = responseData?.data.pagination;
 
-  // Search Logic: Filter based on Name or Email
+  // Search Logic: Filter based on Name, Email, or Company Name
   const filteredUsers = users.filter((user: UserWithCompany) => {
     const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
     const email = user.email?.toLowerCase() || "";
+    const company = user.companyName?.toLowerCase() || "";
     const search = searchTerm.toLowerCase();
-    return fullName.includes(search) || email.includes(search);
+    return fullName.includes(search) || email.includes(search) || company.includes(search);
   });
 
   // Export CSV Logic
@@ -104,7 +105,7 @@ const Page = () => {
         <div className="relative max-w-sm flex-1">
           <Search className="text-slate-400 absolute top-3 left-3 h-4 w-4" />
           <Input
-            placeholder="Search users by name or email..."
+            placeholder="Search users by name, email, or company..."
             className="h-10 pl-9 rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus-visible:ring-[#2563eb]"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
