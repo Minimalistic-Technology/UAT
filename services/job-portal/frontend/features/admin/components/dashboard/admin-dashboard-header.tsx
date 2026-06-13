@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GlobalSearch } from "@/features/admin/components/global-search";
 import { CreatePlanDialog } from "@/features/admin/components/create-plan-dialog";
-import apiClient from "@/lib/api-client";
+import { useNavSession } from "@/hooks/use-nav-session";
+import { useGetUserDetails } from "@/hooks/use-user";
 
 interface AdminDashboardHeaderProps {
     hasNotifications: boolean;
@@ -26,34 +27,12 @@ export function AdminDashboardHeader({
     recentEmployers,
 }: AdminDashboardHeaderProps) {
     const [createPlanOpen, setCreatePlanOpen] = React.useState(false);
-    const [notificationState, setNotificationState] = React.useState<"loading" | "blocked" | "active">("loading");
+    const { isAuthenticated } = useNavSession();
+    const { data: userProfileData } = useGetUserDetails(isAuthenticated);
 
-    React.useEffect(() => {
-        let mounted = true;
-        async function fetchPreference() {
-            try {
-                const response = await apiClient.get("/api/notifications/preference");
-                if (mounted) {
-                    if (response.data?.success) {
-                        setNotificationState(response.data.data.isBlocked ? "blocked" : "active");
-                    } else {
-                        setNotificationState("active");
-                    }
-                }
-            } catch (error: any) {
-                if (mounted) {
-                    if (error.response?.status === 403) {
-                        setNotificationState("blocked");
-                    } else {
-                        // If it's a 500 or network error, fallback to displaying the bell UI instead of permanent hidden state
-                        setNotificationState("active");
-                    }
-                }
-            }
-        }
-        fetchPreference();
-        return () => { mounted = false; };
-    }, []);
+    // Feature Check identical to Dark Mode
+    const allowedFeatures = userProfileData?.data?.allowedFeatures || [];
+    const canUseNotifications = allowedFeatures.includes("notification-system");
 
     return (
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between w-full">
@@ -62,7 +41,7 @@ export function AdminDashboardHeader({
             </h1>
             <div className="flex flex-1 items-center justify-end gap-4">
                 <GlobalSearch onCreatePlan={() => setCreatePlanOpen(true)} />
-                {notificationState === "active" && (
+                {canUseNotifications && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
