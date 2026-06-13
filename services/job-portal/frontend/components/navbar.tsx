@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { Menu, User, LogOut, Building2, LayoutDashboard } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +56,10 @@ export default function Navbar() {
   const { data: userProfileData } = useGetUserDetails(isAuthenticated);
   const allowedFeatures = userProfileData?.data?.allowedFeatures || [];
   const canUseDarkMode = allowedFeatures.includes("dark-mode");
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   const handleLogout = () => signOut({ callbackUrl: "/login" });
   const closeSheet = () => setOpen(false);

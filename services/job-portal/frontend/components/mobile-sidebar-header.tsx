@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Logo from "@/components/logo";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,17 @@ export function MobileSidebarHeader({
 }: {
     SidebarComponent: React.ComponentType<{ className?: string, forceExpanded?: boolean }>;
 }) {
+    const [open, setOpen] = useState(false);
+    const pathname = usePathname();
+
+    useEffect(() => {
+        setOpen(false);
+    }, [pathname]);
+
     return (
         <div className="lg:hidden flex items-center justify-between h-16 px-4 border-b bg-background sticky top-0 z-30 shadow-sm">
             <Logo />
-            <Sheet>
+            <Sheet open={open} onOpenChange={setOpen}>
                 <SheetTrigger asChild>
                     <Button variant="ghost" size="icon" className="shrink-0 text-foreground">
                         <Menu className="h-6 w-6" strokeWidth={2.5} />
