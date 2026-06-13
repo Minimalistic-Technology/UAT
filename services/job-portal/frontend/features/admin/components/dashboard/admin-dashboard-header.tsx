@@ -40,9 +40,12 @@ export function AdminDashboardHeader({
             <h1 className="text-[1.4rem] font-bold text-slate-900 dark:text-white">
                 Overview
             </h1>
-            <div className="flex flex-1 items-center justify-end gap-4">
-                <GlobalSearch onCreatePlan={() => setCreatePlanOpen(true)} />
-                {canUseNotifications && (
+            <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center justify-end gap-3 sm:gap-4">
+                <div className="flex items-center justify-start sm:justify-end w-full sm:w-auto gap-4">
+                    <div className="flex-1 sm:flex-none">
+                        <GlobalSearch onCreatePlan={() => setCreatePlanOpen(true)} />
+                    </div>
+                    {canUseNotifications && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
@@ -104,12 +107,13 @@ export function AdminDashboardHeader({
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )}
-                <div className="flex items-center gap-3">
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
                     <CreateCouponDialog>
                         <Button
                             variant="outline"
                             size="sm"
-                            className="rounded-xl h-10 px-4 font-semibold text-xs border-[#2563eb]/20 text-[#2563eb] hover:bg-[#2563eb]/5"
+                            className="flex-1 sm:flex-none rounded-xl h-10 px-4 font-semibold text-xs border-[#2563eb]/20 text-[#2563eb] hover:bg-[#2563eb]/5"
                         >
                             Create Coupon
                         </Button>
@@ -117,7 +121,7 @@ export function AdminDashboardHeader({
                     <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen}>
                         <Button
                             size="sm"
-                            className="rounded-xl h-10 px-5 text-sm font-semibold shadow-sm shadow-blue-500/20"
+                            className="flex-1 sm:flex-none rounded-xl h-10 px-5 text-sm font-semibold shadow-sm shadow-blue-500/20"
                         >
                             Create Plan
                         </Button>
