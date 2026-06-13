@@ -53,7 +53,7 @@ export function CouponTableRow({ coupon }: { coupon: Coupon }) {
         </TableCell>
         <TableCell className="text-muted-foreground tabular-nums hidden md:table-cell">
           {coupon.expiryDate
-            ? new Date(coupon.expiryDate).toLocaleDateString(undefined, { dateStyle: "medium" })
+            ? new Date(Number(coupon.expiryDate)).toLocaleDateString(undefined, { dateStyle: "medium" })
             : "No Expiry"}
         </TableCell>
         <TableCell className="text-right">
