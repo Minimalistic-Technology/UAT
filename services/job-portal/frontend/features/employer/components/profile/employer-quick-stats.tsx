@@ -10,9 +10,9 @@ export function EmployerQuickStats() {
     const { data: jobsResponse, isLoading: isLoadingJobs } = useGetMyJobPostings();
     const { data: appsResponse, isLoading: isLoadingApps } = useAllEmployerApplications();
 
-    const jobsCount = jobsResponse?.data?.count ?? jobsResponse?.data?.jobPosts?.length ?? 0;
-    const applicationsCount = appsResponse?.data?.count ?? appsResponse?.data?.applications?.length ?? 0;
-    const currentPlan = session?.user?.plan || "Free";
+    const jobsCount = (jobsResponse?.data as any)?.count ?? jobsResponse?.data?.jobPosts?.length ?? 0;
+    const applicationsCount = appsResponse?.data?.applications?.length ?? 0;
+    const currentPlan = (session?.user as any)?.plan || "Free";
 
     return (
         <div className="space-y-4">

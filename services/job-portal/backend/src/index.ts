@@ -31,6 +31,7 @@ import developerRoutes from './routes/developer.route.js';
 import featureRoutes from './routes/feature.route.js';
 import aiRoutes from './routes/ai.routes.js';
 import testimonialRoutes from './routes/testimonial.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 // Graphql imports
 import { ApolloServer } from "@apollo/server";
@@ -109,6 +110,7 @@ app.use("/api/listings", listingRoutes);
 app.use("/api/features", featureRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/testimonials", testimonialRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {

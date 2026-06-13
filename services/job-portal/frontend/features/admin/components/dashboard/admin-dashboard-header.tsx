@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GlobalSearch } from "@/features/admin/components/global-search";
 import { CreatePlanDialog } from "@/features/admin/components/create-plan-dialog";
+import apiClient from "@/lib/api-client";
 
 interface AdminDashboardHeaderProps {
     hasNotifications: boolean;
@@ -25,6 +26,34 @@ export function AdminDashboardHeader({
     recentEmployers,
 }: AdminDashboardHeaderProps) {
     const [createPlanOpen, setCreatePlanOpen] = React.useState(false);
+    const [notificationState, setNotificationState] = React.useState<"loading" | "blocked" | "active">("loading");
+
+    React.useEffect(() => {
+        let mounted = true;
+        async function fetchPreference() {
+            try {
+                const response = await apiClient.get("/api/notifications/preference");
+                if (mounted) {
+                    if (response.data?.success) {
+                        setNotificationState(response.data.data.isBlocked ? "blocked" : "active");
+                    } else {
+                        setNotificationState("active");
+                    }
+                }
+            } catch (error: any) {
+                if (mounted) {
+                    if (error.response?.status === 403) {
+                        setNotificationState("blocked");
+                    } else {
+                        // If it's a 500 or network error, fallback to displaying the bell UI instead of permanent hidden state
+                        setNotificationState("active");
+                    }
+                }
+            }
+        }
+        fetchPreference();
+        return () => { mounted = false; };
+    }, []);
 
     return (
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between w-full">
@@ -33,66 +62,68 @@ export function AdminDashboardHeader({
             </h1>
             <div className="flex flex-1 items-center justify-end gap-4">
                 <GlobalSearch onCreatePlan={() => setCreatePlanOpen(true)} />
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full size-10 bg-slate-100 dark:bg-slate-800 hidden sm:flex text-slate-500 hover:text-slate-900 dark:hover:text-white relative"
-                        >
-                            {hasNotifications && (
-                                <div className="absolute top-2 right-2.5 size-2 bg-rose-500 rounded-full animate-pulse z-10" />
-                            )}
-                            <Bell className="size-5" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[300px]">
-                        <DropdownMenuLabel className="font-bold text-base">
-                            Notifications
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <div className="flex flex-col gap-1 p-1 max-h-64 overflow-y-auto">
-                            {summary.kycPending > 0 && (
-                                <DropdownMenuItem className="flex flex-col items-start p-3 cursor-pointer" asChild>
-                                    <Link href="/admin-dashboard/kyc">
+                {notificationState === "active" && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full size-10 bg-slate-100 dark:bg-slate-800 hidden sm:flex text-slate-500 hover:text-slate-900 dark:hover:text-white relative"
+                            >
+                                {hasNotifications && (
+                                    <div className="absolute top-2 right-2.5 size-2 bg-rose-500 rounded-full animate-pulse z-10" />
+                                )}
+                                <Bell className="size-5" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[300px]">
+                            <DropdownMenuLabel className="font-bold text-base">
+                                Notifications
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <div className="flex flex-col gap-1 p-1 max-h-64 overflow-y-auto">
+                                {summary.kycPending > 0 && (
+                                    <DropdownMenuItem className="flex flex-col items-start p-3 cursor-pointer" asChild>
+                                        <Link href="/admin-dashboard/kyc">
+                                            <span className="font-semibold text-sm text-[#2563eb]">
+                                                Verification Pending
+                                            </span>
+                                            <span className="text-xs text-slate-500">
+                                                {summary.kycPending} new companies require KYC approval.
+                                            </span>
+                                        </Link>
+                                    </DropdownMenuItem>
+                                )}
+
+                                {recentEmployers && recentEmployers.length > 0 && (
+                                    <DropdownMenuItem className="flex flex-col items-start p-3 cursor-pointer">
                                         <span className="font-semibold text-sm text-[#2563eb]">
-                                            Verification Pending
+                                            Recent Registrations
                                         </span>
                                         <span className="text-xs text-slate-500">
-                                            {summary.kycPending} new companies require KYC approval.
+                                            {recentEmployers[0].name} just registered recently.
                                         </span>
-                                    </Link>
-                                </DropdownMenuItem>
-                            )}
+                                    </DropdownMenuItem>
+                                )}
 
-                            {recentEmployers && recentEmployers.length > 0 && (
-                                <DropdownMenuItem className="flex flex-col items-start p-3 cursor-pointer">
-                                    <span className="font-semibold text-sm text-[#2563eb]">
-                                        Recent Registrations
+                                {!hasNotifications && (
+                                    <span className="text-sm p-4 text-slate-500 text-center">
+                                        No new notifications.
                                     </span>
-                                    <span className="text-xs text-slate-500">
-                                        {recentEmployers[0].name} just registered recently.
-                                    </span>
-                                </DropdownMenuItem>
-                            )}
-
-                            {!hasNotifications && (
-                                <span className="text-sm p-4 text-slate-500 text-center">
-                                    No new notifications.
-                                </span>
-                            )}
-                        </div>
-                        <DropdownMenuSeparator />
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            asChild
-                            className="w-full h-8 text-xs text-[#2563eb] font-bold"
-                        >
-                            <Link href="/admin-dashboard/users">View Activity Log</Link>
-                        </Button>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                                )}
+                            </div>
+                            <DropdownMenuSeparator />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                asChild
+                                className="w-full h-8 text-xs text-[#2563eb] font-bold"
+                            >
+                                <Link href="/admin-dashboard/users">View Activity Log</Link>
+                            </Button>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
                 <div className="flex items-center gap-3">
                     <Button
                         variant="outline"

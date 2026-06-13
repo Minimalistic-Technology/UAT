@@ -79,6 +79,7 @@ export default function LoginClient() {
           src="/login-page-img.png"
           alt="login-image"
           fill
+          sizes="(max-width: 1024px) 100vw, 50vw"
           priority
           className="object-cover"
         />
