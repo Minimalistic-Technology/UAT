@@ -67,7 +67,9 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
         type: coupon.type,
         value: coupon.value,
         isActive: coupon.isActive,
-        expiryDate: coupon.expiryDate ? new Date(coupon.expiryDate).toISOString().split('T')[0] : undefined,
+        expiryDate: (coupon.expiryDate && !isNaN(new Date(coupon.expiryDate).getTime()))
+          ? new Date(coupon.expiryDate).toISOString().split("T")[0]
+          : undefined,
         maxUses: coupon.maxUses,
       });
     }
