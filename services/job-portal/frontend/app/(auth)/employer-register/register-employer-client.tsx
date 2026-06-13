@@ -98,7 +98,7 @@ export default function EmployerRegisterPage() {
   const isLoading = registerMutation.isPending;
 
   return (
-    <div className="flex h-[calc(100vh-72px)] w-full bg-slate-50/50 overflow-hidden">
+    <div className="flex h-[calc(100dvh-72px)] w-full bg-slate-50/50 overflow-hidden">
       <div className="hidden h-full w-1/2 lg:block relative shrink-0">
         <Image
           src="/employer-signup-page-img.png"

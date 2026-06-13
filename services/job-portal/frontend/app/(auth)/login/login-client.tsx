@@ -73,7 +73,7 @@ export default function LoginClient() {
   const isLoading = isMutationLoading || isAuthChecking;
 
   return (
-    <div className="flex h-[calc(100vh-72px)] w-full bg-slate-50/50 overflow-hidden">
+    <div className="flex h-[calc(100dvh-72px)] w-full bg-slate-50/50 overflow-hidden">
       <div className="hidden h-full w-1/2 lg:block relative shrink-0">
         <Image
           src="/login-page-img.png"
@@ -84,7 +84,7 @@ export default function LoginClient() {
           className="object-cover"
         />
       </div>
-      <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:px-8">
+      <div className="flex h-full flex-1 flex-col overflow-y-auto justify-center px-4 py-6 sm:px-6 lg:px-8">
         <Card className="m-auto w-full max-w-sm space-y-3 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2">
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-3xl font-bold tracking-tight">
