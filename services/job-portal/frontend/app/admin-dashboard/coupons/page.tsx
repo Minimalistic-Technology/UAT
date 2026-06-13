@@ -26,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { useFetchAdminCoupons } from "@/features/admin/hooks/use-coupon";
 import { CouponTableRow } from "@/features/admin/components/coupon-table-row";
+import { CreateCouponDialog } from "@/features/admin/components/create-coupon-dialog";
 
 const COLUMNS = [
   { key: "code", label: "Coupon Code" },
@@ -146,11 +147,11 @@ export default function CouponsPage() {
           />
         </div>
 
-        <Link href="/admin-dashboard/coupons/create">
+        <CreateCouponDialog>
           <Button className="rounded-xl h-10 px-5 bg-[#2563eb] text-white hover:bg-blue-700 shadow-sm font-semibold">
             <Plus className="mr-2 h-4 w-4" /> Create Coupon
           </Button>
-        </Link>
+        </CreateCouponDialog>
       </div>
 
       <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">

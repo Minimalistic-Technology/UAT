@@ -1,30 +1,20 @@
-import React from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreVertical } from "lucide-react";
 
 export function AdminRecentEmployers({ employers }: { employers: any[] }) {
     return (
         <div className="rounded-[20px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-tight">
-                    Recent Employer<br />Registrations
+                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-tight mb-6">
+                    Recent Employer Registrations
                 </h3>
-                <Button variant="link" className="text-[#2563eb] font-semibold p-0">
-                    <Link href="/admin-dashboard/kyc">View All</Link>
-                </Button>
-            </div>
 
             <div className="overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow className="uppercase text-[11px] font-bold tracking-wider text-slate-500">
-                            <TableHead className="w-[180px]">Company</TableHead>
-                            <TableHead>Applied On</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Action</TableHead>
+                            <TableHead className="w-[50%]">Company</TableHead>
+                            <TableHead className="w-[25%]">Applied On</TableHead>
+                            <TableHead className="w-[25%] text-right">Status</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -55,22 +45,17 @@ export function AdminRecentEmployers({ employers }: { employers: any[] }) {
                                         <TableCell className="text-slate-500">
                                             {new Date(employer.createdAt).toLocaleDateString()}
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell className="text-right">
                                             <Badge variant={badgeVariant} className="text-[9px]">
                                                 {statusLabel}
                                             </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
-                                                <MoreVertical className="size-4" />
-                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 );
                             })
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="py-8 text-center text-slate-500">
+                                <TableCell colSpan={3} className="py-8 text-center text-slate-500">
                                     No recent employers found.
                                 </TableCell>
                             </TableRow>

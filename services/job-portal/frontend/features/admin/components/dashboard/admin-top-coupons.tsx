@@ -4,19 +4,10 @@ import { Button } from "@/components/ui/button";
 
 export function AdminTopCoupons({ coupons }: { coupons: any[] }) {
     return (
-        <div className="rounded-[20px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-tight">
-                    Top Performing<br />Coupons
+        <div className="rounded-[20px] h-fit max-h-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-tight mb-6">
+                    Top Performing Coupons
                 </h3>
-                <Button
-                    variant="secondary"
-                    asChild
-                    className="bg-[#2563eb]/10 hover:bg-[#2563eb]/20 text-[#2563eb] font-semibold hidden sm:flex rounded-xl"
-                >
-                    <Link href="/admin-dashboard/coupons/create">+ New Coupon</Link>
-                </Button>
-            </div>
 
             <div className="space-y-4">
                 {coupons && coupons.length > 0 ? (
