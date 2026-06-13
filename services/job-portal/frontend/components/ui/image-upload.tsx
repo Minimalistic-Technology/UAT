@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,8 +24,15 @@ export function ImageUpload({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+    useEffect(() => {
+        setPreviewUrl(null);
+    }, [value]);
+
     const handleClick = () => {
         if (disabled) return;
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
         fileInputRef.current?.click();
     };
 

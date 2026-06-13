@@ -17,9 +17,10 @@ export function AdminProfileCard({ firstName, lastName, email, avatarUrl, onEdit
         <Card className="shadow-sm rounded-[20px] overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-[0_2px_10px_rgba(0,0,0,0.05)] pt-6">
             <CardContent className="p-8 pb-10 flex flex-col items-center text-center space-y-5">
                 <ImageUpload
-                    disabled={true}
+                    disabled={false}
                     value={avatarUrl}
                     initials={`${firstName.charAt(0)}${lastName.charAt(0)}`}
+                    onChange={(file) => onImageUpload && onImageUpload(file)}
                 />
 
                 <div className="space-y-1.5">
