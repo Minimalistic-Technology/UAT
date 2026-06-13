@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 
 export function AdminTopCoupons({ coupons }: { coupons: any[] }) {
     return (
-        <div className="rounded-[20px] h-fit max-h-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-tight mb-6">
+        <div className="rounded-[20px] min-h-fit max-h-[400px] flex flex-col border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white leading-tight shrink-0 mb-6">
                     Top Performing Coupons
                 </h3>
 
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1 overflow-y-auto pr-2 -mr-2">
                 {coupons && coupons.length > 0 ? (
                     coupons.map((coupon) => (
                         <div
