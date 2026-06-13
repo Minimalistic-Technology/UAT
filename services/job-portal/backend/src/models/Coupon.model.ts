@@ -86,7 +86,7 @@ couponSchema.pre("save", function (this: ICoupon, next) {
   if (this.expiryDate && this.expiryDate < new Date()) {
     this.isActive = false;
   }
-  next;
+  next();
 });
 
 couponSchema.pre("findOneAndUpdate", function (next) {
@@ -97,7 +97,7 @@ couponSchema.pre("findOneAndUpdate", function (next) {
     this.setUpdate(update);
   }
 
-  next;
+  next();
 });
 
 export default mongoose.model<ICoupon>("Coupon", couponSchema);
