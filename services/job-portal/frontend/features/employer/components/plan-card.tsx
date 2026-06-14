@@ -42,14 +42,18 @@ import { APP_NAME } from "@/constants";
 
 export function PlanCard({
   plan,
+  isYearly = false,
 }: {
   plan: Plan;
+  isYearly?: boolean;
 }) {
   const { data: session } = useSession();
   const companyRole = session?.user.companyRole;
   const userId = session?.user.id;
   const isUnlimited = plan.jobPostLimit === -1;
   const router = useRouter();
+
+  const currentBasePrice = isYearly ? Math.round(plan.price * 12 * 0.8) : plan.price;
 
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -74,7 +78,7 @@ export function PlanCard({
       validateMutation.mutate(
         {
           code: couponCode,
-          baseAmount: plan.price,
+          baseAmount: currentBasePrice,
         },
         {
           onSuccess: (response) => {
@@ -122,6 +126,7 @@ export function PlanCard({
         planId: plan._id,
         userId: userId!,
         couponCode: appliedCoupon?.code,
+        billingCycle: isYearly ? "yearly" : "monthly",
         internalOrderId: `ORD_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       };
 
@@ -138,7 +143,7 @@ export function PlanCard({
         amount: orderData.data.order.amount,
         currency: orderData.data.order.currency,
         name: APP_NAME,
-        description: `Upgrade to ${plan.name} Plan`,
+        description: `Upgrade to ${plan.name} Plan (${isYearly ? "Yearly" : "Monthly"})`,
         order_id: orderData.data.order.id,
         handler: async function (response: any) {
           try {
@@ -200,13 +205,20 @@ export function PlanCard({
           </p>
         </div>
 
-        <div className="mt-6 flex items-baseline gap-1">
-          <span className={cn("text-5xl font-black font-heading", isFeatured ? "text-slate-900 dark:text-white" : "text-foreground")}>
-            {discountedPrice !== null ? formatCurrency(discountedPrice, plan.currency) : formatCurrency(plan.price, plan.currency)}
-          </span>
-          <span className={cn("text-sm font-semibold", isFeatured ? "text-slate-600 dark:text-slate-400" : "text-muted-foreground")}>
-            /month
-          </span>
+        <div className="mt-6 flex flex-col pt-2">
+          <div className="flex items-baseline gap-1">
+            <span className={cn("text-5xl font-black font-heading", isFeatured ? "text-slate-900 dark:text-white" : "text-foreground")}>
+              {discountedPrice !== null ? formatCurrency(discountedPrice, plan.currency) : formatCurrency(currentBasePrice, plan.currency)}
+            </span>
+            <span className={cn("text-sm font-semibold", isFeatured ? "text-slate-600 dark:text-slate-400" : "text-muted-foreground")}>
+              {isYearly ? "/year" : "/month"}
+            </span>
+          </div>
+          {isYearly && currentBasePrice > 0 && (
+            <span className="text-xs font-semibold text-purple-700 dark:text-purple-400 mt-1 uppercase tracking-wider">
+              EQUIVALENT TO {formatCurrency(Math.round(plan.price * 0.8), plan.currency)}/MONTH
+            </span>
+          )}
         </div>
       </CardHeader>
 
@@ -214,10 +226,10 @@ export function PlanCard({
         {discountedPrice !== null && (
           <div className="flex items-center gap-2 mb-4 -mt-2">
             <span className="text-muted-foreground text-sm line-through">
-              {formatCurrency(plan.price, plan.currency)}
+              {formatCurrency(currentBasePrice, plan.currency)}
             </span>
             <Badge variant="outline" className="border-green-600 text-[10px] text-green-600 uppercase bg-green-50 dark:bg-green-950">
-              Save {(plan.price - discountedPrice).toFixed(2)} {plan.currency}
+              Save {(currentBasePrice - discountedPrice).toFixed(2)} {plan.currency}
             </Badge>
           </div>
         )}
