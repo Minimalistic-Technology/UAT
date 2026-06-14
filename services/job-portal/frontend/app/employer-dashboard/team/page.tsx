@@ -34,9 +34,12 @@ import {
 } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { AddTeamMemberDialog } from "@/features/employer/components/add-team-member-dialog";
 
 const Page = () => {
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   const { data: responseData, isLoading, isError, error } = useGetAllEmployees();
   const { data: companyRes, isLoading: companyLoading } = useGetMyCompanyDetails();
   const deleteMutation = useDeleteEmployee();
@@ -48,7 +51,7 @@ const Page = () => {
 
   if (isLoading || companyLoading) {
     return (
-      <div className="space-y-4 p-8">
+      <div className="space-y-4">
         <Skeleton className="h-10 w-50" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
@@ -66,6 +69,8 @@ const Page = () => {
 
   return (
     <div className="space-y-4">
+      <AddTeamMemberDialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Team Management</h1>
@@ -80,9 +85,9 @@ const Page = () => {
               router.push("/employer-dashboard/plans");
               return;
             }
-            router.push("/employer-dashboard/team/add");
+            setIsAddModalOpen(true);
           }}
-          className="rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-500/20 font-semibold h-10 px-5 gap-2"
+          className="rounded-xl font-semibold h-10 px-5 gap-2"
         >
           <UserPlus className="size-4" strokeWidth={2} />
           Add New Employee
