@@ -16,7 +16,7 @@ export const registerSchema = z
     }),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
-    recaptchaToken: z.string().min(1, "Please complete the CAPTCHA verification"),
+    recaptchaToken: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
