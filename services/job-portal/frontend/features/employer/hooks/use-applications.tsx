@@ -5,11 +5,11 @@ export const useGetApplicationsByJobId = (listingId: string, listingType: string
   return useQuery({
     queryKey: ["job-applications", listingId, listingType],
     queryFn: () => getApplicationsByJobId(listingId, listingType),
-    enabled: !!listingId && !!listingType, 
+    enabled: !!listingId && !!listingType,
   });
 };
 
-export const useAllEmployerApplications = (params?: { page?: number; limit?: number; status?: string }) => {
+export const useAllEmployerApplications = (params?: { page?: number; limit?: number; status?: string; search?: string }) => {
   return useQuery({
     queryKey: ["all-employer-applications", params],
     queryFn: () => getAllEmployerApplications(params),

@@ -21,10 +21,24 @@ import { useGetMyInternshipPostings } from "@/features/employer/hooks/use-intern
 import { Skeleton } from "@/components/ui/skeleton";
 import { InternshipRow } from "@/features/employer/components/internship-row";
 
+import { useState, useMemo } from "react";
+import { GlobalSearchInput } from "@/components/global-search-input";
+import { formatLocation } from "@/utils";
+
 const Page = () => {
   const { data: responseData, isLoading, isError } = useGetMyInternshipPostings();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const myInternshipPostings = responseData?.data?.internshipPosts || [];
+  const myInternshipPostingsRaw = responseData?.data?.internshipPosts || [];
+
+  const myInternshipPostings = useMemo(() => {
+    if (!searchQuery.trim()) return myInternshipPostingsRaw;
+    const lowerQuery = searchQuery.toLowerCase();
+    return myInternshipPostingsRaw.filter((internship: any) =>
+      internship.title?.toLowerCase().includes(lowerQuery) ||
+      formatLocation(internship.location)?.toLowerCase().includes(lowerQuery)
+    );
+  }, [myInternshipPostingsRaw, searchQuery]);
 
   if (isLoading) {
     return <InternshipTableSkeleton />;
@@ -36,14 +50,13 @@ const Page = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative max-w-sm flex-1">
-          <input
-            type="text"
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:max-w-sm flex-1">
+          <GlobalSearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
             placeholder="Search internship listings..."
-            className="h-10 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus-visible:outline-none focus:ring-1 focus:ring-blue-500 w-full text-sm"
           />
-          <Briefcase className="text-slate-400 absolute top-3 left-3 h-4 w-4" />
         </div>
         <Button asChild size="sm">
           <Link href="/employer-dashboard/jobs/create">

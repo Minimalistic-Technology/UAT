@@ -7,6 +7,7 @@ import { ApiError } from "../utils/apiError.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import { JobStatus } from "../models/BaseJob.model.js";
 import Subscription from "../models/Subscription.model.js";
+import User from "../models/User.model.js";
 export const createApplication = async (req, res, next) => {
     try {
         const { listingId, listingType } = req.body;
@@ -131,23 +132,36 @@ export const getAllCompanyApplications = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
-        const { status, listingType } = req.query;
-        // Find all jobs belonging to the company
-        const [jobs, internships] = await Promise.all([
-            Job.find({ company: companyId }).select("_id"),
-            Internship.find({ company: companyId }).select("_id"),
+        const { status, listingType, search } = req.query;
+        const [allJobs, allInternships] = await Promise.all([
+            Job.find({ company: companyId }).select("_id title"),
+            Internship.find({ company: companyId }).select("_id title"),
         ]);
-        const listingIds = [
-            ...jobs.map((j) => j._id),
-            ...internships.map((i) => i._id),
-        ];
-        const query = { listing: { $in: listingIds } };
-        if (status) {
+        const allListings = [...allJobs, ...allInternships];
+        const query = { listing: { $in: allListings.map(l => l._id) } };
+        if (status && status !== "all") {
             query.status = status;
         }
-        if (listingType &&
-            Object.values(ListingType).includes(listingType)) {
+        if (listingType && Object.values(ListingType).includes(listingType)) {
             query.listingType = listingType;
+        }
+        if (search) {
+            const searchRegex = new RegExp(search, "i");
+            const matchedUsers = await User.find({
+                $or: [
+                    { firstName: searchRegex },
+                    { lastName: searchRegex },
+                    { email: searchRegex },
+                ]
+            }).select("_id");
+            const userIds = matchedUsers.map((u) => u._id);
+            const matchedListingIds = allListings
+                .filter(l => searchRegex.test(l.title))
+                .map(l => l._id);
+            query.$or = [
+                { jobSeeker: { $in: userIds } },
+                { listing: { $in: matchedListingIds } }
+            ];
         }
         const activeSubscription = await Subscription.findOne({
             companyId: companyId,
