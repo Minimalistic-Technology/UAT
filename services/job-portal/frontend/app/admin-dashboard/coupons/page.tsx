@@ -14,6 +14,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { DataTable } from "@/components/ui/data-table";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -25,7 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useFetchAdminCoupons } from "@/features/admin/hooks/use-coupon";
-import { CouponTableRow } from "@/features/admin/components/coupon-table-row";
+import { columns } from "@/features/admin/components/coupon-columns";
 import { CreateCouponDialog } from "@/features/admin/components/create-coupon-dialog";
 
 const COLUMNS = [
@@ -162,68 +170,36 @@ export default function CouponsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-7 pb-6">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  {COLUMNS.map((column) => (
-                    <TableHead
-                      key={column.key}
-                      className={
-                        column.key === "actions"
-                          ? "text-right"
-                          : column.className || ""
-                      }
-                    >
-                      {column.label}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCoupons.length > 0 ? (
-                  filteredCoupons.map((coupon: any) => (
-                    <CouponTableRow key={coupon._id} coupon={coupon} />
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={COLUMNS.length}
-                      className="text-muted-foreground h-24 text-center"
-                    >
-                      No coupons found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable columns={columns} data={filteredCoupons} />
 
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!pagination?.hasPrevPage}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="cursor-pointer"
-            >
-              Previous
-            </Button>
-
-            <div className="px-2 text-xs font-medium">
-              Page {pagination?.currentPage || 1} of{" "}
-              {pagination?.totalPages || 1}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!pagination?.hasNextPage}
-              onClick={() => setPage((p) => p + 1)}
-              className="cursor-pointer"
-            >
-              Next
-            </Button>
+          <div className="py-4">
+            <Pagination className="justify-end">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination?.hasPrevPage) setPage((p) => Math.max(1, p - 1));
+                    }}
+                    className={!pagination?.hasPrevPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                <PaginationItem className="px-4 text-xs font-medium text-muted-foreground flex items-center">
+                  Page {pagination?.currentPage || 1} of {pagination?.totalPages || 1}
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination?.hasNextPage) setPage((p) => p + 1);
+                    }}
+                    className={!pagination?.hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         </CardContent>
       </Card>

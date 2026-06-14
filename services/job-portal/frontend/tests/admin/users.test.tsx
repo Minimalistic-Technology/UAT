@@ -33,7 +33,7 @@ describe("Admin User Management Page", () => {
     const { container } = render(<Page />);
     
     // Check that skeletons are rendered (we check for the skeleton elements or just the table structure)
-    expect(screen.queryByTestId("user-row")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("data-table-row")).not.toBeInTheDocument();
     
     // A skeleton should be present
     const skeletons = container.querySelectorAll(".animate-pulse");
@@ -79,7 +79,7 @@ describe("Admin User Management Page", () => {
     expect(screen.getByText("User Management")).toBeInTheDocument();
     
     // Users are rendered using our mocked UserTableRow
-    const userRows = screen.getAllByTestId("user-row");
+    const userRows = screen.getAllByTestId("data-table-row");
     expect(userRows).toHaveLength(2);
     expect(screen.getByText("John Doe")).toBeInTheDocument();
     expect(screen.getByText("Jane Smith")).toBeInTheDocument();
@@ -104,14 +104,14 @@ describe("Admin User Management Page", () => {
     render(<Page />);
     
     // Ensure both are present initially
-    expect(screen.getAllByTestId("user-row")).toHaveLength(2);
+    expect(screen.getAllByTestId("data-table-row")).toHaveLength(2);
 
     // Search for 'Jane'
     const searchInput = screen.getByPlaceholderText("Search users...");
     fireEvent.change(searchInput, { target: { value: "Jane" } });
     
     // Only Jane should be visible
-    expect(screen.getAllByTestId("user-row")).toHaveLength(1);
+    expect(screen.getAllByTestId("data-table-row")).toHaveLength(1);
     expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
     expect(screen.getByText("Jane Smith")).toBeInTheDocument();
   });
@@ -209,7 +209,7 @@ describe("Admin User Management Page", () => {
     const searchInput = screen.getByPlaceholderText("Search users...");
     fireEvent.change(searchInput, { target: { value: "Nonexistent" } });
     
-    expect(screen.queryByTestId("user-row")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("data-table-row")).not.toBeInTheDocument();
     expect(screen.getByText("No results found.")).toBeInTheDocument();
   });
 
@@ -234,7 +234,7 @@ describe("Admin User Management Page", () => {
     const searchInput = screen.getByPlaceholderText("Search users...");
     fireEvent.change(searchInput, { target: { value: "testme@company.com" } });
     
-    expect(screen.getAllByTestId("user-row")).toHaveLength(1);
+    expect(screen.getAllByTestId("data-table-row")).toHaveLength(1);
     expect(screen.getByText("Jane Smith")).toBeInTheDocument();
   });
 
@@ -258,7 +258,7 @@ describe("Admin User Management Page", () => {
     const searchInput = screen.getByPlaceholderText("Search users...");
     fireEvent.change(searchInput, { target: { value: "jOhN D" } });
     
-    expect(screen.getAllByTestId("user-row")).toHaveLength(1);
+    expect(screen.getAllByTestId("data-table-row")).toHaveLength(1);
     expect(screen.getByText("John Doe")).toBeInTheDocument();
   });
 
@@ -361,7 +361,7 @@ describe("Admin User Management Page", () => {
 
     render(<Page />);
     
-    const userRows = screen.getAllByTestId("user-row");
+    const userRows = screen.getAllByTestId("data-table-row");
     expect(userRows).toHaveLength(2);
     expect(userRows[0]).toHaveTextContent("John");
   });

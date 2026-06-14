@@ -34,19 +34,7 @@ jest.mock("@/features/admin/hooks/use-coupon", () => ({
   useCreateCoupon: jest.fn(),
 }));
 
-jest.mock("@/features/admin/components/coupon-table-row", () => {
-  return {
-    CouponTableRow: function MockCouponTableRow({ coupon }: any) {
-      return (
-        <tr data-testid="coupon-row">
-          <td>{coupon.code}</td>
-          <td>{coupon.value}</td>
-          <td>{coupon.status}</td>
-        </tr>
-      );
-    }
-  };
-});
+
 
 describe("Admin Coupons Management Page", () => {
   const mockRefetch = jest.fn();
@@ -107,7 +95,7 @@ describe("Admin Coupons Management Page", () => {
 
     render(<CouponsPage />);
     
-    const rows = screen.getAllByTestId("coupon-row");
+    const rows = screen.getAllByTestId("data-table-row");
     expect(rows).toHaveLength(2);
     expect(screen.getByText("SUMMER50")).toBeInTheDocument();
     expect(screen.getByText("WINTER20")).toBeInTheDocument();
@@ -134,7 +122,7 @@ describe("Admin Coupons Management Page", () => {
     const searchInput = screen.getByPlaceholderText("Search coupons...");
     fireEvent.change(searchInput, { target: { value: "summer" } }); // lowercase to test case insensitivity
     
-    const rows = screen.getAllByTestId("coupon-row");
+    const rows = screen.getAllByTestId("data-table-row");
     expect(rows).toHaveLength(1);
     expect(screen.getByText("SUMMER50")).toBeInTheDocument();
     expect(screen.queryByText("WINTER20")).not.toBeInTheDocument();
