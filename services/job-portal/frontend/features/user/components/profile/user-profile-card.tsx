@@ -3,7 +3,7 @@
 import React, { useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Camera, Mail, Loader2 } from "lucide-react";
+import { Pencil, Mail, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import apiClient from "@/lib/api-client";
@@ -131,7 +131,7 @@ export function UserProfileCard({
                             {isUploading ? (
                                 <Loader2 className="w-6 h-6 text-white animate-spin" />
                             ) : (
-                                <Camera className="w-6 h-6 text-white" />
+                                <Pencil className="w-6 h-6 text-white" />
                             )}
                         </div>
                     </div>
