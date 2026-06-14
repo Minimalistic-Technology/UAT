@@ -9,17 +9,6 @@ jest.mock("@/features/admin/hooks/use-user", () => ({
   useFetchAllUsers: jest.fn(),
 }));
 
-// Mock the UserTableRow so we don't need to worry about its internal hooks
-jest.mock("@/features/admin/components/user-table-row", () => {
-  return function MockUserTableRow({ user }: { user: any }) {
-    return (
-      <tr data-testid="user-row">
-        <td>{user.firstName} {user.lastName}</td>
-        <td>{user.email}</td>
-      </tr>
-    );
-  };
-});
 
 describe("Admin User Management Page", () => {
   const mockRefetch = jest.fn();
