@@ -217,7 +217,6 @@ const ApplicationsPage = () => {
                             variant="ghost"
                             size="icon"
                             disabled={[
-                              ApplicationStatus.ACCEPTED,
                               ApplicationStatus.REJECTED,
                               ApplicationStatus.WITHDRAWN,
                             ].includes(app.status?.toLowerCase())}
