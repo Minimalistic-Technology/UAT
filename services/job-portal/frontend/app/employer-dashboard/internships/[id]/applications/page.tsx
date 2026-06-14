@@ -130,7 +130,7 @@ const ApplicationsPage = () => {
 
   if (isLoading)
     return (
-      <div className="mx-auto max-w-7xl space-y-6 p-6">
+      <div className="space-y-6">
         <div className="flex justify-between items-center mb-4">
           <Skeleton className="h-10 w-48 rounded-md" />
           <Skeleton className="h-8 w-24 rounded-full" />
@@ -140,7 +140,7 @@ const ApplicationsPage = () => {
     );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Applications</h1>

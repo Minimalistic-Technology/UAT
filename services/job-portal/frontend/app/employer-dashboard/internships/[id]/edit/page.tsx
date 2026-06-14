@@ -22,7 +22,7 @@ const EditInternshipPage = () => {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-10">
+      <div className="space-y-6">
         <div className="mb-8 flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700">
             <ChevronLeft className="h-4 w-4" />
@@ -46,7 +46,7 @@ const EditInternshipPage = () => {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
+    <div className="space-y-6">
       <div className="mb-8 flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700">
           <ChevronLeft className="h-4 w-4" />
