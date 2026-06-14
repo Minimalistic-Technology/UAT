@@ -28,7 +28,7 @@ export function MobileSidebarHeader({
                         <Menu className="h-6 w-6" strokeWidth={2.5} />
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="p-0 w-64 sm:w-72 border-r z-50 bg-white dark:bg-[#0A0F1C]">
+                <SheetContent side="right" className="p-0 w-64 sm:w-72 border-r z-50 bg-white dark:bg-[#0A0F1C]">
                     <SheetHeader className="sr-only">
                         <SheetTitle>Navigation Menu</SheetTitle>
                         <SheetDescription>Navigate using the sidebar menu</SheetDescription>

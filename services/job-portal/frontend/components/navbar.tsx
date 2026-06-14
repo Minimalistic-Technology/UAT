@@ -123,7 +123,7 @@ export default function Navbar() {
                   <Menu className="w-6 h-6 text-slate-800 dark:text-slate-200" strokeWidth={2.5} />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64 sm:w-72 bg-white dark:bg-[#0A0F1C] border-r dark:border-slate-800">
+              <SheetContent side="right" className="p-0 w-64 sm:w-72 bg-white dark:bg-[#0A0F1C] border-r dark:border-slate-800">
                 <SheetHeader className="sr-only">
                   <SheetTitle>Navigation Menu</SheetTitle>
                 </SheetHeader>
