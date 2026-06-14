@@ -44,7 +44,7 @@ export function AdminStatusCard({
         <div className="flex items-start justify-between w-full">
           {icon && (
             <div className={cn(
-              "p-2 rounded-md flex flex-shrink-0 items-center justify-center",
+              "p-2 rounded-md flex items-center justify-center",
               variant === 'success' ? "bg-success/10 text-success" :
                 variant === 'warning' ? "bg-premium/10 text-premium" :
                   "bg-primary/10 text-primary"
