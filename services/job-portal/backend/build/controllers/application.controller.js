@@ -341,22 +341,8 @@ export const updateApplicationStatus = async (req, res, next) => {
             note,
         });
         await application.save();
-        // Check if the status was changed to accepted
-        if (status === ApplicationStatus.ACCEPTED) {
-            // Find all accepted applications for this listing
-            const acceptedCount = await Application.countDocuments({
-                listing: listing._id,
-                listingType: application.listingType,
-                status: ApplicationStatus.ACCEPTED,
-            });
-            const targetListing = application.listingType === ListingType.JOB
-                ? await Job.findById(listing._id)
-                : await Internship.findById(listing._id);
-            if (targetListing && acceptedCount >= targetListing.openings) {
-                targetListing.status = JobStatus.CLOSED;
-                await targetListing.save();
-            }
-        }
+        // Note: The logic that automatically closed the job when openings are filled has been removed
+        // to keep the vacancy open even if the employer accepts applications.
         // Send notification email to job seeker
         // const jobSeeker: any = application.jobSeeker;
         // await sendEmail({

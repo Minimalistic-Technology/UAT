@@ -13,20 +13,6 @@ import TempUser from "../models/TempUser.model.js";
 import { generateToken } from "../utils/jwt.js";
 import Feature, { FeatureStatus } from "../models/Feature.model.js";
 import FeaturePermission from "../models/FeaturePermission.model.js";
-const verifyCaptcha = async (token) => {
-    const secretKey = process.env.TURNSTILE_SECRET_KEY || "dummy_secret_key";
-    const formData = new URLSearchParams();
-    formData.append('secret', secretKey);
-    formData.append('response', token);
-    const response = await fetch(`https://challenges.cloudflare.com/turnstile/v0/siteverify`, {
-        method: "POST",
-        body: formData
-    });
-    const data = await response.json();
-    if (!data.success) {
-        throw new ApiError(400, "Security validation failed. Please try again.");
-    }
-};
 const sendTokenResponse = (user, statusCode, res) => {
     const token = generateToken(user._id);
     const options = {
@@ -66,12 +52,26 @@ const sendTokenResponse = (user, statusCode, res) => {
         .cookie("token", token, options)
         .json(new ApiResponse(statusCode, payload, "Login successful"));
 };
+const checkAndEnforceOTPBlock = async (email, session) => {
+    const tempUser = await TempUser.findOne({ email }).session(session);
+    if (!tempUser)
+        return null;
+    if (tempUser.blockedUntil && tempUser.blockedUntil > new Date()) {
+        const remainingTime = Math.ceil((tempUser.blockedUntil.getTime() - Date.now()) / 60000);
+        throw new ApiError(429, `Too many OTP requests. Please wait ${remainingTime} minutes before trying again.`);
+    }
+    if (tempUser.blockedUntil && tempUser.blockedUntil <= new Date()) {
+        tempUser.blockedUntil = undefined;
+        tempUser.resendAttempts = 0;
+    }
+    return tempUser;
+};
 export const requestUserRegistration = async (req, res, next) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        const { firstName, lastName, email, password, phone, captchaToken } = req.body;
-        await verifyCaptcha(captchaToken);
+        const { firstName, lastName, email, password, phone } = req.body;
+        await checkAndEnforceOTPBlock(email, session);
         const existingUser = await User.findOne({ email }).session(session);
         if (existingUser) {
             const companyOwner = await Company.findOne({
@@ -119,8 +119,8 @@ export const requestEmployerRegistration = async (req, res, next) => {
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        const { email, companyName, role, industry, password, firstName, lastName, phone, captchaToken, } = req.body;
-        await verifyCaptcha(captchaToken);
+        const { email, companyName, role, industry, password, firstName, lastName, phone, } = req.body;
+        await checkAndEnforceOTPBlock(email, session);
         let user = await User.findOne({ email }).session(session);
         if (user) {
             const existingCompany = await Company.findOne({
@@ -197,7 +197,6 @@ export const confirmRegistrationOTP = async (req, res, next) => {
         let userToReturn;
         let isNewUser = true;
         if (tempUser.isEmployer) {
-            console.log(tempUser.isEmployer);
             let user = await User.findOne({ email }).session(session);
             isNewUser = !user;
             if (isNewUser) {
@@ -266,6 +265,62 @@ export const confirmRegistrationOTP = async (req, res, next) => {
         await TempUser.deleteOne({ _id: tempUser._id }).session(session);
         await session.commitTransaction();
         return sendTokenResponse(userToReturn, isNewUser ? 201 : 200, res);
+    }
+    catch (error) {
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
+        next(error);
+    }
+    finally {
+        session.endSession();
+    }
+};
+export const resendRegistrationOTP = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const { email } = req.body;
+        const tempUser = await TempUser.findOne({ email }).session(session);
+        if (!tempUser) {
+            throw new ApiError(404, "Registration session expired or not found. Please start over.");
+        }
+        // Check if user is currently blocked from resending
+        if (tempUser.blockedUntil && tempUser.blockedUntil > new Date()) {
+            const remainingTime = Math.ceil((tempUser.blockedUntil.getTime() - Date.now()) / 60000);
+            throw new ApiError(429, `Too many resend attempts. Please wait ${remainingTime} minutes.`);
+        }
+        // Unblock if time has passed
+        if (tempUser.blockedUntil && tempUser.blockedUntil <= new Date()) {
+            tempUser.blockedUntil = undefined;
+            tempUser.resendAttempts = 0;
+        }
+        // Increment attempts
+        tempUser.resendAttempts = (tempUser.resendAttempts || 0) + 1;
+        // Block if exceeded 3 attempts
+        if (tempUser.resendAttempts > 3) {
+            tempUser.blockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes block
+            tempUser.expiresAt = new Date(Date.now() + 30 * 60 * 1000); // Keep doc alive
+            await tempUser.save({ session, validateBeforeSave: false });
+            await session.commitTransaction();
+            throw new ApiError(429, "Too many resend attempts. You have been blocked from sending OTPs for 30 minutes.");
+        }
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const salt = crypto.randomBytes(16).toString("hex");
+        const hashedOtp = crypto
+            .createHmac("sha256", config.otpSecret)
+            .update(otp)
+            .digest("hex");
+        tempUser.otp = `${salt}:${hashedOtp}`;
+        tempUser.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // extend by 10 mins
+        await tempUser.save({ session, validateBeforeSave: true });
+        await sendEmail({
+            email,
+            subject: "Verify your email - Resend OTP",
+            message: `Your new registration OTP is ${otp}. It expires in 10 minutes.`,
+        });
+        await session.commitTransaction();
+        res.status(200).json(new ApiResponse(200, null, "OTP resent to email"));
     }
     catch (error) {
         if (session.inTransaction()) {

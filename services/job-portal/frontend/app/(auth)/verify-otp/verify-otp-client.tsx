@@ -59,7 +59,8 @@ export default function VerifyOtpClient() {
       toast.success("OTP resent successfully.");
       setTimer(30);
     } catch (err: any) {
-      toast.error(err.message || "Failed to resend OTP.");
+      const errorMessage = err?.response?.data?.message || err.message || "Failed to resend OTP.";
+      toast.error(errorMessage);
     }
   };
 
