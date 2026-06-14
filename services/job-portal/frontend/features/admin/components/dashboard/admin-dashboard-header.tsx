@@ -111,9 +111,8 @@ export function AdminDashboardHeader({
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                     <CreateCouponDialog>
                         <Button
-                            variant="outline"
                             size="sm"
-                            className="flex-1 sm:flex-none rounded-xl h-10 px-4 font-semibold text-xs border-[#2563eb]/20 text-[#2563eb] hover:bg-[#2563eb]/5"
+                            className="flex-1 sm:flex-none rounded-xl h-10 px-5 text-sm font-semibold shadow-sm shadow-blue-500/20 cursor-pointer"
                         >
                             Create Coupon
                         </Button>
@@ -121,7 +120,7 @@ export function AdminDashboardHeader({
                     <CreatePlanDialog open={createPlanOpen} onOpenChange={setCreatePlanOpen}>
                         <Button
                             size="sm"
-                            className="flex-1 sm:flex-none rounded-xl h-10 px-5 text-sm font-semibold shadow-sm shadow-blue-500/20"
+                            className="flex-1 sm:flex-none rounded-xl h-10 px-5 text-sm font-semibold shadow-sm shadow-blue-500/20 cursor-pointer"
                         >
                             Create Plan
                         </Button>

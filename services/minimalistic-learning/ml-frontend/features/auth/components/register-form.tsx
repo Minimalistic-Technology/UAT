@@ -241,6 +241,7 @@ const RegisterForm = () => {
           </div>
         </div>
 
+        {/* Captcha bypassed
         <div className="flex flex-col items-center pt-2">
           <ReCAPTCHA
             sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"} // Default to test key
@@ -248,6 +249,7 @@ const RegisterForm = () => {
           />
           {errors.recaptchaToken && <p className="text-xs font-semibold text-red-500 mt-2">{errors.recaptchaToken.message}</p>}
         </div>
+        */}
 
         <button
           type="submit"

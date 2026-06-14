@@ -9,7 +9,7 @@ import { UserPersonalInfo } from "@/features/user/components/profile/user-person
 import { useGetUserDetails } from "@/features/user/hooks/use-user";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Edit, X } from "lucide-react";
+import { Edit, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function UserProfilePage() {
@@ -36,20 +36,9 @@ export default function UserProfilePage() {
 
     if (isLoading) {
         return (
-            <div className="w-full space-y-6">
-                <div className="flex items-center justify-between border-b pb-5">
-                    <Skeleton className="h-8 w-40" />
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="space-y-6">
-                        <Skeleton className="h-64 rounded-xl" />
-                        <Skeleton className="h-40 rounded-xl" />
-                    </div>
-                    <div className="lg:col-span-2 space-y-6">
-                        <Skeleton className="h-[500px] rounded-xl" />
-                    </div>
-                </div>
-            </div>
+            <div className="flex h-96 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      </div>
         );
     }
 

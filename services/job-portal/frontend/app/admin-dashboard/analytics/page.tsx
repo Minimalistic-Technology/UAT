@@ -113,10 +113,10 @@ const AnalyticsPage = () => {
         <div className="flex items-center mt-4 md:mt-0">
           <Button
             onClick={handleExportReport}
-            variant="outline"
-            className="gap-2"
+            variant="secondary"
+            className="gap-2 cursor-pointer"
           >
-            <Download className="h-4 w-4" />
+            <Download className="size-4" />
             Export Report
           </Button>
         </div>
