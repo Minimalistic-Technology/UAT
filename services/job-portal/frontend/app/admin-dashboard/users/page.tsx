@@ -112,9 +112,9 @@ const Page = () => {
           />
         </div>
         <Button
-          variant="outline"
+          variant="secondary"
           onClick={handleExportCSV}
-          className="rounded-xl border-[#2563eb]/20 text-[#2563eb] hover:bg-[#2563eb]/5 font-semibold h-10 px-5"
+          className="rounded-xl border-[#2563eb]/20 text-[#2563eb] hover:bg-[#2563eb]/5 font-semibold h-10 px-5 cursor-pointer"
         >
           Export CSV
         </Button>

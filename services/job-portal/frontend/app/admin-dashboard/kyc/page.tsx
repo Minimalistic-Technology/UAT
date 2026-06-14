@@ -88,7 +88,7 @@ export default function KycManagementPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-37.5 cursor-pointer">
+          <SelectTrigger className="w-40 cursor-pointer">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
