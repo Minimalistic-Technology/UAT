@@ -219,8 +219,8 @@ export default function JobCard({ job }: JobCardProps) {
           </div>
 
           {/* Description Snippet */}
-          <p className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed">
-            {job.description}
+          <p className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed" title={job.description?.replace(/<[^>]*>?/gm, ' ')}>
+            {job.description ? job.description.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() : ''}
           </p>
 
           {/* Skills Row */}

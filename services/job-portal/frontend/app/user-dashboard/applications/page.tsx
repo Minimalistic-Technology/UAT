@@ -68,7 +68,7 @@ const MyApplicationsPage = () => {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 p-6 lg:p-10">
+    <div className="w-full space-y-6 md:space-y-8 p-1">
       <div className="flex flex-col gap-1.5 md:mb-6">
         <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl lg:text-4xl font-heading">
           My Applications
@@ -136,7 +136,7 @@ export default MyApplicationsPage;
 
 const ApplicationsSkeleton = () => {
   return (
-    <div className="mx-auto max-w-6xl space-y-8 p-6 lg:p-10">
+    <div className="w-full space-y-8 p-1">
       <div className="space-y-3 mb-10">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-5 w-[350px]" />

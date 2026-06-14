@@ -75,7 +75,7 @@ export default function JobSeekerDashboard() {
   ];
 
   return (
-    <div className="animate-in fade-in container mx-auto space-y-8 p-6 lg:p-10 duration-500">
+    <div className="animate-in fade-in w-full space-y-6 md:space-y-8 duration-500">
       {/* Welcome Header */}
       <UserWelcomeHeader
         userName={session?.user?.name?.split(" ")[0] || "Guest"}
@@ -121,7 +121,7 @@ export default function JobSeekerDashboard() {
 function DashboardSkeleton() {
   return (
     <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
     </div>
   );
 }
