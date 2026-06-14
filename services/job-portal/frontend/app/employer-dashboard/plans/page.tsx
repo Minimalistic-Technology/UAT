@@ -55,9 +55,9 @@ export default function PlansPage() {
   const [isYearly, setIsYearly] = useState(false);
 
   return (
-    <div className="flex flex-col w-full bg-[#fcfdff] dark:bg-background pb-20">
+    <div className="flex flex-col w-full">
       {/* Header Section */}
-      <div className="pt-4 pb-12 text-center max-w-3xl mx-auto px-4">
+      <div className="pt-4 pb-8 text-center px-4">
         <h1 className="text-4xl md:text-5xl font-bold font-heading text-slate-900 dark:text-white tracking-tight">
           Pricing Built for Growth
         </h1>
@@ -98,12 +98,14 @@ export default function PlansPage() {
         {/* Plans Grid */}
         <div
           className={cn(
-            "grid justify-center gap-6 lg:gap-8 max-w-6xl mx-auto mt-4 px-4",
+            "grid justify-center gap-6 w-full mx-auto mt-4",
             visualPlans.length === 1
               ? "grid-cols-1 max-w-md"
               : visualPlans.length === 2
                 ? "grid-cols-1 md:grid-cols-2 max-w-4xl"
-                : "grid-cols-1 md:grid-cols-3",
+                : visualPlans.length === 3
+                  ? "grid-cols-1 md:grid-cols-3 max-w-6xl"
+                  : "grid-cols-1 md:grid-cols-2 xl:grid-cols-4",
           )}
         >
           {isLoading || companyIsLoading ? (
@@ -121,7 +123,7 @@ export default function PlansPage() {
 
         {/* Compare Features Section */}
         {visualPlans.length > 0 && (
-          <div className="mt-32 max-w-5xl mx-auto px-4">
+          <div className="mt-20 w-full mb-10">
             <h2 className="text-3xl font-bold text-center mb-10 text-slate-900 dark:text-white font-heading">Compare All Features</h2>
 
             <div className="overflow-x-auto">
