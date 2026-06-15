@@ -63,7 +63,7 @@ export function JobPublishing({ initialData }: { initialData?: any }) {
                         )}
                     </div>
 
-                    <div className="grid gap-2">
+                    {/* <div className="grid gap-2">
                         <Label>Visibility</Label>
                         <div className="flex items-center space-x-2 rounded-lg border p-4">
                             <Controller
@@ -75,7 +75,7 @@ export function JobPublishing({ initialData }: { initialData?: any }) {
                             />
                             <Label htmlFor="isFeatured" className="cursor-pointer font-normal">Feature this listing</Label>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </section>

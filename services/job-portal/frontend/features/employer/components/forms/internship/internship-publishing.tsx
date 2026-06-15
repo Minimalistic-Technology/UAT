@@ -30,7 +30,7 @@ export function InternshipPublishing({ initialData }: { initialData?: any }) {
                     />
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-1">
                     <div className="grid gap-2">
                         <Label>Application Deadline</Label>
                         <Input
@@ -41,7 +41,7 @@ export function InternshipPublishing({ initialData }: { initialData?: any }) {
                         {errors.applicationDeadline && <p className="text-destructive text-xs">{errors.applicationDeadline.message}</p>}
                     </div>
 
-                    <div className="grid gap-2">
+                    {/* <div className="grid gap-2">
                         <Label>Visibility</Label>
                         <div className="flex items-center space-x-2 rounded-lg border p-4">
                             <Controller
@@ -53,7 +53,7 @@ export function InternshipPublishing({ initialData }: { initialData?: any }) {
                             />
                             <Label htmlFor="intern-featured" className="cursor-pointer font-normal">Feature this listing</Label>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </section>
