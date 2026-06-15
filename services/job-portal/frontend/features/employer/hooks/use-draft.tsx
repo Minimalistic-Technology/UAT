@@ -14,8 +14,11 @@ export const useSaveDraft = () => {
 
   return useMutation({
     mutationFn: (data: { id?: string; type: "job" | "internship"; formData: any }) => saveDraft(data),
-    onSuccess: () => {
+    onSuccess: (res, variables) => {
       queryClient.invalidateQueries({ queryKey: ["drafts"] });
+      if (variables.id) {
+        queryClient.invalidateQueries({ queryKey: ["draft", variables.id] });
+      }
       toast.success("Draft saved successfully!");
       router.push("/employer-dashboard/drafts");
     },
@@ -39,6 +42,7 @@ export const useGetDraftById = (draftId?: string) => {
     queryKey: ["draft", draftId],
     queryFn: () => getDraftById(draftId!),
     enabled: !!draftId, // Only run the query if draftId is provided
+    gcTime: 0, // Prevent caching stale draft data across navigations
   });
 };
 

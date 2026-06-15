@@ -15,9 +15,10 @@ interface LocationSelectorProps {
     state: string;
     country: string;
     onChange: (name: string, value: string) => void;
+    isRequired?: boolean;
 }
 
-export function LocationSelector({ city, state, country, onChange }: LocationSelectorProps) {
+export function LocationSelector({ city, state, country, onChange, isRequired = true }: LocationSelectorProps) {
     // Get all countries
     const countries = useMemo(() => Country.getAllCountries(), []);
 
@@ -69,7 +70,7 @@ export function LocationSelector({ city, state, country, onChange }: LocationSel
             {/* Country Dropdown */}
             <div className="grid gap-2">
                 <Label className="flex items-center gap-1">
-                    Country <Asterisk className="text-destructive size-3" />
+                    Country {isRequired && <Asterisk className="text-destructive size-3" />}
                 </Label>
                 <Select value={country} onValueChange={handleCountryChange}>
                     <SelectTrigger className="truncate">
@@ -88,7 +89,7 @@ export function LocationSelector({ city, state, country, onChange }: LocationSel
             {/* State / Province Dropdown */}
             <div className="grid gap-2">
                 <Label className="flex items-center gap-1">
-                    State / Province <Asterisk className="text-destructive size-3" />
+                    State / Province {isRequired && <Asterisk className="text-destructive size-3" />}
                 </Label>
                 <Select
                     value={state}
@@ -111,7 +112,7 @@ export function LocationSelector({ city, state, country, onChange }: LocationSel
             {/* City Dropdown */}
             <div className="grid gap-2">
                 <Label className="flex items-center gap-1">
-                    City <Asterisk className="text-destructive size-3" />
+                    City {isRequired && <Asterisk className="text-destructive size-3" />}
                 </Label>
                 <Select
                     value={city}

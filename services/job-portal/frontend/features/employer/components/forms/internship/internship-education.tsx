@@ -58,7 +58,7 @@ export function InternshipEducation() {
                             <Checkbox id="edu-required" checked={field.value} onCheckedChange={field.onChange} />
                         )}
                     />
-                    <Label htmlFor="edu-required" className="cursor-pointer">Minimum qualification is mandatory</Label>
+                    <Label htmlFor="edu-required" className="cursor-pointer">Minimum qualification should be mandatory ?</Label>
                 </div>
             </div>
         </section>

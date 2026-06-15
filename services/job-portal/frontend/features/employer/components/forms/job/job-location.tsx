@@ -4,6 +4,7 @@ import { LocationSelector } from "@/components/ui/location-selector";
 
 export function JobLocation() {
     const { watch, setValue, formState: { errors } } = useFormContext<CreateJobFormData>();
+    const workMode = watch("workMode");
 
     return (
         <section className="space-y-6 border-b pb-10 border-border/70">
@@ -14,6 +15,7 @@ export function JobLocation() {
             <div className="space-y-6">
                 <div className="space-y-4 md:col-span-3">
                     <LocationSelector
+                        isRequired={workMode !== "remote"}
                         city={watch("location.city") || ""}
                         state={watch("location.state") || ""}
                         country={watch("location.country") || ""}
