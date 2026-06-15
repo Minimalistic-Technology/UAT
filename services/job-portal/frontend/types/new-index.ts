@@ -174,12 +174,10 @@ export type Internship = BaseListing & {
 export type Kyc = {
   _id: string; // mongoose.objectId
   user: string; // mongoose.objectId
-  companyName: string;
-  aadharNo: string;
-  gstNo: string;
-  cinNo: string;
-  photo: CloudinaryAsset;
-  lightbill: CloudinaryAsset;
+  companyDocument: CloudinaryAsset;
+  companyDocumentType: string;
+  personalDocument: CloudinaryAsset;
+  personalDocumentType: string;
   status: KycStatus;
   rejectionReason?: string;
   isLatest: boolean;

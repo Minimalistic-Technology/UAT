@@ -61,20 +61,11 @@ const VerifyPage = () => {
 
     const formData = new FormData();
 
-    // We send dummy fallback values for backend requirements if they are still strict
-    formData.append("companyName", companyDetails?.name || "Company");
-    formData.append("aadharNo", "123456789012");
-    formData.append("gstNo", "");
-    formData.append("cinNo", "");
-
-    // Add extra document types as fields incase backend gets updated to use them
     formData.append("companyDocumentType", companyDocType);
     formData.append("personalDocumentType", personalDocType);
 
-    // Map files to existing expected backend fields "lightbill" & "photo" 
-    // This ensures no backend breaking errors, while fully supporting the new UI
-    formData.append("lightbill", companyFile);
-    formData.append("photo", personalFile);
+    formData.append("companyDocument", companyFile);
+    formData.append("personalDocument", personalFile);
 
     submitKyc(formData, {
       onSuccess: () => {
@@ -171,9 +162,12 @@ const DocumentUploadSection = ({
   inputId: string;
 }) => (
   <div className="space-y-3">
-    <h3 className="font-semibold text-sm text-slate-700 dark:text-slate-300">
-      {title} <span className="text-slate-400 font-normal">(At least 1 required)</span>
-    </h3>
+    <div className="flex flex-col">
+      <h3 className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+        {title}
+      </h3>
+      <span className="text-slate-400 text-xs font-normal">Supported formats: PDF, JPEG, PNG, WEBP (Max 5MB)</span>
+    </div>
     <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 sm:p-5 border border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row gap-4 items-start sm:items-center transition-all hover:border-blue-200 dark:hover:border-blue-900/50">
       <div className="flex-1 w-full relative">
         <Select value={selectedType} onValueChange={setSelectedType}>
@@ -195,10 +189,24 @@ const DocumentUploadSection = ({
           <Input
             type="file"
             id={inputId}
-            accept="image/*,.pdf"
+            accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
             className="hidden"
             onChange={(e) => {
-              if (e.target.files?.[0]) setSelectedFile(e.target.files[0]);
+              const file = e.target.files?.[0];
+              if (file) {
+                const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
+                if (!validTypes.includes(file.type)) {
+                  toast.error("Invalid file type. Only PDF, JPEG, PNG, and WEBP are allowed.");
+                  e.target.value = "";
+                  return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                  toast.error("File is too large. Maximum size is 5MB.");
+                  e.target.value = "";
+                  return;
+                }
+                setSelectedFile(file);
+              }
             }}
           />
           <Button

@@ -40,8 +40,8 @@ interface KycTableProps {
 }
 
 const KYC_COLUMNS = [
-  { key: "company", label: "Company Info" },
-  { key: "ids", label: "Tax & ID Details" },
+  { key: "user", label: "User Info" },
+  { key: "types", label: "Document Types" },
   { key: "docs", label: "Proof Files" },
   { key: "status", label: "Current Status" },
   { key: "actions", label: "Actions" },
@@ -112,8 +112,7 @@ export const KycTable = ({
               >
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold">{app.companyName}</span>
-                    <span className="text-muted-foreground text-xs">
+                    <span className="text-sm font-bold">
                       {app.user?.firstName} {app.user?.lastName}
                     </span>
                     <span className="text-muted-foreground/70 font-mono text-[11px]">
@@ -123,27 +122,19 @@ export const KycTable = ({
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1 font-mono text-[11px]">
-                    <div className="flex gap-2">
-                      <span className="text-muted-foreground w-12">GST:</span>
-                      {app.gstNo}
+                    <div className="flex flex-col">
+                      <span className="text-muted-foreground">Company Doc:</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{app.companyDocumentType}</span>
                     </div>
-                    <div className="flex gap-2">
-                      <span className="text-muted-foreground w-12">
-                        AADHAR:
-                      </span>
-                      {app.aadharNo}
-                    </div>
-                    <div className="flex gap-2">
-                      <span className="text-muted-foreground w-12">
-                        CIN No:
-                      </span>
-                      {app.cinNo}
+                    <div className="flex flex-col mt-2">
+                      <span className="text-muted-foreground">Personal Doc:</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{app.personalDocumentType}</span>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
-                    {app.photo?.url && (
+                    {app.companyDocument?.url && (
                       <Button
                         variant="link"
                         size="sm"
@@ -151,15 +142,15 @@ export const KycTable = ({
                         asChild
                       >
                         <a
-                          href={app.photo.url}
+                          href={getViewUrl(app.companyDocument.url)}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          <Eye className="mr-1 h-3 w-3" /> Photo
+                          <ExternalLink className="mr-1 h-3 w-3" /> Company Document
                         </a>
                       </Button>
                     )}
-                    {app.lightbill?.url && (
+                    {app.personalDocument?.url && (
                       <Button
                         variant="link"
                         size="sm"
@@ -167,15 +158,15 @@ export const KycTable = ({
                         asChild
                       >
                         <a
-                          href={getViewUrl(app.lightbill.url)}
+                          href={getViewUrl(app.personalDocument.url)}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          <ExternalLink className="mr-1 h-3 w-3" /> Utility Bill
+                          <ExternalLink className="mr-1 h-3 w-3" /> Personal Document
                         </a>
                       </Button>
                     )}
-                    {!app.photo?.url && !app.lightbill?.url && (
+                    {!app.companyDocument?.url && !app.personalDocument?.url && (
                       <span className="text-muted-foreground text-xs">
                         No documents
                       </span>

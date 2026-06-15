@@ -307,36 +307,21 @@ export const updateKycStatus = async (
     await kycApplication.save();
 
     if (status === "approved") {
-      let company = await Company.findOne({ owner: kycApplication.user });
+      const companyMember = await CompanyMember.findOne({ user: kycApplication.user });
 
-      if (!company) {
-        // Create an introductory company footprint using the given KYC properties
-        company = await Company.create({
-          name: kycApplication.companyName,
-          description: "Company details pending.",
-          industry: "Not specified",
-          owner: kycApplication.user,
-          isVerified: true,
-        });
-
-        // Instantiate the applicant as the designated company owner
-        await CompanyMember.create({
-          user: kycApplication.user,
-          company: company._id,
-          role: "owner",
-        });
-      } else {
-        // Upgrade existing un-verified corporate entities with fresh KYC metadata
-        company.isVerified = true;
-        company.name = kycApplication.companyName;
-        await company.save();
+      if (companyMember) {
+        let company = await Company.findById(companyMember.company);
+        if (company) {
+          company.isVerified = true;
+          await company.save();
+          
+          // Elevate system user privileges & metadata bindings globally
+          await User.findByIdAndUpdate(kycApplication.user, {
+            isVerified: true,
+            company: company._id,
+          });
+        }
       }
-
-      // Elevate system user privileges & metadata bindings globally
-      await User.findByIdAndUpdate(kycApplication.user, {
-        isVerified: true,
-        company: company._id,
-      });
     }
 
     return res

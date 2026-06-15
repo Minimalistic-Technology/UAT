@@ -66,7 +66,7 @@ export default function PlansPage() {
         </p>
 
         {/* Toggle Switch */}
-        <div className="mt-10 flex items-center justify-center gap-3">
+        {/* <div className="mt-10 flex items-center justify-center gap-3">
           <span className={cn("text-sm font-semibold cursor-pointer transition-colors", !isYearly ? "text-slate-900 dark:text-white" : "text-slate-500")} onClick={() => setIsYearly(false)}>Monthly</span>
           <div
             className={cn("w-12 h-6 rounded-full p-1 relative cursor-pointer outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500", isYearly ? "bg-purple-600" : "bg-[#2563eb]")}
@@ -80,7 +80,7 @@ export default function PlansPage() {
           </div>
           <span className={cn("text-sm font-semibold cursor-pointer transition-colors", isYearly ? "text-slate-900 dark:text-white" : "text-slate-500")} onClick={() => setIsYearly(true)}>Yearly</span>
           <span className="ml-1 bg-purple-100 text-purple-700 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">Save 20%</span>
-        </div>
+        </div> */}
       </div>
 
       <div className="px-6 lg:px-10">

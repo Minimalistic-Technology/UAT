@@ -49,8 +49,9 @@ export default function KycManagementPage() {
   const filteredApps = applications.filter((app) => {
     const search = searchTerm.toLowerCase();
     return (
-      app.companyName?.toLowerCase().includes(search) ||
-      app.user?.email?.toLowerCase().includes(search)
+      app.user?.email?.toLowerCase().includes(search) ||
+      app.user?.firstName?.toLowerCase().includes(search) ||
+      app.user?.lastName?.toLowerCase().includes(search)
     );
   });
 
