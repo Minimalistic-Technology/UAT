@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -297,7 +298,23 @@ export default function EmployerRegisterPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center w-full">
+              <div className="flex flex-col items-center justify-center w-full my-2 min-h-[65px]">
+                <Turnstile
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                  onSuccess={(token) => {
+                    setValue("captchaToken", token, { shouldValidate: true });
+                    clearErrors("captchaToken");
+                  }}
+                  onError={() => {
+                    setValue("captchaToken", "");
+                  }}
+                  options={{ theme: "light" }}
+                />
+                {errors.captchaToken && (
+                  <p className="text-destructive text-xs mt-1">
+                    {errors.captchaToken.message}
+                  </p>
+                )}
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>

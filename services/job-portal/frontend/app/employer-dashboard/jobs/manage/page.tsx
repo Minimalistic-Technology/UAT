@@ -63,10 +63,10 @@ const Page = () => {
             placeholder="Search job listings..."
           />
         </div>
-        <Button asChild size="sm">
-          <Link href="/employer-dashboard/jobs/create">
-            <Plus className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Post Job</span>
+        <Button asChild size="sm" className="w-full sm:w-auto">
+          <Link href="/employer-dashboard/jobs/create" className="flex items-center justify-center">
+            <Plus className="mr-2 h-4 w-4 shrink-0" />
+            <span>Post Job</span>
           </Link>
         </Button>
       </div>
