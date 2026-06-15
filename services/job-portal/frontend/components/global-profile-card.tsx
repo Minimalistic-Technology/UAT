@@ -12,6 +12,7 @@ interface GlobalProfileCardProps {
     firstName: string;
     lastName: string;
     email: string;
+    phone?: string;
     avatarUrl?: string;
     profileStrength?: number;
     badgeIcon?: React.ReactNode;
@@ -24,6 +25,7 @@ export function GlobalProfileCard({
     firstName,
     lastName,
     email,
+    phone,
     avatarUrl,
     profileStrength = 100,
     badgeIcon,
@@ -149,6 +151,12 @@ export function GlobalProfileCard({
                             <Mail className="h-3.5 w-3.5" />
                             <span>{email}</span>
                         </div>
+                        {phone && (
+                            <div className="flex items-center gap-1.5">
+                                <span className="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-phone"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg></span>
+                                <span>{phone}</span>
+                            </div>
+                        )}
                         {badgeText && (
                             <div className="inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300 text-[12px] font-medium tracking-wide uppercase px-3 py-1 mt-2 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
                                 {badgeIcon}
