@@ -70,8 +70,7 @@ const Page = () => {
             className="flex items-center justify-center"
           >
             <Plus className="mr-1.5 h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Post Job</span>
-            <span className="sm:hidden">Post</span>
+            <span>Post New Job</span>
           </Link>
         </Button>
       </div>
