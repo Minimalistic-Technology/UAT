@@ -103,28 +103,33 @@ const Page = () => {
         </CardHeader>
         <CardContent className="px-7 pb-6">
           <div className="rounded-md border">
-            {employees.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="bg-muted mb-4 rounded-full p-4">
-                  <Users className="text-muted-foreground h-8 w-8" />
-                </div>
-                <h3 className="text-lg font-semibold">No team members</h3>
-                <p className="text-muted-foreground mt-1 max-w-xs text-sm">
-                  You haven't added any employees to your company yet.
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader className="bg-muted/50">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="w-75">Employee</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {employees.length === 0 ? (
                   <TableRow>
-                    <TableHead className="w-75">Employee</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      <EmptyState
+                        onAddEmployee={() => {
+                          if (!hasPlan) {
+                            toast.error("Please purchase a subscription plan to add team members.");
+                            router.push("/employer-dashboard/plans");
+                            return;
+                          }
+                          setIsAddModalOpen(true);
+                        }}
+                      />
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employees.map((emp: any) => {
+                ) : (
+                  employees.map((emp: any) => {
                     const isConfirming = confirmId === emp._id;
                     const isDeleting =
                       deleteMutation.isPending &&
@@ -235,10 +240,10 @@ const Page = () => {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
-                </TableBody>
-              </Table>
-            )}
+                  })
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -247,3 +252,20 @@ const Page = () => {
 };
 
 export default Page;
+
+function EmptyState({ onAddEmployee }: { onAddEmployee: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-12">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted dark:bg-slate-800">
+        <Users className="h-10 w-10 text-slate-400" />
+      </div>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No team members</h3>
+      <p className="mt-1 max-w-md text-center text-sm text-slate-500">
+        You haven't added any employees to your company yet. Add your first team member to collaborate.
+      </p>
+      <Button variant="outline" className="mt-6" onClick={onAddEmployee}>
+        Add New Employee
+      </Button>
+    </div>
+  );
+}

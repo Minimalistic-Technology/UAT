@@ -141,13 +141,18 @@ function DraftTableSkeleton() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-50">
-        <FileEdit className="h-10 w-10 text-gray-300" />
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted dark:bg-slate-800">
+        <FileEdit className="h-10 w-10 text-slate-400" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-900">No drafts found</h3>
-      <p className="mt-1 max-w-[300px] text-center text-sm text-gray-500">
-        You don't have any saved drafts.
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No drafts found</h3>
+      <p className="mt-1 max-w-md text-center text-sm text-slate-500">
+        You don't have any saved drafts. Get started by creating your first listing.
       </p>
+      <Button asChild variant="outline" className="mt-6">
+        <Link href="/employer-dashboard/listings/create">
+          Create New Listing
+        </Link>
+      </Button>
     </div>
   );
 }

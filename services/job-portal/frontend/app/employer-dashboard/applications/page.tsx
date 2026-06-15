@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { format } from "date-fns";
 import {
   useAllEmployerApplications,
@@ -39,6 +40,7 @@ import {
   CheckCircle2,
   XCircle,
   Search,
+  FileSearch,
 } from "lucide-react";
 import { ApplicationDetailModal } from "@/features/employer/components/application-details-model";
 import {
@@ -225,10 +227,6 @@ const EmployerApplicationsPage = () => {
             <div className="text-destructive py-10 text-center">
               Failed to load applications. Please try again.
             </div>
-          ) : applications.length === 0 ? (
-            <div className="text-muted-foreground py-20 text-center">
-              No applications found matching your criteria.
-            </div>
           ) : (
             <div className="rounded-md border">
               <Table>
@@ -243,7 +241,14 @@ const EmployerApplicationsPage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {applications.map((app: any) => (
+                  {applications.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        <EmptyState />
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    applications.map((app: any) => (
                     <TableRow key={app._id}>
                       <TableCell>
                         <div className="font-medium">
@@ -315,7 +320,8 @@ const EmployerApplicationsPage = () => {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ))
+                )}
                 </TableBody>
               </Table>
             </div>
@@ -404,3 +410,17 @@ const EmployerApplicationsPage = () => {
 };
 
 export default EmployerApplicationsPage;
+
+function EmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-12">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted dark:bg-slate-800">
+        <FileSearch className="h-10 w-10 text-slate-400" />
+      </div>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No applications found</h3>
+      <p className="mt-1 max-w-md text-center text-sm text-slate-500">
+        You haven't received any applications yet, or none match your search criteria.
+      </p>
+    </div>
+  );
+}
