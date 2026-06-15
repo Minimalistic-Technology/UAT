@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Briefcase, GraduationCap, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +9,7 @@ import { InternshipForm } from "@/features/employer/components/internship-form";
 import { ListingType } from "@/types/enums";
 import { useGetDraftById } from "@/features/employer/hooks/use-draft";
 
-function PostListingPage() {
+function PostListingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const draftId = searchParams.get("draftId") || undefined;
@@ -72,6 +72,19 @@ function PostListingPage() {
         <InternshipForm onCancel={() => router.back()} draftId={draftId} draftData={draftData} />
       )}
     </div>
+  );
+}
+
+function PostListingPage() {
+  return (
+    <Suspense fallback={
+      <div className="w-full px-[3px] py-4 flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-lg text-muted-foreground">Loading...</span>
+      </div>
+    }>
+      <PostListingContent />
+    </Suspense>
   );
 }
 
