@@ -39,9 +39,10 @@ const Page = () => {
   const myJobPostings = useMemo(() => {
     if (!searchQuery.trim()) return myJobPostingsRaw;
     const lowerQuery = searchQuery.toLowerCase();
-    return myJobPostingsRaw.filter((job: any) =>
-      job.title?.toLowerCase().includes(lowerQuery) ||
-      formatLocation(job.location)?.toLowerCase().includes(lowerQuery)
+    return myJobPostingsRaw.filter(
+      (job: any) =>
+        job.title?.toLowerCase().includes(lowerQuery) ||
+        formatLocation(job.location)?.toLowerCase().includes(lowerQuery),
     );
   }, [myJobPostingsRaw, searchQuery]);
 
@@ -55,8 +56,8 @@ const Page = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative w-full sm:max-w-sm flex-1">
+      <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+        <div className="relative w-full flex-1 sm:max-w-sm">
           <GlobalSearchInput
             value={searchQuery}
             onChange={setSearchQuery}
@@ -64,18 +65,23 @@ const Page = () => {
           />
         </div>
         <Button asChild size="sm" className="w-full sm:w-auto">
-          <Link href="/employer-dashboard/listings/create" className="flex items-center justify-center">
+          <Link
+            href="/employer-dashboard/listings/create"
+            className="flex items-center justify-center"
+          >
             <Plus className="mr-2 h-4 w-4 shrink-0" />
             <span>Post Job</span>
           </Link>
         </Button>
       </div>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="pb-4 pt-6 px-7">
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+        <CardHeader className="px-7 pt-6 pb-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Your Job Listings</CardTitle>
+              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                Your Job Listings
+              </CardTitle>
               <CardDescription className="text-sm text-slate-500">
                 Manage status, edit jobs and track performance.
               </CardDescription>
@@ -88,7 +94,9 @@ const Page = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-62.5 font-semibold">Job Title</TableHead>
+                  <TableHead className="w-62.5 font-semibold">
+                    Job Title
+                  </TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Applications</TableHead>
                   <TableHead className="font-semibold">Posted By</TableHead>
@@ -107,10 +115,7 @@ const Page = () => {
                   </TableRow>
                 ) : (
                   myJobPostings.map((job: any) => (
-                    <JobRow
-                      key={job._id}
-                      job={job}
-                    />
+                    <JobRow key={job._id} job={job} />
                   ))
                 )}
               </TableBody>
@@ -126,8 +131,8 @@ export default Page;
 
 function JobTableSkeleton() {
   return (
-    <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] mt-14">
-      <CardHeader className="pb-4 pt-6 px-7 flex flex-row justify-between">
+    <Card className="mt-14 rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+      <CardHeader className="flex flex-row justify-between px-7 pt-6 pb-4">
         <div className="space-y-2">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-4 w-60" />
@@ -175,7 +180,9 @@ function EmptyState() {
         first one.
       </p>
       <Button asChild variant="outline" className="mt-6">
-        <Link href="/employer-dashboard/listings/create?type=job">Post Your First Job</Link>
+        <Link href="/employer-dashboard/listings/create?type=job">
+          Post Your First Job
+        </Link>
       </Button>
     </div>
   );
