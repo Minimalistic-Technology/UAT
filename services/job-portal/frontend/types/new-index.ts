@@ -297,3 +297,13 @@ export type subscription = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+export type Draft = {
+  _id: string; // mongoose.objectId
+  company: string; // mongoose.objectId
+  postedBy: string; // mongoose.objectId
+  type: "job" | "internship";
+  formData: any;
+  createdAt: Date;
+  updatedAt: Date;
+};

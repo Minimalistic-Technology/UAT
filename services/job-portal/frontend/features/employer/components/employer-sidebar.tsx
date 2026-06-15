@@ -13,7 +13,8 @@ import {
   PlusCircle,
   Settings2,
   User as UserIcon,
-  Sparkles
+  Sparkles,
+  FileEdit
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -35,6 +36,7 @@ import {
 export const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/employer-dashboard" },
   { label: "Post a Job / Internship", icon: PlusCircle, href: "/employer-dashboard/jobs/create" },
+  { label: "Saved Drafts", icon: FileEdit, href: "/employer-dashboard/drafts" },
   { label: "Manage Jobs", icon: Briefcase, href: "/employer-dashboard/jobs/manage" },
   { label: "Manage Internships", icon: Briefcase, href: "/employer-dashboard/internships/manage" },
   { label: "All Applications", icon: FileText, href: "/employer-dashboard/applications" },

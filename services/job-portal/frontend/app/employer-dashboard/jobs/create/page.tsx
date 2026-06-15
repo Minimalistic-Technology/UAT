@@ -1,25 +1,52 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Briefcase, GraduationCap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Briefcase, GraduationCap, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JobForm } from "@/features/employer/components/job-form";
 import { InternshipForm } from "@/features/employer/components/internship-form";
 import { ListingType } from "@/types/enums";
+import { useGetDraftById } from "@/features/employer/hooks/use-draft";
 
 function PostListingPage() {
   const router = useRouter();
-  const [listingType, setListingType] = useState<ListingType>(ListingType.JOB);
+  const searchParams = useSearchParams();
+  const draftId = searchParams.get("draftId") || undefined;
+  const draftTypeParam = searchParams.get("type");
+
+  const [listingType, setListingType] = useState<ListingType>(
+    draftTypeParam === "internship" ? ListingType.INTERNSHIP : ListingType.JOB
+  );
+
+  const { data: draftResponse, isLoading } = useGetDraftById(draftId);
+  const draftData = draftResponse?.data?.formData;
+
+  useEffect(() => {
+    if (draftTypeParam === "internship") {
+      setListingType(ListingType.INTERNSHIP);
+    } else if (draftTypeParam === "job") {
+      setListingType(ListingType.JOB);
+    }
+  }, [draftTypeParam]);
+
+  if (draftId && isLoading) {
+    return (
+      <div className="w-full px-[3px] py-4 flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-lg text-muted-foreground">Loading draft...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full px-[3px] py-4">
       <div className="mb-8 border-b pb-6">
         <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
-          Post a New Listing
+          {draftId ? "Edit Draft" : "Post a New Listing"}
         </h1>
         <p className="text-muted-foreground mt-2 text-lg">
-          Choose whether you're hiring for a job or an internship.
+          {draftId ? "Pick up where you left off." : "Choose whether you're hiring for a job or an internship."}
         </p>
       </div>
 
@@ -40,9 +67,9 @@ function PostListingPage() {
       </Tabs>
 
       {listingType === ListingType.JOB ? (
-        <JobForm onCancel={() => router.back()} />
+        <JobForm onCancel={() => router.back()} draftId={draftId} draftData={draftData} />
       ) : (
-        <InternshipForm onCancel={() => router.back()} />
+        <InternshipForm onCancel={() => router.back()} draftId={draftId} draftData={draftData} />
       )}
     </div>
   );

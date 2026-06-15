@@ -1,4 +1,5 @@
 import { useCreateMyJobPosting, useUpdateMyJobPosting } from "../hooks/use-job";
+import { useSaveDraft, useDeleteDraft } from "../hooks/use-draft";
 import { Job } from "@/types/new-index";
 import { CreateJobFormData, createJobSchema } from "../validations/job.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,15 +12,17 @@ import { JobSalary } from "./forms/job/job-salary";
 import { JobSkills } from "./forms/job/job-skills";
 import { JobPublishing } from "./forms/job/job-publishing";
 
-export function JobForm({ onCancel, initialData }: { onCancel: () => void, initialData?: Job }) {
+export function JobForm({ onCancel, initialData, draftData, draftId }: { onCancel: () => void, initialData?: Job, draftData?: any, draftId?: string }) {
   const { mutate: createJob, isPending: isCreating } = useCreateMyJobPosting();
   const { mutate: updateJob, isPending: isUpdating } = useUpdateMyJobPosting(initialData?._id as string);
+  const { mutate: saveDraft, isPending: isSavingDraft } = useSaveDraft();
+  const { mutate: deleteDraft } = useDeleteDraft();
 
-  const isPending = isCreating || isUpdating;
+  const isPending = isCreating || isUpdating || isSavingDraft;
 
   const methods = useForm<CreateJobFormData>({
     resolver: zodResolver(createJobSchema) as Resolver<CreateJobFormData>,
-    defaultValues: initialData ? {
+    defaultValues: draftData ? draftData : initialData ? {
       title: initialData.title,
       description: initialData.description,
       employmentType: initialData.employmentType as any,
@@ -74,8 +77,20 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
     if (initialData) {
       updateJob(data);
     } else {
-      createJob(data);
+      createJob(data, {
+        onSuccess: () => {
+          if (draftId) deleteDraft(draftId);
+        }
+      });
     }
+  };
+
+  const handleSaveDraft = () => {
+    saveDraft({
+      id: draftId,
+      type: "job",
+      formData: methods.getValues(),
+    });
   };
 
   return (
@@ -92,8 +107,13 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
           <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-32">
             Cancel
           </Button>
+          {!initialData && (
+            <Button type="button" variant="secondary" onClick={handleSaveDraft} disabled={isPending} className="w-full sm:w-40">
+              {isSavingDraft ? "Saving..." : "Save as Draft"}
+            </Button>
+          )}
           <Button type="submit" disabled={isPending} className="w-full sm:w-40">
-            {isPending ? (initialData ? "Saving..." : "Posting...") : (initialData ? "Save Changes" : "Post Job")}
+            {isCreating || isUpdating ? (initialData ? "Saving..." : "Posting...") : (initialData ? "Save Changes" : "Post Job")}
           </Button>
         </div>
       </form>
