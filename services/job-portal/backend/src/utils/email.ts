@@ -10,16 +10,6 @@ interface EmailOptions {
 const isDev = config.nodeEnv === "development";
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
-let resendInstance: any = null;
-
-const getResendInstance = async () => {
-  if (!resendInstance) {
-    const { Resend } = await import("resend");
-    if (!config.resendApiKey) throw new Error("Resend API key missing");
-    resendInstance = new Resend(config.resendApiKey);
-  }
-  return resendInstance;
-};
 
 const getTransporter = async (): Promise<ReturnType<typeof nodemailer.createTransport>> => {
   if (transporter) return transporter;
@@ -87,29 +77,6 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
       }
     }
 
-    // 2. Fallback to Resend over SendGrid if Resend API key exists in .env
-    if (config.resendApiKey) {
-      try {
-        const resend = await getResendInstance();
-        const { error } = await resend.emails.send({
-          to: options.email,
-          from: fromAddress,
-          subject: options.subject,
-          text: options.message,
-          html: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`,
-        });
-
-        if (error) {
-          console.warn(`Resend Error: ${error.message}. Falling back to SMTP...`);
-        } else {
-          console.log("OTP Email successfully sent out via Resend.");
-          return;
-        }
-      } catch (err: any) {
-        console.warn(`Resend Exception: ${err.message}. Falling back to SMTP...`);
-      }
-    }
-
     const emailTransporter = await getTransporter();
     const mailOptions = {
       from: `"Job Portal" <${isDev && !config.emailHost ? "dev@jobportal.com" : fromAddress}>`,
@@ -126,6 +93,16 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
       console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
     }
   } catch (error: any) {
+    if (isDev) {
+      console.warn(`\n[DEV MODE] Email Failed: ${error.message}`);
+      console.log(`[DEV MODE] Ignoring error and printing email content instead:`);
+      console.log(`--------------------------------------------------`);
+      console.log(`To: ${options.email}`);
+      console.log(`Subject: ${options.subject}`);
+      console.log(`Message: ${options.message}`);
+      console.log(`--------------------------------------------------\n`);
+      return;
+    }
     throw new Error(`Email Error: ${error.message}`);
   }
 };
