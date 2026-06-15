@@ -23,12 +23,27 @@ import { JobRow } from "@/features/employer/components/job-row";
 
 // TODO: Implement the status change functionality and the updateStatusMutation for handling job status updates
 // (e.g., activating, deactivating, or deleting a job posting). This will likely involve creating a new API endpoint
+// (e.g., activating, deactivating, or deleting a job posting). This will likely involve creating a new API endpoint
 // in the backend to handle status updates and then integrating that endpoint into the frontend with appropriate UI feedback
 // for the user.
+import { useState, useMemo } from "react";
+import { GlobalSearchInput } from "@/components/global-search-input";
+import { formatLocation } from "@/utils";
+
 const Page = () => {
   const { data: responseData, isLoading, isError } = useGetMyJobPostings();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const myJobPostings = responseData?.data?.jobPosts || [];
+  const myJobPostingsRaw = responseData?.data?.jobPosts || [];
+
+  const myJobPostings = useMemo(() => {
+    if (!searchQuery.trim()) return myJobPostingsRaw;
+    const lowerQuery = searchQuery.toLowerCase();
+    return myJobPostingsRaw.filter((job: any) =>
+      job.title?.toLowerCase().includes(lowerQuery) ||
+      formatLocation(job.location)?.toLowerCase().includes(lowerQuery)
+    );
+  }, [myJobPostingsRaw, searchQuery]);
 
   if (isLoading) {
     return <JobTableSkeleton />;
@@ -40,19 +55,18 @@ const Page = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative max-w-sm flex-1">
-          <input
-            type="text"
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:max-w-sm flex-1">
+          <GlobalSearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
             placeholder="Search job listings..."
-            className="h-10 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus-visible:outline-none focus:ring-1 focus:ring-blue-500 w-full text-sm"
           />
-          <Briefcase className="text-slate-400 absolute top-3 left-3 h-4 w-4" />
         </div>
-        <Button asChild size="sm">
-          <Link href="/employer-dashboard/jobs/create">
-            <Plus className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Post Job</span>
+        <Button asChild size="sm" className="w-full sm:w-auto">
+          <Link href="/employer-dashboard/jobs/create" className="flex items-center justify-center">
+            <Plus className="mr-2 h-4 w-4 shrink-0" />
+            <span>Post Job</span>
           </Link>
         </Button>
       </div>

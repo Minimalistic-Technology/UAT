@@ -1,8 +1,8 @@
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,14 +10,14 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Mail, 
-  Phone, 
-  ExternalLink, 
-  Briefcase, 
-  GraduationCap, 
-  User, 
-  Wrench 
+import {
+  Mail,
+  Phone,
+  ExternalLink,
+  Briefcase,
+  GraduationCap,
+  User,
+  Wrench
 } from "lucide-react";
 import { getInlineUrl } from "@/utils";
 
@@ -32,9 +32,9 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
           View Details
         </Button>
       </DialogTrigger>
-      
+
       <DialogContent className="max-w-3xl w-[95vw] overflow-hidden p-0 gap-0">
-        <DialogHeader className="p-6 pb-4 border-b bg-muted/20">
+        <DialogHeader className="p-4 sm:p-6 pb-4 border-b bg-muted/20">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <DialogTitle className="text-2xl font-bold tracking-tight">
@@ -47,18 +47,18 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
             {resume && (
               <Button size="sm" variant="secondary" asChild className="gap-2">
                 <a href={resumeLinkToShow} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" /> 
+                  <ExternalLink className="h-4 w-4" />
                   View Resume
                 </a>
               </Button>
             )}
           </div>
         </DialogHeader>
-        
+
         {/* Fixed Height Scroll Area prevents layout jumping */}
-        <ScrollArea className="h-[70vh] px-6">
-          <div className="py-6 space-y-8">
-            
+        <ScrollArea className="h-[70vh] px-4 sm:px-6">
+          <div className="py-4 sm:py-6 space-y-8">
+
             {/* Header Section: Bio & Skills */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-2 space-y-3">
@@ -78,7 +78,7 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
                   </div>
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-primary font-semibold uppercase text-xs tracking-wider md:justify-end">
                   <Wrench className="h-4 w-4" />
@@ -111,7 +111,7 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
                   jobSeeker.experience.map((exp: any, i: number) => (
                     <Card key={i} className="border-l-4 border-l-primary shadow-none bg-muted/10">
                       <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
                           <div>
                             <h4 className="font-bold text-base">{exp.title}</h4>
                             <p className="text-sm font-medium text-muted-foreground">{exp.company} • {exp.location}</p>
@@ -159,12 +159,12 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
             </section>
           </div>
         </ScrollArea>
-        
+
         {/* Modal Footer (Standard for Management Dashboards) */}
         <div className="p-4 border-t bg-muted/20 flex justify-end">
-            <DialogTrigger asChild>
-                <Button variant="ghost">Close Profile</Button>
-            </DialogTrigger>
+          <DialogTrigger asChild>
+            <Button variant="ghost">Close Profile</Button>
+          </DialogTrigger>
         </div>
       </DialogContent>
     </Dialog>

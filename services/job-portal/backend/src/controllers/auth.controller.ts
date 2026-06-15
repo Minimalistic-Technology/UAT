@@ -61,6 +61,22 @@ const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
     .json(new ApiResponse(statusCode, payload, "Login successful"));
 };
 
+const checkAndEnforceOTPBlock = async (email: string, session: mongoose.ClientSession) => {
+  const tempUser = await TempUser.findOne({ email }).session(session);
+  if (!tempUser) return null;
+
+  if (tempUser.blockedUntil && tempUser.blockedUntil > new Date()) {
+    const remainingTime = Math.ceil((tempUser.blockedUntil.getTime() - Date.now()) / 60000);
+    throw new ApiError(429, `Too many OTP requests. Please wait ${remainingTime} minutes before trying again.`);
+  }
+
+  if (tempUser.blockedUntil && tempUser.blockedUntil <= new Date()) {
+    tempUser.blockedUntil = undefined;
+    tempUser.resendAttempts = 0;
+  }
+  return tempUser;
+};
+
 export const requestUserRegistration = async (
   req: AuthRequest,
   res: Response,
@@ -70,6 +86,8 @@ export const requestUserRegistration = async (
   session.startTransaction();
   try {
     const { firstName, lastName, email, password, phone } = req.body;
+
+    await checkAndEnforceOTPBlock(email, session);
 
     const existingUser = await User.findOne({ email }).session(session);
 
@@ -149,6 +167,8 @@ export const requestEmployerRegistration = async (
       lastName,
       phone,
     } = req.body;
+
+    await checkAndEnforceOTPBlock(email, session);
 
     let user = await User.findOne({ email }).session(session);
 
@@ -367,6 +387,38 @@ export const resendRegistrationOTP = async (
       throw new ApiError(
         404,
         "Registration session expired or not found. Please start over.",
+      );
+    }
+
+    // Check if user is currently blocked from resending
+    if (tempUser.blockedUntil && tempUser.blockedUntil > new Date()) {
+      const remainingTime = Math.ceil(
+        (tempUser.blockedUntil.getTime() - Date.now()) / 60000
+      );
+      throw new ApiError(
+        429,
+        `Too many resend attempts. Please wait ${remainingTime} minutes.`
+      );
+    }
+
+    // Unblock if time has passed
+    if (tempUser.blockedUntil && tempUser.blockedUntil <= new Date()) {
+      tempUser.blockedUntil = undefined;
+      tempUser.resendAttempts = 0;
+    }
+
+    // Increment attempts
+    tempUser.resendAttempts = (tempUser.resendAttempts || 0) + 1;
+
+    // Block if exceeded 3 attempts
+    if (tempUser.resendAttempts > 3) {
+      tempUser.blockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes block
+      tempUser.expiresAt = new Date(Date.now() + 30 * 60 * 1000); // Keep doc alive
+      await tempUser.save({ session, validateBeforeSave: false });
+      await session.commitTransaction();
+      throw new ApiError(
+        429,
+        "Too many resend attempts. You have been blocked from sending OTPs for 30 minutes."
       );
     }
 

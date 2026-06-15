@@ -88,11 +88,11 @@ export function JobForm({ onCancel, initialData }: { onCancel: () => void, initi
         <JobSkills initialData={initialData} />
         <JobPublishing initialData={initialData} />
 
-        <div className="mt-4 flex items-center justify-end gap-4 border-t pt-8">
-          <Button type="button" variant="ghost" onClick={onCancel}>
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-end gap-3 border-t pt-8">
+          <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-32">
             Cancel
           </Button>
-          <Button type="submit" disabled={isPending} className="px-8 py-2">
+          <Button type="submit" disabled={isPending} className="w-full sm:w-40">
             {isPending ? (initialData ? "Saving..." : "Posting...") : (initialData ? "Save Changes" : "Post Job")}
           </Button>
         </div>

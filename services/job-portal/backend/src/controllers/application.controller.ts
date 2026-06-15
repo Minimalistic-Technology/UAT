@@ -12,6 +12,7 @@ import { ApiError } from "../utils/apiError.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import { JobStatus } from "../models/BaseJob.model.js";
 import Subscription from "../models/Subscription.model.js";
+import User from "../models/User.model.js";
 
 export const createApplication = async (
   req: AuthRequest,
@@ -200,31 +201,46 @@ export const getAllCompanyApplications = async (
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    const { status, listingType } = req.query;
+    const { status, listingType, search } = req.query;
 
-    // Find all jobs belonging to the company
-
-    const [jobs, internships] = await Promise.all([
-      Job.find({ company: companyId }).select("_id"),
-      Internship.find({ company: companyId }).select("_id"),
+    const [allJobs, allInternships] = await Promise.all([
+      Job.find({ company: companyId }).select("_id title"),
+      Internship.find({ company: companyId }).select("_id title"),
     ]);
 
-    const listingIds = [
-      ...jobs.map((j) => j._id),
-      ...internships.map((i) => i._id),
-    ];
+    const allListings = [...allJobs, ...allInternships];
 
-    const query: any = { listing: { $in: listingIds } };
+    const query: any = { listing: { $in: allListings.map(l => l._id) } };
 
-    if (status) {
+    if (status && status !== "all") {
       query.status = status;
     }
 
-    if (
-      listingType &&
-      Object.values(ListingType).includes(listingType as ListingType)
-    ) {
+    if (listingType && Object.values(ListingType).includes(listingType as ListingType)) {
       query.listingType = listingType;
+    }
+
+    if (search) {
+      const searchRegex = new RegExp(search as string, "i");
+
+      const matchedUsers = await User.find({
+        $or: [
+          { firstName: searchRegex },
+          { lastName: searchRegex },
+          { email: searchRegex },
+        ]
+      }).select("_id");
+
+      const userIds = matchedUsers.map((u: any) => u._id);
+
+      const matchedListingIds = allListings
+        .filter(l => searchRegex.test(l.title))
+        .map(l => l._id);
+
+      query.$or = [
+        { jobSeeker: { $in: userIds } },
+        { listing: { $in: matchedListingIds } }
+      ];
     }
 
     const activeSubscription = await Subscription.findOne({
@@ -463,7 +479,7 @@ export const updateApplicationStatus = async (
       company: listing.company,
     });
 
-    const isEmployer = listing.postedBy.toString() === req.user.id;
+    const isEmployer = listing.postedBy.toString() === req.user._id.toString();
     const isAuthorizedMember =
       companyMember &&
       (companyMember.role === CompanyRole.HR ||
@@ -483,7 +499,7 @@ export const updateApplicationStatus = async (
     application.statusHistory.push({
       status,
       changedAt: new Date(),
-      changedBy: req.user.id,
+      changedBy: req.user._id,
       note,
     });
 
@@ -530,7 +546,7 @@ export const withdrawApplication = async (
     }
 
     // Verify application belongs to user
-    if (application.jobSeeker.toString() !== req.user.id) {
+    if (application.jobSeeker.toString() !== req.user._id.toString()) {
       throw new ApiError(403, "Not authorized to withdraw this application");
     }
 

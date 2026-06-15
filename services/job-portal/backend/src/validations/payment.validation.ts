@@ -15,6 +15,7 @@ export const createOrderSchema = [
     .notEmpty()
     .withMessage("Internal order ID is required"),
   body("couponCode").optional().isString(),
+  body("billingCycle").optional().isString().isIn(["monthly", "yearly"]),
 ];
 
 export const verifyPaymentSchema = [

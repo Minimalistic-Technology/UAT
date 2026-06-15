@@ -33,6 +33,7 @@ export const getAllEmployerApplications = async (params?: {
   page?: number;
   limit?: number;
   status?: string;
+  search?: string;
 }) => {
   const response = await apiClient.get<
     ApiSuccessResponse<GetAllEmployerApplicationsResponse>

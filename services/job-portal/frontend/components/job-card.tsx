@@ -116,7 +116,7 @@ export default function JobCard({ job }: JobCardProps) {
               ) : (
                 <div className="hidden flex-col items-end md:flex">
                   <span className="text-muted-foreground text-sm font-medium capitalize">
-                    {job.stipend?.type} Stipend
+                    {job.stipend?.type === "unpaid" ? "Unpaid" : `${job.stipend?.type || ""} Stipend`}
                   </span>
                 </div>
               )
@@ -196,7 +196,7 @@ export default function JobCard({ job }: JobCardProps) {
                 </div>
               ) : (
                 <div className="text-muted-foreground flex items-center text-sm font-medium capitalize md:hidden">
-                  {job.stipend?.type} Stipend
+                  {job.stipend?.type === "unpaid" ? "Unpaid" : `${job.stipend?.type || ""} Stipend`}
                 </div>
               )
             ) : job.salary?.min || job.salary?.max ? (
@@ -219,8 +219,8 @@ export default function JobCard({ job }: JobCardProps) {
           </div>
 
           {/* Description Snippet */}
-          <p className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed">
-            {job.description}
+          <p className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed" title={job.description?.replace(/<[^>]*>?/gm, ' ')}>
+            {job.description ? job.description.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() : ''}
           </p>
 
           {/* Skills Row */}

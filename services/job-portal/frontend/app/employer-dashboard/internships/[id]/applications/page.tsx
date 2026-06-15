@@ -130,7 +130,7 @@ const ApplicationsPage = () => {
 
   if (isLoading)
     return (
-      <div className="mx-auto max-w-7xl space-y-6 p-6">
+      <div className="space-y-6">
         <div className="flex justify-between items-center mb-4">
           <Skeleton className="h-10 w-48 rounded-md" />
           <Skeleton className="h-8 w-24 rounded-full" />
@@ -140,7 +140,7 @@ const ApplicationsPage = () => {
     );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Applications</h1>
@@ -277,13 +277,13 @@ const ApplicationsPage = () => {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md w-[95vw] max-w-[95vw] sm:w-full rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Schedule Interview</DialogTitle>
+            <DialogTitle className="text-xl">Schedule Interview</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-2 sm:py-4">
             <div className="flex flex-col space-y-2">
-              <Label>Interview Date</Label>
+              <Label className="text-sm font-medium">Interview Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -328,16 +328,18 @@ const ApplicationsPage = () => {
               </p>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
             <Button
               variant="outline"
               onClick={() => setInterviewModalOpen(false)}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
             <Button
               onClick={handleScheduleInterview}
               disabled={isUpdating || !interviewDate || !interviewTime}
+              className="w-full sm:w-auto"
             >
               Schedule
             </Button>

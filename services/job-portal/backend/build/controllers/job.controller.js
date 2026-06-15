@@ -164,6 +164,8 @@ export const createJob = async (req, res, next) => {
             skills: req.body.skills,
             requirements: req.body.requirements,
             benefits: req.body.benefits,
+            genderPreference: req.body.genderPreference,
+            englishFluency: req.body.englishFluency,
             applicationDeadline: req.body.applicationDeadline,
             isFeatured: req.body.isFeatured ?? false,
             status: req.body.status ?? "active",

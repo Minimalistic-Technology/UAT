@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 
 import { Briefcase, AlertCircle, Check, Minus, ArrowRight, PhoneCall } from "lucide-react";
 import {
@@ -51,10 +52,12 @@ export default function PlansPage() {
   // Ensure unique mapped features for Compare Table
   const allFeaturesRows = Array.from(new Set(plans.flatMap(p => p.features)));
 
+  const [isYearly, setIsYearly] = useState(false);
+
   return (
-    <div className="flex flex-col w-full bg-[#fcfdff] dark:bg-background pb-20">
+    <div className="flex flex-col w-full">
       {/* Header Section */}
-      <div className="pt-4 pb-12 text-center max-w-3xl mx-auto px-4">
+      <div className="pt-4 pb-8 text-center px-4">
         <h1 className="text-4xl md:text-5xl font-bold font-heading text-slate-900 dark:text-white tracking-tight">
           Pricing Built for Growth
         </h1>
@@ -62,13 +65,20 @@ export default function PlansPage() {
           Empower your recruitment team with intelligent hiring. Choose the plan that fits your current needs and scale as you grow.
         </p>
 
-        {/* Toggle Switch Concept */}
+        {/* Toggle Switch */}
         <div className="mt-10 flex items-center justify-center gap-3">
-          <span className="text-sm font-semibold text-slate-900 dark:text-white">Monthly</span>
-          <div className="w-12 h-6 bg-[#2563eb] rounded-full p-1 relative cursor-pointer">
-            <div className="w-4 h-4 bg-white rounded-full translate-x-6 shadow-sm"></div>
+          <span className={cn("text-sm font-semibold cursor-pointer transition-colors", !isYearly ? "text-slate-900 dark:text-white" : "text-slate-500")} onClick={() => setIsYearly(false)}>Monthly</span>
+          <div
+            className={cn("w-12 h-6 rounded-full p-1 relative cursor-pointer outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500", isYearly ? "bg-purple-600" : "bg-[#2563eb]")}
+            onClick={() => setIsYearly(!isYearly)}
+            role="switch"
+            aria-checked={isYearly}
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsYearly(!isYearly); } }}
+          >
+            <div className={cn("w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300", isYearly ? "translate-x-6" : "translate-x-0")}></div>
           </div>
-          <span className="text-sm font-semibold text-slate-500">Yearly</span>
+          <span className={cn("text-sm font-semibold cursor-pointer transition-colors", isYearly ? "text-slate-900 dark:text-white" : "text-slate-500")} onClick={() => setIsYearly(true)}>Yearly</span>
           <span className="ml-1 bg-purple-100 text-purple-700 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">Save 20%</span>
         </div>
       </div>
@@ -88,12 +98,14 @@ export default function PlansPage() {
         {/* Plans Grid */}
         <div
           className={cn(
-            "grid justify-center gap-6 lg:gap-8 max-w-6xl mx-auto mt-4 px-4",
+            "grid justify-center gap-6 w-full mx-auto mt-4",
             visualPlans.length === 1
               ? "grid-cols-1 max-w-md"
               : visualPlans.length === 2
                 ? "grid-cols-1 md:grid-cols-2 max-w-4xl"
-                : "grid-cols-1 md:grid-cols-3",
+                : visualPlans.length === 3
+                  ? "grid-cols-1 md:grid-cols-3 max-w-6xl"
+                  : "grid-cols-1 md:grid-cols-2 xl:grid-cols-4",
           )}
         >
           {isLoading || companyIsLoading ? (
@@ -103,7 +115,7 @@ export default function PlansPage() {
           ) : (
             visualPlans.map((plan) => (
               <div key={plan._id} className="h-full z-10 w-full relative">
-                <PlanCard plan={plan} />
+                <PlanCard plan={plan} isYearly={isYearly} />
               </div>
             ))
           )}
@@ -111,7 +123,7 @@ export default function PlansPage() {
 
         {/* Compare Features Section */}
         {visualPlans.length > 0 && (
-          <div className="mt-32 max-w-5xl mx-auto px-4">
+          <div className="mt-20 w-full mb-10">
             <h2 className="text-3xl font-bold text-center mb-10 text-slate-900 dark:text-white font-heading">Compare All Features</h2>
 
             <div className="overflow-x-auto">

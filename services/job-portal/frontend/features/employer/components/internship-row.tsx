@@ -61,16 +61,11 @@ export function InternshipRow({ internship }: { internship: any }) {
           <DropdownMenuContent align="end" className="w-50">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <button
-                type="button"
-                onClick={() =>
-                  router.push(`/employer-dashboard/internships/${internship._id}`)
-                }
-                className="flex cursor-pointer items-center"
-              >
-                <Eye className="mr-2 size-4" /> View Details
-              </button>
+            <DropdownMenuItem
+              onClick={() => router.push(`/employer-dashboard/internships/${internship._id}`)}
+              className="cursor-pointer"
+            >
+              <Eye className="mr-2 size-4" /> View Details
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
