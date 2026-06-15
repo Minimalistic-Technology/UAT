@@ -14,7 +14,7 @@ const JOBS = [
     logo: "L",
     location: "Remote",
     type: "Full-time",
-    salary: "$140k — $180k",
+    salary: "₹12,00,000 - ₹15,00,000",
     tags: ["Design Systems", "Figma", "B2B SaaS"],
     category: "Design",
     hot: true,
@@ -26,7 +26,7 @@ const JOBS = [
     logo: "V",
     location: "SF / Remote",
     type: "Full-time",
-    salary: "$210k — $260k",
+    salary: "₹20,00,000 - ₹25,00,000",
     tags: ["React", "Next.js", "TypeScript"],
     category: "Engineering",
     hot: true,
@@ -38,7 +38,7 @@ const JOBS = [
     logo: "S",
     location: "New York",
     type: "Full-time",
-    salary: "$185k — $240k",
+    salary: "₹18,00,000 - ₹24,00,000",
     tags: ["PyTorch", "Fraud ML", "Python"],
     category: "Data & AI",
   },
@@ -49,7 +49,7 @@ const JOBS = [
     logo: "F",
     location: "Remote — EU",
     type: "Full-time",
-    salary: "€95k — €125k",
+    salary: "₹9,00,000 - ₹12,00,000",
     tags: ["Lifecycle", "SEO", "Analytics"],
     category: "Marketing",
   },
@@ -60,7 +60,7 @@ const JOBS = [
     logo: "R",
     location: "Remote",
     type: "Full-time",
-    salary: "$170k — $220k",
+    salary: "₹15,00,000 - ₹20,00,000",
     tags: ["AWS", "Terraform", "K8s"],
     category: "Engineering",
   },
@@ -71,7 +71,7 @@ const JOBS = [
     logo: "N",
     location: "SF",
     type: "Full-time",
-    salary: "$200k — $250k",
+    salary: "₹20,00,000 - ₹25,00,000",
     tags: ["LLM", "0-1", "Research"],
     category: "Data & AI",
     hot: true,
@@ -165,10 +165,29 @@ export const FeaturedJobs = () => {
 
                   const employementTypeStr = job.type || (job.employmentType ? job.employmentType.replace("_", " ") : "Full-time");
 
-                  // Salary formatting
-                  let salaryStr = typeof job.salary === 'object' && job.salary !== null
-                    ? `₹${job.salary.min ? job.salary.min.toLocaleString() : "0"} - ₹${job.salary.max ? job.salary.max.toLocaleString() : "0"}`
-                    : (job.salary || "N/A");
+                  // Salary/Stipend formatting
+                  let salaryStr = "Salary not disclosed";
+                  if (job.listingType === 'internship') {
+                    if (job.stipend?.type === 'unpaid') {
+                      salaryStr = 'Unpaid';
+                    } else if (job.stipend?.amount) {
+                      salaryStr = `₹${job.stipend.amount.toLocaleString()} / ${job.stipend.period}`;
+                    } else if (job.stipend?.type) {
+                      salaryStr = `${job.stipend.type} Stipend`;
+                    }
+                  } else {
+                    if (typeof job.salary === 'object' && job.salary !== null) {
+                      if (job.salary.min && job.salary.max) {
+                        salaryStr = `₹${job.salary.min.toLocaleString()} - ₹${job.salary.max.toLocaleString()}`;
+                      } else if (job.salary.min) {
+                        salaryStr = `From ₹${job.salary.min.toLocaleString()}`;
+                      } else if (job.salary.max) {
+                        salaryStr = `Up to ₹${job.salary.max.toLocaleString()}`;
+                      }
+                    } else if (typeof job.salary === 'string' && job.salary) {
+                      salaryStr = job.salary;
+                    }
+                  }
 
                   // Logo logic
                   let logoEl = <span className="font-bold text-2xl text-primary">{companyName?.charAt(0) || "J"}</span>;
@@ -189,25 +208,25 @@ export const FeaturedJobs = () => {
                       key={String(jobId)}
                       className="group relative flex flex-col md:flex-row md:items-center gap-6 px-6 md:px-10 py-8 hover:bg-primary/5 transition-colors cursor-pointer"
                     >
-                      {/* Left: Brand */}
-                      <div className="flex items-center gap-5 flex-1">
-                        <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center font-bold text-2xl text-primary group-hover:scale-110 group-hover:bg-white transition-all duration-300 overflow-hidden">
+                      {/* Left: Brand — fixed width 40% */}
+                      <div className="flex items-center gap-5 md:w-[40%] min-w-0">
+                        <div className="w-14 h-14 shrink-0 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center font-bold text-2xl text-primary group-hover:scale-110 group-hover:bg-white transition-all duration-300 overflow-hidden">
                           {logoEl}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-bold text-slate-400 uppercase tracking-tight">
+                            <span className="text-sm font-bold text-slate-400 uppercase tracking-tight truncate">
                               {companyName}
                             </span>
                           </div>
-                          <h3 className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors">
+                          <h3 className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-2">
                             {roleName}
                           </h3>
                         </div>
                       </div>
 
-                      {/* Middle: Tags (Visible on Tablet/Desktop) */}
-                      <div className="hidden lg:flex flex-col justify-center flex-1 gap-2">
+                      {/* Middle: Tags — fixed width 30%, always aligned */}
+                      <div className="hidden lg:flex flex-col justify-center md:w-[30%] gap-2">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           Required Skills
                         </span>
@@ -223,8 +242,8 @@ export const FeaturedJobs = () => {
                         </div>
                       </div>
 
-                      {/* Right: Meta & Actions */}
-                      <div className="flex items-center justify-between md:justify-end gap-8">
+                      {/* Right: Meta & Actions — fixed width 30% */}
+                      <div className="flex items-center justify-between md:justify-end md:w-[30%] gap-6 shrink-0">
                         <div className="text-left md:text-right">
                           <div className="flex items-center md:justify-end gap-1.5 text-sm font-medium text-slate-500 mb-1">
                             <MapPin size={14} /> {locStr} · {employementTypeStr}

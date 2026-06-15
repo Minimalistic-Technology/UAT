@@ -1,11 +1,9 @@
 "use client";
 
-import { useForm, UseFormRegisterReturn } from "react-hook-form";
+import { useState } from "react";
 import { useSubmitKyc } from "@/features/employer/hooks/use-company";
-import { Upload, CheckCircle, Building2, CreditCard, ReceiptText, AlertCircle } from "lucide-react";
+import { CheckCircle, AlertCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -13,18 +11,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
 import Link from "next/link";
+import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
-interface KycFormValues {
-  companyName: string;
-  aadharNo: string;
-  gstNo: string;
-  cinNo: string;
-  photo: FileList;
-  lightbill: FileList;
-}
+export const COMPANY_DOCUMENT_TYPES = [
+  "Company GSTIN",
+  "Company PAN Card",
+  "Udyog Aadhaar Number",
+  "Shops And Establishment Act",
+  "Food License",
+  "Corporate Identity Number",
+  "Other"
+];
+
+export const PERSONAL_DOCUMENT_TYPES = [
+  "Visiting Card",
+  "Personal Aadhar",
+  "Personal PAN Card",
+  "Employee ID Card",
+  "DigiLocker Aadhaar",
+  "Other"
+];
 
 const VerifyPage = () => {
   const { data: companyResponse, isLoading: isLoadingCompany } = useGetMyCompanyDetails();
@@ -32,153 +42,101 @@ const VerifyPage = () => {
   const hasPlan = !!companyDetails?.currentPlan;
 
   const { mutate: submitKyc, isPending } = useSubmitKyc();
-  
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<KycFormValues>();
 
-  const onSubmit = (data: KycFormValues) => {
+  const [companyDocType, setCompanyDocType] = useState<string>("");
+  const [companyFile, setCompanyFile] = useState<File | null>(null);
+
+  const [personalDocType, setPersonalDocType] = useState<string>("");
+  const [personalFile, setPersonalFile] = useState<File | null>(null);
+
+  const onSubmit = () => {
+    if (!companyDocType || !companyFile) {
+      toast.error("Please select a Company Document type and upload a file.");
+      return;
+    }
+    if (!personalDocType || !personalFile) {
+      toast.error("Please select a Personal/HR Document type and upload a file.");
+      return;
+    }
+
     const formData = new FormData();
-    formData.append("companyName", data.companyName);
-    formData.append("aadharNo", data.aadharNo);
-    formData.append("gstNo", data.gstNo || "");
-    formData.append("cinNo", data.cinNo || "");
-    
-    if (data.photo?.[0]) formData.append("photo", data.photo[0]);
-    if (data.lightbill?.[0]) formData.append("lightbill", data.lightbill[0]);
 
-    submitKyc(formData);
+    formData.append("companyDocumentType", companyDocType);
+    formData.append("personalDocumentType", personalDocType);
+
+    formData.append("companyDocument", companyFile);
+    formData.append("personalDocument", personalFile);
+
+    submitKyc(formData, {
+      onSuccess: () => {
+        setCompanyDocType("");
+        setCompanyFile(null);
+        setPersonalDocType("");
+        setPersonalFile(null);
+      }
+    });
   };
 
-  const photoFile = watch("photo")?.[0];
-  const lightbillFile = watch("lightbill")?.[0];
-
   return (
-    <div className="bg-background text-foreground flex flex-col items-center justify-center p-6">
-      <Card className="w-full max-w-2xl bg-card border-border shadow-2xl space-y-4">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl font-bold tracking-tight">
-            Verify Identity
+    <div className="bg-background text-foreground flex flex-col items-center justify-start p-6 min-h-screen">
+      <Card className="w-full max-w-3xl bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] sm:rounded-[24px]">
+        <CardHeader className="space-y-1 pb-4 pt-8 px-8 border-b">
+          <CardTitle className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
+            <ShieldCheck className="w-7 h-7 text-blue-600" /> KYC
           </CardTitle>
-          <CardDescription className="text-muted-foreground text-sm">
-            Complete your KYC to access premium legal services.
+          <CardDescription className="text-slate-500 text-sm mt-1">
+            Please upload your company and personal documents for verification
           </CardDescription>
         </CardHeader>
-        
-        <CardContent>
+
+        <CardContent className="px-8 pt-6 pb-8">
           {isLoadingCompany ? (
             <div className="flex justify-center p-8">Loading...</div>
           ) : !hasPlan ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
+            <div className="flex flex-col items-center justify-center p-12 text-center space-y-4 rounded-xl border border-dashed border-amber-200 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/20">
               <AlertCircle className="w-12 h-12 text-amber-500" />
-              <h3 className="text-xl font-bold">Active Plan Required</h3>
-              <p className="text-muted-foreground">
-                You need an active subscription plan before you can submit your KYC details.
+              <h3 className="text-xl font-bold text-amber-900 dark:text-amber-500">Active Plan Required</h3>
+              <p className="text-amber-700/80 dark:text-amber-500/80 max-w-md text-sm">
+                You need an active subscription premium plan before you can submit your KYC details.
               </p>
-              <Button asChild className="mt-4">
+              <Button asChild className="mt-4 shadow-lg shadow-amber-500/20 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg px-8">
                 <Link href="/employer-dashboard/plans">View Pricing Plans</Link>
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Text Inputs */}
-              <div className="space-y-2">
-                <Label htmlFor="companyName" className={errors.companyName ? "text-destructive" : "text-muted-foreground"}>Company Name</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input 
-                    id="companyName"
-                    placeholder="Acme Corp" 
-                    className={cn("pl-10 bg-background focus-visible:ring-ring", errors.companyName ? "border-destructive focus-visible:ring-destructive" : "border-input")}
-                    {...register("companyName", { required: "Company Name is required" })}
-                  />
-                </div>
-                {errors.companyName && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {errors.companyName.message}</p>}
-              </div>
+            <div className="space-y-8">
 
-              <div className="space-y-2">
-                <Label htmlFor="aadharNo" className={errors.aadharNo ? "text-destructive" : "text-muted-foreground"}>Aadhar Number</Label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input 
-                    id="aadharNo"
-                    placeholder="123456789012" 
-                    className={cn("pl-10 bg-background focus-visible:ring-ring", errors.aadharNo ? "border-destructive focus-visible:ring-destructive" : "border-input")}
-                    {...register("aadharNo", { 
-                      required: "Aadhar Number is required",
-                      pattern: { value: /^\d{12}$/, message: "Must be exactly 12 digits" }
-                    })}
-                  />
-                </div>
-                {errors.aadharNo && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {errors.aadharNo.message}</p>}
-              </div>
+              <DocumentUploadSection
+                title="Company Documents"
+                options={COMPANY_DOCUMENT_TYPES}
+                selectedType={companyDocType}
+                setSelectedType={setCompanyDocType}
+                selectedFile={companyFile}
+                setSelectedFile={setCompanyFile}
+                inputId="companyDoc"
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="gstNo" className={errors.gstNo ? "text-destructive" : "text-muted-foreground"}>GST Number</Label>
-                <div className="relative">
-                  <ReceiptText className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input 
-                    id="gstNo"
-                    placeholder="22AAAAA0000A1Z5" 
-                    className={cn("pl-10 bg-background focus-visible:ring-ring", errors.gstNo ? "border-destructive focus-visible:ring-destructive" : "border-input")}
-                    {...register("gstNo", {
-                      required: "GST Number is required",
-                      pattern: { value: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i, message: "Invalid GST format" }
-                    })}
-                  />
-                </div>
-                {errors.gstNo && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {errors.gstNo.message}</p>}
-              </div>
+              <DocumentUploadSection
+                title="Personal / HR Documents"
+                options={PERSONAL_DOCUMENT_TYPES}
+                selectedType={personalDocType}
+                setSelectedType={setPersonalDocType}
+                selectedFile={personalFile}
+                setSelectedFile={setPersonalFile}
+                inputId="personalDoc"
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="cinNo" className={errors.cinNo ? "text-destructive" : "text-muted-foreground"}>CIN Number</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                  <Input 
-                    id="cinNo"
-                    placeholder="U12345MH2023PTC123456" 
-                    className={cn("pl-10 bg-background focus-visible:ring-ring", errors.cinNo ? "border-destructive focus-visible:ring-destructive" : "border-input")}
-                    {...register("cinNo", {
-                      required: "CIN Number is required",
-                      pattern: { value: /^[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/i, message: "Invalid CIN format" }
-                    })}
-                  />
-                </div>
-                {errors.cinNo && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} /> {errors.cinNo.message}</p>}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                <Button
+                  onClick={onSubmit}
+                  disabled={isPending || !companyFile || !personalFile}
+                  size="lg"
+                  className="w-full py-6 font-bold tracking-wide text-base rounded-xl bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/20 text-white disabled:bg-slate-300 disabled:shadow-none transition-all active:scale-[0.98]"
+                >
+                  {isPending ? "Processing Security Check..." : "Submit Verification Documents"}
+                </Button>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-              {/* File Uploads */}
-              <FileUploadField 
-                label="Passport Photo" 
-                registration={register("photo", { required: "Passport Photo is required" })}
-                file={photoFile} 
-                error={errors.photo?.message}
-                accept="image/*"
-              />
-              <FileUploadField 
-                label="Electricity Bill (PDF/Img)" 
-                registration={register("lightbill", { required: "Electricity Bill is required" })}
-                file={lightbillFile} 
-                error={errors.lightbill?.message}
-                accept="image/*,.pdf"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isPending}
-              size="lg"
-              className="w-full py-6 font-semibold text-base rounded-xl mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {isPending ? "Processing..." : "Submit KYC Details"}
-            </Button>
-          </form>
           )}
         </CardContent>
       </Card>
@@ -186,50 +144,90 @@ const VerifyPage = () => {
   );
 };
 
-const FileUploadField = ({ 
-  label, 
-  registration, 
-  file, 
-  error,
-  accept 
-}: { 
-  label: string;
-  registration: UseFormRegisterReturn;
-  file?: File;
-  error?: string;
-  accept?: string;
+const DocumentUploadSection = ({
+  title,
+  options,
+  selectedType,
+  setSelectedType,
+  selectedFile,
+  setSelectedFile,
+  inputId,
+}: {
+  title: string;
+  options: string[];
+  selectedType: string;
+  setSelectedType: (val: string) => void;
+  selectedFile: File | null;
+  setSelectedFile: (file: File | null) => void;
+  inputId: string;
 }) => (
-  <div className="space-y-2">
-    <Label className={error ? "text-destructive" : "text-muted-foreground"}>{label}</Label>
-    <label className="cursor-pointer group block">
-      <div className={cn(
-        "border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-2 transition-all",
-        error ? "border-destructive/50 bg-destructive/5 group-hover:border-destructive group-hover:bg-destructive/10" :
-        file 
-          ? "border-primary/50 bg-primary/5" 
-          : "border-input bg-background group-hover:border-accent-foreground/20 group-hover:bg-accent/50"
-      )}>
-        {file ? (
-          <CheckCircle className="text-primary" size={24} />
-        ) : (
-          <Upload className={error ? "text-destructive/70 group-hover:text-destructive" : "text-muted-foreground group-hover:text-foreground transition-colors"} size={24} />
-        )}
-        <span className={cn(
-          "text-xs text-center truncate max-w-[180px]",
-          error ? "text-destructive" :
-          file ? "text-primary font-medium" : "text-muted-foreground"
-        )}>
-          {file ? file.name : "Click to upload"}
-        </span>
+  <div className="space-y-3">
+    <div className="flex flex-col">
+      <h3 className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+        {title}
+      </h3>
+      <span className="text-slate-400 text-xs font-normal">Supported formats: PDF, JPEG, PNG, WEBP (Max 5MB)</span>
+    </div>
+    <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 sm:p-5 border border-slate-200/60 dark:border-slate-800 flex flex-col sm:flex-row gap-4 items-start sm:items-center transition-all hover:border-blue-200 dark:hover:border-blue-900/50">
+      <div className="flex-1 w-full relative">
+        <Select value={selectedType} onValueChange={setSelectedType}>
+          <SelectTrigger className="w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 h-11 rounded-lg focus:ring-2 focus:ring-blue-500/20">
+            <SelectValue placeholder="Select Document Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((type) => (
+              <SelectItem key={type} value={type} className="cursor-pointer">
+                {type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <input 
-        type="file" 
-        className="hidden" 
-        {...registration}
-        accept={accept} 
-      />
-    </label>
-    {error && <p className="text-xs text-destructive flex items-center gap-1 mt-1"><AlertCircle size={12} /> {error}</p>}
+
+      {selectedType && (
+        <div className="w-full sm:w-auto shrink-0 flex items-center justify-center animate-in zoom-in-95 duration-200">
+          <Input
+            type="file"
+            id={inputId}
+            accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
+                if (!validTypes.includes(file.type)) {
+                  toast.error("Invalid file type. Only PDF, JPEG, PNG, and WEBP are allowed.");
+                  e.target.value = "";
+                  return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                  toast.error("File is too large. Maximum size is 5MB.");
+                  e.target.value = "";
+                  return;
+                }
+                setSelectedFile(file);
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant={selectedFile ? "outline" : "default"}
+            className={selectedFile
+              ? "w-full sm:w-auto border-green-500 text-green-600 bg-green-50 hover:bg-green-100 dark:border-green-800 dark:text-green-400 dark:bg-green-900/20 h-11 px-8 rounded-lg font-bold uppercase tracking-wider text-xs transition-all"
+              : "w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 h-11 px-8 rounded-lg font-bold uppercase tracking-wider text-xs transition-all"
+            }
+            onClick={() => document.getElementById(inputId)?.click()}
+          >
+            {selectedFile ? <><CheckCircle className="w-4 h-4 mr-2" /> Uploaded</> : "Upload"}
+          </Button>
+        </div>
+      )}
+    </div>
+    {selectedFile && (
+      <p className="text-xs text-green-600 dark:text-green-400 font-medium ml-2 animate-in slide-in-from-top-1">
+        Selected file: {selectedFile.name}
+      </p>
+    )}
   </div>
 );
 

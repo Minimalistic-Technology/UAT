@@ -21,10 +21,29 @@ import { useGetMyInternshipPostings } from "@/features/employer/hooks/use-intern
 import { Skeleton } from "@/components/ui/skeleton";
 import { InternshipRow } from "@/features/employer/components/internship-row";
 
-const Page = () => {
-  const { data: responseData, isLoading, isError } = useGetMyInternshipPostings();
+import { useState, useMemo } from "react";
+import { GlobalSearchInput } from "@/components/global-search-input";
+import { formatLocation } from "@/utils";
 
-  const myInternshipPostings = responseData?.data?.internshipPosts || [];
+const Page = () => {
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+  } = useGetMyInternshipPostings();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const myInternshipPostingsRaw = responseData?.data?.internshipPosts || [];
+
+  const myInternshipPostings = useMemo(() => {
+    if (!searchQuery.trim()) return myInternshipPostingsRaw;
+    const lowerQuery = searchQuery.toLowerCase();
+    return myInternshipPostingsRaw.filter(
+      (internship: any) =>
+        internship.title?.toLowerCase().includes(lowerQuery) ||
+        formatLocation(internship.location)?.toLowerCase().includes(lowerQuery),
+    );
+  }, [myInternshipPostingsRaw, searchQuery]);
 
   if (isLoading) {
     return <InternshipTableSkeleton />;
@@ -36,28 +55,32 @@ const Page = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative max-w-sm flex-1">
-          <input
-            type="text"
-            placeholder="Search internship listings..."
-            className="h-10 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus-visible:outline-none focus:ring-1 focus:ring-blue-500 w-full text-sm"
+      <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 w-full">
+        <div className="relative w-full flex-1 sm:max-w-sm">
+          <GlobalSearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search internships..."
           />
-          <Briefcase className="text-slate-400 absolute top-3 left-3 h-4 w-4" />
         </div>
-        <Button asChild size="sm">
-          <Link href="/employer-dashboard/jobs/create">
-            <Plus className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Post Internship</span>
+        <Button asChild size="sm" className="w-auto shrink-0 whitespace-nowrap px-3 sm:px-4">
+          <Link
+            href="/employer-dashboard/listings/create?type=internship"
+            className="flex items-center justify-center"
+          >
+            <Plus className="mr-1.5 h-4 w-4 shrink-0" />
+            <span>Post New Internship</span>
           </Link>
         </Button>
       </div>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="pb-4 pt-6 px-7">
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+        <CardHeader className="px-7 pt-6 pb-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Your Internship Listings</CardTitle>
+              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                Your Internship Listings
+              </CardTitle>
               <CardDescription className="text-sm text-slate-500">
                 Manage status, edit internships and track performance.
               </CardDescription>
@@ -70,7 +93,9 @@ const Page = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-62.5 font-semibold">Internship Title</TableHead>
+                  <TableHead className="w-62.5 font-semibold">
+                    Internship Title
+                  </TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Applications</TableHead>
                   <TableHead className="font-semibold">Posted By</TableHead>
@@ -108,8 +133,8 @@ export default Page;
 
 function InternshipTableSkeleton() {
   return (
-    <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] mt-14">
-      <CardHeader className="pb-4 pt-6 px-7 flex flex-row justify-between">
+    <Card className="mt-14 rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+      <CardHeader className="flex flex-row justify-between px-7 pt-6 pb-4">
         <div className="space-y-2">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-4 w-60" />
@@ -148,16 +173,17 @@ function InternshipTableSkeleton() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-50">
-        <Briefcase className="h-10 w-10 text-gray-300" />
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted dark:bg-slate-800">
+        <Briefcase className="h-10 w-10 text-slate-400" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-900">No internships found</h3>
-      <p className="mt-1 max-w-75 text-center text-sm text-gray-500">
-        You haven't posted any internship listings yet. Get started by creating your
-        first one.
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No jobs found</h3>
+      <p className="mt-1 max-w-md text-center text-sm text-slate-500">
+        You haven't posted any internship listings yet. Get started by creating your first one.
       </p>
       <Button asChild variant="outline" className="mt-6">
-        <Link href="/employer-dashboard/internships/create">Post Your First Internship</Link>
+        <Link href="/employer-dashboard/listings/create?type=internship">
+          Post Your First Internship
+        </Link>
       </Button>
     </div>
   );

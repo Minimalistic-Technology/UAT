@@ -102,3 +102,34 @@ export const authorize = (...roles: GlobalRole[]) => {
     next();
   };
 };
+
+export const isEmployer = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (!req.user) {
+      return next(new ApiError(401, "Not authorized to access this route"));
+    }
+
+    const companyMember = await CompanyMember.findOne({ user: req.user._id });
+
+    if (!companyMember || !companyMember.isActive) {
+      return next(
+        new ApiError(
+          403,
+          "Access denied. Only employers can perform this action.",
+        ),
+      );
+    }
+
+    // Assign company related data to req.user for downstream use if needed
+    req.user.isEmployer = true;
+    req.user.companyId = companyMember.company;
+
+    next();
+  } catch (error: any) {
+    next(new ApiError(500, error.message || "Internal Server Error"));
+  }
+};

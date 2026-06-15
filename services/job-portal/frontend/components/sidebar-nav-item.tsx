@@ -7,22 +7,30 @@ interface SidebarNavItemProps {
   label: string
   icon: LucideIcon
   isActive: boolean
+  forceExpanded?: boolean
 }
 
-export function SidebarNavItem({ href, label, icon: Icon, isActive }: SidebarNavItemProps) {
+import { useSidebar } from "@/components/ui/sidebar-context";
+
+export function SidebarNavItem({ href, label, icon: Icon, isActive, forceExpanded }: SidebarNavItemProps) {
+  const { isCollapsed } = useSidebar();
+  const effectiveCollapsed = forceExpanded ? false : isCollapsed;
+
   return (
     <Link
       href={href}
+      title={effectiveCollapsed ? label : undefined}
       className={cn(
-        "group flex items-center justify-between px-3 py-2 text-sm font-medium transition-all duration-200",
+        "group flex items-center px-3 py-2 text-sm font-medium transition-all duration-200 overflow-hidden",
         isActive
           ? "bg-[#2563eb]/10 text-[#2563eb] border-l-4 border-l-[#2563eb] rounded-r-xl font-bold"
-          : "text-slate-500 dark:text-slate-400 border-l-4 border-l-transparent hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white rounded-r-xl"
+          : "text-slate-500 dark:text-slate-400 border-l-4 border-l-transparent hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white rounded-r-xl",
+        effectiveCollapsed ? "justify-center rounded-l-xl mx-2 px-0" : "justify-between"
       )}
     >
-      <div className="flex items-center gap-3">
-        <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
-        {label}
+      <div className={cn("flex items-center gap-3", effectiveCollapsed && "gap-0")}>
+        <Icon className={cn("h-5 w-5 shrink-0", isActive ? "text-[#2563eb]" : "text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white")} />
+        {!effectiveCollapsed && <span className="whitespace-nowrap">{label}</span>}
       </div>
     </Link>
   )

@@ -13,8 +13,6 @@ interface AdminEditProfileModalProps {
     setIsEditing: (open: boolean) => void;
     isLoading: boolean;
     email: string;
-    avatarUrl?: string;
-    onImageUpload?: (file: File) => void;
     formData: {
         firstName: string;
         lastName: string;
@@ -32,8 +30,6 @@ export function AdminEditProfileModal({
     setIsEditing,
     isLoading,
     email,
-    avatarUrl,
-    onImageUpload,
     formData,
     handleSave,
 }: AdminEditProfileModalProps) {
@@ -68,14 +64,7 @@ export function AdminEditProfileModal({
                         </div>
                     </DialogHeader>
 
-                    <div className="flex items-center gap-5 pb-6 border-b border-slate-100 dark:border-slate-800/60">
-                        <div className="flex-shrink-0 scale-90 origin-left">
-                            <ImageUpload
-                                value={avatarUrl}
-                                initials={`${localData.firstName.charAt(0)}${localData.lastName.charAt(0)}`}
-                                onChange={(file) => onImageUpload && onImageUpload(file)}
-                            />
-                        </div>
+                    <div className="flex items-center pb-6 border-b border-slate-100 dark:border-slate-800/60">
                         <div className="space-y-1.5 flex-1">
                             <div className="inline-flex items-center text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-0.5">
                                 <ShieldCheck className="w-3.5 h-3.5 mr-1 text-blue-500" /> Super Admin

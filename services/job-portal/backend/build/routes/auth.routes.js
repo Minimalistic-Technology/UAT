@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { login, logout, getMe, verifyOTP, googleAuth, forgotPassword, resetPassword, requestUserRegistration, requestEmployerRegistration, confirmRegistrationOTP, } from "../controllers/auth.controller.js";
+import { login, logout, getMe, verifyOTP, googleAuth, forgotPassword, resetPassword, requestUserRegistration, requestEmployerRegistration, confirmRegistrationOTP, resendRegistrationOTP, } from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
 import { loginLimiter, otpLimiter, otpRequestLimiter } from "../middleware/rateLimiter.js";
-import { confirmRegistrationSchema, forgotPasswordSchema, googleAuthSchema, loginSchema, registerEmployerSchema, registerUserSchema, resetPasswordSchema, verifyOtpSchema, } from "../validations/auth.validation.js";
+import { confirmRegistrationSchema, forgotPasswordSchema, googleAuthSchema, loginSchema, registerEmployerSchema, registerUserSchema, resetPasswordSchema, verifyOtpSchema, resendRegistrationOtpSchema, } from "../validations/auth.validation.js";
 const router = Router();
 // Register
 router.post("/request-otp/register", otpRequestLimiter, validate(registerUserSchema), requestUserRegistration);
@@ -11,6 +11,8 @@ router.post("/request-otp/register", otpRequestLimiter, validate(registerUserSch
 router.post("/request-otp/employer", otpRequestLimiter, validate(registerEmployerSchema), requestEmployerRegistration);
 // confirm registration
 router.post("/register/confirm", otpLimiter, validate(confirmRegistrationSchema), confirmRegistrationOTP);
+// Resend OTP
+router.post("/resend-otp", otpRequestLimiter, validate(resendRegistrationOtpSchema), resendRegistrationOTP);
 // Login
 router.post("/login", loginLimiter, validate(loginSchema), login);
 // Logout

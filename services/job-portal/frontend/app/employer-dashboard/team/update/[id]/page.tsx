@@ -55,7 +55,7 @@ export default function UpdateTeamMemberPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-6 p-6">
+      <div className="space-y-6">
         <Skeleton className="h-10 w-32" />
         <Skeleton className="h-[400px] w-full rounded-xl" />
       </div>
@@ -71,7 +71,7 @@ export default function UpdateTeamMemberPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"

@@ -173,7 +173,7 @@ export const submitKyc = async (
   next: NextFunction,
 ) => {
   try {
-    const { companyName, aadharNo, gstNo, cinNo } = req.body;
+    const { companyDocumentType, personalDocumentType } = req.body;
 
     const companyMember = await CompanyMember.findOne({ user: req.user.id, isActive: true });
     if (!companyMember) {
@@ -191,22 +191,14 @@ export const submitKyc = async (
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-    if (!files?.photo?.[0] || !files?.lightbill?.[0]) {
+    if (!files?.personalDocument?.[0] || !files?.companyDocument?.[0]) {
       throw new ApiError(
         400,
-        "Both photo and lightbill documents are required.",
+        "Both personal and company documents are required.",
       );
     }
 
-    let existingKyc = await KYC.findOne({
-      $or: [
-        { user: req.user.id },
-        // Use a case-insensitive regex to catch "Acme Corp" vs "ACME Corp"
-        // { companyName: { $regex: new RegExp(`^${companyName}$`, "i") } },
-        // { gstNo },
-        // { cinNo },
-      ],
-    });
+    let existingKyc = await KYC.findOne({ user: req.user.id });
 
     if (existingKyc && existingKyc.status === "approved") {
       throw new ApiError(400, "Your KYC is already approved.");
@@ -221,35 +213,35 @@ export const submitKyc = async (
       await existingKyc.save();
     }
 
-    const photoResult = await uploadToCloudinary(
-      files.photo[0].buffer,
-      "job_portal/kyc_photos",
-      "image",
-      `kyc-photo-${req.user.id}-${Date.now()}`,
+    const isPersonalDocPdf = files.personalDocument[0].mimetype === "application/pdf";
+    const personalDocResult = await uploadToCloudinary(
+      files.personalDocument[0].buffer,
+      "job_portal/kyc_personal",
+      isPersonalDocPdf ? "raw" : "image",
+      `kyc-personal-${req.user.id}-${Date.now()}`,
+      isPersonalDocPdf ? "pdf" : undefined,
     );
 
-    const isLightbillPdf = files.lightbill[0].mimetype === "application/pdf";
-
-    const lightbillResult = await uploadToCloudinary(
-      files.lightbill[0].buffer,
-      "job_portal/kyc_lightbills",
-      isLightbillPdf ? "raw" : "image",
-      `kyc-lightbill-${req.user.id}-${Date.now()}`,
+    const isCompanyDocPdf = files.companyDocument[0].mimetype === "application/pdf";
+    const companyDocResult = await uploadToCloudinary(
+      files.companyDocument[0].buffer,
+      "job_portal/kyc_company",
+      isCompanyDocPdf ? "raw" : "image",
+      `kyc-company-${req.user.id}-${Date.now()}`,
+      isCompanyDocPdf ? "pdf" : undefined,
     );
 
     const kycData = {
       user: req.user.id,
-      companyName,
-      aadharNo,
-      gstNo,
-      cinNo,
-      photo: {
-        url: photoResult.secure_url,
-        publicId: photoResult.public_id,
+      companyDocumentType,
+      personalDocumentType,
+      personalDocument: {
+        url: personalDocResult.secure_url,
+        publicId: personalDocResult.public_id,
       },
-      lightbill: {
-        url: lightbillResult.secure_url,
-        publicId: lightbillResult.public_id,
+      companyDocument: {
+        url: companyDocResult.secure_url,
+        publicId: companyDocResult.public_id,
       },
       status: "pending" as const,
     };
@@ -259,8 +251,8 @@ export const submitKyc = async (
     if (!kyc) {
       // optionally delete the uploaded images
       await Promise.allSettled([
-        deleteFromCloudinary(photoResult.public_id),
-        deleteFromCloudinary(lightbillResult.public_id),
+        deleteFromCloudinary(personalDocResult.public_id),
+        deleteFromCloudinary(companyDocResult.public_id),
       ]);
 
       throw new ApiError(
@@ -270,13 +262,11 @@ export const submitKyc = async (
     }
 
     const responseToSend = {
-      companyName: kyc?.companyName,
-      aadharNo: kyc?.aadharNo,
-      gstNo: kyc?.gstNo,
-      cinNo: kyc?.cinNo,
+      companyDocumentType: kyc?.companyDocumentType,
+      personalDocumentType: kyc?.personalDocumentType,
       documents: {
-        photoUrl: kyc?.photo.url,
-        lightbillUrl: kyc?.lightbill.url,
+        personalDocumentUrl: kyc?.personalDocument.url,
+        companyDocumentUrl: kyc?.companyDocument.url,
       },
     };
 

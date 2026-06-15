@@ -70,7 +70,7 @@ export const EmployerCTA = () => {
       });
       return;
     }
-    router.push("/employer-dashboard/jobs/create");
+    router.push("/employer-dashboard/listings/create");
   };
 
   const agencyCost = hiresPerYear[0] * 15000;

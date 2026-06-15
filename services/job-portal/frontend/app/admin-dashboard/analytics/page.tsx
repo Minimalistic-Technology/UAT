@@ -113,10 +113,10 @@ const AnalyticsPage = () => {
         <div className="flex items-center mt-4 md:mt-0">
           <Button
             onClick={handleExportReport}
-            variant="outline"
-            className="gap-2"
+            variant="secondary"
+            className="gap-2 cursor-pointer"
           >
-            <Download className="h-4 w-4" />
+            <Download className="size-4" />
             Export Report
           </Button>
         </div>
@@ -160,7 +160,7 @@ const AnalyticsPage = () => {
       </div>
 
       {/* 📊 Secondary KPIs Mesh */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {getAnalyticsStatusCardsConfig(summary).map((card, index) => (
           <StatusCard
             key={index}

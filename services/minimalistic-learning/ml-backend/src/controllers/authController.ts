@@ -60,7 +60,8 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     );
   }
 
-  // Verify Google reCAPTCHA
+  // --- Captcha is temporarily bypassed as per user request ---
+  /*
   const recaptchaSecret = env.RECAPTCHA_SECRET_KEY || "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"; // Default test secret
   const recaptchaToken = (payload as any).recaptchaToken;
 
@@ -73,7 +74,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
       `https://www.google.com/recaptcha/api/siteverify?secret=${recaptchaSecret}&response=${recaptchaToken}`,
       { method: 'POST' }
     );
-    const verifyData:any = await verifyRes.json();
+    const verifyData: any = await verifyRes.json();
 
     if (!verifyData.success) {
       console.error("CAPTCHA Google Response:", verifyData);
@@ -83,6 +84,8 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     console.error("CAPTCHA Catch Block Error:", error.message || error);
     throw new ApiError(StatusCodes.BAD_REQUEST, "CAPTCHA verification failed. Are you a robot?");
   }
+  */
+  // ---------------------------------------------------------
 
   const existing = await userService.findByEmail(payload.email);
   if (existing) {

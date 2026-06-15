@@ -36,7 +36,7 @@ export function RecentApplicationsCard({ applications }: RecentApplicationsCardP
                             <Briefcase className="mx-auto mb-3 h-12 w-12 text-slate-300" />
                             <p className="text-slate-500">You haven't applied to any jobs yet.</p>
                             <Button variant="link" asChild>
-                                <Link href="/user-dashboard/find-jobs">Start searching</Link>
+                                <Link href="/find-jobs">Start searching</Link>
                             </Button>
                         </div>
                     ) : (

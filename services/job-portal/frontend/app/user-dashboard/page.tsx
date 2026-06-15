@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { Briefcase, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Briefcase, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // hooks
@@ -75,7 +75,7 @@ export default function JobSeekerDashboard() {
   ];
 
   return (
-    <div className="animate-in fade-in container mx-auto space-y-8 p-6 lg:p-10 duration-500">
+    <div className="animate-in fade-in w-full space-y-6 md:space-y-8 duration-500">
       {/* Welcome Header */}
       <UserWelcomeHeader
         userName={session?.user?.name?.split(" ")[0] || "Guest"}
@@ -120,20 +120,8 @@ export default function JobSeekerDashboard() {
 
 function DashboardSkeleton() {
   return (
-    <div className="container mx-auto space-y-8 p-10">
-      <div className="flex justify-between">
-        <Skeleton className="h-10 w-[300px]" />
-        <Skeleton className="h-10 w-[150px]" />
-      </div>
-      <div className="grid gap-4 md:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-28 w-full rounded-xl" />
-        ))}
-      </div>
-      <div className="grid gap-8 lg:grid-cols-12">
-        <Skeleton className="h-[500px] rounded-xl lg:col-span-8" />
-        <Skeleton className="h-[500px] rounded-xl lg:col-span-4" />
-      </div>
+    <div className="flex h-full items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
     </div>
   );
 }

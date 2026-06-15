@@ -16,6 +16,8 @@ export interface ITempUser extends Document {
   companyName?: string;
   companyRole?: string;
   industry?: string;
+  resendAttempts: number;
+  blockedUntil?: Date;
 }
 
 const tempUserSchema = new mongoose.Schema<ITempUser>({
@@ -75,7 +77,15 @@ const tempUserSchema = new mongoose.Schema<ITempUser>({
   expiresAt: {
     type: Date,
     default: Date.now,
-    expires: 600,
+    expires: 600, // MongoDB TTL deletes document 10 minutes AFTER expiresAt
+  },
+  resendAttempts: {
+    type: Number,
+    default: 0,
+  },
+  blockedUntil: {
+    type: Date,
+    default: null,
   },
 });
 

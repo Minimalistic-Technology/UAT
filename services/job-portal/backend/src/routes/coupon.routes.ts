@@ -3,7 +3,6 @@ import { validate } from "../middleware/validate.middleware.js";
 import {
   applyCoupon,
   createCoupon,
-  getCoupons,
   validateCoupon,
   updateCoupon,
   deleteCoupon,
@@ -15,8 +14,6 @@ import { applyCouponSchema, createCouponSchema, updateCouponSchema, validateCoup
 const router = Router();
 
 router.use(protect);
-
-router.get("/", getCoupons);
 
 router.post(
   "/apply",

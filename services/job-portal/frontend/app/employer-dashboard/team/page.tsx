@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   useDeleteEmployee,
   useGetAllEmployees,
+  useGetMyCompanyDetails,
 } from "@/features/employer/hooks/use-company";
 import { Loader2, Trash2, UserPlus, Users, Pencil } from "lucide-react";
 import {
@@ -32,19 +33,25 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { AddTeamMemberDialog } from "@/features/employer/components/add-team-member-dialog";
 
 const Page = () => {
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   const { data: responseData, isLoading, isError, error } = useGetAllEmployees();
+  const { data: companyRes, isLoading: companyLoading } = useGetMyCompanyDetails();
   const deleteMutation = useDeleteEmployee();
   const router = useRouter();
 
   const employees = responseData?.data?.members || [];
   const getInitials = (first: string, last: string) => `${first[0]}${last[0]}`;
+  const hasPlan = !!companyRes?.data?.currentPlan;
 
-  if (isLoading) {
+  if (isLoading || companyLoading) {
     return (
-      <div className="space-y-4 p-8">
+      <div className="space-y-4">
         <Skeleton className="h-10 w-50" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
@@ -62,7 +69,9 @@ const Page = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <AddTeamMemberDialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Team Management</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -70,8 +79,15 @@ const Page = () => {
           </p>
         </div>
         <Button
-          onClick={() => router.push("/employer-dashboard/team/add")}
-          className="rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-500/20 font-semibold h-10 px-5 gap-2"
+          onClick={() => {
+            if (!hasPlan) {
+              toast.error("Please purchase a subscription plan to add team members.");
+              router.push("/employer-dashboard/plans");
+              return;
+            }
+            setIsAddModalOpen(true);
+          }}
+          className="rounded-xl font-semibold h-10 px-5 gap-2"
         >
           <UserPlus className="size-4" strokeWidth={2} />
           Add New Employee
@@ -87,28 +103,33 @@ const Page = () => {
         </CardHeader>
         <CardContent className="px-7 pb-6">
           <div className="rounded-md border">
-            {employees.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="bg-muted mb-4 rounded-full p-4">
-                  <Users className="text-muted-foreground h-8 w-8" />
-                </div>
-                <h3 className="text-lg font-semibold">No team members</h3>
-                <p className="text-muted-foreground mt-1 max-w-xs text-sm">
-                  You haven't added any employees to your company yet.
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader className="bg-muted/50">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="w-75">Employee</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {employees.length === 0 ? (
                   <TableRow>
-                    <TableHead className="w-75">Employee</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      <EmptyState
+                        onAddEmployee={() => {
+                          if (!hasPlan) {
+                            toast.error("Please purchase a subscription plan to add team members.");
+                            router.push("/employer-dashboard/plans");
+                            return;
+                          }
+                          setIsAddModalOpen(true);
+                        }}
+                      />
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employees.map((emp: any) => {
+                ) : (
+                  employees.map((emp: any) => {
                     const isConfirming = confirmId === emp._id;
                     const isDeleting =
                       deleteMutation.isPending &&
@@ -219,10 +240,10 @@ const Page = () => {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
-                </TableBody>
-              </Table>
-            )}
+                  })
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
@@ -231,3 +252,20 @@ const Page = () => {
 };
 
 export default Page;
+
+function EmptyState({ onAddEmployee }: { onAddEmployee: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-12">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted dark:bg-slate-800">
+        <Users className="h-10 w-10 text-slate-400" />
+      </div>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No team members</h3>
+      <p className="mt-1 max-w-md text-center text-sm text-slate-500">
+        You haven't added any employees to your company yet. Add your first team member to collaborate.
+      </p>
+      <Button variant="outline" className="mt-6" onClick={onAddEmployee}>
+        Add New Employee
+      </Button>
+    </div>
+  );
+}

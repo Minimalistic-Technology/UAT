@@ -12,7 +12,7 @@ import Subscription from "../models/Subscription.model.js";
 import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 
 // Helper to provision subscription
-const provisionSubscription = async (userId: string, planId: string, razorpayOrderId: string) => {
+const provisionSubscription = async (userId: string, planId: string, razorpayOrderId: string, billingCycle: string = "monthly") => {
   const plan = await Plan.findById(planId);
   if (!plan) {
     console.warn(`Provisioning: Plan not found ${planId}`);
@@ -37,7 +37,8 @@ const provisionSubscription = async (userId: string, planId: string, razorpayOrd
     { $set: { status: "cancelled" } },
   );
 
-  const durationMilliseconds = plan.durationDays * 24 * 60 * 60 * 1000;
+  const durationMultiplier = billingCycle === "yearly" ? 12 : 1;
+  const durationMilliseconds = (plan.durationDays * durationMultiplier) * 24 * 60 * 60 * 1000;
   const expiryDate = new Date(Date.now() + durationMilliseconds);
 
   await Subscription.create({
@@ -63,15 +64,26 @@ export const createOrder = async (
   session.startTransaction();
 
   try {
-    const { planId, userId, couponCode, internalOrderId } = req.body;
+    const { planId, userId, couponCode, internalOrderId, billingCycle } = req.body;
 
     // 1. Fetch the actual Plan from DB
     const plan = await Plan.findById(planId);
     if (!plan) throw new ApiError(404, "Plan not found");
 
-    // Prevent purchasing if there is an active plan with remaining posts
+    // Fetch the company to ensure we're checking the subscription for this specific company
+    const companyMember = await CompanyMember.findOne({
+      user: userId,
+      role: { $in: [CompanyRole.OWNER, CompanyRole.ADMIN] },
+    });
+
+    if (!companyMember) {
+      throw new ApiError(400, "You must be part of a company to purchase a plan.");
+    }
+
+    // Prevent purchasing if there is an active plan with remaining posts for this company
     const activeSubscription = await Subscription.findOne({
       employerId: userId,
+      companyId: companyMember.company,
       status: "active",
       expiryDate: { $gt: new Date() },
       $or: [{ postsRemaining: { $gt: 0 } }, { postsRemaining: -1 }],
@@ -93,7 +105,13 @@ export const createOrder = async (
       }
     }
 
-    let finalAmount = plan.price;
+    // Base pricing based on cycle
+    let basePlanPrice = plan.price;
+    if (billingCycle === "yearly") {
+      basePlanPrice = Math.round(plan.price * 12 * 0.8);
+    }
+
+    let finalAmount = basePlanPrice;
     let discountValue = 0;
     let appliedCoupon = null;
 
@@ -114,7 +132,7 @@ export const createOrder = async (
             { $expr: { $lt: ["$usageCount", "$maxUses"] } },
           ],
         },
-        { 
+        {
           $inc: { usageCount: 1 },
           $addToSet: { usedBy: userId },
         },
@@ -128,21 +146,21 @@ export const createOrder = async (
       // Calculate Discount
       if (appliedCoupon.type === "percentage") {
         discountValue = Number(
-          ((plan.price * appliedCoupon.value) / 100).toFixed(2),
+          ((basePlanPrice * appliedCoupon.value) / 100).toFixed(2),
         );
       } else {
         discountValue = appliedCoupon.value;
       }
 
       // Cap discount at plan price
-      discountValue = Math.min(discountValue, plan.price);
-      finalAmount = Number((plan.price - discountValue).toFixed(2));
+      discountValue = Math.min(discountValue, basePlanPrice);
+      finalAmount = Number((basePlanPrice - discountValue).toFixed(2));
     }
 
     // 3. Handle free plan or 100% discount
     if (finalAmount === 0) {
       const internalOrderIdString = internalOrderId || `FREE_${Date.now()}`;
-      
+
       await Payment.create(
         [
           {
@@ -150,14 +168,14 @@ export const createOrder = async (
             amount: 0,
             currency: plan.currency || "INR",
             razorpayOrderId: internalOrderIdString,
-            metadata: { planId, couponCode: appliedCoupon?.code, internalOrderId },
+            metadata: { planId, couponCode: appliedCoupon?.code, internalOrderId, billingCycle: billingCycle || "monthly" },
             status: PaymentStatus.CAPTURED,
             capturedAt: new Date(),
           },
         ],
         { session }
       );
-      
+
       await session.commitTransaction();
 
       // Provision Subscription for free plan
@@ -187,6 +205,7 @@ export const createOrder = async (
         userId,
         planId,
         couponCode: couponCode || "NONE",
+        billingCycle: billingCycle || "monthly"
       },
     };
 
@@ -200,7 +219,7 @@ export const createOrder = async (
           amount: Math.round(finalAmount * 100),
           currency: plan.currency || "INR",
           razorpayOrderId: order.id,
-          metadata: { planId, couponCode: appliedCoupon?.code, internalOrderId },
+          metadata: { planId, couponCode: appliedCoupon?.code, internalOrderId, billingCycle: billingCycle || "monthly" },
           status: PaymentStatus.CREATED,
         },
       ],
@@ -316,12 +335,12 @@ export const handleRazorpayWebhook = async (
 
         // Provision subscription upon successful payment
         try {
-          const { userId, planId } = paymentEntity.notes || {};
+          const { userId, planId, billingCycle } = paymentEntity.notes || {};
 
           // Check if subscription already exists for this order to prevent duplicate provisioning
           const existingSub = await Subscription.findOne({ orderId: razorpayOrderId });
           if (!existingSub && userId && planId) {
-            await provisionSubscription(userId, planId, razorpayOrderId);
+            await provisionSubscription(userId, planId, razorpayOrderId, billingCycle);
           }
         } catch (subErr) {
           console.error("Webhook processing Subscription error:", subErr);
@@ -395,7 +414,7 @@ export const verifyPayment = async (
     }
 
     const payment = await Payment.findOne({ razorpayOrderId: razorpay_order_id });
-    
+
     if (!payment) {
       return next(new ApiError(404, "Payment record not found"));
     }
@@ -410,7 +429,8 @@ export const verifyPayment = async (
       // Provision subscription
       if (payment.metadata && payment.metadata.get("planId")) {
         const planId = payment.metadata.get("planId");
-        await provisionSubscription(payment.userId.toString(), planId, razorpay_order_id);
+        const billingCycle = payment.metadata.get("billingCycle") || "monthly";
+        await provisionSubscription(payment.userId.toString(), planId, razorpay_order_id, billingCycle);
       }
     }
 

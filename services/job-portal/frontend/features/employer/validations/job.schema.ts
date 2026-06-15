@@ -49,7 +49,9 @@ export const createJobSchema = BaseListingSchema.extend({
   }),
   experienceInYears: z.preprocess(
     (val) =>
-      val === "" || val === undefined || val === null ? undefined : Number(val),
+      val === "" || val === undefined || val === null || (typeof val === "number" && Number.isNaN(val))
+        ? undefined
+        : Number(val),
     z
       .number({
         error: "Experience in years is required",

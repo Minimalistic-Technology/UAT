@@ -12,11 +12,45 @@ import {
     Strikethrough,
     List,
     ListOrdered,
-    Heading1,
-    Heading2,
-    Heading3,
 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Extension } from "@tiptap/react";
+import { TextStyle } from "@tiptap/extension-text-style";
+
+const FontSize = Extension.create({
+    name: "fontSize",
+    addOptions() {
+        return { types: ["textStyle"] };
+    },
+    addGlobalAttributes() {
+        return [
+            {
+                types: this.options.types,
+                attributes: {
+                    fontSize: {
+                        default: null,
+                        parseHTML: (element) => element.style.fontSize.replace(/['"]+/g, ""),
+                        renderHTML: (attributes) => {
+                            if (!attributes.fontSize) return {};
+                            return { style: `font-size: ${attributes.fontSize}` };
+                        },
+                    },
+                },
+            },
+        ];
+    },
+    addCommands() {
+        return {
+            setFontSize: (fontSize: string) => ({ chain }: any) => {
+                return chain().setMark("textStyle", { fontSize }).run();
+            },
+            unsetFontSize: () => ({ chain }: any) => {
+                return chain().setMark("textStyle", { fontSize: null }).removeEmptyTextStyle().run();
+            },
+        };
+    },
+});
 
 interface RichTextEditorProps {
     value: string;
@@ -77,35 +111,29 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
 
                 <div className="w-[1px] h-4 bg-border mx-1 my-auto" />
 
-                <ToggleGroupItem
-                    value="h1"
-                    aria-label="Toggle heading 1"
-                    className="h-8 w-8 px-0"
-                    data-state={isActive("heading", { level: 1 })}
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                >
-                    <Heading1 className="h-4 w-4" />
-                </ToggleGroupItem>
-
-                <ToggleGroupItem
-                    value="h2"
-                    aria-label="Toggle heading 2"
-                    className="h-8 w-8 px-0"
-                    data-state={isActive("heading", { level: 2 })}
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                >
-                    <Heading2 className="h-4 w-4" />
-                </ToggleGroupItem>
-
-                <ToggleGroupItem
-                    value="h3"
-                    aria-label="Toggle heading 3"
-                    className="h-8 w-8 px-0"
-                    data-state={isActive("heading", { level: 3 })}
-                    onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                >
-                    <Heading3 className="h-4 w-4" />
-                </ToggleGroupItem>
+                <div className="flex items-center px-1">
+                    <Select
+                        value={editor.getAttributes("textStyle").fontSize || "16px"}
+                        onValueChange={(val) => {
+                            if (val === "16px") (editor.chain().focus() as any).unsetFontSize().run();
+                            else (editor.chain().focus() as any).setFontSize(val).run();
+                        }}
+                    >
+                        <SelectTrigger className="h-8 w-[70px] text-xs px-2 shadow-none border-border">
+                            <SelectValue placeholder="Size" />
+                        </SelectTrigger>
+                        <SelectContent className="min-w-[70px]">
+                            <SelectItem value="12px" className="text-xs">12</SelectItem>
+                            <SelectItem value="14px" className="text-xs">14</SelectItem>
+                            <SelectItem value="16px" className="text-xs">16</SelectItem>
+                            <SelectItem value="18px" className="text-xs">18</SelectItem>
+                            <SelectItem value="20px" className="text-xs">20</SelectItem>
+                            <SelectItem value="24px" className="text-xs">24</SelectItem>
+                            <SelectItem value="30px" className="text-xs">30</SelectItem>
+                            <SelectItem value="36px" className="text-xs">36</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
 
                 <div className="w-[1px] h-4 bg-border mx-1 my-auto" />
 
@@ -137,7 +165,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     const [mounted, setMounted] = useState(false);
 
     const editor = useEditor({
-        extensions: [StarterKit, Underline],
+        extensions: [StarterKit, Underline, TextStyle, FontSize],
         content: value || "",
         immediatelyRender: false,
         editorProps: {

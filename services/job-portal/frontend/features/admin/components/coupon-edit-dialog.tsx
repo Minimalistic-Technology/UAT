@@ -67,7 +67,9 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
         type: coupon.type,
         value: coupon.value,
         isActive: coupon.isActive,
-        expiryDate: coupon.expiryDate ? new Date(coupon.expiryDate).toISOString().split('T')[0] : undefined,
+        expiryDate: (coupon.expiryDate && !isNaN(new Date(coupon.expiryDate).getTime()))
+          ? new Date(coupon.expiryDate).toISOString().split("T")[0]
+          : undefined,
         maxUses: coupon.maxUses,
       });
     }
@@ -75,8 +77,15 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
 
   const onSubmit = (data: CouponFormValues) => {
     if (!coupon?._id) return;
+
+    const payload = {
+      ...data,
+      expiryDate: data.expiryDate === "" ? null : data.expiryDate,
+      maxUses: data.maxUses === undefined ? null : data.maxUses,
+    };
+
     updateCoupon(
-      { id: coupon._id, data },
+      { id: coupon._id, data: payload as Partial<CouponFormValues> },
       {
         onSuccess: () => {
           onOpenChange(false);

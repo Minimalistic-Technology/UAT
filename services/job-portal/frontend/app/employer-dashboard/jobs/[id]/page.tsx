@@ -57,7 +57,7 @@ const Page = () => {
     return <div className="p-10 text-center">Job not found.</div>;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
+    <div className="space-y-6">
       {/* Top Navigation & Actions */}
       <div className="flex items-center justify-between">
         <Button
@@ -238,7 +238,7 @@ export default Page;
 
 function JobSkeleton() {
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-10">
+    <div className="space-y-6">
       <div className="flex justify-between">
         <Skeleton className="h-9 w-24 rounded-full" />
         <Skeleton className="h-9 w-40 rounded-full" />

@@ -53,8 +53,8 @@ function JobsPageContent() {
     const jobs = responseData?.data?.jobs;
 
     return (
-        <div className="mx-auto max-w-7xl px-4 py-6 md:py-10">
-            <div className="mb-6 md:mb-10">
+        <div className="w-full">
+            <div className="mb-6 md:mb-8">
                 <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl lg:text-4xl font-heading">
                     Find Jobs
                 </h1>
@@ -119,7 +119,7 @@ function JobsPageContent() {
                                         Filters
                                     </Button>
                                 </SheetTrigger>
-                                <SheetContent side="left" className="w-80 overflow-y-auto">
+                                <SheetContent side="right" className="w-80 overflow-y-auto">
                                     <SheetHeader className="mb-6">
                                         <SheetTitle>Filters</SheetTitle>
                                     </SheetHeader>

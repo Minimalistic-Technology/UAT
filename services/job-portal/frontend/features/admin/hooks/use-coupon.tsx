@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { CouponFormValues } from "../validations/coupon.schema";
 import { useRouter } from "next/navigation";
 
-export const useCreateCoupon = () => {
+export const useCreateCoupon = (onSuccessCallback?: () => void) => {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -19,9 +19,13 @@ export const useCreateCoupon = () => {
     },
     onSuccess: () => {
       toast.success("Coupon created successfully!");
-      // If we ever add a coupons list hook, invalidate it here
       queryClient.invalidateQueries({ queryKey: ["admin-coupons"] });
-      router.push("/admin-dashboard/coupons");
+      
+      if (onSuccessCallback) {
+        onSuccessCallback();
+      } else {
+        router.push("/admin-dashboard/coupons");
+      }
     },
     onError: (error: any) => {
       toast.error(

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-    getTestimonials,
     createTestimonial,
     updateTestimonial,
     deleteTestimonial
@@ -9,9 +8,6 @@ import { protect, authorize } from "../middleware/auth.middleware.js";
 import { GlobalRole } from "../models/User.model.js";
 
 const router = Router();
-
-// Public routes
-router.get("/", getTestimonials);
 
 // Authenticated routes
 router.use(protect);

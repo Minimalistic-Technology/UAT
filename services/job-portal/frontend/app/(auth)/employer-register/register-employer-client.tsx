@@ -98,7 +98,7 @@ export default function EmployerRegisterPage() {
   const isLoading = registerMutation.isPending;
 
   return (
-    <div className="flex h-[calc(100vh-72px)] w-full bg-slate-50/50 overflow-hidden">
+    <div className="flex h-[calc(100dvh-72px)] w-full bg-slate-50/50 overflow-hidden">
       <div className="hidden h-full w-1/2 lg:block relative shrink-0">
         <Image
           src="/employer-signup-page-img.png"
@@ -298,17 +298,20 @@ export default function EmployerRegisterPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center pt-1 w-full">
-                <div className="w-full">
-                  <Turnstile
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "dummy_site_key"}
-                    onSuccess={(token) => setValue("captchaToken", token || "", { shouldValidate: true })}
-                    options={{ size: "flexible" }}
-                    style={{ width: "100%" }}
-                  />
-                </div>
+              <div className="flex flex-col items-center justify-center w-full my-2 min-h-[65px]">
+                <Turnstile
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                  onSuccess={(token) => {
+                    setValue("captchaToken", token, { shouldValidate: true });
+                    clearErrors("captchaToken");
+                  }}
+                  onError={() => {
+                    setValue("captchaToken", "");
+                  }}
+                  options={{ theme: "light" }}
+                />
                 {errors.captchaToken && (
-                  <p className="text-destructive text-xs font-medium mt-1">
+                  <p className="text-destructive text-xs mt-1">
                     {errors.captchaToken.message}
                   </p>
                 )}

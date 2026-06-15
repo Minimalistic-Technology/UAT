@@ -17,4 +17,20 @@ export const testimonialResolvers = {
       }
     },
   },
+  TestimonialUser: {
+    role: (user: any) => {
+      if (user.experience && user.experience.length > 0) {
+        const currentExp =
+          user.experience.find((e: any) => e.current) || user.experience[0];
+        if (currentExp.title && currentExp.company) {
+          return `${currentExp.title} at ${currentExp.company}`;
+        }
+        return currentExp.title || "User";
+      }
+      return "User";
+    },
+    avatarUrl: (user: any) => {
+      return user.avatar?.url || null;
+    },
+  },
 };

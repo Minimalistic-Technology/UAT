@@ -8,5 +8,7 @@ export const rootTypeDefs = `#graphql
 `;
 
 import { testimonialTypeDefs } from "./testimonial.typeDefs.js";
+import { couponTypeDefs } from "./coupon.typeDefs.js";
+import { planTypeDefs } from "./plan.typeDefs.js";
 
-export const typeDefs = [rootTypeDefs, testimonialTypeDefs];
+export const typeDefs = [rootTypeDefs, testimonialTypeDefs, couponTypeDefs, planTypeDefs];

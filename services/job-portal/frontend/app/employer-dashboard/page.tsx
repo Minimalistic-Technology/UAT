@@ -95,7 +95,7 @@ const Page = () => {
   }
 
   return (
-    <div className="flex flex-col w-full text-foreground max-w-7xl mx-auto">
+    <div className="flex flex-col w-full text-foreground">
       {/* Header Section */}
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between w-full">
         <div className="flex flex-col gap-1.5">
@@ -124,7 +124,8 @@ const Page = () => {
 
           <Button
             size="sm"
-            onClick={() => router.push("/employer-dashboard/jobs/create")}
+            onClick={() => router.push("/employer-dashboard/listings/create")}
+            className="cursor-pointer"
           >
             <Plus className="mr-2 h-4 w-4" />
             Post New Job
@@ -348,7 +349,7 @@ export default Page;
 
 export const DashboardSkeleton = () => {
   return (
-    <div className="flex flex-col gap-8 w-full max-w-7xl mx-auto">
+    <div className="flex flex-col gap-8 w-full">
       <div className="flex flex-col justify-between gap-4 border-b pb-6 md:flex-row md:items-center">
         <div className="space-y-3">
           <Skeleton className="h-10 w-64 rounded-lg" />

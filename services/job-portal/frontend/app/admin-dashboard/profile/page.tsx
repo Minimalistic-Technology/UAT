@@ -21,7 +21,6 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -30,7 +29,7 @@ export default function ProfilePage() {
     countryCode: "+91",
     city: "",
     state: "",
-    country: ""
+    country: "",
   });
 
   const email = session?.user?.email || "";
@@ -40,14 +39,48 @@ export default function ProfilePage() {
     async function fetchProfile() {
       if (session?.user?.id) {
         try {
-          const res = await apiClient.get(`/users/${session.user.id}`);
+          const res = await apiClient.get(
+            `/users/${session.user.id}?t=${Date.now()}`,
+          );
           if (res.data?.success) {
             const dbUser = res.data.data;
             let finalPhone = "";
             let finalCountryCode = "+91";
             if (dbUser.phone) {
-              const possibleCodes = ["+1", "+7", "+20", "+27", "+33", "+34", "+39", "+44", "+49", "+52", "+55", "+60", "+61", "+64", "+65", "+81", "+82", "+86", "+91", "+92", "+94", "+98", "+254", "+353", "+358", "+880", "+971", "+972", "+977"];
-              const matched = possibleCodes.filter(c => dbUser.phone.startsWith(c)).sort((a, b) => b.length - a.length)[0];
+              const possibleCodes = [
+                "+1",
+                "+7",
+                "+20",
+                "+27",
+                "+33",
+                "+34",
+                "+39",
+                "+44",
+                "+49",
+                "+52",
+                "+55",
+                "+60",
+                "+61",
+                "+64",
+                "+65",
+                "+81",
+                "+82",
+                "+86",
+                "+91",
+                "+92",
+                "+94",
+                "+98",
+                "+254",
+                "+353",
+                "+358",
+                "+880",
+                "+971",
+                "+972",
+                "+977",
+              ];
+              const matched = possibleCodes
+                .filter((c) => dbUser.phone.startsWith(c))
+                .sort((a, b) => b.length - a.length)[0];
               if (matched) {
                 finalCountryCode = matched;
                 finalPhone = dbUser.phone.slice(matched.length).trim();
@@ -78,26 +111,39 @@ export default function ProfilePage() {
     fetchProfile();
   }, [session?.user?.id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarUrl(previewUrl);
+
+    const avatarFormData = new FormData();
+    avatarFormData.append("avatar", file);
+
+    try {
+      const response = await apiClient.put("/users/avatar", avatarFormData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      if (response.data?.success && response.data.data?.avatarUrl) {
+        setAvatarUrl(response.data.data.avatarUrl);
+      }
+      toast.success("Avatar uploaded successfully")
+    } catch (error) {
+      console.error(error);
+      toast.error("Some error occured while uploading avatar")
+    }
   };
 
   const handleSave = async (updatedData: any) => {
     try {
       setIsLoading(true);
-
-      // Upload avatar if a new file was selected
-      if (avatarFile) {
-        const avatarFormData = new FormData();
-        avatarFormData.append("avatar", avatarFile);
-        await apiClient.put("/users/avatar", avatarFormData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-        setAvatarFile(null); // Clear after successful upload
-      }
 
       // Update profile details
       await apiClient.put("/users/profile", {
@@ -108,11 +154,13 @@ export default function ProfilePage() {
           city: updatedData.city,
           state: updatedData.state,
           country: updatedData.country,
-        }
+        },
       });
 
       if (update) {
-        await update({ name: `${updatedData.firstName} ${updatedData.lastName}` });
+        await update({
+          name: `${updatedData.firstName} ${updatedData.lastName}`,
+        });
       }
 
       // Update local state to reflect instantly on main UI
@@ -131,18 +179,20 @@ export default function ProfilePage() {
   return (
     <div className="w-full space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/50 pb-5">
-        <h1 className="text-[1.4rem] font-bold tracking-tight text-slate-900 dark:text-white">Profile Page</h1>
+      <div className="border-border/50 flex items-center justify-between border-b pb-5">
+        <h1 className="text-[1.4rem] font-bold tracking-tight text-slate-900 dark:text-white">
+          Profile Page
+        </h1>
         <Button
           onClick={() => setIsEditing(true)}
-          className="bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-500/20 rounded-lg px-5 h-9"
+          className="h-9 rounded-lg bg-blue-600 px-5 text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700"
         >
-          <Edit className="w-3.5 h-3.5 mr-2" />
+          <Edit className="mr-2 h-3.5 w-3.5" />
           Edit Profile
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column */}
         <div className="space-y-6">
           <AdminProfileCard
@@ -151,14 +201,15 @@ export default function ProfilePage() {
             email={email}
             avatarUrl={avatarUrl}
             onEdit={() => setIsEditing(true)}
+            onImageUpload={handleAvatarUpload}
           />
-          <AdminQuickStats />
+          {/* <AdminQuickStats /> */}
         </div>
 
         {/* Right Column */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           <AdminPersonalInfo formData={formData} email={email} />
-          <AdminSecurityCard />
+          {/* <AdminSecurityCard /> */}
         </div>
       </div>
 
@@ -167,15 +218,8 @@ export default function ProfilePage() {
         setIsEditing={setIsEditing}
         isLoading={isLoading}
         email={email}
-        avatarUrl={avatarUrl}
         formData={formData}
         handleSave={handleSave}
-        onImageUpload={(file) => {
-          const previewUrl = URL.createObjectURL(file);
-          setAvatarUrl(previewUrl);
-          setAvatarFile(file);
-          toast.info("Image selected! Click Save to upload to Cloud.");
-        }}
       />
     </div>
   );

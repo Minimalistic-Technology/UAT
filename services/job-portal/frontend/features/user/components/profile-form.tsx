@@ -18,8 +18,9 @@ import { SkillInput } from "@/features/employer/components/skill-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { getInlineUrl } from "@/utils";
 
-export function UserProfileForm() {
+export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
     const { data: session } = useSession();
     const userId = session?.user?.id;
 
@@ -89,7 +90,11 @@ export function UserProfileForm() {
     };
 
     const onSubmit = (data: UserProfileFormValues) => {
-        updateProfileMutation.mutate(data);
+        updateProfileMutation.mutate(data, {
+            onSuccess: () => {
+                if (onSuccess) onSuccess();
+            }
+        });
     };
 
     if (isFetching) {
@@ -124,7 +129,7 @@ export function UserProfileForm() {
                                     </div>
                                     <div>
                                         <p className="font-semibold text-sm">{currentResumeName || "resume.pdf"}</p>
-                                        <a href={currentResumeUrl} target="_blank" rel="noreferrer" className="text-primary text-xs font-bold uppercase hover:underline">View Current Resume</a>
+                                        <a href={getInlineUrl(currentResumeUrl)} target="_blank" rel="noreferrer" className="text-primary text-xs font-bold uppercase hover:underline">View Current Resume</a>
                                     </div>
                                 </div>
                             ) : (

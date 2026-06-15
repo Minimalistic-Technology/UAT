@@ -1,35 +1,15 @@
 import { body } from "express-validator";
 
 export const submitKycSchema = [
-  body("companyName")
+  body("companyDocumentType")
     .trim()
     .notEmpty()
-    .withMessage("Company name is required")
-    .isLength({ min: 2, max: 100 })
-    .withMessage("Company name must be between 2 and 100 characters"),
+    .withMessage("Company document type is required"),
 
-  body("aadharNo")
+  body("personalDocumentType")
     .trim()
     .notEmpty()
-    .withMessage("Aadhaar number is required")
-    .matches(/^\d{12}$/)
-    .withMessage("Aadhaar must be exactly 12 digits"),
-
-  body("gstNo")
-    .trim()
-    .notEmpty()
-    .withMessage("GST number is required")
-    .matches(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/)
-    .withMessage("Invalid GST number")
-    .toUpperCase(),
-
-  body("cinNo")
-    .trim()
-    .notEmpty()
-    .withMessage("CIN number is required")
-    .matches(/^[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/)
-    .withMessage("Invalid CIN number")
-    .toUpperCase(),
+    .withMessage("Personal document type is required"),
 ];
 
 export const updateProfileSchema = [

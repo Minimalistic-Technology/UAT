@@ -73,7 +73,7 @@ export const kycUpload = multer({
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Invalid file type"));
+      cb(new Error("Invalid file type. Only images and PDFs are allowed."));
     }
   },
 });

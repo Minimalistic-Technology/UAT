@@ -31,6 +31,8 @@ import developerRoutes from './routes/developer.route.js';
 import featureRoutes from './routes/feature.route.js';
 import aiRoutes from './routes/ai.routes.js';
 import testimonialRoutes from './routes/testimonial.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import draftRoutes from './routes/draft.routes.js';
 
 // Graphql imports
 import { ApolloServer } from "@apollo/server";
@@ -94,6 +96,7 @@ app.use("/graphql", expressMiddleware(apolloServer, {
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use("/api/internships", internshipRoutes);
+app.use("/api/drafts", draftRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/companies', companyRoutes);
@@ -109,6 +112,7 @@ app.use("/api/listings", listingRoutes);
 app.use("/api/features", featureRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/testimonials", testimonialRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
@@ -157,3 +161,4 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 export { app };
+

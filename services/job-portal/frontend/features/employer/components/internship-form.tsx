@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { createInternshipSchema, CreateInternshipFormData } from "@/features/employer/validations/internship.schema";
 import { useCreateMyInternshipPosting, useUpdateMyInternshipPosting } from "@/features/employer/hooks/use-internship";
+import { useSaveDraft, useDeleteDraft } from "@/features/employer/hooks/use-draft";
 
 import { InternshipBasicInfo } from "./forms/internship/internship-basic-info";
 import { InternshipDurationStipend } from "./forms/internship/internship-duration-stipend";
@@ -11,15 +12,17 @@ import { InternshipEducation } from "./forms/internship/internship-education";
 import { InternshipSkills } from "./forms/internship/internship-skills";
 import { InternshipPublishing } from "./forms/internship/internship-publishing";
 
-export function InternshipForm({ onCancel, initialData }: { onCancel: () => void, initialData?: any }) {
+export function InternshipForm({ onCancel, initialData, draftData, draftId }: { onCancel: () => void, initialData?: any, draftData?: any, draftId?: string }) {
   const { mutate: createInternship, isPending: isCreating } = useCreateMyInternshipPosting();
   const { mutate: updateInternship, isPending: isUpdating } = useUpdateMyInternshipPosting(initialData?._id as string);
+  const { mutate: saveDraft, isPending: isSavingDraft } = useSaveDraft();
+  const { mutate: deleteDraft } = useDeleteDraft();
 
-  const isPending = isCreating || isUpdating;
+  const isPending = isCreating || isUpdating || isSavingDraft;
 
   const methods = useForm<CreateInternshipFormData>({
     resolver: zodResolver(createInternshipSchema) as Resolver<CreateInternshipFormData>,
-    defaultValues: initialData ? {
+    defaultValues: draftData ? draftData : initialData ? {
       title: initialData.title,
       description: initialData.description,
       employmentType: initialData.employmentType as any,
@@ -92,8 +95,20 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
     if (initialData) {
       updateInternship(data);
     } else {
-      createInternship(data);
+      createInternship(data, {
+        onSuccess: () => {
+          if (draftId) deleteDraft(draftId);
+        }
+      });
     }
+  };
+
+  const handleSaveDraft = () => {
+    saveDraft({
+      id: draftId,
+      type: "internship",
+      formData: methods.getValues(),
+    });
   };
 
   return (
@@ -106,12 +121,17 @@ export function InternshipForm({ onCancel, initialData }: { onCancel: () => void
         <InternshipSkills initialData={initialData} />
         <InternshipPublishing initialData={initialData} />
 
-        <div className="mt-4 flex items-center justify-end gap-4 border-t pt-8">
-          <Button type="button" variant="ghost" onClick={onCancel}>
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-end gap-3 border-t pt-8">
+          <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-32">
             Cancel
           </Button>
-          <Button type="submit" disabled={isPending} className="px-8 py-2">
-            {isPending ? (initialData ? "Saving..." : "Posting...") : (initialData ? "Save Changes" : "Post Internship")}
+          {!initialData && (
+            <Button type="button" variant="secondary" onClick={handleSaveDraft} disabled={isPending} className="w-full sm:w-40">
+              {isSavingDraft ? "Saving..." : "Save as Draft"}
+            </Button>
+          )}
+          <Button type="submit" disabled={isPending} className="w-full sm:w-40">
+            {isCreating || isUpdating ? (initialData ? "Saving..." : "Posting...") : (initialData ? "Save Changes" : "Post Internship")}
           </Button>
         </div>
       </form>

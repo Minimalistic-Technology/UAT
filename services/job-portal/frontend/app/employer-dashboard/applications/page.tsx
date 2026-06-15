@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { format } from "date-fns";
 import {
   useAllEmployerApplications,
@@ -38,6 +39,8 @@ import {
   Calendar,
   CheckCircle2,
   XCircle,
+  Search,
+  FileSearch,
 } from "lucide-react";
 import { ApplicationDetailModal } from "@/features/employer/components/application-details-model";
 import {
@@ -70,10 +73,26 @@ const EmployerApplicationsPage = () => {
   const [limit] = useState(10);
   const [statusFilter, setStatusFilter] = useState("all");
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      setPage(1); // Reset page on search
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+
   const queryParams = {
     page,
     limit,
     ...(statusFilter !== "all" && { status: statusFilter }),
+    ...(debouncedSearchQuery.trim() && { search: debouncedSearchQuery.trim() }),
   };
 
   const {
@@ -158,32 +177,43 @@ const EmployerApplicationsPage = () => {
       </div>
 
       <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="flex flex-row items-center justify-between pb-4 pt-6 px-7">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 pt-6 px-7 gap-4">
           <div className="space-y-1">
             <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Recent Applications</CardTitle>
             <CardDescription className="text-sm text-slate-500">
               {pagination?.totalItems || 0} total applications
             </CardDescription>
           </div>
-          <div className="w-48">
-            <Select
-              value={statusFilter}
-              onValueChange={(val) => {
-                setStatusFilter(val);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-10 rounded-xl">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="applied">Applied</SelectItem>
-                <SelectItem value="under_review">Under Review</SelectItem>
-                <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex flex-row w-full sm:w-auto items-center gap-2 sm:gap-3">
+            <div className="relative flex-1 sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search candidate or job..."
+                className="pl-9 h-10 rounded-xl w-full"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="w-[130px] sm:w-48 shrink-0">
+              <Select
+                value={statusFilter}
+                onValueChange={(val) => {
+                  setStatusFilter(val);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-10 rounded-xl w-full px-3">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="applied">Applied</SelectItem>
+                  <SelectItem value="under_review">Under Review</SelectItem>
+                  <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="px-7 pb-6">
@@ -196,10 +226,6 @@ const EmployerApplicationsPage = () => {
           ) : isError ? (
             <div className="text-destructive py-10 text-center">
               Failed to load applications. Please try again.
-            </div>
-          ) : applications.length === 0 ? (
-            <div className="text-muted-foreground py-20 text-center">
-              No applications found matching your criteria.
             </div>
           ) : (
             <div className="rounded-md border">
@@ -215,79 +241,87 @@ const EmployerApplicationsPage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {applications.map((app: any) => (
-                    <TableRow key={app._id}>
-                      <TableCell>
-                        <div className="font-medium">
-                          {app.jobSeeker?.firstName} {app.jobSeeker?.lastName}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          {app.jobSeeker?.email}
-                        </div>
-                      </TableCell>
-                      <TableCell>{app.listing?.title || "Unknown Listing Title"}</TableCell>
-                      <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(app.status)}>
-                          {app.status.replace("_", " ").toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {format(new Date(app.createdAt), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <ApplicationDetailModal application={app} />
-
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                disabled={[ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN].includes(app.status?.toLowerCase())}
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-border z-50">
-                              <DropdownMenuLabel>
-                                Quick Actions
-                              </DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="cursor-pointer text-blue-600"
-                                onClick={() => {
-                                  setSelectedAppId(app._id);
-                                  setInterviewModalOpen(true);
-                                }}
-                              >
-                                <Calendar className="mr-2 h-4 w-4" /> Schedule
-                                Interview
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="cursor-pointer text-green-600"
-                                onClick={() =>
-                                  handleUpdateStatus(app._id, "accepted")
-                                }
-                              >
-                                <CheckCircle2 className="mr-2 h-4 w-4" /> Accept
-                                Candidate
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="cursor-pointer text-red-600"
-                                onClick={() =>
-                                  handleUpdateStatus(app._id, "rejected")
-                                }
-                              >
-                                <XCircle className="mr-2 h-4 w-4" /> Reject
-                                Candidate
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                  {applications.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        <EmptyState />
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    applications.map((app: any) => (
+                      <TableRow key={app._id}>
+                        <TableCell>
+                          <div className="font-medium">
+                            {app.jobSeeker?.firstName} {app.jobSeeker?.lastName}
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            {app.jobSeeker?.email}
+                          </div>
+                        </TableCell>
+                        <TableCell>{app.listing?.title || "Unknown Listing Title"}</TableCell>
+                        <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadgeVariant(app.status)}>
+                            {app.status.replace("_", " ").toUpperCase()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {format(new Date(app.createdAt), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <ApplicationDetailModal application={app} />
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled={[ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN].includes(app.status?.toLowerCase())}
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-border z-50">
+                                <DropdownMenuLabel>
+                                  Quick Actions
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="cursor-pointer text-blue-600"
+                                  onClick={() => {
+                                    setSelectedAppId(app._id);
+                                    setInterviewModalOpen(true);
+                                  }}
+                                >
+                                  <Calendar className="mr-2 h-4 w-4" /> Schedule
+                                  Interview
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="cursor-pointer text-green-600"
+                                  onClick={() =>
+                                    handleUpdateStatus(app._id, "accepted")
+                                  }
+                                >
+                                  <CheckCircle2 className="mr-2 h-4 w-4" /> Accept
+                                  Candidate
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="cursor-pointer text-red-600"
+                                  onClick={() =>
+                                    handleUpdateStatus(app._id, "rejected")
+                                  }
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" /> Reject
+                                  Candidate
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -334,34 +368,37 @@ const EmployerApplicationsPage = () => {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md w-[95vw] max-w-[95vw] sm:w-full rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Schedule Interview</DialogTitle>
+            <DialogTitle className="text-xl">Schedule Interview</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Interview Date and Time</Label>
+          <div className="space-y-4 py-2 sm:py-4">
+            <div className="flex flex-col space-y-2">
+              <Label className="text-sm font-medium">Interview Date and Time</Label>
               <Input
                 type="datetime-local"
                 value={interviewDate}
                 onChange={(e) => setInterviewDate(e.target.value)}
                 min={new Date().toISOString().slice(0, 16)}
+                className="w-full text-base sm:text-sm"
               />
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground text-xs mt-1">
                 Select a date and time in the future.
               </p>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
             <Button
               variant="outline"
               onClick={() => setInterviewModalOpen(false)}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
             <Button
               onClick={handleScheduleInterview}
               disabled={isUpdating || !interviewDate}
+              className="w-full sm:w-auto"
             >
               Schedule
             </Button>
@@ -373,3 +410,17 @@ const EmployerApplicationsPage = () => {
 };
 
 export default EmployerApplicationsPage;
+
+function EmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-12">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted dark:bg-slate-800">
+        <FileSearch className="h-10 w-10 text-slate-400" />
+      </div>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No applications found</h3>
+      <p className="mt-1 max-w-md text-center text-sm text-slate-500">
+        You haven't received any applications yet, or none match your search criteria.
+      </p>
+    </div>
+  );
+}

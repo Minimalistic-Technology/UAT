@@ -14,7 +14,11 @@ import {
 } from "@/components/ui/command"
 import { useRouter } from "next/navigation"
 
-export function GlobalSearch() {
+interface GlobalSearchProps {
+    onCreatePlan?: () => void;
+}
+
+export function GlobalSearch({ onCreatePlan }: GlobalSearchProps = {}) {
     const [open, setOpen] = React.useState(false)
     const router = useRouter()
 
@@ -71,7 +75,10 @@ export function GlobalSearch() {
                             <CommandItem onSelect={() => runCommand(() => router.push("/admin-dashboard/coupons/create"))}>
                                 Create New Coupon
                             </CommandItem>
-                            <CommandItem onSelect={() => runCommand(() => router.push("/admin-dashboard/plans/create"))}>
+                            <CommandItem onSelect={() => runCommand(() => {
+                                if (onCreatePlan) onCreatePlan();
+                                else router.push("/admin-dashboard/plans/create");
+                            })}>
                                 Create New Plan
                             </CommandItem>
                             <CommandItem onSelect={() => runCommand(() => router.push("/admin-dashboard/settings"))}>

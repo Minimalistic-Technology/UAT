@@ -7,12 +7,10 @@ export interface ICloudinaryAsset {
 
 export interface IKYC extends Document {
   user: mongoose.Types.ObjectId;
-  companyName: string;
-  aadharNo: string;
-  gstNo: string;
-  cinNo: string;
-  photo: ICloudinaryAsset;
-  lightbill: ICloudinaryAsset;
+  companyDocument: ICloudinaryAsset;
+  companyDocumentType: string;
+  personalDocument: ICloudinaryAsset;
+  personalDocumentType: string;
   status: "pending" | "approved" | "rejected";
   rejectionReason?: string;
   isLatest: boolean;
@@ -42,34 +40,23 @@ const kycSchema = new Schema<IKYC>(
       required: true,
       // unique: true,
     },
-    companyName: {
-      type: String,
-      required: [true, "Company name is required"],
-      trim: true,
-    },
-    aadharNo: {
-      type: String,
-      required: [true, "Aadhar number is required"],
-      trim: true,
-    },
-    gstNo: {
-      type: String,
-      required: [true, "GST number is required"],
-      trim: true,
-    },
-    cinNo: {
-      type: String,
-      required: [true, "CIN number is required"],
-      trim: true,
-    },
-    photo: {
+    companyDocument: {
       type: cloudinaryAssetSchema,
       required: true,
     },
-
-    lightbill: {
+    companyDocumentType: {
+      type: String,
+      required: [true, "Company document type is required"],
+      trim: true,
+    },
+    personalDocument: {
       type: cloudinaryAssetSchema,
       required: true,
+    },
+    personalDocumentType: {
+      type: String,
+      required: [true, "Personal document type is required"],
+      trim: true,
     },
     status: {
       type: String,

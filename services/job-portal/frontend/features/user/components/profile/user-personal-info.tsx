@@ -3,8 +3,9 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, GraduationCap, MapPin, Phone, Mail, FileText, Download } from "lucide-react";
+import { Briefcase, GraduationCap, MapPin, Phone, Mail, FileText, Download, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getInlineUrl } from "@/utils";
 
 interface UserPersonalInfoProps {
     user: any;
@@ -72,11 +73,18 @@ export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
                                         <p className="text-sm font-semibold text-slate-900">{user.resumeOriginalName || "Resume.pdf"}</p>
                                     </div>
                                 </div>
-                                <Button size="sm" variant="outline" asChild>
-                                    <a href={user.resume.url} target="_blank" rel="noopener noreferrer">
-                                        <Download className="w-4 h-4 mr-2" /> Download
-                                    </a>
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button size="sm" variant="outline" asChild>
+                                        <a href={getInlineUrl(user.resume.url)} target="_blank" rel="noopener noreferrer">
+                                            <Eye className="w-4 h-4 mr-2" /> View
+                                        </a>
+                                    </Button>
+                                    <Button size="sm" variant="secondary" asChild>
+                                        <a href={user.resume.url} target="_blank" rel="noopener noreferrer" download>
+                                            <Download className="w-4 h-4 mr-2" /> Download
+                                        </a>
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     )}

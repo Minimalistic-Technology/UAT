@@ -54,7 +54,7 @@ export const registerEmployerSchema = z.object({
   phone: z.string().optional(),
   role: z.enum([CompanyRole.OWNER]).default(CompanyRole.OWNER),
   captchaToken: z.string().min(1, "Captcha is required"),
-})
+});
 
 export type EmployerRegisterInput = z.infer<typeof registerEmployerSchema>;
 

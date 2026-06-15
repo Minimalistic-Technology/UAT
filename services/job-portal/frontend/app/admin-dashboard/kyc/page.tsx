@@ -49,8 +49,9 @@ export default function KycManagementPage() {
   const filteredApps = applications.filter((app) => {
     const search = searchTerm.toLowerCase();
     return (
-      app.companyName?.toLowerCase().includes(search) ||
-      app.user?.email?.toLowerCase().includes(search)
+      app.user?.email?.toLowerCase().includes(search) ||
+      app.user?.firstName?.toLowerCase().includes(search) ||
+      app.user?.lastName?.toLowerCase().includes(search)
     );
   });
 
@@ -88,7 +89,7 @@ export default function KycManagementPage() {
             setPage(1);
           }}
         >
-          <SelectTrigger className="w-37.5 cursor-pointer">
+          <SelectTrigger className="w-40 cursor-pointer">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>

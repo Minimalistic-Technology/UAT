@@ -23,12 +23,28 @@ import { JobRow } from "@/features/employer/components/job-row";
 
 // TODO: Implement the status change functionality and the updateStatusMutation for handling job status updates
 // (e.g., activating, deactivating, or deleting a job posting). This will likely involve creating a new API endpoint
+// (e.g., activating, deactivating, or deleting a job posting). This will likely involve creating a new API endpoint
 // in the backend to handle status updates and then integrating that endpoint into the frontend with appropriate UI feedback
 // for the user.
+import { useState, useMemo } from "react";
+import { GlobalSearchInput } from "@/components/global-search-input";
+import { formatLocation } from "@/utils";
+
 const Page = () => {
   const { data: responseData, isLoading, isError } = useGetMyJobPostings();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const myJobPostings = responseData?.data?.jobPosts || [];
+  const myJobPostingsRaw = responseData?.data?.jobPosts || [];
+
+  const myJobPostings = useMemo(() => {
+    if (!searchQuery.trim()) return myJobPostingsRaw;
+    const lowerQuery = searchQuery.toLowerCase();
+    return myJobPostingsRaw.filter(
+      (job: any) =>
+        job.title?.toLowerCase().includes(lowerQuery) ||
+        formatLocation(job.location)?.toLowerCase().includes(lowerQuery),
+    );
+  }, [myJobPostingsRaw, searchQuery]);
 
   if (isLoading) {
     return <JobTableSkeleton />;
@@ -40,28 +56,32 @@ const Page = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative max-w-sm flex-1">
-          <input
-            type="text"
+      <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 w-full">
+        <div className="relative w-full flex-1 sm:max-w-sm">
+          <GlobalSearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
             placeholder="Search job listings..."
-            className="h-10 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus-visible:outline-none focus:ring-1 focus:ring-blue-500 w-full text-sm"
           />
-          <Briefcase className="text-slate-400 absolute top-3 left-3 h-4 w-4" />
         </div>
-        <Button asChild size="sm">
-          <Link href="/employer-dashboard/jobs/create">
-            <Plus className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Post Job</span>
+        <Button asChild size="sm" className="w-auto shrink-0 whitespace-nowrap px-3 sm:px-4">
+          <Link
+            href="/employer-dashboard/listings/create?type=job"
+            className="flex items-center justify-center"
+          >
+            <Plus className="mr-1.5 h-4 w-4 shrink-0" />
+            <span>Post New Job</span>
           </Link>
         </Button>
       </div>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="pb-4 pt-6 px-7">
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+        <CardHeader className="px-7 pt-6 pb-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Your Job Listings</CardTitle>
+              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                Your Job Listings
+              </CardTitle>
               <CardDescription className="text-sm text-slate-500">
                 Manage status, edit jobs and track performance.
               </CardDescription>
@@ -74,7 +94,9 @@ const Page = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-62.5 font-semibold">Job Title</TableHead>
+                  <TableHead className="w-62.5 font-semibold">
+                    Job Title
+                  </TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Applications</TableHead>
                   <TableHead className="font-semibold">Posted By</TableHead>
@@ -87,16 +109,13 @@ const Page = () => {
               <TableBody>
                 {myJobPostings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       <EmptyState />
                     </TableCell>
                   </TableRow>
                 ) : (
                   myJobPostings.map((job: any) => (
-                    <JobRow
-                      key={job._id}
-                      job={job}
-                    />
+                    <JobRow key={job._id} job={job} />
                   ))
                 )}
               </TableBody>
@@ -112,8 +131,8 @@ export default Page;
 
 function JobTableSkeleton() {
   return (
-    <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] mt-14">
-      <CardHeader className="pb-4 pt-6 px-7 flex flex-row justify-between">
+    <Card className="mt-14 rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+      <CardHeader className="flex flex-row justify-between px-7 pt-6 pb-4">
         <div className="space-y-2">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-4 w-60" />
@@ -152,16 +171,17 @@ function JobTableSkeleton() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-50">
-        <Briefcase className="h-10 w-10 text-gray-300" />
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+        <Briefcase className="h-10 w-10 text-slate-400" />
       </div>
-      <h3 className="text-lg font-semibold text-gray-900">No jobs found</h3>
-      <p className="mt-1 max-w-75 text-center text-sm text-gray-500">
-        You haven't posted any job listings yet. Get started by creating your
-        first one.
+      <h3 className="text-lg font-semibold text-slate-900">No jobs found</h3>
+      <p className="mt-1 max-w-md text-center text-sm text-slate-500">
+        You haven't posted any job listings yet. Get started by creating your first one.
       </p>
       <Button asChild variant="outline" className="mt-6">
-        <Link href="/employer/jobs/new">Post Your First Job</Link>
+        <Link href="/employer-dashboard/listings/create?type=job">
+          Post Your First Job
+        </Link>
       </Button>
     </div>
   );

@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import Coupon from "../models/Coupon.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import { getPagination } from "../utils/parse-pagination.js";
 
 export const createCoupon = async (
   req: Request,
@@ -40,43 +39,6 @@ export const createCoupon = async (
   }
 };
 
-export const getCoupons = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-   const { page, limit } = getPagination(req.query);
-    const skip = (page - 1) * limit;
-
-    const totalCoupons = await Coupon.countDocuments();
-    const coupons = await Coupon.find()
-      .sort("-createdAt")
-      .skip(skip)
-      .limit(limit);
-
-    const totalPages = Math.ceil(totalCoupons / limit);
-
-    res.status(200).json(
-      new ApiResponse(
-        200,
-        {
-          coupons,
-          pagination: {
-            currentPage: page,
-            totalPages,
-            hasNextPage: page < totalPages,
-            hasPrevPage: page > 1,
-            totalItems: totalCoupons,
-          },
-        },
-        "Coupons fetched successfully",
-      ),
-    );
-  } catch (error: any) {
-    next(error);
-  }
-};
 
 export const applyCoupon = async (
   req: Request,
@@ -252,8 +214,20 @@ export const updateCoupon = async (
     }
 
     if (isActive !== undefined) coupon.isActive = isActive;
-    if (expiryDate !== undefined) coupon.expiryDate = expiryDate;
-    if (maxUses !== undefined) coupon.maxUses = maxUses === -1 ? -1 : maxUses;
+    if (expiryDate !== undefined) {
+      if (expiryDate === "" || expiryDate === null) {
+        coupon.expiryDate = undefined;
+      } else {
+        coupon.expiryDate = new Date(expiryDate);
+      }
+    }
+    if (maxUses !== undefined) {
+      if (maxUses === null || maxUses === "") {
+        coupon.maxUses = -1;
+      } else {
+        coupon.maxUses = maxUses === -1 ? -1 : typeof maxUses === "string" ? parseInt(maxUses) : maxUses;
+      }
+    }
 
     await coupon.save();
 

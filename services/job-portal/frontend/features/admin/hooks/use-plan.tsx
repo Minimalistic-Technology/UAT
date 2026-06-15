@@ -4,7 +4,7 @@ import { CreatePlanFormValues } from "../validations/plan.schema";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-export const useCreatePlan = () => {
+export const useCreatePlan = (onSuccessCallback?: () => void) => {
     const queryClient = useQueryClient();
     const router = useRouter();
 
@@ -13,7 +13,11 @@ export const useCreatePlan = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["plans"] });
             toast.success("Plan created successfully");
-            router.push("/admin-dashboard/plans");
+            if (onSuccessCallback) {
+                onSuccessCallback();
+            } else {
+                router.push("/admin-dashboard/plans");
+            }
         },
         onError: (error) => {
             console.error("Failed to create plan", error);

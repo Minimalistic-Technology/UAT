@@ -1,0 +1,172 @@
+﻿[env] Environment variables validated successfully
+[db] Connected Database Successfully via Prisma & Optimized
+[db] Dynamic route permissions seeded successfully
+[MongoDB] Connected safely to: ac-t5dqueu-shard-00-01.wwhubi2.mongodb.net
+[server] Service listening on port 5001 in production mode
+[server] CORS origins: http://localhost:3000, http://127.0.0.1:3000, https://minimalistic-learning.onrender.com
+docker : [Error Handler] {
+At line:1 char:1
++ docker logs ml-backend 
+2>&1 | Out-File -FilePath 
+backend-logs.txt -En ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: ([Error   
+  Handler] {:String) [], R   
+ emoteException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+  message: '',
+  stack: 'AggregateError 
+[ETIMEDOUT]: \n' +
+    '    at 
+internalConnectMultiple 
+(node:net:1122:18)\n' +
+    '    at 
+internalConnectMultiple 
+(node:net:1190:5)\n' +
+    '    at Timeout.internalC
+onnectMultipleTimeout 
+(node:net:1716:5)\n' +
+    '    at listOnTimeout (no
+de:internal/timers:583:11)\n'
+ +
+    '    at 
+process.processTimers (node:i
+nternal/timers:519:7)',
+  details: [
+    Error: connect ETIMEDOUT 
+54.161.66.236:443
+        at 
+createConnectionError 
+(node:net:1652:14)
+        at Timeout.internalCo
+nnectMultipleTimeout 
+(node:net:1711:38)
+        at listOnTimeout 
+(node:internal/timers:583:11)
+        at 
+process.processTimers 
+(node:internal/timers:519:7) 
+{
+      errno: -110,
+      code: 'ETIMEDOUT',
+      syscall: 'connect',
+      address: 
+'54.161.66.236',
+      port: 443
+    },
+    Error: connect 
+ENETUNREACH 
+64:ff9b::369e:dfdf:443 - 
+Local (:::0)
+        at 
+internalConnectMultiple 
+(node:net:1186:16)
+        at Timeout.internalCo
+nnectMultipleTimeout 
+(node:net:1716:5)
+        at listOnTimeout 
+(node:internal/timers:583:11)
+        at 
+process.processTimers 
+(node:internal/timers:519:7) 
+{
+      errno: -101,
+      code: 'ENETUNREACH',
+      syscall: 'connect',
+      address: 
+'64:ff9b::369e:dfdf',
+      port: 443
+    },
+    Error: connect ETIMEDOUT 
+54.158.223.223:443
+        at 
+createConnectionError 
+(node:net:1652:14)
+        at Timeout.internalCo
+nnectMultipleTimeout 
+(node:net:1711:38)
+        at listOnTimeout 
+(node:internal/timers:583:11)
+        at 
+process.processTimers 
+(node:internal/timers:519:7) 
+{
+      errno: -110,
+      code: 'ETIMEDOUT',
+      syscall: 'connect',
+      address: 
+'54.158.223.223',
+      port: 443
+    },
+    Error: connect 
+ENETUNREACH 
+64:ff9b::36a1:42ec:443 - 
+Local (:::0)
+        at 
+internalConnectMultiple 
+(node:net:1186:16)
+        at Timeout.internalCo
+nnectMultipleTimeout 
+(node:net:1716:5)
+        at listOnTimeout 
+(node:internal/timers:583:11)
+        at 
+process.processTimers 
+(node:internal/timers:519:7) 
+{
+      errno: -101,
+      code: 'ENETUNREACH',
+      syscall: 'connect',
+      address: 
+'64:ff9b::36a1:42ec',
+      port: 443
+    },
+    Error: connect ETIMEDOUT 
+75.101.163.47:443
+        at 
+createConnectionError 
+(node:net:1652:14)
+        at Timeout.internalCo
+nnectMultipleTimeout 
+(node:net:1711:38)
+        at listOnTimeout 
+(node:internal/timers:583:11)
+        at 
+process.processTimers 
+(node:internal/timers:519:7) 
+{
+      errno: -110,
+      code: 'ETIMEDOUT',
+      syscall: 'connect',
+      address: 
+'75.101.163.47',
+      port: 443
+    },
+    Error: connect 
+ENETUNREACH 
+64:ff9b::4b65:a32f:443 - 
+Local (:::0)
+        at 
+internalConnectMultiple 
+(node:net:1186:16)
+        at Timeout.internalCo
+nnectMultipleTimeout 
+(node:net:1716:5)
+        at listOnTimeout 
+(node:internal/timers:583:11)
+        at 
+process.processTimers 
+(node:internal/timers:519:7) 
+{
+      errno: -101,
+      code: 'ENETUNREACH',
+      syscall: 'connect',
+      address: 
+'64:ff9b::4b65:a32f',
+      port: 443
+    }
+  ]
+}

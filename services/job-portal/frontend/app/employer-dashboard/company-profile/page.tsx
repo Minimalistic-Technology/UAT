@@ -31,7 +31,7 @@ const CompanyProfilePage = () => {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <div className="space-y-6">
       <input
         type="file"
         ref={logoInputRef}
@@ -51,7 +51,7 @@ const CompanyProfilePage = () => {
 
         <div className="space-y-6 lg:col-span-2">
           <CompanyInformation company={company} />
-          
+
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <CompanyPlanDetails company={company} />
             <CompanyDangerZone company={company} />

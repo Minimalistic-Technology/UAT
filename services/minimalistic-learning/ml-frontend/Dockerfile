@@ -14,21 +14,24 @@ COPY . .
 RUN npm run build
 
 
-# # ── STAGE 2: Serve with Nginx ──
-# FROM nginx:alpine
+# ── STAGE 2: Runner ──
+FROM node:20-alpine AS runner
+WORKDIR /app
 
-# # Copy the custom Nginx configuration to handle SPA routing correctly
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV NODE_ENV production
+ENV PORT 3000
 
-# # Copy the static export (`out` directory) from builder
-# COPY --from=builder /app/out /usr/share/nginx/html
+# Copy minimum required public assets
+COPY --from=builder /app/public ./public
 
-# # Expose port 80
-# EXPOSE 80
+# Copy the standalone server output
+COPY --from=builder /app/.next/standalone ./
 
-# # Start Nginx
-# CMD ["nginx", "-g", "daemon off;"]
+# Copy the static folder to the standalone directory (.next/static)
+COPY --from=builder /app/.next/static ./.next/static
 
+# Expose port 3000
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+# Start server
+CMD ["node", "server.js"]

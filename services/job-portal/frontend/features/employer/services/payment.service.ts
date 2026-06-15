@@ -13,6 +13,7 @@ export const createOrder = async (orderPayload: {
   userId: string;
   couponCode: string | null;
   internalOrderId: string;
+  billingCycle?: "monthly" | "yearly" | string;
 }) => {
   const response = await apiClient.post<ApiSuccessResponse<CreateOrderResponse>>(
     "/payments/create-order",

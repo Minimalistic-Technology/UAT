@@ -174,12 +174,10 @@ export type Internship = BaseListing & {
 export type Kyc = {
   _id: string; // mongoose.objectId
   user: string; // mongoose.objectId
-  companyName: string;
-  aadharNo: string;
-  gstNo: string;
-  cinNo: string;
-  photo: CloudinaryAsset;
-  lightbill: CloudinaryAsset;
+  companyDocument: CloudinaryAsset;
+  companyDocumentType: string;
+  personalDocument: CloudinaryAsset;
+  personalDocumentType: string;
   status: KycStatus;
   rejectionReason?: string;
   isLatest: boolean;
@@ -294,6 +292,16 @@ export type subscription = {
   expiryDate: Date;
   status: "active" | "expired" | "depleted" | "cancelled";
   lastBilledAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Draft = {
+  _id: string; // mongoose.objectId
+  company: string; // mongoose.objectId
+  postedBy: string; // mongoose.objectId
+  type: "job" | "internship";
+  formData: any;
   createdAt: Date;
   updatedAt: Date;
 };

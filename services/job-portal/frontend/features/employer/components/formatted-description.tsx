@@ -7,7 +7,7 @@ export function FormattedDescription({ text }: { text: string }) {
   if (isHtml) {
     return (
       <div
-        className="text-muted-foreground space-y-2 text-[15px] leading-relaxed [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-slate-900 dark:[&>h1]:text-white [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-slate-800 dark:[&>h2]:text-slate-100 [&>h3]:text-lg [&>h3]:font-bold [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:pl-5 [&>ol]:pl-5 [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul>li]:mb-1 [&>ol>li]:mb-1"
+        className="text-muted-foreground space-y-2 text-[15px] leading-relaxed [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-slate-900 dark:[&>h1]:text-white [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-slate-800 dark:[&>h2]:text-slate-100 [&>h3]:text-lg [&>h3]:font-bold [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:pl-5 [&>ol]:pl-5 [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul>li]:mb-1 [&>ol>li]:mb-1 [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a:hover]:text-blue-800 dark:[&_a:hover]:text-blue-300 [&_a]:break-words"
         dangerouslySetInnerHTML={{ __html: text }}
       />
     );

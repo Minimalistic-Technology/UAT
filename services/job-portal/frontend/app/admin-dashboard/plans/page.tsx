@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { Search, Plus } from "lucide-react";
 import {
   Table,
@@ -11,6 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { DataTable } from "@/components/ui/data-table";
 import {
   Card,
   CardContent,
@@ -23,7 +30,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useFetchAdminPlans } from "@/features/admin/hooks/use-plan";
-import { PlanTableRow } from "@/features/admin/components/plan-table-row";
+import { columns } from "@/features/admin/components/plan-columns";
+import { CreatePlanDialog } from "@/features/admin/components/create-plan-dialog";
 
 const COLUMNS = [
   { key: "plan", label: "Plan Name" },
@@ -146,11 +154,11 @@ export default function PlansPage() {
           />
         </div>
 
-        <Link href="/admin-dashboard/plans/create">
+        <CreatePlanDialog>
           <Button className="rounded-xl h-10 px-5 bg-[#2563eb] text-white hover:bg-blue-700 shadow-sm font-semibold">
             <Plus className="mr-2 h-4 w-4" /> Create Plan
           </Button>
-        </Link>
+        </CreatePlanDialog>
       </div>
 
       <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
@@ -161,68 +169,36 @@ export default function PlansPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="px-7 pb-6">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  {COLUMNS.map((column) => (
-                    <TableHead
-                      key={column.key}
-                      className={
-                        column.key === "actions"
-                          ? "text-right"
-                          : column.className || ""
-                      }
-                    >
-                      {column.label}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.isArray(filteredPlans) && filteredPlans.length > 0 ? (
-                  filteredPlans.map((plan) => (
-                    <PlanTableRow key={plan._id} plan={plan} />
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={COLUMNS.length}
-                      className="text-muted-foreground h-24 text-center"
-                    >
-                      No plans found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable columns={columns} data={filteredPlans || []} />
 
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!pagination?.hasPrevPage}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="cursor-pointer"
-            >
-              Previous
-            </Button>
-
-            <div className="px-2 text-xs font-medium">
-              Page {pagination?.currentPage || 1} of{" "}
-              {pagination?.totalPages || 1}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!pagination?.hasNextPage}
-              onClick={() => setPage((p) => p + 1)}
-              className="cursor-pointer"
-            >
-              Next
-            </Button>
+          <div className="py-4">
+            <Pagination className="justify-end">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination?.hasPrevPage) setPage((p) => Math.max(1, p - 1));
+                    }}
+                    className={!pagination?.hasPrevPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                <PaginationItem className="px-4 text-xs font-medium text-muted-foreground flex items-center">
+                  Page {pagination?.currentPage || 1} of {pagination?.totalPages || 1}
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination?.hasNextPage) setPage((p) => p + 1);
+                    }}
+                    className={!pagination?.hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         </CardContent>
       </Card>

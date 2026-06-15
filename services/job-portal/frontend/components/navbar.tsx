@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { Menu, User, LogOut, Building2, LayoutDashboard } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-import { menuItems as adminMenuItems } from "@/features/admin/components/sidebar";
-import { menuItems as employerMenuItems } from "@/features/employer/components/employer-sidebar";
-import { userMenuItems } from "@/features/user/components/user-sidebar";
+import { Sidebar } from "@/features/admin/components/sidebar";
+import EmployerSidebar from "@/features/employer/components/employer-sidebar";
+import UserSidebar from "@/features/user/components/user-sidebar";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,6 +56,10 @@ export default function Navbar() {
   const { data: userProfileData } = useGetUserDetails(isAuthenticated);
   const allowedFeatures = userProfileData?.data?.allowedFeatures || [];
   const canUseDarkMode = allowedFeatures.includes("dark-mode");
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   const handleLogout = () => signOut({ callbackUrl: "/login" });
   const closeSheet = () => setOpen(false);
@@ -119,32 +123,24 @@ export default function Navbar() {
                   <Menu className="w-6 h-6 text-slate-800 dark:text-slate-200" strokeWidth={2.5} />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-72 bg-white dark:bg-[#0A0F1C] border-l dark:border-slate-800">
-                <SheetHeader className="border-b pb-4 text-left">
-                  <SheetTitle>
-                    <Logo />
-                  </SheetTitle>
+              <SheetContent side="right" className="p-0 w-64 sm:w-72 bg-white dark:bg-[#0A0F1C] border-r dark:border-slate-800">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Navigation Menu</SheetTitle>
                 </SheetHeader>
 
-                <div className="flex flex-col gap-1 pt-2">
-                  {isLoading ? (
-                    <MobileSkeleton />
-                  ) : isAuthenticated ? (
-                    <MobileAuthNav
-                      session={session}
-                      isEmployer={isEmployer ?? false}
-                      isJobSeeker={isJobSeeker}
-                      isAdmin={isAdmin}
-                      pathname={pathname}
-                      showFindJobs={showFindJobs}
-                      onLogout={handleLogout}
-                      onClose={closeSheet}
-                      canUseDarkMode={canUseDarkMode}
-                    />
-                  ) : (
+                {isLoading ? (
+                  <div className="p-4 pt-10"><MobileSkeleton /></div>
+                ) : isAuthenticated ? (
+                  <>
+                    {isAdmin && <Sidebar className="h-full w-full" forceExpanded />}
+                    {isEmployer && <EmployerSidebar className="h-full w-full" forceExpanded />}
+                    {isJobSeeker && <UserSidebar className="h-full w-full" forceExpanded />}
+                  </>
+                ) : (
+                  <div className="flex flex-col gap-1 p-4 pt-10">
                     <MobileGuestButtons onClose={closeSheet} />
-                  )}
-                </div>
+                  </div>
+                )}
               </SheetContent>
             </Sheet>
           </div>
@@ -271,86 +267,7 @@ function DesktopSkeleton() {
 
 // ─── Mobile Sub-components ────────────────────────────────────────────────────
 
-function MobileAuthNav({
-  session,
-  isEmployer,
-  isJobSeeker,
-  isAdmin,
-  pathname,
-  showFindJobs,
-  onLogout,
-  onClose,
-  canUseDarkMode,
-}: {
-  session: any;
-  isEmployer: boolean;
-  isJobSeeker: boolean;
-  isAdmin: boolean;
-  pathname: string;
-  showFindJobs: boolean;
-  onLogout: () => void;
-  onClose: () => void;
-  canUseDarkMode?: boolean;
-}) {
-  const roleMenuItems: MenuItem[] = isAdmin
-    ? adminMenuItems
-    : isEmployer
-      ? employerMenuItems
-      : isJobSeeker
-        ? userMenuItems
-        : [];
 
-  return (
-    <>
-      {showFindJobs && !isAdmin && (
-        <MobileNavLink href="/find-jobs" onClick={onClose}>
-          Find Jobs
-        </MobileNavLink>
-      )}
-
-      {isJobSeeker && (
-        <MobileNavLink href="/user-dashboard/applications" onClick={onClose}>
-          My Applications
-        </MobileNavLink>
-      )}
-
-      {/* Role-specific sidebar items */}
-      {roleMenuItems.map(({ label, href, icon: Icon }) => (
-        <MobileNavLink
-          key={href}
-          href={href}
-          onClick={onClose}
-          active={pathname === href || pathname.startsWith(href + "/")}
-        >
-          <Icon className="size-4" />
-          {label}
-        </MobileNavLink>
-      ))}
-
-      <div className="my-1 border-t" />
-
-      {canUseDarkMode && (
-        <div className="px-3 py-2 flex items-center justify-between">
-          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Theme</span>
-          <ThemeToggle />
-        </div>
-      )}
-
-      <MobileNavLink href="/profile" onClick={onClose}>
-        <User className="h-4 w-4" />
-        Profile
-      </MobileNavLink>
-
-      <button
-        onClick={onLogout}
-        className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-500 transition-colors hover:bg-red-50"
-      >
-        <LogOut className="size-4" />
-        Logout
-      </button>
-    </>
-  );
-}
 
 function MobileGuestButtons({ onClose }: { onClose: () => void }) {
   return (

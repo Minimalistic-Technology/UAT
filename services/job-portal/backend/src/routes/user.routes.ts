@@ -24,8 +24,8 @@ router.post(
   "/kyc",
   protect,
   kycUpload.fields([
-    { name: "photo", maxCount: 1 },
-    { name: "lightbill", maxCount: 1 },
+    { name: "personalDocument", maxCount: 1 },
+    { name: "companyDocument", maxCount: 1 },
   ]),
   validate(submitKycSchema),
   submitKyc,

@@ -1,4 +1,6 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
+import { API_URL } from "@/constants";
+import { GET_ADMIN_COUPONS_QUERY } from "../graphql/queries/coupon.queries";
 import { CouponFormValues } from "../validations/coupon.schema";
 import {
   GetAllCouponsResponse,
@@ -13,13 +15,25 @@ export async function createCoupon(payload: CouponFormValues) {
   return response.data;
 }
 
+
 export const getAdminCoupons = async (page: number = 1, limit: number = 10) => {
-  const response = await apiClient.get<
-    ApiSuccessResponse<GetAllCouponsResponse>
-  >(`/coupons`, {
-    params: { page, limit },
-  });
-  return response.data;
+  const response = await apiClient.post(
+    "/graphql",
+    {
+      query: GET_ADMIN_COUPONS_QUERY,
+      variables: { page, limit },
+    },
+    {
+      baseURL: API_URL.replace("/api", ""),
+    }
+  );
+
+  return {
+    success: true,
+    statusCode: 200,
+    message: "Coupons fetched successfully",
+    data: response.data.data.getCoupons,
+  };
 };
 
 export const updateCoupon = async ({
