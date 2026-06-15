@@ -66,7 +66,7 @@ const Page = () => {
         </div>
         <Button asChild size="sm" className="w-full sm:w-auto">
           <Link
-            href="/employer-dashboard/listings/create"
+            href="/employer-dashboard/listings/create?type=job"
             className="flex items-center justify-center"
           >
             <Plus className="mr-2 h-4 w-4 shrink-0" />
