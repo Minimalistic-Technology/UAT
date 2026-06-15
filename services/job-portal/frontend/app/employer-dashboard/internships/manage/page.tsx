@@ -170,7 +170,7 @@ function EmptyState() {
         first one.
       </p>
       <Button asChild variant="outline" className="mt-6">
-        <Link href="/employer-dashboard/internships/create">Post Your First Internship</Link>
+        <Link href="/employer-dashboard/listings/create?type=internship">Post Your First Internship</Link>
       </Button>
     </div>
   );

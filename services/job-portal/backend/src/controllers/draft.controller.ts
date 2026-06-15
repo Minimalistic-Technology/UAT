@@ -30,6 +30,7 @@ export const saveDraft = async (req: AuthRequest, res: Response, next: NextFunct
       }
       draft.formData = formData;
       draft.type = type;
+      draft.markModified('formData');
       await draft.save();
     } else {
       draft = await Draft.create({

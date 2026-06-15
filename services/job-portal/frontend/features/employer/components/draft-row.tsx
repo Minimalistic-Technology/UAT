@@ -47,7 +47,7 @@ export function DraftRow({ draft }: { draft: any }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
-                router.push(`/employer-dashboard/jobs/create?draftId=${draft._id}&type=${draft.type}`);
+                router.push(`/employer-dashboard/listings/create?draftId=${draft._id}&type=${draft.type}`);
               }}
               className="cursor-pointer"
             >
