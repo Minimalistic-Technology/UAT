@@ -362,34 +362,37 @@ const EmployerApplicationsPage = () => {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-md w-[95vw] max-w-[95vw] sm:w-full rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Schedule Interview</DialogTitle>
+            <DialogTitle className="text-xl">Schedule Interview</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Interview Date and Time</Label>
+          <div className="space-y-4 py-2 sm:py-4">
+            <div className="flex flex-col space-y-2">
+              <Label className="text-sm font-medium">Interview Date and Time</Label>
               <Input
                 type="datetime-local"
                 value={interviewDate}
                 onChange={(e) => setInterviewDate(e.target.value)}
                 min={new Date().toISOString().slice(0, 16)}
+                className="w-full text-base sm:text-sm"
               />
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground text-xs mt-1">
                 Select a date and time in the future.
               </p>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
             <Button
               variant="outline"
               onClick={() => setInterviewModalOpen(false)}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
             <Button
               onClick={handleScheduleInterview}
               disabled={isUpdating || !interviewDate}
+              className="w-full sm:w-auto"
             >
               Schedule
             </Button>

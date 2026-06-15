@@ -479,7 +479,7 @@ export const updateApplicationStatus = async (
       company: listing.company,
     });
 
-    const isEmployer = listing.postedBy.toString() === req.user.id;
+    const isEmployer = listing.postedBy.toString() === req.user._id.toString();
     const isAuthorizedMember =
       companyMember &&
       (companyMember.role === CompanyRole.HR ||
@@ -499,7 +499,7 @@ export const updateApplicationStatus = async (
     application.statusHistory.push({
       status,
       changedAt: new Date(),
-      changedBy: req.user.id,
+      changedBy: req.user._id,
       note,
     });
 
@@ -546,7 +546,7 @@ export const withdrawApplication = async (
     }
 
     // Verify application belongs to user
-    if (application.jobSeeker.toString() !== req.user.id) {
+    if (application.jobSeeker.toString() !== req.user._id.toString()) {
       throw new ApiError(403, "Not authorized to withdraw this application");
     }
 
