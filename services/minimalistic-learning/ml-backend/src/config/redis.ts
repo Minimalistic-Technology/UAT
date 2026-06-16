@@ -12,11 +12,14 @@ const getRedisUrl = () => {
 
 const redisUrl = getRedisUrl();
 
+export let isRedisConnected = false;
+
 export const redis = new Redis(redisUrl, {
     maxRetriesPerRequest: 1,
     retryStrategy(times) {
         if (times >= 3) {
             console.warn("[Redis] Database not found. Skipping cache and running without Redis.");
+            isRedisConnected = false;
             return null; // Stops retrying and prevents endless loop
         }
         console.warn(`[Redis] Retrying connection attempt ${times} (Please start Docker or Redis)...`);
@@ -25,6 +28,7 @@ export const redis = new Redis(redisUrl, {
 });
 
 redis.on('connect', () => {
+    isRedisConnected = true;
     console.log('[Redis] Connected to cache successfully ⚡');
 });
 
