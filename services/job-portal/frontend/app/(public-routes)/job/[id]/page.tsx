@@ -25,6 +25,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyCard } from "@/components/company-card";
 import { FormattedDescription } from "@/features/employer/components/formatted-description";
 import { ListingType } from "@/types/enums";
+import { getCurrencySymbol } from "@/utils";
+import { format } from "date-fns";
 
 const Page = () => {
   const params = useParams();
@@ -64,7 +66,7 @@ const Page = () => {
       <div className="flex flex-col lg:grid gap-6 lg:gap-8 lg:grid-cols-3">
         {/* Left Column: Main Details */}
         <div className="contents lg:block lg:col-span-2 lg:space-y-6">
-          <Card className="border-none shadow-sm order-1 lg:order-none">
+          <Card className="border-none shadow-sm order-1 lg:order-0">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
@@ -88,14 +90,18 @@ const Page = () => {
             </CardHeader>
             <CardContent>
               <div className="mt-4 flex flex-wrap gap-4">
-                <div className="text-muted-foreground flex items-center text-sm">
-                  <MapPinIcon className="mr-1 h-4 w-4" />
-                  {job.location?.city
-                    ? `${job.location.city}, ${job.location.country}`
-                    : "Location not specified"}
+                <div className="text-muted-foreground flex items-center text-sm capitalize">
+                  <MapPinIcon className="mr-1 h-4 w-4 shrink-0" />
+                  <span>
+                    {job.workMode === "remote"
+                      ? "Remote"
+                      : job.location?.city
+                        ? `${job.location.city}, ${job.location.country}`
+                        : "Location not specified"}
+                  </span>
                 </div>
 
-                {job.workMode && (
+                {job.workMode && job.workMode !== "remote" && (
                   <div className="text-muted-foreground flex items-center text-sm capitalize">
                     <MonitorIcon className="mr-1 h-4 w-4" />
                     {job.workMode.replace(/_/g, " ")}
@@ -106,7 +112,7 @@ const Page = () => {
                   <div className="text-muted-foreground flex items-center text-sm">
                     <WalletIcon className="mr-1 h-4 w-4" />
                     {job.salary.min || job.salary.max
-                      ? `${job.salary.currency} ${job.salary.min && job.salary.max
+                      ? `${getCurrencySymbol(job.salary.currency || "INR")}${job.salary.min && job.salary.max
                         ? `${job.salary.min} - ${job.salary.max}`
                         : job.salary.min
                           ? `${job.salary.min}+`
@@ -121,7 +127,7 @@ const Page = () => {
                     <WalletIcon className="mr-1 h-4 w-4" />
                     {job.stipend.type === "unpaid"
                       ? "Unpaid"
-                      : `${job.stipend.currency || "₹"}${job.stipend.amount?.toLocaleString() || "Variable"} / ${job.stipend.period}`}
+                      : `${getCurrencySymbol(job.stipend.currency || "INR")}${job.stipend.amount?.toLocaleString() || "Variable"} / ${job.stipend.period}`}
                   </div>
                 )}
 
@@ -195,7 +201,7 @@ const Page = () => {
 
         {/* Right Column: Sidebar Actions */}
         <div className="contents lg:block lg:space-y-6">
-          <Card className="border-none shadow-sm order-2 lg:order-none">
+          <Card className="border-none shadow-sm order-2 lg:order-0">
             <CardHeader>
               <CardTitle className="text-xl">Job Overview</CardTitle>
             </CardHeader>
@@ -205,7 +211,7 @@ const Page = () => {
                   <CalendarIcon className="mr-2 h-4 w-4" /> Posted On
                 </span>
                 <span className="text-right font-medium">
-                  {new Date(job.createdAt).toLocaleDateString()}
+                  {format(new Date(job.createdAt), "dd/MM/yyyy")}
                 </span>
               </div>
 
@@ -215,7 +221,7 @@ const Page = () => {
                     <ClockIcon className="mr-2 h-4 w-4" /> Deadline
                   </span>
                   <span className="text-right font-medium">
-                    {new Date(job.applicationDeadline).toLocaleDateString()}
+                    {format(new Date(job.applicationDeadline), "dd/MM/yyyy")}
                   </span>
                 </div>
               )}
@@ -323,7 +329,7 @@ const Page = () => {
             </CardContent>
           </Card>
 
-          <div className="order-4 lg:order-none">
+          <div className="order-4 lg:order-0">
             <CompanyCard
               company={{
                 ...job.company,

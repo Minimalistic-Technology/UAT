@@ -25,6 +25,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyCard } from "@/components/company-card";
 import { FormattedDescription } from "@/features/employer/components/formatted-description";
 import { ListingType } from "@/types/enums";
+import { getCurrencySymbol } from "@/utils";
+import { format } from "date-fns";
 
 const Page = () => {
   const params = useParams();
@@ -97,7 +99,7 @@ const Page = () => {
                   </span>
                 </div>
 
-                {internship.workMode && (
+                {internship.workMode && internship.workMode !== "remote" && (
                   <div className="text-muted-foreground flex items-center text-sm capitalize">
                     <MonitorIcon className="mr-1 h-4 w-4" />
                     {internship.workMode.replace(/_/g, " ")}
@@ -109,7 +111,7 @@ const Page = () => {
                     <WalletIcon className="mr-1 h-4 w-4" />
                     {internship.stipend.type === "unpaid"
                       ? "Unpaid"
-                      : `${internship.stipend.currency || "₹"}${internship.stipend.amount?.toLocaleString() || "Variable"} / ${internship.stipend.period}`}
+                      : `${getCurrencySymbol(internship.stipend.currency || "INR")} ${internship.stipend.amount?.toLocaleString() || "Variable"}/${internship.stipend.period}`}
                   </div>
                 )}
 
@@ -193,7 +195,7 @@ const Page = () => {
                   <CalendarIcon className="mr-2 h-4 w-4" /> Posted On
                 </span>
                 <span className="text-right font-medium">
-                  {new Date(internship.createdAt).toLocaleDateString()}
+                  {format(new Date(internship.createdAt), "dd/MM/yyyy")}
                 </span>
               </div>
 
@@ -203,7 +205,7 @@ const Page = () => {
                     <ClockIcon className="mr-2 h-4 w-4" /> Deadline
                   </span>
                   <span className="text-right font-medium">
-                    {new Date(internship.applicationDeadline).toLocaleDateString()}
+                    {format(new Date(internship.applicationDeadline), "dd/MM/yyyy")}
                   </span>
                 </div>
               )}
