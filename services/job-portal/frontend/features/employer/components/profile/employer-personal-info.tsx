@@ -34,7 +34,7 @@ export function EmployerPersonalInfo({ formData, email }: EmployerPersonalInfoPr
   }[] = [
     { label: "First Name",  value: formData.firstName },
     { label: "Last Name",   value: formData.lastName },
-    { label: "Email Address", value: email, colSpan: true },
+    { label: "Email Address", value: email },
     {
       label: "Phone Number",
       value: formData.phone,
@@ -56,11 +56,6 @@ export function EmployerPersonalInfo({ formData, email }: EmployerPersonalInfoPr
           />
         </div>
       ) : undefined,
-    },
-    {
-      label: "Location",
-      value: locationString,
-      placeholder: "Location not provided",
     },
   ];
 

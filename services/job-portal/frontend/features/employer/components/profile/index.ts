@@ -4,3 +4,4 @@ export * from "./employer-profile-card";
 export * from "./employer-quick-stats";
 export * from "./employer-security-card";
 export * from "./read-only-input-field";
+export * from "./edit-profile-input-field";
