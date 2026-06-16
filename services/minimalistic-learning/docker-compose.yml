@@ -11,13 +11,25 @@ services:
     environment:
       - NODE_ENV=production
       # Note: Add the rest of your backend .env variables here OR ensure the ml-backend/.env is used.
+      - REDIS_URL=redis://redis:6379
     env_file:
       - ./ml-backend/.env
+    restart: always
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    container_name: ml-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
     restart: always
 
   frontend:
     build:
-      context: ./ml-frontend
+      context: ./ml-starter-project
       dockerfile: Dockerfile
     container_name: ml-frontend
     ports:
@@ -25,3 +37,6 @@ services:
     depends_on:
       - backend
     restart: always
+
+volumes:
+  redis_data:

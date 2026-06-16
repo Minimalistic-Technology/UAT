@@ -12,6 +12,7 @@ import { verifyAccessToken } from '../utils/jwt';
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import crypto from 'crypto';
+import redis from '../config/redis';
 
 // SQLite-compatible string constants (replaces Prisma enums)
 const POST_STATUS = { pending: 'pending', published: 'published', rejected: 'rejected' } as const;
@@ -293,6 +294,16 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
+  // INVALIDATE TRENDING CACHE
+  // Whenever a new post is created, we might need to flush trending/post lists.
+  // The simplest way to handle trending variants is deleting keys starting with "trending:"
+  try {
+    const keys = await redis.keys('trending:*');
+    if (keys.length > 0) await redis.del(keys);
+  } catch (err: any) {
+    console.warn("[Redis] Failed to clear cache on post create:", err.message);
+  }
+
   if (postStatus === POST_STATUS.pending) {
     const admins = await prisma.user.findMany({ where: { role: 'admin' } });
     for (const admin of admins) {
@@ -397,6 +408,16 @@ export const updatePost = asyncHandler(async (req: Request, res: Response) => {
 
   const updatedPost = await prisma.post.findUnique({ where: { id: blogId } });
 
+  // INVALIDATE CACHE
+  try {
+    const keys = await redis.keys('trending:*');
+    if (keys.length > 0) await redis.del(keys);
+    // Also delete individual post cache if implemented later
+    if (updatedPost?.slug) await redis.del(`post:${updatedPost.slug}`);
+  } catch (err: any) {
+    console.warn("[Redis] Failed to clear cache on post update:", err.message);
+  }
+
   return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, updatedPost, "Post updated successfully"));
 });
 
@@ -409,6 +430,14 @@ export const deletePost = asyncHandler(async (req: Request, res: Response) => {
   });
 
   if (count.count === 0) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found or you don't have permission");
+
+  // INVALIDATE CACHE
+  try {
+    const keys = await redis.keys('trending:*');
+    if (keys.length > 0) await redis.del(keys);
+  } catch (err: any) {
+    console.warn("[Redis] Failed to clear cache on post delete:", err.message);
+  }
 
   return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, null, "Post deleted successfully"));
 });
@@ -481,6 +510,43 @@ export const recordView = asyncHandler(async (req: Request, res: Response) => {
 
 export const listTrending = asyncHandler(async (req: Request, res: Response) => {
   const limit = Math.min(Number(req.query.limit) || 6, 20);
+  const cacheKey = `trending:${limit}`;
+
+  // 1. Try fetching directly from Redis Cache
+  try {
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+      console.log(`[Redis] Cache Hit: ${cacheKey}`);
+      // Parse and attach user specific metadata (like hasLiked)
+
+      const parsedCache = JSON.parse(cachedData);
+      const bearer = req.headers.authorization;
+      const tokenFromCookie = req.cookies?.access_token as string | undefined;
+      const token = tokenFromCookie || (bearer && bearer.startsWith("Bearer ") ? bearer.split(" ")[1] : undefined);
+
+      let currentUserId: string | null = null;
+      if (token) {
+        try {
+          const payload = verifyAccessToken(token) as { sub: string };
+          currentUserId = payload.sub;
+        } catch { }
+      }
+
+      // Re-map 'hasLiked' based on cached likes array because cache doesn't know who the requesting user is
+      const items = parsedCache.map((post: any) => {
+        const likesArr = typeof post._likes === 'string' ? parseArr(post._likes) : post._likes || [];
+        const hasLiked = currentUserId ? likesArr.includes(currentUserId) : false;
+        return { ...post, hasLiked, _likes: undefined }; // strip likes array before sending
+      });
+
+      return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, { items }, "Trending posts fetched (Cached)"));
+    }
+  } catch (err: any) {
+    console.warn(`[Redis] Cache Read Error for ${cacheKey}:`, err.message);
+  }
+
+  // 2. Cache Miss: Fallback to Database
+  console.log(`[Redis] Cache Miss: ${cacheKey}. Fetching from Database...`);
 
   const postsRaw = await prisma.post.findMany({
     where: { published: true, status: POST_STATUS.published },
@@ -508,13 +574,24 @@ export const listTrending = asyncHandler(async (req: Request, res: Response) => 
     const hasLiked = currentUserId ? likesArr.includes(currentUserId) : false;
     const coverImageObj = post.coverImage ? JSON.parse(post.coverImage) : null;
 
-    const mapped = { ...post, likesCount, hasLiked, coverImage: coverImageObj };
+    const mapped = { ...post, likesCount, hasLiked, coverImage: coverImageObj, _likes: likesArr };
     delete mapped.viewedBy;
     delete mapped.likes;
     return mapped;
   });
 
-  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, { items }, "Trending posts fetched"));
+  // 3. Save purely processed items array into Redis before stripping `_likes` metadata for the response
+  try {
+    // We save for 5 minutes (300 seconds) to balance freshness and performance
+    await redis.setex(cacheKey, 300, JSON.stringify(items));
+  } catch (err: any) {
+    console.warn(`[Redis] Cache Write Error for ${cacheKey}:`, err.message);
+  }
+
+  // Final cleanup before sending to user (don't leak likes array)
+  const finalItems = items.map((item: any) => ({ ...item, _likes: undefined }));
+
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, { items: finalItems }, "Trending posts fetched"));
 });
 
 export const getUserStats = asyncHandler(async (req: Request, res: Response) => {
