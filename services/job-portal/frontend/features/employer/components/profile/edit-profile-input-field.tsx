@@ -8,6 +8,8 @@ interface EditProfileInputFieldProps extends React.InputHTMLAttributes<HTMLInput
   labelRight?: React.ReactNode;
   containerClassName?: string;
   children?: React.ReactNode;
+  error?: string;
+  description?: React.ReactNode;
 }
 
 export const editInputBase =
@@ -19,6 +21,8 @@ export function EditProfileInputField({
   containerClassName,
   children,
   className,
+  error,
+  description,
   ...props
 }: EditProfileInputFieldProps) {
   return (
@@ -40,6 +44,14 @@ export function EditProfileInputField({
 
       {children ?? (
         <Input className={cn(editInputBase, className)} {...props} />
+      )}
+      
+      {description && (
+        <p className="text-xs text-slate-500">{description}</p>
+      )}
+      
+      {error && (
+        <p className="text-sm font-medium text-destructive">{error}</p>
       )}
     </div>
   );

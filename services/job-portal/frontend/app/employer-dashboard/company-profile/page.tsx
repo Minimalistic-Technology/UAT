@@ -2,12 +2,14 @@
 
 import { useRef } from "react";
 import { useGetMyCompanyDetails, useUploadCompanyLogo } from "@/features/employer/hooks/use-company";
-import { CompanyHeader } from "../../../features/employer/components/company-header";
-import { CompanyOverview } from "../../../features/employer/components/company-overview";
-import { CompanyInformation } from "../../../features/employer/components/company-information";
-import { CompanyProfileSkeleton } from "../../../features/employer/components/company-skeleton";
-import { CompanyPlanDetails } from "../../../features/employer/components/company-plan-details";
-import { CompanyDangerZone } from "../../../features/employer/components/company-danger-zone";
+import { CompanyHeader } from "@/features/employer/components/company-header";
+import { CompanyOverview } from "@/features/employer/components/company-overview";
+import { CompanyInformation } from "@/features/employer/components/company-information";
+import { CompanyProfileSkeleton } from "@/features/employer/components/company-skeleton";
+import { CompanyPlanDetails } from "@/features/employer/components/company-plan-details";
+import { CompanyDangerZone } from "@/features/employer/components/company-danger-zone";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 const CompanyProfilePage = () => {
   const { data: companyResponse, isLoading: isCompanyLoading } = useGetMyCompanyDetails();
@@ -19,11 +21,21 @@ const CompanyProfilePage = () => {
 
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append("logo", file);
-      uploadLogo(formData);
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file");
+      return;
     }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("logo", file);
+    uploadLogo(formData);
   };
 
   if (isCompanyLoading) {
@@ -32,7 +44,7 @@ const CompanyProfilePage = () => {
 
   return (
     <div className="space-y-6">
-      <input
+      <Input
         type="file"
         ref={logoInputRef}
         className="hidden"

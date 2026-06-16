@@ -18,8 +18,7 @@ export const CompanyInformation = ({ company }: { company: any }) => {
 
   const user = userDetailsResponse?.data;
   const isOwner = user && company?.owner?._id === user._id;
-  const isKycCompleted = company?.kycStatus === KycStatus.APPROVED;
-
+  const isKycCompleted = company?.isVerified;
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
     defaultValues: {
@@ -106,7 +105,7 @@ export const CompanyInformation = ({ company }: { company: any }) => {
       </div>
 
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
           <DialogHeader>
             <DialogTitle>Edit Company Information</DialogTitle>
             <DialogDescription>Update the details and location of your company here.</DialogDescription>
