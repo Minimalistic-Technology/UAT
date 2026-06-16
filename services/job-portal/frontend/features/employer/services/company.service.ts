@@ -8,17 +8,15 @@ interface GetAllEmployeesResponse {
 }
 
 interface SubmitKycResponse {
-  companyName: string;
-  aadharNo: string;
-  gstNo: string;
-  cinNo: string;
+  companyDocumentType: string;
+  personalDocumentType: string;
   documents: {
-    photoUrl: string;
-    lightbillUrl: string;
+    personalDocumentUrl: string;
+    companyDocumentUrl: string;
   };
 }
 
-// Changes needed in the response types (backend has some issues, fix that and then update these types accordingly)
+
 export const getMyCompany = async () => {
   const response =
     await apiClient.get<ApiSuccessResponse<GetMyCompanyResponse>>(

@@ -300,9 +300,13 @@ export const updateKycStatus = async (
     kycApplication.status = status;
     if (status === "rejected" && note) {
       kycApplication.rejectionReason = note;
-      // Also delete the assests attached to this kycApplication
-      // await deleteFromCloudinary(kycApplication.photo.publicId);
-      // await deleteFromCloudinary(kycApplication.lightbill.publicId);
+      // Also delete the assets attached to this kycApplication
+      if (kycApplication.companyDocument?.publicId) {
+        await deleteFromCloudinary(kycApplication.companyDocument.publicId);
+      }
+      if (kycApplication.personalDocument?.publicId) {
+        await deleteFromCloudinary(kycApplication.personalDocument.publicId);
+      }
     }
     await kycApplication.save();
 
@@ -314,7 +318,7 @@ export const updateKycStatus = async (
         if (company) {
           company.isVerified = true;
           await company.save();
-          
+
           // Elevate system user privileges & metadata bindings globally
           await User.findByIdAndUpdate(kycApplication.user, {
             isVerified: true,

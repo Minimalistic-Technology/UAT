@@ -47,18 +47,18 @@ const DraftsPage = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative w-full sm:max-w-sm flex-1">
+      <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 w-full">
+        <div className="relative w-full flex-1 sm:max-w-sm">
           <GlobalSearchInput
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search drafts..."
           />
         </div>
-        <Button asChild size="sm" className="w-full sm:w-auto">
+        <Button asChild size="sm" className="w-auto shrink-0 whitespace-nowrap px-3 sm:px-4">
           <Link href="/employer-dashboard/listings/create" className="flex items-center justify-center">
-            <Plus className="mr-2 h-4 w-4 shrink-0" />
-            <span>Post New Job</span>
+            <Plus className="mr-1.5 h-4 w-4 shrink-0" />
+            <span>Create New Post</span>
           </Link>
         </Button>
       </div>

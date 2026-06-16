@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyCard } from "@/components/company-card";
+import { FormattedDescription } from "@/features/employer/components/formatted-description";
 import { ListingType } from "@/types/enums";
 
 const Page = () => {
@@ -136,9 +137,7 @@ const Page = () => {
             <CardContent className="space-y-6 pt-6">
               <div>
                 <h3 className="mb-3 text-lg font-semibold">Description</h3>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                  {job.description}
-                </p>
+                <FormattedDescription text={job.description} />
               </div>
 
               {job.requirements && job.requirements.length > 0 && (

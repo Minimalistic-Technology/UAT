@@ -20,6 +20,7 @@ import {
   Wrench
 } from "lucide-react";
 import { getInlineUrl } from "@/utils";
+import { GlobalProfileCard } from "@/components/global-profile-card";
 
 export const ApplicationDetailModal = ({ application }: { application: any }) => {
   const { jobSeeker, resume } = application;
@@ -61,22 +62,16 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
 
             {/* Header Section: Bio & Skills */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2 space-y-3">
-                <div className="flex items-center gap-2 text-primary font-semibold uppercase text-xs tracking-wider">
-                  <User className="h-4 w-4" />
-                  Contact Information
-                </div>
-                <div className="grid gap-2">
-                  <h2 className="text-xl font-bold">{jobSeeker.firstName} {jobSeeker.lastName}</h2>
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Mail className="h-4 w-4" /> {jobSeeker.email}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4" /> {jobSeeker.phone}
-                    </div>
-                  </div>
-                </div>
+              <div className="md:col-span-2">
+                <GlobalProfileCard
+                  firstName={jobSeeker.firstName}
+                  lastName={jobSeeker.lastName}
+                  email={jobSeeker.email}
+                  phone={jobSeeker.phone}
+                  avatarUrl={jobSeeker.profilePhoto?.url}
+                  readOnlyAvatar={true}
+                  profileStrength={jobSeeker.profileStrength || 100}
+                />
               </div>
 
               <div className="space-y-3">
