@@ -3,7 +3,7 @@ import { z } from "zod";
 const experienceSchema = z.object({
     title: z.string().min(2, "Title must be at least 2 characters"),
     company: z.string().min(2, "Company must be at least 2 characters"),
-    workType: z.enum(["wfo", "hybrid", "remote", "temporary_wfh"]).optional(),
+    workType: z.enum(["wfo", "hybrid", "remote", "temporary_wfh"], { error: "Work type is required" }),
     location: z.string().optional(),
     current: z.boolean().optional(),
     startDate: z.string().min(1, "Start date is required"),

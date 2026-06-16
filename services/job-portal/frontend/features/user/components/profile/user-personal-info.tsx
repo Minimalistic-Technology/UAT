@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Briefcase, GraduationCap, MapPin, Phone, Mail, FileText, Download, Eye } from "lucide-react";
@@ -109,7 +108,7 @@ export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
                                     <div className="flex justify-between items-start">
                                         <h4 className="text-sm font-bold text-slate-900">{exp.title}</h4>
                                         <Badge variant="outline" className="text-xs font-normal bg-slate-50">
-                                            {exp.startDate ? new Date(exp.startDate).getFullYear() : 'Past'} - {exp.current ? 'Present' : (exp.endDate ? new Date(exp.endDate).getFullYear() : '')}
+                                            {exp.startDate ? new Date(exp.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Past'} - {exp.current ? 'Present' : (exp.endDate ? new Date(exp.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '')}
                                         </Badge>
                                     </div>
                                     <p className="text-sm font-medium text-primary">{exp.company}</p>
@@ -147,7 +146,7 @@ export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
                                     <div className="flex justify-between items-start">
                                         <h4 className="text-sm font-bold text-slate-900">{edu.degree}</h4>
                                         <Badge variant="outline" className="text-xs font-normal bg-slate-50">
-                                            {edu.startDate ? new Date(edu.startDate).getFullYear() : 'Past'} - {edu.current ? 'Present' : (edu.endDate ? new Date(edu.endDate).getFullYear() : '')}
+                                            {edu.graduationYear}
                                         </Badge>
                                     </div>
                                     <p className="text-sm font-medium text-primary">{edu.institution}</p>
