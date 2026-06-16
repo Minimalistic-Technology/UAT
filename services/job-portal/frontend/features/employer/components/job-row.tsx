@@ -14,19 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import { useDeleteMyJobPosting } from "../hooks/use-job";
-
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "active":
-      return "bg-green-100 text-green-700 hover:bg-green-100";
-    case "draft":
-      return "bg-gray-100 text-gray-700 hover:bg-gray-100";
-    case "expired":
-      return "bg-red-100 text-red-700 hover:bg-red-100";
-    default:
-      return "bg-blue-100 text-blue-700 hover:bg-blue-100";
-  }
-};
+import { getListingStatusColor } from "@/utils";
 
 export function JobRow({ job }: { job: any }) {
   const router = useRouter();
@@ -36,7 +24,7 @@ export function JobRow({ job }: { job: any }) {
     <TableRow className="group">
       <TableCell className="font-medium text-gray-900">{job.title}</TableCell>
       <TableCell>
-        <Badge variant="secondary" className={getStatusColor(job.status)}>
+        <Badge variant="secondary" className={getListingStatusColor(job.status)}>
           {job.status}
         </Badge>
       </TableCell>

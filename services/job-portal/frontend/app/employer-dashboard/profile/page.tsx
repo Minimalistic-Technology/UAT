@@ -127,10 +127,11 @@ export default function EmployerProfilePage() {
         <div className="w-full space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border/50 pb-5">
-                <h1 className="text-[1.4rem] font-bold tracking-tight text-slate-900 dark:text-white">My Profile</h1>
+                <h1 className="text-[1.4rem] font-bold tracking-tight text-slate-900">My Profile</h1>
                 <Button
                     onClick={() => setIsEditing(true)}
                     size="sm"
+                    className="cursor-pointer"
                 >
                     <Edit className="w-3.5 h-3.5 mr-2" />
                     Edit Profile
@@ -154,7 +155,7 @@ export default function EmployerProfilePage() {
                 {/* Right Column */}
                 <div className="lg:col-span-2 space-y-6">
                     <EmployerPersonalInfo formData={formData} email={email} />
-                    <EmployerSecurityCard />
+                    {/* <EmployerSecurityCard /> */}
                 </div>
             </div>
 

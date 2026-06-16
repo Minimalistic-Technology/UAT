@@ -7,12 +7,18 @@ import {
   Clock,
   Users,
   IndianRupee,
+  DollarSign,
+  Euro,
+  PoundSterling,
+  Banknote,
   ChevronLeft,
   Pencil,
   Trash2,
   FileUser,
   Calendar,
   Award,
+  Building2,
+  Tags,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -41,6 +47,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FormattedDescription } from "@/features/employer/components/formatted-description";
 import { Internship } from "@/types/new-index";
+import { getCurrencyIcon, getCurrencySymbol, getListingStatusColor } from "@/utils";
 
 const Page = () => {
   const params = useParams();
@@ -76,7 +83,9 @@ const Page = () => {
             size="sm"
             disabled={internship.status === "closed"}
             onClick={() => {
-              router.push(`/employer-dashboard/internships/${internshipId}/edit`);
+              router.push(
+                `/employer-dashboard/internships/${internshipId}/edit`,
+              );
             }}
           >
             <Pencil className="mr-2 h-4 w-4" /> Edit Details
@@ -96,8 +105,9 @@ const Page = () => {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Internship Posting?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently remove <strong>{internship.title}</strong>.
-                  This action cannot be undone.
+                  This will permanently remove{" "}
+                  <strong>{internship.title}</strong>. This action cannot be
+                  undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -114,22 +124,63 @@ const Page = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column: Internship Info */}
         <div className="space-y-6 lg:col-span-2">
-          <Card className="rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900 border-0 overflow-hidden">
-            <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b pb-6">
-              <div className="mb-2 flex items-center gap-2">
-                <Badge variant="secondary" className="capitalize">
+          <Card className="overflow-hidden rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+            <CardHeader className="border-b bg-slate-50/50 pb-6 dark:bg-slate-800/50">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Badge 
+                  variant="secondary" 
+                  className={`capitalize px-3 py-1 shadow-sm ${getListingStatusColor(internship.status)}`}
+                >
                   {internship.status.replace("_", " ").toLowerCase()}
                 </Badge>
-                {internship.isFeatured && <Badge>Featured</Badge>}
-                {internship.isPPO && <Badge variant="outline" className="border-green-500 text-green-600">PPO Available</Badge>}
-                {internship.certificateProvided && <Badge variant="outline" className="border-blue-500 text-blue-600">Certificate</Badge>}
+                {internship.isFeatured && (
+                  <Badge className="px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm border-0">
+                    Featured
+                  </Badge>
+                )}
+                {internship.isPPO && (
+                  <Badge
+                    variant="outline"
+                    className="border-green-500/50 bg-green-50 text-green-700 px-3 py-1 shadow-sm dark:bg-green-500/10 dark:text-green-400"
+                  >
+                    PPO Available
+                  </Badge>
+                )}
+                {internship.certificateProvided && (
+                  <Badge
+                    variant="outline"
+                    className="border-blue-500/50 bg-blue-50 text-blue-700 px-3 py-1 shadow-sm dark:bg-blue-500/10 dark:text-blue-400"
+                  >
+                    Certificate
+                  </Badge>
+                )}
               </div>
-              <CardTitle className="text-3xl font-bold">{internship.title}</CardTitle>
+              <CardTitle className="text-3xl font-bold">
+                {internship.title}
+              </CardTitle>
               <CardDescription>
                 Posted on {format(new Date(internship.createdAt), "PPP")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border/50">
+                <div className="flex items-center gap-1.5">
+                  <Tags className="h-4 w-4 shrink-0 text-primary/70" />
+                  <span className="capitalize">
+                    <span className="font-semibold text-foreground mr-1">Role:</span>
+                    {internship.roleCategory?.replace(/_/g, " ").toLowerCase() || "Not Specified"}
+                  </span>
+                </div>
+                <Separator orientation="vertical" className="h-4 hidden sm:block" />
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="h-4 w-4 shrink-0 text-primary/70" />
+                  <span className="capitalize">
+                    <span className="font-semibold text-foreground mr-1">Industry:</span>
+                    {internship.industry?.replace(/_/g, " ").toLowerCase() || "Not Specified"}
+                  </span>
+                </div>
+              </div>
+
               <div>
                 <h4 className="mb-2 font-semibold">Description</h4>
                 <FormattedDescription text={internship.description} />
@@ -165,7 +216,7 @@ const Page = () => {
         {/* Right Column: Stats & Meta */}
         <div className="space-y-6">
           {/* Quick Stats Card */}
-          <Card className="rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900 border-0">
+          <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
             <CardHeader className="border-b pb-4">
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
                 Post Performance
@@ -185,7 +236,7 @@ const Page = () => {
           </Card>
 
           {/* Internship Details Card */}
-          <Card className="rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900 border-0">
+          <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
             <CardHeader className="border-b pb-4">
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
                 Listing Details
@@ -193,10 +244,11 @@ const Page = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
-                <IndianRupee className="text-muted-foreground h-4 w-4" />
+                {getCurrencyIcon(internship.stipend.currency || "INR")}
                 <span className="font-medium">
-                  {internship.stipend.type === "fixed" && internship.stipend.amount
-                    ? `₹${internship.stipend.amount.toLocaleString()} / ${internship.stipend.period}`
+                  {internship.stipend.type === "fixed" &&
+                  internship.stipend.amount
+                    ? `${getCurrencySymbol(internship.stipend.currency || "INR")}${internship.stipend.amount.toLocaleString()} / ${internship.stipend.period}`
                     : internship.stipend.type === "unpaid"
                       ? "Unpaid"
                       : "Performance Based"}
@@ -205,7 +257,12 @@ const Page = () => {
               <div className="flex items-center gap-3 text-sm">
                 <Clock className="text-muted-foreground h-4 w-4" />
                 <span className="capitalize">
-                  {internship.duration.value} {internship.duration.unit.toLowerCase()}{internship.duration.value > 1 && !internship.duration.unit.endsWith('s') ? 's' : ''}
+                  {internship.duration.value}{" "}
+                  {internship.duration.unit.toLowerCase()}
+                  {internship.duration.value > 1 &&
+                  !internship.duration.unit.endsWith("s")
+                    ? "s"
+                    : ""}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
@@ -216,9 +273,12 @@ const Page = () => {
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <MapPin className="text-muted-foreground h-4 w-4" />
-                <span>
-                  {internship.location?.city}, {internship.location?.state}{" "}
-                  ({internship.workMode})
+                <span className="capitalize">
+                  {internship.workMode === "remote"
+                    ? "Remote"
+                    : internship.location?.city && internship.location?.country
+                      ? `${internship.location.city}, ${internship.location.country}`
+                      : "Location Not Specified"}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
@@ -228,7 +288,9 @@ const Page = () => {
               {internship.startDate && (
                 <div className="flex items-center gap-3 text-sm">
                   <Calendar className="text-muted-foreground h-4 w-4" />
-                  <span>Start: {format(new Date(internship.startDate), "PP")}</span>
+                  <span>
+                    Start: {format(new Date(internship.startDate), "PP")}
+                  </span>
                 </div>
               )}
               {internship.certificateProvided && (
@@ -242,7 +304,9 @@ const Page = () => {
             <div className="p-4">
               <Button
                 onClick={() =>
-                  router.push(`/employer-dashboard/internships/${internshipId}/applications`)
+                  router.push(
+                    `/employer-dashboard/internships/${internshipId}/applications`,
+                  )
                 }
                 className="w-full cursor-pointer"
                 variant="outline"

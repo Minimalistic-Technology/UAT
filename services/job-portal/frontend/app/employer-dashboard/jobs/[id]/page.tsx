@@ -7,11 +7,17 @@ import {
   Clock,
   Users,
   IndianRupee,
+  DollarSign,
+  Euro,
+  PoundSterling,
+  Banknote,
   ChevronLeft,
   Pencil,
   Trash2,
   Eye,
   FileUser,
+  Building2,
+  Tags,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -39,6 +45,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { FormattedDescription } from "@/features/employer/components/formatted-description";
+import { getCurrencyIcon, getCurrencySymbol, getListingStatusColor } from "@/utils";
 
 const Page = () => {
   const params = useParams();
@@ -112,11 +119,18 @@ const Page = () => {
         <div className="space-y-6 lg:col-span-2">
           <Card className="rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900 border-0 overflow-hidden">
             <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b pb-6">
-              <div className="mb-2 flex items-center gap-2">
-                <Badge variant="secondary" className="capitalize">
-                  {job.status}
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Badge 
+                  variant="secondary" 
+                  className={`capitalize px-3 py-1 shadow-sm ${getListingStatusColor(job.status)}`}
+                >
+                  {job.status.replace("_", " ").toLowerCase()}
                 </Badge>
-                {job.isFeatured && <Badge>Featured</Badge>}
+                {job.isFeatured && (
+                  <Badge className="px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm border-0">
+                    Featured
+                  </Badge>
+                )}
               </div>
               <CardTitle className="text-3xl font-bold">{job.title}</CardTitle>
               <CardDescription>
@@ -124,6 +138,24 @@ const Page = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border/50">
+                <div className="flex items-center gap-1.5">
+                  <Tags className="h-4 w-4 shrink-0 text-primary/70" />
+                  <span className="capitalize">
+                    <span className="font-semibold text-foreground mr-1">Role:</span>
+                    {job.roleCategory?.replace(/_/g, " ").toLowerCase() || "Not Specified"}
+                  </span>
+                </div>
+                <Separator orientation="vertical" className="h-4 hidden sm:block" />
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="h-4 w-4 shrink-0 text-primary/70" />
+                  <span className="capitalize">
+                    <span className="font-semibold text-foreground mr-1">Industry:</span>
+                    {job.industry?.replace(/_/g, " ").toLowerCase() || "Not Specified"}
+                  </span>
+                </div>
+              </div>
+
               <div>
                 <h4 className="mb-2 font-semibold">Description</h4>
                 <FormattedDescription text={job.description} />
@@ -187,10 +219,17 @@ const Page = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
-                <IndianRupee className="text-muted-foreground h-4 w-4" />
+                {getCurrencyIcon(job.currency || "INR")}
                 <span className="font-medium">
-                  ₹{job.salary?.min?.toLocaleString()} - ₹
-                  {job.salary?.max?.toLocaleString()}
+                  {job.salary?.min || job.salary?.max ? (
+                    <>
+                      {job.salary?.min ? `${getCurrencySymbol(job.currency || "INR")}${job.salary.min.toLocaleString()}` : ""}
+                      {job.salary?.min && job.salary?.max ? " - " : ""}
+                      {job.salary?.max ? `${getCurrencySymbol(job.currency || "INR")}${job.salary.max.toLocaleString()}` : ""}
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground italic">Not Disclosed</span>
+                  )}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
@@ -205,9 +244,12 @@ const Page = () => {
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <MapPin className="text-muted-foreground h-4 w-4" />
-                <span>
-                  {job.location.city}, {job.location.state}{" "}
-                  {job.location.remote && "(Remote)"}
+                <span className="capitalize">
+                  {job.workMode === "remote"
+                    ? "Remote"
+                    : job.location?.city && job.location?.state
+                      ? `${job.location.city}, ${job.location.state}`
+                      : "Location Not Specified"}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
