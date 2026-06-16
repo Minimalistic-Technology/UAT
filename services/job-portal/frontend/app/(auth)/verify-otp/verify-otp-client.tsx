@@ -97,18 +97,19 @@ export default function VerifyOtpClient() {
   if (!email) return null;
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-slate-50/50 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">
-            Verify Your Email
-          </CardTitle>
-          <CardDescription>
-            We sent a 6-digit code to{" "}
-            <span className="font-medium text-foreground">{email}</span>.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-6">
+    <div className="flex h-screen w-full bg-slate-50/50 overflow-hidden">
+      <div className="flex h-full flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2">
+          <CardHeader className="text-center pb-2 pt-4">
+            <CardTitle className="text-2xl font-bold">
+              Verify Your Email
+            </CardTitle>
+            <CardDescription className="text-slate-500">
+              We sent a 6-digit code to{" "}
+              <span className="font-medium text-foreground">{email}</span>.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center space-y-6 pb-4">
           {/* Shadcn InputOTP Component */}
           <InputOTP
             maxLength={6}
@@ -154,6 +155,7 @@ export default function VerifyOtpClient() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

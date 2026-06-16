@@ -72,18 +72,18 @@ export default function ResetPasswordClient({ token }: ResetPasswordClientProps)
         priority
         className="hidden h-full w-1/2 object-cover lg:block"
       />
-      <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-sm space-y-3 border-none shadow-lg sm:border">
-          <CardHeader className="space-y-0.5 text-center">
-            <CardTitle className="text-3xl font-bold tracking-tight">
+      <div className="flex  h-full flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-sm space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2">
+          <CardHeader className="text-center pb-2 pt-4">
+            <CardTitle className="text-2xl font-bold">
               Reset Password
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-slate-500">
               Enter your new password below
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <CardContent className="pb-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3">
               {/* Password Field */}
               <div className="grid gap-2">
                 <Label htmlFor="password">New Password</Label>
