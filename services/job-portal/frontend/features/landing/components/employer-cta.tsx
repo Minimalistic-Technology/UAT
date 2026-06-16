@@ -153,16 +153,16 @@ export const EmployerCTA = () => {
                       Talk to sales
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-2xl p-0 overflow-hidden bg-slate-50">
-                    <div className="grid md:grid-cols-2">
+                  <DialogContent className="sm:max-w-2xl w-[95vw] max-h-[90vh] md:max-h-[85vh] p-0 overflow-hidden bg-slate-50 rounded-2xl flex flex-col">
+                    <div className="grid md:grid-cols-2 flex-1 overflow-y-auto scrollbar-hide">
                       {/* Interactive ROI Calculator */}
-                      <div className="p-8 md:p-10 bg-white">
+                      <div className="p-6 md:p-10 bg-white">
                         <DialogHeader>
                           <DialogTitle className="text-2xl font-bold tracking-tight text-slate-900">
                             Let's talk numbers.
                           </DialogTitle>
                         </DialogHeader>
-                        <p className="text-slate-500 mt-2 text-sm leading-relaxed mb-8">
+                        <p className="text-slate-500 mt-2 text-sm leading-relaxed mb-6 md:mb-8">
                           Traditional recruiters charge 15-20% per hire. See how much you could save before we even get on a call.
                         </p>
 
@@ -200,7 +200,7 @@ export const EmployerCTA = () => {
                       </div>
 
                       {/* Sales Contact CTA */}
-                      <div className="bg-slate-900 p-8 md:p-10 text-white flex flex-col justify-center relative overflow-hidden">
+                      <div className="bg-slate-900 p-6 md:p-10 text-white flex flex-col justify-center relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-6 opacity-10">
                           <TrendingDown size={140} />
                         </div>
