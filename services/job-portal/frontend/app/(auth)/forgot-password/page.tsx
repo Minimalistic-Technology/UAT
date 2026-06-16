@@ -12,7 +12,7 @@ export default function ForgotPasswordPage() {
 
 const ForgotPasswordPageSkeleton = () => {
   return (
-    <div className="flex h-[calc(100vh-4rem)] w-full bg-slate-50/50">
+    <div className="flex h-[calc(100dvh-72px)] w-full bg-slate-50/50 overflow-hidden">
       <div className="hidden lg:block h-full w-1/2">
         <Skeleton className="h-full w-full rounded-none" />
       </div>
