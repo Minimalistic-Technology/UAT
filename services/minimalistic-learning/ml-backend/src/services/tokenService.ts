@@ -19,7 +19,42 @@ export const replaceRefreshToken = async (userId: string, tokenValue: string, ex
   return storeToken(userId, tokenValue, TOKEN_TYPE.refresh, expiresIn);
 };
 
+export const storeResetToken = async (userId: string, expiresIn: string) => {
+  await prisma.token.deleteMany({ where: { userId, type: TOKEN_TYPE.reset } });
 
+  // Best choice: Secure URL-safe token generator using crypto!
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+  await prisma.token.create({
+    data: {
+      userId,
+      tokenHash,
+      type: TOKEN_TYPE.reset,
+      expiresAt: createExpiryDate(expiresIn)
+    }
+  });
+
+  return resetToken;
+};
+
+export const verifyStoredResetToken = async (userId: string, plainToken: string): Promise<Token | null> => {
+  const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+
+  const tokenDoc = await prisma.token.findFirst({
+    where: { userId, type: TOKEN_TYPE.reset, tokenHash },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  if (!tokenDoc) return null;
+
+  if (tokenDoc.expiresAt.getTime() < Date.now()) {
+    await deleteToken(tokenDoc);
+    return null;
+  }
+
+  return tokenDoc;
+};
 
 export const invalidateTokens = (userId: string, type?: TokenTypeValue) => {
   if (type) {

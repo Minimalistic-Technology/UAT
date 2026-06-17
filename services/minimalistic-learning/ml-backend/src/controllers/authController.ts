@@ -4,6 +4,8 @@ import { prisma } from '../config/db';
 import {
   signupSchema,
   loginSchema,
+  passwordResetInitSchema,
+  passwordResetCompleteSchema,
   verifyOTPSchema
 } from '../validators/authValidator';
 import * as userService from '../services/userService';
@@ -15,6 +17,8 @@ import {
 import {
   replaceRefreshToken,
   verifyStoredToken,
+  storeResetToken,
+  verifyStoredResetToken,
   deleteToken,
   invalidateTokens,
   createTokenString
@@ -23,7 +27,7 @@ import { env } from '../config/env';
 import { getCookieConfig } from '../config/cookieConfig';
 import { durationToMs } from '../utils/time';
 import { ApiResponse } from "../utils/ApiResponse";
-import { sendOTP, sendAccountCreatedEmail, sendLoginAlertEmail } from "../utils/email";
+import { sendOTP, sendAccountCreatedEmail, sendLoginAlertEmail, sendPasswordResetLinkEmail } from "../utils/email";
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -413,6 +417,55 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
         refreshToken: newRefreshToken
       }, "Tokens refreshed successfully")
     );
+});
+
+export const initiatePasswordReset = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = passwordResetInitSchema.parse(req.body);
+
+  const user = await userService.findByEmail(email);
+  if (!user) {
+    // Return OK anyway to prevent enumeration attacks
+    return res.status(StatusCodes.OK).json(
+      new ApiResponse(StatusCodes.OK, null, 'If that email address exists, we have sent a reset link to it.')
+    );
+  }
+
+  const rawToken = await storeResetToken(user.id, env.PASSWORD_RESET_EXPIRE || '15m');
+
+  // Construct securely targeted URL to frontend reset page
+  const resetLink = `${env.corsOrigins && env.corsOrigins.length > 0 ? env.corsOrigins[0] : 'http://localhost:3000'}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
+
+  sendPasswordResetLinkEmail(email, resetLink).catch((err) => {
+    console.error('[Background] Failed to send password reset link:', err);
+  });
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, null, 'If that email address exists, we have sent a password reset link.')
+  );
+});
+
+export const completePasswordReset = asyncHandler(async (req: Request, res: Response) => {
+  const payload = passwordResetCompleteSchema.parse(req.body);
+
+  const user = await userService.findByEmail(payload.email);
+  if (!user) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid user or expired token.');
+  }
+
+  const tokenDoc = await verifyStoredResetToken(user.id, payload.token);
+  if (!tokenDoc) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired password reset link.');
+  }
+
+  await userService.updatePassword(user, payload.password);
+  await deleteToken(tokenDoc);
+
+  // Invalidate refresh tokens so user is logged out elsewhere
+  await invalidateTokens(user.id, 'refresh');
+
+  return res.status(StatusCodes.OK).json(
+    new ApiResponse(StatusCodes.OK, null, 'Your password has been successfully reset. You can now login.')
+  );
 });
 
 

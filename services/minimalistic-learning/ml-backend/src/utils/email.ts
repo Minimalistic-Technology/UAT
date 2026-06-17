@@ -218,6 +218,71 @@ export const sendNewsletterWelcomeEmail = async (to: string) => {
 // Re-export crypto hash helper used by postController
 export { crypto };
 
+/* ─── Password Reset Link Email ───────────────────────────────────────── */
+export const sendPasswordResetLinkEmail = async (to: string, resetLink: string) => {
+  const subject = 'Reset Your Password — Minimalistic Learning';
+  const year = new Date().getFullYear();
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 20px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 4px 40px rgba(0,0,0,0.08);">
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#e11d48 0%,#be123c 60%,#9f1239 100%);padding:40px 40px 36px;text-align:center;">
+            <div style="display:inline-block;background:rgba(255,255,255,0.12);border-radius:16px;padding:10px 20px;margin-bottom:20px;">
+              <span style="color:#ffffff;font-size:13px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;">Minimalistic Learning</span>
+            </div>
+            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Password Reset Request</h1>
+            <p style="margin:10px 0 0;color:rgba(255,255,255,0.6);font-size:14px;">Secure link to set a new password</p>
+          </td>
+        </tr>
+        <!-- Action Box -->
+        <tr>
+          <td style="padding:40px 40px 20px;text-align:center;">
+            <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+              Click the button below to securely reset your password. This link is valid for <strong style="color:#1e293b;">15 minutes</strong>.
+            </p>
+            <div style="margin:0 auto;display:inline-block;width:100%;box-sizing:border-box;margin-bottom:24px;">
+              <a href="${resetLink}" style="display:inline-block;background:#e11d48;color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;padding:16px 40px;border-radius:12px;text-transform:uppercase;letter-spacing:0.1em;box-shadow:0 4px 15px rgba(225,29,72,0.3);">Reset Password</a>
+            </div>
+          </td>
+        </tr>
+        <!-- Security Note -->
+        <tr>
+          <td style="padding:20px 40px 36px;">
+            <div style="background:#fffbeb;border:1px solid #fef3c7;border-radius:16px;padding:16px 20px;">
+              <p style="margin:0;color:#b45309;font-size:13px;font-weight:700;">&#9888; Security Notice</p>
+              <p style="margin:4px 0 0;color:#d97706;font-size:12px;line-height:1.5;">
+                If you did not request a password reset, please ignore this email. Your password will remain unchanged.
+              </p>
+            </div>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="padding:28px 40px;text-align:center;border-top:1px solid #f1f5f9;">
+            <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.7;">
+              This is an automated message from <strong style="color:#64748b;">Minimalistic Learning</strong>.<br>
+              Please do not reply to this email.<br>
+              &copy; ${year} Minimalistic Learning. All rights reserved.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+  `;
+
+  return smartSend(to, subject, html);
+};
+
 /* ─── Unified Login Alert Email ──────────────────────────────────────── */
 export const sendLoginAlertEmail = async (to: string, userName: string, ipAddress: string = 'Unknown IP', device: string = 'Unknown Device') => {
   const subject = 'New Login Alert — Minimalistic Learning';
