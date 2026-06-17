@@ -432,8 +432,12 @@ export const initiatePasswordReset = asyncHandler(async (req: Request, res: Resp
 
   const rawToken = await storeResetToken(user.id, env.PASSWORD_RESET_EXPIRE || '15m');
 
+  // Dynamically determine the frontend URL based on where the request came from
+  const requestOrigin = req.headers.origin || req.headers.referer?.replace(/\/$/, '');
+  const dynamicFrontendUrl = requestOrigin || env.frontendUrl || 'http://localhost:3000';
+
   // Construct securely targeted URL to frontend reset page
-  const resetLink = `${env.frontendUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
+  const resetLink = `${dynamicFrontendUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
 
   sendPasswordResetLinkEmail(email, resetLink).catch((err) => {
     console.error('[Background] Failed to send password reset link:', err);
