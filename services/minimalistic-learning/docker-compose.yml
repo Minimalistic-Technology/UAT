@@ -15,7 +15,7 @@ services:
     env_file:
       - ./ml-backend/.env
     restart: always
-    cpus:0.1
+    cpus: 0.1
     depends_on:
       - redis
 
