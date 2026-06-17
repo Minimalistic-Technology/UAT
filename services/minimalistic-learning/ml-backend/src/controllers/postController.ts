@@ -12,7 +12,7 @@ import { verifyAccessToken } from '../utils/jwt';
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import crypto from 'crypto';
-import redis, { isRedisConnected } from '../config/redis';
+import CacheService from '../config/redis';
 
 // SQLite-compatible string constants (replaces Prisma enums)
 const POST_STATUS = { pending: 'pending', published: 'published', rejected: 'rejected' } as const;
@@ -43,33 +43,27 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
     } catch { }
   }
 
-  // 1. Try fetching directly from Redis Cache
-  if (isRedisConnected) {
-    try {
-      const cachedData = await redis.get(cacheKey);
-      if (cachedData) {
-        console.log(`[Redis] Cache Hit: ${cacheKey}`);
-        const parsedCache = JSON.parse(cachedData);
+  // 1. Try fetching directly from ultra-fast CacheService (Redis or Local Map)
+  const cachedData = await CacheService.get(cacheKey);
+  if (cachedData) {
+    console.log(`[CacheService] Hit: ${cacheKey}`);
+    const parsedCache = JSON.parse(cachedData);
 
-        // Re-calculate user likes manually instead of caching them uniquely per user
-        const remapLikes = (postList: any[]) => postList.map((post: any) => {
-          const likesArr = typeof post._likes === 'string' ? parseArr(post._likes) : post._likes || [];
-          const hasLiked = currentUserId ? likesArr.includes(currentUserId) : false;
-          return { ...post, hasLiked, _likes: undefined };
-        });
+    // Re-calculate user likes manually instead of caching them uniquely per user
+    const remapLikes = (postList: any[]) => postList.map((post: any) => {
+      const likesArr = typeof post._likes === 'string' ? parseArr(post._likes) : post._likes || [];
+      const hasLiked = currentUserId ? likesArr.includes(currentUserId) : false;
+      return { ...post, hasLiked, _likes: undefined };
+    });
 
-        parsedCache.items = remapLikes(parsedCache.items);
-        parsedCache.trending = remapLikes(parsedCache.trending);
+    parsedCache.items = remapLikes(parsedCache.items);
+    parsedCache.trending = remapLikes(parsedCache.trending);
 
-        return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, parsedCache, "Posts fetched successfully (Cached)"));
-      }
-    } catch (err: any) {
-      console.warn(`[Redis] Cache Read Error for ${cacheKey}:`, err.message);
-    }
+    return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, parsedCache, "Posts fetched successfully (Cached)"));
   }
 
   // 2. Cache Miss: Fallback to Database
-  console.log(`[Redis] Cache Miss: ${cacheKey}. Fetching from Database...`);
+  console.log(`[CacheService] Miss: ${cacheKey}. Fetching from Database...`);
 
   const where: any = { published: true, status: POST_STATUS.published };
 
@@ -120,15 +114,8 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
 
   const cachePayload = { items: parsedItems, trending: parsedTrending, pagination };
 
-  // 3. Save into Redis
-  if (isRedisConnected) {
-    try {
-      await redis.setex(cacheKey, 300, JSON.stringify(cachePayload));
-      console.log(`[Redis] Cache Saved: ${cacheKey}`);
-    } catch (err: any) {
-      console.warn(`[Redis] Cache Write Error for ${cacheKey}:`, err.message);
-    }
-  }
+  // 3. Save into Cache
+  await CacheService.setex(cacheKey, 300, JSON.stringify(cachePayload));
 
   // Final metadata wipe before sending
   const remapLikesForResponse = (postList: any[]) => postList.map((post: any) => {
@@ -347,14 +334,11 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
-  // INVALIDATE TRENDING CACHE
-  if (isRedisConnected) {
-    try {
-      const keys = await redis.keys('posts:*');
-      if (keys.length > 0) await redis.del(keys);
-    } catch (err: any) {
-      console.warn("[Redis] Failed to clear cache on post create:", err.message);
-    }
+  // INVALIDATE TRENDING & POSTS CACHE
+  try {
+    await CacheService.deletePattern('posts:*');
+  } catch (err: any) {
+    console.warn("[CacheService] Failed to clear cache on post create:", err.message);
   }
 
   if (postStatus === POST_STATUS.pending) {
@@ -462,14 +446,11 @@ export const updatePost = asyncHandler(async (req: Request, res: Response) => {
   const updatedPost = await prisma.post.findUnique({ where: { id: blogId } });
 
   // INVALIDATE CACHE
-  if (isRedisConnected) {
-    try {
-      const keys = await redis.keys('posts:*');
-      if (keys.length > 0) await redis.del(keys);
-      if (updatedPost?.slug) await redis.del(`post:${updatedPost.slug}`);
-    } catch (err: any) {
-      console.warn("[Redis] Failed to clear cache on post update:", err.message);
-    }
+  try {
+    await CacheService.deletePattern('posts:*');
+    if (updatedPost?.slug) await CacheService.deleteExact(`post:${updatedPost.slug}`);
+  } catch (err: any) {
+    console.warn("[CacheService] Failed to clear cache on post update:", err.message);
   }
 
   return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, updatedPost, "Post updated successfully"));
@@ -486,13 +467,10 @@ export const deletePost = asyncHandler(async (req: Request, res: Response) => {
   if (count.count === 0) throw new ApiError(StatusCodes.NOT_FOUND, "Post not found or you don't have permission");
 
   // INVALIDATE CACHE
-  if (isRedisConnected) {
-    try {
-      const keys = await redis.keys('posts:*');
-      if (keys.length > 0) await redis.del(keys);
-    } catch (err: any) {
-      console.warn("[Redis] Failed to clear cache on post delete:", err.message);
-    }
+  try {
+    await CacheService.deletePattern('posts:*');
+  } catch (err: any) {
+    console.warn("[CacheService] Failed to clear cache on post delete:", err.message);
   }
 
   return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, null, "Post deleted successfully"));
