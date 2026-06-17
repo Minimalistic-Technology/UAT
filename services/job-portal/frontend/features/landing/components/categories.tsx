@@ -1,5 +1,6 @@
 "use client"
 import { motion } from "motion/react";
+import Link from "next/link";
 import {
   Code2,
   Palette,
@@ -28,12 +29,12 @@ const EASE = [0.22, 1, 0.36, 1];
 export const Categories = () => {
   return (
     <section
-      className="py-24 md:py-32 bg-white"
+      className="py-24 bg-white"
       data-testid="categories-section"
     >
       <div className="max-w-[88rem] mx-auto px-6 md:px-12">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
           <div className="max-w-2xl">
             <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-blue-600">
               Explore
@@ -42,14 +43,14 @@ export const Categories = () => {
               Browse jobs by <span className="text-blue-600">category.</span>
             </h2>
           </div>
-          <a
+          <Link
             href="/find-jobs"
             className="group inline-flex items-center gap-2 text-sm font-bold text-slate-900 transition-colors hover:text-blue-600"
             data-testid="view-all-categories"
           >
-            View all categories
+            Explore all jobs
             <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          </a>
+          </Link>
         </div>
 
         {/* Categories Grid */}

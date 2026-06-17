@@ -24,13 +24,16 @@ export const refreshSchema = z.object({
 });
 
 export const passwordResetInitSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email("Please enter a valid email address"),
 });
 
 export const passwordResetCompleteSchema = z.object({
-  email: z.string().email(),
-  token: z.string().min(1),
-  password: z.string().min(8),
+  email: z.string().email("Please provide your email address"),
+  token: z.string().min(1, "Reset token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters long")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
 });
 
 export const verifyOTPSchema = z.object({

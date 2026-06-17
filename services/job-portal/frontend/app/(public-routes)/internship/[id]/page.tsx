@@ -25,6 +25,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyCard } from "@/components/company-card";
 import { FormattedDescription } from "@/features/employer/components/formatted-description";
 import { ListingType } from "@/types/enums";
+import { getCurrencySymbol } from "@/utils";
+import { format } from "date-fns";
 
 const Page = () => {
   const params = useParams();
@@ -64,7 +66,7 @@ const Page = () => {
       <div className="flex flex-col lg:grid gap-6 lg:gap-8 lg:grid-cols-3">
         {/* Left Column: Main Details */}
         <div className="contents lg:block lg:col-span-2 lg:space-y-6">
-          <Card className="border-none shadow-sm order-1 lg:order-none">
+          <Card className="border-none shadow-sm order-1 lg:order-0">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
@@ -88,14 +90,16 @@ const Page = () => {
             </CardHeader>
             <CardContent>
               <div className="mt-4 flex flex-wrap gap-4">
-                <div className="text-muted-foreground flex items-center text-sm">
-                  <MapPinIcon className="mr-1 h-4 w-4" />
-                  {internship.location?.city
-                    ? `${internship.location.city}, ${internship.location.country}`
-                    : "Location not specified"}
+                <div className="text-muted-foreground flex items-center text-sm capitalize">
+                  <MapPinIcon className="mr-1 h-4 w-4 shrink-0" />
+                  <span>
+                    {internship.workMode === "remote"
+                      ? "Remote"
+                      : internship.location?.city && internship.location?.country}
+                  </span>
                 </div>
 
-                {internship.workMode && (
+                {internship.workMode && internship.workMode !== "remote" && (
                   <div className="text-muted-foreground flex items-center text-sm capitalize">
                     <MonitorIcon className="mr-1 h-4 w-4" />
                     {internship.workMode.replace(/_/g, " ")}
@@ -107,7 +111,7 @@ const Page = () => {
                     <WalletIcon className="mr-1 h-4 w-4" />
                     {internship.stipend.type === "unpaid"
                       ? "Unpaid"
-                      : `${internship.stipend.currency || "₹"}${internship.stipend.amount?.toLocaleString() || "Variable"} / ${internship.stipend.period}`}
+                      : `${getCurrencySymbol(internship.stipend.currency || "INR")} ${internship.stipend.amount?.toLocaleString() || "Variable"}/${internship.stipend.period}`}
                   </div>
                 )}
 
@@ -119,7 +123,7 @@ const Page = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm order-3 lg:order-none">
+          <Card className="border-none shadow-sm order-3 lg:order-0">
             <CardContent className="space-y-6 pt-6">
               <div>
                 <h3 className="mb-3 text-lg font-semibold">Description</h3>
@@ -181,7 +185,7 @@ const Page = () => {
 
         {/* Right Column: Sidebar Actions */}
         <div className="contents lg:block lg:space-y-6">
-          <Card className="border-none shadow-sm order-2 lg:order-none">
+          <Card className="border-none shadow-sm order-2 lg:order-0">
             <CardHeader>
               <CardTitle className="text-xl">Internship Overview</CardTitle>
             </CardHeader>
@@ -191,7 +195,7 @@ const Page = () => {
                   <CalendarIcon className="mr-2 h-4 w-4" /> Posted On
                 </span>
                 <span className="text-right font-medium">
-                  {new Date(internship.createdAt).toLocaleDateString()}
+                  {format(new Date(internship.createdAt), "dd/MM/yyyy")}
                 </span>
               </div>
 
@@ -201,7 +205,7 @@ const Page = () => {
                     <ClockIcon className="mr-2 h-4 w-4" /> Deadline
                   </span>
                   <span className="text-right font-medium">
-                    {new Date(internship.applicationDeadline).toLocaleDateString()}
+                    {format(new Date(internship.applicationDeadline), "dd/MM/yyyy")}
                   </span>
                 </div>
               )}
@@ -295,7 +299,7 @@ const Page = () => {
             </CardContent>
           </Card>
 
-          <div className="order-4 lg:order-none">
+          <div className="order-4 lg:order-0">
             <CompanyCard
               company={{
                 ...internship.company,

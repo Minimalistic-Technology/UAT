@@ -53,7 +53,7 @@ export default function ForgotPasswordClient() {
   const isMutationLoading = forgotPasswordMutation.isPending;
 
   return (
-    <div className="flex h-[calc(100vh-72px)] w-full bg-slate-50/50 overflow-hidden">
+    <div className="flex h-[calc(100dvh-72px)] w-full bg-slate-50/50 overflow-hidden">
       <div className="hidden h-full w-1/2 lg:block relative shrink-0">
         <Image
           src="/login-page-img.png"
@@ -63,18 +63,18 @@ export default function ForgotPasswordClient() {
           className="object-cover"
         />
       </div>
-      <div className="flex h-full flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-slate-50 relative">
-        <Card className="w-full max-w-[400px] border-0 sm:border shadow-2xl sm:border-slate-100 rounded-[24px] overflow-hidden bg-white/70 backdrop-blur-xl supports-backdrop-filter:bg-white/50 relative z-10 p-2 sm:p-4">
-          <CardHeader className="space-y-1.5 text-center pb-8 pt-6">
-            <CardTitle className="text-[1.6rem] font-bold tracking-tight text-slate-800">
+      <div className="flex h-full flex-1 flex-col items-center justify-center px-4 py-4 sm:px-6 lg:px-8 bg-slate-50 relative">
+        <Card className="w-full max-w-md space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2 relative z-10">
+          <CardHeader className="text-center pb-2 pt-4">
+            <CardTitle className="text-2xl font-bold">
               Forgot Password
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-slate-500">
               Enter your email to receive a password reset link
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <CardContent className="pb-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3">
               {/* Email Field */}
               <div className="grid gap-2">
                 <Label htmlFor="email" className="font-semibold text-slate-600 text-[13px] ml-1">Email Address</Label>
@@ -104,7 +104,7 @@ export default function ForgotPasswordClient() {
               </Button>
             </form>
 
-            <div className="text-muted-foreground mt-6 text-center text-sm">
+            <div className="text-muted-foreground mb-2 mt-6 text-center text-sm">
               <Link
                 href="/login"
                 className="text-primary font-medium underline-offset-4 hover:underline flex items-center justify-center"

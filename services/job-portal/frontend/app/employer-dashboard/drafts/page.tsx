@@ -58,7 +58,7 @@ const DraftsPage = () => {
         <Button asChild size="sm" className="w-auto shrink-0 whitespace-nowrap px-3 sm:px-4">
           <Link href="/employer-dashboard/listings/create" className="flex items-center justify-center">
             <Plus className="mr-1.5 h-4 w-4 shrink-0" />
-            <span>Create New Post</span>
+            <span>Create New Listing</span>
           </Link>
         </Button>
       </div>

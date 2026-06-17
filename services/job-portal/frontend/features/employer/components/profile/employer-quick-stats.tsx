@@ -3,11 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Briefcase, UserCheck, CreditCard, Loader2 } from "lucide-react";
 import { useGetMyJobPostings } from "@/features/employer/hooks/use-job";
 import { useAllEmployerApplications } from "@/features/employer/hooks/use-applications";
-import { useNavSession } from "@/hooks/use-nav-session";
+
 import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
 
 export function EmployerQuickStats() {
-    const { session } = useNavSession();
     const { data: companyResponse } = useGetMyCompanyDetails();
     const { data: jobsResponse, isLoading: isLoadingJobs } = useGetMyJobPostings();
     const { data: appsResponse, isLoading: isLoadingApps } = useAllEmployerApplications();

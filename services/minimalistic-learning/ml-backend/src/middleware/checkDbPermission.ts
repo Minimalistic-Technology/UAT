@@ -49,6 +49,11 @@ export const checkDbPermission = async (req: Request, _res: Response, next: Next
             }
             // If exists and active, allow passage
         } else {
+            // Admin failsafe: If the route is merely unregistered, let admin perform the action.
+            if (role === 'admin') {
+                return next();
+            }
+
             console.warn(`[checkDbPermission] UNREGISTERED BLOCK: role=${role}, method=${method}, fullPath=${fullPath}`);
             return next(
                 new ApiError(

@@ -40,22 +40,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-
-const getStatusBadgeVariant = (status: string) => {
-  switch (status.toLowerCase()) {
-    case "applied":
-    case "under_review":
-      return "secondary";
-    case "shortlisted":
-    case "selected":
-      return "default";
-    case "rejected":
-    case "withdrawn":
-      return "destructive";
-    default:
-      return "outline";
-  }
-};
+import { getApplicationStatusColor } from "@/utils";
 
 const Page = () => {
   const {
@@ -97,7 +82,7 @@ const Page = () => {
   return (
     <div className="flex flex-col w-full text-foreground">
       {/* Header Section */}
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between w-full">
+      <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between w-full">
         <div className="flex flex-col gap-1.5">
           <h1 className="text-3xl font-bold font-heading text-foreground tracking-tight">
             Employer Overview
@@ -281,7 +266,7 @@ const Page = () => {
         <div className="overflow-x-auto">
           {isLoadingApps ? (
             <div className="space-y-4">
-              {[...Array(4)].map((_, i) => (
+              {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} className="h-14 w-full rounded-xl opacity-50" />
               ))}
             </div>
@@ -291,7 +276,7 @@ const Page = () => {
               <span className="text-xs text-muted-foreground/60">Jobs posted will gather applications here.</span>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[700px] whitespace-nowrap">
               <thead>
                 <tr className="border-b border-border/50 text-left text-xs uppercase text-muted-foreground tracking-wider font-bold">
                   <th className="pb-3 pr-4">Candidate</th>
@@ -317,8 +302,10 @@ const Page = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-4 font-semibold text-foreground max-w-[150px] truncate">
-                        {app.listing?.title || "Unknown Title"}
+                      <td className="py-4 px-4">
+                        <div className="font-semibold text-foreground max-w-[150px] truncate">
+                          {app.listing?.title || "Unknown Title"}
+                        </div>
                       </td>
                       <td className="py-4 px-4">
                         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -326,12 +313,12 @@ const Page = () => {
                         </span>
                       </td>
                       <td className="py-4 px-4">
-                        <Badge variant={getStatusBadgeVariant(app.status)} className="font-bold cursor-default">
+                        <Badge variant="secondary" className={`font-bold cursor-default px-3 py-1 shadow-sm border-0 ${getApplicationStatusColor(app.status)}`}>
                           {app.status.replace("_", " ").toUpperCase()}
                         </Badge>
                       </td>
-                      <td className="py-4 pl-4 text-right text-xs font-medium text-muted-foreground">
-                        {format(new Date(app.createdAt), "MMM d, yyyy")}
+                      <td className="py-4 pl-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">
+                        {format(new Date(app.createdAt), "MMM d, yyyy, h:mm a")}
                       </td>
                     </tr>
                   )

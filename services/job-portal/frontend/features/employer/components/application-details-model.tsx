@@ -20,8 +20,6 @@ import {
   Wrench
 } from "lucide-react";
 import { getInlineUrl } from "@/utils";
-import { GlobalProfileCard } from "@/components/global-profile-card";
-
 export const ApplicationDetailModal = ({ application }: { application: any }) => {
   const { jobSeeker, resume } = application;
   const resumeLinkToShow = getInlineUrl(resume);
@@ -62,16 +60,33 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
 
             {/* Header Section: Bio & Skills */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2">
-                <GlobalProfileCard
-                  firstName={jobSeeker.firstName}
-                  lastName={jobSeeker.lastName}
-                  email={jobSeeker.email}
-                  phone={jobSeeker.phone}
-                  avatarUrl={jobSeeker.profilePhoto?.url}
-                  readOnlyAvatar={true}
-                  profileStrength={jobSeeker.profileStrength || 100}
-                />
+              <div className="md:col-span-2 space-y-4">
+                <div className="flex items-center gap-4 bg-muted/10 p-5 rounded-2xl border border-border/50">
+                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0 overflow-hidden ring-2 ring-background shadow-sm">
+                    {jobSeeker.profilePhoto?.url ? (
+                      <img src={jobSeeker.profilePhoto.url} alt="Profile" className="h-full w-full object-cover" />
+                    ) : (
+                      <span>{jobSeeker.firstName?.charAt(0)}{jobSeeker.lastName?.charAt(0)}</span>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-xl font-bold">{jobSeeker.firstName} {jobSeeker.lastName}</h3>
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm text-muted-foreground font-medium">
+                      {jobSeeker.email && (
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-4 w-4" />
+                          <span>{jobSeeker.email}</span>
+                        </div>
+                      )}
+                      {jobSeeker.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="h-4 w-4" />
+                          <span>{jobSeeker.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -158,7 +173,7 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
         {/* Modal Footer (Standard for Management Dashboards) */}
         <div className="p-4 border-t bg-muted/20 flex justify-end">
           <DialogTrigger asChild>
-            <Button variant="ghost">Close Profile</Button>
+            <Button variant="outline" className="cursor-pointer">Close Profile</Button>
           </DialogTrigger>
         </div>
       </DialogContent>

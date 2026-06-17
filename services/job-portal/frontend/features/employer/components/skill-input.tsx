@@ -17,10 +17,12 @@ export function SkillInput({
   currentSkills,
   onChange,
   error,
+  isRequired = false,
 }: {
   currentSkills: string[];
   onChange: (skills: string[]) => void;
   error?: string;
+  isRequired?: boolean;
 }) {
   const [skillInput, setSkillInput] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -68,7 +70,7 @@ export function SkillInput({
 
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-1">Skills <Asterisk className="text-destructive size-3" /></Label>
+      <Label className="flex items-center gap-1">Skills {isRequired && <Asterisk className="text-destructive size-3" />}</Label>
       <div className="relative">
         <div className="focus-within:border-[#2563eb] border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 transition-colors focus-within:ring-[#2563eb]/20 flex flex-wrap gap-2 rounded-xl border px-4 py-2 focus-within:ring-2">
           {currentSkills.map((skill) => (

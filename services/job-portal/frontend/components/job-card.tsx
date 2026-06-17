@@ -14,6 +14,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { getCurrencyIcon } from "@/utils";
 
 // Shadcn UI Components
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -24,24 +25,7 @@ interface JobCardProps {
   job: any;
 }
 
-const CurrencyIcon = ({
-  currency,
-  className,
-}: {
-  currency?: string;
-  className?: string;
-}) => {
-  switch (currency?.toUpperCase()) {
-    case "INR":
-      return <IndianRupee className={className} />;
-    case "EUR":
-      return <Euro className={className} />;
-    case "GBP":
-      return <PoundSterling className={className} />;
-    default:
-      return <DollarSign className={className} />;
-  }
-};
+
 
 export default function JobCard({ job }: JobCardProps) {
   return (
@@ -103,10 +87,7 @@ export default function JobCard({ job }: JobCardProps) {
               job.stipend?.amount ? (
                 <div className="hidden flex-col items-end md:flex">
                   <div className="text-foreground flex items-center text-base font-bold">
-                    <CurrencyIcon
-                      currency={job.stipend.currency}
-                      className="mr-0.5 h-4 w-4"
-                    />
+                    {getCurrencyIcon(job.stipend.currency, "mr-0.5 h-4 w-4")}
                     <span>{job.stipend.amount.toLocaleString()}</span>
                   </div>
                   <p className="text-muted-foreground text-[11px] font-bold tracking-wider uppercase">
@@ -123,10 +104,7 @@ export default function JobCard({ job }: JobCardProps) {
             ) : job.salary?.min || job.salary?.max ? (
               <div className="hidden flex-col items-end md:flex">
                 <div className="text-foreground flex items-center text-base font-bold">
-                  <CurrencyIcon
-                    currency={job.salary.currency}
-                    className="mr-0.5 h-4 w-4"
-                  />
+                  {getCurrencyIcon(job.salary.currency, "mr-0.5 h-4 w-4")}
                   {job.salary?.min && job.salary?.max ? (
                     <>
                       <span>{job.salary.min.toLocaleString()}</span>
@@ -168,9 +146,9 @@ export default function JobCard({ job }: JobCardProps) {
           <div className="text-muted-foreground mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             <div className="flex items-center gap-1.5">
               <MapPin className="h-4 w-4" />
-              {job.location.remote
+              {job.workMode?.toLowerCase() === "remote" || job.location?.remote
                 ? "Remote"
-                : `${job.location.city}, ${job.location.country}`}
+                : [job.location?.city, job.location?.country].filter(Boolean).join(", ") || "Location not specified"}
             </div>
             <div className="flex items-center gap-1.5">
               <Briefcase className="h-4 w-4" />
@@ -188,10 +166,7 @@ export default function JobCard({ job }: JobCardProps) {
             {job.listingType === "internship" ? (
               job.stipend?.amount ? (
                 <div className="text-foreground flex items-center gap-1.5 font-semibold md:hidden">
-                  <CurrencyIcon
-                    currency={job.stipend.currency}
-                    className="h-4 w-4"
-                  />
+                  {getCurrencyIcon(job.stipend.currency, "h-4 w-4")}
                   {job.stipend.amount.toLocaleString()}
                 </div>
               ) : (
@@ -201,10 +176,7 @@ export default function JobCard({ job }: JobCardProps) {
               )
             ) : job.salary?.min || job.salary?.max ? (
               <div className="text-foreground flex items-center gap-1.5 font-semibold md:hidden">
-                <CurrencyIcon
-                  currency={job.salary.currency}
-                  className="h-4 w-4"
-                />
+                {getCurrencyIcon(job.salary.currency, "h-4 w-4")}
                 {job.salary?.min && job.salary?.max
                   ? `${job.salary.min.toLocaleString()} - ${job.salary.max.toLocaleString()}`
                   : job.salary?.min

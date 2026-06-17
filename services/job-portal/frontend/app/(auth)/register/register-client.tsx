@@ -85,7 +85,7 @@ export default function RegisterClient() {
         />
       </div>
       <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
-        <Card className="m-auto w-full max-w-md space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2 mt-4 sm:mt-auto">
+        <Card className="m-auto w-full max-w-md space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2">
           <CardHeader className="text-center pb-2 pt-4">
             <CardTitle className="text-2xl font-bold">
               Create an account
@@ -153,7 +153,7 @@ export default function RegisterClient() {
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="123456789"
+                    placeholder="9897654566"
                     {...register("phone")}
                     className={errors.phone ? "border-destructive" : ""}
                     disabled={isLoading}
@@ -174,6 +174,7 @@ export default function RegisterClient() {
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
                       {...register("password")}
                       className={
                         errors.password ? "border-destructive pr-10" : "pr-10"
@@ -205,6 +206,7 @@ export default function RegisterClient() {
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
                       {...register("confirmPassword")}
                       className={
                         errors.confirmPassword

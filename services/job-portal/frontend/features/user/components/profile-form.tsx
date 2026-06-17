@@ -160,12 +160,12 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
                 <CardContent className="space-y-6">
                     <div className="grid gap-6 md:grid-cols-2">
                         <div className="space-y-2">
-                            <Label htmlFor="firstName">First Name</Label>
+                            <Label htmlFor="firstName">First Name <span className="text-destructive">*</span></Label>
                             <Input id="firstName" {...form.register("firstName")} />
                             {errors.firstName && <p className="text-sm font-medium text-destructive">{errors.firstName.message}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="lastName">Last Name</Label>
+                            <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
                             <Input id="lastName" {...form.register("lastName")} />
                             {errors.lastName && <p className="text-sm font-medium text-destructive">{errors.lastName.message}</p>}
                         </div>
@@ -181,6 +181,7 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
                             city={watch("location.city") || ""}
                             state={watch("location.state") || ""}
                             country={watch("location.country") || ""}
+                            isRequired={false}
                             onChange={(name, value) => {
                                 if (name === "country") {
                                     setValue("location.country", value);
@@ -198,7 +199,6 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
 
                     <div className="space-y-4 pt-4 border-t">
                         <div className="space-y-2">
-                            <Label>Key Skills</Label>
                             <Controller
                                 control={control}
                                 name="skills"
@@ -221,7 +221,7 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
                         </CardTitle>
                         <CardDescription>Add your past and current work experience.</CardDescription>
                     </div>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendExp({ title: "", company: "", current: false, startDate: "" })}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendExp({ title: "", company: "", workType: "wfo", current: false, startDate: "" })}>
                         <Plus className="mr-2 h-4 w-4" /> Add Experience
                     </Button>
                 </CardHeader>
@@ -238,16 +238,16 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
                                 </Button>
                                 <div className="grid gap-6 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <Label>Job Title</Label>
+                                        <Label>Job Title <span className="text-destructive">*</span></Label>
                                         <Input {...form.register(`experience.${index}.title` as const)} placeholder="e.g. Software Engineer" />
                                         {errors.experience?.[index]?.title && <p className="text-xs text-destructive">{errors.experience[index]?.title?.message}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Company Name</Label>
+                                        <Label>Company Name <span className="text-destructive">*</span></Label>
                                         <Input {...form.register(`experience.${index}.company` as const)} placeholder="e.g. Acme Corp" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Work Type</Label>
+                                        <Label>Work Type <span className="text-destructive">*</span></Label>
                                         <Controller
                                             control={control}
                                             name={`experience.${index}.workType` as const}
@@ -265,6 +265,7 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
                                                 </Select>
                                             )}
                                         />
+                                        {errors.experience?.[index]?.workType && <p className="text-xs text-destructive">{errors.experience[index]?.workType?.message}</p>}
                                     </div>
                                     <div className="space-y-2 lg:col-span-2">
                                         <Label>Location</Label>
@@ -283,6 +284,7 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
                                                             city={currentCity}
                                                             state={currentState}
                                                             country={currentCountry}
+                                                            isRequired={false}
                                                             onChange={(name, val) => {
                                                                 let newCity = currentCity;
                                                                 let newState = currentState;
@@ -309,7 +311,7 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
                                 </div>
                                 <div className="grid gap-6 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <Label>Start Date</Label>
+                                        <Label>Start Date <span className="text-destructive">*</span></Label>
                                         <Input type="date" {...form.register(`experience.${index}.startDate` as const)} />
                                     </div>
                                     <div className="space-y-2 flex flex-col justify-end">
@@ -326,7 +328,7 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
                                     </div>
                                     {!watch(`experience.${index}.current`) && (
                                         <div className="space-y-2">
-                                            <Label>End Date</Label>
+                                            <Label>End Date <span className="text-destructive">*</span></Label>
                                             <Input type="date" {...form.register(`experience.${index}.endDate` as const)} />
                                             {errors.experience?.[index]?.endDate && <p className="text-xs text-destructive">{errors.experience[index]?.endDate?.message}</p>}
                                         </div>
@@ -368,21 +370,21 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
                                 </Button>
                                 <div className="grid gap-6 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <Label>Degree / Qualification</Label>
+                                        <Label>Degree / Qualification <span className="text-destructive">*</span></Label>
                                         <Input {...form.register(`education.${index}.degree` as const)} placeholder="e.g. B.Tech" />
                                         {errors.education?.[index]?.degree && <p className="text-xs text-destructive">{errors.education[index]?.degree?.message}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Institution / University</Label>
+                                        <Label>Institution / University <span className="text-destructive">*</span></Label>
                                         <Input {...form.register(`education.${index}.institution` as const)} placeholder="e.g. MIT" />
                                         {errors.education?.[index]?.institution && <p className="text-xs text-destructive">{errors.education[index]?.institution?.message}</p>}
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Field of Study</Label>
+                                        <Label>Field of Study <span className="text-destructive">*</span></Label>
                                         <Input {...form.register(`education.${index}.fieldOfStudy` as const)} placeholder="e.g. Computer Science" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Graduation Year</Label>
+                                        <Label>Graduation Year <span className="text-destructive">*</span></Label>
                                         <Input {...form.register(`education.${index}.graduationYear` as const)} placeholder="e.g. 2024" type="number" />
                                         {errors.education?.[index]?.graduationYear && <p className="text-xs text-destructive">{errors.education[index]?.graduationYear?.message}</p>}
                                     </div>

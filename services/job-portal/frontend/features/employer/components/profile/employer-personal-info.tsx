@@ -1,83 +1,87 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { BuildingIcon } from "lucide-react";
+import { ReadOnlyField, inputBase } from "@/features/employer/components/profile"
+import { cn } from "@/lib/utils";
+
+// Shadcn Components
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountryCodeSelector } from "@/components/ui/country-code-selector";
+import { Input } from "@/components/ui/input";
 
 interface EmployerPersonalInfoProps {
-    formData: {
-        firstName: string;
-        lastName: string;
-        phone: string;
-        countryCode: string;
-        city: string;
-        state: string;
-        country: string;
-    };
-    email: string;
+  formData: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    countryCode: string;
+    city: string;
+    state: string;
+    country: string;
+  };
+  email: string;
 }
 
 export function EmployerPersonalInfo({ formData, email }: EmployerPersonalInfoProps) {
-    return (
-        <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
-            <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4 pt-6 px-8">
-                <BuildingIcon className="w-5 h-5 text-blue-500" />
-                <CardTitle className="text-[17px] font-semibold text-slate-800 dark:text-white">
-                    Personal Information
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="px-8 pb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                    <div className="space-y-2">
-                        <Label className="text-[13px] font-medium text-slate-500 dark:text-slate-400">First Name</Label>
-                        <Input
-                            value={formData.firstName}
-                            readOnly
-                            className="bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 h-10 rounded-xl text-slate-700 dark:text-slate-200 pointer-events-none"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[13px] font-medium text-slate-500 dark:text-slate-400">Last Name</Label>
-                        <Input
-                            value={formData.lastName}
-                            readOnly
-                            className="bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 h-10 rounded-xl text-slate-700 dark:text-slate-200 pointer-events-none"
-                        />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                        <Label className="text-[13px] font-medium text-slate-500 dark:text-slate-400">Email Address</Label>
-                        <Input
-                            value={email}
-                            readOnly
-                            className="bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 h-10 rounded-xl text-slate-700 dark:text-slate-200 pointer-events-none"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[13px] font-medium text-slate-500 dark:text-slate-400">Phone Number</Label>
-                        <div className="flex h-10 w-full opacity-80 pointer-events-none">
-                            <CountryCodeSelector
-                                value={formData.countryCode}
-                                disabled
-                                className="h-full rounded-l-xl bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 border-r-0 text-slate-700 dark:text-slate-200 w-[70px] lg:w-[85px] pointer-events-none"
-                            />
-                            <Input
-                                value={formData.phone}
-                                readOnly
-                                className="bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 h-full flex-1 rounded-r-xl rounded-l-none text-slate-700 dark:text-slate-200 px-3"
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[13px] font-medium text-slate-500 dark:text-slate-400">Location</Label>
-                        <Input
-                            value={`${formData.city}, ${formData.state}, ${formData.country}`.replace(/^, , $/, '')}
-                            readOnly
-                            className="bg-slate-50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-800 h-10 rounded-xl text-slate-700 dark:text-slate-200 pointer-events-none"
-                        />
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    );
+  const locationString = [formData.city, formData.state, formData.country]
+    .filter(Boolean)
+    .join(", ");
+
+  const fields: {
+    label: string;
+    value: string;
+    placeholder?: string;
+    colSpan?: boolean;
+    custom?: React.ReactNode;
+  }[] = [
+    { label: "First Name",  value: formData.firstName },
+    { label: "Last Name",   value: formData.lastName },
+    { label: "Email Address", value: email },
+    {
+      label: "Phone Number",
+      value: formData.phone,
+      placeholder: "Phone number not provided",
+      custom: formData.phone ? (
+        <div className="flex h-10 w-full opacity-80 pointer-events-none">
+          <CountryCodeSelector
+            value={formData.countryCode}
+            disabled
+            className={cn(
+              inputBase,
+              "w-[70px] lg:w-[85px] rounded-r-none border-r-0 text-slate-700 dark:text-slate-200"
+            )}
+          />
+          <Input
+            value={formData.phone}
+            readOnly
+            className={cn(inputBase, "flex-1 rounded-l-none px-3 text-slate-700 dark:text-slate-200")}
+          />
+        </div>
+      ) : undefined,
+    },
+  ];
+
+  return (
+    <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:bg-slate-900">
+      <CardHeader className="flex flex-row items-center gap-3 space-y-0 px-8 pb-4 pt-6">
+        <BuildingIcon className="h-5 w-5 text-blue-500" />
+        <CardTitle className="text-[17px] font-semibold text-slate-800 dark:text-white">
+          Personal Information
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-8 pb-8">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+          {fields.map((field) => (
+            <ReadOnlyField
+              key={field.label}
+              label={field.label}
+              value={field.value}
+              placeholder={field.placeholder}
+              className={field.colSpan ? "md:col-span-2" : undefined}
+            >
+              {field.custom}
+            </ReadOnlyField>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }

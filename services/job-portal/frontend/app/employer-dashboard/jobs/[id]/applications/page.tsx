@@ -54,20 +54,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApplicationStatus } from "@/types/enums";
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "accepted":
-      return "bg-green-100 text-green-700 border-green-200";
-    case "rejected":
-      return "bg-red-100 text-red-700 border-red-200";
-    case "interview":
-    case "interviewing":
-      return "bg-blue-100 text-blue-700 border-blue-200";
-    default:
-      return "bg-slate-100 text-slate-700 border-slate-200";
-  }
-};
+import { getApplicationStatusColor } from "@/utils";
 
 const ApplicationsPage = () => {
   const params = useParams();
@@ -187,7 +174,7 @@ const ApplicationsPage = () => {
                   </TableCell>
                   <TableCell>
                     <Badge
-                      className={getStatusColor(app.status)}
+                      className={getApplicationStatusColor(app.status)}
                       variant="outline"
                     >
                       {app.status.toUpperCase()}
@@ -201,11 +188,11 @@ const ApplicationsPage = () => {
                   <TableCell>
                     <span className="text-sm">
                       {app.jobSeeker.experience?.[0]?.title ||
-                        "Freshman / No Exp"}
+                        "Fresher / No Exp"}
                     </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {new Date(app.createdAt).toLocaleDateString()}
+                    {format(new Date(app.createdAt), "MMM d, yyyy, h:mm a")}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

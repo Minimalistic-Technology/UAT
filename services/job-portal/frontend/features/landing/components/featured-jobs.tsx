@@ -92,6 +92,7 @@ export const FeaturedJobs = () => {
   });
 
   const dbJobs = responseData?.data?.jobs || [];
+  console.log("Db jobs", dbJobs);
   const filteredMockJobs = JOBS.filter(
     (job) => activeTab === "All" || job.category === activeTab
   );
@@ -135,7 +136,7 @@ export const FeaturedJobs = () => {
         </div>
 
         {/* Job List Container */}
-        <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-4xl scrollbar-hide overflow-y-scroll shadow-sm max-h-[600px]">
           <motion.div layout className="divide-y divide-slate-100">
             <AnimatePresence mode="popLayout">
               {displayJobs.length === 0 ? (

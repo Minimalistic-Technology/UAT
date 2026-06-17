@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRightIcon, MapPinIcon, UsersIcon } from "lucide-react";
+import { ArrowRightIcon, MapPinIcon, UsersIcon, Building2Icon, GlobeIcon } from "lucide-react";
 
 interface CompanyCardProps {
   company: {
@@ -24,11 +24,19 @@ export const CompanyCard = ({ company }: CompanyCardProps) => {
     .slice(0, 2)
     .toUpperCase();
 
-  const location = typeof company.location === 'string'
+  let location = typeof company.location === 'string'
     ? company.location
     : [company.location?.city, company.location?.country]
         .filter(Boolean)
         .join(", ");
+
+  const isRemote = location.toLowerCase().includes("remote");
+  
+  if (isRemote && typeof company.location !== 'string' && !location.toLowerCase().startsWith("remote")) {
+      location = `${location} (Remote)`;
+  } else if (!location && typeof company.location === 'object' && (company.location as any).remote) {
+      location = "Remote";
+  }
 
   const logoUrl = typeof company.logo === "string" ? company.logo : company.logo?.url;
 
@@ -56,7 +64,8 @@ export const CompanyCard = ({ company }: CompanyCardProps) => {
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{company.name}</p>
           {company.industry && (
-            <p className="text-muted-foreground text-xs capitalize">
+            <p className="text-muted-foreground flex items-center gap-1 text-xs capitalize mt-1">
+              <Building2Icon className="h-3 w-3" />
               {company.industry.replace(/_/g, " ")}
             </p>
           )}
@@ -74,7 +83,7 @@ export const CompanyCard = ({ company }: CompanyCardProps) => {
       <div className="flex flex-wrap gap-2">
         {location && (
           <span className="text-muted-foreground bg-muted inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs">
-            <MapPinIcon className="h-3 w-3" />
+            {isRemote ? <GlobeIcon className="h-3 w-3" /> : <MapPinIcon className="h-3 w-3" />}
             {location}
           </span>
         )}

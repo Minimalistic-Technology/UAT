@@ -28,8 +28,7 @@ export function CompanyInfoView({ company }: CompanyInfoViewProps) {
                 <div>
                     <h4 className="text-sm font-medium text-slate-500 mb-1">Location</h4>
                     <p className="text-sm text-slate-900 font-medium">
-                        {company.location?.city || "City"},{" "}
-                        {company.location?.country || "Country"}
+                        {[company.location?.city, company.location?.country].filter(Boolean).join(", ") || "Not specified"}
                     </p>
                 </div>
             </div>

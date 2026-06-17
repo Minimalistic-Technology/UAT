@@ -324,22 +324,43 @@ export function PlanCard({
 
       <CardFooter className="px-8 pb-10">
         <div className="flex w-full flex-col gap-3">
-          <Button
-            onClick={handlePayment}
-            disabled={!canPurchase}
-            size="lg"
-            className={cn(
-              "group w-full cursor-pointer font-bold transition-all h-12 rounded-xl text-sm active:scale-95",
-              isFeatured ? "bg-[#2563eb] text-white hover:bg-blue-700 shadow-xl shadow-blue-500/20" : "bg-white text-slate-900 border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 dark:bg-transparent dark:text-white dark:border-slate-700 dark:hover:bg-slate-800"
-            )}
-            variant={isFeatured ? "default" : "outline"}
-          >
-            {isFeatured ? "Start " + plan.name + " Plan" : "Get " + plan.name}
-          </Button>
-          {!canPurchase && (
-            <p className="text-center text-xs font-semibold text-destructive">
-              Active plan prevents override.
-            </p>
+          {companyDetails?.currentPlan?._id === plan._id && hasActivePlan ? (
+            <Button
+              disabled
+              size="lg"
+              className={cn(
+                "group w-full font-bold h-12 rounded-xl text-sm",
+                "bg-emerald-50 text-emerald-600 border-2 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-500"
+              )}
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Current Plan
+            </Button>
+          ) : (
+            <>
+              <Button
+                onClick={handlePayment}
+                disabled={!canPurchase}
+                size="lg"
+                className={cn(
+                  "group w-full font-bold transition-all h-12 rounded-xl text-sm",
+                  canPurchase && "cursor-pointer active:scale-95",
+                  isFeatured ? "bg-[#2563eb] text-white hover:bg-blue-700 shadow-xl shadow-blue-500/20" : "bg-white text-slate-900 border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 dark:bg-transparent dark:text-white dark:border-slate-700 dark:hover:bg-slate-800",
+                  !canPurchase && "opacity-60"
+                )}
+                variant={isFeatured ? "default" : "outline"}
+              >
+                {isFeatured ? "Start " + plan.name + " Plan" : "Get " + plan.name}
+              </Button>
+              {!canPurchase && (
+                <div className="flex items-center justify-center gap-1.5 text-amber-600 dark:text-amber-500">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <p className="text-center text-xs font-medium">
+                    Exhaust active plan to switch
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </CardFooter>

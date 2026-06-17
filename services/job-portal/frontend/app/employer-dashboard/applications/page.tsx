@@ -62,6 +62,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ApplicationStatus } from "@/types/enums";
+import { getApplicationStatusColor } from "@/utils";
 
 const EmployerApplicationsPage = () => {
   const [page, setPage] = useState(1);
@@ -149,22 +150,6 @@ const EmployerApplicationsPage = () => {
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "applied":
-      case "under_review":
-        return "secondary";
-      case "shortlisted":
-      case "selected":
-        return "default";
-      case "rejected":
-      case "withdrawn":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -207,10 +192,14 @@ const EmployerApplicationsPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="applied">Applied</SelectItem>
-                  <SelectItem value="under_review">Under Review</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="reviewed">Reviewed</SelectItem>
                   <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                  <SelectItem value="interview">Interview</SelectItem>
+                  <SelectItem value="offered">Offered</SelectItem>
+                  <SelectItem value="accepted">Accepted</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="withdrawn">Withdrawn</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -261,12 +250,12 @@ const EmployerApplicationsPage = () => {
                         <TableCell>{app.listing?.title || "Unknown Listing Title"}</TableCell>
                         <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
                         <TableCell>
-                          <Badge variant={getStatusBadgeVariant(app.status)}>
+                          <Badge variant="secondary" className={`font-bold cursor-default px-3 py-1 shadow-sm border-0 ${getApplicationStatusColor(app.status)}`}>
                             {app.status.replace("_", " ").toUpperCase()}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {format(new Date(app.createdAt), "MMM d, yyyy")}
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                          {format(new Date(app.createdAt), "MMM d, yyyy, h:mm a")}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">

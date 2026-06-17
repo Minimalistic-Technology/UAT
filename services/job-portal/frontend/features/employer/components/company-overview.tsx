@@ -1,10 +1,9 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Globe } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { IconBrandFacebook, IconBrandTwitter, IconBrandLinkedin } from '@tabler/icons-react';
+import { Globe, Loader2 } from "lucide-react";
+import { SOCIAL_LINKS } from "../config";
 import { useGetUserDetails } from "@/hooks/use-user";
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/ui/image-upload";
+import Link from "next/link";
 
 interface CompanyOverviewProps {
   company: any;
@@ -25,7 +24,7 @@ export const CompanyOverview = ({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[20px] border-0 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+      <div className="rounded-[20px] border-0 bg-white p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
         <h3 className="mb-6 text-lg font-semibold text-slate-900">
           Company Logo
         </h3>
@@ -38,75 +37,72 @@ export const CompanyOverview = ({
               disabled={!isOwner || isLogoUploading}
               onChange={(file) => {
                 if (!isOwner) {
-                  toast.error("You are not authorized to update the company logo");
+                  toast.error(
+                    "You are not authorized to update the company logo",
+                  );
                   return;
                 }
                 if (logoInputRef.current) {
                   const dataTransfer = new DataTransfer();
                   dataTransfer.items.add(file);
                   logoInputRef.current.files = dataTransfer.files;
-                  logoInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                  logoInputRef.current.dispatchEvent(
+                    new Event("change", { bubbles: true }),
+                  );
                 }
               }}
             />
+            {isLogoUploading && (
+              <div className="absolute inset-0 z-10 flex h-28 w-28 items-center justify-center rounded-full bg-black/40">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+              </div>
+            )}
           </div>
-          <p className="text-center text-sm text-slate-500 mt-2">
+          <p className="mt-2 text-center text-sm text-slate-500">
             Allowed formats: JPEG, PNG. Max size: 5MB
           </p>
         </div>
       </div>
 
-      <div className="rounded-[20px] border-0 bg-white dark:bg-slate-900 p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] space-y-6">
-        <h3 className="text-lg font-semibold text-slate-900">
-          Links & Social
-        </h3>
+      <div className="space-y-6 rounded-[20px] border-0 bg-white p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+        <h3 className="text-lg font-semibold text-slate-900">Links & Social</h3>
 
         <div className="space-y-4">
           {company.website ? (
             <div className="flex items-center gap-3">
-              <div className="bg-slate-100 p-2 rounded-md">
+              <div className="rounded-md bg-slate-100 p-2">
                 <Globe className="h-4 w-4 text-slate-600" />
               </div>
-              <a href={company.website} target="_blank" rel="noreferrer" className="text-sm font-medium text-indigo-600 hover:underline truncate">
+              <Link
+                href={company.website}
+                target="_blank"
+                rel="noreferrer"
+                className="truncate text-sm font-medium text-indigo-600 hover:underline"
+              >
                 {company.website}
-              </a>
+              </Link>
             </div>
           ) : (
             <div className="text-sm text-slate-500">No website added</div>
           )}
 
-          {company.socialLinks?.linkedin && (
-            <div className="flex items-center gap-3">
-              <div className="bg-slate-100 p-2 rounded-md">
-                <IconBrandLinkedin className="h-4 w-4 text-slate-600" />
+          {SOCIAL_LINKS.map((link) => {
+            const url = company.socialLinks?.[link.key];
+            if (!url) return null;
+            return (
+              <div key={link.key} className="flex items-center gap-3">
+                <div className="rounded-md bg-slate-100 p-2">{link.icon}</div>
+                <Link
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="truncate text-sm font-medium text-indigo-600 hover:underline"
+                >
+                  {link.label}
+                </Link>
               </div>
-              <a href={company.socialLinks.linkedin} target="_blank" rel="noreferrer" className="text-sm font-medium text-indigo-600 hover:underline truncate">
-                LinkedIn Profile
-              </a>
-            </div>
-          )}
-
-          {company.socialLinks?.twitter && (
-            <div className="flex items-center gap-3">
-              <div className="bg-slate-100 p-2 rounded-md">
-                <IconBrandTwitter className="h-4 w-4 text-slate-600" />
-              </div>
-              <a href={company.socialLinks.twitter} target="_blank" rel="noreferrer" className="text-sm font-medium text-indigo-600 hover:underline truncate">
-                Twitter Profile
-              </a>
-            </div>
-          )}
-
-          {company.socialLinks?.facebook && (
-            <div className="flex items-center gap-3">
-              <div className="bg-slate-100 p-2 rounded-md">
-                <IconBrandFacebook className="h-4 w-4 text-slate-600" />
-              </div>
-              <a href={company.socialLinks.facebook} target="_blank" rel="noreferrer" className="text-sm font-medium text-indigo-600 hover:underline truncate">
-                Facebook Profile
-              </a>
-            </div>
-          )}
+            );
+          })}
         </div>
       </div>
     </div>
