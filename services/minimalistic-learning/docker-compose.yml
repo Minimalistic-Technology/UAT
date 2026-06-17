@@ -15,6 +15,7 @@ services:
     env_file:
       - ./ml-backend/.env
     restart: always
+    cpus:0.1
     depends_on:
       - redis
 
@@ -25,17 +26,6 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    restart: always
-
-  frontend:
-    build:
-      context: ./ml-starter-project
-      dockerfile: Dockerfile
-    container_name: ml-frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
     restart: always
 
 volumes:
