@@ -62,9 +62,12 @@ export const getSiteContent = asyncHandler(async (req: Request, res: Response) =
     where: { page }
   });
 
-  // Transform array into section key-value object
   const contentMap = content.reduce((acc: any, curr: any) => {
-    acc[curr.section] = curr.content;
+    try {
+      acc[curr.section] = JSON.parse(curr.content);
+    } catch {
+      acc[curr.section] = curr.content;
+    }
     return acc;
   }, {});
 
