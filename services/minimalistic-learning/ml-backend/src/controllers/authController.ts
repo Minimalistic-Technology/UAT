@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { prisma } from '../config/db';
+import { User } from '@prisma/client';
 import {
   signupSchema,
   loginSchema,
@@ -195,8 +196,7 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
     );
   }
 
-  let user: any = null;
-  user = await userService.findByEmail(email);
+  let user: User | null = await userService.findByEmail(email);
 
   if (user) {
     const isExpired = user.otpExpires && new Date(Date.now() - 5000) > user.otpExpires;
@@ -401,7 +401,7 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
   }
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(user as any) }, "User profile fetched successfully")
+    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(user as User) }, "User profile fetched successfully")
   );
 });
 
@@ -427,7 +427,7 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 // UPDATE PROFILE
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
-  const user: any = req.user!;
+  const user = req.user as User;
   const { firstName, lastName, contactNumber, currentPassword, newPassword } = req.body;
 
   const dataToUpdate: any = {};
@@ -451,7 +451,7 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
   }
 
   const updatedUser = await prisma.user.update({
-    where: { id: user.id || user._id.toString() },
+    where: { id: user.id },
     data: dataToUpdate
   });
 
