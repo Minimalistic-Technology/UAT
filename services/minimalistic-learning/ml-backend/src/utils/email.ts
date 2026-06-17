@@ -19,9 +19,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // 2. Setup Brevo API Instance (The Professional Choice)
-const apiInstance = new brevo.TransactionalEmailsApi();
-// Configure API key authorization: api-key
-apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, env.BREVO_API_KEY);
+const apiInstance = new brevo.BrevoClient({ apiKey: env.BREVO_API_KEY });
 
 /* ─── Shared Nodemailer fallback ──────────────────────────────────────── */
 async function sendViaNodemailer(to: string, subject: string, html: string) {
@@ -43,15 +41,13 @@ async function sendViaNodemailer(to: string, subject: string, html: string) {
 
 /* ─── Shared Brevo dispatcher ───────────────────────────────────────── */
 async function sendViaBrevo(to: string, subject: string, html: string) {
-  const sendSmtpEmail = new brevo.SendSmtpEmail();
-
-  sendSmtpEmail.subject = subject;
-  sendSmtpEmail.htmlContent = html;
-  sendSmtpEmail.sender = { name: "Minimalistic Learning", email: env.BREVO_FROM_EMAIL || "no-reply@minimalistic-learning.com" };
-  sendSmtpEmail.to = [{ email: to }];
-
   try {
-    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    const data = await apiInstance.transactionalEmails.sendTransacEmail({
+      subject,
+      htmlContent: html,
+      sender: { name: "Minimalistic Learning", email: env.BREVO_FROM_EMAIL || "no-reply@minimalistic-learning.com" },
+      to: [{ email: to }]
+    });
     return data;
   } catch (error: any) {
     console.error('[email] Brevo SDK Error Details:', error?.response?.body || error.message);
@@ -67,7 +63,7 @@ async function smartSend(to: string, subject: string, html: string) {
     try {
       console.log('[email] Attempting Brevo delivery to ' + to + '...');
       const result = await sendViaBrevo(to, subject, html);
-      console.log('[email] Sent via Brevo successfully:', result.body?.messageId || 'OK');
+      console.log('[email] Sent via Brevo successfully:', result?.messageId || 'OK');
       return result;
     } catch (err: any) {
       console.warn('[email] Brevo failed! Falling back to Nodemailer. Reason:', err.message);
