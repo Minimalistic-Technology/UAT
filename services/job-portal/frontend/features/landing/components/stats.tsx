@@ -13,6 +13,7 @@ const STATS = [
   { value: 3200, suffix: "+", label: "Hiring companies" },
   { value: 72, suffix: "h", label: "Avg. response time" },
   { value: 94, suffix: "%", label: "Candidate match rate" },
+  { value: 50, suffix: "k+", label: "Active users" },
 ];
 
 const Counter = ({ to, suffix = "" }: CounterProps) => {
