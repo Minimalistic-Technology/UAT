@@ -23,15 +23,7 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
-export const passwordResetInitSchema = z.object({
-  email: z.string().email(),
-});
 
-export const passwordResetCompleteSchema = z.object({
-  email: z.string().email(),
-  token: z.string().min(1),
-  password: z.string().min(8),
-});
 
 export const verifyOTPSchema = z.object({
   email: z.string().email(),

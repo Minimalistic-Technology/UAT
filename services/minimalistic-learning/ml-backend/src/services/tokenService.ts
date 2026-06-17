@@ -19,10 +19,7 @@ export const replaceRefreshToken = async (userId: string, tokenValue: string, ex
   return storeToken(userId, tokenValue, TOKEN_TYPE.refresh, expiresIn);
 };
 
-export const storeResetToken = async (userId: string, tokenValue: string, expiresIn: string) => {
-  await prisma.token.deleteMany({ where: { userId, type: TOKEN_TYPE.reset } });
-  return storeToken(userId, tokenValue, TOKEN_TYPE.reset, expiresIn);
-};
+
 
 export const invalidateTokens = (userId: string, type?: TokenTypeValue) => {
   if (type) {

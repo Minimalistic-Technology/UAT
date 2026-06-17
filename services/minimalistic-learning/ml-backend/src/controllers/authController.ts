@@ -4,8 +4,6 @@ import { prisma } from '../config/db';
 import {
   signupSchema,
   loginSchema,
-  passwordResetInitSchema,
-  passwordResetCompleteSchema,
   verifyOTPSchema
 } from '../validators/authValidator';
 import * as userService from '../services/userService';
@@ -16,7 +14,6 @@ import {
 } from '../utils/jwt';
 import {
   replaceRefreshToken,
-  storeResetToken,
   verifyStoredToken,
   deleteToken,
   invalidateTokens,
@@ -26,7 +23,7 @@ import { env } from '../config/env';
 import { getCookieConfig } from '../config/cookieConfig';
 import { durationToMs } from '../utils/time';
 import { ApiResponse } from "../utils/ApiResponse";
-import { sendOTP, sendPasswordResetOTP, sendAccountCreatedEmail, sendLoginAlertEmail } from "../utils/email";
+import { sendOTP, sendAccountCreatedEmail, sendLoginAlertEmail } from "../utils/email";
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -418,49 +415,6 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     );
 });
 
-export const initiatePasswordReset = asyncHandler(async (req: Request, res: Response) => {
-  const { email } = passwordResetInitSchema.parse(req.body);
-
-  const user = await userService.findByEmail(email);
-  if (!user) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'User with this email address does not exist.');
-  }
-
-  const resetOTP = crypto.randomInt(100000, 999999).toString();
-
-  await storeResetToken(user.id, resetOTP, env.PASSWORD_RESET_EXPIRE || '15m');
-
-  sendPasswordResetOTP(email, resetOTP).catch((err) => {
-    console.error('[Background] Failed to send password reset OTP:', err);
-  });
-
-  return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { email }, 'A password reset code has been sent to your email.')
-  );
-});
-
-export const completePasswordReset = asyncHandler(async (req: Request, res: Response) => {
-  const payload = passwordResetCompleteSchema.parse(req.body);
-
-  const user = await userService.findByEmail(payload.email);
-  if (!user) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid user or expired token.');
-  }
-
-  const tokenDoc = await verifyStoredToken(user.id, payload.token, 'reset');
-  if (!tokenDoc) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired password reset verification code.');
-  }
-
-  await userService.updatePassword(user, payload.password);
-  await deleteToken(tokenDoc);
-
-  await invalidateTokens(user.id, 'refresh');
-
-  return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, null, 'Your password has been successfully reset.')
-  );
-});
 
 export const getMe = asyncHandler(async (req: Request, res: Response) => {
   const user = req.user;

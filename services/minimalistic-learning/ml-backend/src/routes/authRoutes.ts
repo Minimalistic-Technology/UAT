@@ -3,8 +3,6 @@ import {
   signup,
   login,
   refreshToken,
-  initiatePasswordReset,
-  completePasswordReset,
   getMe,
   logout,
   verifyOTP,
@@ -22,8 +20,6 @@ router.get('/me', requireAuth, getMe);
 router.patch('/profile', requireAuth, updateProfile);
 router.post('/logout', requireAuth, logout);
 router.post('/refresh-token', refreshToken);
-router.post('/password-reset/initiate', authStrictLimiter, initiatePasswordReset);
-router.post('/password-reset/complete', authStrictLimiter, completePasswordReset);
 
 export default router;
 
