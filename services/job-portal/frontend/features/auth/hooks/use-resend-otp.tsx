@@ -1,5 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
-import { resendRegistrationOTP, ResendOtpInput } from "../services/auth.service";
+import {
+  resendRegistrationOTP,
+  ResendOtpInput,
+} from "../services/auth.service";
 
 export const useResendRegistrationOtp = () => {
   return useMutation({

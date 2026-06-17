@@ -74,8 +74,8 @@ export default function RegisterClient() {
   const isLoading = registerMutation.isPending;
 
   return (
-    <div className="flex h-[calc(100dvh-72px)] w-full bg-slate-50/50 overflow-hidden">
-      <div className="hidden h-full w-1/2 lg:block relative shrink-0">
+    <div className="flex h-[calc(100dvh-72px)] w-full overflow-hidden bg-slate-50/50">
+      <div className="relative hidden h-full w-1/2 shrink-0 lg:block">
         <Image
           src="/signup-page-img.png"
           alt="signup-image"
@@ -85,8 +85,8 @@ export default function RegisterClient() {
         />
       </div>
       <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
-        <Card className="m-auto w-full max-w-md space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2">
-          <CardHeader className="text-center pb-2 pt-4">
+        <Card className="m-auto w-full max-w-md shrink-0 space-y-1 rounded-[24px] border border-slate-100 bg-white p-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <CardHeader className="pt-4 pb-2 text-center">
             <CardTitle className="text-2xl font-bold">
               Create an account
             </CardTitle>
@@ -99,7 +99,9 @@ export default function RegisterClient() {
               {/* Name Row */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="firstName">First Name</Label>
+                  <Label required htmlFor="firstName">
+                    First Name
+                  </Label>
                   <Input
                     id="firstName"
                     placeholder="Max"
@@ -114,7 +116,9 @@ export default function RegisterClient() {
                   )}
                 </div>
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="lastName">Last Name</Label>
+                  <Label required htmlFor="lastName">
+                    Last Name
+                  </Label>
                   <Input
                     id="lastName"
                     placeholder="Robinson"
@@ -133,7 +137,9 @@ export default function RegisterClient() {
               {/* Contact Row */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="email">Email</Label>
+                  <Label required htmlFor="email">
+                    Email
+                  </Label>
                   <Input
                     id="email"
                     type="email"
@@ -149,7 +155,9 @@ export default function RegisterClient() {
                   )}
                 </div>
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="phone">Phone</Label>
+                  <Label required htmlFor="phone">
+                    Phone
+                  </Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -169,7 +177,9 @@ export default function RegisterClient() {
               {/* Security Row */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="password">Password</Label>
+                  <Label required htmlFor="password">
+                    Password
+                  </Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -201,7 +211,9 @@ export default function RegisterClient() {
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="confirmPassword">Confirm</Label>
+                  <Label required htmlFor="confirmPassword">
+                    Confirm
+                  </Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
@@ -217,7 +229,9 @@ export default function RegisterClient() {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                     >
                       {showConfirmPassword ? (
@@ -252,7 +266,7 @@ export default function RegisterClient() {
                 </label>
               </div>
 
-              <div className="flex flex-col items-center justify-center w-full my-2 min-h-[65px]">
+              <div className="my-2 flex min-h-[65px] w-full flex-col items-center justify-center">
                 <Turnstile
                   siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
                   onSuccess={(token) => {
@@ -265,7 +279,7 @@ export default function RegisterClient() {
                   options={{ theme: "light" }}
                 />
                 {errors.captchaToken && (
-                  <p className="text-destructive text-xs mt-1">
+                  <p className="text-destructive mt-1 text-xs">
                     {errors.captchaToken.message}
                   </p>
                 )}

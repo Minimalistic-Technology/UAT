@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 interface ReadOnlyFieldProps {
   label: string;
   value: string;
-   placeholder?: string; // shown when value is empty, styled as muted+italic
-  className?: string;   // col-span overrides etc.
+  placeholder?: string; // shown when value is empty, styled as muted+italic
+  className?: string; // col-span overrides etc.
   children?: React.ReactNode; // escape hatch for custom inputs (e.g. phone)
 }
 
@@ -35,8 +35,8 @@ export function ReadOnlyField({
           className={cn(
             inputBase,
             isEmpty && placeholder
-              ? "text-slate-400 dark:text-slate-500 italic"
-              : "text-slate-700 dark:text-slate-200"
+              ? "text-slate-400 italic dark:text-slate-500"
+              : "text-slate-700 dark:text-slate-200",
           )}
         />
       )}

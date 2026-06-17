@@ -13,7 +13,9 @@ import { getStatusCardsConfig } from "@/features/admin/config/admin-dashboard.co
 
 const AdminDashboard = () => {
   const { data, isLoading, error } = useAdminAnalytics();
-  const [activeChart, setActiveChart] = useState<"revenue" | "users">("revenue");
+  const [activeChart, setActiveChart] = useState<"revenue" | "users">(
+    "revenue",
+  );
 
   if (isLoading) {
     return (
@@ -32,7 +34,8 @@ const AdminDashboard = () => {
   }
 
   const { summary, graphs, recentEmployers, topCoupons } = data.data;
-  const hasNotifications = summary.kycPending > 0 || (recentEmployers && recentEmployers.length > 0);
+  const hasNotifications =
+    summary.kycPending > 0 || (recentEmployers && recentEmployers.length > 0);
 
   return (
     <>
@@ -42,7 +45,7 @@ const AdminDashboard = () => {
         recentEmployers={recentEmployers}
       />
 
-      <div className="mb-8 grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
         {getStatusCardsConfig(summary).map((card, index) => (
           <StatusCard
             key={index}

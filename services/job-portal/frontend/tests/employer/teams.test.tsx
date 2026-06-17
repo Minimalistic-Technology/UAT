@@ -88,13 +88,23 @@ describe("Team Management Test Suite", () => {
       const mockEmployees = [
         {
           _id: "emp-1",
-          user: { firstName: "John", lastName: "Doe", email: "john@example.com", avatar: "" },
+          user: {
+            firstName: "John",
+            lastName: "Doe",
+            email: "john@example.com",
+            avatar: "",
+          },
           role: "manager",
           isActive: true,
         },
         {
           _id: "emp-2",
-          user: { firstName: "Jane", lastName: "Smith", email: "jane@example.com", avatar: "" },
+          user: {
+            firstName: "Jane",
+            lastName: "Smith",
+            email: "jane@example.com",
+            avatar: "",
+          },
           role: "employee",
           isActive: false,
         },
@@ -128,14 +138,21 @@ describe("Team Management Test Suite", () => {
       const addButton = screen.getByText("Add New Employee");
       fireEvent.click(addButton);
 
-      expect(mockRouterPush).toHaveBeenCalledWith("/employer-dashboard/team/add");
+      expect(mockRouterPush).toHaveBeenCalledWith(
+        "/employer-dashboard/team/add",
+      );
     });
 
     it("navigates to update employee page", () => {
       const mockEmployees = [
         {
           _id: "emp-1",
-          user: { firstName: "John", lastName: "Doe", email: "john@example.com", avatar: "" },
+          user: {
+            firstName: "John",
+            lastName: "Doe",
+            email: "john@example.com",
+            avatar: "",
+          },
           role: "manager",
           isActive: true,
         },
@@ -151,17 +168,26 @@ describe("Team Management Test Suite", () => {
 
       // Hover to trigger tooltip logic if needed, but we can just click the update button directly
       // In Tooltip components from radix, it might require extra care, but buttons are usually accessible
-      const updateButtons = screen.getAllByRole("button").filter(btn => btn.querySelector(".lucide-pencil"));
+      const updateButtons = screen
+        .getAllByRole("button")
+        .filter((btn) => btn.querySelector(".lucide-pencil"));
       fireEvent.click(updateButtons[0]);
 
-      expect(mockRouterPush).toHaveBeenCalledWith("/employer-dashboard/team/update/emp-1");
+      expect(mockRouterPush).toHaveBeenCalledWith(
+        "/employer-dashboard/team/update/emp-1",
+      );
     });
 
     it("handles delete employee workflow", () => {
       const mockEmployees = [
         {
           _id: "emp-1",
-          user: { firstName: "John", lastName: "Doe", email: "john@example.com", avatar: "" },
+          user: {
+            firstName: "John",
+            lastName: "Doe",
+            email: "john@example.com",
+            avatar: "",
+          },
           role: "manager",
           isActive: true,
         },
@@ -176,13 +202,15 @@ describe("Team Management Test Suite", () => {
       render(<TeamManagementPage />);
 
       // Find delete button
-      const deleteButtons = screen.getAllByRole("button").filter(btn => btn.querySelector(".lucide-trash-2"));
+      const deleteButtons = screen
+        .getAllByRole("button")
+        .filter((btn) => btn.querySelector(".lucide-trash-2"));
       fireEvent.click(deleteButtons[0]);
 
       // Confirm dialog should appear
       const confirmButton = screen.getByText("Confirm");
       const cancelButton = screen.getByText("Cancel");
-      
+
       expect(confirmButton).toBeInTheDocument();
       expect(cancelButton).toBeInTheDocument();
 
@@ -191,10 +219,17 @@ describe("Team Management Test Suite", () => {
       expect(screen.queryByText("Confirm")).not.toBeInTheDocument();
 
       // Click delete again and confirm
-      fireEvent.click(screen.getAllByRole("button").filter(btn => btn.querySelector(".lucide-trash-2"))[0]);
+      fireEvent.click(
+        screen
+          .getAllByRole("button")
+          .filter((btn) => btn.querySelector(".lucide-trash-2"))[0],
+      );
       fireEvent.click(screen.getByText("Confirm"));
 
-      expect(mockDeleteMutate).toHaveBeenCalledWith("emp-1", expect.any(Object));
+      expect(mockDeleteMutate).toHaveBeenCalledWith(
+        "emp-1",
+        expect.any(Object),
+      );
     });
   });
 
@@ -219,7 +254,7 @@ describe("Team Management Test Suite", () => {
 
     it("shows validation errors on empty submission", async () => {
       render(<AddTeamMemberPage />);
-      
+
       const submitButton = screen.getByRole("button", { name: "Add Member" });
       fireEvent.submit(submitButton.closest("form")!);
 
@@ -227,7 +262,9 @@ describe("Team Management Test Suite", () => {
         expect(screen.getByText(/First name is required/i)).toBeInTheDocument();
         expect(screen.getByText(/Last name is required/i)).toBeInTheDocument();
         expect(screen.getByText(/Invalid email/i)).toBeInTheDocument();
-        expect(screen.getByText(/Password must be at least 6 characters/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Password must be at least 6 characters/i),
+        ).toBeInTheDocument();
       });
 
       expect(mockCreateMutate).not.toHaveBeenCalled();
@@ -236,10 +273,18 @@ describe("Team Management Test Suite", () => {
     it("submits the form successfully", async () => {
       render(<AddTeamMemberPage />);
 
-      fireEvent.change(screen.getByLabelText("First Name"), { target: { value: "Alice" } });
-      fireEvent.change(screen.getByLabelText("Last Name"), { target: { value: "Smith" } });
-      fireEvent.change(screen.getByLabelText("Email Address"), { target: { value: "alice@example.com" } });
-      fireEvent.change(screen.getByLabelText("Temporary Password"), { target: { value: "password123" } });
+      fireEvent.change(screen.getByLabelText("First Name"), {
+        target: { value: "Alice" },
+      });
+      fireEvent.change(screen.getByLabelText("Last Name"), {
+        target: { value: "Smith" },
+      });
+      fireEvent.change(screen.getByLabelText("Email Address"), {
+        target: { value: "alice@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText("Temporary Password"), {
+        target: { value: "password123" },
+      });
 
       const submitButton = screen.getByRole("button", { name: "Add Member" });
       fireEvent.submit(submitButton.closest("form")!);
@@ -296,7 +341,9 @@ describe("Team Management Test Suite", () => {
       });
 
       render(<UpdateTeamMemberPage />);
-      expect(screen.getByText("Failed to load member details.")).toBeInTheDocument();
+      expect(
+        screen.getByText("Failed to load member details."),
+      ).toBeInTheDocument();
     });
 
     it("renders form with pre-filled data", () => {
@@ -315,9 +362,11 @@ describe("Team Management Test Suite", () => {
 
       expect(screen.getByLabelText("First Name")).toHaveValue("Bob");
       expect(screen.getByLabelText("Last Name")).toHaveValue("Jones");
-      expect(screen.getByLabelText("Email Address")).toHaveValue("bob@example.com");
+      expect(screen.getByLabelText("Email Address")).toHaveValue(
+        "bob@example.com",
+      );
       expect(screen.getByLabelText("Email Address")).toBeDisabled();
-      
+
       const switchEl = screen.getByRole("switch");
       expect(switchEl).toBeChecked();
     });
@@ -337,8 +386,12 @@ describe("Team Management Test Suite", () => {
       render(<UpdateTeamMemberPage />);
 
       // Clear fields
-      fireEvent.change(screen.getByLabelText("First Name"), { target: { value: "" } });
-      fireEvent.change(screen.getByLabelText("Last Name"), { target: { value: "" } });
+      fireEvent.change(screen.getByLabelText("First Name"), {
+        target: { value: "" },
+      });
+      fireEvent.change(screen.getByLabelText("Last Name"), {
+        target: { value: "" },
+      });
 
       const submitButton = screen.getByRole("button", { name: "Save Changes" });
       fireEvent.submit(submitButton.closest("form")!);
@@ -365,8 +418,10 @@ describe("Team Management Test Suite", () => {
 
       render(<UpdateTeamMemberPage />);
 
-      fireEvent.change(screen.getByLabelText("First Name"), { target: { value: "Bobby" } });
-      
+      fireEvent.change(screen.getByLabelText("First Name"), {
+        target: { value: "Bobby" },
+      });
+
       const switchEl = screen.getByRole("switch");
       fireEvent.click(switchEl);
 

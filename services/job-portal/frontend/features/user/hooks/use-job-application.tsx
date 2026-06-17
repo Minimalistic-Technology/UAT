@@ -13,7 +13,10 @@ import { toast } from "sonner";
 import { getValidationErrorMessage } from "@/lib/validation-error";
 import { useRouter } from "next/navigation";
 
-export const useGetMyApplications = (params?: { page?: number; limit?: number }) => {
+export const useGetMyApplications = (params?: {
+  page?: number;
+  limit?: number;
+}) => {
   return useQuery({
     queryKey: ["my-applications", params],
     queryFn: () => getMyApplications(params),

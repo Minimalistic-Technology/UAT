@@ -1,18 +1,14 @@
 import z from "zod";
-import {
-  Experience_Level,
-  BaseListingSchema,
-} from "./base-listing.schema";
+import { Experience_Level, BaseListingSchema } from "./base-listing.schema";
 
 const salarySchema = z
   .object({
-
     min: z.preprocess(
       (val) =>
         val === "" ||
-          val === undefined ||
-          val === null ||
-          (typeof val === "number" && Number.isNaN(val))
+        val === undefined ||
+        val === null ||
+        (typeof val === "number" && Number.isNaN(val))
           ? undefined
           : Number(val),
       z.number().min(0, "Min salary must be positive").optional(),
@@ -20,9 +16,9 @@ const salarySchema = z
     max: z.preprocess(
       (val) =>
         val === "" ||
-          val === undefined ||
-          val === null ||
-          (typeof val === "number" && Number.isNaN(val))
+        val === undefined ||
+        val === null ||
+        (typeof val === "number" && Number.isNaN(val))
           ? undefined
           : Number(val),
       z.number().min(0, "Max salary must be positive").optional(),
@@ -49,7 +45,10 @@ export const createJobSchema = BaseListingSchema.extend({
   }),
   experienceInYears: z.preprocess(
     (val) =>
-      val === "" || val === undefined || val === null || (typeof val === "number" && Number.isNaN(val))
+      val === "" ||
+      val === undefined ||
+      val === null ||
+      (typeof val === "number" && Number.isNaN(val))
         ? undefined
         : Number(val),
     z

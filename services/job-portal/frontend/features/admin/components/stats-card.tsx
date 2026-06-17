@@ -1,7 +1,7 @@
-import React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const statusCardVariants = cva(
   "relative overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 rounded-xl border border-secondary/20",
@@ -17,7 +17,7 @@ const statusCardVariants = cva(
     defaultVariants: {
       variant: "default",
     },
-  }
+  },
 );
 
 interface StatusCardProps extends VariantProps<typeof statusCardVariants> {
@@ -36,40 +36,56 @@ export function AdminStatusCard({
   variant,
   className,
 }: StatusCardProps) {
-  const isDefault = variant === 'default';
+  const isDefault = variant === "default";
 
   return (
     <Card className={cn(statusCardVariants({ variant }), className)}>
-      <CardContent className="p-4 sm:p-5 flex flex-col gap-3 h-full justify-between">
-        <div className="flex items-start justify-between w-full">
+      <CardContent className="flex h-full flex-col justify-between gap-3 p-4 sm:p-5">
+        <div className="flex w-full items-start justify-between">
           {icon && (
-            <div className={cn(
-              "p-2 rounded-md flex items-center justify-center",
-              variant === 'success' ? "bg-success/10 text-success" :
-                variant === 'warning' ? "bg-premium/10 text-premium" :
-                  "bg-primary/10 text-primary"
-            )}>
-              {/* @ts-ignore */}
-              {React.cloneElement(icon as React.ReactElement, { size: 18, strokeWidth: 2.5 })}
+            <div
+              className={cn(
+                "flex items-center justify-center rounded-md p-2",
+                variant === "success"
+                  ? "bg-success/10 text-success"
+                  : variant === "warning"
+                    ? "bg-premium/10 text-premium"
+                    : "bg-primary/10 text-primary",
+              )}
+            >
+              {React.cloneElement(
+                icon as React.ReactElement<{
+                  size?: number;
+                  strokeWidth?: number;
+                }>,
+                {
+                  size: 18,
+                  strokeWidth: 2.5,
+                },
+              )}
             </div>
           )}
           {description && (
-            <div className={cn(
-              "text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap",
-              variant === 'success' ? "bg-success/10 text-success" :
-                variant === 'warning' ? "bg-premium/10 text-premium" :
-                  "bg-secondary/10 text-secondary"
-            )}>
+            <div
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap",
+                variant === "success"
+                  ? "bg-success/10 text-success"
+                  : variant === "warning"
+                    ? "bg-premium/10 text-premium"
+                    : "bg-secondary/10 text-secondary",
+              )}
+            >
               {description}
             </div>
           )}
         </div>
 
         <div className="flex flex-col space-y-0.5">
-          <span className="text-xs sm:text-[13px] font-medium text-muted-foreground truncate">
+          <span className="text-muted-foreground truncate text-xs font-medium sm:text-[13px]">
             {label}
           </span>
-          <span className="text-xl sm:text-2xl font-bold font-heading tracking-tight text-foreground truncate">
+          <span className="font-heading text-foreground truncate text-xl font-bold tracking-tight sm:text-2xl">
             {value}
           </span>
         </div>

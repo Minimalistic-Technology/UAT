@@ -38,7 +38,11 @@ interface CouponEditDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialogProps) {
+export function CouponEditDialog({
+  coupon,
+  open,
+  onOpenChange,
+}: CouponEditDialogProps) {
   const { mutate: updateCoupon, isPending } = useUpdateCoupon();
 
   const {
@@ -67,9 +71,10 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
         type: coupon.type,
         value: coupon.value,
         isActive: coupon.isActive,
-        expiryDate: (coupon.expiryDate && !isNaN(new Date(coupon.expiryDate).getTime()))
-          ? new Date(coupon.expiryDate).toISOString().split("T")[0]
-          : undefined,
+        expiryDate:
+          coupon.expiryDate && !isNaN(new Date(coupon.expiryDate).getTime())
+            ? new Date(coupon.expiryDate).toISOString().split("T")[0]
+            : undefined,
         maxUses: coupon.maxUses,
       });
     }
@@ -90,7 +95,7 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
         onSuccess: () => {
           onOpenChange(false);
         },
-      }
+      },
     );
   };
 
@@ -99,8 +104,8 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden p-0 gap-0 border-0 shadow-2xl sm:rounded-[24px] bg-white dark:bg-slate-900">
-        <DialogHeader className="border-b px-8 py-5 border-slate-100 dark:border-slate-800">
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col gap-0 overflow-hidden border-0 bg-white p-0 shadow-2xl sm:rounded-[24px] dark:bg-slate-900">
+        <DialogHeader className="border-b border-slate-100 px-8 py-5 dark:border-slate-800">
           <DialogTitle className="text-xl font-bold">Edit Coupon</DialogTitle>
           <DialogDescription className="text-slate-500">
             Update discount type, value, and limits for this coupon.
@@ -108,7 +113,11 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
         </DialogHeader>
 
         <ScrollArea className="flex-1 overflow-y-auto px-6 py-4">
-          <form id="coupon-edit-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form
+            id="coupon-edit-form"
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-6"
+          >
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="edit-code">Coupon Code</Label>
@@ -120,7 +129,9 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
                   className="uppercase"
                 />
                 {errors.code && (
-                  <p className="text-sm text-destructive">{errors.code.message}</p>
+                  <p className="text-destructive text-sm">
+                    {errors.code.message}
+                  </p>
                 )}
               </div>
 
@@ -139,7 +150,9 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
                   </SelectContent>
                 </Select>
                 {errors.type && (
-                  <p className="text-sm text-destructive">{errors.type.message}</p>
+                  <p className="text-destructive text-sm">
+                    {errors.type.message}
+                  </p>
                 )}
               </div>
 
@@ -156,14 +169,18 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
                   placeholder="0"
                 />
                 {errors.value && (
-                  <p className="text-sm text-destructive">{errors.value.message}</p>
+                  <p className="text-destructive text-sm">
+                    {errors.value.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="edit-expiryDate">
                   Expiry Date{" "}
-                  <span className="font-normal text-muted-foreground">(optional)</span>
+                  <span className="text-muted-foreground font-normal">
+                    (optional)
+                  </span>
                 </Label>
                 <Input
                   id="edit-expiryDate"
@@ -176,7 +193,7 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
               <div className="space-y-2">
                 <Label htmlFor="edit-maxUses">
                   Max Uses{" "}
-                  <span className="font-normal text-muted-foreground">
+                  <span className="text-muted-foreground font-normal">
                     (-1 for unlimited)
                   </span>
                 </Label>
@@ -185,13 +202,17 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
                   {...register("maxUses", {
                     valueAsNumber: true,
                     setValueAs: (v) =>
-                      v === "" || v === null || isNaN(v) ? undefined : Number(v),
+                      v === "" || v === null || isNaN(v)
+                        ? undefined
+                        : Number(v),
                   })}
                   type="number"
                   placeholder="Enter -1 for unlimited"
                 />
                 {errors.maxUses && (
-                  <p className="text-sm text-destructive">{errors.maxUses.message}</p>
+                  <p className="text-destructive text-sm">
+                    {errors.maxUses.message}
+                  </p>
                 )}
               </div>
 
@@ -206,7 +227,7 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
             </div>
           </form>
         </ScrollArea>
-        <div className="bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 border-t px-8 py-5 border-slate-100 dark:border-slate-800">
+        <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-8 py-5 dark:border-slate-800 dark:bg-slate-800/50">
           <Button
             type="button"
             variant="ghost"
@@ -220,7 +241,7 @@ export function CouponEditDialog({ coupon, open, onOpenChange }: CouponEditDialo
             type="submit"
             form="coupon-edit-form"
             disabled={isPending}
-            className="bg-[#2563eb] hover:bg-blue-700 text-white shadow-sm rounded-xl px-6 font-semibold"
+            className="rounded-xl bg-[#2563eb] px-6 font-semibold text-white shadow-sm hover:bg-blue-700"
           >
             {isPending ? (
               <>

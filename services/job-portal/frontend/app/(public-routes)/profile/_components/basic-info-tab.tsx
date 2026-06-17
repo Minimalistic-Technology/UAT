@@ -6,7 +6,10 @@ import { ProfileFormValues } from "@/validations";
 import { CountryCodeSelector } from "@/components/ui/country-code-selector";
 
 export const BasicInfoTab = () => {
-  const { register, formState: { errors } } = useFormContext<ProfileFormValues>();
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<ProfileFormValues>();
 
   return (
     <TabsContent value="basic" className="space-y-4 pt-4">
@@ -14,23 +17,32 @@ export const BasicInfoTab = () => {
         <div className="space-y-2">
           <Label>First Name</Label>
           <Input {...register("firstName")} />
-          {errors.firstName && <p className="text-red-500 text-sm">{errors.firstName.message}</p>}
+          {errors.firstName && (
+            <p className="text-sm text-red-500">{errors.firstName.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label>Last Name</Label>
           <Input {...register("lastName")} />
-          {errors.lastName && <p className="text-red-500 text-sm">{errors.lastName.message}</p>}
+          {errors.lastName && (
+            <p className="text-sm text-red-500">{errors.lastName.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label>Phone</Label>
-          <div className="flex h-10 shadow-sm rounded-md">
+          <div className="flex h-10 rounded-md shadow-sm">
             <CountryCodeSelector
-              className="h-full border-input border-r-0 bg-transparent text-foreground rounded-l-md w-[80px]"
+              className="border-input text-foreground h-full w-[80px] rounded-l-md border-r-0 bg-transparent"
               defaultValue="+1"
             />
-            <Input {...register("phone")} className="rounded-l-none border-input h-full flex-1" />
+            <Input
+              {...register("phone")}
+              className="border-input h-full flex-1 rounded-l-none"
+            />
           </div>
-          {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
+          {errors.phone && (
+            <p className="text-sm text-red-500">{errors.phone.message}</p>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-3 gap-4">

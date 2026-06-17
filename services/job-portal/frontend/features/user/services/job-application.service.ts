@@ -38,7 +38,10 @@ export interface ApplyJobPayload {
 
 // ---------------------------------- Service -----------------------------------
 
-export const getMyApplications = async (params?: { page?: number; limit?: number }) => {
+export const getMyApplications = async (params?: {
+  page?: number;
+  limit?: number;
+}) => {
   const response = await apiClient.get<
     ApiSuccessResponse<GetMyApplicationsResponse>
   >("/applications/my-applications", { params });

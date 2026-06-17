@@ -133,8 +133,10 @@ describe("Applications Pages", () => {
       });
 
       render(<MyApplicationsPage />);
-      expect(screen.getByText("Failed to load applications")).toBeInTheDocument();
-      
+      expect(
+        screen.getByText("Failed to load applications"),
+      ).toBeInTheDocument();
+
       const retryBtn = screen.getByRole("button", { name: /retry/i });
       fireEvent.click(retryBtn);
       expect(mockRefetch).toHaveBeenCalled();
@@ -142,7 +144,12 @@ describe("Applications Pages", () => {
 
     it("renders empty state when no applications", () => {
       (useGetMyApplications as jest.Mock).mockReturnValue({
-        data: { data: { applications: [], pagination: { totalItems: 0, totalPages: 0 } } },
+        data: {
+          data: {
+            applications: [],
+            pagination: { totalItems: 0, totalPages: 0 },
+          },
+        },
         isLoading: false,
         isError: false,
       });
@@ -174,10 +181,10 @@ describe("Applications Pages", () => {
       });
 
       render(<MyApplicationsPage />);
-      
+
       const nextBtn = screen.getByRole("button", { name: /next/i });
       fireEvent.click(nextBtn);
-      
+
       // Ensure component re-renders without error on Next click
       expect(nextBtn).toBeInTheDocument();
     });
@@ -190,15 +197,19 @@ describe("Applications Pages", () => {
       });
 
       render(<MyApplicationsPage />);
-      
+
       const withdrawBtns = screen.getAllByRole("button", { name: /withdraw/i });
-      fireEvent.click(withdrawBtns[0]); 
+      fireEvent.click(withdrawBtns[0]);
 
       await waitFor(() => {
-        expect(screen.getByText("Are you absolutely sure?")).toBeInTheDocument();
+        expect(
+          screen.getByText("Are you absolutely sure?"),
+        ).toBeInTheDocument();
       });
 
-      const confirmBtn = screen.getByRole("button", { name: "Withdraw Application" });
+      const confirmBtn = screen.getByRole("button", {
+        name: "Withdraw Application",
+      });
       fireEvent.click(confirmBtn);
 
       expect(mockWithdrawApplication).toHaveBeenCalledWith("app1");
@@ -230,10 +241,14 @@ describe("Applications Pages", () => {
 
       render(<ViewApplicationPage />);
       expect(screen.getByText("Application Not Found")).toBeInTheDocument();
-      
-      const backBtn = screen.getByRole("button", { name: /back to applications/i });
+
+      const backBtn = screen.getByRole("button", {
+        name: /back to applications/i,
+      });
       fireEvent.click(backBtn);
-      expect(mockRouter.push).toHaveBeenCalledWith("/user-dashboard/applications");
+      expect(mockRouter.push).toHaveBeenCalledWith(
+        "/user-dashboard/applications",
+      );
     });
 
     it("renders application details correctly", () => {
@@ -273,15 +288,22 @@ describe("Applications Pages", () => {
       mockConfirm.mockReturnValueOnce(true);
 
       render(<ViewApplicationPage />);
-      const withdrawBtn = screen.getByRole("button", { name: "Withdraw Application" });
+      const withdrawBtn = screen.getByRole("button", {
+        name: "Withdraw Application",
+      });
       fireEvent.click(withdrawBtn);
 
       expect(mockConfirm).toHaveBeenCalled();
-      expect(mockWithdrawApplication).toHaveBeenCalledWith("app1", expect.any(Object));
-      
+      expect(mockWithdrawApplication).toHaveBeenCalledWith(
+        "app1",
+        expect.any(Object),
+      );
+
       const { onSuccess } = mockWithdrawApplication.mock.calls[0][1];
       onSuccess();
-      expect(mockRouter.push).toHaveBeenCalledWith("/user-dashboard/applications");
+      expect(mockRouter.push).toHaveBeenCalledWith(
+        "/user-dashboard/applications",
+      );
     });
 
     it("does not withdraw application if confirm cancelled", () => {
@@ -294,7 +316,9 @@ describe("Applications Pages", () => {
       mockConfirm.mockReturnValueOnce(false);
 
       render(<ViewApplicationPage />);
-      const withdrawBtn = screen.getByRole("button", { name: "Withdraw Application" });
+      const withdrawBtn = screen.getByRole("button", {
+        name: "Withdraw Application",
+      });
       fireEvent.click(withdrawBtn);
 
       expect(mockConfirm).toHaveBeenCalled();

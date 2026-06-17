@@ -65,35 +65,46 @@ export default function Navbar() {
   const closeSheet = () => setOpen(false);
   const showFindJobs = isLoading || !isEmployer;
 
-  const isPublicFindJobs = pathname?.startsWith("/find-jobs") || pathname?.startsWith("/job/") || pathname?.startsWith("/internship/");
+  const isPublicFindJobs =
+    pathname?.startsWith("/find-jobs") ||
+    pathname?.startsWith("/job/") ||
+    pathname?.startsWith("/internship/");
   const isProfilePage = pathname?.startsWith("/profile");
-  const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/employer-register";
+  const isAuthPage =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/employer-register";
 
   if (pathname !== "/" && !isPublicFindJobs && !isProfilePage && !isAuthPage) {
     return null;
   }
 
   return (
-    <nav className="fixed top-0 z-50 h-[72px] w-full border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-[#0A0F1C] transition-colors duration-300">
+    <nav className="fixed top-0 z-50 h-[72px] w-full border-b border-slate-100 bg-white transition-colors duration-300 dark:border-slate-800 dark:bg-[#0A0F1C]">
       <div className="h-full px-4 sm:px-6 xl:px-12">
         <div className="flex h-full items-center justify-between">
           <Logo />
 
           {/* ── Left Empty Space (since center links are removed) ── */}
-          <div className="hidden lg:flex flex-1" />
+          <div className="hidden flex-1 lg:flex" />
 
           {/* ── Desktop Right Actions ── */}
-          <div className="hidden h-full items-center lg:flex gap-4">
+          <div className="hidden h-full items-center gap-4 lg:flex">
             {isLoading ? (
               <DesktopSkeleton />
             ) : isAuthenticated ? (
-              <div className="flex items-center h-full gap-8">
+              <div className="flex h-full items-center gap-8">
                 {showFindJobs && !isAdmin && (
-                  <NavLink href="/find-jobs" active={pathname === "/"}>Find Jobs</NavLink>
+                  <NavLink href="/find-jobs" active={pathname === "/"}>
+                    Find Jobs
+                  </NavLink>
                 )}
 
                 {isJobSeeker && (
-                  <NavLink href="/user-dashboard/applications" active={pathname.includes("/user-dashboard")}>
+                  <NavLink
+                    href="/user-dashboard/applications"
+                    active={pathname.includes("/user-dashboard")}
+                  >
                     My Applications
                   </NavLink>
                 )}
@@ -108,7 +119,13 @@ export default function Navbar() {
                   </div>
                 )}
 
-                <UserDropdown session={session} onLogout={handleLogout} isEmployer={isEmployer} isAdmin={isAdmin} isJobSeeker={isJobSeeker} />
+                <UserDropdown
+                  session={session}
+                  onLogout={handleLogout}
+                  isEmployer={isEmployer}
+                  isAdmin={isAdmin}
+                  isJobSeeker={isJobSeeker}
+                />
               </div>
             ) : (
               <GuestButtons />
@@ -116,25 +133,46 @@ export default function Navbar() {
           </div>
 
           {/* ── Mobile Menu Trigger ── */}
-          <div className="lg:hidden flex items-center justify-end h-full">
+          <div className="flex h-full items-center justify-end lg:hidden">
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="hover:bg-slate-100 dark:hover:bg-slate-800 bg-transparent shrink-0">
-                  <Menu className="w-6 h-6 text-slate-800 dark:text-slate-200" strokeWidth={2.5} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <Menu
+                    className="h-6 w-6 text-slate-800 dark:text-slate-200"
+                    strokeWidth={2.5}
+                  />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="p-0 w-64 sm:w-72 bg-white dark:bg-[#0A0F1C] border-r dark:border-slate-800">
+              <SheetContent
+                side="right"
+                className="w-64 border-r bg-white p-0 sm:w-72 dark:border-slate-800 dark:bg-[#0A0F1C]"
+              >
                 <SheetHeader className="sr-only">
                   <SheetTitle>Navigation Menu</SheetTitle>
                 </SheetHeader>
 
                 {isLoading ? (
-                  <div className="p-4 pt-10"><MobileSkeleton /></div>
+                  <div className="p-4 pt-10">
+                    <MobileSkeleton />
+                  </div>
                 ) : isAuthenticated ? (
                   <>
-                    {isAdmin && <Sidebar className="h-full w-full" forceExpanded />}
-                    {isEmployer && <EmployerSidebar className="h-full w-full" forceExpanded />}
-                    {isJobSeeker && <UserSidebar className="h-full w-full" forceExpanded />}
+                    {isAdmin && (
+                      <Sidebar className="h-full w-full" forceExpanded />
+                    )}
+                    {isEmployer && (
+                      <EmployerSidebar
+                        className="h-full w-full"
+                        forceExpanded
+                      />
+                    )}
+                    {isJobSeeker && (
+                      <UserSidebar className="h-full w-full" forceExpanded />
+                    )}
                   </>
                 ) : (
                   <div className="flex flex-col gap-1 p-4 pt-10">
@@ -170,12 +208,15 @@ function UserDropdown({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-9 w-9 cursor-pointer rounded-full bg-slate-100 dark:bg-slate-800 focus-visible:ring-0"
+          className="relative h-9 w-9 cursor-pointer rounded-full bg-slate-100 focus-visible:ring-0 dark:bg-slate-800"
         >
           <User className="h-5 w-5 text-slate-600 dark:text-slate-300" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-slate-900 dark:border-slate-800">
+      <DropdownMenuContent
+        align="end"
+        className="w-56 bg-white dark:border-slate-800 dark:bg-slate-900"
+      >
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm leading-none font-medium">
@@ -188,14 +229,20 @@ function UserDropdown({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/profile" className="flex cursor-pointer items-center font-medium">
+          <Link
+            href="/profile"
+            className="flex cursor-pointer items-center font-medium"
+          >
             <User className="mr-2 h-4 w-4" /> My Profile
           </Link>
         </DropdownMenuItem>
 
         {isAdmin && (
           <DropdownMenuItem asChild>
-            <Link href="/admin-dashboard" className="flex cursor-pointer items-center text-foreground font-medium">
+            <Link
+              href="/admin-dashboard"
+              className="text-foreground flex cursor-pointer items-center font-medium"
+            >
               <LayoutDashboard className="mr-2 h-4 w-4" /> My Dashboard
             </Link>
           </DropdownMenuItem>
@@ -203,7 +250,10 @@ function UserDropdown({
 
         {isEmployer && (
           <DropdownMenuItem asChild>
-            <Link href="/employer-dashboard" className="flex cursor-pointer items-center text-foreground font-medium">
+            <Link
+              href="/employer-dashboard"
+              className="text-foreground flex cursor-pointer items-center font-medium"
+            >
               <LayoutDashboard className="mr-2 h-4 w-4" /> My Dashboard
             </Link>
           </DropdownMenuItem>
@@ -211,7 +261,10 @@ function UserDropdown({
 
         {isJobSeeker && (
           <DropdownMenuItem asChild>
-            <Link href="/user-dashboard" className="flex cursor-pointer items-center text-foreground font-medium">
+            <Link
+              href="/user-dashboard"
+              className="text-foreground flex cursor-pointer items-center font-medium"
+            >
               <LayoutDashboard className="mr-2 h-4 w-4" /> My Dashboard
             </Link>
           </DropdownMenuItem>
@@ -219,7 +272,10 @@ function UserDropdown({
 
         {isEmployer && (
           <DropdownMenuItem asChild>
-            <Link href="/employer-dashboard/company-profile" className="flex cursor-pointer items-center text-primary font-medium">
+            <Link
+              href="/employer-dashboard/company-profile"
+              className="text-primary flex cursor-pointer items-center font-medium"
+            >
               <Building2 className="mr-2 h-4 w-4" /> My Company
             </Link>
           </DropdownMenuItem>
@@ -238,7 +294,10 @@ function UserDropdown({
 function GuestButtons() {
   return (
     <div className="flex h-full items-center gap-3">
-      <Link href="/find-jobs" className="text-[15px] font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors mr-3">
+      <Link
+        href="/find-jobs"
+        className="mr-3 text-[15px] font-semibold text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+      >
         Find Jobs
       </Link>
       <Button variant="outline" asChild>
@@ -267,12 +326,14 @@ function DesktopSkeleton() {
 
 // ─── Mobile Sub-components ────────────────────────────────────────────────────
 
-
-
 function MobileGuestButtons({ onClose }: { onClose: () => void }) {
   return (
     <div className="mt-4 flex flex-col gap-3 px-4">
-      <MobileNavLink href="/find-jobs" onClick={onClose} className="justify-center border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200">
+      <MobileNavLink
+        href="/find-jobs"
+        onClick={onClose}
+        className="justify-center border border-slate-100 text-slate-700 dark:border-slate-800 dark:text-slate-200"
+      >
         Find Jobs
       </MobileNavLink>
       <Button variant="outline" asChild className="w-full">
@@ -319,10 +380,10 @@ function NavLink({
     <Link
       href={href}
       className={cn(
-        "flex h-full items-center text-sm font-bold transition-all border-b-[3px]",
+        "flex h-full items-center border-b-[3px] text-sm font-bold transition-all",
         active
           ? "border-[#2563eb] text-[#2563eb] dark:border-[#3b82f6] dark:text-[#3b82f6]"
-          : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
       )}
     >
       {children}
@@ -350,8 +411,8 @@ function MobileNavLink({
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
         active
-          ? "bg-slate-100 dark:bg-slate-800 text-[#2563eb] dark:text-[#3b82f6] font-bold"
-          : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50",
+          ? "bg-slate-100 font-bold text-[#2563eb] dark:bg-slate-800 dark:text-[#3b82f6]"
+          : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-white",
         className,
       )}
     >

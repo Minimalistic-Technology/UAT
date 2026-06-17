@@ -4,16 +4,28 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useGetEmployeeById, useUpdateEmployee } from "@/features/employer/hooks/use-company";
+import {
+  useGetEmployeeById,
+  useUpdateEmployee,
+} from "@/features/employer/hooks/use-company";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
-import { updateTeamMemberSchema, UpdateTeamMemberSchema } from "@/features/employer/validations/team.schema";
+import {
+  updateTeamMemberSchema,
+  UpdateTeamMemberSchema,
+} from "@/features/employer/validations/team.schema";
 
 export default function UpdateTeamMemberPage() {
   const router = useRouter();
@@ -64,7 +76,7 @@ export default function UpdateTeamMemberPage() {
 
   if (isError || !memberData?.data?.member) {
     return (
-      <div className="p-20 text-center text-destructive">
+      <div className="text-destructive p-20 text-center">
         Failed to load member details.
       </div>
     );
@@ -82,16 +94,20 @@ export default function UpdateTeamMemberPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Update Team Member</h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Update Team Member
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
             Modify the details and status of this team member.
           </p>
         </div>
       </div>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="pb-4 pt-6 px-7">
-          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Member Details</CardTitle>
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+        <CardHeader className="px-7 pt-6 pb-4">
+          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+            Member Details
+          </CardTitle>
           <CardDescription className="text-sm text-slate-500">
             Update the employee's name and activity status.
           </CardDescription>
@@ -107,7 +123,9 @@ export default function UpdateTeamMemberPage() {
                   {...register("firstName")}
                 />
                 {errors.firstName && (
-                  <p className="text-sm text-destructive">{errors.firstName.message}</p>
+                  <p className="text-destructive text-sm">
+                    {errors.firstName.message}
+                  </p>
                 )}
               </div>
 
@@ -119,7 +137,9 @@ export default function UpdateTeamMemberPage() {
                   {...register("lastName")}
                 />
                 {errors.lastName && (
-                  <p className="text-sm text-destructive">{errors.lastName.message}</p>
+                  <p className="text-destructive text-sm">
+                    {errors.lastName.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -133,14 +153,17 @@ export default function UpdateTeamMemberPage() {
                 disabled
                 className="bg-muted/50"
               />
-              <p className="text-xs text-muted-foreground">Email addresses cannot be changed.</p>
+              <p className="text-muted-foreground text-xs">
+                Email addresses cannot be changed.
+              </p>
             </div>
 
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <Label>Active Status</Label>
-                <p className="text-sm text-muted-foreground">
-                  If disabled, this member will no longer have access to the company dashboard.
+                <p className="text-muted-foreground text-sm">
+                  If disabled, this member will no longer have access to the
+                  company dashboard.
                 </p>
               </div>
               <Switch

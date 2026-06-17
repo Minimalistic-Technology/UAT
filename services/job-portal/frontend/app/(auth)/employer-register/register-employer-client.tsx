@@ -98,8 +98,8 @@ export default function EmployerRegisterPage() {
   const isLoading = registerMutation.isPending;
 
   return (
-    <div className="flex h-[calc(100dvh-72px)] w-full bg-slate-50/50 overflow-hidden">
-      <div className="hidden h-full w-1/2 lg:block relative shrink-0">
+    <div className="flex h-[calc(100dvh-72px)] w-full overflow-hidden bg-slate-50/50">
+      <div className="relative hidden h-full w-1/2 shrink-0 lg:block">
         <Image
           src="/employer-signup-page-img.png"
           alt="employer-signup-image"
@@ -109,8 +109,8 @@ export default function EmployerRegisterPage() {
         />
       </div>
       <div className="flex h-full flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
-        <Card className="m-auto w-full max-w-md space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2">
-          <CardHeader className="text-center pb-2 pt-4">
+        <Card className="m-auto w-full max-w-md shrink-0 space-y-1 rounded-[24px] border border-slate-100 bg-white p-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <CardHeader className="pt-4 pb-2 text-center">
             <CardTitle className="text-2xl font-bold">
               Create Employer Account
             </CardTitle>
@@ -121,11 +121,12 @@ export default function EmployerRegisterPage() {
 
           <CardContent className="pb-4">
             <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3">
-
               {/* Native Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="firstName">First Name</Label>
+                  <Label required htmlFor="firstName">
+                    First Name
+                  </Label>
                   <Input
                     id="firstName"
                     placeholder="John"
@@ -139,7 +140,9 @@ export default function EmployerRegisterPage() {
                   )}
                 </div>
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="lastName">Last Name</Label>
+                  <Label required htmlFor="lastName">
+                    Last Name
+                  </Label>
                   <Input
                     id="lastName"
                     placeholder="Doe"
@@ -156,7 +159,9 @@ export default function EmployerRegisterPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="companyName">Company Name</Label>
+                  <Label required htmlFor="companyName">
+                    Company Name
+                  </Label>
                   <Input
                     id="companyName"
                     placeholder="Acme Inc."
@@ -216,7 +221,9 @@ export default function EmployerRegisterPage() {
               </div>
 
               <div className="grid gap-1.5">
-                <Label required htmlFor="email">Email Address</Label>
+                <Label required htmlFor="email">
+                  Email Address
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -233,7 +240,9 @@ export default function EmployerRegisterPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="password">Password</Label>
+                  <Label required htmlFor="password">
+                    Password
+                  </Label>
                   <div className="relative">
                     <Input
                       id="password"
@@ -264,7 +273,9 @@ export default function EmployerRegisterPage() {
                   )}
                 </div>
                 <div className="grid gap-1.5">
-                  <Label required htmlFor="confirmPassword">Confirm</Label>
+                  <Label required htmlFor="confirmPassword">
+                    Confirm
+                  </Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
@@ -300,7 +311,7 @@ export default function EmployerRegisterPage() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center w-full my-2 min-h-[65px]">
+              <div className="my-2 flex min-h-[65px] w-full flex-col items-center justify-center">
                 <Turnstile
                   siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
                   onSuccess={(token) => {
@@ -313,7 +324,7 @@ export default function EmployerRegisterPage() {
                   options={{ theme: "light" }}
                 />
                 {errors.captchaToken && (
-                  <p className="text-destructive text-xs mt-1">
+                  <p className="text-destructive mt-1 text-xs">
                     {errors.captchaToken.message}
                   </p>
                 )}

@@ -1,5 +1,11 @@
 import React from "react";
-import { IndianRupee, Users, Briefcase, ShieldCheck, Building2 } from "lucide-react";
+import {
+  IndianRupee,
+  Users,
+  Briefcase,
+  ShieldCheck,
+  Building2,
+} from "lucide-react";
 
 export interface DashboardSummary {
   totalRevenue: number;

@@ -20,7 +20,7 @@ export const useCreateCoupon = (onSuccessCallback?: () => void) => {
     onSuccess: () => {
       toast.success("Coupon created successfully!");
       queryClient.invalidateQueries({ queryKey: ["admin-coupons"] });
-      
+
       if (onSuccessCallback) {
         onSuccessCallback();
       } else {

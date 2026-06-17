@@ -70,7 +70,7 @@ export interface StatusHistory {
   status: ApplicationStatus;
   changedAt: Date;
   changedBy: string; // Object Id
-  note: string
+  note: string;
 }
 
 export interface Application {
@@ -82,5 +82,5 @@ export interface Application {
   statusHistory: StatusHistory[];
   employerNotes: string;
   createdAt: Date;
-  updatedAt: Date
+  updatedAt: Date;
 }

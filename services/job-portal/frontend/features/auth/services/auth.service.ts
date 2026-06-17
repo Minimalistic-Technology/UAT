@@ -1,5 +1,10 @@
 import apiClient, { type ApiSuccessResponse } from "@/lib/api-client";
-import { RegisterUserInput, EmployerRegisterInput, ForgotPasswordInput, ResetPasswordInput } from "../validations/auth.schema";
+import {
+  RegisterUserInput,
+  EmployerRegisterInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+} from "../validations/auth.schema";
 import { AuthUser } from "../types";
 
 export interface ConfirmRegistrationInput {

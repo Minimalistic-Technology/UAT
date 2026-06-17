@@ -104,11 +104,13 @@ export const Degree_Level = [
   "any",
 ];
 
-const locationSchema = z.object({
-  city: z.string().trim().optional().or(z.literal("")),
-  state: z.string().trim().optional().or(z.literal("")),
-  country: z.string().trim().optional().or(z.literal("")),
-}).optional();
+const locationSchema = z
+  .object({
+    city: z.string().trim().optional().or(z.literal("")),
+    state: z.string().trim().optional().or(z.literal("")),
+    country: z.string().trim().optional().or(z.literal("")),
+  })
+  .optional();
 
 const educationSchema = z.object({
   minimumDegree: z.enum(Degree_Level, {
@@ -142,58 +144,64 @@ const applicationDeadlineSchema = z
     return date;
   });
 
-export const BaseListingSchema = z.object({
-  title: z.string().trim().min(1, "Job title is required"),
-  description: z.string().trim().min(1, "Job description is required"),
+export const BaseListingSchema = z
+  .object({
+    title: z.string().trim().min(1, "Job title is required"),
+    description: z.string().trim().min(1, "Job description is required"),
 
-  // Select values
-  employmentType: z.enum(Job_Type, { error: "Job type is required" }),
-  opportunityType: z.enum(Opportunity_Type, { error: "Opportunity type is required" }),
-  workMode: z.enum(Work_Mode, { error: "Work mode is required" }),
-  companyType: z.enum(Company_Type, { error: "Company type is required" }),
-  roleCategory: z.enum(ROLE_CATEGORIES, { error: "Role category is required" }),
-  industry: z.enum(INDUSTRIES, { error: "Industry is required" }),
+    // Select values
+    employmentType: z.enum(Job_Type, { error: "Job type is required" }),
+    opportunityType: z.enum(Opportunity_Type, {
+      error: "Opportunity type is required",
+    }),
+    workMode: z.enum(Work_Mode, { error: "Work mode is required" }),
+    companyType: z.enum(Company_Type, { error: "Company type is required" }),
+    roleCategory: z.enum(ROLE_CATEGORIES, {
+      error: "Role category is required",
+    }),
+    industry: z.enum(INDUSTRIES, { error: "Industry is required" }),
 
-  genderPreference: z.enum(Gender_Preference).default("any"),
-  englishFluency: z.enum(English_Fluency).default("none"),
+    genderPreference: z.enum(Gender_Preference).default("any"),
+    englishFluency: z.enum(English_Fluency).default("none"),
 
-  location: locationSchema,
-  education: educationSchema,
+    location: locationSchema,
+    education: educationSchema,
 
-  skills: z
-    .array(z.string().trim().min(1, "Skill cannot be empty"))
-    .min(1, "At least one skill is required"),
-  requirements: z
-    .array(z.string().trim().min(1, "Requirement cannot be empty"))
-    .min(1, "At least one requirement is required"),
-  benefits: z.array(z.string()).optional(),
+    skills: z
+      .array(z.string().trim().min(1, "Skill cannot be empty"))
+      .min(1, "At least one skill is required"),
+    requirements: z
+      .array(z.string().trim().min(1, "Requirement cannot be empty"))
+      .min(1, "At least one requirement is required"),
+    benefits: z.array(z.string()).optional(),
 
-  applicationDeadline: applicationDeadlineSchema,
-  openings: z.coerce.number().int().min(1, "Openings must be at least 1"),
-  status: z.enum(Listing_Status).default("active"),
-  isFeatured: z.boolean().default(false),
-}).superRefine((data, ctx) => {
-  if (data.workMode !== "remote") {
-    if (!data.location?.city) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["location", "city"],
-        message: "City is required for non-remote roles",
-      });
+    applicationDeadline: applicationDeadlineSchema,
+    openings: z.coerce.number().int().min(1, "Openings must be at least 1"),
+    status: z.enum(Listing_Status).default("active"),
+    isFeatured: z.boolean().default(false),
+  })
+  .superRefine((data, ctx) => {
+    if (data.workMode !== "remote") {
+      if (!data.location?.city) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["location", "city"],
+          message: "City is required for non-remote roles",
+        });
+      }
+      if (!data.location?.state) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["location", "state"],
+          message: "State is required for non-remote roles",
+        });
+      }
+      if (!data.location?.country) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["location", "country"],
+          message: "Country is required for non-remote roles",
+        });
+      }
     }
-    if (!data.location?.state) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["location", "state"],
-        message: "State is required for non-remote roles",
-      });
-    }
-    if (!data.location?.country) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["location", "country"],
-        message: "Country is required for non-remote roles",
-      });
-    }
-  }
-});
+  });

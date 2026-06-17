@@ -53,7 +53,6 @@ export type JobEducationRequirement = {
 };
 
 export type SalaryDetails = {
-
   min?: number;
   max?: number;
   currency: string;
@@ -145,7 +144,7 @@ export type BaseListing = {
   isFeatured: boolean;
   applicationsCount: number;
   viewsCount: number;
-  opportunityType: ListingType
+  opportunityType: ListingType;
 };
 
 export type Job = BaseListing & {

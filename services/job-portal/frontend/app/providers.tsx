@@ -7,9 +7,12 @@ import { SidebarProvider } from "@/components/ui/sidebar-context";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('theme') === 'system') {
-      localStorage.setItem('theme', 'light');
-      window.dispatchEvent(new Event('storage'));
+    if (
+      typeof window !== "undefined" &&
+      localStorage.getItem("theme") === "system"
+    ) {
+      localStorage.setItem("theme", "light");
+      window.dispatchEvent(new Event("storage"));
     }
   }, []);
   const [queryClient] = useState(

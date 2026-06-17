@@ -138,7 +138,7 @@ export function CreatePlanDialog({
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-1 flex-col overflow-hidden"
         >
-          <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="scrollbar-hide flex-1 space-y-6 overflow-y-auto px-6 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {/* Basic Info */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
@@ -158,7 +158,10 @@ export function CreatePlanDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="displayOrder" className="flex items-center gap-1">
+                <Label
+                  htmlFor="displayOrder"
+                  className="flex items-center gap-1"
+                >
                   Display Order <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Input
@@ -222,7 +225,8 @@ export function CreatePlanDialog({
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="duration" className="flex items-center gap-1">
-                  Plan Expiry Period (In Days) <Asterisk className="text-destructive size-3" />
+                  Plan Expiry Period (In Days){" "}
+                  <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Input
                   id="duration"
@@ -263,7 +267,8 @@ export function CreatePlanDialog({
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="jobLimit" className="flex items-center gap-1">
-                  Job Post Limit (-1 = Unlimited) <Asterisk className="text-destructive size-3" />
+                  Job Post Limit (-1 = Unlimited){" "}
+                  <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Input
                   id="jobLimit"
@@ -279,8 +284,12 @@ export function CreatePlanDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="teamMemberLimit" className="flex items-center gap-1">
-                  Team Member Limit (-1 = Unlimited) <Asterisk className="text-destructive size-3" />
+                <Label
+                  htmlFor="teamMemberLimit"
+                  className="flex items-center gap-1"
+                >
+                  Team Member Limit (-1 = Unlimited){" "}
+                  <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Input
                   id="teamMemberLimit"
@@ -360,7 +369,10 @@ export function CreatePlanDialog({
                   size="sm"
                   onClick={() => {
                     append("" as any);
-                    setTimeout(() => setFocus(`features.${fields.length}` as const), 0);
+                    setTimeout(
+                      () => setFocus(`features.${fields.length}` as const),
+                      0,
+                    );
                   }}
                 >
                   <Plus className="mr-1 h-4 w-4" /> Add Feature

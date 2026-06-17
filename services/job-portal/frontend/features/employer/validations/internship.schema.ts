@@ -12,9 +12,9 @@ const stipendSchema = z
     amount: z.preprocess(
       (val) =>
         val === "" ||
-          val === undefined ||
-          val === null ||
-          (typeof val === "number" && Number.isNaN(val))
+        val === undefined ||
+        val === null ||
+        (typeof val === "number" && Number.isNaN(val))
           ? undefined
           : Number(val),
       z.number().min(0, "Stipend amount cannot be negative").optional(),
@@ -22,26 +22,23 @@ const stipendSchema = z
     currency: z.string().default("INR"),
     period: z.enum(["monthly", "weekly"]).default("monthly"),
   })
-  .refine(
-    (data) => data.type === "unpaid" || data.amount !== undefined,
-    {
-      message: "Stipend amount is required for paid internships",
-      path: ["amount"],
-    },
-  );
+  .refine((data) => data.type === "unpaid" || data.amount !== undefined, {
+    message: "Stipend amount is required for paid internships",
+    path: ["amount"],
+  });
 
 const durationSchema = z.object({
   value: z.preprocess(
     (val) =>
       val === "" ||
-        val === undefined ||
-        val === null ||
-        (typeof val === "number" && Number.isNaN(val))
+      val === undefined ||
+      val === null ||
+      (typeof val === "number" && Number.isNaN(val))
         ? undefined
         : Number(val),
     z
       .number({ error: "Duration is required" })
-      .min(1, "Duration must be at least 1")
+      .min(1, "Duration must be at least 1"),
   ),
   unit: z.enum(Duration_Type, {
     error: "Duration unit is required",

@@ -37,8 +37,12 @@ describe("ForgotPasswordClient Component", () => {
   });
 
   const fillFormAndSubmit = async (email: string) => {
-    fireEvent.change(screen.getByLabelText(/Email Address/i), { target: { value: email } });
-    const submitButton = screen.getByRole("button", { name: /Send Reset Link/i });
+    fireEvent.change(screen.getByLabelText(/Email Address/i), {
+      target: { value: email },
+    });
+    const submitButton = screen.getByRole("button", {
+      name: /Send Reset Link/i,
+    });
     fireEvent.submit(submitButton.closest("form")!);
   };
 
@@ -47,15 +51,21 @@ describe("ForgotPasswordClient Component", () => {
 
     expect(screen.getByText("Forgot Password")).toBeInTheDocument();
     expect(screen.getByLabelText(/Email Address/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Send Reset Link/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Back to Login/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Send Reset Link/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Back to Login/i }),
+    ).toBeInTheDocument();
   });
 
   describe("Form Validations", () => {
     it("shows validation error for empty email on submit", async () => {
       render(<ForgotPasswordClient />);
 
-      const submitButton = screen.getByRole("button", { name: /Send Reset Link/i });
+      const submitButton = screen.getByRole("button", {
+        name: /Send Reset Link/i,
+      });
       fireEvent.submit(submitButton.closest("form")!);
 
       await waitFor(() => {
@@ -89,7 +99,7 @@ describe("ForgotPasswordClient Component", () => {
           expect.objectContaining({
             email: "john@example.com",
           }),
-          expect.any(Object)
+          expect.any(Object),
         );
       });
     });
@@ -104,7 +114,9 @@ describe("ForgotPasswordClient Component", () => {
       await fillFormAndSubmit("john@example.com");
 
       await waitFor(() => {
-        expect(toast.success).toHaveBeenCalledWith("Password reset link sent to your email!");
+        expect(toast.success).toHaveBeenCalledWith(
+          "Password reset link sent to your email!",
+        );
       });
     });
 
@@ -150,7 +162,9 @@ describe("ForgotPasswordClient Component", () => {
       render(<ForgotPasswordClient />);
 
       expect(screen.getByLabelText(/Email Address/i)).toBeDisabled();
-      expect(screen.getByRole("button", { name: /Sending.../i })).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: /Sending.../i }),
+      ).toBeDisabled();
     });
   });
 });

@@ -30,13 +30,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${plusJakartaSans.variable}`}>
-      <body className="font-sans bg-background text-foreground transition-colors duration-300">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${plusJakartaSans.variable}`}
+    >
+      <body className="bg-background text-foreground font-sans transition-colors duration-300">
         <Providers>
           <Navbar />
-          <MainWrapper>
-            {children}
-          </MainWrapper>
+          <MainWrapper>{children}</MainWrapper>
           <Toaster position="top-right" />
           <AiChatbot />
         </Providers>

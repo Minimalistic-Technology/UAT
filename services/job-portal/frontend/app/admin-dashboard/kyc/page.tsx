@@ -101,10 +101,10 @@ export default function KycManagementPage() {
         </Select>
       </div>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="pb-4 pt-6 px-7">
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+        <CardHeader className="px-7 pt-6 pb-4">
           <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
-            <FileText className="text-[#2563eb] h-5 w-5" />
+            <FileText className="h-5 w-5 text-[#2563eb]" />
             Employer KYC Applications
           </CardTitle>
           <CardDescription className="text-sm text-slate-500">

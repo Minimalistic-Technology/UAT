@@ -118,7 +118,7 @@ const ApplicationsPage = () => {
   if (isLoading)
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <Skeleton className="h-10 w-48 rounded-md" />
           <Skeleton className="h-8 w-24 rounded-full" />
         </div>
@@ -140,7 +140,7 @@ const ApplicationsPage = () => {
         </Badge>
       </div>
 
-      <div className="rounded-[20px] border-0 bg-white dark:bg-slate-900 shadow-[0_2px_15px_rgba(0,0,0,0.04)] overflow-hidden p-6 mx-auto">
+      <div className="mx-auto overflow-hidden rounded-[20px] border-0 bg-white p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
         <Table>
           <TableHeader>
             <TableRow>
@@ -211,7 +211,10 @@ const ApplicationsPage = () => {
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-border z-50">
+                        <DropdownMenuContent
+                          align="end"
+                          className="border-border z-50 w-48 bg-white dark:bg-slate-900"
+                        >
                           <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -264,7 +267,7 @@ const ApplicationsPage = () => {
           }
         }}
       >
-        <DialogContent className="sm:max-w-md w-[95vw] max-w-[95vw] sm:w-full rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
+        <DialogContent className="max-h-[90vh] w-[95vw] max-w-[95vw] overflow-y-auto rounded-2xl p-4 sm:w-full sm:max-w-md sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl">Schedule Interview</DialogTitle>
           </DialogHeader>
@@ -315,7 +318,7 @@ const ApplicationsPage = () => {
               </p>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+          <DialogFooter className="mt-4 gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setInterviewModalOpen(false)}

@@ -134,10 +134,10 @@ export default function ProfilePage() {
       if (response.data?.success && response.data.data?.avatarUrl) {
         setAvatarUrl(response.data.data.avatarUrl);
       }
-      toast.success("Avatar uploaded successfully")
+      toast.success("Avatar uploaded successfully");
     } catch (error) {
       console.error(error);
-      toast.error("Some error occured while uploading avatar")
+      toast.error("Some error occured while uploading avatar");
     }
   };
 

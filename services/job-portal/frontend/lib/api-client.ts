@@ -47,7 +47,11 @@ apiClient.interceptors.response.use(
     if (status === 401) {
       if (typeof window !== "undefined") {
         const path = window.location.pathname;
-        if (!path.includes("/login") && !path.includes("/register") && path !== "/") {
+        if (
+          !path.includes("/login") &&
+          !path.includes("/register") &&
+          path !== "/"
+        ) {
           window.location.href = "/login";
         }
       }

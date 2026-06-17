@@ -69,15 +69,29 @@ describe("RegisterClient Component", () => {
   });
 
   const fillFormAndSubmit = async (overrides: Record<string, string> = {}) => {
-    fireEvent.change(screen.getByLabelText(/First Name/i), { target: { value: overrides.firstName ?? "John" } });
-    fireEvent.change(screen.getByLabelText(/Last Name/i), { target: { value: overrides.lastName ?? "Doe" } });
-    fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: overrides.email ?? "john@example.com" } });
-    fireEvent.change(screen.getByLabelText(/Phone Number/i), { target: { value: overrides.phone ?? "1234567890" } });
-    fireEvent.change(screen.getByLabelText(/^Password/i), { target: { value: overrides.password ?? "password123" } });
-    fireEvent.change(screen.getByLabelText(/Confirm Password/i), { target: { value: overrides.confirmPassword ?? "password123" } });
-    
+    fireEvent.change(screen.getByLabelText(/First Name/i), {
+      target: { value: overrides.firstName ?? "John" },
+    });
+    fireEvent.change(screen.getByLabelText(/Last Name/i), {
+      target: { value: overrides.lastName ?? "Doe" },
+    });
+    fireEvent.change(screen.getByLabelText(/Email/i), {
+      target: { value: overrides.email ?? "john@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText(/Phone Number/i), {
+      target: { value: overrides.phone ?? "1234567890" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Password/i), {
+      target: { value: overrides.password ?? "password123" },
+    });
+    fireEvent.change(screen.getByLabelText(/Confirm Password/i), {
+      target: { value: overrides.confirmPassword ?? "password123" },
+    });
+
     // Accept terms
-    const termsCheckbox = screen.getByLabelText(/I agree to the/i) as HTMLInputElement;
+    const termsCheckbox = screen.getByLabelText(
+      /I agree to the/i,
+    ) as HTMLInputElement;
     if (!termsCheckbox.checked) {
       fireEvent.click(termsCheckbox);
     }
@@ -87,7 +101,9 @@ describe("RegisterClient Component", () => {
       fireEvent.click(screen.getByTestId("trigger-captcha"));
     }
 
-    const submitButton = screen.getByRole("button", { name: /Create Account/i });
+    const submitButton = screen.getByRole("button", {
+      name: /Create Account/i,
+    });
     fireEvent.submit(submitButton.closest("form")!);
   };
 
@@ -102,7 +118,9 @@ describe("RegisterClient Component", () => {
     expect(screen.getByLabelText(/^Password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Confirm Password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/I agree to the/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Create Account/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Create Account/i }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("turnstile-mock")).toBeInTheDocument();
   });
 
@@ -111,13 +129,21 @@ describe("RegisterClient Component", () => {
       render(<RegisterClient />);
 
       // Don't trigger captcha, submit immediately
-      const submitButton = screen.getByRole("button", { name: /Create Account/i });
+      const submitButton = screen.getByRole("button", {
+        name: /Create Account/i,
+      });
       fireEvent.submit(submitButton.closest("form")!);
 
       await waitFor(() => {
-        expect(screen.getByText(/First name must be at least 2 characters/i)).toBeInTheDocument();
-        expect(screen.getByText(/Last name must be at least 2 characters/i)).toBeInTheDocument();
-        const passwordErrors = screen.getAllByText(/Password must be at least 6 characters/i);
+        expect(
+          screen.getByText(/First name must be at least 2 characters/i),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText(/Last name must be at least 2 characters/i),
+        ).toBeInTheDocument();
+        const passwordErrors = screen.getAllByText(
+          /Password must be at least 6 characters/i,
+        );
         expect(passwordErrors.length).toBeGreaterThan(0);
       });
 
@@ -127,7 +153,11 @@ describe("RegisterClient Component", () => {
     it("shows validation error for password mismatch", async () => {
       render(<RegisterClient />);
 
-      await fillFormAndSubmit({ password: "password123", confirmPassword: "password456", phone: "1234567890" });
+      await fillFormAndSubmit({
+        password: "password123",
+        confirmPassword: "password456",
+        phone: "1234567890",
+      });
 
       await waitFor(() => {
         expect(screen.getByText(/Passwords don't match/i)).toBeInTheDocument();
@@ -179,7 +209,7 @@ describe("RegisterClient Component", () => {
             confirmPassword: "password123",
             captchaToken: "mock-captcha-token",
           }),
-          expect.any(Object)
+          expect.any(Object),
         );
       });
     });
@@ -195,7 +225,9 @@ describe("RegisterClient Component", () => {
 
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("OTP sent to your email!");
-        expect(mockRouter.push).toHaveBeenCalledWith("/verify-otp?email=test%40example.com");
+        expect(mockRouter.push).toHaveBeenCalledWith(
+          "/verify-otp?email=test%40example.com",
+        );
       });
     });
 
@@ -249,7 +281,9 @@ describe("RegisterClient Component", () => {
       expect(screen.getByLabelText(/Phone Number/i)).toBeDisabled();
       expect(screen.getByLabelText(/^Password/i)).toBeDisabled();
       expect(screen.getByLabelText(/Confirm Password/i)).toBeDisabled();
-      expect(screen.getByRole("button", { name: /Please wait.../i })).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: /Please wait.../i }),
+      ).toBeDisabled();
     });
 
     it("toggles password visibility when clicking the eye icon", () => {

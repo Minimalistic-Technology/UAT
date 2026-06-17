@@ -39,7 +39,11 @@ const COLUMNS = [
   { key: "duration", label: "Duration", className: "hidden lg:table-cell" },
   { key: "limit", label: "Job Limit", className: "hidden xl:table-cell" },
   { key: "teamLimit", label: "Team Limit", className: "hidden xl:table-cell" },
-  { key: "listingLifespan", label: "Listing Lifespan", className: "hidden xl:table-cell" },
+  {
+    key: "listingLifespan",
+    label: "Listing Lifespan",
+    className: "hidden xl:table-cell",
+  },
   { key: "status", label: "Status" },
   { key: "created", label: "Created At", className: "hidden md:table-cell" },
   { key: "actions", label: "Actions" },
@@ -111,8 +115,9 @@ export default function PlansPage() {
                           className={col.className || ""}
                         >
                           <Skeleton
-                            className={`h-5 ${col.key === "actions" ? "ml-auto w-20" : "w-full"
-                              }`}
+                            className={`h-5 ${
+                              col.key === "actions" ? "ml-auto w-20" : "w-full"
+                            }`}
                           />
                         </TableCell>
                       ))}
@@ -137,7 +142,7 @@ export default function PlansPage() {
 
   // Client-side filtering (optional, backend usually does this but we'll do simple filtering based on searchTerm)
   const filteredPlans = plans?.filter((plan) =>
-    plan.name.toLowerCase().includes(searchTerm.toLowerCase())
+    plan.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -145,25 +150,27 @@ export default function PlansPage() {
       {/* Search and Filters Area */}
       <div className="flex items-center justify-between gap-4">
         <div className="relative max-w-sm flex-1">
-          <Search className="text-slate-400 absolute top-3 left-3 h-4 w-4" />
+          <Search className="absolute top-3 left-3 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Search plans..."
-            className="h-10 pl-9 rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus-visible:ring-[#2563eb]"
+            className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-9 focus-visible:ring-[#2563eb] dark:border-slate-800 dark:bg-slate-900"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         <CreatePlanDialog>
-          <Button className="rounded-xl h-10 px-5 bg-[#2563eb] text-white hover:bg-blue-700 shadow-sm font-semibold">
+          <Button className="h-10 rounded-xl bg-[#2563eb] px-5 font-semibold text-white shadow-sm hover:bg-blue-700">
             <Plus className="mr-2 h-4 w-4" /> Create Plan
           </Button>
         </CreatePlanDialog>
       </div>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="pb-4 pt-6 px-7">
-          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Plans Management</CardTitle>
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+        <CardHeader className="px-7 pt-6 pb-4">
+          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+            Plans Management
+          </CardTitle>
           <CardDescription className="text-sm text-slate-500">
             Manage subscription plans, pricing, limits, and visibility.
           </CardDescription>
@@ -175,26 +182,36 @@ export default function PlansPage() {
             <Pagination className="justify-end">
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious 
-                    href="#" 
+                  <PaginationPrevious
+                    href="#"
                     onClick={(e) => {
                       e.preventDefault();
-                      if (pagination?.hasPrevPage) setPage((p) => Math.max(1, p - 1));
+                      if (pagination?.hasPrevPage)
+                        setPage((p) => Math.max(1, p - 1));
                     }}
-                    className={!pagination?.hasPrevPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={
+                      !pagination?.hasPrevPage
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
                   />
                 </PaginationItem>
-                <PaginationItem className="px-4 text-xs font-medium text-muted-foreground flex items-center">
-                  Page {pagination?.currentPage || 1} of {pagination?.totalPages || 1}
+                <PaginationItem className="text-muted-foreground flex items-center px-4 text-xs font-medium">
+                  Page {pagination?.currentPage || 1} of{" "}
+                  {pagination?.totalPages || 1}
                 </PaginationItem>
                 <PaginationItem>
-                  <PaginationNext 
-                    href="#" 
+                  <PaginationNext
+                    href="#"
                     onClick={(e) => {
                       e.preventDefault();
                       if (pagination?.hasNextPage) setPage((p) => p + 1);
                     }}
-                    className={!pagination?.hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={
+                      !pagination?.hasNextPage
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
                   />
                 </PaginationItem>
               </PaginationContent>

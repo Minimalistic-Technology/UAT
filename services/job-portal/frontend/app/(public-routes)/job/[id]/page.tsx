@@ -45,7 +45,10 @@ const Page = () => {
   const handleApply = () => {
     applyJob({
       listingId: jobId as string,
-      listingType: job?.employmentType === "internship" ? "internship" as ListingType : "job" as ListingType,
+      listingType:
+        job?.employmentType === "internship"
+          ? ("internship" as ListingType)
+          : ("job" as ListingType),
     });
   };
 
@@ -63,10 +66,10 @@ const Page = () => {
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-10">
-      <div className="flex flex-col lg:grid gap-6 lg:gap-8 lg:grid-cols-3">
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:gap-8">
         {/* Left Column: Main Details */}
-        <div className="contents lg:block lg:col-span-2 lg:space-y-6">
-          <Card className="border-none shadow-sm order-1 lg:order-0">
+        <div className="contents lg:col-span-2 lg:block lg:space-y-6">
+          <Card className="order-1 border-none shadow-sm lg:order-0">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
@@ -112,12 +115,13 @@ const Page = () => {
                   <div className="text-muted-foreground flex items-center text-sm">
                     <WalletIcon className="mr-1 h-4 w-4" />
                     {job.salary.min || job.salary.max
-                      ? `${getCurrencySymbol(job.salary.currency || "INR")}${job.salary.min && job.salary.max
-                        ? `${job.salary.min} - ${job.salary.max}`
-                        : job.salary.min
-                          ? `${job.salary.min}+`
-                          : `Up to ${job.salary.max}`
-                      } / ${job.salary.period}`
+                      ? `${getCurrencySymbol(job.salary.currency || "INR")}${
+                          job.salary.min && job.salary.max
+                            ? `${job.salary.min} - ${job.salary.max}`
+                            : job.salary.min
+                              ? `${job.salary.min}+`
+                              : `Up to ${job.salary.max}`
+                        } / ${job.salary.period}`
                       : "Salary not disclosed"}
                   </div>
                 )}
@@ -139,7 +143,7 @@ const Page = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm order-3 lg:order-none">
+          <Card className="order-3 border-none shadow-sm lg:order-none">
             <CardContent className="space-y-6 pt-6">
               <div>
                 <h3 className="mb-3 text-lg font-semibold">Description</h3>
@@ -201,7 +205,7 @@ const Page = () => {
 
         {/* Right Column: Sidebar Actions */}
         <div className="contents lg:block lg:space-y-6">
-          <Card className="border-none shadow-sm order-2 lg:order-0">
+          <Card className="order-2 border-none shadow-sm lg:order-0">
             <CardHeader>
               <CardTitle className="text-xl">Job Overview</CardTitle>
             </CardHeader>
@@ -316,8 +320,8 @@ const Page = () => {
               ) : !session ? (
                 <Button
                   variant="outline"
-                  className="h-12 w-full cursor-pointer text-[13px] sm:text-sm font-semibold whitespace-nowrap border-[#2563eb] text-[#2563eb] hover:bg-[#2563eb]/5"
-                  onClick={() => window.location.href = "/login"}
+                  className="h-12 w-full cursor-pointer border-[#2563eb] text-[13px] font-semibold whitespace-nowrap text-[#2563eb] hover:bg-[#2563eb]/5 sm:text-sm"
+                  onClick={() => (window.location.href = "/login")}
                 >
                   Please login to apply for this job.
                 </Button>

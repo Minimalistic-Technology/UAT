@@ -18,13 +18,19 @@ import { getListingStatusColor } from "@/utils";
 
 export function InternshipRow({ internship }: { internship: any }) {
   const router = useRouter();
-  const { mutate: deleteInternship, isPending: isDeleting } = useDeleteMyInternshipPosting();
+  const { mutate: deleteInternship, isPending: isDeleting } =
+    useDeleteMyInternshipPosting();
 
   return (
     <TableRow className="group">
-      <TableCell className="font-medium text-gray-900">{internship.title}</TableCell>
+      <TableCell className="font-medium text-gray-900">
+        {internship.title}
+      </TableCell>
       <TableCell>
-        <Badge variant="secondary" className={getListingStatusColor(internship.status)}>
+        <Badge
+          variant="secondary"
+          className={getListingStatusColor(internship.status)}
+        >
           {internship.status}
         </Badge>
       </TableCell>
@@ -34,7 +40,9 @@ export function InternshipRow({ internship }: { internship: any }) {
         </span>
       </TableCell>
       <TableCell>
-        <span className="text-sm font-medium">{internship.postedBy.firstName + " " + internship.postedBy.lastName}</span>
+        <span className="text-sm font-medium">
+          {internship.postedBy.firstName + " " + internship.postedBy.lastName}
+        </span>
       </TableCell>
       <TableCell className="text-sm text-gray-500">
         {format(new Date(internship.createdAt), "MMM dd, yyyy")}
@@ -50,14 +58,18 @@ export function InternshipRow({ internship }: { internship: any }) {
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => router.push(`/employer-dashboard/internships/${internship._id}`)}
+              onClick={() =>
+                router.push(`/employer-dashboard/internships/${internship._id}`)
+              }
               className="cursor-pointer"
             >
               <Eye className="mr-2 size-4" /> View Details
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
-                router.push(`/employer-dashboard/internships/${internship._id}/applications`)
+                router.push(
+                  `/employer-dashboard/internships/${internship._id}/applications`,
+                )
               }
             >
               <FileUser className="mr-2 size-4" />
@@ -74,7 +86,9 @@ export function InternshipRow({ internship }: { internship: any }) {
             <DropdownMenuItem
               disabled={internship.status === "closed"}
               onClick={() => {
-                router.push(`/employer-dashboard/internships/${internship._id}/edit`)
+                router.push(
+                  `/employer-dashboard/internships/${internship._id}/edit`,
+                );
               }}
             >
               <Edit className="mr-2 size-4" /> Edit Internship

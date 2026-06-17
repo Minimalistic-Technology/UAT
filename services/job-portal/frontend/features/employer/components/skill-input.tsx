@@ -4,13 +4,52 @@ import { X, Asterisk } from "lucide-react";
 import { useState } from "react";
 
 const PREDEFINED_SKILLS = [
-  "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Express",
-  "Python", "Django", "Flask", "Java", "Spring Boot", "C++", "C#", ".NET",
-  "Ruby", "Ruby on Rails", "PHP", "Laravel", "Go", "Rust", "Swift", "Kotlin",
-  "React Native", "Flutter", "SQL", "PostgreSQL", "MySQL", "MongoDB", "Redis",
-  "AWS", "Azure", "Google Cloud", "Docker", "Kubernetes", "Git", "CI/CD",
-  "GraphQL", "REST API", "Tailwind CSS", "SASS", "HTML", "CSS",
-  "Machine Learning", "Data Science", "UI/UX Design", "Figma",
+  "JavaScript",
+  "TypeScript",
+  "React",
+  "Next.js",
+  "Node.js",
+  "Express",
+  "Python",
+  "Django",
+  "Flask",
+  "Java",
+  "Spring Boot",
+  "C++",
+  "C#",
+  ".NET",
+  "Ruby",
+  "Ruby on Rails",
+  "PHP",
+  "Laravel",
+  "Go",
+  "Rust",
+  "Swift",
+  "Kotlin",
+  "React Native",
+  "Flutter",
+  "SQL",
+  "PostgreSQL",
+  "MySQL",
+  "MongoDB",
+  "Redis",
+  "AWS",
+  "Azure",
+  "Google Cloud",
+  "Docker",
+  "Kubernetes",
+  "Git",
+  "CI/CD",
+  "GraphQL",
+  "REST API",
+  "Tailwind CSS",
+  "SASS",
+  "HTML",
+  "CSS",
+  "Machine Learning",
+  "Data Science",
+  "UI/UX Design",
+  "Figma",
 ];
 
 export function SkillInput({
@@ -48,7 +87,11 @@ export function SkillInput({
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       addSkill(skillInput);
-    } else if (e.key === "Backspace" && !skillInput && currentSkills.length > 0) {
+    } else if (
+      e.key === "Backspace" &&
+      !skillInput &&
+      currentSkills.length > 0
+    ) {
       onChange(currentSkills.slice(0, -1));
     }
   };
@@ -56,9 +99,14 @@ export function SkillInput({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     if (val.includes(",")) {
-      const toAdd = val.split(",").map((s) => s.trim()).filter(Boolean);
+      const toAdd = val
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
       const merged = [...currentSkills];
-      toAdd.forEach((s) => { if (!merged.includes(s)) merged.push(s); });
+      toAdd.forEach((s) => {
+        if (!merged.includes(s)) merged.push(s);
+      });
       onChange(merged);
       setSkillInput("");
       setShowSuggestions(false);
@@ -70,15 +118,24 @@ export function SkillInput({
 
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-1">Skills {isRequired && <Asterisk className="text-destructive size-3" />}</Label>
+      <Label className="flex items-center gap-1">
+        Skills {isRequired && <Asterisk className="text-destructive size-3" />}
+      </Label>
       <div className="relative">
-        <div className="focus-within:border-[#2563eb] border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 transition-colors focus-within:ring-[#2563eb]/20 flex flex-wrap gap-2 rounded-xl border px-4 py-2 focus-within:ring-2">
+        <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2 transition-colors focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-[#2563eb]/20 dark:border-slate-800 dark:bg-slate-900/50">
           {currentSkills.map((skill) => (
-            <Badge key={skill} variant="secondary" className="bg-secondary/50 rounded-sm border-none px-2 py-1">
+            <Badge
+              key={skill}
+              variant="secondary"
+              className="bg-secondary/50 rounded-sm border-none px-2 py-1"
+            >
               {skill}
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
                 onClick={() => removeSkill(skill)}
                 className="ml-1"
               >
@@ -91,7 +148,10 @@ export function SkillInput({
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onFocus={() => setShowSuggestions(true)}
-            onBlur={() => { if (skillInput.trim()) addSkill(skillInput); setShowSuggestions(false); }}
+            onBlur={() => {
+              if (skillInput.trim()) addSkill(skillInput);
+              setShowSuggestions(false);
+            }}
             placeholder="Add skill... (comma or enter to add)"
             className="min-w-[150px] flex-1 bg-transparent outline-none"
           />
@@ -102,7 +162,11 @@ export function SkillInput({
               <div
                 key={skill}
                 className="hover:bg-muted cursor-pointer px-4 py-2 text-sm"
-                onMouseDown={(e) => { e.preventDefault(); addSkill(skill); setShowSuggestions(false); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  addSkill(skill);
+                  setShowSuggestions(false);
+                }}
               >
                 {skill}
               </div>

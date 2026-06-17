@@ -57,12 +57,18 @@ jest.mock("@marsidev/react-turnstile", () => ({
 // Mock Select to avoid Radix UI infinite loop in jsdom
 jest.mock("@/components/ui/select", () => ({
   Select: ({ onValueChange, children, disabled }: any) => (
-    <select data-testid="mock-select" disabled={disabled} onChange={(e: any) => onValueChange(e.target.value)}>
+    <select
+      data-testid="mock-select"
+      disabled={disabled}
+      onChange={(e: any) => onValueChange(e.target.value)}
+    >
       {children}
     </select>
   ),
   SelectTrigger: ({ children }: any) => <>{children}</>,
-  SelectValue: ({ placeholder }: any) => <option value="">{placeholder}</option>,
+  SelectValue: ({ placeholder }: any) => (
+    <option value="">{placeholder}</option>
+  ),
   SelectContent: ({ children }: any) => <>{children}</>,
   SelectItem: ({ value, children }: any) => (
     <option value={value}>{children}</option>
@@ -85,23 +91,41 @@ describe("EmployerRegisterPage Component", () => {
   });
 
   const fillFormAndSubmit = async (overrides: Record<string, string> = {}) => {
-    fireEvent.change(screen.getByLabelText(/First Name/i), { target: { value: overrides.firstName ?? "John" } });
-    fireEvent.change(screen.getByLabelText(/Last Name/i), { target: { value: overrides.lastName ?? "Doe" } });
-    fireEvent.change(screen.getByLabelText(/Company Name/i), { target: { value: overrides.companyName ?? "Acme Inc." } });
-    fireEvent.change(screen.getByLabelText(/Email Address/i), { target: { value: overrides.email ?? "john@acme.com" } });
-    fireEvent.change(screen.getByLabelText(/^Password/i), { target: { value: overrides.password ?? "password123" } });
-    fireEvent.change(screen.getByLabelText(/Confirm/i), { target: { value: overrides.confirmPassword ?? "password123" } });
+    fireEvent.change(screen.getByLabelText(/First Name/i), {
+      target: { value: overrides.firstName ?? "John" },
+    });
+    fireEvent.change(screen.getByLabelText(/Last Name/i), {
+      target: { value: overrides.lastName ?? "Doe" },
+    });
+    fireEvent.change(screen.getByLabelText(/Company Name/i), {
+      target: { value: overrides.companyName ?? "Acme Inc." },
+    });
+    fireEvent.change(screen.getByLabelText(/Email Address/i), {
+      target: { value: overrides.email ?? "john@acme.com" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Password/i), {
+      target: { value: overrides.password ?? "password123" },
+    });
+    fireEvent.change(screen.getByLabelText(/Confirm/i), {
+      target: { value: overrides.confirmPassword ?? "password123" },
+    });
 
     // Handle Select dropdown for industry if not set to skip
     if (overrides.industry !== "skip" && overrides.industry !== "Other") {
       const select = screen.getByTestId("mock-select");
-      fireEvent.change(select, { target: { value: overrides.industry ?? "Technology" } });
+      fireEvent.change(select, {
+        target: { value: overrides.industry ?? "Technology" },
+      });
     } else if (overrides.industry === "Other") {
       const select = screen.getByTestId("mock-select");
       fireEvent.change(select, { target: { value: "Other" } });
       // Wait for input to appear and type
-      const customIndustryInput = screen.getByPlaceholderText(/Please specify your industry/i);
-      fireEvent.change(customIndustryInput, { target: { value: overrides.customIndustry ?? "Space Tech" } });
+      const customIndustryInput = screen.getByPlaceholderText(
+        /Please specify your industry/i,
+      );
+      fireEvent.change(customIndustryInput, {
+        target: { value: overrides.customIndustry ?? "Space Tech" },
+      });
     }
 
     // Trigger captcha
@@ -109,7 +133,9 @@ describe("EmployerRegisterPage Component", () => {
       fireEvent.click(screen.getByTestId("trigger-captcha"));
     }
 
-    const submitButton = screen.getByRole("button", { name: /Register Company/i });
+    const submitButton = screen.getByRole("button", {
+      name: /Register Company/i,
+    });
     fireEvent.submit(submitButton.closest("form")!);
   };
 
@@ -124,7 +150,9 @@ describe("EmployerRegisterPage Component", () => {
     expect(screen.getByLabelText(/Email Address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Confirm/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Register Company/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Register Company/i }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("turnstile-mock")).toBeInTheDocument();
   });
 
@@ -132,13 +160,21 @@ describe("EmployerRegisterPage Component", () => {
     it("shows validation errors for empty fields on submit", async () => {
       render(<EmployerRegisterPage />);
 
-      const submitButton = screen.getByRole("button", { name: /Register Company/i });
+      const submitButton = screen.getByRole("button", {
+        name: /Register Company/i,
+      });
       fireEvent.submit(submitButton.closest("form")!);
 
       await waitFor(() => {
-        expect(screen.getByText(/First name must be at least 2 characters/i)).toBeInTheDocument();
-        expect(screen.getByText(/Company name must be at least 2 characters/i)).toBeInTheDocument();
-        const passwordErrors = screen.getAllByText(/Password must be at least 6 characters/i);
+        expect(
+          screen.getByText(/First name must be at least 2 characters/i),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText(/Company name must be at least 2 characters/i),
+        ).toBeInTheDocument();
+        const passwordErrors = screen.getAllByText(
+          /Password must be at least 6 characters/i,
+        );
         expect(passwordErrors.length).toBeGreaterThan(0);
       });
 
@@ -148,7 +184,10 @@ describe("EmployerRegisterPage Component", () => {
     it("shows validation error for password mismatch", async () => {
       render(<EmployerRegisterPage />);
 
-      await fillFormAndSubmit({ password: "password123", confirmPassword: "password456" });
+      await fillFormAndSubmit({
+        password: "password123",
+        confirmPassword: "password456",
+      });
 
       await waitFor(() => {
         expect(screen.getByText(/Passwords don't match/i)).toBeInTheDocument();
@@ -173,21 +212,25 @@ describe("EmployerRegisterPage Component", () => {
   describe("Industry Selection", () => {
     it("allows selecting a predefined industry", async () => {
       render(<EmployerRegisterPage />);
-      
+
       const select = screen.getByTestId("mock-select");
       fireEvent.change(select, { target: { value: "Healthcare" } });
-      
+
       expect(select).toHaveValue("Healthcare");
-      expect(screen.queryByPlaceholderText(/Please specify your industry/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByPlaceholderText(/Please specify your industry/i),
+      ).not.toBeInTheDocument();
     });
 
     it("shows custom input when 'Other' industry is selected", () => {
       render(<EmployerRegisterPage />);
-      
+
       const select = screen.getByTestId("mock-select");
       fireEvent.change(select, { target: { value: "Other" } });
-      
-      expect(screen.getByPlaceholderText(/Please specify your industry/i)).toBeInTheDocument();
+
+      expect(
+        screen.getByPlaceholderText(/Please specify your industry/i),
+      ).toBeInTheDocument();
     });
   });
 
@@ -210,7 +253,7 @@ describe("EmployerRegisterPage Component", () => {
             captchaToken: "mock-captcha-token",
             role: CompanyRole.OWNER,
           }),
-          expect.any(Object)
+          expect.any(Object),
         );
       });
     });
@@ -218,7 +261,10 @@ describe("EmployerRegisterPage Component", () => {
     it("calls register mutation with valid inputs and custom industry", async () => {
       render(<EmployerRegisterPage />);
 
-      await fillFormAndSubmit({ industry: "Other", customIndustry: "Space Tech" });
+      await fillFormAndSubmit({
+        industry: "Other",
+        customIndustry: "Space Tech",
+      });
 
       await waitFor(() => {
         expect(mockMutate).toHaveBeenCalledWith(
@@ -226,7 +272,7 @@ describe("EmployerRegisterPage Component", () => {
             industry: "Space Tech",
             companyName: "Acme Inc.",
           }),
-          expect.any(Object)
+          expect.any(Object),
         );
       });
     });
@@ -242,7 +288,9 @@ describe("EmployerRegisterPage Component", () => {
 
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("OTP sent to your email!");
-        expect(mockRouter.push).toHaveBeenCalledWith("/verify-otp?email=test%40acme.com");
+        expect(mockRouter.push).toHaveBeenCalledWith(
+          "/verify-otp?email=test%40acme.com",
+        );
       });
     });
 
@@ -273,7 +321,9 @@ describe("EmployerRegisterPage Component", () => {
       expect(screen.getByLabelText(/First Name/i)).toBeDisabled();
       expect(screen.getByLabelText(/Company Name/i)).toBeDisabled();
       expect(screen.getByLabelText(/Email Address/i)).toBeDisabled();
-      expect(screen.getByRole("button", { name: /Creating Account.../i })).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: /Creating Account.../i }),
+      ).toBeDisabled();
     });
 
     it("toggles password visibility when clicking the eye icon", () => {

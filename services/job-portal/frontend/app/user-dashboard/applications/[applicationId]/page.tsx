@@ -73,7 +73,7 @@ const ViewApplicationPage = () => {
   };
 
   return (
-    <div className="w-full space-y-6 md:space-y-8 p-1 animate-in fade-in duration-500">
+    <div className="animate-in fade-in w-full space-y-6 p-1 duration-500 md:space-y-8">
       <TopActions
         status={status}
         isWithdrawing={isWithdrawing}
@@ -81,21 +81,20 @@ const ViewApplicationPage = () => {
       />
 
       {/* Main Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start">
-
+      <div className="grid grid-cols-1 items-start gap-6 md:gap-8 lg:grid-cols-3">
         {/* Left Column: Job Details & Documents */}
-        <div className="lg:col-span-2 space-y-6 md:space-y-8">
-          <Card className="border-secondary/20 shadow-sm rounded-2xl overflow-hidden">
-            <div className="h-4 bg-primary/10 w-full" />
+        <div className="space-y-6 md:space-y-8 lg:col-span-2">
+          <Card className="border-secondary/20 overflow-hidden rounded-2xl shadow-sm">
+            <div className="bg-primary/10 h-4 w-full" />
             <CardHeader className="pb-6">
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                 <div>
                   <Badge
-                    className={`mb-3 rounded-md px-3 py-1 ${getApplicationStatusColor(status)} border border-current/10 uppercase tracking-widest text-[10px] font-extrabold`}
+                    className={`mb-3 rounded-md px-3 py-1 ${getApplicationStatusColor(status)} border border-current/10 text-[10px] font-extrabold tracking-widest uppercase`}
                   >
                     {status}
                   </Badge>
-                  <CardTitle className="mb-2 text-2xl lg:text-3xl font-extrabold tracking-tight text-slate-900 border-none">
+                  <CardTitle className="mb-2 border-none text-2xl font-extrabold tracking-tight text-slate-900 lg:text-3xl">
                     {listing?.title}
                   </CardTitle>
                   <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-2 text-base font-medium">
@@ -111,26 +110,31 @@ const ViewApplicationPage = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6 bg-slate-50/50 p-6 rounded-b-2xl border-t border-secondary/10">
+            <CardContent className="border-secondary/10 space-y-6 rounded-b-2xl border-t bg-slate-50/50 p-6">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-secondary/10 shadow-xs">
-                  <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                <div className="border-secondary/10 flex items-center gap-3 rounded-xl border bg-white p-4 shadow-xs">
+                  <div className="rounded-lg bg-indigo-50 p-2.5 text-indigo-600">
                     <Briefcase className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Role Type</p>
-                    <p className="text-sm font-semibold capitalize text-slate-900">
-                      {listing?.employmentType?.replace("_", " ") || listingType}
+                    <p className="mb-0.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                      Role Type
+                    </p>
+                    <p className="text-sm font-semibold text-slate-900 capitalize">
+                      {listing?.employmentType?.replace("_", " ") ||
+                        listingType}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-secondary/10 shadow-xs">
-                  <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+                <div className="border-secondary/10 flex items-center gap-3 rounded-xl border bg-white p-4 shadow-xs">
+                  <div className="rounded-lg bg-emerald-50 p-2.5 text-emerald-600">
                     <Calendar className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Applied Date</p>
+                    <p className="mb-0.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                      Applied Date
+                    </p>
                     <p className="text-sm font-semibold text-slate-900">
                       {format(new Date(createdAt), "PPP")}
                     </p>
@@ -138,12 +142,14 @@ const ViewApplicationPage = () => {
                 </div>
 
                 {interviewDate && (
-                  <div className="col-span-1 sm:col-span-2 flex items-center gap-3 p-4 bg-[#2563eb]/5 border border-[#2563eb]/20 rounded-xl shadow-xs">
-                    <div className="p-2.5 bg-[#2563eb] text-white rounded-lg shrink-0">
+                  <div className="col-span-1 flex items-center gap-3 rounded-xl border border-[#2563eb]/20 bg-[#2563eb]/5 p-4 shadow-xs sm:col-span-2">
+                    <div className="shrink-0 rounded-lg bg-[#2563eb] p-2.5 text-white">
                       <Clock className="h-5 w-5 animate-pulse" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-bold text-[#2563eb]/60 uppercase tracking-wider mb-0.5">Interview Scheduled</p>
+                      <p className="mb-0.5 text-[11px] font-bold tracking-wider text-[#2563eb]/60 uppercase">
+                        Interview Scheduled
+                      </p>
                       <p className="text-sm font-bold text-[#2563eb]">
                         {format(new Date(interviewDate), "PPP 'at' p")}
                       </p>
@@ -155,27 +161,64 @@ const ViewApplicationPage = () => {
           </Card>
 
           {/* Application Documents */}
-          <Card className="border-secondary/20 shadow-sm rounded-2xl">
+          <Card className="border-secondary/20 rounded-2xl shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-bold">Attached Document</CardTitle>
+              <CardTitle className="text-lg font-bold">
+                Attached Document
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl border border-secondary/20 bg-slate-50/50">
-                <div className="p-3 bg-red-100/50 text-red-600 rounded-xl">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></svg>
+              <div className="border-secondary/20 flex flex-col items-center gap-4 rounded-xl border bg-slate-50/50 p-4 sm:flex-row">
+                <div className="rounded-xl bg-red-100/50 p-3 text-red-600">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-file-text"
+                  >
+                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                    <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                    <path d="M10 9H8" />
+                    <path d="M16 13H8" />
+                    <path d="M16 17H8" />
+                  </svg>
                 </div>
-                <div className="flex-1 text-center sm:text-left min-w-0">
-                  <p className="text-sm font-bold truncate text-slate-900">Submitted Resume</p>
-                  <p className="text-[11px] font-semibold text-slate-400">PDF Document format</p>
+                <div className="min-w-0 flex-1 text-center sm:text-left">
+                  <p className="truncate text-sm font-bold text-slate-900">
+                    Submitted Resume
+                  </p>
+                  <p className="text-[11px] font-semibold text-slate-400">
+                    PDF Document format
+                  </p>
                 </div>
-                <div className="flex w-full sm:w-auto gap-2">
-                  <a href={getInlineUrl(resume)} target="_blank" rel="noopener noreferrer" className="flex-1 sm:flex-none">
-                    <Button variant="outline" className="w-full bg-white hover:bg-slate-50 rounded-lg gap-2 text-xs font-bold border-secondary/20">
+                <div className="flex w-full gap-2 sm:w-auto">
+                  <a
+                    href={getInlineUrl(resume)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 sm:flex-none"
+                  >
+                    <Button
+                      variant="outline"
+                      className="border-secondary/20 w-full gap-2 rounded-lg bg-white text-xs font-bold hover:bg-slate-50"
+                    >
                       <Eye className="h-3.5 w-3.5" /> View
                     </Button>
                   </a>
-                  <a href={resume} target="_blank" rel="noopener noreferrer" download className="flex-1 sm:flex-none">
-                    <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-lg gap-2 text-xs font-bold">
+                  <a
+                    href={resume}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="flex-1 sm:flex-none"
+                  >
+                    <Button className="w-full gap-2 rounded-lg bg-slate-900 text-xs font-bold text-white hover:bg-slate-800">
                       <Download className="h-3.5 w-3.5" /> Save
                     </Button>
                   </a>
@@ -187,32 +230,39 @@ const ViewApplicationPage = () => {
 
         {/* Right Column: Timeline Widget */}
         <div className="lg:col-span-1">
-          <Card className="border-secondary/20 shadow-sm rounded-2xl sticky top-6">
-            <CardHeader className="border-b border-secondary/10 bg-slate-50/50 rounded-t-2xl">
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
+          <Card className="border-secondary/20 sticky top-6 rounded-2xl shadow-sm">
+            <CardHeader className="border-secondary/10 rounded-t-2xl border-b bg-slate-50/50">
+              <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                <CheckCircle2 className="text-primary h-5 w-5" />
                 Track Timeline
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 px-6">
+            <CardContent className="px-6 pt-6">
               {statusHistory && statusHistory.length > 0 ? (
-                <div className="relative border-l-2 border-slate-100 ml-3 space-y-6">
+                <div className="relative ml-3 space-y-6 border-l-2 border-slate-100">
                   {statusHistory.map((historyItem: any, index: number) => {
                     const isLast = index === statusHistory.length - 1;
                     return (
                       <div key={index} className="relative pl-6">
                         {/* Dot indicator */}
-                        <div className={`absolute -left-[9px] top-1 h-4 w-4 rounded-full border-[3px] border-white shadow-sm ${isLast ? 'bg-[#2563eb] ring-4 ring-[#2563eb]/20' : 'bg-slate-300'}`} />
+                        <div
+                          className={`absolute top-1 -left-[9px] h-4 w-4 rounded-full border-[3px] border-white shadow-sm ${isLast ? "bg-[#2563eb] ring-4 ring-[#2563eb]/20" : "bg-slate-300"}`}
+                        />
 
                         <div className="flex flex-col">
-                          <span className={`text-sm font-bold capitalize ${isLast ? 'text-slate-900' : 'text-slate-500'}`}>
+                          <span
+                            className={`text-sm font-bold capitalize ${isLast ? "text-slate-900" : "text-slate-500"}`}
+                          >
                             {historyItem.status}
                           </span>
-                          <span className="text-[11px] font-bold text-slate-400 mt-0.5">
-                            {format(new Date(historyItem.changedAt), "MMM d, yyyy · p")}
+                          <span className="mt-0.5 text-[11px] font-bold text-slate-400">
+                            {format(
+                              new Date(historyItem.changedAt),
+                              "MMM d, yyyy · p",
+                            )}
                           </span>
                           {historyItem.note && (
-                            <p className="text-xs text-slate-600 bg-slate-50 mt-2 p-3 rounded-lg border border-slate-100 italic">
+                            <p className="mt-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600 italic">
                               "{historyItem.note}"
                             </p>
                           )}
@@ -222,7 +272,9 @@ const ViewApplicationPage = () => {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 italic text-center py-4">No tracking history yet.</p>
+                <p className="py-4 text-center text-sm text-slate-400 italic">
+                  No tracking history yet.
+                </p>
               )}
             </CardContent>
           </Card>
@@ -257,15 +309,15 @@ function TopActions({
       {!["withdrawn", "rejected", "accepted", "selected"].includes(
         status?.toLowerCase(),
       ) && (
-          <Button
-            variant="destructive"
-            onClick={handleWithdraw}
-            disabled={isWithdrawing}
-            className="cursor-pointer"
-          >
-            {isWithdrawing ? "Withdrawing..." : "Withdraw Application"}
-          </Button>
-        )}
+        <Button
+          variant="destructive"
+          onClick={handleWithdraw}
+          disabled={isWithdrawing}
+          className="cursor-pointer"
+        >
+          {isWithdrawing ? "Withdrawing..." : "Withdraw Application"}
+        </Button>
+      )}
     </div>
   );
 }

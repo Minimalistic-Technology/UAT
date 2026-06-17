@@ -4,7 +4,7 @@ import apiClient from "@/lib/api-client";
 
 export const useUploadAvatar = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();

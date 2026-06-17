@@ -101,7 +101,9 @@ export function PlanEditDialog({
 
   const onSubmit = (data: CreatePlanFormValues) => {
     if (!plan?._id) return;
-    const cleanedFeatures = data.features.filter((f) => f && f.trim().length > 0);
+    const cleanedFeatures = data.features.filter(
+      (f) => f && f.trim().length > 0,
+    );
     updatePlan(
       { id: plan._id, data: { ...data, features: cleanedFeatures } },
       {
@@ -114,8 +116,8 @@ export function PlanEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden p-0 gap-0 border-0 shadow-2xl sm:rounded-[24px] bg-white dark:bg-slate-900">
-        <DialogHeader className="border-b px-8 py-5 border-slate-100 dark:border-slate-800">
+      <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col gap-0 overflow-hidden border-0 bg-white p-0 shadow-2xl sm:rounded-[24px] dark:bg-slate-900">
+        <DialogHeader className="border-b border-slate-100 px-8 py-5 dark:border-slate-800">
           <DialogTitle className="text-xl font-bold">Edit Plan</DialogTitle>
           <DialogDescription className="text-slate-500">
             Update pricing, limits, and features for this plan.
@@ -201,7 +203,9 @@ export function PlanEditDialog({
             {/* Durations */}
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="edit-duration">Plan Expiry Period (In Days)</Label>
+                <Label htmlFor="edit-duration">
+                  Plan Expiry Period (In Days)
+                </Label>
                 <Input
                   id="edit-duration"
                   type="number"
@@ -217,8 +221,12 @@ export function PlanEditDialog({
 
               {/* New Input Field: postValidityDays */}
               <div className="space-y-2">
-                <Label htmlFor="edit-postValidityDays" className="flex items-center gap-1">
-                  Job Post Visibility (In Days) <Asterisk className="text-destructive size-3" />
+                <Label
+                  htmlFor="edit-postValidityDays"
+                  className="flex items-center gap-1"
+                >
+                  Job Post Visibility (In Days){" "}
+                  <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Input
                   id="edit-postValidityDays"
@@ -278,7 +286,9 @@ export function PlanEditDialog({
                   checked={watch("isActive")}
                   onCheckedChange={(val) => setValue("isActive", val)}
                 />
-                <Label htmlFor="edit-isActive" className="cursor-pointer">Active Plan</Label>
+                <Label htmlFor="edit-isActive" className="cursor-pointer">
+                  Active Plan
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -286,7 +296,9 @@ export function PlanEditDialog({
                   checked={watch("isFeatured")}
                   onCheckedChange={(val) => setValue("isFeatured", val)}
                 />
-                <Label htmlFor="edit-isFeatured" className="cursor-pointer">Featured Plan</Label>
+                <Label htmlFor="edit-isFeatured" className="cursor-pointer">
+                  Featured Plan
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -294,7 +306,9 @@ export function PlanEditDialog({
                   checked={watch("isDefault")}
                   onCheckedChange={(val) => setValue("isDefault", val)}
                 />
-                <Label htmlFor="edit-isDefault" className="cursor-pointer">Default Plan</Label>
+                <Label htmlFor="edit-isDefault" className="cursor-pointer">
+                  Default Plan
+                </Label>
               </div>
 
               {/* New Toggle Field: allowResumeDownload */}
@@ -310,7 +324,10 @@ export function PlanEditDialog({
                     />
                   )}
                 />
-                <Label htmlFor="edit-allowResumeDownload" className="cursor-pointer font-semibold text-indigo-700 dark:text-indigo-400">
+                <Label
+                  htmlFor="edit-allowResumeDownload"
+                  className="cursor-pointer font-semibold text-indigo-700 dark:text-indigo-400"
+                >
                   Allow Resume Downloads
                 </Label>
               </div>
@@ -362,7 +379,7 @@ export function PlanEditDialog({
             </div>
           </form>
         </ScrollArea>
-        <div className="bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 border-t px-8 py-5 border-slate-100 dark:border-slate-800">
+        <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-8 py-5 dark:border-slate-800 dark:bg-slate-800/50">
           <Button
             type="button"
             variant="ghost"
@@ -376,7 +393,7 @@ export function PlanEditDialog({
             type="submit"
             form="plan-edit-form"
             disabled={isPending}
-            className="bg-[#2563eb] hover:bg-blue-700 text-white shadow-sm rounded-xl px-6 font-semibold"
+            className="rounded-xl bg-[#2563eb] px-6 font-semibold text-white shadow-sm hover:bg-blue-700"
           >
             {isPending ? (
               <>

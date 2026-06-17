@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -14,16 +14,16 @@ import {
   Settings2,
   User as UserIcon,
   Sparkles,
-  FileEdit
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { signOut, useSession } from "next-auth/react"
-import { SidebarNavItem } from "@/components/sidebar-nav-item"
-import Logo from "@/components/logo"
-import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company"
-import { useSidebar } from "@/components/ui/sidebar-context"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+  FileEdit,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { signOut, useSession } from "next-auth/react";
+import { SidebarNavItem } from "@/components/sidebar-nav-item";
+import Logo from "@/components/logo";
+import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
+import { useSidebar } from "@/components/ui/sidebar-context";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,21 +31,43 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 export const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/employer-dashboard" },
-  { label: "Post a Job / Internship", icon: PlusCircle, href: "/employer-dashboard/listings/create" },
+  {
+    label: "Post a Job / Internship",
+    icon: PlusCircle,
+    href: "/employer-dashboard/listings/create",
+  },
   { label: "Saved Drafts", icon: FileEdit, href: "/employer-dashboard/drafts" },
-  { label: "Manage Jobs", icon: Briefcase, href: "/employer-dashboard/jobs/manage" },
-  { label: "Manage Internships", icon: Briefcase, href: "/employer-dashboard/internships/manage" },
-  { label: "All Applications", icon: FileText, href: "/employer-dashboard/applications" },
+  {
+    label: "Manage Jobs",
+    icon: Briefcase,
+    href: "/employer-dashboard/jobs/manage",
+  },
+  {
+    label: "Manage Internships",
+    icon: Briefcase,
+    href: "/employer-dashboard/internships/manage",
+  },
+  {
+    label: "All Applications",
+    icon: FileText,
+    href: "/employer-dashboard/applications",
+  },
   { label: "Manage Team", icon: Users, href: "/employer-dashboard/team" },
   { label: "Settings", icon: Settings2, href: "/employer-dashboard/settings" },
-]
+];
 
-export default function EmployerSidebar({ className, forceExpanded }: { className?: string; forceExpanded?: boolean }) {
-  const pathname = usePathname()
+export default function EmployerSidebar({
+  className,
+  forceExpanded,
+}: {
+  className?: string;
+  forceExpanded?: boolean;
+}) {
+  const pathname = usePathname();
   const handleLogout = () => signOut({ callbackUrl: "/login" });
   const { data: session } = useSession();
 
@@ -58,33 +80,50 @@ export default function EmployerSidebar({ className, forceExpanded }: { classNam
   const { isCollapsed, toggleCollapse } = useSidebar();
   const effectiveCollapsed = forceExpanded ? false : isCollapsed;
 
-  const roleBasedItems = companyRole === "owner" ? menuItems : menuItems.filter(item => item.label !== "Manage Team");
+  const roleBasedItems =
+    companyRole === "owner"
+      ? menuItems
+      : menuItems.filter((item) => item.label !== "Manage Team");
 
   return (
-    <div className={cn("flex flex-col border-r bg-background/80 backdrop-blur-xl shadow-sm transition-all duration-300 relative", effectiveCollapsed ? "w-[80px]" : "w-64", className)}>
+    <div
+      className={cn(
+        "bg-background/80 relative flex flex-col border-r shadow-sm backdrop-blur-xl transition-all duration-300",
+        effectiveCollapsed ? "w-[80px]" : "w-64",
+        className,
+      )}
+    >
       <Button
         variant="outline"
         size="icon"
-        className={cn("absolute -right-4 top-5 h-8 w-8 rounded-full border-border bg-background shadow-md z-50 hidden lg:flex", effectiveCollapsed && "rotate-180")}
+        className={cn(
+          "border-border bg-background absolute top-5 -right-4 z-50 hidden h-8 w-8 rounded-full shadow-md lg:flex",
+          effectiveCollapsed && "rotate-180",
+        )}
         onClick={toggleCollapse}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
-      <div className={cn("flex h-16 items-center px-6 border-b border-border/50", effectiveCollapsed && "justify-center px-0")}>
+      <div
+        className={cn(
+          "border-border/50 flex h-16 items-center border-b px-6",
+          effectiveCollapsed && "justify-center px-0",
+        )}
+      >
         {!effectiveCollapsed ? (
           <Logo />
         ) : (
-          <span className="font-bold text-2xl text-primary bg-primary/10 w-10 h-10 flex items-center justify-center rounded-xl border border-primary/20">
+          <span className="text-primary bg-primary/10 border-primary/20 flex h-10 w-10 items-center justify-center rounded-xl border text-2xl font-bold">
             J
           </span>
         )}
       </div>
 
-      <div className="flex-1 flex flex-col overflow-y-auto py-6 px-3">
+      <div className="flex flex-1 flex-col overflow-y-auto px-3 py-6">
         <nav className="space-y-1">
           {roleBasedItems.map((item) => {
-            const isActive = pathname === item.href
+            const isActive = pathname === item.href;
             return (
               <SidebarNavItem
                 key={item.href}
@@ -94,76 +133,114 @@ export default function EmployerSidebar({ className, forceExpanded }: { classNam
                 isActive={isActive}
                 forceExpanded={forceExpanded}
               />
-            )
+            );
           })}
         </nav>
         {effectiveCollapsed ? (
-          <div className="px-2 mt-auto">
-            <Link href="/employer-dashboard/plans" className="flex items-center justify-center w-full aspect-square bg-[#2563eb] rounded-xl text-white hover:bg-blue-700 transition">
+          <div className="mt-auto px-2">
+            <Link
+              href="/employer-dashboard/plans"
+              className="flex aspect-square w-full items-center justify-center rounded-xl bg-[#2563eb] text-white transition hover:bg-blue-700"
+            >
               <Sparkles className="h-5 w-5" />
             </Link>
           </div>
         ) : (
-          <div className="px-4 py-4 mt-auto">
-            <div className="rounded-xl bg-[#2563eb] p-4 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] space-y-3 relative overflow-hidden transition-all hover:shadow-[0_4px_25px_rgba(37,99,235,0.5)] hover:-translate-y-0.5">
-              <div className="absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
+          <div className="mt-auto px-4 py-4">
+            <div className="relative space-y-3 overflow-hidden rounded-xl bg-[#2563eb] p-4 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_4px_25px_rgba(37,99,235,0.5)]">
+              <div className="pointer-events-none absolute -top-6 -right-6 size-24 rounded-full bg-white/10 blur-2xl"></div>
               <div className="relative z-10 flex flex-col gap-1">
-                <span className="text-[10px] font-extrabold text-blue-100 uppercase tracking-widest drop-shadow-sm">{planName}</span>
-                <span className="text-lg font-bold leading-tight font-heading">Upgrade to Pro</span>
+                <span className="text-[10px] font-extrabold tracking-widest text-blue-100 uppercase drop-shadow-sm">
+                  {planName}
+                </span>
+                <span className="font-heading text-lg leading-tight font-bold">
+                  Upgrade to Pro
+                </span>
               </div>
-              <Button variant="secondary" size="sm" asChild className="w-full relative z-10 rounded-lg font-bold text-[#2563eb] bg-white hover:bg-slate-50 shadow-sm cursor-pointer h-9 px-0">
-                <Link href="/employer-dashboard/plans">
-                  Get Access
-                </Link>
+              <Button
+                variant="secondary"
+                size="sm"
+                asChild
+                className="relative z-10 h-9 w-full cursor-pointer rounded-lg bg-white px-0 font-bold text-[#2563eb] shadow-sm hover:bg-slate-50"
+              >
+                <Link href="/employer-dashboard/plans">Get Access</Link>
               </Button>
             </div>
           </div>
         )}
-
       </div>
 
       {session?.user && (
-        <div className="border-t border-border/50 p-4 z-10 bg-background/80 backdrop-blur-md shrink-0">
+        <div className="border-border/50 bg-background/80 z-10 shrink-0 border-t p-4 backdrop-blur-md">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors border border-transparent hover:border-primary/10">
-                <div className={cn("flex items-center gap-3", effectiveCollapsed && "justify-center w-full")}>
-                  <div className="size-9 rounded-full bg-primary/20 flex flex-shrink-0 items-center justify-center text-primary font-bold text-sm ring-2 ring-background">
-                    {session.user.name ? session.user.name.charAt(0).toUpperCase() : "E"}
+              <div className="hover:bg-muted/50 hover:border-primary/10 flex cursor-pointer items-center justify-between rounded-lg border border-transparent p-2 transition-colors">
+                <div
+                  className={cn(
+                    "flex items-center gap-3",
+                    effectiveCollapsed && "w-full justify-center",
+                  )}
+                >
+                  <div className="bg-primary/20 text-primary ring-background flex size-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ring-2">
+                    {session.user.name
+                      ? session.user.name.charAt(0).toUpperCase()
+                      : "E"}
                   </div>
                   {!effectiveCollapsed && (
-                    <div className="flex flex-col truncate w-[130px]">
-                      <span className="text-sm font-bold text-foreground leading-tight truncate">{session.user.name || "Employer"}</span>
-                      <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider truncate">
-                        {companyRole === 'owner' ? 'Owner / Admin' : 'Member'}
+                    <div className="flex w-[130px] flex-col truncate">
+                      <span className="text-foreground truncate text-sm leading-tight font-bold">
+                        {session.user.name || "Employer"}
+                      </span>
+                      <span className="text-muted-foreground truncate text-[10px] font-semibold tracking-wider uppercase">
+                        {companyRole === "owner" ? "Owner / Admin" : "Member"}
                       </span>
                     </div>
                   )}
                 </div>
               </div>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[230px] ml-4 mb-2 bg-white dark:bg-slate-900 border-border shadow-2xl rounded-xl z-50">
+            <DropdownMenuContent
+              align="end"
+              className="border-border z-50 mb-2 ml-4 w-[230px] rounded-xl bg-white shadow-2xl dark:bg-slate-900"
+            >
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1.5 p-1">
-                  <p className="text-sm font-bold leading-none">{session.user.name}</p>
-                  <p className="text-muted-foreground text-xs leading-none break-all">{session.user.email}</p>
+                  <p className="text-sm leading-none font-bold">
+                    {session.user.name}
+                  </p>
+                  <p className="text-muted-foreground text-xs leading-none break-all">
+                    {session.user.email}
+                  </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild className="cursor-pointer py-2 text-sm font-medium">
-                <Link href="/employer-dashboard/profile" className="flex items-center text-foreground cursor-pointer w-full">
-                  <UserIcon className="mr-2 h-4 w-4 text-muted-foreground" /> My Profile
+              <DropdownMenuItem
+                asChild
+                className="cursor-pointer py-2 text-sm font-medium"
+              >
+                <Link
+                  href="/employer-dashboard/profile"
+                  className="text-foreground flex w-full cursor-pointer items-center"
+                >
+                  <UserIcon className="text-muted-foreground mr-2 h-4 w-4" /> My
+                  Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer py-2 text-sm font-medium">
-                <Link href="/employer-dashboard/company-profile" className="flex items-center text-primary cursor-pointer w-full">
-                  <Building2 className="mr-2 h-4 w-4 text-primary" /> My Company
+              <DropdownMenuItem
+                asChild
+                className="cursor-pointer py-2 text-sm font-medium"
+              >
+                <Link
+                  href="/employer-dashboard/company-profile"
+                  className="text-primary flex w-full cursor-pointer items-center"
+                >
+                  <Building2 className="text-primary mr-2 h-4 w-4" /> My Company
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}
-                className="text-destructive font-bold focus:bg-destructive/10 flex cursor-pointer items-center py-2"
+                className="text-destructive focus:bg-destructive/10 flex cursor-pointer items-center py-2 font-bold"
               >
                 <LogOut className="mr-2 h-4 w-4" /> Logout Account
               </DropdownMenuItem>
@@ -172,5 +249,5 @@ export default function EmployerSidebar({ className, forceExpanded }: { classNam
         </div>
       )}
     </div>
-  )
+  );
 }

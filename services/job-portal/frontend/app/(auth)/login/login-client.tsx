@@ -73,8 +73,8 @@ export default function LoginClient() {
   const isLoading = isMutationLoading || isAuthChecking;
 
   return (
-    <div className="flex h-[calc(100dvh-72px)] w-full bg-slate-50/50 overflow-hidden">
-      <div className="hidden h-full w-1/2 lg:block relative shrink-0">
+    <div className="flex h-[calc(100dvh-72px)] w-full overflow-hidden bg-slate-50/50">
+      <div className="relative hidden h-full w-1/2 shrink-0 lg:block">
         <Image
           src="/login-page-img.png"
           alt="login-image"
@@ -85,11 +85,9 @@ export default function LoginClient() {
         />
       </div>
       <div className="flex h-full flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-sm space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2">
-          <CardHeader className="text-center pb-2 pt-4">
-            <CardTitle className="text-2xl font-bold">
-              Welcome Back
-            </CardTitle>
+        <Card className="w-full max-w-sm shrink-0 space-y-1 rounded-[24px] border border-slate-100 bg-white p-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <CardHeader className="pt-4 pb-2 text-center">
+            <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
             <CardDescription className="text-slate-500">
               Enter your email to sign in to your account
             </CardDescription>
@@ -98,7 +96,9 @@ export default function LoginClient() {
             <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3">
               {/* Email Field */}
               <div className="grid gap-2">
-                <Label required htmlFor="email">Email Address</Label>
+                <Label required htmlFor="email">
+                  Email Address
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -117,7 +117,9 @@ export default function LoginClient() {
               {/* Password Field */}
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
-                  <Label required htmlFor="password">Password</Label>
+                  <Label required htmlFor="password">
+                    Password
+                  </Label>
                   <Link
                     href="/forgot-password"
                     className="text-primary text-xs underline-offset-4 hover:underline"
@@ -154,8 +156,6 @@ export default function LoginClient() {
                   </p>
                 )}
               </div>
-
-
 
               {/* Submit Button */}
               <Button type="submit" className="w-full" disabled={isLoading}>
