@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { BrevoClient } from '@getbrevo/brevo';
+import * as brevo from '@getbrevo/brevo';
 import crypto from 'crypto';
 import { env } from '../config/env';
 
@@ -18,8 +18,10 @@ const transporter = nodemailer.createTransport({
   connectionTimeout: 10000,
 });
 
-// 2. Setup Brevo (The Professional Choice)
-const brevo = new BrevoClient({ apiKey: env.BREVO_API_KEY });
+// 2. Setup Brevo API Instance (The Professional Choice)
+const apiInstance = new brevo.TransactionalEmailsApi();
+// Configure API key authorization: api-key
+apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, env.BREVO_API_KEY);
 
 /* ─── Shared Nodemailer fallback ──────────────────────────────────────── */
 async function sendViaNodemailer(to: string, subject: string, html: string) {
@@ -41,44 +43,39 @@ async function sendViaNodemailer(to: string, subject: string, html: string) {
 
 /* ─── Shared Brevo dispatcher ───────────────────────────────────────── */
 async function sendViaBrevo(to: string, subject: string, html: string) {
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'api-key': env.BREVO_API_KEY,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-      sender: { name: 'Minimalistic Learning', email: env.BREVO_FROM_EMAIL },
-      to: [{ email: to }],
-      subject: subject,
-      htmlContent: html
-    })
-  });
+  const sendSmtpEmail = new brevo.SendSmtpEmail();
 
-  if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error('Brevo API rejected: ' + errorData);
+  sendSmtpEmail.subject = subject;
+  sendSmtpEmail.htmlContent = html;
+  sendSmtpEmail.sender = { name: "Minimalistic Learning", email: env.BREVO_FROM_EMAIL || "no-reply@minimalistic-learning.com" };
+  sendSmtpEmail.to = [{ email: to }];
+
+  try {
+    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    return data;
+  } catch (error: any) {
+    console.error('[email] Brevo SDK Error Details:', error?.response?.body || error.message);
+    throw new Error('Brevo SDK rejected: ' + (error?.response?.body?.message || error.message));
   }
-
-  return await response.json();
 }
 
 /* ─── Smart send: Brevo first, Nodemailer fallback ─────────────────── */
 async function smartSend(to: string, subject: string, html: string) {
-  const canUseBrevo = env.BREVO_API_KEY && !env.BREVO_API_KEY.includes('example');
+  const canUseBrevo = env.BREVO_API_KEY && env.BREVO_API_KEY.trim() !== '' && !env.BREVO_API_KEY.includes('example');
+
   if (canUseBrevo) {
     try {
       console.log('[email] Attempting Brevo delivery to ' + to + '...');
       const result = await sendViaBrevo(to, subject, html);
-      console.log('[email] Sent via Brevo successfully.');
+      console.log('[email] Sent via Brevo successfully:', result.body?.messageId || 'OK');
       return result;
     } catch (err: any) {
-      console.warn('[email] Brevo failed, falling back to Nodemailer:', err.message);
+      console.warn('[email] Brevo failed! Falling back to Nodemailer. Reason:', err.message);
       return sendViaNodemailer(to, subject, html);
     }
   }
-  console.log('[email] Brevo not configured. Using Nodemailer...');
+
+  console.log('[email] Brevo not configured. Using Nodemailer directly...');
   return sendViaNodemailer(to, subject, html);
 }
 
