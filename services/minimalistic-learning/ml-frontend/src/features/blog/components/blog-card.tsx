@@ -13,7 +13,7 @@ interface BlogCardProps {
 export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
   const {
     title, excerpt, content, coverImage, coverImageUrl,
-    tags, authorId, createdAt, category, likesCount,
+    tags, authorId, category, likesCount, readTime
   } = blog;
 
   const imageUrl = coverImage?.url || coverImageUrl;
@@ -23,11 +23,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
     : "Author";
   const authorInitial = authorName.charAt(0).toUpperCase();
 
-  const formattedDate = new Date(createdAt).toLocaleDateString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-  });
-
-  const readingTime = Math.max(Math.ceil((content?.split(/\s+/).length || 0) / 200), 1);
+  const readingTime = readTime || Math.max(Math.ceil((content?.split(/\s+/).length || 0) / 200), 1);
 
   /* ── 3D Tilt ────────────────────────────────────────────────────── */
   const card = useRef<HTMLAnchorElement>(null);
@@ -123,10 +119,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ blog }) => {
         </p>
 
         {/* Footer */}
-        <div className="pt-4 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between">
-          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-            {formattedDate}
-          </span>
+        <div className="pt-4 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-end">
           <div className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
             <Clock size={11} className="text-gray-300" />
             {readingTime} min read

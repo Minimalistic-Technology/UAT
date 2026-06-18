@@ -75,9 +75,9 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
     let result = [...blogs];
 
     if (sortBy === 'Newest') {
-      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      result.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     } else if (sortBy === 'Oldest') {
-      result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      result.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
     } else if (sortBy === 'Title A-Z') {
       result.sort((a, b) => a.title.localeCompare(b.title));
     }

@@ -11,23 +11,28 @@ export interface BlogResponse {
     id?: string;
     title: string;
     slug: string;
-    content: string;
+    /** Full HTML content — only present on detail page, NOT on list endpoints */
+    content?: string;
     excerpt?: string;
-    coverImage: {
+    coverImage?: {
       url: string;
       alt?: string;
       publicId?: string;
     };
     coverImageUrl?: string;
     tags: string[];
-    status: "draft" | "published";
-    category: string;
-    published: boolean;
-    authorId: string | { _id: string; firstName: string; lastName: string };
+    /** Strip from list responses — only present on detail page */
+    status?: "draft" | "published" | "pending";
+    category?: string;
+    /** Strip from list responses — only present on detail page */
+    published?: boolean;
+    authorId?: string | { _id?: string; firstName: string; lastName?: string };
     likesCount?: number;
     hasLiked?: boolean;
-    createdAt: string;
-    updatedAt: string;
+    readTime?: number;
+    /** Only present on detail page */
+    createdAt?: string;
+    updatedAt?: string;
   };
 }
 
