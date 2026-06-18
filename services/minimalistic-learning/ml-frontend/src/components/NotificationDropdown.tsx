@@ -28,9 +28,7 @@ const NotificationDropdown = () => {
 
   useEffect(() => {
     fetchNotifications();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
+    // No polling — fetches once on mount and when dropdown opens
   }, []);
 
   useEffect(() => {
@@ -98,7 +96,11 @@ const NotificationDropdown = () => {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          const opening = !isOpen;
+          setIsOpen(opening);
+          if (opening) fetchNotifications(); // Refresh when user opens
+        }}
         className="relative w-10 h-10 rounded-full bg-theme-element-sec border border-theme-accent/20 flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-theme-element transition-all shadow-sm"
       >
         <Bell size={18} />
