@@ -1,9 +1,12 @@
 import axios from 'axios';
 
+const isProduction = process.env.NODE_ENV === 'production';
+const defaultUrl = isProduction ? 'https://uat-dd.onrender.com' : 'http://localhost:5000';
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
+  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || defaultUrl,
   withCredentials: true,
-  timeout: 20000, // 20 seconds timeout to prevent infinite "Sending..."
+  timeout: 20000, // 20 seconds timeout
 });
 
 // Add a request interceptor to handle path prefixes and logging

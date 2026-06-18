@@ -138,6 +138,38 @@ class NotificationService {
     }
 
     /**
+     * Sends a welcome email upon successful signup
+     */
+    static async sendWelcomeEmail(email: string, name: string): Promise<boolean> {
+        try {
+            if (!email) return false;
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+
+            const mailOptions: any = {
+                from,
+                to: email,
+                subject: 'Welcome to DDTEC Platform!',
+                html: `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h1 style="color: #0d9488;">Welcome to DDTEC!</h1>
+                        </div>
+                        <p>Hi ${name},</p>
+                        <p>Your account has been successfully created. You can now access our marketplace, track orders, and experience top-tier IT servicing.</p>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                        <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 DDTEC. All rights reserved.</p>
+                    </div>
+                `
+            };
+            const result = await this.sendBrevoEmail(mailOptions);
+            return result.success;
+        } catch (error) {
+            console.error('[STRICT-ERROR] Welcome email failed:', error);
+            return false;
+        }
+    }
+
+    /**
      * Sends an Order Confirmation email with a generated Bill PDF
      */
     static async sendOrderConfirmation(order: any): Promise<boolean> {
@@ -345,7 +377,7 @@ class NotificationService {
     /**
      * Sends a successful login alert to the User
      */
-    static async sendLoginAlert(user: any): Promise<boolean> {
+    static async sendLoginAlert(user: any, ip?: string): Promise<boolean> {
         try {
             if (!user.email) return false;
 
@@ -363,6 +395,7 @@ class NotificationService {
                         <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                             <p style="margin: 0;"><strong>Time:</strong> ${new Date().toLocaleString()}</p>
                             <p style="margin: 5px 0 0;"><strong>Status:</strong> Successful</p>
+                            ${ip ? `<p style="margin: 5px 0 0;"><strong>IP Address:</strong> ${ip}</p>` : ''}
                         </div>
                         <p>If this was you, you don't need to do anything. If you don't recognize this activity, please contact support immediately.</p>
                         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />

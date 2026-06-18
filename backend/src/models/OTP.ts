@@ -4,6 +4,8 @@ export interface IOTP extends Document {
     identifier: string;
     otp: string;
     expiresAt: Date;
+    attempts: number;
+    lockUntil?: number;
 }
 
 const OTPSchema: Schema = new Schema({
@@ -19,7 +21,14 @@ const OTPSchema: Schema = new Schema({
         type: Date,
         required: true,
         default: Date.now,
-        index: { expires: '5m' } // Auto-delete after 5 minutes (TTL)
+        index: { expires: '30m' } // Keep the record around a bit longer for lockout tracking
+    },
+    attempts: {
+        type: Number,
+        default: 0
+    },
+    lockUntil: {
+        type: Number
     }
 }, { timestamps: true });
 

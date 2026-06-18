@@ -288,7 +288,7 @@ export default function WarehouseDashboard() {
         p.name.toLowerCase().includes(productSearch.toLowerCase())
     );
 
-    if (loading || !user) {
+    if (loading || !user || user.role !== 'warehouse') {
         return (
             <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center gap-4 transition-colors">
                 <Activity className="size-10 text-teal-600 dark:text-teal-500 animate-spin" />
@@ -379,7 +379,7 @@ export default function WarehouseDashboard() {
             )}
 
             {/* Main Content Workspace Panel */}
-            <div className="flex-1 flex flex-col min-w-0 pt-16">
+            <div className="flex-1 flex flex-col min-w-0 pt-0 md:pt-16">
                 {/* Header carrying the notifications, search, and admin-like stats */}
                 <Header
                     user={user}

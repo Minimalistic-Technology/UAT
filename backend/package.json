@@ -12,11 +12,13 @@
   "dependencies": {
     "@getbrevo/brevo": "^5.0.4",
     "@sendgrid/mail": "^8.1.6",
+    "axios": "^1.16.1",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^4.19.0",
+    "ioredis": "^5.11.0",
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
