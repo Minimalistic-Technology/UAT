@@ -13,7 +13,11 @@ export const useSaveDraft = () => {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: (data: { id?: string; type: "job" | "internship"; formData: any }) => saveDraft(data),
+    mutationFn: (data: {
+      id?: string;
+      type: "job" | "internship";
+      formData: any;
+    }) => saveDraft(data),
     onSuccess: (res, variables) => {
       queryClient.invalidateQueries({ queryKey: ["drafts"] });
       if (variables.id) {
@@ -24,7 +28,9 @@ export const useSaveDraft = () => {
     },
     onError: (error: any) => {
       console.error("Error saving draft:", error);
-      const errorMsg = error?.response?.data?.message || "Failed to save draft. Please try again.";
+      const errorMsg =
+        error?.response?.data?.message ||
+        "Failed to save draft. Please try again.";
       toast.error(errorMsg);
     },
   });

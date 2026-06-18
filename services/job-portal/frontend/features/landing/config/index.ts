@@ -1,4 +1,8 @@
-import { IconBrandGithub, IconBrandLinkedin, IconBrandTwitter } from "@tabler/icons-react";
+import {
+  IconBrandGithub,
+  IconBrandLinkedin,
+  IconBrandTwitter,
+} from "@tabler/icons-react";
 
 export const SocialLinks = [
   { icon: IconBrandTwitter, label: "Twitter", href: "https://twitter.com" },
@@ -9,11 +13,23 @@ export const SocialLinks = [
 export const FOOTER_COLS = [
   {
     title: "For candidates",
-    links: ["Find jobs", "Browse companies", "Salary explorer", "Career stories", "Remote jobs"],
+    links: [
+      "Find jobs",
+      "Browse companies",
+      "Salary explorer",
+      "Career stories",
+      "Remote jobs",
+    ],
   },
   {
     title: "For employers",
-    links: ["Post a job", "Source candidates", "Pricing", "Enterprise", "ATS integrations"],
+    links: [
+      "Post a job",
+      "Source candidates",
+      "Pricing",
+      "Enterprise",
+      "ATS integrations",
+    ],
   },
   {
     title: "Company",

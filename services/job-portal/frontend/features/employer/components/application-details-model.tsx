@@ -17,10 +17,14 @@ import {
   Briefcase,
   GraduationCap,
   User,
-  Wrench
+  Wrench,
 } from "lucide-react";
 import { getInlineUrl } from "@/utils";
-export const ApplicationDetailModal = ({ application }: { application: any }) => {
+export const ApplicationDetailModal = ({
+  application,
+}: {
+  application: any;
+}) => {
   const { jobSeeker, resume } = application;
   const resumeLinkToShow = getInlineUrl(resume);
 
@@ -32,20 +36,25 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-3xl w-[95vw] overflow-hidden p-0 gap-0">
-        <DialogHeader className="p-4 sm:p-6 pb-4 border-b bg-muted/20">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <DialogContent className="w-[95vw] max-w-3xl gap-0 overflow-hidden p-0">
+        <DialogHeader className="bg-muted/20 border-b p-4 pb-4 sm:p-6">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div>
               <DialogTitle className="text-2xl font-bold tracking-tight">
                 Candidate Profile
               </DialogTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Reviewing application for {jobSeeker.firstName} {jobSeeker.lastName}
+              <p className="text-muted-foreground mt-1 text-sm">
+                Reviewing application for {jobSeeker.firstName}{" "}
+                {jobSeeker.lastName}
               </p>
             </div>
             {resume && (
               <Button size="sm" variant="secondary" asChild className="gap-2">
-                <a href={resumeLinkToShow} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={resumeLinkToShow}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <ExternalLink className="h-4 w-4" />
                   View Resume
                 </a>
@@ -56,22 +65,30 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
 
         {/* Fixed Height Scroll Area prevents layout jumping */}
         <ScrollArea className="h-[70vh] px-4 sm:px-6">
-          <div className="py-4 sm:py-6 space-y-8">
-
+          <div className="space-y-8 py-4 sm:py-6">
             {/* Header Section: Bio & Skills */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-2 space-y-4">
-                <div className="flex items-center gap-4 bg-muted/10 p-5 rounded-2xl border border-border/50">
-                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0 overflow-hidden ring-2 ring-background shadow-sm">
+            <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <div className="space-y-4 md:col-span-2">
+                <div className="bg-muted/10 border-border/50 flex items-center gap-4 rounded-2xl border p-5">
+                  <div className="bg-primary/10 text-primary ring-background flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full text-xl font-bold shadow-sm ring-2">
                     {jobSeeker.profilePhoto?.url ? (
-                      <img src={jobSeeker.profilePhoto.url} alt="Profile" className="h-full w-full object-cover" />
+                      <img
+                        src={jobSeeker.profilePhoto.url}
+                        alt="Profile"
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
-                      <span>{jobSeeker.firstName?.charAt(0)}{jobSeeker.lastName?.charAt(0)}</span>
+                      <span>
+                        {jobSeeker.firstName?.charAt(0)}
+                        {jobSeeker.lastName?.charAt(0)}
+                      </span>
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <h3 className="text-xl font-bold">{jobSeeker.firstName} {jobSeeker.lastName}</h3>
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm text-muted-foreground font-medium">
+                    <h3 className="text-xl font-bold">
+                      {jobSeeker.firstName} {jobSeeker.lastName}
+                    </h3>
+                    <div className="text-muted-foreground flex flex-col gap-2 text-sm font-medium sm:flex-row sm:gap-4">
                       {jobSeeker.email && (
                         <div className="flex items-center gap-1.5">
                           <Mail className="h-4 w-4" />
@@ -90,19 +107,25 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-primary font-semibold uppercase text-xs tracking-wider md:justify-end">
+                <div className="text-primary flex items-center gap-2 text-xs font-semibold tracking-wider uppercase md:justify-end">
                   <Wrench className="h-4 w-4" />
                   Core Skills
                 </div>
                 <div className="flex flex-wrap gap-1.5 md:justify-end">
                   {jobSeeker.skills?.length > 0 ? (
                     jobSeeker.skills.map((skill: string) => (
-                      <Badge key={skill} variant="outline" className="bg-primary/5 text-primary border-primary/20">
+                      <Badge
+                        key={skill}
+                        variant="outline"
+                        className="bg-primary/5 text-primary border-primary/20"
+                      >
                         {skill}
                       </Badge>
                     ))
                   ) : (
-                    <span className="text-xs text-muted-foreground italic">No skills listed</span>
+                    <span className="text-muted-foreground text-xs italic">
+                      No skills listed
+                    </span>
                   )}
                 </div>
               </div>
@@ -112,22 +135,32 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
 
             {/* Experience Section */}
             <section className="space-y-4">
-              <div className="flex items-center gap-2 text-primary font-semibold uppercase text-xs tracking-wider">
+              <div className="text-primary flex items-center gap-2 text-xs font-semibold tracking-wider uppercase">
                 <Briefcase className="h-4 w-4" />
                 Professional Experience
               </div>
               <div className="space-y-4">
                 {jobSeeker.experience?.length > 0 ? (
                   jobSeeker.experience.map((exp: any, i: number) => (
-                    <Card key={i} className="border-l-4 border-l-primary shadow-none bg-muted/10">
+                    <Card
+                      key={i}
+                      className="border-l-primary bg-muted/10 border-l-4 shadow-none"
+                    >
                       <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-2 gap-2">
+                        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div>
-                            <h4 className="font-bold text-base">{exp.title}</h4>
-                            <p className="text-sm font-medium text-muted-foreground">{exp.company} • {exp.location}</p>
+                            <h4 className="text-base font-bold">{exp.title}</h4>
+                            <p className="text-muted-foreground text-sm font-medium">
+                              {exp.company} • {exp.location}
+                            </p>
                           </div>
                           <Badge variant="secondary" className="text-[10px]">
-                            {new Date(exp.startDate).toLocaleDateString()} - {exp.current ? 'Present' : exp.endDate ? new Date(exp.endDate).toLocaleDateString() : ''}
+                            {new Date(exp.startDate).toLocaleDateString()} -{" "}
+                            {exp.current
+                              ? "Present"
+                              : exp.endDate
+                                ? new Date(exp.endDate).toLocaleDateString()
+                                : ""}
                           </Badge>
                         </div>
                         <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
@@ -137,7 +170,9 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
                     </Card>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No experience provided.</p>
+                  <p className="text-muted-foreground text-sm italic">
+                    No experience provided.
+                  </p>
                 )}
               </div>
             </section>
@@ -146,24 +181,35 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
 
             {/* Education Section */}
             <section className="space-y-4 pb-4">
-              <div className="flex items-center gap-2 text-primary font-semibold uppercase text-xs tracking-wider">
+              <div className="text-primary flex items-center gap-2 text-xs font-semibold tracking-wider uppercase">
                 <GraduationCap className="h-4 w-4" />
                 Education
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {jobSeeker.education?.length > 0 ? (
                   jobSeeker.education.map((edu: any, i: number) => (
-                    <div key={i} className="flex flex-col p-4 rounded-xl border bg-card text-card-foreground shadow-sm">
-                      <span className="text-xs font-bold text-primary mb-1">Class of {edu.graduationYear}</span>
-                      <h4 className="font-bold text-sm leading-tight">{edu.degree}</h4>
-                      <p className="text-xs text-muted-foreground font-medium mt-0.5">{edu.fieldOfStudy}</p>
-                      <p className="text-xs text-muted-foreground mt-2 border-t pt-2 italic">
+                    <div
+                      key={i}
+                      className="bg-card text-card-foreground flex flex-col rounded-xl border p-4 shadow-sm"
+                    >
+                      <span className="text-primary mb-1 text-xs font-bold">
+                        Class of {edu.graduationYear}
+                      </span>
+                      <h4 className="text-sm leading-tight font-bold">
+                        {edu.degree}
+                      </h4>
+                      <p className="text-muted-foreground mt-0.5 text-xs font-medium">
+                        {edu.fieldOfStudy}
+                      </p>
+                      <p className="text-muted-foreground mt-2 border-t pt-2 text-xs italic">
                         {edu.institution}
                       </p>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground italic col-span-2">No education history provided.</p>
+                  <p className="text-muted-foreground col-span-2 text-sm italic">
+                    No education history provided.
+                  </p>
                 )}
               </div>
             </section>
@@ -171,9 +217,11 @@ export const ApplicationDetailModal = ({ application }: { application: any }) =>
         </ScrollArea>
 
         {/* Modal Footer (Standard for Management Dashboards) */}
-        <div className="p-4 border-t bg-muted/20 flex justify-end">
+        <div className="bg-muted/20 flex justify-end border-t p-4">
           <DialogTrigger asChild>
-            <Button variant="outline" className="cursor-pointer">Close Profile</Button>
+            <Button variant="outline" className="cursor-pointer">
+              Close Profile
+            </Button>
           </DialogTrigger>
         </div>
       </DialogContent>

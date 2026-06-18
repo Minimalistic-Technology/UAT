@@ -25,11 +25,12 @@ interface JobCardProps {
   job: any;
 }
 
-
-
 export default function JobCard({ job }: JobCardProps) {
   return (
-    <Link href={`/${job.listingType === 'internship' ? 'internship' : 'job'}/${job._id}`} className="group block">
+    <Link
+      href={`/${job.listingType === "internship" ? "internship" : "job"}/${job._id}`}
+      className="group block"
+    >
       <Card className="hover:border-primary/20 overflow-hidden border shadow-sm transition-all duration-200 hover:shadow-md">
         <CardContent className="p-5">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
@@ -97,7 +98,9 @@ export default function JobCard({ job }: JobCardProps) {
               ) : (
                 <div className="hidden flex-col items-end md:flex">
                   <span className="text-muted-foreground text-sm font-medium capitalize">
-                    {job.stipend?.type === "unpaid" ? "Unpaid" : `${job.stipend?.type || ""} Stipend`}
+                    {job.stipend?.type === "unpaid"
+                      ? "Unpaid"
+                      : `${job.stipend?.type || ""} Stipend`}
                   </span>
                 </div>
               )
@@ -148,7 +151,9 @@ export default function JobCard({ job }: JobCardProps) {
               <MapPin className="h-4 w-4" />
               {job.workMode?.toLowerCase() === "remote" || job.location?.remote
                 ? "Remote"
-                : [job.location?.city, job.location?.country].filter(Boolean).join(", ") || "Location not specified"}
+                : [job.location?.city, job.location?.country]
+                    .filter(Boolean)
+                    .join(", ") || "Location not specified"}
             </div>
             <div className="flex items-center gap-1.5">
               <Briefcase className="h-4 w-4" />
@@ -171,7 +176,9 @@ export default function JobCard({ job }: JobCardProps) {
                 </div>
               ) : (
                 <div className="text-muted-foreground flex items-center text-sm font-medium capitalize md:hidden">
-                  {job.stipend?.type === "unpaid" ? "Unpaid" : `${job.stipend?.type || ""} Stipend`}
+                  {job.stipend?.type === "unpaid"
+                    ? "Unpaid"
+                    : `${job.stipend?.type || ""} Stipend`}
                 </div>
               )
             ) : job.salary?.min || job.salary?.max ? (
@@ -191,13 +198,23 @@ export default function JobCard({ job }: JobCardProps) {
           </div>
 
           {/* Description Snippet */}
-          <p className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed" title={job.description?.replace(/<[^>]*>?/gm, ' ')}>
-            {job.description ? job.description.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() : ''}
+          <p
+            className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed"
+            title={job.description?.replace(/<[^>]*>?/gm, " ")}
+          >
+            {job.description
+              ? job.description
+                  .replace(/<[^>]*>?/gm, " ")
+                  .replace(/\s+/g, " ")
+                  .trim()
+              : ""}
           </p>
 
           {/* Skills Row */}
           <div className="mt-4 border-t pt-4">
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Required Skills</h4>
+            <h4 className="mb-2 text-xs font-bold tracking-wider text-slate-500 uppercase">
+              Required Skills
+            </h4>
             <div className="flex flex-wrap gap-2">
               {job.skills?.length > 0 ? (
                 <>
@@ -205,19 +222,21 @@ export default function JobCard({ job }: JobCardProps) {
                     <Badge
                       key={index}
                       variant="secondary"
-                      className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-md border-transparent px-2.5 py-0.5 text-xs font-semibold"
+                      className="rounded-md border-transparent bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
                     >
                       {skill}
                     </Badge>
                   ))}
                   {job.skills.length > 4 && (
-                    <span className="text-slate-500 ml-1 self-center text-[11px] font-bold">
+                    <span className="ml-1 self-center text-[11px] font-bold text-slate-500">
                       +{job.skills.length - 4} more
                     </span>
                   )}
                 </>
               ) : (
-                <span className="text-slate-400 text-xs italic">No specific skills listed</span>
+                <span className="text-xs text-slate-400 italic">
+                  No specific skills listed
+                </span>
               )}
             </div>
           </div>

@@ -154,32 +154,36 @@ const EmployerApplicationsPage = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">All Applications</h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            All Applications
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
             Manage all the applications received across your company's jobs.
           </p>
         </div>
       </div>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 pt-6 px-7 gap-4">
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+        <CardHeader className="flex flex-col items-start justify-between gap-4 px-7 pt-6 pb-4 sm:flex-row sm:items-center">
           <div className="space-y-1">
-            <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Recent Applications</CardTitle>
+            <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+              Recent Applications
+            </CardTitle>
             <CardDescription className="text-sm text-slate-500">
               {pagination?.totalItems || 0} total applications
             </CardDescription>
           </div>
-          <div className="flex flex-row w-full sm:w-auto items-center gap-2 sm:gap-3">
+          <div className="flex w-full flex-row items-center gap-2 sm:w-auto sm:gap-3">
             <div className="relative flex-1 sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 placeholder="Search candidate or job..."
-                className="pl-9 h-10 rounded-xl w-full"
+                className="h-10 w-full rounded-xl pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="w-[130px] sm:w-48 shrink-0">
+            <div className="w-[130px] shrink-0 sm:w-48">
               <Select
                 value={statusFilter}
                 onValueChange={(val) => {
@@ -187,7 +191,7 @@ const EmployerApplicationsPage = () => {
                   setPage(1);
                 }}
               >
-                <SelectTrigger className="h-10 rounded-xl w-full px-3">
+                <SelectTrigger className="h-10 w-full rounded-xl px-3">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -247,15 +251,25 @@ const EmployerApplicationsPage = () => {
                             {app.jobSeeker?.email}
                           </div>
                         </TableCell>
-                        <TableCell>{app.listing?.title || "Unknown Listing Title"}</TableCell>
-                        <TableCell>{app.listingType || "Unknown Listing Type"}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className={`font-bold cursor-default px-3 py-1 shadow-sm border-0 ${getApplicationStatusColor(app.status)}`}>
+                          {app.listing?.title || "Unknown Listing Title"}
+                        </TableCell>
+                        <TableCell>
+                          {app.listingType || "Unknown Listing Type"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="secondary"
+                            className={`cursor-default border-0 px-3 py-1 font-bold shadow-sm ${getApplicationStatusColor(app.status)}`}
+                          >
                             {app.status.replace("_", " ").toUpperCase()}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">
-                          {format(new Date(app.createdAt), "MMM d, yyyy, h:mm a")}
+                          {format(
+                            new Date(app.createdAt),
+                            "MMM d, yyyy, h:mm a",
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
@@ -266,12 +280,19 @@ const EmployerApplicationsPage = () => {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  disabled={[ApplicationStatus.ACCEPTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN].includes(app.status?.toLowerCase())}
+                                  disabled={[
+                                    ApplicationStatus.ACCEPTED,
+                                    ApplicationStatus.REJECTED,
+                                    ApplicationStatus.WITHDRAWN,
+                                  ].includes(app.status?.toLowerCase())}
                                 >
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-border z-50">
+                              <DropdownMenuContent
+                                align="end"
+                                className="border-border z-50 w-48 bg-white dark:bg-slate-900"
+                              >
                                 <DropdownMenuLabel>
                                   Quick Actions
                                 </DropdownMenuLabel>
@@ -292,8 +313,8 @@ const EmployerApplicationsPage = () => {
                                     handleUpdateStatus(app._id, "accepted")
                                   }
                                 >
-                                  <CheckCircle2 className="mr-2 h-4 w-4" /> Accept
-                                  Candidate
+                                  <CheckCircle2 className="mr-2 h-4 w-4" />{" "}
+                                  Accept Candidate
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="cursor-pointer text-red-600"
@@ -357,13 +378,15 @@ const EmployerApplicationsPage = () => {
           }
         }}
       >
-        <DialogContent className="sm:max-w-md w-[95vw] max-w-[95vw] sm:w-full rounded-2xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
+        <DialogContent className="max-h-[90vh] w-[95vw] max-w-[95vw] overflow-y-auto rounded-2xl p-4 sm:w-full sm:max-w-md sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl">Schedule Interview</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2 sm:py-4">
             <div className="flex flex-col space-y-2">
-              <Label className="text-sm font-medium">Interview Date and Time</Label>
+              <Label className="text-sm font-medium">
+                Interview Date and Time
+              </Label>
               <Input
                 type="datetime-local"
                 value={interviewDate}
@@ -371,12 +394,12 @@ const EmployerApplicationsPage = () => {
                 min={new Date().toISOString().slice(0, 16)}
                 className="w-full text-base sm:text-sm"
               />
-              <p className="text-muted-foreground text-xs mt-1">
+              <p className="text-muted-foreground mt-1 text-xs">
                 Select a date and time in the future.
               </p>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+          <DialogFooter className="mt-4 gap-2 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setInterviewModalOpen(false)}
@@ -403,12 +426,15 @@ export default EmployerApplicationsPage;
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted dark:bg-slate-800">
+      <div className="bg-muted mb-4 flex h-20 w-20 items-center justify-center rounded-full dark:bg-slate-800">
         <FileSearch className="h-10 w-10 text-slate-400" />
       </div>
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No applications found</h3>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+        No applications found
+      </h3>
       <p className="mt-1 max-w-md text-center text-sm text-slate-500">
-        You haven't received any applications yet, or none match your search criteria.
+        You haven't received any applications yet, or none match your search
+        criteria.
       </p>
     </div>
   );

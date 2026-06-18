@@ -11,7 +11,7 @@ export const getLandingTestimonials = async (limit: number = 3) => {
     },
     {
       baseURL: API_URL.replace("/api", ""),
-    }
+    },
   );
 
   return response.data.data.getTestimonials;

@@ -1,16 +1,45 @@
 import { Request, Response } from 'express';
 import Product from '../models/Product';
+import redisClient from '../config/redis';
 
-
+// Helper to invalidate all product caches instantly
+const clearProductCache = async () => {
+    try {
+        await redisClient.del('products:all', 'products:home');
+    } catch (err) {
+        console.error('Failed to clear product cache:', err);
+    }
+};
 export const getProducts = async (req: Request, res: Response) => {
     try {
         const { showOnHome } = req.query;
+        const cacheKey = showOnHome === 'true' ? 'products:home' : 'products:all';
+
+        // 1. CACHE CHECK: Ask Redis first (Takes <1ms)
+        let cachedProducts = null;
+        try {
+            cachedProducts = await redisClient.get(cacheKey);
+            if (cachedProducts) {
+                // Cache Hit! Instantly return without touching Mongoose/MongoDB
+                return res.json(JSON.parse(cachedProducts));
+            }
+        } catch (redisErr) {
+            console.error('Redis cache unavailable, falling back to MongoDB...');
+        }
+
+        // 2. CACHE MISS or FALLBACK: Fetch from Mongo
         const filter: any = {};
         if (showOnHome === 'true') {
             filter.showOnHome = true;
         }
 
         const products = await Product.find(filter).sort({ createdAt: -1 }).populate('category', 'name');
+
+        // 3. STORE IN CACHE: Save it in Redis for the next 24 Hours
+        try {
+            await redisClient.set(cacheKey, JSON.stringify(products), 'EX', 86400);
+        } catch (e) { }
+
         res.json(products);
     } catch (err) {
         console.error(err);
@@ -57,6 +86,9 @@ export const createProduct = async (req: Request, res: Response) => {
 
         const product = await newProduct.save();
 
+        // 4. INVALIDATE CACHE: Someone added a new product, wipe old list!
+        await clearProductCache();
+
         res.json(product);
     } catch (err) {
         console.error(err);
@@ -90,6 +122,9 @@ export const updateProduct = async (req: Request, res: Response) => {
 
         await product.save();
 
+        // 4. INVALIDATE CACHE: Product modified (price/stock etc changed), wipe old list!
+        await clearProductCache();
+
         res.json(product);
     } catch (err) {
         console.error(err);
@@ -105,6 +140,9 @@ export const deleteProduct = async (req: Request, res: Response) => {
         // Optional: Delete associated coupon?
         // await Coupon.deleteOne({ code: product.couponCode, type: 'product-specific' });
 
+        // 4. INVALIDATE CACHE: Product deleted, wipe old list!
+        await clearProductCache();
+
         res.json({ msg: 'Product removed' });
     } catch (err) {
         console.error(err);
@@ -119,6 +157,9 @@ export const toggleProductStatus = async (req: Request, res: Response) => {
 
         product.isActive = !product.isActive;
         await product.save();
+
+        // 4. INVALIDATE CACHE: Status toggled, wipe old list!
+        await clearProductCache();
 
         res.json({ msg: `Product ${product.isActive ? 'activated' : 'deactivated'}`, isActive: product.isActive });
     } catch (err) {

@@ -19,9 +19,39 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} - Find Your Dream Job`,
+  title: {
+    default: `${APP_NAME} - Find Your Dream Job`,
+    template: `%s | ${APP_NAME}`,
+  },
   description:
-    "Connect with top employers and find your perfect career opportunity",
+    "Connect with top employers and find your perfect career opportunity. Discover jobs, internships, and build your professional profile.",
+  keywords: [
+    "Job Portal",
+    "Careers",
+    "Employment",
+    "Internships",
+    "Recruitment",
+    "Hiring",
+    "Job Search",
+    "Resume",
+  ],
+  authors: [{ name: APP_NAME }],
+  creator: APP_NAME,
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    title: `${APP_NAME} - Find Your Dream Job`,
+    description:
+      "Connect with top employers and find your perfect career opportunity. Discover jobs, internships, and build your professional profile.",
+    siteName: APP_NAME,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${APP_NAME} - Find Your Dream Job`,
+    description:
+      "Connect with top employers and find your perfect career opportunity.",
+  },
 };
 
 export default function RootLayout({
@@ -30,13 +60,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${plusJakartaSans.variable}`}>
-      <body className="font-sans bg-background text-foreground transition-colors duration-300">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${plusJakartaSans.variable}`}
+    >
+      <body className="bg-background text-foreground font-sans transition-colors duration-300">
         <Providers>
           <Navbar />
-          <MainWrapper>
-            {children}
-          </MainWrapper>
+          <MainWrapper>{children}</MainWrapper>
           <Toaster position="top-right" />
           <AiChatbot />
         </Providers>

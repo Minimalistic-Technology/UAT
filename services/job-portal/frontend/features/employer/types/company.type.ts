@@ -9,10 +9,9 @@ export type CompanyMetrics = {
   totalMembers: number;
   currentPlan: { _id: string; name: string } | null;
   subscription: any | null;
-}
+};
 
-export type GetMyCompanyResponse =
-  Omit<Company, "owner"> &
+export type GetMyCompanyResponse = Omit<Company, "owner"> &
   CompanyMetrics & {
     owner: {
       _id: string;

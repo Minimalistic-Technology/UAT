@@ -7,7 +7,7 @@ export function FormattedDescription({ text }: { text: string }) {
   if (isHtml) {
     return (
       <div
-        className="text-muted-foreground space-y-2 text-[15px] leading-relaxed [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-slate-900 dark:[&>h1]:text-white [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-slate-800 dark:[&>h2]:text-slate-100 [&>h3]:text-lg [&>h3]:font-bold [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:pl-5 [&>ol]:pl-5 [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul>li]:mb-1 [&>ol>li]:mb-1 [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:underline [&_a:hover]:text-blue-800 dark:[&_a:hover]:text-blue-300 [&_a]:break-words"
+        className="text-muted-foreground space-y-2 text-[15px] leading-relaxed [&_a]:break-words [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_a:hover]:text-blue-800 dark:[&_a:hover]:text-blue-300 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-slate-900 dark:[&>h1]:text-white [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-slate-800 dark:[&>h2]:text-slate-100 [&>h3]:text-lg [&>h3]:font-bold [&>ol]:list-decimal [&>ol]:pl-5 [&>ol>li]:mb-1 [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul]:list-disc [&>ul]:pl-5 [&>ul>li]:mb-1"
         dangerouslySetInnerHTML={{ __html: text }}
       />
     );
@@ -18,8 +18,7 @@ export function FormattedDescription({ text }: { text: string }) {
   const parts = text.split(numberedPattern).filter(Boolean);
 
   // Check if it looks like "Key: Value" metadata
-  const isMetaLine = (s: string) =>
-    /^[A-Z][A-Za-z\s]+:\s/.test(s.trim());
+  const isMetaLine = (s: string) => /^[A-Z][A-Za-z\s]+:\s/.test(s.trim());
 
   return (
     <div className="text-muted-foreground space-y-2 text-sm leading-relaxed">
@@ -46,13 +45,13 @@ export function FormattedDescription({ text }: { text: string }) {
               <div key={i}>
                 {prose && (
                   <p>
-                    <span className="font-medium text-foreground">
+                    <span className="text-foreground font-medium">
                       {numberedMatch[1]}.
                     </span>{" "}
                     {prose}
                   </p>
                 )}
-                <div className="mt-3 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 rounded-md border bg-muted/40 p-3">
+                <div className="bg-muted/40 mt-3 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 rounded-md border p-3">
                   {metaLines.map((line, j) => {
                     const colonIdx = line.indexOf(":");
                     if (colonIdx === -1) return null;
@@ -60,7 +59,10 @@ export function FormattedDescription({ text }: { text: string }) {
                     const val = line.slice(colonIdx + 1).trim();
                     return (
                       <>
-                        <span key={`k-${j}`} className="font-medium text-foreground">
+                        <span
+                          key={`k-${j}`}
+                          className="text-foreground font-medium"
+                        >
                           {key}
                         </span>
                         <span key={`v-${j}`}>{val}</span>
@@ -74,7 +76,7 @@ export function FormattedDescription({ text }: { text: string }) {
 
           return (
             <p key={i}>
-              <span className="font-medium text-foreground">
+              <span className="text-foreground font-medium">
                 {numberedMatch[1]}.
               </span>{" "}
               {body}

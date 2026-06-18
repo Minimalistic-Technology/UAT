@@ -21,13 +21,13 @@ export const getAdminPlans = async (page: number = 1, limit: number = 10) => {
     },
     {
       baseURL: API_URL.replace("/api", ""),
-    }
+    },
   );
-  
+
   return {
     success: true,
     data: response.data.data.getAllAdminPlans,
-    message: "All plans fetched successfully for admin"
+    message: "All plans fetched successfully for admin",
   } as ApiSuccessResponse<GetAllAdminPlans>;
 };
 

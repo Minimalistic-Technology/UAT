@@ -10,9 +10,7 @@ import OTP from '../models/OTP';
 import RouteConfig from '../models/RouteConfig';
 import NotificationService from '../services/notification.service';
 import ValidationService from '../services/validation.service';
-
-// In-Memory Failures Tracker for non-existent users exponential backoff
-const authFailures = new Map<string, { attempts: number; lockUntil: number }>();
+import redisClient from '../config/redis';
 
 const getIp = (req: Request) => (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown').toString();
 
@@ -68,12 +66,12 @@ export const sendOtp = async (req: Request, res: Response) => {
 
         const otp = generateOTP();
 
-        // Save OTP to DB (upsert)
-        await OTP.findOneAndUpdate(
-            { identifier },
-            { identifier, otp, expiresAt: new Date(Date.now() + 5 * 60 * 1000) }, // 5 mins
-            { upsert: true, new: true }
-        );
+        // Save OTP to Redis directly with 5-minute Auto-expiry
+        await redisClient.set(`otp:${identifier}`, JSON.stringify({
+            otp,
+            attempts: 0,
+            lockUntil: 0
+        }), 'EX', 300);
 
         // REAL SENDING
         const result = await NotificationService.sendOTP(identifier, otp);
@@ -103,10 +101,12 @@ export const verifyOtp = async (req: Request, res: Response) => {
             return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${minutesLeft} minute(s).` });
         }
 
-        const otpRecord = await OTP.findOne({ identifier });
-        if (!otpRecord) {
+        const otpRecordStr = await redisClient.get(`otp:${identifier}`);
+        if (!otpRecordStr) {
             return res.status(400).json({ msg: 'OTP expired or not sent', isValid: false });
         }
+
+        let otpRecord = JSON.parse(otpRecordStr);
 
         // Check if OTP block limit reached
         if (otpRecord.lockUntil && otpRecord.lockUntil > Date.now()) {
@@ -121,18 +121,16 @@ export const verifyOtp = async (req: Request, res: Response) => {
             if (otpRecord.attempts >= 3) {
                 const blockMinutes = Math.pow(2, otpRecord.attempts - 3) * 2; // 2, 4, 8, 16 mins etc.
                 otpRecord.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                await otpRecord.save();
+                await redisClient.set(`otp:${identifier}`, JSON.stringify(otpRecord), 'KEEPTTL');
                 return res.status(403).json({ msg: `Verification is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
             }
 
-            await otpRecord.save();
+            await redisClient.set(`otp:${identifier}`, JSON.stringify(otpRecord), 'KEEPTTL');
             return res.status(400).json({ msg: 'Invalid OTP', isValid: false });
         }
 
-        // Reset attempts on success
-        otpRecord.attempts = 0;
-        otpRecord.lockUntil = 0; // Removing lock
-        await otpRecord.save();
+        // Reset attempts and completely remove OTP on success
+        await redisClient.del(`otp:${identifier}`);
 
         // Also reset user lock if it existed
         if (user) {
@@ -276,8 +274,8 @@ export const login = async (req: Request, res: Response) => {
         const clientIp = getIp(req);
         const lockKey = `${clientIp}_${identifier}`;
 
-        // Fetch Tracker state
-        let tracker = authFailures.get(lockKey) || { attempts: 0, lockUntil: 0 };
+        const trackerData = await redisClient.get(`loginLock:${lockKey}`);
+        let tracker = trackerData ? JSON.parse(trackerData) : { attempts: 0, lockUntil: 0 };
 
         if (tracker.lockUntil > Date.now()) {
             const minutesLeft = Math.ceil((tracker.lockUntil - Date.now()) / 60000);
@@ -301,10 +299,10 @@ export const login = async (req: Request, res: Response) => {
             if (tracker.attempts >= 3) {
                 const blockMinutes = Math.pow(2, tracker.attempts - 3) * 2;
                 tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                authFailures.set(lockKey, tracker);
+                await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400); // max 24 hours lock in memory
                 return res.status(403).json({ msg: `Access blocked due to multiple failed login attempts. Please try again after ${blockMinutes} minute(s).` });
             }
-            authFailures.set(lockKey, tracker);
+            await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400);
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
@@ -325,21 +323,21 @@ export const login = async (req: Request, res: Response) => {
                 const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
                 user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
 
-                // Keep memory lock synced too
+                // Keep memory lock synced too in Redis
                 tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                authFailures.set(lockKey, tracker);
+                await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400);
 
                 await user.save();
                 return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
             }
 
-            authFailures.set(lockKey, tracker);
+            await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400);
             await user.save();
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
         // Success - Reset lock and attempts
-        authFailures.delete(lockKey);
+        await redisClient.del(`loginLock:${lockKey}`);
         user.loginAttempts = 0;
         user.lockUntil = undefined;
         await user.save();

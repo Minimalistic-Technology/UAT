@@ -1,7 +1,10 @@
 "use client";
 
 import { useRef } from "react";
-import { useGetMyCompanyDetails, useUploadCompanyLogo } from "@/features/employer/hooks/use-company";
+import {
+  useGetMyCompanyDetails,
+  useUploadCompanyLogo,
+} from "@/features/employer/hooks/use-company";
 import { CompanyHeader } from "@/features/employer/components/company-header";
 import { CompanyOverview } from "@/features/employer/components/company-overview";
 import { CompanyInformation } from "@/features/employer/components/company-information";
@@ -12,8 +15,10 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 const CompanyProfilePage = () => {
-  const { data: companyResponse, isLoading: isCompanyLoading } = useGetMyCompanyDetails();
-  const { mutate: uploadLogo, isPending: isLogoUploading } = useUploadCompanyLogo();
+  const { data: companyResponse, isLoading: isCompanyLoading } =
+    useGetMyCompanyDetails();
+  const { mutate: uploadLogo, isPending: isLogoUploading } =
+    useUploadCompanyLogo();
 
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,7 +44,11 @@ const CompanyProfilePage = () => {
   };
 
   if (isCompanyLoading) {
-    return <div className="p-6"><CompanyProfileSkeleton /></div>;
+    return (
+      <div className="p-6">
+        <CompanyProfileSkeleton />
+      </div>
+    );
   }
 
   return (
@@ -54,7 +63,7 @@ const CompanyProfilePage = () => {
 
       <CompanyHeader company={company} isLoading={isCompanyLoading} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-start">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
         <CompanyOverview
           company={company}
           isLogoUploading={isLogoUploading}

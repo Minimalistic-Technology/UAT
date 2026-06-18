@@ -12,7 +12,7 @@ export const CompanyHeader = ({ company, isLoading }: CompanyHeaderProps) => {
   if (isLoading || !company) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-[20px] border-0 bg-white dark:bg-slate-900 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+    <div className="relative overflow-hidden rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
       {/* Background Banner */}
       <div className="h-32 bg-linear-to-r from-indigo-500 to-purple-600"></div>
 
@@ -43,7 +43,7 @@ export const CompanyHeader = ({ company, isLoading }: CompanyHeaderProps) => {
               <div className="mt-2 flex items-center gap-4 text-sm text-slate-500">
                 {/* @ts-ignore */}
                 {company.owner?.firstName && company.owner?.lastName ? (
-                  <div className="flex items-center gap-1 text-foreground">
+                  <div className="text-foreground flex items-center gap-1">
                     <User className="h-4 w-4" />
                     {/* @ts-ignore */}
                     {`${company.owner?.firstName ?? ""} ${company.owner?.lastName ?? ""}`.trim()}

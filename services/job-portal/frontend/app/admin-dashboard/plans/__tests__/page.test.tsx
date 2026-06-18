@@ -20,7 +20,7 @@ jest.mock("@/features/admin/components/plan-table-row", () => {
           <td>{plan.status}</td>
         </tr>
       );
-    }
+    },
   };
 });
 
@@ -44,7 +44,7 @@ describe("Admin Plans Management Page", () => {
     });
 
     const { container } = render(<PlansPage />);
-    
+
     // Check for skeletons instead of text
     const skeletons = container.querySelectorAll(".animate-pulse");
     expect(skeletons.length).toBeGreaterThan(0);
@@ -59,9 +59,9 @@ describe("Admin Plans Management Page", () => {
     });
 
     render(<PlansPage />);
-    
+
     expect(screen.getByText("Failed to load plans data.")).toBeInTheDocument();
-    
+
     // Retry button works
     fireEvent.click(screen.getByText("Retry"));
     expect(mockRefetch).toHaveBeenCalledTimes(1);
@@ -75,7 +75,12 @@ describe("Admin Plans Management Page", () => {
             { _id: "1", name: "Basic Plan", price: 0, status: "Active" },
             { _id: "2", name: "Premium Plan", price: 100, status: "Active" },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -84,7 +89,7 @@ describe("Admin Plans Management Page", () => {
     });
 
     render(<PlansPage />);
-    
+
     const rows = screen.getAllByTestId("plan-row");
     expect(rows).toHaveLength(2);
     expect(screen.getByText("Basic Plan")).toBeInTheDocument();
@@ -99,7 +104,12 @@ describe("Admin Plans Management Page", () => {
             { _id: "1", name: "Basic Plan", price: 0, status: "Active" },
             { _id: "2", name: "Premium Plan", price: 100, status: "Active" },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -108,10 +118,10 @@ describe("Admin Plans Management Page", () => {
     });
 
     render(<PlansPage />);
-    
+
     const searchInput = screen.getByPlaceholderText("Search plans...");
     fireEvent.change(searchInput, { target: { value: "Premium" } });
-    
+
     // After search, only "Premium Plan" should be rendered
     const rows = screen.getAllByTestId("plan-row");
     expect(rows).toHaveLength(1);
@@ -124,7 +134,12 @@ describe("Admin Plans Management Page", () => {
       data: {
         data: {
           plans: [{ _id: "1", name: "Basic Plan", price: 0, status: "Active" }],
-          pagination: { currentPage: 1, totalPages: 3, hasNextPage: true, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 3,
+            hasNextPage: true,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -133,7 +148,7 @@ describe("Admin Plans Management Page", () => {
     });
 
     const { rerender } = render(<PlansPage />);
-    
+
     const prevBtn = screen.getByText("Previous");
     const nextBtn = screen.getByText("Next");
 
@@ -148,21 +163,28 @@ describe("Admin Plans Management Page", () => {
     (useFetchAdminPlans as jest.Mock).mockReturnValue({
       data: {
         data: {
-          plans: [{ _id: "2", name: "Premium Plan", price: 100, status: "Active" }],
-          pagination: { currentPage: 2, totalPages: 3, hasNextPage: true, hasPrevPage: true },
+          plans: [
+            { _id: "2", name: "Premium Plan", price: 100, status: "Active" },
+          ],
+          pagination: {
+            currentPage: 2,
+            totalPages: 3,
+            hasNextPage: true,
+            hasPrevPage: true,
+          },
         },
       },
       isLoading: false,
       isError: false,
       refetch: mockRefetch,
     });
-    
+
     rerender(<PlansPage />);
-    
+
     // Click Previous
     const activePrevBtn = screen.getByText("Previous");
     fireEvent.click(activePrevBtn);
-    
+
     // Should navigate back to page 1
     expect(useFetchAdminPlans).toHaveBeenCalledWith(1, 10);
   });
@@ -172,7 +194,12 @@ describe("Admin Plans Management Page", () => {
       data: {
         data: {
           plans: [],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,

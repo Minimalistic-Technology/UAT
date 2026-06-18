@@ -46,10 +46,16 @@ describe("ResetPasswordClient Component", () => {
   });
 
   const fillFormAndSubmit = async (overrides: Record<string, string> = {}) => {
-    fireEvent.change(screen.getByLabelText(/^New Password/i), { target: { value: overrides.password ?? "newpassword123" } });
-    fireEvent.change(screen.getByLabelText(/Confirm New Password/i), { target: { value: overrides.confirmPassword ?? "newpassword123" } });
+    fireEvent.change(screen.getByLabelText(/^New Password/i), {
+      target: { value: overrides.password ?? "newpassword123" },
+    });
+    fireEvent.change(screen.getByLabelText(/Confirm New Password/i), {
+      target: { value: overrides.confirmPassword ?? "newpassword123" },
+    });
 
-    const submitButton = screen.getByRole("button", { name: /Reset Password/i });
+    const submitButton = screen.getByRole("button", {
+      name: /Reset Password/i,
+    });
     fireEvent.submit(submitButton.closest("form")!);
   };
 
@@ -60,19 +66,27 @@ describe("ResetPasswordClient Component", () => {
     expect(resetPasswordTexts.length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/^New Password/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Confirm New Password/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Reset Password/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Back to Login/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Reset Password/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Back to Login/i }),
+    ).toBeInTheDocument();
   });
 
   describe("Form Validations", () => {
     it("shows validation errors for empty fields on submit", async () => {
       render(<ResetPasswordClient token={mockToken} />);
 
-      const submitButton = screen.getByRole("button", { name: /Reset Password/i });
+      const submitButton = screen.getByRole("button", {
+        name: /Reset Password/i,
+      });
       fireEvent.submit(submitButton.closest("form")!);
 
       await waitFor(() => {
-        const passwordErrors = screen.getAllByText(/Password must be at least 6 characters/i);
+        const passwordErrors = screen.getAllByText(
+          /Password must be at least 6 characters/i,
+        );
         expect(passwordErrors.length).toBeGreaterThan(0);
       });
 
@@ -82,7 +96,10 @@ describe("ResetPasswordClient Component", () => {
     it("shows validation error for password mismatch", async () => {
       render(<ResetPasswordClient token={mockToken} />);
 
-      await fillFormAndSubmit({ password: "password123", confirmPassword: "password456" });
+      await fillFormAndSubmit({
+        password: "password123",
+        confirmPassword: "password456",
+      });
 
       await waitFor(() => {
         expect(screen.getByText(/Passwords don't match/i)).toBeInTheDocument();
@@ -104,7 +121,7 @@ describe("ResetPasswordClient Component", () => {
             password: "newpassword123",
             confirmPassword: "newpassword123",
           }),
-          expect.any(Object)
+          expect.any(Object),
         );
       });
 
@@ -121,7 +138,9 @@ describe("ResetPasswordClient Component", () => {
       await fillFormAndSubmit();
 
       await waitFor(() => {
-        expect(toast.success).toHaveBeenCalledWith("Password reset successfully! Please login with your new password.");
+        expect(toast.success).toHaveBeenCalledWith(
+          "Password reset successfully! Please login with your new password.",
+        );
         expect(mockRouter.push).toHaveBeenCalledWith("/login");
       });
     });
@@ -169,7 +188,9 @@ describe("ResetPasswordClient Component", () => {
 
       expect(screen.getByLabelText(/^New Password/i)).toBeDisabled();
       expect(screen.getByLabelText(/Confirm New Password/i)).toBeDisabled();
-      expect(screen.getByRole("button", { name: /Resetting.../i })).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: /Resetting.../i }),
+      ).toBeDisabled();
     });
 
     it("toggles password visibility when clicking the eye icon", () => {

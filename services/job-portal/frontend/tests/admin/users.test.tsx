@@ -9,7 +9,6 @@ jest.mock("@/features/admin/hooks/use-user", () => ({
   useFetchAllUsers: jest.fn(),
 }));
 
-
 describe("Admin User Management Page", () => {
   const mockRefetch = jest.fn();
 
@@ -31,10 +30,10 @@ describe("Admin User Management Page", () => {
     });
 
     const { container } = render(<Page />);
-    
+
     // Check that skeletons are rendered (we check for the skeleton elements or just the table structure)
     expect(screen.queryByTestId("data-table-row")).not.toBeInTheDocument();
-    
+
     // A skeleton should be present
     const skeletons = container.querySelectorAll(".animate-pulse");
     expect(skeletons.length).toBeGreaterThan(0);
@@ -49,9 +48,11 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
-    expect(screen.getByText("Failed to load user management data.")).toBeInTheDocument();
-    
+
+    expect(
+      screen.getByText("Failed to load user management data."),
+    ).toBeInTheDocument();
+
     // Retry button works
     fireEvent.click(screen.getByText("Retry"));
     expect(mockRefetch).toHaveBeenCalledTimes(1);
@@ -62,10 +63,25 @@ describe("Admin User Management Page", () => {
       data: {
         data: {
           users: [
-            { _id: "1", firstName: "John", lastName: "Doe", email: "john@example.com" },
-            { _id: "2", firstName: "Jane", lastName: "Smith", email: "jane@example.com" },
+            {
+              _id: "1",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+            },
+            {
+              _id: "2",
+              firstName: "Jane",
+              lastName: "Smith",
+              email: "jane@example.com",
+            },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -74,10 +90,10 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
+
     // Page title
     expect(screen.getByText("User Management")).toBeInTheDocument();
-    
+
     // Users are rendered using our mocked UserTableRow
     const userRows = screen.getAllByTestId("data-table-row");
     expect(userRows).toHaveLength(2);
@@ -90,10 +106,25 @@ describe("Admin User Management Page", () => {
       data: {
         data: {
           users: [
-            { _id: "1", firstName: "John", lastName: "Doe", email: "john@example.com" },
-            { _id: "2", firstName: "Jane", lastName: "Smith", email: "jane@example.com" },
+            {
+              _id: "1",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+            },
+            {
+              _id: "2",
+              firstName: "Jane",
+              lastName: "Smith",
+              email: "jane@example.com",
+            },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -102,14 +133,14 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
+
     // Ensure both are present initially
     expect(screen.getAllByTestId("data-table-row")).toHaveLength(2);
 
     // Search for 'Jane'
     const searchInput = screen.getByPlaceholderText("Search users...");
     fireEvent.change(searchInput, { target: { value: "Jane" } });
-    
+
     // Only Jane should be visible
     expect(screen.getAllByTestId("data-table-row")).toHaveLength(1);
     expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
@@ -117,16 +148,28 @@ describe("Admin User Management Page", () => {
   });
 
   it("triggers CSV export when Export CSV is clicked", () => {
-    const mockClick = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-
+    const mockClick = jest
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
 
     (useFetchAllUsers as jest.Mock).mockReturnValue({
       data: {
         data: {
           users: [
-            { _id: "1", firstName: "John", lastName: "Doe", email: "john@example.com", createdAt: "2023-01-01" },
+            {
+              _id: "1",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+              createdAt: "2023-01-01",
+            },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -135,7 +178,7 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
+
     const exportBtn = screen.getByText("Export CSV");
     fireEvent.click(exportBtn);
 
@@ -150,7 +193,12 @@ describe("Admin User Management Page", () => {
       data: {
         data: {
           users: [],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -166,8 +214,20 @@ describe("Admin User Management Page", () => {
     (useFetchAllUsers as jest.Mock).mockReturnValue({
       data: {
         data: {
-          users: [{ _id: "1", firstName: "John", lastName: "Doe", email: "john@example.com" }],
-          pagination: { currentPage: 1, totalPages: 2, hasNextPage: true, hasPrevPage: false },
+          users: [
+            {
+              _id: "1",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+            },
+          ],
+          pagination: {
+            currentPage: 1,
+            totalPages: 2,
+            hasNextPage: true,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -176,7 +236,7 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
+
     const prevBtn = screen.getByText("Previous");
     const nextBtn = screen.getByText("Next");
 
@@ -194,9 +254,19 @@ describe("Admin User Management Page", () => {
       data: {
         data: {
           users: [
-            { _id: "1", firstName: "John", lastName: "Doe", email: "john@example.com" },
+            {
+              _id: "1",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+            },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -205,10 +275,10 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
+
     const searchInput = screen.getByPlaceholderText("Search users...");
     fireEvent.change(searchInput, { target: { value: "Nonexistent" } });
-    
+
     expect(screen.queryByTestId("data-table-row")).not.toBeInTheDocument();
     expect(screen.getByText("No results found.")).toBeInTheDocument();
   });
@@ -218,10 +288,25 @@ describe("Admin User Management Page", () => {
       data: {
         data: {
           users: [
-            { _id: "1", firstName: "John", lastName: "Doe", email: "john@example.com" },
-            { _id: "2", firstName: "Jane", lastName: "Smith", email: "testme@company.com" },
+            {
+              _id: "1",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+            },
+            {
+              _id: "2",
+              firstName: "Jane",
+              lastName: "Smith",
+              email: "testme@company.com",
+            },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -230,10 +315,10 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
+
     const searchInput = screen.getByPlaceholderText("Search users...");
     fireEvent.change(searchInput, { target: { value: "testme@company.com" } });
-    
+
     expect(screen.getAllByTestId("data-table-row")).toHaveLength(1);
     expect(screen.getByText("Jane Smith")).toBeInTheDocument();
   });
@@ -243,9 +328,19 @@ describe("Admin User Management Page", () => {
       data: {
         data: {
           users: [
-            { _id: "1", firstName: "John", lastName: "Doe", email: "john@example.com" },
+            {
+              _id: "1",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+            },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -254,10 +349,10 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
+
     const searchInput = screen.getByPlaceholderText("Search users...");
     fireEvent.change(searchInput, { target: { value: "jOhN D" } });
-    
+
     expect(screen.getAllByTestId("data-table-row")).toHaveLength(1);
     expect(screen.getByText("John Doe")).toBeInTheDocument();
   });
@@ -266,8 +361,20 @@ describe("Admin User Management Page", () => {
     (useFetchAllUsers as jest.Mock).mockReturnValue({
       data: {
         data: {
-          users: [{ _id: "1", firstName: "John", lastName: "Doe", email: "john@example.com" }],
-          pagination: { currentPage: 1, totalPages: 3, hasNextPage: true, hasPrevPage: false },
+          users: [
+            {
+              _id: "1",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+            },
+          ],
+          pagination: {
+            currentPage: 1,
+            totalPages: 3,
+            hasNextPage: true,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -276,49 +383,78 @@ describe("Admin User Management Page", () => {
     });
 
     const { rerender } = render(<Page />);
-    
+
     const nextBtn = screen.getByText("Next");
     fireEvent.click(nextBtn);
     expect(useFetchAllUsers).toHaveBeenCalledWith(2, 10);
-    
+
     // Re-mock to simulate being on page 2
     (useFetchAllUsers as jest.Mock).mockReturnValue({
       data: {
         data: {
-          users: [{ _id: "2", firstName: "Jane", lastName: "Doe", email: "jane@example.com" }],
-          pagination: { currentPage: 2, totalPages: 3, hasNextPage: true, hasPrevPage: true },
+          users: [
+            {
+              _id: "2",
+              firstName: "Jane",
+              lastName: "Doe",
+              email: "jane@example.com",
+            },
+          ],
+          pagination: {
+            currentPage: 2,
+            totalPages: 3,
+            hasNextPage: true,
+            hasPrevPage: true,
+          },
         },
       },
       isLoading: false,
       isError: false,
       refetch: mockRefetch,
     });
-    
+
     rerender(<Page />);
-    
+
     const prevBtn = screen.getByText("Previous");
     fireEvent.click(prevBtn);
     expect(useFetchAllUsers).toHaveBeenCalledWith(1, 10);
   });
 
   it("validates CSV content correctly", () => {
-    const mockClick = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
-    
+    const mockClick = jest
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
     // Mock Blob to intercept its content
     const originalBlob = global.Blob;
     let blobContent: any[] = [];
-    global.Blob = jest.fn().mockImplementation((content: any[], options: any) => {
-      blobContent = content;
-      return new originalBlob(content, options);
-    });
+    global.Blob = jest
+      .fn()
+      .mockImplementation((content: any[], options: any) => {
+        blobContent = content;
+        return new originalBlob(content, options);
+      });
 
     (useFetchAllUsers as jest.Mock).mockReturnValue({
       data: {
         data: {
           users: [
-            { _id: "1", firstName: "John", lastName: "Doe", email: "john@example.com", companyRole: "admin", isActive: true, createdAt: "2023-01-01T00:00:00.000Z" },
+            {
+              _id: "1",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+              companyRole: "admin",
+              isActive: true,
+              createdAt: "2023-01-01T00:00:00.000Z",
+            },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -327,7 +463,7 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
+
     const exportBtn = screen.getByText("Export CSV");
     fireEvent.click(exportBtn);
 
@@ -351,7 +487,12 @@ describe("Admin User Management Page", () => {
             { _id: "1", firstName: "John" }, // Missing lastName and email
             { _id: "2" }, // Missing most fields
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -360,7 +501,7 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
+
     const userRows = screen.getAllByTestId("data-table-row");
     expect(userRows).toHaveLength(2);
     expect(userRows[0]).toHaveTextContent("John");
@@ -371,9 +512,19 @@ describe("Admin User Management Page", () => {
       data: {
         data: {
           users: [
-            { _id: "1", firstName: "John", lastName: "Doe", email: "john@example.com" },
+            {
+              _id: "1",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john@example.com",
+            },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -382,11 +533,15 @@ describe("Admin User Management Page", () => {
     });
 
     render(<Page />);
-    
+
     expect(screen.getByText("User Management")).toBeInTheDocument();
     expect(screen.getByRole("table")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Export CSV" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Previous" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Export CSV" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Previous" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { motion } from "motion/react";
 import Link from "next/link";
 import {
@@ -28,18 +28,15 @@ const EASE = [0.22, 1, 0.36, 1];
 
 export const Categories = () => {
   return (
-    <section
-      className="py-24 bg-white"
-      data-testid="categories-section"
-    >
-      <div className="max-w-[88rem] mx-auto px-6 md:px-12">
+    <section className="bg-white py-24" data-testid="categories-section">
+      <div className="mx-auto max-w-[88rem] px-6 md:px-12">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
+        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
-            <span className="text-[10px] md:text-xs tracking-[0.2em] uppercase font-black text-blue-600">
+            <span className="text-[10px] font-black tracking-[0.2em] text-blue-600 uppercase md:text-xs">
               Explore
             </span>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl mt-3 text-slate-900 font-bold tracking-tight leading-[1.1]">
+            <h2 className="mt-3 text-4xl leading-[1.1] font-bold tracking-tight text-slate-900 md:text-5xl lg:text-6xl">
               Browse jobs by <span className="text-blue-600">category.</span>
             </h2>
           </div>
@@ -49,7 +46,10 @@ export const Categories = () => {
             data-testid="view-all-categories"
           >
             Explore all jobs
-            <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            <ArrowUpRight
+              size={18}
+              className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
           </Link>
         </div>
 
@@ -63,7 +63,7 @@ export const Categories = () => {
               transition: { staggerChildren: 0.04, delayChildren: 0.1 },
             },
           }}
-          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 border-l border-t border-slate-200 rounded-2xl overflow-hidden shadow-sm"
+          className="grid grid-cols-2 overflow-hidden rounded-2xl border-t border-l border-slate-200 shadow-sm md:grid-cols-3 lg:grid-cols-4"
         >
           {CATEGORIES.map((category) => {
             const Icon = category.icon;
@@ -81,30 +81,31 @@ export const Categories = () => {
                     transition: { duration: 0.5, ease: "easeInOut" },
                   },
                 }}
-                className="group relative p-8 md:p-10 bg-white hover:bg-slate-50 border-r border-b border-slate-200 transition-all duration-300"
+                className="group relative border-r border-b border-slate-200 bg-white p-8 transition-all duration-300 hover:bg-slate-50 md:p-10"
                 aria-label={`View ${category.label} jobs`}
               >
                 {/* Icon Container */}
                 <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${isPurple
+                  className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 ${
+                    isPurple
                       ? "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white"
                       : "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white"
-                    }`}
+                  }`}
                 >
                   <Icon size={24} strokeWidth={2} />
                 </div>
 
                 <div className="mt-8">
-                  <h3 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+                  <h3 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
                     {category.label}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-500 font-medium">
+                  <p className="mt-1 text-sm font-medium text-slate-500">
                     {category.count} open roles
                   </p>
                 </div>
 
                 {/* Hover Reveal Arrow */}
-                <div className="absolute top-6 right-6 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                <div className="absolute top-6 right-6 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
                   <ArrowUpRight size={20} className="text-blue-600" />
                 </div>
               </motion.a>

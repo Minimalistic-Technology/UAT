@@ -66,7 +66,9 @@ export const KycTable = ({
 }: KycTableProps) => {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [viewingReason, setViewingReason] = useState<string | undefined | null>(undefined);
+  const [viewingReason, setViewingReason] = useState<string | undefined | null>(
+    undefined,
+  );
 
   const handleRejectConfirm = () => {
     if (rejectingId) {
@@ -123,12 +125,20 @@ export const KycTable = ({
                 <TableCell>
                   <div className="space-y-1 font-mono text-[11px]">
                     <div className="flex flex-col">
-                      <span className="text-muted-foreground">Company Doc:</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">{app.companyDocumentType}</span>
+                      <span className="text-muted-foreground">
+                        Company Doc:
+                      </span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {app.companyDocumentType}
+                      </span>
                     </div>
-                    <div className="flex flex-col mt-2">
-                      <span className="text-muted-foreground">Personal Doc:</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">{app.personalDocumentType}</span>
+                    <div className="mt-2 flex flex-col">
+                      <span className="text-muted-foreground">
+                        Personal Doc:
+                      </span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {app.personalDocumentType}
+                      </span>
                     </div>
                   </div>
                 </TableCell>
@@ -146,7 +156,8 @@ export const KycTable = ({
                           target="_blank"
                           rel="noreferrer"
                         >
-                          <ExternalLink className="mr-1 h-3 w-3" /> Company Document
+                          <ExternalLink className="mr-1 h-3 w-3" /> Company
+                          Document
                         </a>
                       </Button>
                     )}
@@ -162,15 +173,17 @@ export const KycTable = ({
                           target="_blank"
                           rel="noreferrer"
                         >
-                          <ExternalLink className="mr-1 h-3 w-3" /> Personal Document
+                          <ExternalLink className="mr-1 h-3 w-3" /> Personal
+                          Document
                         </a>
                       </Button>
                     )}
-                    {!app.companyDocument?.url && !app.personalDocument?.url && (
-                      <span className="text-muted-foreground text-xs">
-                        No documents
-                      </span>
-                    )}
+                    {!app.companyDocument?.url &&
+                      !app.personalDocument?.url && (
+                        <span className="text-muted-foreground text-xs">
+                          No documents
+                        </span>
+                      )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -275,10 +288,12 @@ export const KycTable = ({
         open={!!rejectingId}
         onOpenChange={(open) => !open && setRejectingId(null)}
       >
-        <DialogContent className="p-0 gap-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl sm:rounded-[24px]">
-          <div className="p-6 sm:p-8 space-y-6">
+        <DialogContent className="gap-0 overflow-hidden border-0 bg-white p-0 shadow-2xl sm:rounded-[24px] dark:bg-slate-900">
+          <div className="space-y-6 p-6 sm:p-8">
             <DialogHeader className="px-0">
-              <DialogTitle className="text-xl font-bold">Reject KYC Application</DialogTitle>
+              <DialogTitle className="text-xl font-bold">
+                Reject KYC Application
+              </DialogTitle>
               <DialogDescription className="text-slate-500">
                 Please provide a reason for rejecting this KYC application. The
                 employer will see this reason on their dashboard.
@@ -289,10 +304,10 @@ export const KycTable = ({
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="e.g. The document uploaded is blurry and illegible."
               rows={4}
-              className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-800 rounded-xl"
+              className="rounded-xl border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800"
             />
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800/50 px-8 py-5 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-8 py-5 dark:border-slate-800 dark:bg-slate-800/50">
             <Button
               variant="ghost"
               className="rounded-xl"
@@ -319,17 +334,22 @@ export const KycTable = ({
         open={!!viewingReason}
         onOpenChange={(open) => !open && setViewingReason(null)}
       >
-        <DialogContent className="p-0 gap-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl sm:rounded-[24px]">
-          <div className="p-6 sm:p-8 space-y-6">
+        <DialogContent className="gap-0 overflow-hidden border-0 bg-white p-0 shadow-2xl sm:rounded-[24px] dark:bg-slate-900">
+          <div className="space-y-6 p-6 sm:p-8">
             <DialogHeader className="px-0">
-              <DialogTitle className="text-xl font-bold">Rejection Reason</DialogTitle>
+              <DialogTitle className="text-xl font-bold">
+                Rejection Reason
+              </DialogTitle>
             </DialogHeader>
-            <div className="bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 rounded-xl p-5 text-sm whitespace-pre-wrap border border-rose-100 dark:border-rose-900/50">
+            <div className="rounded-xl border border-rose-100 bg-rose-50 p-5 text-sm whitespace-pre-wrap text-rose-700 dark:border-rose-900/50 dark:bg-rose-500/10 dark:text-rose-400">
               {viewingReason}
             </div>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-800/50 px-8 py-5 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
-            <Button onClick={() => setViewingReason(null)} className="rounded-xl px-8 bg-[#2563eb] text-white hover:bg-blue-700">
+          <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-8 py-5 dark:border-slate-800 dark:bg-slate-800/50">
+            <Button
+              onClick={() => setViewingReason(null)}
+              className="rounded-xl bg-[#2563eb] px-8 text-white hover:bg-blue-700"
+            >
               Close
             </Button>
           </div>

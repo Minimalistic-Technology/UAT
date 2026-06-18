@@ -53,8 +53,8 @@ export default function ForgotPasswordClient() {
   const isMutationLoading = forgotPasswordMutation.isPending;
 
   return (
-    <div className="flex h-[calc(100dvh-72px)] w-full bg-slate-50/50 overflow-hidden">
-      <div className="hidden h-full w-1/2 lg:block relative shrink-0">
+    <div className="flex h-[calc(100dvh-72px)] w-full overflow-hidden bg-slate-50/50">
+      <div className="relative hidden h-full w-1/2 shrink-0 lg:block">
         <Image
           src="/login-page-img.png"
           alt="forgot-password-image"
@@ -63,9 +63,9 @@ export default function ForgotPasswordClient() {
           className="object-cover"
         />
       </div>
-      <div className="flex h-full flex-1 flex-col items-center justify-center px-4 py-4 sm:px-6 lg:px-8 bg-slate-50 relative">
-        <Card className="w-full max-w-md space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2 relative z-10">
-          <CardHeader className="text-center pb-2 pt-4">
+      <div className="relative flex h-full flex-1 flex-col items-center justify-center bg-slate-50 px-4 py-4 sm:px-6 lg:px-8">
+        <Card className="relative z-10 w-full max-w-md shrink-0 space-y-1 rounded-[24px] border border-slate-100 bg-white p-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <CardHeader className="pt-4 pb-2 text-center">
             <CardTitle className="text-2xl font-bold">
               Forgot Password
             </CardTitle>
@@ -77,24 +77,33 @@ export default function ForgotPasswordClient() {
             <form onSubmit={handleSubmit(onSubmit)} className="grid gap-3">
               {/* Email Field */}
               <div className="grid gap-2">
-                <Label htmlFor="email" className="font-semibold text-slate-600 text-[13px] ml-1">Email Address</Label>
+                <Label
+                  htmlFor="email"
+                  className="ml-1 text-[13px] font-semibold text-slate-600"
+                >
+                  Email Address
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="name@example.com"
                   {...register("email")}
                   disabled={isMutationLoading}
-                  className={`h-11 rounded-xl bg-slate-50/50 border-slate-200 focus-visible:ring-[#2563eb] text-sm px-4 ${errors.email ? "border-destructive" : ""}`}
+                  className={`h-11 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-sm focus-visible:ring-[#2563eb] ${errors.email ? "border-destructive" : ""}`}
                 />
                 {errors.email && (
-                  <p className="text-destructive text-[11px] font-bold tracking-wide mt-1 ml-1">
+                  <p className="text-destructive mt-1 ml-1 text-[11px] font-bold tracking-wide">
                     {errors.email.message}
                   </p>
                 )}
               </div>
 
               {/* Submit Button */}
-              <Button type="submit" className="w-full h-11 rounded-xl bg-[#2563eb] hover:bg-blue-700 text-white font-semibold text-[15px] shadow-md shadow-blue-500/20 mt-4 transition-all" disabled={isMutationLoading}>
+              <Button
+                type="submit"
+                className="mt-4 h-11 w-full rounded-xl bg-[#2563eb] text-[15px] font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-700"
+                disabled={isMutationLoading}
+              >
                 {isMutationLoading ? (
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 ) : (
@@ -104,10 +113,10 @@ export default function ForgotPasswordClient() {
               </Button>
             </form>
 
-            <div className="text-muted-foreground mb-2 mt-6 text-center text-sm">
+            <div className="text-muted-foreground mt-6 mb-2 text-center text-sm">
               <Link
                 href="/login"
-                className="text-primary font-medium underline-offset-4 hover:underline flex items-center justify-center"
+                className="text-primary flex items-center justify-center font-medium underline-offset-4 hover:underline"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Login

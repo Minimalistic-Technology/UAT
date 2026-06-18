@@ -27,11 +27,13 @@ export const useCreateMyJobPosting = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-job-postings"] });
       toast.success("Job posted successfully!");
-      router.push("/employer-dashboard")
+      router.push("/employer-dashboard");
     },
     onError: (error: any) => {
       console.error("Error posting job:", error);
-      const errorMsg = error?.response?.data?.message || "Failed to post job. Please try again.";
+      const errorMsg =
+        error?.response?.data?.message ||
+        "Failed to post job. Please try again.";
       toast.error(errorMsg);
     },
   });
@@ -43,7 +45,7 @@ export const useGetJobPostById = (jobId: string) => {
     queryFn: () => getJobPostById(jobId),
     enabled: !!jobId, // Only run the query if jobId is provided
   });
-}
+};
 
 export const useDeleteMyJobPosting = () => {
   const queryClient = useQueryClient();
@@ -56,7 +58,9 @@ export const useDeleteMyJobPosting = () => {
     },
     onError: (error: any) => {
       console.error("Error deleting job:", error);
-      const errorMsg = error?.response?.data?.message || "Failed to delete job. Please try again.";
+      const errorMsg =
+        error?.response?.data?.message ||
+        "Failed to delete job. Please try again.";
       toast.error(errorMsg);
     },
   });
@@ -76,7 +80,9 @@ export const useUpdateMyJobPosting = (jobId: string) => {
     },
     onError: (error: any) => {
       console.error("Error updating job:", error);
-      const errorMsg = error?.response?.data?.message || "Failed to update job. Please try again.";
+      const errorMsg =
+        error?.response?.data?.message ||
+        "Failed to update job. Please try again.";
       toast.error(errorMsg);
     },
   });

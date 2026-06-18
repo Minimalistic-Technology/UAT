@@ -23,8 +23,15 @@ export const useUpdateKycApplicationStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ applicationId, status, note }: { applicationId: string; status: string; note?: string }) =>
-      updateKycApplicationStatus({ applicationId, status, note }),
+    mutationFn: ({
+      applicationId,
+      status,
+      note,
+    }: {
+      applicationId: string;
+      status: string;
+      note?: string;
+    }) => updateKycApplicationStatus({ applicationId, status, note }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["kyc-applications"] });
     },

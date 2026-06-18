@@ -6,8 +6,7 @@ export const useToggleUserStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ userId }: { userId: string }) =>
-      toggleUserStatus(userId),
+    mutationFn: ({ userId }: { userId: string }) => toggleUserStatus(userId),
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });

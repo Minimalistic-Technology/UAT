@@ -29,7 +29,9 @@ interface ResetPasswordClientProps {
   token: string;
 }
 
-export default function ResetPasswordClient({ token }: ResetPasswordClientProps) {
+export default function ResetPasswordClient({
+  token,
+}: ResetPasswordClientProps) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -46,7 +48,9 @@ export default function ResetPasswordClient({ token }: ResetPasswordClientProps)
   const onSubmit = async (data: ResetPasswordInput) => {
     resetPasswordMutation.mutate(data, {
       onSuccess: () => {
-        toast.success("Password reset successfully! Please login with your new password.");
+        toast.success(
+          "Password reset successfully! Please login with your new password.",
+        );
         router.push("/login");
       },
       onError: (error: any) => {
@@ -72,12 +76,10 @@ export default function ResetPasswordClient({ token }: ResetPasswordClientProps)
         priority
         className="hidden h-full w-1/2 object-cover lg:block"
       />
-      <div className="flex  h-full flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-sm space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2">
-          <CardHeader className="text-center pb-2 pt-4">
-            <CardTitle className="text-2xl font-bold">
-              Reset Password
-            </CardTitle>
+      <div className="flex h-full flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-sm shrink-0 space-y-1 rounded-[24px] border border-slate-100 bg-white p-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <CardHeader className="pt-4 pb-2 text-center">
+            <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
             <CardDescription className="text-slate-500">
               Enter your new password below
             </CardDescription>
@@ -128,7 +130,9 @@ export default function ResetPasswordClient({ token }: ResetPasswordClientProps)
                     {...register("confirmPassword")}
                     disabled={isMutationLoading}
                     className={
-                      errors.confirmPassword ? "border-destructive pr-10" : "pr-10"
+                      errors.confirmPassword
+                        ? "border-destructive pr-10"
+                        : "pr-10"
                     }
                   />
                   <button
@@ -151,7 +155,11 @@ export default function ResetPasswordClient({ token }: ResetPasswordClientProps)
               </div>
 
               {/* Submit Button */}
-              <Button type="submit" className="w-full mt-2" disabled={isMutationLoading}>
+              <Button
+                type="submit"
+                className="mt-2 w-full"
+                disabled={isMutationLoading}
+              >
                 {isMutationLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -164,7 +172,7 @@ export default function ResetPasswordClient({ token }: ResetPasswordClientProps)
             <div className="text-muted-foreground mt-6 text-center text-sm">
               <Link
                 href="/login"
-                className="text-primary font-medium underline-offset-4 hover:underline flex items-center justify-center"
+                className="text-primary flex items-center justify-center font-medium underline-offset-4 hover:underline"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Login

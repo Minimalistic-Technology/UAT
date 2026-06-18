@@ -30,7 +30,8 @@ export default function VerifyOtpClient() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [timer, setTimer] = useState<number>(30);
 
-  const { mutateAsync: resendOtp, isPending: isResending } = useResendRegistrationOtp();
+  const { mutateAsync: resendOtp, isPending: isResending } =
+    useResendRegistrationOtp();
 
   useEffect(() => {
     if (timer > 0) {
@@ -59,7 +60,8 @@ export default function VerifyOtpClient() {
       toast.success("OTP resent successfully.");
       setTimer(30);
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err.message || "Failed to resend OTP.";
+      const errorMessage =
+        err?.response?.data?.message || err.message || "Failed to resend OTP.";
       toast.error(errorMessage);
     }
   };
@@ -97,64 +99,67 @@ export default function VerifyOtpClient() {
   if (!email) return null;
 
   return (
-    <div className="flex h-screen w-full bg-slate-50/50 overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50/50">
       <div className="flex h-full flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-md space-y-1 shadow-2xl rounded-[24px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0 p-2">
-          <CardHeader className="text-center pb-2 pt-4">
+        <Card className="w-full max-w-md shrink-0 space-y-1 rounded-[24px] border border-slate-100 bg-white p-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <CardHeader className="pt-4 pb-2 text-center">
             <CardTitle className="text-2xl font-bold">
               Verify Your Email
             </CardTitle>
             <CardDescription className="text-slate-500">
               We sent a 6-digit code to{" "}
-              <span className="font-medium text-foreground">{email}</span>.
+              <span className="text-foreground font-medium">{email}</span>.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center space-y-6 pb-4">
-          {/* Shadcn InputOTP Component */}
-          <InputOTP
-            maxLength={6}
-            value={otp}
-            onChange={(value) => setOtp(value)}
-            disabled={isLoading}
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
-            </InputOTPGroup>
-          </InputOTP>
+            {/* Shadcn InputOTP Component */}
+            <InputOTP
+              maxLength={6}
+              value={otp}
+              onChange={(value) => setOtp(value)}
+              disabled={isLoading}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
 
-          <Button
-            onClick={onSubmit}
-            className="w-full"
-            disabled={isLoading || otp.length !== 6}
-          >
-            {isLoading ? "Verifying..." : "Verify OTP"}
-          </Button>
+            <Button
+              onClick={onSubmit}
+              className="w-full"
+              disabled={isLoading || otp.length !== 6}
+            >
+              {isLoading ? "Verifying..." : "Verify OTP"}
+            </Button>
 
-          <div className="text-center text-sm">
-            {timer > 0 ? (
-              <p className="text-muted-foreground font-medium">
-                Resend code in <span className="text-primary font-bold">00:{timer < 10 ? `0${timer}` : timer}</span>
-              </p>
-            ) : (
-              <p className="text-muted-foreground font-medium flex items-center justify-center gap-1">
-                Didn&apos;t receive a code?{" "}
-                <button
-                  onClick={handleResendOtp}
-                  disabled={isResending}
-                  className="text-primary hover:underline font-bold disabled:opacity-50"
-                >
-                  {isResending ? "Resending..." : "Resend / Try again"}
-                </button>
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="text-center text-sm">
+              {timer > 0 ? (
+                <p className="text-muted-foreground font-medium">
+                  Resend code in{" "}
+                  <span className="text-primary font-bold">
+                    00:{timer < 10 ? `0${timer}` : timer}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-muted-foreground flex items-center justify-center gap-1 font-medium">
+                  Didn&apos;t receive a code?{" "}
+                  <button
+                    onClick={handleResendOtp}
+                    disabled={isResending}
+                    className="text-primary font-bold hover:underline disabled:opacity-50"
+                  >
+                    {isResending ? "Resending..." : "Resend / Try again"}
+                  </button>
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

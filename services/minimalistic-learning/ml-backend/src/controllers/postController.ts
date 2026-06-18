@@ -100,9 +100,25 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
     const post = { ...item, authorId: item.author };
     const likesArr = parseArr(post.likes);
     const coverImageObj = post.coverImage ? JSON.parse(post.coverImage) : null;
-    const mappedPost = { ...post, coverImage: coverImageObj, _likes: likesArr, likesCount: likesArr.length };
-    delete mappedPost.likes;
-    delete mappedPost.viewedBy;
+    const readTime = Math.max(Math.ceil(((post.content || "").split(/\s+/).length) / 200), 1);
+
+    const mappedPost = {
+      ...post,
+      coverImage: coverImageObj,
+      _likes: likesArr,
+      likesCount: likesArr.length,
+      readTime
+    };
+
+    // Strip only heavy / internal-only fields — keep everything the card UI needs
+    delete mappedPost.content;   // Heavy HTML — not needed in list cards
+    delete mappedPost.likes;     // Raw likes array — replaced by likesCount
+    delete mappedPost.viewedBy;  // Large viewer array — not needed in list
+    delete mappedPost.updatedAt; // Internal field — not displayed in cards
+    delete mappedPost.status;    // Internal — cards use published=true filter already
+    delete mappedPost.published; // Internal — always true for public list
+    delete mappedPost.author;    // Replaced by authorId (populated)
+
     return mappedPost;
   });
 
@@ -160,10 +176,15 @@ export const listMyPosts = asyncHandler(async (req: Request, res: Response) => {
     const likesArr = parseArr(post.likes);
     const likesCount = likesArr.length;
     const hasLiked = likesArr.includes(userId);
+    const readTime = Math.max(Math.ceil(((post.content || "").split(/\s+/).length) / 200), 1);
 
     const coverImageObj = post.coverImage ? JSON.parse(post.coverImage) : null;
-    const mappedPost = { ...post, likesCount, hasLiked, coverImage: coverImageObj };
-    delete mappedPost.likes;
+    const mappedPost = { ...post, likesCount, hasLiked, coverImage: coverImageObj, readTime };
+
+    delete mappedPost.content;   // strip heavy HTML content — not needed in list
+    delete mappedPost.likes;     // strip raw likes array — already computed as likesCount
+    delete mappedPost.viewedBy;  // strip large viewedBy array — not needed in list
+
     return mappedPost;
   });
 

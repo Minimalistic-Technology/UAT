@@ -24,7 +24,10 @@ export function JobRow({ job }: { job: any }) {
     <TableRow className="group">
       <TableCell className="font-medium text-gray-900">{job.title}</TableCell>
       <TableCell>
-        <Badge variant="secondary" className={getListingStatusColor(job.status)}>
+        <Badge
+          variant="secondary"
+          className={getListingStatusColor(job.status)}
+        >
           {job.status}
         </Badge>
       </TableCell>
@@ -34,7 +37,9 @@ export function JobRow({ job }: { job: any }) {
         </span>
       </TableCell>
       <TableCell>
-        <span className="text-sm font-medium">{job.postedBy.firstName + " " + job.postedBy.lastName}</span>
+        <span className="text-sm font-medium">
+          {job.postedBy.firstName + " " + job.postedBy.lastName}
+        </span>
       </TableCell>
       <TableCell className="text-sm text-gray-500">
         {format(new Date(job.createdAt), "MMM dd, yyyy")}
@@ -73,7 +78,9 @@ export function JobRow({ job }: { job: any }) {
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={job.status === "closed"}
-              onClick={() => router.push(`/employer-dashboard/jobs/${job._id}/edit`)}
+              onClick={() =>
+                router.push(`/employer-dashboard/jobs/${job._id}/edit`)
+              }
             >
               <Edit className="mr-2 size-4" /> Edit Job
             </DropdownMenuItem>

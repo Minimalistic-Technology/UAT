@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView } from "motion/react";
 
@@ -7,12 +7,13 @@ type CounterProps = {
   suffix?: string;
 };
 
-
 const STATS = [
   { value: 12804, suffix: "+", label: "Jobs posted this week" },
   { value: 3200, suffix: "+", label: "Hiring companies" },
   { value: 72, suffix: "h", label: "Avg. response time" },
   { value: 94, suffix: "%", label: "Candidate match rate" },
+  { value: 50, suffix: "k+", label: "Active users" },
+  { value: 99, suffix: "%", label: "Satisfaction rate" },
 ];
 
 const Counter = ({ to, suffix = "" }: CounterProps) => {
@@ -49,10 +50,10 @@ const Counter = ({ to, suffix = "" }: CounterProps) => {
   return (
     <span
       ref={ref}
-      className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter text-white"
+      className="text-5xl font-bold tracking-tighter text-white md:text-6xl lg:text-7xl"
     >
       {val.toLocaleString()}
-      <span className="text-blue-400 ml-1">{suffix}</span>
+      <span className="ml-1 text-blue-400">{suffix}</span>
     </span>
   );
 };
@@ -62,31 +63,31 @@ export default Counter;
 export const Stats = () => {
   return (
     <section
-      className="py-24 md:py-32 bg-slate-950 relative overflow-hidden"
+      className="relative overflow-hidden bg-slate-950 py-24 md:py-32"
       data-testid="stats-section"
     >
       {/* Visual Decorations */}
-      <div 
-        className="absolute inset-0 opacity-10 pointer-events-none [background-image:linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] [background-size:40px_40px]" 
-        aria-hidden="true"
-      />
-      
-      {/* Decorative Orbs - Using Tailwind instead of missing custom classes */}
       <div
-        className="absolute rounded-full blur-[120px] bg-blue-600/20 w-[480px] h-[480px] -top-40 left-1/4"
-        aria-hidden="true"
-      />
-      <div
-        className="absolute rounded-full blur-[100px] bg-blue-600/20 w-[420px] h-[420px] -bottom-32 right-1/3"
+        className="pointer-events-none absolute inset-0 [background-image:linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] [background-size:40px_40px] opacity-10"
         aria-hidden="true"
       />
 
-      <div className="relative max-w-[88rem] mx-auto px-6 md:px-12">
-        <div className="max-w-2xl mb-16 md:mb-24">
-          <span className="text-[10px] md:text-xs tracking-[0.24em] uppercase font-black text-blue-400">
+      {/* Decorative Orbs - Using Tailwind instead of missing custom classes */}
+      <div
+        className="absolute -top-40 left-1/4 h-[480px] w-[480px] rounded-full bg-blue-600/20 blur-[120px]"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute right-1/3 -bottom-32 h-[420px] w-[420px] rounded-full bg-blue-600/20 blur-[100px]"
+        aria-hidden="true"
+      />
+
+      <div className="relative mx-auto max-w-[88rem] px-6 md:px-12">
+        <div className="mb-16 max-w-2xl md:mb-24">
+          <span className="text-[10px] font-black tracking-[0.24em] text-blue-400 uppercase md:text-xs">
             By the numbers
           </span>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl mt-4 text-white font-bold leading-tight tracking-tight">
+          <h2 className="mt-4 text-4xl leading-tight font-bold tracking-tight text-white md:text-5xl lg:text-6xl">
             Momentum, <span className="text-slate-400">measured.</span>
           </h2>
         </div>
@@ -95,10 +96,10 @@ export const Stats = () => {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
-          variants={{ 
-            show: { transition: { staggerChildren: 0.1 } } 
+          variants={{
+            show: { transition: { staggerChildren: 0.1 } },
           }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-16 md:gap-6"
+          className="grid grid-cols-2 gap-x-8 gap-y-16 md:grid-cols-4 md:gap-6"
         >
           {STATS.map((stat, i) => (
             <motion.div
@@ -107,16 +108,16 @@ export const Stats = () => {
                 hidden: { opacity: 0, y: 20 },
                 show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
               }}
-              className="flex flex-col relative"
+              className="relative flex flex-col"
               data-testid={`stat-${i}`}
             >
               <Counter to={stat.value} suffix={stat.suffix} />
-              <div className="mt-4 text-sm md:text-base font-medium text-slate-400 uppercase tracking-widest max-w-[14rem]">
+              <div className="mt-4 max-w-[14rem] text-sm font-medium tracking-widest text-slate-400 uppercase md:text-base">
                 {stat.label}
               </div>
-              
+
               {/* Subtle accent border for desktop */}
-              <div className="hidden md:block absolute -left-4 top-2 bottom-2 w-[1px] bg-gradient-to-b from-transparent via-slate-800 to-transparent" />
+              <div className="absolute top-2 bottom-2 -left-4 hidden w-[1px] bg-gradient-to-b from-transparent via-slate-800 to-transparent md:block" />
             </motion.div>
           ))}
         </motion.div>

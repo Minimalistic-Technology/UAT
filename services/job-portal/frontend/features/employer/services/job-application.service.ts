@@ -13,7 +13,7 @@ export type ApplicationWithUser = Omit<Application, "jobSeeker"> & {
     skills: string[];
     experience: Experience[];
     education: Education[];
-    resume?: string
+    resume?: string;
   };
 };
 
@@ -22,7 +22,10 @@ interface JobApplicationsResponse {
   applications: ApplicationWithUser[];
 }
 
-export const getApplicationsByJobId = async (listingId: string, listingType: string) => {
+export const getApplicationsByJobId = async (
+  listingId: string,
+  listingType: string,
+) => {
   const response = await apiClient.post<
     ApiSuccessResponse<JobApplicationsResponse>
   >(`/applications/jobs/my-applications`, { listingId, listingType });
@@ -52,10 +55,13 @@ export const updateApplicationStatus = async ({
   note?: string;
   interviewDate?: string;
 }) => {
-  const response = await apiClient.put(`/applications/${applicationId}/status`, {
-    status,
-    note,
-    interviewDate,
-  });
+  const response = await apiClient.put(
+    `/applications/${applicationId}/status`,
+    {
+      status,
+      note,
+      interviewDate,
+    },
+  );
   return response.data;
 };

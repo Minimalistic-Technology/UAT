@@ -15,7 +15,6 @@ export async function createCoupon(payload: CouponFormValues) {
   return response.data;
 }
 
-
 export const getAdminCoupons = async (page: number = 1, limit: number = 10) => {
   const response = await apiClient.post(
     "/graphql",
@@ -25,7 +24,7 @@ export const getAdminCoupons = async (page: number = 1, limit: number = 10) => {
     },
     {
       baseURL: API_URL.replace("/api", ""),
-    }
+    },
   );
 
   return {

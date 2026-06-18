@@ -1,7 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { getApplicationsByJobId, getAllEmployerApplications, updateApplicationStatus } from "../services/job-application.service";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getApplicationsByJobId,
+  getAllEmployerApplications,
+  updateApplicationStatus,
+} from "../services/job-application.service";
 
-export const useGetApplicationsByJobId = (listingId: string, listingType: string) => {
+export const useGetApplicationsByJobId = (
+  listingId: string,
+  listingType: string,
+) => {
   return useQuery({
     queryKey: ["job-applications", listingId, listingType],
     queryFn: () => getApplicationsByJobId(listingId, listingType),
@@ -9,7 +16,12 @@ export const useGetApplicationsByJobId = (listingId: string, listingType: string
   });
 };
 
-export const useAllEmployerApplications = (params?: { page?: number; limit?: number; status?: string; search?: string }) => {
+export const useAllEmployerApplications = (params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
+}) => {
   return useQuery({
     queryKey: ["all-employer-applications", params],
     queryFn: () => getAllEmployerApplications(params),
@@ -23,7 +35,9 @@ export const useUpdateApplicationStatus = () => {
     mutationFn: updateApplicationStatus,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["job-applications"] });
-      queryClient.invalidateQueries({ queryKey: ["all-employer-applications"] });
+      queryClient.invalidateQueries({
+        queryKey: ["all-employer-applications"],
+      });
     },
   });
 };

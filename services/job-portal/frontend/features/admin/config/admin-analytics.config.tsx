@@ -43,6 +43,7 @@ export const getAnalyticsStatusCardsConfig = (summary: AnalyticsSummary) => [
     value: summary.kycPending.toLocaleString(),
     variant: "warning" as const,
     icon: <ShieldCheck />,
-    className: "md:col-span-1 col-span-2 shadow-md border-premium/40 bg-premium/5",
+    className:
+      "md:col-span-1 col-span-2 shadow-md border-premium/40 bg-premium/5",
   },
 ];

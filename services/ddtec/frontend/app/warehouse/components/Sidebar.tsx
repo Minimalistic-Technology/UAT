@@ -46,7 +46,7 @@ export default function Sidebar({
 
     return (
         <>
-            <aside className={`fixed inset-y-0 left-0 z-40 w-64 pt-16 bg-white dark:bg-slate-800 border-0 shadow-2xl drop-shadow-xl transition-all duration-300 transform md:translate-x-0 ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} flex flex-col`}>
+            <aside className={`fixed inset-y-0 left-0 z-[60] w-64 pt-20 bg-white dark:bg-slate-800 border-r border-slate-100 dark:border-slate-700/50 shadow-2xl drop-shadow-xl transition-all duration-300 transform md:translate-x-0 ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"} flex flex-col`}>
 
                 {/* Mobile Close Button Container */}
                 <div className="md:hidden p-4 border-0 flex justify-end">
@@ -59,7 +59,7 @@ export default function Sidebar({
                 </div>
 
                 {/* Navigation Links list */}
-                <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+                <nav className="flex-1 px-4 py-8 space-y-1.5 overflow-y-auto">
                     {sidebarItems.map((item, index) => {
                         const Icon = item.icon;
                         const isActive = sidebarActiveItem === item.label;
@@ -108,7 +108,7 @@ export default function Sidebar({
             {isMobileSidebarOpen && (
                 <div
                     onClick={() => setIsMobileSidebarOpen(false)}
-                    className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-25 md:hidden"
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] md:hidden"
                 />
             )}
         </>

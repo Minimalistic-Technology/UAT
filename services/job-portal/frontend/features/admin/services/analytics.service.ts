@@ -19,7 +19,7 @@ export interface AdminAnalyticsSummary {
   kycPending: number;
   totalCompanies: number;
   totalApplications: number;
-  revenueCurrency: "INR" | "USD" | "EUR" | "GBP",
+  revenueCurrency: "INR" | "USD" | "EUR" | "GBP";
 }
 
 export interface AdminAnalyticsResponse {
@@ -34,10 +34,12 @@ export interface AdminAnalyticsResponse {
   topCoupons: any[];
 }
 
-
 // -------------------------------- Service ---------------------------
 
 export const fetchAdminAnalytics = async () => {
-  const response = await apiClient.get<ApiSuccessResponse<AdminAnalyticsResponse>>(`/admin/analytics`);
+  const response =
+    await apiClient.get<ApiSuccessResponse<AdminAnalyticsResponse>>(
+      `/admin/analytics`,
+    );
   return response.data;
 };

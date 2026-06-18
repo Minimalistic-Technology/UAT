@@ -27,7 +27,6 @@ export const ProfileOverview = ({
         <CardContent className="pt-8 pb-6 text-center">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
-
               {/* Avatar */}
               <Avatar className="border-background h-28 w-28 border-4 shadow-xl">
                 {user?.avatar?.url ? (
@@ -86,7 +85,11 @@ export const ProfileOverview = ({
             <span className="text-muted-foreground font-medium">Location</span>
             <span className="text-foreground ml-auto text-right font-semibold">
               {user?.location
-                ? [user.location.city, user.location.state, user.location.country]
+                ? [
+                    user.location.city,
+                    user.location.state,
+                    user.location.country,
+                  ]
                     .filter(Boolean)
                     .join(", ") || "Not Specified"
                 : "Not Specified"}

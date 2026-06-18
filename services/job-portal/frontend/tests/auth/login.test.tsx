@@ -51,7 +51,7 @@ describe("LoginClient Component", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     (useSession as jest.Mock).mockReturnValue({
       data: null,
       status: "unauthenticated",
@@ -65,78 +65,112 @@ describe("LoginClient Component", () => {
 
   it("renders all form elements correctly", () => {
     render(<LoginClient />);
-    
+
     expect(screen.getByText("Welcome Back")).toBeInTheDocument();
-    expect(screen.getByText(/Enter your email to sign in to your account/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Enter your email to sign in to your account/i),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/Email Address/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Remember me/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Sign In with Email/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Sign In with Email/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Google/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Forgot password\?/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Forgot password\?/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Sign up/i })).toBeInTheDocument();
   });
 
   describe("Form Validations", () => {
     it("shows validation errors for empty fields on submit", async () => {
       render(<LoginClient />);
-      
-      fireEvent.click(screen.getByRole("button", { name: /Sign In with Email/i }));
-      
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /Sign In with Email/i }),
+      );
+
       await waitFor(() => {
         expect(screen.getByText(/Invalid email address/i)).toBeInTheDocument();
-        expect(screen.getByText(/Password must be at least 6 characters/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Password must be at least 6 characters/i),
+        ).toBeInTheDocument();
       });
-      
+
       expect(mockMutate).not.toHaveBeenCalled();
     });
 
     it("shows validation error for invalid email format", async () => {
       render(<LoginClient />);
-      
+
       const emailInput = screen.getByLabelText(/Email Address/i);
       fireEvent.change(emailInput, { target: { value: "invalid-email" } });
-      fireEvent.change(screen.getByLabelText(/^Password$/i), { target: { value: "password123" } });
-      
+      fireEvent.change(screen.getByLabelText(/^Password$/i), {
+        target: { value: "password123" },
+      });
+
       fireEvent.submit(emailInput.closest("form")!);
-      
+
       await waitFor(() => {
         expect(screen.getByText(/Invalid email address/i)).toBeInTheDocument();
       });
-      expect(screen.queryByText(/Password must be at least 6 characters/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Password must be at least 6 characters/i),
+      ).not.toBeInTheDocument();
       expect(mockMutate).not.toHaveBeenCalled();
     });
 
     it("shows validation error for password less than 6 characters", async () => {
       render(<LoginClient />);
-      
-      fireEvent.change(screen.getByLabelText(/Email Address/i), { target: { value: "test@example.com" } });
-      fireEvent.change(screen.getByLabelText(/^Password$/i), { target: { value: "12345" } });
-      
-      fireEvent.click(screen.getByRole("button", { name: /Sign In with Email/i }));
-      
-      await waitFor(() => {
-        expect(screen.getByText(/Password must be at least 6 characters/i)).toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "test@example.com" },
       });
-      expect(screen.queryByText(/Invalid email address/i)).not.toBeInTheDocument();
+      fireEvent.change(screen.getByLabelText(/^Password$/i), {
+        target: { value: "12345" },
+      });
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /Sign In with Email/i }),
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Password must be at least 6 characters/i),
+        ).toBeInTheDocument();
+      });
+      expect(
+        screen.queryByText(/Invalid email address/i),
+      ).not.toBeInTheDocument();
       expect(mockMutate).not.toHaveBeenCalled();
     });
 
     it("removes validation error after fixing the input", async () => {
       render(<LoginClient />);
-      
-      fireEvent.click(screen.getByRole("button", { name: /Sign In with Email/i }));
-      
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /Sign In with Email/i }),
+      );
+
       await waitFor(() => {
         expect(screen.getByText(/Invalid email address/i)).toBeInTheDocument();
       });
 
-      fireEvent.change(screen.getByLabelText(/Email Address/i), { target: { value: "test@example.com" } });
-      fireEvent.change(screen.getByLabelText(/^Password$/i), { target: { value: "password123" } });
-      fireEvent.click(screen.getByRole("button", { name: /Sign In with Email/i }));
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText(/^Password$/i), {
+        target: { value: "password123" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: /Sign In with Email/i }),
+      );
 
       await waitFor(() => {
-        expect(screen.queryByText(/Invalid email address/i)).not.toBeInTheDocument();
+        expect(
+          screen.queryByText(/Invalid email address/i),
+        ).not.toBeInTheDocument();
       });
     });
   });
@@ -144,16 +178,22 @@ describe("LoginClient Component", () => {
   describe("Form Submissions & API Interactions", () => {
     it("calls login mutation with valid inputs", async () => {
       render(<LoginClient />);
-      
-      fireEvent.change(screen.getByLabelText(/Email Address/i), { target: { value: "test@example.com" } });
-      fireEvent.change(screen.getByLabelText(/^Password$/i), { target: { value: "password123" } });
-      
-      fireEvent.click(screen.getByRole("button", { name: /Sign In with Email/i }));
-      
+
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText(/^Password$/i), {
+        target: { value: "password123" },
+      });
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /Sign In with Email/i }),
+      );
+
       await waitFor(() => {
         expect(mockMutate).toHaveBeenCalledWith(
           { email: "test@example.com", password: "password123" },
-          expect.any(Object)
+          expect.any(Object),
         );
       });
     });
@@ -164,11 +204,17 @@ describe("LoginClient Component", () => {
       });
 
       render(<LoginClient />);
-      
-      fireEvent.change(screen.getByLabelText(/Email Address/i), { target: { value: "test@example.com" } });
-      fireEvent.change(screen.getByLabelText(/^Password$/i), { target: { value: "password123" } });
-      fireEvent.click(screen.getByRole("button", { name: /Sign In with Email/i }));
-      
+
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText(/^Password$/i), {
+        target: { value: "password123" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: /Sign In with Email/i }),
+      );
+
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith("Login successful!");
       });
@@ -180,11 +226,17 @@ describe("LoginClient Component", () => {
       });
 
       render(<LoginClient />);
-      
-      fireEvent.change(screen.getByLabelText(/Email Address/i), { target: { value: "test@example.com" } });
-      fireEvent.change(screen.getByLabelText(/^Password$/i), { target: { value: "password123" } });
-      fireEvent.click(screen.getByRole("button", { name: /Sign In with Email/i }));
-      
+
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText(/^Password$/i), {
+        target: { value: "password123" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: /Sign In with Email/i }),
+      );
+
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Invalid credentials");
       });
@@ -196,37 +248,49 @@ describe("LoginClient Component", () => {
         options.onError(mockValidationError);
       });
 
-      (getValidationErrorMessage as jest.Mock).mockReturnValue("Email is not registered");
+      (getValidationErrorMessage as jest.Mock).mockReturnValue(
+        "Email is not registered",
+      );
 
       render(<LoginClient />);
-      
-      fireEvent.change(screen.getByLabelText(/Email Address/i), { target: { value: "test@example.com" } });
-      fireEvent.change(screen.getByLabelText(/^Password$/i), { target: { value: "password123" } });
-      fireEvent.click(screen.getByRole("button", { name: /Sign In with Email/i }));
-      
+
+      fireEvent.change(screen.getByLabelText(/Email Address/i), {
+        target: { value: "test@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText(/^Password$/i), {
+        target: { value: "password123" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: /Sign In with Email/i }),
+      );
+
       await waitFor(() => {
-        expect(getValidationErrorMessage).toHaveBeenCalledWith(mockValidationError);
+        expect(getValidationErrorMessage).toHaveBeenCalledWith(
+          mockValidationError,
+        );
         expect(toast.error).toHaveBeenCalledWith("Email is not registered");
       });
     });
 
     it("handles Google login click", async () => {
       render(<LoginClient />);
-      
+
       fireEvent.click(screen.getByRole("button", { name: /Google/i }));
-      
+
       await waitFor(() => {
         expect(signIn).toHaveBeenCalledWith("google");
       });
     });
 
     it("shows error toast if Google login fails", async () => {
-      (signIn as jest.Mock).mockRejectedValueOnce(new Error("Google login failed"));
-      
+      (signIn as jest.Mock).mockRejectedValueOnce(
+        new Error("Google login failed"),
+      );
+
       render(<LoginClient />);
-      
+
       fireEvent.click(screen.getByRole("button", { name: /Google/i }));
-      
+
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith("Google login failed");
       });
@@ -241,11 +305,13 @@ describe("LoginClient Component", () => {
       });
 
       render(<LoginClient />);
-      
+
       expect(screen.getByLabelText(/Email Address/i)).toBeDisabled();
       expect(screen.getByLabelText(/^Password$/i)).toBeDisabled();
       expect(screen.getByLabelText(/Remember me/i)).toBeDisabled();
-      expect(screen.getByRole("button", { name: /Signing in.../i })).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: /Signing in.../i }),
+      ).toBeDisabled();
       expect(screen.getByRole("button", { name: /Google/i })).toBeDisabled();
     });
 
@@ -256,25 +322,27 @@ describe("LoginClient Component", () => {
       });
 
       render(<LoginClient />);
-      
+
       expect(screen.getByLabelText(/Email Address/i)).toBeDisabled();
       expect(screen.getByLabelText(/^Password$/i)).toBeDisabled();
       expect(screen.getByLabelText(/Remember me/i)).toBeDisabled();
-      expect(screen.getByRole("button", { name: /Sign In with Email/i })).toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: /Sign In with Email/i }),
+      ).toBeDisabled();
       expect(screen.getByRole("button", { name: /Google/i })).toBeDisabled();
     });
 
     it("toggles password visibility when clicking the eye icon", () => {
       render(<LoginClient />);
-      
+
       const passwordInput = screen.getByLabelText(/^Password$/i);
       expect(passwordInput).toHaveAttribute("type", "password");
-      
-      const toggleButton = screen.getAllByRole("button")[0]; 
-      
+
+      const toggleButton = screen.getAllByRole("button")[0];
+
       fireEvent.click(toggleButton);
       expect(passwordInput).toHaveAttribute("type", "text");
-      
+
       fireEvent.click(toggleButton);
       expect(passwordInput).toHaveAttribute("type", "password");
     });

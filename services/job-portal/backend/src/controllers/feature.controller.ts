@@ -17,13 +17,9 @@ export const checkFeature = async (req: CustomRequest, res: Response, next: Next
 
         if (!feature) {
             return res.status(200).json(new ApiResponse(200, { allowed: false }, "Feature not found"));
-        }
-
-        if (feature.status === FeatureStatus.PUBLIC) {
+        } else if (feature.status === FeatureStatus.PUBLIC) {
             return res.status(200).json(new ApiResponse(200, { allowed: true }, "Feature is public"));
-        }
-
-        if (feature.status === FeatureStatus.DISABLED) {
+        } else if (feature.status === FeatureStatus.DISABLED) {
             return res.status(200).json(new ApiResponse(200, { allowed: false }, "Feature is disabled"));
         }
 

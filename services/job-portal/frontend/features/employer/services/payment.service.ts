@@ -15,10 +15,9 @@ export const createOrder = async (orderPayload: {
   internalOrderId: string;
   billingCycle?: "monthly" | "yearly" | string;
 }) => {
-  const response = await apiClient.post<ApiSuccessResponse<CreateOrderResponse>>(
-    "/payments/create-order",
-    orderPayload
-  );
+  const response = await apiClient.post<
+    ApiSuccessResponse<CreateOrderResponse>
+  >("/payments/create-order", orderPayload);
 
   return response.data;
 };
@@ -28,10 +27,9 @@ export const verifyPayment = async (verificationPayload: {
   razorpay_payment_id: string;
   razorpay_signature: string;
 }) => {
-  const response = await apiClient.post<ApiSuccessResponse<{ success: boolean }>>(
-    "/payments/verify-payment",
-    verificationPayload
-  );
+  const response = await apiClient.post<
+    ApiSuccessResponse<{ success: boolean }>
+  >("/payments/verify-payment", verificationPayload);
 
   return response.data;
 };

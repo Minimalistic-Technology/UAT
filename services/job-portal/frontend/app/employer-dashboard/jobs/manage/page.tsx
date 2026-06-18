@@ -56,7 +56,7 @@ const Page = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 w-full">
+      <div className="flex w-full flex-row items-center justify-between gap-2 sm:gap-4">
         <div className="relative w-full flex-1 sm:max-w-sm">
           <GlobalSearchInput
             value={searchQuery}
@@ -64,7 +64,11 @@ const Page = () => {
             placeholder="Search job listings..."
           />
         </div>
-        <Button asChild size="sm" className="w-auto shrink-0 whitespace-nowrap px-3 sm:px-4">
+        <Button
+          asChild
+          size="sm"
+          className="w-auto shrink-0 px-3 whitespace-nowrap sm:px-4"
+        >
           <Link
             href="/employer-dashboard/listings/create?type=job"
             className="flex items-center justify-center"
@@ -171,12 +175,13 @@ function JobTableSkeleton() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+      <div className="bg-muted mb-4 flex h-20 w-20 items-center justify-center rounded-full">
         <Briefcase className="h-10 w-10 text-slate-400" />
       </div>
       <h3 className="text-lg font-semibold text-slate-900">No jobs found</h3>
       <p className="mt-1 max-w-md text-center text-sm text-slate-500">
-        You haven't posted any job listings yet. Get started by creating your first one.
+        You haven't posted any job listings yet. Get started by creating your
+        first one.
       </p>
       <Button asChild variant="outline" className="mt-6">
         <Link href="/employer-dashboard/listings/create?type=job">

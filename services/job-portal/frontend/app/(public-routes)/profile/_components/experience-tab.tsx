@@ -6,16 +6,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ProfileFormValues } from "@/validations";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 export const ExperienceTab = () => {
-  const { control, register, watch, formState: { errors } } = useFormContext<ProfileFormValues>();
+  const {
+    control,
+    register,
+    watch,
+    formState: { errors },
+  } = useFormContext<ProfileFormValues>();
 
-  const { fields: expFields, append: appendExp, remove: removeExp } = useFieldArray({
+  const {
+    fields: expFields,
+    append: appendExp,
+    remove: removeExp,
+  } = useFieldArray({
     control,
     name: "experience",
   });
@@ -30,16 +49,30 @@ export const ExperienceTab = () => {
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => appendExp({ title: "", company: "", workType: "wfo", location: "", startDate: "", endDate: "", current: false, description: "" } as any)}
+          onClick={() =>
+            appendExp({
+              title: "",
+              company: "",
+              workType: "wfo",
+              location: "",
+              startDate: "",
+              endDate: "",
+              current: false,
+              description: "",
+            } as any)
+          }
         >
-          <Plus className="h-4 w-4 mr-2" /> Add Experience
+          <Plus className="mr-2 h-4 w-4" /> Add Experience
         </Button>
       </div>
       <div className="space-y-6">
         {expFields.map((field, index) => {
           const isCurrent = experienceValues?.[index]?.current;
           return (
-            <div key={field.id} className="p-4 border rounded-md relative space-y-4">
+            <div
+              key={field.id}
+              className="relative space-y-4 rounded-md border p-4"
+            >
               <Button
                 type="button"
                 variant="ghost"
@@ -54,14 +87,18 @@ export const ExperienceTab = () => {
                   <Label>Title</Label>
                   <Input {...register(`experience.${index}.title`)} />
                   {errors.experience?.[index]?.title && (
-                    <p className="text-red-500 text-sm">{errors.experience[index]?.title?.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.experience[index]?.title?.message}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <Label>Company</Label>
                   <Input {...register(`experience.${index}.company`)} />
                   {errors.experience?.[index]?.company && (
-                    <p className="text-red-500 text-sm">{errors.experience[index]?.company?.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.experience[index]?.company?.message}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -70,7 +107,10 @@ export const ExperienceTab = () => {
                     control={control}
                     name={`experience.${index}.workType`}
                     render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ""}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select work type" />
                         </SelectTrigger>
@@ -78,27 +118,36 @@ export const ExperienceTab = () => {
                           <SelectItem value="wfo">WFO</SelectItem>
                           <SelectItem value="hybrid">Hybrid</SelectItem>
                           <SelectItem value="remote">Remote</SelectItem>
-                          <SelectItem value="temporary_wfh">Temporary WFH</SelectItem>
+                          <SelectItem value="temporary_wfh">
+                            Temporary WFH
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     )}
                   />
                   {errors.experience?.[index]?.workType && (
-                    <p className="text-red-500 text-sm">{errors.experience[index]?.workType?.message as string}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.experience[index]?.workType?.message as string}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <Label>
-                    Location {experienceValues?.[index]?.workType !== "remote" && <span className="text-red-500">*</span>}
+                    Location{" "}
+                    {experienceValues?.[index]?.workType !== "remote" && (
+                      <span className="text-red-500">*</span>
+                    )}
                   </Label>
                   <Input {...register(`experience.${index}.location`)} />
                   {errors.experience?.[index]?.location && (
-                    <p className="text-red-500 text-sm">{errors.experience[index]?.location?.message as string}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.experience[index]?.location?.message as string}
+                    </p>
                   )}
                 </div>
 
                 {/* Start & End Date side by side */}
-                <div className="space-y-2 flex flex-col">
+                <div className="flex flex-col space-y-2">
                   <Label>Start Date</Label>
                   <Controller
                     control={control}
@@ -110,19 +159,27 @@ export const ExperienceTab = () => {
                             variant={"outline"}
                             className={cn(
                               "w-full justify-start text-left font-normal",
-                              !field.value && "text-muted-foreground"
+                              !field.value && "text-muted-foreground",
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(new Date(field.value), "dd/MM/yyyy") : <span>Pick a date</span>}
+                            {field.value ? (
+                              format(new Date(field.value), "dd/MM/yyyy")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
-                            selected={field.value ? new Date(field.value) : undefined}
+                            selected={
+                              field.value ? new Date(field.value) : undefined
+                            }
                             onSelect={(date) => {
-                              field.onChange(date ? format(date, "yyyy-MM-dd") : "");
+                              field.onChange(
+                                date ? format(date, "yyyy-MM-dd") : "",
+                              );
                             }}
                             initialFocus
                           />
@@ -131,10 +188,12 @@ export const ExperienceTab = () => {
                     )}
                   />
                   {errors.experience?.[index]?.startDate && (
-                    <p className="text-red-500 text-sm">{errors.experience[index]?.startDate?.message as string}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.experience[index]?.startDate?.message as string}
+                    </p>
                   )}
                 </div>
-                <div className="space-y-2 flex flex-col">
+                <div className="flex flex-col space-y-2">
                   <Label>End Date</Label>
                   <Controller
                     control={control}
@@ -147,19 +206,27 @@ export const ExperienceTab = () => {
                             variant={"outline"}
                             className={cn(
                               "w-full justify-start text-left font-normal",
-                              !field.value && "text-muted-foreground"
+                              !field.value && "text-muted-foreground",
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(new Date(field.value), "dd/MM/yyyy") : <span>Pick a date</span>}
+                            {field.value ? (
+                              format(new Date(field.value), "dd/MM/yyyy")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
-                            selected={field.value ? new Date(field.value) : undefined}
+                            selected={
+                              field.value ? new Date(field.value) : undefined
+                            }
                             onSelect={(date) => {
-                              field.onChange(date ? format(date, "yyyy-MM-dd") : "");
+                              field.onChange(
+                                date ? format(date, "yyyy-MM-dd") : "",
+                              );
                             }}
                             initialFocus
                           />
@@ -177,12 +244,15 @@ export const ExperienceTab = () => {
                     {...register(`experience.${index}.current`)}
                     className="h-4 w-4"
                   />
-                  <Label htmlFor={`current-${index}`} className="font-normal cursor-pointer">
+                  <Label
+                    htmlFor={`current-${index}`}
+                    className="cursor-pointer font-normal"
+                  >
                     I currently work here
                   </Label>
                 </div>
 
-                <div className="space-y-2 col-span-2">
+                <div className="col-span-2 space-y-2">
                   <Label>Description</Label>
                   <Textarea {...register(`experience.${index}.description`)} />
                 </div>

@@ -24,6 +24,5 @@ export const useRedirectAsPerRole = () => {
     } else {
       router.push(callbackUrl);
     }
-
   }, [session, status, router, callbackUrl]);
 };

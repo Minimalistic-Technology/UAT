@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createInternshipPost, deleteInternshipPost, getMyInternshipPostings, getInternshipPostById, updateInternshipPostDetails } from "../services/internship.service";
+import {
+  createInternshipPost,
+  deleteInternshipPost,
+  getMyInternshipPostings,
+  getInternshipPostById,
+  updateInternshipPostDetails,
+} from "../services/internship.service";
 
 export const useGetMyInternshipPostings = () => {
   return useQuery({
@@ -19,7 +25,9 @@ export const useUpdateMyInternshipPosting = (internshipId: string) => {
       updateInternshipPostDetails(internshipId, internshipData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-internship-postings"] });
-      queryClient.invalidateQueries({ queryKey: ["internship-post", internshipId] });
+      queryClient.invalidateQueries({
+        queryKey: ["internship-post", internshipId],
+      });
       toast.success("Internship updated successfully!");
       router.push(`/employer-dashboard/internships/${internshipId}`);
     },

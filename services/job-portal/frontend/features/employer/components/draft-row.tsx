@@ -25,7 +25,10 @@ export function DraftRow({ draft }: { draft: any }) {
     <TableRow className="group">
       <TableCell className="font-medium text-gray-900">{title}</TableCell>
       <TableCell>
-        <Badge variant="outline" className="bg-orange-50 text-orange-700 hover:bg-orange-50">
+        <Badge
+          variant="outline"
+          className="bg-orange-50 text-orange-700 hover:bg-orange-50"
+        >
           Draft
         </Badge>
       </TableCell>
@@ -47,7 +50,9 @@ export function DraftRow({ draft }: { draft: any }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
-                router.push(`/employer-dashboard/listings/create?draftId=${draft._id}&type=${draft.type}`);
+                router.push(
+                  `/employer-dashboard/listings/create?draftId=${draft._id}&type=${draft.type}`,
+                );
               }}
               className="cursor-pointer"
             >
@@ -55,7 +60,7 @@ export function DraftRow({ draft }: { draft: any }) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="text-red-600 focus:text-red-600 cursor-pointer"
+              className="cursor-pointer text-red-600 focus:text-red-600"
               disabled={isDeleting}
               onClick={() => deleteDraft(draft._id)}
             >

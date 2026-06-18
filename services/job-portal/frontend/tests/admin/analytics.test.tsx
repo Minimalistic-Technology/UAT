@@ -24,7 +24,9 @@ jest.mock("recharts", () => ({
 
 // Mock ChartContainer from UI components since it might have ResizeObserver issues
 jest.mock("@/components/ui/chart", () => ({
-  ChartContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="chart-container">{children}</div>,
+  ChartContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="chart-container">{children}</div>
+  ),
   ChartTooltip: () => null,
   ChartTooltipContent: () => null,
 }));
@@ -49,10 +51,22 @@ const mockData = {
       totalApplications: 1250,
     },
     graphs: {
-      revenue: [{ name: "Jan", revenue: 10000 }, { name: "Feb", revenue: 15000 }],
-      users: [{ name: "Jan", users: 500 }, { name: "Feb", users: 600 }],
-      jobs: [{ name: "Jan", jobs: 10 }, { name: "Feb", jobs: 20 }],
-      internships: [{ name: "Jan", internships: 5 }, { name: "Feb", internships: 8 }],
+      revenue: [
+        { name: "Jan", revenue: 10000 },
+        { name: "Feb", revenue: 15000 },
+      ],
+      users: [
+        { name: "Jan", users: 500 },
+        { name: "Feb", users: 600 },
+      ],
+      jobs: [
+        { name: "Jan", jobs: 10 },
+        { name: "Feb", jobs: 20 },
+      ],
+      internships: [
+        { name: "Jan", internships: 5 },
+        { name: "Feb", internships: 8 },
+      ],
     },
   },
 };
@@ -76,7 +90,7 @@ describe("Admin Analytics Page", () => {
     });
 
     const { container } = render(<AnalyticsPage />);
-    
+
     // Check for loader by finding the animate-spin class or looking for specific div structure
     const loader = container.querySelector(".animate-spin");
     expect(loader).toBeInTheDocument();
@@ -90,7 +104,9 @@ describe("Admin Analytics Page", () => {
     });
 
     render(<AnalyticsPage />);
-    expect(screen.getByText(/Failed to load advanced analytics. Please refresh./i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Failed to load advanced analytics. Please refresh./i),
+    ).toBeInTheDocument();
   });
 
   it("renders error state when API success is false", () => {
@@ -101,7 +117,9 @@ describe("Admin Analytics Page", () => {
     });
 
     render(<AnalyticsPage />);
-    expect(screen.getByText(/Failed to load advanced analytics. Please refresh./i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Failed to load advanced analytics. Please refresh./i),
+    ).toBeInTheDocument();
   });
 
   it("renders the analytics dashboard correctly when data is successfully fetched", () => {
@@ -115,13 +133,15 @@ describe("Admin Analytics Page", () => {
 
     // Check Header and Titles
     expect(screen.getByText("Advanced Intelligence")).toBeInTheDocument();
-    
+
     // Check primary KPIs
     expect(screen.getByText("₹1,50,500")).toBeInTheDocument(); // Format logic might slightly differ by locale, testing basic presence or value
     expect(screen.getByText("5,200")).toBeInTheDocument(); // active users
-    
+
     // Check Growth metric text
-    expect(screen.getByText(/15.5% accelerated growth vs last month/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/15.5% accelerated growth vs last month/i),
+    ).toBeInTheDocument();
 
     // Check secondary KPIs using the StatusCard labels and values
     expect(screen.getByText("Active Jobs")).toBeInTheDocument();
@@ -189,7 +209,7 @@ describe("Admin Analytics Page", () => {
     expect(csvString).toContain("Platform Analytics Report");
     expect(csvString).toContain("Total Revenue (INR),150500");
     expect(csvString).toContain("Active Users,5200");
-    
+
     // Verify object URL creation and anchor click
     expect(mockCreateObjectURL).toHaveBeenCalled();
     expect(mockClick).toHaveBeenCalled();

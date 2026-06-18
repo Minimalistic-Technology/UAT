@@ -398,7 +398,18 @@ export const getAdminAnalytics = async (
       Company.aggregate([
         { $sort: { createdAt: -1 } },
         { $limit: 5 },
-        { $lookup: { from: "kycs", localField: "owner", foreignField: "user", as: "kyc" } },
+        {
+          $lookup: {
+            from: "kycs",
+            let: { ownerId: "$owner" },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$user", "$$ownerId"] } } },
+              { $sort: { createdAt: -1 } },
+              { $limit: 1 }
+            ],
+            as: "kyc"
+          }
+        },
         { $unwind: { path: "$kyc", preserveNullAndEmptyArrays: true } },
         {
           $project: {

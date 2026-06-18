@@ -47,7 +47,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FormattedDescription } from "@/features/employer/components/formatted-description";
 import { Internship } from "@/types/new-index";
-import { getCurrencyIcon, getCurrencySymbol, getListingStatusColor } from "@/utils";
+import {
+  getCurrencyIcon,
+  getCurrencySymbol,
+  getListingStatusColor,
+} from "@/utils";
 
 const Page = () => {
   const params = useParams();
@@ -127,21 +131,21 @@ const Page = () => {
           <Card className="overflow-hidden rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
             <CardHeader className="border-b bg-slate-50/50 pb-6 dark:bg-slate-800/50">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge 
-                  variant="secondary" 
-                  className={`capitalize px-3 py-1 shadow-sm ${getListingStatusColor(internship.status)}`}
+                <Badge
+                  variant="secondary"
+                  className={`px-3 py-1 capitalize shadow-sm ${getListingStatusColor(internship.status)}`}
                 >
                   {internship.status.replace("_", " ").toLowerCase()}
                 </Badge>
                 {internship.isFeatured && (
-                  <Badge className="px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm border-0">
+                  <Badge className="border-0 bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1 text-white shadow-sm">
                     Featured
                   </Badge>
                 )}
                 {internship.isPPO && (
                   <Badge
                     variant="outline"
-                    className="border-green-500/50 bg-green-50 text-green-700 px-3 py-1 shadow-sm dark:bg-green-500/10 dark:text-green-400"
+                    className="border-green-500/50 bg-green-50 px-3 py-1 text-green-700 shadow-sm dark:bg-green-500/10 dark:text-green-400"
                   >
                     PPO Available
                   </Badge>
@@ -149,7 +153,7 @@ const Page = () => {
                 {internship.certificateProvided && (
                   <Badge
                     variant="outline"
-                    className="border-blue-500/50 bg-blue-50 text-blue-700 px-3 py-1 shadow-sm dark:bg-blue-500/10 dark:text-blue-400"
+                    className="border-blue-500/50 bg-blue-50 px-3 py-1 text-blue-700 shadow-sm dark:bg-blue-500/10 dark:text-blue-400"
                   >
                     Certificate
                   </Badge>
@@ -163,20 +167,30 @@ const Page = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border/50">
+              <div className="text-muted-foreground bg-muted/30 border-border/50 flex flex-wrap items-center gap-4 rounded-lg border p-3 text-sm">
                 <div className="flex items-center gap-1.5">
-                  <Tags className="h-4 w-4 shrink-0 text-primary/70" />
+                  <Tags className="text-primary/70 h-4 w-4 shrink-0" />
                   <span className="capitalize">
-                    <span className="font-semibold text-foreground mr-1">Role:</span>
-                    {internship.roleCategory?.replace(/_/g, " ").toLowerCase() || "Not Specified"}
+                    <span className="text-foreground mr-1 font-semibold">
+                      Role:
+                    </span>
+                    {internship.roleCategory
+                      ?.replace(/_/g, " ")
+                      .toLowerCase() || "Not Specified"}
                   </span>
                 </div>
-                <Separator orientation="vertical" className="h-4 hidden sm:block" />
+                <Separator
+                  orientation="vertical"
+                  className="hidden h-4 sm:block"
+                />
                 <div className="flex items-center gap-1.5">
-                  <Building2 className="h-4 w-4 shrink-0 text-primary/70" />
+                  <Building2 className="text-primary/70 h-4 w-4 shrink-0" />
                   <span className="capitalize">
-                    <span className="font-semibold text-foreground mr-1">Industry:</span>
-                    {internship.industry?.replace(/_/g, " ").toLowerCase() || "Not Specified"}
+                    <span className="text-foreground mr-1 font-semibold">
+                      Industry:
+                    </span>
+                    {internship.industry?.replace(/_/g, " ").toLowerCase() ||
+                      "Not Specified"}
                   </span>
                 </div>
               </div>

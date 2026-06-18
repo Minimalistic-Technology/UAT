@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useUpdateProfile } from "@/hooks/use-user";
@@ -20,7 +26,10 @@ interface EditProfileDialogProps {
   children: React.ReactNode;
 }
 
-export const EditProfileDialog = ({ user, children }: EditProfileDialogProps) => {
+export const EditProfileDialog = ({
+  user,
+  children,
+}: EditProfileDialogProps) => {
   const [open, setOpen] = useState(false);
   const { mutate: updateProfile, isPending } = useUpdateProfile();
 
@@ -51,21 +60,27 @@ export const EditProfileDialog = ({ user, children }: EditProfileDialogProps) =>
         },
         skills: user.skills || [],
         languages: user.languages || [],
-        experience: user.experience?.map((e) => ({
-          title: e.title || "",
-          company: e.company || "",
-          location: e.location || "",
-          startDate: e.startDate ? new Date(e.startDate).toISOString().split("T")[0] : "",
-          endDate: e.endDate ? new Date(e.endDate).toISOString().split("T")[0] : "",
-          current: e.current || false,
-          description: e.description || "",
-        })) || [],
-        education: user.education?.map((e) => ({
-          degree: e.degree || "",
-          institution: e.institution || "",
-          graduationYear: e.graduationYear || new Date().getFullYear(),
-          fieldOfStudy: e.fieldOfStudy || "",
-        })) || [],
+        experience:
+          user.experience?.map((e) => ({
+            title: e.title || "",
+            company: e.company || "",
+            location: e.location || "",
+            startDate: e.startDate
+              ? new Date(e.startDate).toISOString().split("T")[0]
+              : "",
+            endDate: e.endDate
+              ? new Date(e.endDate).toISOString().split("T")[0]
+              : "",
+            current: e.current || false,
+            description: e.description || "",
+          })) || [],
+        education:
+          user.education?.map((e) => ({
+            degree: e.degree || "",
+            institution: e.institution || "",
+            graduationYear: e.graduationYear || new Date().getFullYear(),
+            fieldOfStudy: e.fieldOfStudy || "",
+          })) || [],
       });
     }
   }, [user, open, methods]);
@@ -75,10 +90,10 @@ export const EditProfileDialog = ({ user, children }: EditProfileDialogProps) =>
       ...data,
       skills: data.skills,
       languages: data.languages,
-      experience: data.experience?.map(e => ({
+      experience: data.experience?.map((e) => ({
         ...e,
         startDate: new Date(e.startDate),
-        endDate: e.endDate ? new Date(e.endDate) : undefined
+        endDate: e.endDate ? new Date(e.endDate) : undefined,
       })) as Experience[],
     } as any;
 
@@ -91,10 +106,10 @@ export const EditProfileDialog = ({ user, children }: EditProfileDialogProps) =>
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className={cn("max-w-4xl max-h-[90vh] overflow-y-auto p-3")}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent
+        className={cn("max-h-[90vh] max-w-4xl overflow-y-auto p-3")}
+      >
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
         </DialogHeader>
@@ -115,8 +130,14 @@ export const EditProfileDialog = ({ user, children }: EditProfileDialogProps) =>
               <EducationTab />
             </Tabs>
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <div className="flex justify-end gap-2 border-t pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
+                Cancel
+              </Button>
               <Button type="submit" disabled={isPending}>
                 {isPending ? "Saving..." : "Save Changes"}
               </Button>

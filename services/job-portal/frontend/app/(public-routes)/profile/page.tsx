@@ -23,8 +23,10 @@ const Page = () => {
 
   const { data: session, status } = useSession();
 
-  const { mutate: mutateAvatar, isPending: isAvatarUploading } = useUploadAvatar();
-  const { mutate: mutateResume, isPending: isResumeUploading } = useUploadResume();
+  const { mutate: mutateAvatar, isPending: isAvatarUploading } =
+    useUploadAvatar();
+  const { mutate: mutateResume, isPending: isResumeUploading } =
+    useUploadResume();
 
   const user = userDetails?.data;
   const initials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`;

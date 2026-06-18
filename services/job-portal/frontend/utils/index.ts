@@ -71,7 +71,7 @@ export const formatLocation = (location: any) => {
 
 export const getCurrencyIcon = (
   currency?: string,
-  className: string = "text-muted-foreground h-4 w-4"
+  className: string = "text-muted-foreground h-4 w-4",
 ) => {
   switch (currency?.toUpperCase()) {
     case "USD":

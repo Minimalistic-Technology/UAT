@@ -2,11 +2,14 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import CouponsPage from "@/app/admin-dashboard/coupons/page";
 import CreateCouponForm from "@/app/admin-dashboard/coupons/create/page";
-import { useFetchAdminCoupons, useCreateCoupon } from "@/features/admin/hooks/use-coupon";
+import {
+  useFetchAdminCoupons,
+  useCreateCoupon,
+} from "@/features/admin/hooks/use-coupon";
 import "@testing-library/jest-dom";
 
 // Polyfill for Radix UI Select testing in JSDOM
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   window.PointerEvent = class PointerEvent extends Event {
     button: number;
     ctrlKey: boolean;
@@ -15,7 +18,7 @@ if (typeof window !== 'undefined') {
       super(type, props);
       this.button = props?.button || 0;
       this.ctrlKey = props?.ctrlKey || false;
-      this.pointerType = props?.pointerType || 'mouse';
+      this.pointerType = props?.pointerType || "mouse";
     }
   } as any;
   window.HTMLElement.prototype.hasPointerCapture = jest.fn();
@@ -33,8 +36,6 @@ jest.mock("@/features/admin/hooks/use-coupon", () => ({
   useFetchAdminCoupons: jest.fn(),
   useCreateCoupon: jest.fn(),
 }));
-
-
 
 describe("Admin Coupons Management Page", () => {
   const mockRefetch = jest.fn();
@@ -56,7 +57,7 @@ describe("Admin Coupons Management Page", () => {
     });
 
     const { container } = render(<CouponsPage />);
-    
+
     const skeletons = container.querySelectorAll(".animate-pulse");
     expect(skeletons.length).toBeGreaterThan(0);
   });
@@ -70,9 +71,11 @@ describe("Admin Coupons Management Page", () => {
     });
 
     render(<CouponsPage />);
-    
-    expect(screen.getByText("Failed to load coupons data.")).toBeInTheDocument();
-    
+
+    expect(
+      screen.getByText("Failed to load coupons data."),
+    ).toBeInTheDocument();
+
     fireEvent.click(screen.getByText("Retry"));
     expect(mockRefetch).toHaveBeenCalledTimes(1);
   });
@@ -85,7 +88,12 @@ describe("Admin Coupons Management Page", () => {
             { _id: "1", code: "SUMMER50", value: 50, status: "Active" },
             { _id: "2", code: "WINTER20", value: 20, status: "Active" },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -94,7 +102,7 @@ describe("Admin Coupons Management Page", () => {
     });
 
     render(<CouponsPage />);
-    
+
     const rows = screen.getAllByTestId("data-table-row");
     expect(rows).toHaveLength(2);
     expect(screen.getByText("SUMMER50")).toBeInTheDocument();
@@ -109,7 +117,12 @@ describe("Admin Coupons Management Page", () => {
             { _id: "1", code: "SUMMER50", value: 50, status: "Active" },
             { _id: "2", code: "WINTER20", value: 20, status: "Active" },
           ],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -118,10 +131,10 @@ describe("Admin Coupons Management Page", () => {
     });
 
     render(<CouponsPage />);
-    
+
     const searchInput = screen.getByPlaceholderText("Search coupons...");
     fireEvent.change(searchInput, { target: { value: "summer" } }); // lowercase to test case insensitivity
-    
+
     const rows = screen.getAllByTestId("data-table-row");
     expect(rows).toHaveLength(1);
     expect(screen.getByText("SUMMER50")).toBeInTheDocument();
@@ -132,8 +145,15 @@ describe("Admin Coupons Management Page", () => {
     (useFetchAdminCoupons as jest.Mock).mockReturnValue({
       data: {
         data: {
-          coupons: [{ _id: "1", code: "SUMMER50", value: 50, status: "Active" }],
-          pagination: { currentPage: 1, totalPages: 2, hasNextPage: true, hasPrevPage: false },
+          coupons: [
+            { _id: "1", code: "SUMMER50", value: 50, status: "Active" },
+          ],
+          pagination: {
+            currentPage: 1,
+            totalPages: 2,
+            hasNextPage: true,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -142,7 +162,7 @@ describe("Admin Coupons Management Page", () => {
     });
 
     const { rerender } = render(<CouponsPage />);
-    
+
     const prevBtn = screen.getByText("Previous");
     const nextBtn = screen.getByText("Next");
 
@@ -155,20 +175,27 @@ describe("Admin Coupons Management Page", () => {
     (useFetchAdminCoupons as jest.Mock).mockReturnValue({
       data: {
         data: {
-          coupons: [{ _id: "2", code: "WINTER20", value: 20, status: "Active" }],
-          pagination: { currentPage: 2, totalPages: 2, hasNextPage: false, hasPrevPage: true },
+          coupons: [
+            { _id: "2", code: "WINTER20", value: 20, status: "Active" },
+          ],
+          pagination: {
+            currentPage: 2,
+            totalPages: 2,
+            hasNextPage: false,
+            hasPrevPage: true,
+          },
         },
       },
       isLoading: false,
       isError: false,
       refetch: mockRefetch,
     });
-    
+
     rerender(<CouponsPage />);
-    
+
     const activePrevBtn = screen.getByText("Previous");
     fireEvent.click(activePrevBtn);
-    
+
     expect(useFetchAdminCoupons).toHaveBeenCalledWith(1, 10);
   });
 
@@ -177,7 +204,12 @@ describe("Admin Coupons Management Page", () => {
       data: {
         data: {
           coupons: [],
-          pagination: { currentPage: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          pagination: {
+            currentPage: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         },
       },
       isLoading: false,
@@ -207,36 +239,48 @@ describe("CreateCouponForm", () => {
 
   it("renders all form fields properly", () => {
     render(<CreateCouponForm />);
-    
-    expect(screen.getByRole("heading", { name: "Create New Coupon" })).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("heading", { name: "Create New Coupon" }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Coupon Code")).toBeInTheDocument();
     expect(screen.getByText("Discount Type")).toBeInTheDocument();
     expect(screen.getByLabelText(/Discount Value/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Expiry Date/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Max Uses/)).toBeInTheDocument();
     expect(screen.getByLabelText("Active Coupon")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Create Coupon" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create Coupon" }),
+    ).toBeInTheDocument();
   });
 
   it("handles validation errors when required fields are empty", async () => {
     render(<CreateCouponForm />);
-    
+
     const submitBtn = screen.getByRole("button", { name: "Create Coupon" });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(screen.getByText("Coupon code must be at least 3 characters")).toBeInTheDocument();
+      expect(
+        screen.getByText("Coupon code must be at least 3 characters"),
+      ).toBeInTheDocument();
     });
-    
+
     expect(mockCreateCoupon).not.toHaveBeenCalled();
   });
 
   it("submits the form with correct data", async () => {
     render(<CreateCouponForm />);
-    
-    fireEvent.change(screen.getByLabelText("Coupon Code"), { target: { value: "SUMMER50" } });
-    fireEvent.change(screen.getByLabelText(/Discount Value/), { target: { value: "50" } });
-    fireEvent.change(screen.getByLabelText(/Max Uses/), { target: { value: "100" } });
+
+    fireEvent.change(screen.getByLabelText("Coupon Code"), {
+      target: { value: "SUMMER50" },
+    });
+    fireEvent.change(screen.getByLabelText(/Discount Value/), {
+      target: { value: "50" },
+    });
+    fireEvent.change(screen.getByLabelText(/Max Uses/), {
+      target: { value: "100" },
+    });
 
     // Assuming type defaults to 'percentage' and isActive defaults to true
     const submitBtn = screen.getByRole("button", { name: "Create Coupon" });
@@ -258,12 +302,18 @@ describe("CreateCouponForm", () => {
 
   it("submits undefined for maxUses if empty string is provided", async () => {
     render(<CreateCouponForm />);
-    
-    fireEvent.change(screen.getByLabelText("Coupon Code"), { target: { value: "UNLIMITED" } });
-    fireEvent.change(screen.getByLabelText(/Discount Value/), { target: { value: "10" } });
-    
+
+    fireEvent.change(screen.getByLabelText("Coupon Code"), {
+      target: { value: "UNLIMITED" },
+    });
+    fireEvent.change(screen.getByLabelText(/Discount Value/), {
+      target: { value: "10" },
+    });
+
     // Set maxUses to empty string to test setValueAs logic
-    fireEvent.change(screen.getByLabelText(/Max Uses/), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText(/Max Uses/), {
+      target: { value: "" },
+    });
 
     const submitBtn = screen.getByRole("button", { name: "Create Coupon" });
     fireEvent.click(submitBtn);
@@ -288,7 +338,7 @@ describe("CreateCouponForm", () => {
     });
 
     render(<CreateCouponForm />);
-    
+
     const submitBtn = screen.getByRole("button", { name: /Creating.../i });
     expect(submitBtn).toBeInTheDocument();
     expect(submitBtn).toBeDisabled();

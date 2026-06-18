@@ -6,18 +6,37 @@ export const companyFormSchema = z.object({
   website: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   industry: z.string().min(2, "Industry is required"),
   companySize: z.string().optional(),
-  location: z.object({
-    address: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    country: z.string().optional(),
-    zipCode: z.string().max(10, "Zip code cannot exceed 10 characters").optional(),
-  }).optional(),
-  socialLinks: z.object({
-    linkedin: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-    twitter: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-    facebook: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  }).optional(),
+  location: z
+    .object({
+      address: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      country: z.string().optional(),
+      zipCode: z
+        .string()
+        .max(10, "Zip code cannot exceed 10 characters")
+        .optional(),
+    })
+    .optional(),
+  socialLinks: z
+    .object({
+      linkedin: z
+        .string()
+        .url("Must be a valid URL")
+        .optional()
+        .or(z.literal("")),
+      twitter: z
+        .string()
+        .url("Must be a valid URL")
+        .optional()
+        .or(z.literal("")),
+      facebook: z
+        .string()
+        .url("Must be a valid URL")
+        .optional()
+        .or(z.literal("")),
+    })
+    .optional(),
 });
 
 export type CompanyFormValues = z.infer<typeof companyFormSchema>;

@@ -7,55 +7,77 @@ import { useAllEmployerApplications } from "@/features/employer/hooks/use-applic
 import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
 
 export function EmployerQuickStats() {
-    const { data: companyResponse } = useGetMyCompanyDetails();
-    const { data: jobsResponse, isLoading: isLoadingJobs } = useGetMyJobPostings();
-    const { data: appsResponse, isLoading: isLoadingApps } = useAllEmployerApplications();
+  const { data: companyResponse } = useGetMyCompanyDetails();
+  const { data: jobsResponse, isLoading: isLoadingJobs } =
+    useGetMyJobPostings();
+  const { data: appsResponse, isLoading: isLoadingApps } =
+    useAllEmployerApplications();
 
-    const jobsCount = (jobsResponse?.data as any)?.count ?? jobsResponse?.data?.jobPosts?.length ?? 0;
-    const applicationsCount = appsResponse?.data?.count ?? appsResponse?.data?.applications?.length ?? 0;
-    const currentPlan = companyResponse?.data?.currentPlan?.name || "Free";
+  const jobsCount =
+    (jobsResponse?.data as any)?.count ??
+    jobsResponse?.data?.jobPosts?.length ??
+    0;
+  const applicationsCount =
+    appsResponse?.data?.count ?? appsResponse?.data?.applications?.length ?? 0;
+  const currentPlan = companyResponse?.data?.currentPlan?.name || "Free";
 
-    return (
-        <div className="space-y-4">
-            <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
-                <CardContent className="p-5 flex items-center justify-between">
-                    <div className="space-y-1">
-                        <p className="text-[13px] font-medium text-slate-500 dark:text-slate-400">Total Posted Jobs</p>
-                        {isLoadingJobs ? <Loader2 className="w-5 h-5 animate-spin text-blue-500 mt-1" /> : (
-                            <p className="text-[1.5rem] font-bold text-slate-800 dark:text-white leading-none">{jobsCount}</p>
-                        )}
-                    </div>
-                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-[14px] flex items-center justify-center">
-                        <Briefcase className="w-6 h-6 text-blue-500" />
-                    </div>
-                </CardContent>
-            </Card>
+  return (
+    <div className="space-y-4">
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.05)] shadow-sm dark:bg-slate-900">
+        <CardContent className="flex items-center justify-between p-5">
+          <div className="space-y-1">
+            <p className="text-[13px] font-medium text-slate-500 dark:text-slate-400">
+              Total Posted Jobs
+            </p>
+            {isLoadingJobs ? (
+              <Loader2 className="mt-1 h-5 w-5 animate-spin text-blue-500" />
+            ) : (
+              <p className="text-[1.5rem] leading-none font-bold text-slate-800 dark:text-white">
+                {jobsCount}
+              </p>
+            )}
+          </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-blue-50 dark:bg-blue-900/30">
+            <Briefcase className="h-6 w-6 text-blue-500" />
+          </div>
+        </CardContent>
+      </Card>
 
-            <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
-                <CardContent className="p-5 flex items-center justify-between">
-                    <div className="space-y-1">
-                        <p className="text-[13px] font-medium text-slate-500 dark:text-slate-400">Applications Received</p>
-                        {isLoadingApps ? <Loader2 className="w-5 h-5 animate-spin text-blue-500 mt-1" /> : (
-                            <p className="text-[1.5rem] font-bold text-slate-800 dark:text-white leading-none">{applicationsCount}</p>
-                        )}
-                    </div>
-                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-[14px] flex items-center justify-center">
-                        <UserCheck className="w-6 h-6 text-blue-500" />
-                    </div>
-                </CardContent>
-            </Card>
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.05)] shadow-sm dark:bg-slate-900">
+        <CardContent className="flex items-center justify-between p-5">
+          <div className="space-y-1">
+            <p className="text-[13px] font-medium text-slate-500 dark:text-slate-400">
+              Applications Received
+            </p>
+            {isLoadingApps ? (
+              <Loader2 className="mt-1 h-5 w-5 animate-spin text-blue-500" />
+            ) : (
+              <p className="text-[1.5rem] leading-none font-bold text-slate-800 dark:text-white">
+                {applicationsCount}
+              </p>
+            )}
+          </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-blue-50 dark:bg-blue-900/30">
+            <UserCheck className="h-6 w-6 text-blue-500" />
+          </div>
+        </CardContent>
+      </Card>
 
-            <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
-                <CardContent className="p-5 flex items-center justify-between">
-                    <div className="space-y-1">
-                        <p className="text-[13px] font-medium text-slate-500 dark:text-slate-400">Current Plan</p>
-                        <p className="text-[1.1rem] font-bold text-slate-800 dark:text-white leading-none mt-1 capitalize">{currentPlan}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-[14px] flex items-center justify-center">
-                        <CreditCard className="w-6 h-6 text-blue-500" />
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-    );
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_10px_rgba(0,0,0,0.05)] shadow-sm dark:bg-slate-900">
+        <CardContent className="flex items-center justify-between p-5">
+          <div className="space-y-1">
+            <p className="text-[13px] font-medium text-slate-500 dark:text-slate-400">
+              Current Plan
+            </p>
+            <p className="mt-1 text-[1.1rem] leading-none font-bold text-slate-800 capitalize dark:text-white">
+              {currentPlan}
+            </p>
+          </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-blue-50 dark:bg-blue-900/30">
+            <CreditCard className="h-6 w-6 text-blue-500" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

@@ -16,7 +16,6 @@ interface SubmitKycResponse {
   };
 }
 
-
 export const getMyCompany = async () => {
   const response =
     await apiClient.get<ApiSuccessResponse<GetMyCompanyResponse>>(
@@ -100,7 +99,7 @@ export const uploadCompanyLogo = async (formData: FormData) => {
 
 export const deleteCompany = async (id: string) => {
   const response = await apiClient.delete<ApiSuccessResponse<null>>(
-    `/companies/${id}`
+    `/companies/${id}`,
   );
   return response.data;
 };

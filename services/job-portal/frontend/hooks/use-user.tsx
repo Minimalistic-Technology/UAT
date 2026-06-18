@@ -1,7 +1,7 @@
-import apiClient, { ApiSuccessResponse } from "@/lib/api-client"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { updateProfile, UpdateProfilePayload } from "@/services/user.service"
-import { toast } from "sonner"
+import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { updateProfile, UpdateProfilePayload } from "@/services/user.service";
+import { toast } from "sonner";
 
 export const useGetUserDetails = (enabled: boolean = true) => {
   const response = useQuery({
@@ -11,10 +11,10 @@ export const useGetUserDetails = (enabled: boolean = true) => {
       return response.data;
     },
     enabled,
-  })
+  });
 
   return response;
-}
+};
 
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();

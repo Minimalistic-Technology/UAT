@@ -3,11 +3,20 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { useUpdateCompany } from "@/features/employer/hooks/use-company";
-import { companyFormSchema, CompanyFormValues } from "@/features/employer/validations/company.schema";
+import {
+  companyFormSchema,
+  CompanyFormValues,
+} from "@/features/employer/validations/company.schema";
 import { KycStatus } from "@/types/enums";
 import { useGetUserDetails } from "@/hooks/use-user";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { CompanyInfoForm } from "./company-info-form";
 import { CompanyInfoView } from "./company-info-view";
 
@@ -76,8 +85,8 @@ export const CompanyInformation = ({ company }: { company: any }) => {
   };
 
   return (
-    <div className="rounded-[20px] border-0 bg-white dark:bg-slate-900 shadow-[0_2px_15px_rgba(0,0,0,0.04)] overflow-hidden">
-      <div className="flex items-center justify-between border-b px-6 py-4 bg-slate-50/50">
+    <div className="overflow-hidden rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b bg-slate-50/50 px-6 py-4">
         <div>
           <h3 className="text-lg font-semibold text-slate-900">
             Company Information
@@ -90,7 +99,9 @@ export const CompanyInformation = ({ company }: { company: any }) => {
           variant="default"
           onClick={() => {
             if (!isOwner) {
-              toast.error("You are not authorized to update the company profile");
+              toast.error(
+                "You are not authorized to update the company profile",
+              );
               return;
             }
             setIsEditing(true);
@@ -105,10 +116,12 @@ export const CompanyInformation = ({ company }: { company: any }) => {
       </div>
 
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
+        <DialogContent className="scrollbar-hide max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Company Information</DialogTitle>
-            <DialogDescription>Update the details and location of your company here.</DialogDescription>
+            <DialogDescription>
+              Update the details and location of your company here.
+            </DialogDescription>
           </DialogHeader>
           <div className="mt-2">
             <CompanyInfoForm

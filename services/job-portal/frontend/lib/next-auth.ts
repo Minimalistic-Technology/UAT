@@ -29,7 +29,6 @@ export const authOptions: NextAuthOptions = {
             });
           }
 
-
           if (response.data.success) {
             const user = response.data.data;
 
@@ -46,7 +45,6 @@ export const authOptions: NextAuthOptions = {
           }
           return null;
         } catch (error: unknown) {
-
           let message: string | undefined;
 
           if (axios.isAxiosError(error)) {

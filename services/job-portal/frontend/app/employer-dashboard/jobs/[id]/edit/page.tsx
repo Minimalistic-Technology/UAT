@@ -24,7 +24,12 @@ const EditJobPage = () => {
     return (
       <div className="space-y-6">
         <div className="mb-8 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -48,7 +53,12 @@ const EditJobPage = () => {
   return (
     <div className="space-y-6">
       <div className="mb-8 flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          className="rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"
+        >
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div>

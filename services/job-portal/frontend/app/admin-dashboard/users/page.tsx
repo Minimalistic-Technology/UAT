@@ -69,7 +69,11 @@ const Page = () => {
     const email = user.email?.toLowerCase() || "";
     const company = user.companyName?.toLowerCase() || "";
     const search = searchTerm.toLowerCase();
-    return fullName.includes(search) || email.includes(search) || company.includes(search);
+    return (
+      fullName.includes(search) ||
+      email.includes(search) ||
+      company.includes(search)
+    );
   });
 
   // Export CSV Logic
@@ -107,12 +111,12 @@ const Page = () => {
   return (
     <div className="space-y-4">
       {/* Search and Filters Area */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative max-w-sm flex-1">
-          <Search className="text-slate-400 absolute top-3 left-3 h-4 w-4" />
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="relative w-full sm:max-w-sm">
+          <Search className="absolute top-3 left-3 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Search users by name, email, or company..."
-            className="h-10 pl-9 rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 focus-visible:ring-[#2563eb]"
+            className="h-10 w-full rounded-xl border-slate-200 bg-slate-50/50 pl-9 focus-visible:ring-[#2563eb] dark:border-slate-800 dark:bg-slate-900"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -120,46 +124,60 @@ const Page = () => {
         <Button
           variant="secondary"
           onClick={handleExportCSV}
-          className="rounded-xl border-[#2563eb]/20 text-[#2563eb] hover:bg-[#2563eb]/5 font-semibold h-10 px-5 cursor-pointer"
+          className="h-10 w-full cursor-pointer rounded-xl border-[#2563eb]/20 px-5 font-semibold text-[#2563eb] hover:bg-[#2563eb]/5 sm:w-auto"
         >
           Export CSV
         </Button>
       </div>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="pb-4 pt-6 px-7">
-          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">User Management</CardTitle>
-          <CardDescription className="text-sm text-slate-500">
+      <Card className="w-full max-w-full overflow-hidden rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+        <CardHeader className="px-4 pt-5 pb-3 sm:px-7 sm:pt-6 sm:pb-4">
+          <CardTitle className="text-lg font-bold text-slate-900 sm:text-xl dark:text-white">
+            User Management
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-500 sm:text-sm">
             A list of all users in your organization and their current status.
           </CardDescription>
         </CardHeader>
-        <CardContent className="px-7 pb-6">
-          <DataTable columns={columns} data={filteredUsers} />
+        <CardContent className="px-4 pb-6 sm:px-7">
+          <div className="w-full overflow-x-auto">
+            <DataTable columns={columns} data={filteredUsers} />
+          </div>
 
           <div className="py-4">
             <Pagination className="justify-end">
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious 
-                    href="#" 
+                  <PaginationPrevious
+                    href="#"
                     onClick={(e) => {
                       e.preventDefault();
-                      if (pagination?.hasPrevPage) setPage((p) => Math.max(1, p - 1));
+                      if (pagination?.hasPrevPage)
+                        setPage((p) => Math.max(1, p - 1));
                     }}
-                    className={!pagination?.hasPrevPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={
+                      !pagination?.hasPrevPage
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
                   />
                 </PaginationItem>
-                <PaginationItem className="px-4 text-xs font-medium text-muted-foreground flex items-center">
-                  Page {pagination?.currentPage || 1} of {pagination?.totalPages || 1}
+                <PaginationItem className="text-muted-foreground flex items-center px-4 text-xs font-medium">
+                  Page {pagination?.currentPage || 1} of{" "}
+                  {pagination?.totalPages || 1}
                 </PaginationItem>
                 <PaginationItem>
-                  <PaginationNext 
-                    href="#" 
+                  <PaginationNext
+                    href="#"
                     onClick={(e) => {
                       e.preventDefault();
                       if (pagination?.hasNextPage) setPage((p) => p + 1);
                     }}
-                    className={!pagination?.hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={
+                      !pagination?.hasNextPage
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
                   />
                 </PaginationItem>
               </PaginationContent>
@@ -191,17 +209,17 @@ const ErrorState = ({ onRetry }: { onRetry: () => void }) => {
 const LoadingState = () => {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <Skeleton className="h-10 w-full max-w-sm" />
-        <Skeleton className="h-10 w-24" />
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <Skeleton className="h-10 w-full sm:max-w-sm" />
+        <Skeleton className="h-10 w-full sm:w-24" />
       </div>
-      <Card>
-        <CardHeader className="pb-3">
+      <Card className="w-full max-w-full overflow-hidden rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+        <CardHeader className="px-4 pt-5 pb-3 sm:px-7 sm:pt-6 sm:pb-4">
           <Skeleton className="mb-2 h-6 w-48" />
           <Skeleton className="h-4 w-64" />
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="px-4 pb-6 sm:px-7">
+          <div className="w-full overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">

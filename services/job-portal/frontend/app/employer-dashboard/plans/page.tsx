@@ -1,7 +1,14 @@
 "use client";
 import { useState } from "react";
 
-import { Briefcase, AlertCircle, Check, Minus, ArrowRight, PhoneCall } from "lucide-react";
+import {
+  Briefcase,
+  AlertCircle,
+  Check,
+  Minus,
+  ArrowRight,
+  PhoneCall,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -17,14 +24,17 @@ import { useGetPlans } from "@/features/employer/hooks/use-plans";
 import { PlanCard } from "@/features/employer/components/plan-card";
 import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
 import { Button } from "@/components/ui/button";
-import { formatJobLimit, formatDuration } from "@/features/employer/helper/plan.helper";
+import {
+  formatJobLimit,
+  formatDuration,
+} from "@/features/employer/helper/plan.helper";
 
 export default function PlansPage() {
   const { data: plansResponse, isLoading, isError } = useGetPlans();
   const {
     data: companyResponse,
     isLoading: companyIsLoading,
-    isError: companyIsError
+    isError: companyIsError,
   } = useGetMyCompanyDetails();
 
   const companyDetails = companyResponse?.data;
@@ -50,19 +60,20 @@ export default function PlansPage() {
   }
 
   // Ensure unique mapped features for Compare Table
-  const allFeaturesRows = Array.from(new Set(plans.flatMap(p => p.features)));
+  const allFeaturesRows = Array.from(new Set(plans.flatMap((p) => p.features)));
 
   const [isYearly, setIsYearly] = useState(false);
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex w-full flex-col">
       {/* Header Section */}
-      <div className="pt-4 pb-8 text-center px-4">
-        <h1 className="text-4xl md:text-5xl font-bold font-heading text-slate-900 dark:text-white tracking-tight">
+      <div className="px-4 pt-4 pb-8 text-center">
+        <h1 className="font-heading text-4xl font-bold tracking-tight text-slate-900 md:text-5xl dark:text-white">
           Pricing Built for Growth
         </h1>
         <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
-          Empower your recruitment team with intelligent hiring. Choose the plan that fits your current needs and scale as you grow.
+          Empower your recruitment team with intelligent hiring. Choose the plan
+          that fits your current needs and scale as you grow.
         </p>
 
         {/* Toggle Switch */}
@@ -86,7 +97,7 @@ export default function PlansPage() {
       <div className="px-6 lg:px-10">
         {/* Error State */}
         {(isError || companyIsError) && (
-          <Alert variant="destructive" className="mx-auto max-w-2xl py-2 mb-8">
+          <Alert variant="destructive" className="mx-auto mb-8 max-w-2xl py-2">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>
@@ -98,13 +109,13 @@ export default function PlansPage() {
         {/* Plans Grid */}
         <div
           className={cn(
-            "grid justify-center gap-6 w-full mx-auto mt-4",
+            "mx-auto mt-4 grid w-full justify-center gap-6",
             visualPlans.length === 1
-              ? "grid-cols-1 max-w-md"
+              ? "max-w-md grid-cols-1"
               : visualPlans.length === 2
-                ? "grid-cols-1 md:grid-cols-2 max-w-4xl"
+                ? "max-w-4xl grid-cols-1 md:grid-cols-2"
                 : visualPlans.length === 3
-                  ? "grid-cols-1 md:grid-cols-3 max-w-6xl"
+                  ? "max-w-6xl grid-cols-1 md:grid-cols-3"
                   : "grid-cols-1 md:grid-cols-2 xl:grid-cols-4",
           )}
         >
@@ -114,7 +125,7 @@ export default function PlansPage() {
             <EmptyState />
           ) : (
             visualPlans.map((plan) => (
-              <div key={plan._id} className="h-full z-10 w-full relative">
+              <div key={plan._id} className="relative z-10 h-full w-full">
                 <PlanCard plan={plan} isYearly={isYearly} />
               </div>
             ))
@@ -123,56 +134,96 @@ export default function PlansPage() {
 
         {/* Compare Features Section */}
         {visualPlans.length > 0 && (
-          <div className="mt-20 w-full mb-10">
-            <h2 className="text-3xl font-bold text-center mb-10 text-slate-900 dark:text-white font-heading">Compare All Features</h2>
+          <div className="mt-20 mb-10 w-full">
+            <h2 className="font-heading mb-10 text-center text-3xl font-bold text-slate-900 dark:text-white">
+              Compare All Features
+            </h2>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-800">
-                    <th className="py-5 px-4 text-xs font-bold uppercase tracking-widest text-slate-500 w-1/3">Features</th>
-                    {visualPlans.map(plan => (
-                      <th key={`head-${plan._id}`} className="py-5 px-4 text-xs font-bold uppercase tracking-widest text-slate-900 dark:text-white text-center">
+                    <th className="w-1/3 px-4 py-5 text-xs font-bold tracking-widest text-slate-500 uppercase">
+                      Features
+                    </th>
+                    {visualPlans.map((plan) => (
+                      <th
+                        key={`head-${plan._id}`}
+                        className="px-4 py-5 text-center text-xs font-bold tracking-widest text-slate-900 uppercase dark:text-white"
+                      >
                         {plan.name}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-                    <td className="py-5 px-4 font-semibold text-slate-700 dark:text-slate-300">Job Postings</td>
-                    {visualPlans.map(plan => (
-                      <td key={`job-${plan._id}`} className="py-5 px-4 text-center text-slate-600 dark:text-slate-400 font-medium">
-                        {plan.jobPostLimit === -1 ? 'Unlimited' : `${plan.jobPostLimit} Active`}
+                  <tr className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                    <td className="px-4 py-5 font-semibold text-slate-700 dark:text-slate-300">
+                      Job Postings
+                    </td>
+                    {visualPlans.map((plan) => (
+                      <td
+                        key={`job-${plan._id}`}
+                        className="px-4 py-5 text-center font-medium text-slate-600 dark:text-slate-400"
+                      >
+                        {plan.jobPostLimit === -1
+                          ? "Unlimited"
+                          : `${plan.jobPostLimit} Active`}
                       </td>
                     ))}
                   </tr>
-                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-                    <td className="py-5 px-4 font-semibold text-slate-700 dark:text-slate-300">Listing Duration</td>
-                    {visualPlans.map(plan => (
-                      <td key={`dur-${plan._id}`} className="py-5 px-4 text-center text-slate-600 dark:text-slate-400 font-medium">
+                  <tr className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                    <td className="px-4 py-5 font-semibold text-slate-700 dark:text-slate-300">
+                      Listing Duration
+                    </td>
+                    {visualPlans.map((plan) => (
+                      <td
+                        key={`dur-${plan._id}`}
+                        className="px-4 py-5 text-center font-medium text-slate-600 dark:text-slate-400"
+                      >
                         {plan.postValidityDays} Days
                       </td>
                     ))}
                   </tr>
-                  <tr className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-                    <td className="py-5 px-4 font-semibold text-slate-700 dark:text-slate-300">Resume PDF Downloads</td>
-                    {visualPlans.map(plan => (
-                      <td key={`res-${plan._id}`} className="py-5 px-4 text-center flex justify-center">
-                        {plan.allowResumeDownload ? <Check className="text-blue-600 size-5" /> : <Minus className="text-slate-300 size-5" />}
+                  <tr className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                    <td className="px-4 py-5 font-semibold text-slate-700 dark:text-slate-300">
+                      Resume PDF Downloads
+                    </td>
+                    {visualPlans.map((plan) => (
+                      <td
+                        key={`res-${plan._id}`}
+                        className="flex justify-center px-4 py-5 text-center"
+                      >
+                        {plan.allowResumeDownload ? (
+                          <Check className="size-5 text-blue-600" />
+                        ) : (
+                          <Minus className="size-5 text-slate-300" />
+                        )}
                       </td>
                     ))}
                   </tr>
                   {allFeaturesRows.slice(0, 5).map((featureText, idx) => (
-                    <tr key={`featrow-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-                      <td className="py-5 px-4 font-semibold text-slate-700 dark:text-slate-300">{featureText}</td>
-                      {visualPlans.map(plan => {
+                    <tr
+                      key={`featrow-${idx}`}
+                      className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                    >
+                      <td className="px-4 py-5 font-semibold text-slate-700 dark:text-slate-300">
+                        {featureText}
+                      </td>
+                      {visualPlans.map((plan) => {
                         const hasFeat = plan.features.includes(featureText);
                         return (
-                          <td key={`featcol-${plan._id}-${idx}`} className="py-5 px-4 text-center flex justify-center">
-                            {hasFeat ? <Check className="text-blue-600 size-5" /> : <Minus className="text-slate-300 size-5" />}
+                          <td
+                            key={`featcol-${plan._id}-${idx}`}
+                            className="flex justify-center px-4 py-5 text-center"
+                          >
+                            {hasFeat ? (
+                              <Check className="size-5 text-blue-600" />
+                            ) : (
+                              <Minus className="size-5 text-slate-300" />
+                            )}
                           </td>
-                        )
+                        );
                       })}
                     </tr>
                   ))}
@@ -183,51 +234,86 @@ export default function PlansPage() {
         )}
 
         {/* FAQ Section */}
-        <div className="mt-32 max-w-5xl mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-10 text-slate-900 dark:text-white font-heading">Frequently Asked Questions</h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-              <h4 className="font-bold text-[#2563eb] mb-2">Can I change plans at any time?</h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Yes, you can upgrade or downgrade your plan at any time from your dashboard settings. If you upgrade, the change is immediate.</p>
+        <div className="mx-auto mt-32 max-w-5xl px-4">
+          <h2 className="font-heading mb-10 text-center text-3xl font-bold text-slate-900 dark:text-white">
+            Frequently Asked Questions
+          </h2>
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="rounded-[20px] border-0 bg-white p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+              <h4 className="mb-2 font-bold text-[#2563eb]">
+                Can I change plans at any time?
+              </h4>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                Yes, you can upgrade or downgrade your plan at any time from
+                your dashboard settings. If you upgrade, the change is
+                immediate.
+              </p>
             </div>
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-              <h4 className="font-bold text-[#2563eb] mb-2">How does the Resume Ranking work?</h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Our AI analyzes candidate resumes against your job description requirements, scoring them on skills to surface top talent faster.</p>
+            <div className="rounded-[20px] border-0 bg-white p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+              <h4 className="mb-2 font-bold text-[#2563eb]">
+                How does the Resume Ranking work?
+              </h4>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                Our AI analyzes candidate resumes against your job description
+                requirements, scoring them on skills to surface top talent
+                faster.
+              </p>
             </div>
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-              <h4 className="font-bold text-[#2563eb] mb-2">Do you offer a free trial?</h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Absolutely. Select plans come with a 14-day free trial. No credit card is required to start exploring the premium recruitment features.</p>
+            <div className="rounded-[20px] border-0 bg-white p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+              <h4 className="mb-2 font-bold text-[#2563eb]">
+                Do you offer a free trial?
+              </h4>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                Absolutely. Select plans come with a 14-day free trial. No
+                credit card is required to start exploring the premium
+                recruitment features.
+              </p>
             </div>
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-              <h4 className="font-bold text-[#2563eb] mb-2">What kind of support do you provide?</h4>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">Starter users get email support. Professional users receive 24/7 priority chat support. Enterprise clients have a dedicated success manager.</p>
+            <div className="rounded-[20px] border-0 bg-white p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+              <h4 className="mb-2 font-bold text-[#2563eb]">
+                What kind of support do you provide?
+              </h4>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                Starter users get email support. Professional users receive 24/7
+                priority chat support. Enterprise clients have a dedicated
+                success manager.
+              </p>
             </div>
           </div>
         </div>
 
         {/* Footer CTA Section */}
-        <div className="mt-32 max-w-5xl mx-auto px-4 mb-10">
-          <div className="bg-[#0b51da] rounded-[2rem] p-10 md:p-14 text-center relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4"></div>
+        <div className="mx-auto mt-32 mb-10 max-w-5xl px-4">
+          <div className="relative overflow-hidden rounded-[2rem] bg-[#0b51da] p-10 text-center shadow-2xl md:p-14">
+            <div className="absolute top-0 right-0 h-96 w-96 translate-x-1/3 -translate-y-1/2 rounded-full bg-white/10 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 h-64 w-64 -translate-x-1/4 translate-y-1/3 rounded-full bg-black/10 blur-2xl"></div>
 
             <div className="relative z-10 flex flex-col items-center">
-              <h2 className="text-3xl md:text-5xl font-black text-white font-heading tracking-tight mb-4 text-center">Ready to hire better?</h2>
-              <p className="text-blue-100 mb-10 max-w-xl text-center text-sm md:text-base font-medium">
-                Join top companies using our Job Portal to build world-class teams without the manual overhead.
+              <h2 className="font-heading mb-4 text-center text-3xl font-black tracking-tight text-white md:text-5xl">
+                Ready to hire better?
+              </h2>
+              <p className="mb-10 max-w-xl text-center text-sm font-medium text-blue-100 md:text-base">
+                Join top companies using our Job Portal to build world-class
+                teams without the manual overhead.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <Button className="bg-white text-[#2563eb] hover:bg-slate-50 font-bold h-12 px-8 rounded-xl shadow-lg border-none" size="lg">
+              <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
+                <Button
+                  className="h-12 rounded-xl border-none bg-white px-8 font-bold text-[#2563eb] shadow-lg hover:bg-slate-50"
+                  size="lg"
+                >
                   Get Started for Free
                 </Button>
-                <Button variant="outline" className="bg-[#1e40af] border-none hover:bg-[#1e3a8a] text-white hover:text-white font-bold h-12 px-8 rounded-xl" size="lg">
+                <Button
+                  variant="outline"
+                  className="h-12 rounded-xl border-none bg-[#1e40af] px-8 font-bold text-white hover:bg-[#1e3a8a] hover:text-white"
+                  size="lg"
+                >
                   Schedule a Demo
                 </Button>
               </div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
@@ -235,9 +321,9 @@ export default function PlansPage() {
 
 function EmptyState() {
   return (
-    <Card className="col-span-full border-dashed bg-slate-50/50 dark:bg-slate-900/50 py-20 rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
+    <Card className="col-span-full rounded-[20px] border-dashed bg-slate-50/50 py-20 shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900/50">
       <CardContent className="flex flex-col items-center justify-center space-y-4 text-center">
-        <div className="rounded-full bg-white dark:bg-slate-800 p-4 shadow-sm">
+        <div className="rounded-full bg-white p-4 shadow-sm dark:bg-slate-800">
           <Briefcase className="h-10 w-10 text-slate-400" />
         </div>
         <div className="space-y-2">
@@ -253,13 +339,13 @@ function EmptyState() {
 
 function PlanSkeleton() {
   return (
-    <Card className="flex h-[36rem] flex-col rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900">
-      <CardHeader className="space-y-4 pt-10 px-8">
+    <Card className="flex h-[36rem] flex-col rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+      <CardHeader className="space-y-4 px-8 pt-10">
         <Skeleton className="h-6 w-1/3" />
         <Skeleton className="h-10 w-1/2" />
       </CardHeader>
       <CardContent className="flex-1 space-y-6 px-8">
-        <div className="space-y-4 mt-4">
+        <div className="mt-4 space-y-4">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-5/6" />
           <Skeleton className="h-4 w-4/6" />

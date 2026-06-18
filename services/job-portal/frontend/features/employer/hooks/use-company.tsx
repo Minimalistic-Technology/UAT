@@ -1,7 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addEmployee, deleteEmployee, getAllEmployees, getMyCompany, submitKycData, updateCompanyDetails, uploadCompanyLogo, getEmployeeById, updateEmployee, deleteCompany } from "../services/company.service";
+import {
+  addEmployee,
+  deleteEmployee,
+  getAllEmployees,
+  getMyCompany,
+  submitKycData,
+  updateCompanyDetails,
+  uploadCompanyLogo,
+  getEmployeeById,
+  updateEmployee,
+  deleteCompany,
+} from "../services/company.service";
 import { toast } from "sonner";
-import {useRouter} from "next/navigation"
+import { useRouter } from "next/navigation";
 import { getValidationErrorMessage } from "@/lib/validation-error";
 
 export const useGetAllEmployees = () => {
@@ -24,7 +35,8 @@ export const useCreateEmployee = () => {
     },
     onError: (error: any) => {
       console.error("Error adding employee:", error);
-      const errorMsg = error?.response?.data?.message || "Failed to add employee";
+      const errorMsg =
+        error?.response?.data?.message || "Failed to add employee";
       if (errorMsg === "Validation failed") {
         const firstErrorMessage = getValidationErrorMessage(error);
         toast.error(firstErrorMessage);
@@ -64,7 +76,8 @@ export const useUpdateEmployee = () => {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateEmployee({ id, data }),
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      updateEmployee({ id, data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-employees"] });
       toast.success("Employee updated successfully");
@@ -72,7 +85,8 @@ export const useUpdateEmployee = () => {
     },
     onError: (error: any) => {
       console.error("Error updating employee:", error);
-      const errorMsg = error?.response?.data?.message || "Failed to update employee";
+      const errorMsg =
+        error?.response?.data?.message || "Failed to update employee";
       if (errorMsg === "Validation failed") {
         const firstErrorMessage = getValidationErrorMessage(error);
         toast.error(firstErrorMessage);
@@ -86,9 +100,9 @@ export const useUpdateEmployee = () => {
 export const useGetMyCompanyDetails = () => {
   return useQuery({
     queryKey: ["my-company-details"],
-    queryFn: () => getMyCompany()
-  })
-}
+    queryFn: () => getMyCompany(),
+  });
+};
 
 export const useSubmitKyc = () => {
   const queryClient = useQueryClient();
@@ -98,17 +112,18 @@ export const useSubmitKyc = () => {
     mutationFn: (formData: FormData) => submitKycData(formData),
     onSuccess: (data) => {
       toast.success(data.message || "KYC submitted successfully!");
-      queryClient.invalidateQueries({ queryKey: ["user-details", "my-company-details"] });
+      queryClient.invalidateQueries({
+        queryKey: ["user-details", "my-company-details"],
+      });
       router.push("/employer-dashboard");
     },
     onError: (error: any) => {
       const errorMsg = error?.response?.data?.message || "Failed to submit KYC";
 
-      if(errorMsg === 'Validation failed'){
-        const firstErrorMessage = getValidationErrorMessage(error)
+      if (errorMsg === "Validation failed") {
+        const firstErrorMessage = getValidationErrorMessage(error);
         toast.error(firstErrorMessage);
         return;
-
       }
       toast.error(errorMsg);
     },
@@ -125,7 +140,8 @@ export const useUpdateCompany = () => {
       toast.success("Company profile updated successfully");
     },
     onError: (error: any) => {
-      const errorMsg = error?.response?.data?.message || "Failed to update company profile";
+      const errorMsg =
+        error?.response?.data?.message || "Failed to update company profile";
       toast.error(errorMsg);
     },
   });
@@ -141,7 +157,8 @@ export const useUploadCompanyLogo = () => {
       toast.success("Company logo updated successfully");
     },
     onError: (error: any) => {
-      const errorMsg = error?.response?.data?.message || "Failed to upload company logo";
+      const errorMsg =
+        error?.response?.data?.message || "Failed to upload company logo";
       toast.error(errorMsg);
     },
   });
@@ -159,7 +176,8 @@ export const useDeleteCompany = () => {
       router.push("/employer-dashboard"); // or maybe /login or some setup page if company is required
     },
     onError: (error: any) => {
-      const errorMsg = error?.response?.data?.message || "Failed to delete company";
+      const errorMsg =
+        error?.response?.data?.message || "Failed to delete company";
       toast.error(errorMsg);
     },
   });

@@ -18,14 +18,14 @@ export type GetKycApplicationsResponse = {
   count: number;
   applications: KycWithUser[];
   pagination: Pagination;
-}
+};
 
 export type UpdateKycApplicationStatusParams = {
   applicationId: string;
   status: string;
   note?: string;
-}
+};
 
 export type UpdateKycApplicationStatusResponse = {
   kycApplication: Kyc;
-}
+};

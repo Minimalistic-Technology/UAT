@@ -6,7 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // hooks
 import { useGetJobs } from "@/features/user/hooks/use-job";
-import { useGetMyApplications, useGetMyApplicationStats } from "@/features/user/hooks/use-job-application";
+import {
+  useGetMyApplications,
+  useGetMyApplicationStats,
+} from "@/features/user/hooks/use-job-application";
 
 // global components
 import { AdminStatusCard } from "@/features/admin/components/stats-card";
@@ -22,9 +25,13 @@ export default function JobSeekerDashboard() {
   const { data: session, status: authStatus } = useSession();
   const userId = session?.user?.id;
 
-  const { data: applications, isLoading: applicationLoading } = useGetMyApplications();
-  const { data: responseData, isLoading: statsLoading } = useGetMyApplicationStats();
-  const { data: recommendedJobs, isLoading: jobsLoading } = useGetJobs({ limit: 5 });
+  const { data: applications, isLoading: applicationLoading } =
+    useGetMyApplications();
+  const { data: responseData, isLoading: statsLoading } =
+    useGetMyApplicationStats();
+  const { data: recommendedJobs, isLoading: jobsLoading } = useGetJobs({
+    limit: 5,
+  });
   const { data: userData } = useGetUserDetails(userId);
 
   if (authStatus === "loading" || applicationLoading || statsLoading) {
@@ -62,7 +69,9 @@ export default function JobSeekerDashboard() {
     },
     {
       label: "Selected / Shortlisted",
-      value: (statsData?.byStatus?.shortlisted || 0) + (statsData?.byStatus?.accepted || 0),
+      value:
+        (statsData?.byStatus?.shortlisted || 0) +
+        (statsData?.byStatus?.accepted || 0),
       icon: <CheckCircle className="text-success" />,
       variant: "success" as const,
     },
@@ -75,7 +84,7 @@ export default function JobSeekerDashboard() {
   ];
 
   return (
-    <div className="animate-in fade-in w-full space-y-6 md:space-y-8 duration-500">
+    <div className="animate-in fade-in w-full space-y-6 duration-500 md:space-y-8">
       {/* Welcome Header */}
       <UserWelcomeHeader
         userName={session?.user?.name?.split(" ")[0] || "Guest"}
@@ -96,19 +105,31 @@ export default function JobSeekerDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-12 items-start">
+      <div className="grid items-start gap-8 lg:grid-cols-12">
         {/* Main Content: Recent Applications */}
         <div className="space-y-6 lg:col-span-8">
-          <RecentApplicationsCard applications={applications?.data?.applications || []} />
+          <RecentApplicationsCard
+            applications={applications?.data?.applications || []}
+          />
         </div>
 
         {/* Sidebar Components */}
-        <div className="space-y-6 lg:col-span-4 self-stretch">
+        <div className="space-y-6 self-stretch lg:col-span-4">
           <UserProfileCard
-            firstName={user?.firstName || session?.user?.name?.split(" ")[0] || ""}
-            lastName={user?.lastName || session?.user?.name?.split(" ").slice(1).join(" ") || ""}
+            firstName={
+              user?.firstName || session?.user?.name?.split(" ")[0] || ""
+            }
+            lastName={
+              user?.lastName ||
+              session?.user?.name?.split(" ").slice(1).join(" ") ||
+              ""
+            }
             email={user?.email || session?.user?.email || ""}
-            avatarUrl={typeof user?.avatar === "string" ? user.avatar : user?.avatar?.url || ""}
+            avatarUrl={
+              typeof user?.avatar === "string"
+                ? user.avatar
+                : user?.avatar?.url || ""
+            }
             profileStrength={profileStrength}
           />
           <RecommendedJobsCard jobs={recommendedJobs?.data?.jobs || []} />

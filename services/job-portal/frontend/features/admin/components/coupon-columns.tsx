@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { ColumnDef } from "@tanstack/react-table"
-import { Coupon } from "@/types/new-index"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Pencil, Trash2 } from "lucide-react"
-import { useDeleteCoupon } from "@/features/admin/hooks/use-coupon"
-import { CouponEditDialog } from "./coupon-edit-dialog"
+import { useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
+import { Coupon } from "@/types/new-index";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Pencil, Trash2 } from "lucide-react";
+import { useDeleteCoupon } from "@/features/admin/hooks/use-coupon";
+import { CouponEditDialog } from "./coupon-edit-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
 const ActionCell = ({ coupon }: { coupon: Coupon }) => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -40,26 +40,30 @@ const ActionCell = ({ coupon }: { coupon: Coupon }) => {
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 text-destructive hover:bg-destructive hover:text-destructive-foreground cursor-pointer"
+              className="text-destructive hover:bg-destructive hover:text-destructive-foreground h-8 w-8 cursor-pointer"
               disabled={isDeleting}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent className="p-0 gap-0 overflow-hidden bg-white dark:bg-slate-900 border-0 shadow-2xl sm:rounded-[24px]">
-            <div className="p-6 sm:p-8 space-y-4">
+          <AlertDialogContent className="gap-0 overflow-hidden border-0 bg-white p-0 shadow-2xl sm:rounded-[24px] dark:bg-slate-900">
+            <div className="space-y-4 p-6 sm:p-8">
               <AlertDialogHeader className="px-0">
-                <AlertDialogTitle className="text-xl font-bold">Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogTitle className="text-xl font-bold">
+                  Are you absolutely sure?
+                </AlertDialogTitle>
                 <AlertDialogDescription className="text-slate-500">
                   This action cannot be undone. This will permanently delete the
                   coupon "{coupon.code}" and remove it from the system.
                 </AlertDialogDescription>
               </AlertDialogHeader>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-800/50 px-8 py-5 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
-              <AlertDialogCancel className="mt-0 rounded-xl">Cancel</AlertDialogCancel>
+            <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-8 py-5 dark:border-slate-800 dark:bg-slate-800/50">
+              <AlertDialogCancel className="mt-0 rounded-xl">
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
-                className="bg-red-600 text-white hover:bg-red-700 rounded-xl shadow-sm font-semibold"
+                className="rounded-xl bg-red-600 font-semibold text-white shadow-sm hover:bg-red-700"
                 onClick={() => deleteCoupon(coupon._id)}
               >
                 Delete Coupon
@@ -84,9 +88,7 @@ export const columns: ColumnDef<Coupon>[] = [
     header: "Coupon Code",
     cell: ({ row }) => {
       return (
-        <div className="font-bold text-sm uppercase">
-          {row.original.code}
-        </div>
+        <div className="text-sm font-bold uppercase">{row.original.code}</div>
       );
     },
   },
@@ -110,7 +112,9 @@ export const columns: ColumnDef<Coupon>[] = [
       const coupon = row.original;
       return (
         <div className="text-muted-foreground font-medium">
-          {coupon.type === "percentage" ? `${coupon.value}%` : `$${coupon.value}`}
+          {coupon.type === "percentage"
+            ? `${coupon.value}%`
+            : `$${coupon.value}`}
         </div>
       );
     },
@@ -148,9 +152,11 @@ export const columns: ColumnDef<Coupon>[] = [
     cell: ({ row }) => {
       const expiryDate = row.original.expiryDate;
       return (
-        <div className="text-muted-foreground tabular-nums hidden md:block">
+        <div className="text-muted-foreground hidden tabular-nums md:block">
           {expiryDate
-            ? new Date(Number(expiryDate)).toLocaleDateString(undefined, { dateStyle: "medium" })
+            ? new Date(Number(expiryDate)).toLocaleDateString(undefined, {
+                dateStyle: "medium",
+              })
             : "No Expiry"}
         </div>
       );
@@ -163,4 +169,4 @@ export const columns: ColumnDef<Coupon>[] = [
       return <ActionCell coupon={row.original} />;
     },
   },
-]
+];

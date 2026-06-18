@@ -40,8 +40,14 @@ const Page = () => {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const { data: responseData, isLoading, isError, error } = useGetAllEmployees();
-  const { data: companyRes, isLoading: companyLoading } = useGetMyCompanyDetails();
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+    error,
+  } = useGetAllEmployees();
+  const { data: companyRes, isLoading: companyLoading } =
+    useGetMyCompanyDetails();
   const deleteMutation = useDeleteEmployee();
   const router = useRouter();
 
@@ -61,42 +67,54 @@ const Page = () => {
   if (isError) {
     return (
       <div className="text-destructive p-20 text-center">
-        {/* @ts-ignore */}
-        <p>{error?.response?.data?.message ?? "Failed to load team members. Please try again later."}</p>
+        <p>
+          {/* @ts-ignore */}
+          {error?.response?.data?.message ??
+            "Failed to load team members. Please try again later."}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <AddTeamMemberDialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
+      <AddTeamMemberDialog
+        open={isAddModalOpen}
+        onOpenChange={setIsAddModalOpen}
+      />
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Team Management</h1>
-          <p className="text-slate-500 text-sm mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Team Management
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
             Manage your employees and their access levels.
           </p>
         </div>
         <Button
           onClick={() => {
             if (!hasPlan) {
-              toast.error("Please purchase a subscription plan to add team members.");
+              toast.error(
+                "Please purchase a subscription plan to add team members.",
+              );
               router.push("/employer-dashboard/plans");
               return;
             }
             setIsAddModalOpen(true);
           }}
-          className="rounded-xl font-semibold h-10 px-5 gap-2"
+          className="h-10 gap-2 rounded-xl px-5 font-semibold"
         >
           <UserPlus className="size-4" strokeWidth={2} />
           Add New Employee
         </Button>
       </div>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="pb-4 pt-6 px-7">
-          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Company Members</CardTitle>
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+        <CardHeader className="px-7 pt-6 pb-4">
+          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+            Company Members
+          </CardTitle>
           <CardDescription className="text-sm text-slate-500">
             A list of all users in your company and their roles.
           </CardDescription>
@@ -119,7 +137,9 @@ const Page = () => {
                       <EmptyState
                         onAddEmployee={() => {
                           if (!hasPlan) {
-                            toast.error("Please purchase a subscription plan to add team members.");
+                            toast.error(
+                              "Please purchase a subscription plan to add team members.",
+                            );
                             router.push("/employer-dashboard/plans");
                             return;
                           }
@@ -143,9 +163,15 @@ const Page = () => {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9 border">
-                              <AvatarImage src={emp.user.avatar} alt={`${emp.user.firstName} ${emp.user.lastName}`} />
+                              <AvatarImage
+                                src={emp.user.avatar}
+                                alt={`${emp.user.firstName} ${emp.user.lastName}`}
+                              />
                               <AvatarFallback className="bg-indigo-50 text-xs font-bold text-indigo-700">
-                                {getInitials(emp.user.firstName, emp.user.lastName)}
+                                {getInitials(
+                                  emp.user.firstName,
+                                  emp.user.lastName,
+                                )}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col">
@@ -213,7 +239,11 @@ const Page = () => {
                                       variant="ghost"
                                       size="icon"
                                       className="text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                                      onClick={() => router.push(`/employer-dashboard/team/update/${emp._id}`)}
+                                      onClick={() =>
+                                        router.push(
+                                          `/employer-dashboard/team/update/${emp._id}`,
+                                        )
+                                      }
                                     >
                                       <Pencil className="h-4 w-4" />
                                     </Button>
@@ -256,12 +286,15 @@ export default Page;
 function EmptyState({ onAddEmployee }: { onAddEmployee: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted dark:bg-slate-800">
+      <div className="bg-muted mb-4 flex h-20 w-20 items-center justify-center rounded-full dark:bg-slate-800">
         <Users className="h-10 w-10 text-slate-400" />
       </div>
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No team members</h3>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+        No team members
+      </h3>
       <p className="mt-1 max-w-md text-center text-sm text-slate-500">
-        You haven't added any employees to your company yet. Add your first team member to collaborate.
+        You haven't added any employees to your company yet. Add your first team
+        member to collaborate.
       </p>
       <Button variant="outline" className="mt-6" onClick={onAddEmployee}>
         Add New Employee

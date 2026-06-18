@@ -116,7 +116,7 @@ export function CreateCouponDialog({
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-1 flex-col overflow-hidden"
         >
-          <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="scrollbar-hide flex-1 space-y-6 overflow-y-auto px-6 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="code" className="flex items-center gap-1">
@@ -208,18 +208,22 @@ export function CreateCouponDialog({
                   placeholder="Enter -1 for unlimited"
                 />
                 {errors.maxUses && (
-                  <p className="text-sm text-red-600">{errors.maxUses.message}</p>
+                  <p className="text-sm text-red-600">
+                    {errors.maxUses.message}
+                  </p>
                 )}
               </div>
             </div>
-            
-            <div className="flex items-center space-x-3 pt-6 border-t mt-6">
+
+            <div className="mt-6 flex items-center space-x-3 border-t pt-6">
               <Switch
                 id="isActive"
                 checked={isActive}
                 onCheckedChange={(checked) => setValue("isActive", checked)}
               />
-              <Label htmlFor="isActive" className="cursor-pointer">Active Coupon</Label>
+              <Label htmlFor="isActive" className="cursor-pointer">
+                Active Coupon
+              </Label>
             </div>
           </div>
 

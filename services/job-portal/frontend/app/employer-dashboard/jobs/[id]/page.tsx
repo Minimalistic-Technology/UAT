@@ -45,7 +45,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { FormattedDescription } from "@/features/employer/components/formatted-description";
-import { getCurrencyIcon, getCurrencySymbol, getListingStatusColor } from "@/utils";
+import {
+  getCurrencyIcon,
+  getCurrencySymbol,
+  getListingStatusColor,
+} from "@/utils";
 
 const Page = () => {
   const params = useParams();
@@ -80,7 +84,9 @@ const Page = () => {
             className="cursor-pointer"
             size="sm"
             disabled={job.status === "closed"}
-            onClick={() => router.push(`/employer-dashboard/jobs/${jobId}/edit`)}
+            onClick={() =>
+              router.push(`/employer-dashboard/jobs/${jobId}/edit`)
+            }
           >
             <Pencil className="mr-2 h-4 w-4" /> Edit Details
           </Button>
@@ -117,17 +123,17 @@ const Page = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column: Job Info */}
         <div className="space-y-6 lg:col-span-2">
-          <Card className="rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900 border-0 overflow-hidden">
-            <CardHeader className="bg-slate-50/50 dark:bg-slate-800/50 border-b pb-6">
+          <Card className="overflow-hidden rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+            <CardHeader className="border-b bg-slate-50/50 pb-6 dark:bg-slate-800/50">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge 
-                  variant="secondary" 
-                  className={`capitalize px-3 py-1 shadow-sm ${getListingStatusColor(job.status)}`}
+                <Badge
+                  variant="secondary"
+                  className={`px-3 py-1 capitalize shadow-sm ${getListingStatusColor(job.status)}`}
                 >
                   {job.status.replace("_", " ").toLowerCase()}
                 </Badge>
                 {job.isFeatured && (
-                  <Badge className="px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm border-0">
+                  <Badge className="border-0 bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1 text-white shadow-sm">
                     Featured
                   </Badge>
                 )}
@@ -138,20 +144,29 @@ const Page = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg border border-border/50">
+              <div className="text-muted-foreground bg-muted/30 border-border/50 flex flex-wrap items-center gap-4 rounded-lg border p-3 text-sm">
                 <div className="flex items-center gap-1.5">
-                  <Tags className="h-4 w-4 shrink-0 text-primary/70" />
+                  <Tags className="text-primary/70 h-4 w-4 shrink-0" />
                   <span className="capitalize">
-                    <span className="font-semibold text-foreground mr-1">Role:</span>
-                    {job.roleCategory?.replace(/_/g, " ").toLowerCase() || "Not Specified"}
+                    <span className="text-foreground mr-1 font-semibold">
+                      Role:
+                    </span>
+                    {job.roleCategory?.replace(/_/g, " ").toLowerCase() ||
+                      "Not Specified"}
                   </span>
                 </div>
-                <Separator orientation="vertical" className="h-4 hidden sm:block" />
+                <Separator
+                  orientation="vertical"
+                  className="hidden h-4 sm:block"
+                />
                 <div className="flex items-center gap-1.5">
-                  <Building2 className="h-4 w-4 shrink-0 text-primary/70" />
+                  <Building2 className="text-primary/70 h-4 w-4 shrink-0" />
                   <span className="capitalize">
-                    <span className="font-semibold text-foreground mr-1">Industry:</span>
-                    {job.industry?.replace(/_/g, " ").toLowerCase() || "Not Specified"}
+                    <span className="text-foreground mr-1 font-semibold">
+                      Industry:
+                    </span>
+                    {job.industry?.replace(/_/g, " ").toLowerCase() ||
+                      "Not Specified"}
                   </span>
                 </div>
               </div>
@@ -191,7 +206,7 @@ const Page = () => {
         {/* Right Column: Stats & Meta */}
         <div className="space-y-6">
           {/* Quick Stats Card */}
-          <Card className="rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900 border-0">
+          <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
             <CardHeader className="border-b pb-4">
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
                 Post Performance
@@ -211,7 +226,7 @@ const Page = () => {
           </Card>
 
           {/* Job Details Card */}
-          <Card className="rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)] bg-white dark:bg-slate-900 border-0">
+          <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
             <CardHeader className="border-b pb-4">
               <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
                 Listing Details
@@ -223,12 +238,18 @@ const Page = () => {
                 <span className="font-medium">
                   {job.salary?.min || job.salary?.max ? (
                     <>
-                      {job.salary?.min ? `${getCurrencySymbol(job.currency || "INR")}${job.salary.min.toLocaleString()}` : ""}
+                      {job.salary?.min
+                        ? `${getCurrencySymbol(job.currency || "INR")}${job.salary.min.toLocaleString()}`
+                        : ""}
                       {job.salary?.min && job.salary?.max ? " - " : ""}
-                      {job.salary?.max ? `${getCurrencySymbol(job.currency || "INR")}${job.salary.max.toLocaleString()}` : ""}
+                      {job.salary?.max
+                        ? `${getCurrencySymbol(job.currency || "INR")}${job.salary.max.toLocaleString()}`
+                        : ""}
                     </>
                   ) : (
-                    <span className="text-muted-foreground italic">Not Disclosed</span>
+                    <span className="text-muted-foreground italic">
+                      Not Disclosed
+                    </span>
                   )}
                 </span>
               </div>

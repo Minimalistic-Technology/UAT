@@ -33,7 +33,7 @@ const DraftsPage = () => {
     if (!searchQuery.trim()) return draftsRaw;
     const lowerQuery = searchQuery.toLowerCase();
     return draftsRaw.filter((draft: any) =>
-      draft.formData?.title?.toLowerCase().includes(lowerQuery)
+      draft.formData?.title?.toLowerCase().includes(lowerQuery),
     );
   }, [draftsRaw, searchQuery]);
 
@@ -47,7 +47,7 @@ const DraftsPage = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 w-full">
+      <div className="flex w-full flex-row items-center justify-between gap-2 sm:gap-4">
         <div className="relative w-full flex-1 sm:max-w-sm">
           <GlobalSearchInput
             value={searchQuery}
@@ -55,19 +55,28 @@ const DraftsPage = () => {
             placeholder="Search drafts..."
           />
         </div>
-        <Button asChild size="sm" className="w-auto shrink-0 whitespace-nowrap px-3 sm:px-4">
-          <Link href="/employer-dashboard/listings/create" className="flex items-center justify-center">
+        <Button
+          asChild
+          size="sm"
+          className="w-auto shrink-0 px-3 whitespace-nowrap sm:px-4"
+        >
+          <Link
+            href="/employer-dashboard/listings/create"
+            className="flex items-center justify-center"
+          >
             <Plus className="mr-1.5 h-4 w-4 shrink-0" />
             <span>Create New Listing</span>
           </Link>
         </Button>
       </div>
 
-      <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)]">
-        <CardHeader className="pb-4 pt-6 px-7">
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+        <CardHeader className="px-7 pt-6 pb-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">Saved Drafts</CardTitle>
+              <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                Saved Drafts
+              </CardTitle>
               <CardDescription className="text-sm text-slate-500">
                 Pick up where you left off. Edit and publish your drafts.
               </CardDescription>
@@ -84,7 +93,9 @@ const DraftsPage = () => {
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Type</TableHead>
                   <TableHead className="font-semibold">Last Saved</TableHead>
-                  <TableHead className="text-right font-semibold">Actions</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -112,8 +123,8 @@ export default DraftsPage;
 
 function DraftTableSkeleton() {
   return (
-    <Card className="shadow-sm rounded-[20px] bg-white dark:bg-slate-900 border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] mt-14">
-      <CardHeader className="pb-4 pt-6 px-7 flex flex-row justify-between">
+    <Card className="mt-14 rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+      <CardHeader className="flex flex-row justify-between px-7 pt-6 pb-4">
         <div className="space-y-2">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-4 w-60" />
@@ -125,7 +136,10 @@ function DraftTableSkeleton() {
         <div className="space-y-4 rounded-md border p-4">
           <Skeleton className="h-10 w-full" />
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between border-b border-gray-50 py-2 last:border-0">
+            <div
+              key={i}
+              className="flex items-center justify-between border-b border-gray-50 py-2 last:border-0"
+            >
               <Skeleton className="h-5 w-48" />
               <Skeleton className="h-5 w-24" />
               <Skeleton className="h-5 w-24" />
@@ -141,12 +155,15 @@ function DraftTableSkeleton() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12">
-      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted dark:bg-slate-800">
+      <div className="bg-muted mb-4 flex h-20 w-20 items-center justify-center rounded-full dark:bg-slate-800">
         <FileEdit className="h-10 w-10 text-slate-400" />
       </div>
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No drafts found</h3>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+        No drafts found
+      </h3>
       <p className="mt-1 max-w-md text-center text-sm text-slate-500">
-        You don't have any saved drafts. Get started by creating your first listing.
+        You don't have any saved drafts. Get started by creating your first
+        listing.
       </p>
       <Button asChild variant="outline" className="mt-6">
         <Link href="/employer-dashboard/listings/create">

@@ -12,18 +12,15 @@ export const EducationSection = ({ user }: EducationSectionProps) => {
       {user?.education && user.education.length > 0 ? (
         <div className="space-y-6">
           {user.education.map((edu: any, index: number) => (
-            <div
-              key={index}
-              className="border-b last:border-0 pb-6 last:pb-0"
-            >
-              <div className="flex justify-between items-start gap-4">
+            <div key={index} className="border-b pb-6 last:border-0 last:pb-0">
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h4 className="font-bold text-base">
+                  <h4 className="text-base font-bold">
                     {edu.degree} in {edu.fieldOfStudy}
                   </h4>
                   <p className="text-sm font-medium">{edu.institution}</p>
                 </div>
-                <div className="text-right text-sm text-muted-foreground whitespace-nowrap">
+                <div className="text-muted-foreground text-right text-sm whitespace-nowrap">
                   Class of {edu.graduationYear}
                 </div>
               </div>
@@ -31,9 +28,7 @@ export const EducationSection = ({ user }: EducationSectionProps) => {
           ))}
         </div>
       ) : (
-        <p className="text-muted-foreground text-sm">
-          No education added yet.
-        </p>
+        <p className="text-muted-foreground text-sm">No education added yet.</p>
       )}
     </ProfileSectionCard>
   );
