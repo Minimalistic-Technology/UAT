@@ -16,6 +16,9 @@ const defaultRoutes = [
     { path: '/cart', name: 'Shopping Cart', description: 'Contains selected products before checkout', isActive: true },
     { path: '/checkout', name: 'Checkout Page', description: 'Payment and shipping address confirmation', isActive: true },
     { path: '/blogs', name: 'Tech Blogs', description: 'Articles and news about enterprise IT solutions', isActive: true },
+    { path: '/login', name: 'User Login', description: 'Authentication page for users to login', isActive: true },
+    { path: '/signup', name: 'User Signup', description: 'Registration page for new users with OTP setup', isActive: true },
+    { path: '/product', name: 'Product Details', description: 'Single product detail and view page', isActive: true },
     { path: '/admin', name: 'Admin Dashboard', description: 'Core administrative control panel (Should never be disabled!)', isActive: true },
 ];
 

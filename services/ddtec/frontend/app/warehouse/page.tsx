@@ -379,7 +379,7 @@ export default function WarehouseDashboard() {
             )}
 
             {/* Main Content Workspace Panel */}
-            <div className="flex-1 flex flex-col min-w-0 pt-16">
+            <div className="flex-1 flex flex-col min-w-0 pt-0 md:pt-16">
                 {/* Header carrying the notifications, search, and admin-like stats */}
                 <Header
                     user={user}
