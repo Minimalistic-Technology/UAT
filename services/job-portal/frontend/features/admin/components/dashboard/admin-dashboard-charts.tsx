@@ -18,7 +18,7 @@ const chartConfig = {
 interface AdminDashboardChartsProps {
   activeChart: "revenue" | "users";
   setActiveChart: (chart: "revenue" | "users") => void;
-  graphData: any[]; // Ideally defined precisely if a type is available
+  graphData: any[];
 }
 
 export function AdminDashboardCharts({
@@ -60,27 +60,30 @@ export function AdminDashboardCharts({
 
   return (
     <div className="mb-8 grid gap-6 lg:grid-cols-3">
-      <div className="min-h-[400px] rounded-[20px] border border-slate-200 bg-white p-6 shadow-[0_2px_15px_rgba(0,0,0,0.04)] lg:col-span-3 dark:border-slate-800 dark:bg-slate-900">
-        <div className="mb-8 flex items-center justify-between">
+      <div className="min-h-fit rounded-[20px] border border-slate-200 bg-white p-4 shadow-[0_2px_15px_rgba(0,0,0,0.04)] sm:p-6 lg:col-span-3 dark:border-slate-800 dark:bg-slate-900">
+        {/* Header — stacks on mobile, row on sm+ */}
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+            <h3 className="text-[17px] font-bold text-slate-900 dark:text-white">
               {activeChart === "revenue"
                 ? "Revenue Growth"
                 : "User Acquisition"}
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
               {activeChart === "revenue"
                 ? "Monthly Recurring Revenue (MRR) Trends"
                 : "New User Registrations Over Time"}
             </p>
           </div>
-          <div className="flex rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+
+          {/* Toggle buttons */}
+          <div className="flex w-fit rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
             <Button
               onClick={() => setActiveChart("revenue")}
               variant="ghost"
               size="sm"
               className={cn(
-                "h-8 overflow-hidden rounded-lg px-4 text-xs font-semibold transition-all duration-300",
+                "h-8 rounded-lg px-3 text-xs font-semibold transition-all duration-300 sm:px-4",
                 activeChart === "revenue"
                   ? "border border-slate-200 bg-white text-[#2563eb] shadow-sm dark:border-slate-700 dark:bg-slate-900"
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white",
@@ -93,7 +96,7 @@ export function AdminDashboardCharts({
               variant="ghost"
               size="sm"
               className={cn(
-                "h-8 overflow-hidden rounded-lg px-4 text-xs font-semibold transition-all duration-300",
+                "h-8 rounded-lg px-3 text-xs font-semibold transition-all duration-300 sm:px-4",
                 activeChart === "users"
                   ? "border border-slate-200 bg-white text-[#2563eb] shadow-sm dark:border-slate-700 dark:bg-slate-900"
                   : "text-slate-500 hover:text-slate-900 dark:hover:text-white",
@@ -106,12 +109,12 @@ export function AdminDashboardCharts({
 
         <ChartContainer
           config={chartConfig}
-          className="mt-4 h-56 w-full md:h-72"
+          className="h-48 w-full sm:h-56 md:h-72"
         >
           <BarChart
             accessibilityLayer
             data={graphData}
-            margin={{ left: -15, right: 10 }}
+            margin={{ left: -10, right: 5 }}
           >
             <CartesianGrid
               vertical={false}
@@ -123,16 +126,17 @@ export function AdminDashboardCharts({
               tickLine={false}
               tickMargin={10}
               axisLine={false}
-              fontSize={12}
+              fontSize={11}
               className="text-slate-500"
             />
             <YAxis
               tickLine={false}
               axisLine={false}
-              tickMargin={10}
+              tickMargin={5}
               tickFormatter={formatYAxis}
-              fontSize={12}
+              fontSize={11}
               className="text-slate-500"
+              width={48}
             />
             <ChartTooltip
               cursor={{ fill: "rgba(0,0,0,0.04)" }}
@@ -142,7 +146,7 @@ export function AdminDashboardCharts({
               dataKey={activeChart}
               fill={`var(--color-${activeChart})`}
               radius={[6, 6, 0, 0]}
-              barSize={40}
+              maxBarSize={40} // ← fluid, not fixed
               className="transition-colors duration-500 ease-in-out"
               animationDuration={1000}
               animationEasing="ease-in-out"

@@ -111,12 +111,12 @@ const Page = () => {
   return (
     <div className="space-y-4">
       {/* Search and Filters Area */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative max-w-sm flex-1">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="relative w-full sm:max-w-sm">
           <Search className="absolute top-3 left-3 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Search users by name, email, or company..."
-            className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-9 focus-visible:ring-[#2563eb] dark:border-slate-800 dark:bg-slate-900"
+            className="h-10 w-full rounded-xl border-slate-200 bg-slate-50/50 pl-9 focus-visible:ring-[#2563eb] dark:border-slate-800 dark:bg-slate-900"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -124,23 +124,25 @@ const Page = () => {
         <Button
           variant="secondary"
           onClick={handleExportCSV}
-          className="h-10 cursor-pointer rounded-xl border-[#2563eb]/20 px-5 font-semibold text-[#2563eb] hover:bg-[#2563eb]/5"
+          className="h-10 w-full cursor-pointer rounded-xl border-[#2563eb]/20 px-5 font-semibold text-[#2563eb] hover:bg-[#2563eb]/5 sm:w-auto"
         >
           Export CSV
         </Button>
       </div>
 
-      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
-        <CardHeader className="px-7 pt-6 pb-4">
-          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+      <Card className="w-full max-w-full overflow-hidden rounded-[20px] border-0 shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+        <CardHeader className="px-4 pt-5 pb-3 sm:px-7 sm:pt-6 sm:pb-4">
+          <CardTitle className="text-lg font-bold text-slate-900 sm:text-xl dark:text-white">
             User Management
           </CardTitle>
-          <CardDescription className="text-sm text-slate-500">
+          <CardDescription className="text-xs text-slate-500 sm:text-sm">
             A list of all users in your organization and their current status.
           </CardDescription>
         </CardHeader>
-        <CardContent className="px-7 pb-6">
-          <DataTable columns={columns} data={filteredUsers} />
+        <CardContent className="px-4 pb-6 sm:px-7">
+          <div className="w-full overflow-x-auto">
+            <DataTable columns={columns} data={filteredUsers} />
+          </div>
 
           <div className="py-4">
             <Pagination className="justify-end">
@@ -207,17 +209,17 @@ const ErrorState = ({ onRetry }: { onRetry: () => void }) => {
 const LoadingState = () => {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <Skeleton className="h-10 w-full max-w-sm" />
-        <Skeleton className="h-10 w-24" />
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <Skeleton className="h-10 w-full sm:max-w-sm" />
+        <Skeleton className="h-10 w-full sm:w-24" />
       </div>
-      <Card>
-        <CardHeader className="pb-3">
+      <Card className="w-full max-w-full overflow-hidden rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+        <CardHeader className="px-4 pt-5 pb-3 sm:px-7 sm:pt-6 sm:pb-4">
           <Skeleton className="mb-2 h-6 w-48" />
           <Skeleton className="h-4 w-64" />
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="px-4 pb-6 sm:px-7">
+          <div className="w-full overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">
