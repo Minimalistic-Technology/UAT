@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const blog = res.data;
       return {
         title: `${blog.title} | Minimalistic Learning`,
-        description: blog.excerpt || blog.content.substring(0, 160).replace(/<[^>]*>/g, ''),
+        description: blog.excerpt || (blog.content?.substring(0, 160) ?? '').replace(/<[^>]*>/g, ''),
         openGraph: {
           title: blog.title,
           description: blog.excerpt,
