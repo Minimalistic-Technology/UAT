@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { prisma } from '../config/db';
+import { User } from '@prisma/client';
 import {
   signupSchema,
   loginSchema,
@@ -16,8 +17,9 @@ import {
 } from '../utils/jwt';
 import {
   replaceRefreshToken,
-  storeResetToken,
   verifyStoredToken,
+  storeResetToken,
+  verifyStoredResetToken,
   deleteToken,
   invalidateTokens,
   createTokenString
@@ -26,7 +28,7 @@ import { env } from '../config/env';
 import { getCookieConfig } from '../config/cookieConfig';
 import { durationToMs } from '../utils/time';
 import { ApiResponse } from "../utils/ApiResponse";
-import { sendOTP, sendPasswordResetOTP, sendAccountCreatedEmail, sendLoginAlertEmail } from "../utils/email";
+import { sendOTP, sendAccountCreatedEmail, sendLoginAlertEmail, sendPasswordResetLinkEmail } from "../utils/email";
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -46,6 +48,9 @@ interface LockoutInfo {
 const loginLockoutMap = new Map<string, LockoutInfo>();
 const otpLockoutMap = new Map<string, LockoutInfo>();
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SIGNUP - Original OTP flow (pendingUser → OTP email → verifyOTP to activate)
+// ─────────────────────────────────────────────────────────────────────────────
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const payload = signupSchema.parse(req.body) as userService.CreateUserPayload;
   const emailKey = payload.email.toLowerCase().trim();
@@ -60,40 +65,13 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     );
   }
 
-  // --- Captcha is temporarily bypassed as per user request ---
-  /*
-  const recaptchaSecret = env.RECAPTCHA_SECRET_KEY || "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"; // Default test secret
-  const recaptchaToken = (payload as any).recaptchaToken;
-
-  if (!recaptchaToken) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "CAPTCHA verification is required.");
-  }
-
-  try {
-    const verifyRes = await fetch(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${recaptchaSecret}&response=${recaptchaToken}`,
-      { method: 'POST' }
-    );
-    const verifyData: any = await verifyRes.json();
-
-    if (!verifyData.success) {
-      console.error("CAPTCHA Google Response:", verifyData);
-      throw new Error(`CAPTCHA challenge failed: ${verifyData['error-codes']?.join(', ') || 'Unknown error'}`);
-    }
-  } catch (error: any) {
-    console.error("CAPTCHA Catch Block Error:", error.message || error);
-    throw new ApiError(StatusCodes.BAD_REQUEST, "CAPTCHA verification failed. Are you a robot?");
-  }
-  */
-  // ---------------------------------------------------------
-
   const existing = await userService.findByEmail(payload.email);
   if (existing) {
     throw new ApiError(StatusCodes.CONFLICT, 'Email already in use');
   }
 
   const otp = crypto.randomInt(100000, 999999).toString();
-  const otpExpires = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes expiration
+  const otpExpires = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
   let hashedPassword = payload.password;
   if (payload.password) {
@@ -126,6 +104,9 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGIN - Direct token (NO OTP step for login)
+// ─────────────────────────────────────────────────────────────────────────────
 export const login = asyncHandler(async (req: Request, res: Response) => {
   const credentials = loginSchema.parse(req.body);
   const emailKey = credentials.email.toLowerCase().trim();
@@ -142,22 +123,18 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   const user = await userService.findByEmail(credentials.email);
   if (!user) {
-    // Record login failure for query targeting non-existing logins too to protect enumeration
     const current = loginLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
     current.attempts += 1;
     if (current.attempts >= 3) {
       const lockMinutes = Math.min(60, Math.pow(2, current.attempts - 3) * 2);
       current.lockUntil = new Date(Date.now() + lockMinutes * 60 * 1000);
-      loginLockoutMap.set(emailKey, current);
-    } else {
-      loginLockoutMap.set(emailKey, current);
     }
+    loginLockoutMap.set(emailKey, current);
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid credentials');
   }
 
   const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
   if (!isPasswordValid) {
-    // Record login failure
     const current = loginLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
     current.attempts += 1;
     if (current.attempts >= 3) {
@@ -178,70 +155,33 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  // Clear login lockout on successful password match
+  // Clear login lockout on success
   loginLockoutMap.delete(emailKey);
 
-  const detectedRole = user.role?.toString().trim().toLowerCase();
-  console.log(`[auth] Login attempt: ${user.email}, Detected Role: ${detectedRole}`);
+  const accessToken = signAccessToken(user.id);
+  const refreshToken = signRefreshToken(user.id);
 
-  if (detectedRole === 'admin') {
-    const accessToken = signAccessToken(user.id);
-    const refreshToken = signRefreshToken(user.id);
+  await replaceRefreshToken(user.id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
+  const cookieBase = getCookieConfig();
 
-    await replaceRefreshToken(user.id, refreshToken, env.REFRESH_TOKEN_EXPIRE);
-    const cookieBase = getCookieConfig();
+  // Non-blocking login alert email
+  sendLoginAlertEmail(user.email, user.firstName, req.ip, req.headers['user-agent']).catch(console.error);
 
-    sendLoginAlertEmail(user.email, user.firstName, req.ip, req.headers['user-agent']).catch(console.error);
-
-    return res
-      .cookie('access_token', accessToken, {
-        ...cookieBase,
-        maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
-      })
-      .cookie('refresh_token', refreshToken, {
-        ...cookieBase,
-        maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
-      })
-      .status(StatusCodes.OK)
-      .json(
-        new ApiResponse<LoginResponseData>(StatusCodes.OK, {
-          user: userService.toPublicUser(user),
-          tokens: { accessToken, refreshToken }
-        }, "Admin login successful")
-      );
-  }
-
-  // Check OTP request lockout
-  const otpLockout = otpLockoutMap.get(emailKey);
-  if (otpLockout && otpLockout.lockUntil && otpLockout.lockUntil > new Date()) {
-    const minLeft = Math.ceil((otpLockout.lockUntil.getTime() - Date.now()) / 1000 / 60);
-    throw new ApiError(
-      StatusCodes.TOO_MANY_REQUESTS,
-      `Too many OTP requests. Please wait ${minLeft} minute(s) before logging in again.`
+  return res
+    .cookie('access_token', accessToken, { ...cookieBase, maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE) })
+    .cookie('refresh_token', refreshToken, { ...cookieBase, maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE) })
+    .status(StatusCodes.OK)
+    .json(
+      new ApiResponse<LoginResponseData>(StatusCodes.OK, {
+        user: userService.toPublicUser(user),
+        tokens: { accessToken, refreshToken }
+      }, "Login successful")
     );
-  }
-
-  const otp = crypto.randomInt(100000, 999999).toString();
-  const otpExpires = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes expiration
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { otp, otpExpires: new Date(otpExpires) }
-  });
-
-  sendOTP(user.email, otp).catch((err) => {
-    console.error('[Background] Failed to send login OTP email:', err);
-  });
-
-  const message = user.isVerified
-    ? "OTP sent to your email. Please verify."
-    : "Please verify your account. OTP sent to your email.";
-
-  return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { email: user.email, isVerified: user.isVerified, requiresOTP: true }, message)
-  );
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// VERIFY OTP - Used for signup verification only
+// ─────────────────────────────────────────────────────────────────────────────
 export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
   const { email, otp } = verifyOTPSchema.parse(req.body);
   const emailKey = email.toLowerCase().trim();
@@ -256,13 +196,11 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
     );
   }
 
-  let user: any = null;
-  user = await userService.findByEmail(email);
+  let user: User | null = await userService.findByEmail(email);
 
   if (user) {
     const isExpired = user.otpExpires && new Date(Date.now() - 5000) > user.otpExpires;
     if (user.otp !== otp || isExpired) {
-      // Record OTP verification failure
       const current = otpLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
       current.attempts += 1;
       if (current.attempts >= 3) {
@@ -276,28 +214,22 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
       } else {
         otpLockoutMap.set(emailKey, current);
         const remaining = 3 - current.attempts;
-        throw new ApiError(
-          StatusCodes.BAD_REQUEST,
-          `Invalid or expired OTP. ${remaining} attempt(s) remaining.`
-        );
+        throw new ApiError(StatusCodes.BAD_REQUEST, `Invalid or expired OTP. ${remaining} attempt(s) remaining.`);
       }
     }
 
-    // Clear lockout on success
     otpLockoutMap.delete(emailKey);
-
     user = await prisma.user.update({
       where: { id: user.id },
       data: { otp: null, otpExpires: null, isVerified: true }
     });
-
     sendLoginAlertEmail(user.email, user.firstName, req.ip, req.headers['user-agent']).catch(console.error);
+
   } else {
     const pending = await prisma.pendingUser.findUnique({ where: { email } });
     const isExpired = pending && new Date(Date.now() - 5000) > pending.otpExpires;
 
     if (!pending || pending.otp !== otp || isExpired) {
-      // Record OTP verification failure
       const current = otpLockoutMap.get(emailKey) || { attempts: 0, lockUntil: null };
       current.attempts += 1;
       if (current.attempts >= 3) {
@@ -311,14 +243,10 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
       } else {
         otpLockoutMap.set(emailKey, current);
         const remaining = 3 - current.attempts;
-        throw new ApiError(
-          StatusCodes.BAD_REQUEST,
-          `Invalid or expired OTP. ${remaining} attempt(s) remaining.`
-        );
+        throw new ApiError(StatusCodes.BAD_REQUEST, `Invalid or expired OTP. ${remaining} attempt(s) remaining.`);
       }
     }
 
-    // Clear lockout on success
     otpLockoutMap.delete(emailKey);
 
     const { id, otp: _o, otpExpires: _e, createdAt: _c, password, ...userData } = pending;
@@ -344,14 +272,8 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
   const cookieBase = getCookieConfig();
 
   return res
-    .cookie('access_token', accessToken, {
-      ...cookieBase,
-      maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
-    })
-    .cookie('refresh_token', refreshToken, {
-      ...cookieBase,
-      maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
-    })
+    .cookie('access_token', accessToken, { ...cookieBase, maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE) })
+    .cookie('refresh_token', refreshToken, { ...cookieBase, maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE) })
     .status(StatusCodes.OK)
     .json(
       new ApiResponse<LoginResponseData>(StatusCodes.OK, {
@@ -361,6 +283,9 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
     );
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// REFRESH TOKEN
+// ─────────────────────────────────────────────────────────────────────────────
 export const refreshToken = asyncHandler(async (req: Request, res: Response) => {
   const tokenFromCookie = req.cookies?.refresh_token as string | undefined;
   const tokenFromBody = req.body?.refreshToken as string | undefined;
@@ -379,36 +304,26 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
 
   const tokenDoc = await verifyStoredToken(payload.sub, refreshTokenValue, 'refresh');
   if (!tokenDoc) {
-    console.log(`[auth] Refresh token not found in DB for user ${payload.sub}`);
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'Refresh token invalid or expired');
   }
 
   const user = await userService.findById(payload.sub);
   if (!user) {
-    console.log(`[auth] User ${payload.sub} not found for refresh token`);
     await deleteToken(tokenDoc);
     throw new ApiError(StatusCodes.UNAUTHORIZED, 'User no longer exists');
   }
 
-  console.log(`[auth] Successfully refreshing tokens for user: ${user.email}`);
   await deleteToken(tokenDoc);
 
   const accessToken = signAccessToken(user.id);
   const newRefreshToken = signRefreshToken(user.id);
-
   await replaceRefreshToken(user.id, newRefreshToken, env.REFRESH_TOKEN_EXPIRE);
 
   const cookieBase = getCookieConfig();
 
   return res
-    .cookie('access_token', accessToken, {
-      ...cookieBase,
-      maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE)
-    })
-    .cookie('refresh_token', newRefreshToken, {
-      ...cookieBase,
-      maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE)
-    })
+    .cookie('access_token', accessToken, { ...cookieBase, maxAge: durationToMs(env.ACCESS_TOKEN_EXPIRE) })
+    .cookie('refresh_token', newRefreshToken, { ...cookieBase, maxAge: durationToMs(env.REFRESH_TOKEN_EXPIRE) })
     .status(StatusCodes.OK)
     .json(
       new ApiResponse<RefreshTokenResponseData>(StatusCodes.OK, {
@@ -418,27 +333,40 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
     );
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FORGOT PASSWORD - Initiate
+// ─────────────────────────────────────────────────────────────────────────────
 export const initiatePasswordReset = asyncHandler(async (req: Request, res: Response) => {
   const { email } = passwordResetInitSchema.parse(req.body);
 
   const user = await userService.findByEmail(email);
   if (!user) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'User with this email address does not exist.');
+    // Return OK anyway to prevent enumeration attacks
+    return res.status(StatusCodes.OK).json(
+      new ApiResponse(StatusCodes.OK, null, 'If that email address exists, we have sent a reset link to it.')
+    );
   }
 
-  const resetOTP = crypto.randomInt(100000, 999999).toString();
+  const rawToken = await storeResetToken(user.id, env.PASSWORD_RESET_EXPIRE || '15m');
 
-  await storeResetToken(user.id, resetOTP, env.PASSWORD_RESET_EXPIRE || '15m');
+  // Dynamically determine the frontend URL based on where the request came from
+  const requestOrigin = req.headers.origin || req.headers.referer?.replace(/\/$/, '');
+  const dynamicFrontendUrl = requestOrigin || env.frontendUrl || 'http://localhost:3000';
 
-  sendPasswordResetOTP(email, resetOTP).catch((err) => {
-    console.error('[Background] Failed to send password reset OTP:', err);
+  const resetLink = `${dynamicFrontendUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`;
+
+  sendPasswordResetLinkEmail(email, resetLink).catch((err) => {
+    console.error('[Background] Failed to send password reset link:', err);
   });
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { email }, 'A password reset code has been sent to your email.')
+    new ApiResponse(StatusCodes.OK, null, 'If that email address exists, we have sent a password reset link.')
   );
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FORGOT PASSWORD - Complete
+// ─────────────────────────────────────────────────────────────────────────────
 export const completePasswordReset = asyncHandler(async (req: Request, res: Response) => {
   const payload = passwordResetCompleteSchema.parse(req.body);
 
@@ -447,21 +375,25 @@ export const completePasswordReset = asyncHandler(async (req: Request, res: Resp
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid user or expired token.');
   }
 
-  const tokenDoc = await verifyStoredToken(user.id, payload.token, 'reset');
+  const tokenDoc = await verifyStoredResetToken(user.id, payload.token);
   if (!tokenDoc) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired password reset verification code.');
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid or expired password reset link.');
   }
 
   await userService.updatePassword(user, payload.password);
   await deleteToken(tokenDoc);
 
+  // Invalidate refresh tokens so user is logged out everywhere
   await invalidateTokens(user.id, 'refresh');
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, null, 'Your password has been successfully reset.')
+    new ApiResponse(StatusCodes.OK, null, 'Your password has been successfully reset. You can now login.')
   );
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET ME
+// ─────────────────────────────────────────────────────────────────────────────
 export const getMe = asyncHandler(async (req: Request, res: Response) => {
   const user = req.user;
   if (!user) {
@@ -469,10 +401,13 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
   }
 
   return res.status(StatusCodes.OK).json(
-    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(user as any) }, "User profile fetched successfully")
+    new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(user as User) }, "User profile fetched successfully")
   );
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LOGOUT
+// ─────────────────────────────────────────────────────────────────────────────
 export const logout = asyncHandler(async (req: Request, res: Response) => {
   const cookieOptions = {
     httpOnly: true,
@@ -488,8 +423,11 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
     .json(new ApiResponse(StatusCodes.OK, null, "Logged out successfully"));
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// UPDATE PROFILE
+// ─────────────────────────────────────────────────────────────────────────────
 export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
-  const user: any = req.user!;
+  const user = req.user as User;
   const { firstName, lastName, contactNumber, currentPassword, newPassword } = req.body;
 
   const dataToUpdate: any = {};
@@ -513,7 +451,7 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
   }
 
   const updatedUser = await prisma.user.update({
-    where: { id: user.id || user._id.toString() },
+    where: { id: user.id },
     data: dataToUpdate
   });
 
@@ -521,5 +459,3 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
     new ApiResponse(StatusCodes.OK, { user: userService.toPublicUser(updatedUser) }, 'Profile updated successfully')
   );
 });
-
-// Restart trigger

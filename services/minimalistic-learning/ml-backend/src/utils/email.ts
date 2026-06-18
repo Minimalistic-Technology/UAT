@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { BrevoClient } from '@getbrevo/brevo';
+import * as brevo from '@getbrevo/brevo';
 import crypto from 'crypto';
 import { env } from '../config/env';
 
@@ -18,8 +18,8 @@ const transporter = nodemailer.createTransport({
   connectionTimeout: 10000,
 });
 
-// 2. Setup Brevo (The Professional Choice)
-const brevo = new BrevoClient({ apiKey: env.BREVO_API_KEY });
+// 2. Setup Brevo API Instance (The Professional Choice)
+const apiInstance = new brevo.BrevoClient({ apiKey: env.BREVO_API_KEY });
 
 /* ─── Shared Nodemailer fallback ──────────────────────────────────────── */
 async function sendViaNodemailer(to: string, subject: string, html: string) {
@@ -41,44 +41,37 @@ async function sendViaNodemailer(to: string, subject: string, html: string) {
 
 /* ─── Shared Brevo dispatcher ───────────────────────────────────────── */
 async function sendViaBrevo(to: string, subject: string, html: string) {
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'api-key': env.BREVO_API_KEY,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-      sender: { name: 'Minimalistic Learning', email: env.BREVO_FROM_EMAIL },
-      to: [{ email: to }],
-      subject: subject,
-      htmlContent: html
-    })
-  });
-
-  if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error('Brevo API rejected: ' + errorData);
+  try {
+    const data = await apiInstance.transactionalEmails.sendTransacEmail({
+      subject,
+      htmlContent: html,
+      sender: { name: "Minimalistic Learning", email: env.BREVO_FROM_EMAIL || "no-reply@minimalistic-learning.com" },
+      to: [{ email: to }]
+    });
+    return data;
+  } catch (error: any) {
+    console.error('[email] Brevo SDK Error Details:', error?.response?.body || error.message);
+    throw new Error('Brevo SDK rejected: ' + (error?.response?.body?.message || error.message));
   }
-
-  return await response.json();
 }
 
 /* ─── Smart send: Brevo first, Nodemailer fallback ─────────────────── */
 async function smartSend(to: string, subject: string, html: string) {
-  const canUseBrevo = env.BREVO_API_KEY && !env.BREVO_API_KEY.includes('example');
+  const canUseBrevo = env.BREVO_API_KEY && env.BREVO_API_KEY.trim() !== '' && !env.BREVO_API_KEY.includes('example');
+
   if (canUseBrevo) {
     try {
       console.log('[email] Attempting Brevo delivery to ' + to + '...');
       const result = await sendViaBrevo(to, subject, html);
-      console.log('[email] Sent via Brevo successfully.');
+      console.log('[email] Sent via Brevo successfully:', result?.messageId || 'OK');
       return result;
     } catch (err: any) {
-      console.warn('[email] Brevo failed, falling back to Nodemailer:', err.message);
+      console.warn('[email] Brevo failed! Falling back to Nodemailer. Reason:', err.message);
       return sendViaNodemailer(to, subject, html);
     }
   }
-  console.log('[email] Brevo not configured. Using Nodemailer...');
+
+  console.log('[email] Brevo not configured. Using Nodemailer directly...');
   return sendViaNodemailer(to, subject, html);
 }
 
@@ -218,8 +211,8 @@ export const sendNewsletterWelcomeEmail = async (to: string) => {
 // Re-export crypto hash helper used by postController
 export { crypto };
 
-/* ─── Password Reset OTP Email ───────────────────────────────────────── */
-export const sendPasswordResetOTP = async (to: string, otp: string) => {
+/* ─── Password Reset Link Email ───────────────────────────────────────── */
+export const sendPasswordResetLinkEmail = async (to: string, resetLink: string) => {
   const subject = 'Reset Your Password — Minimalistic Learning';
   const year = new Date().getFullYear();
 
@@ -238,19 +231,17 @@ export const sendPasswordResetOTP = async (to: string, otp: string) => {
               <span style="color:#ffffff;font-size:13px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;">Minimalistic Learning</span>
             </div>
             <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Password Reset Request</h1>
-            <p style="margin:10px 0 0;color:rgba(255,255,255,0.6);font-size:14px;">Your verification code is ready</p>
+            <p style="margin:10px 0 0;color:rgba(255,255,255,0.6);font-size:14px;">Secure link to set a new password</p>
           </td>
         </tr>
-        <!-- OTP Box -->
+        <!-- Action Box -->
         <tr>
           <td style="padding:40px 40px 20px;text-align:center;">
             <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
-              Use the 6-digit code below to verify your identity and set a new password. This code is valid for <strong style="color:#1e293b;">15 minutes</strong>.
+              Click the button below to securely reset your password. This link is valid for <strong style="color:#1e293b;">15 minutes</strong>.
             </p>
-            <div style="background:linear-gradient(135deg,#fff1f2,#ffe4e6);border-radius:20px;padding:32px;margin:0 auto;display:inline-block;width:100%;box-sizing:border-box;">
-              <p style="margin:0 0 8px;color:#e11d48;font-size:11px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;">Password Reset Code</p>
-              <div style="font-size:52px;font-weight:900;color:#e11d48;letter-spacing:16px;margin:8px 0 4px;">${otp}</div>
-              <p style="margin:8px 0 0;color:#64748b;font-size:12px;">For security, never share this code with anyone</p>
+            <div style="margin:0 auto;display:inline-block;width:100%;box-sizing:border-box;margin-bottom:24px;">
+              <a href="${resetLink}" style="display:inline-block;background:#e11d48;color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;padding:16px 40px;border-radius:12px;text-transform:uppercase;letter-spacing:0.1em;box-shadow:0 4px 15px rgba(225,29,72,0.3);">Reset Password</a>
             </div>
           </td>
         </tr>

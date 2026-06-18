@@ -21,6 +21,7 @@ const envSchema = z.object({
   BREVO_API_KEY: z.string().optional().default('xkeysib-example-key'),
   BREVO_FROM_EMAIL: z.string().optional().default('onboarding@minimalistic.com'),
   RECAPTCHA_SECRET_KEY: z.string().optional(),
+  FRONTEND_URL: z.string().optional(),
 });
 
 const parsed = envSchema.parse(process.env);
@@ -30,8 +31,11 @@ const corsOrigins = parsed.CORS_ORIGIN
   ? parsed.CORS_ORIGIN.split(',').map((origin: string) => origin.trim()).filter(Boolean)
   : ['http://localhost:3000'];
 
+const frontendUrl = parsed.FRONTEND_URL || corsOrigins[0];
+
 export const env = {
   ...parsed,
   corsOrigins,
+  frontendUrl,
   isProduction: parsed.NODE_ENV === 'production'
 };

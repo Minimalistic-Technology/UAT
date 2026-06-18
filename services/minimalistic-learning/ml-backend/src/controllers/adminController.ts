@@ -378,6 +378,8 @@ export const updateSiteContent = asyncHandler(async (req: Request, res: Response
 
   if (!content) throw new ApiError(StatusCodes.BAD_REQUEST, 'Content body is required');
 
+  const stringifiedContent = typeof content === 'string' ? content : JSON.stringify(content);
+
   const updatedContent = await (prisma as any).siteContent.upsert({
     where: {
       page_section: {
@@ -385,11 +387,11 @@ export const updateSiteContent = asyncHandler(async (req: Request, res: Response
         section
       }
     },
-    update: { content },
+    update: { content: stringifiedContent },
     create: {
       page,
       section,
-      content
+      content: stringifiedContent
     }
   });
 
