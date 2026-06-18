@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import api from "@/lib/api-client";
 import { useNavSession } from "@/hooks/use-nav-session";
+import { checkFeature } from "@/features/admin/services/feature.service";
 
 export function useFeatureCheck(slug: string) {
   const [isAllowed, setIsAllowed] = useState(false);
@@ -12,13 +12,13 @@ export function useFeatureCheck(slug: string) {
   useEffect(() => {
     let mounted = true;
 
-    async function checkFeature() {
+    async function verifyFeature() {
       if (!session?.user?.id) return;
       try {
-        const featureRes = await api.get(`/features/${slug}/check`);
+        const featureData = await checkFeature(slug);
 
         if (mounted) {
-          setIsAllowed(!!featureRes.data?.data?.allowed);
+          setIsAllowed(!!featureData?.allowed);
         }
       } catch (error) {
         console.error("Failed to check feature permission:", error);
@@ -28,11 +28,11 @@ export function useFeatureCheck(slug: string) {
       }
     }
 
-    checkFeature();
+    verifyFeature();
 
     // Optional: Re-check when window regains focus to catch dashboard changes
     const handleFocus = () => {
-      checkFeature();
+      verifyFeature();
     };
     window.addEventListener("focus", handleFocus);
 
