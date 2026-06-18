@@ -121,11 +121,11 @@ export const verifyOtp = async (req: Request, res: Response) => {
             if (otpRecord.attempts >= 3) {
                 const blockMinutes = Math.pow(2, otpRecord.attempts - 3) * 2; // 2, 4, 8, 16 mins etc.
                 otpRecord.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                await redisClient.set(`otp:${identifier}`, JSON.stringify(otpRecord), 'KEEPTTL');
+                await redisClient.set(`otp:${identifier}`, JSON.stringify(otpRecord), 'KEEPTTL', undefined);
                 return res.status(403).json({ msg: `Verification is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
             }
 
-            await redisClient.set(`otp:${identifier}`, JSON.stringify(otpRecord), 'KEEPTTL');
+            await redisClient.set(`otp:${identifier}`, JSON.stringify(otpRecord), 'KEEPTTL', undefined);
             return res.status(400).json({ msg: 'Invalid OTP', isValid: false });
         }
 
