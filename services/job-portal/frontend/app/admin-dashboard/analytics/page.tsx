@@ -215,7 +215,7 @@ const AnalyticsPage = () => {
       {/* 📈 Graphical Insights Engine */}
       <div className="mt-4 grid gap-8 lg:grid-cols-2">
         {/* Revenue Flow */}
-        <div className="border-primary/10 bg-card shadow-primary/5 rounded-3xl border p-6 shadow-lg transition-all duration-300 hover:shadow-xl">
+        <div className="border-primary/10 bg-card shadow-primary/5 min-w-0 rounded-3xl border p-6 shadow-lg transition-all duration-300 hover:shadow-xl">
           <div className="mb-6 flex items-center justify-between">
             <h3 className="font-heading text-foreground text-xl font-extrabold">
               Revenue Flow
@@ -289,7 +289,7 @@ const AnalyticsPage = () => {
         </div>
 
         {/* User Acquisition */}
-        <div className="border-secondary/10 bg-card shadow-secondary/5 rounded-3xl border p-6 shadow-lg transition-all duration-300 hover:shadow-xl">
+        <div className="border-secondary/10 bg-card shadow-secondary/5 min-w-0 rounded-3xl border p-6 shadow-lg transition-all duration-300 hover:shadow-xl">
           <div className="mb-6 flex items-center justify-between">
             <h3 className="font-heading text-foreground text-xl font-extrabold">
               User Acquisition
@@ -341,7 +341,7 @@ const AnalyticsPage = () => {
         </div>
 
         {/* Opportunity Volume - Merged Jobs & Internships */}
-        <div className="border-border bg-card rounded-3xl border p-6 shadow-sm transition-all duration-300 hover:shadow-xl lg:col-span-2">
+        <div className="border-border bg-card min-w-0 rounded-3xl border p-6 shadow-sm transition-all duration-300 hover:shadow-xl lg:col-span-2">
           <div className="mb-8">
             <h3 className="font-heading text-foreground text-2xl font-extrabold">
               Opportunity Market Dynamics

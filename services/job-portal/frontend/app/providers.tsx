@@ -3,7 +3,7 @@ import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useState, useEffect } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar-context";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
@@ -37,7 +37,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     >
       <SessionProvider>
         <QueryClientProvider client={queryClient}>
-          <SidebarProvider>{children}</SidebarProvider>
+          <TooltipProvider>{children}</TooltipProvider>
         </QueryClientProvider>
       </SessionProvider>
     </NextThemesProvider>

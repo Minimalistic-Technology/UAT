@@ -7,9 +7,11 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-import { Sidebar } from "@/features/admin/components/sidebar";
-import EmployerSidebar from "@/features/employer/components/employer-sidebar";
-import UserSidebar from "@/features/user/components/user-sidebar";
+import {
+  adminMenuItems,
+  employerMenuItems,
+  userMenuItems,
+} from "@/components/app-sidebar";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -160,20 +162,16 @@ export default function Navbar() {
                     <MobileSkeleton />
                   </div>
                 ) : isAuthenticated ? (
-                  <>
-                    {isAdmin && (
-                      <Sidebar className="h-full w-full" forceExpanded />
-                    )}
-                    {isEmployer && (
-                      <EmployerSidebar
-                        className="h-full w-full"
-                        forceExpanded
-                      />
-                    )}
-                    {isJobSeeker && (
-                      <UserSidebar className="h-full w-full" forceExpanded />
-                    )}
-                  </>
+                  <div className="flex flex-col gap-1 p-4 pt-10">
+                    <MobileAuthenticatedMenu
+                      isAdmin={isAdmin}
+                      isEmployer={isEmployer}
+                      isJobSeeker={isJobSeeker}
+                      session={session}
+                      onClose={closeSheet}
+                      pathname={pathname}
+                    />
+                  </div>
                 ) : (
                   <div className="flex flex-col gap-1 p-4 pt-10">
                     <MobileGuestButtons onClose={closeSheet} />
@@ -418,5 +416,53 @@ function MobileNavLink({
     >
       {children}
     </Link>
+  );
+}
+
+function MobileAuthenticatedMenu({
+  isAdmin,
+  isEmployer,
+  isJobSeeker,
+  session,
+  onClose,
+  pathname,
+}: {
+  isAdmin: boolean;
+  isEmployer: boolean;
+  isJobSeeker: boolean;
+  session: any;
+  onClose: () => void;
+  pathname: string;
+}) {
+  let menuItems: MenuItem[] = [];
+  if (isAdmin) {
+    menuItems = adminMenuItems;
+  } else if (isEmployer) {
+    const companyRole = session?.user?.companyRole;
+    menuItems =
+      companyRole === "owner"
+        ? employerMenuItems
+        : employerMenuItems.filter((item) => item.label !== "Manage Team");
+  } else if (isJobSeeker) {
+    menuItems = userMenuItems;
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      {menuItems.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <MobileNavLink
+            key={item.href}
+            href={item.href}
+            onClick={onClose}
+            active={isActive}
+          >
+            <item.icon className="h-5 w-5" />
+            <span>{item.label}</span>
+          </MobileNavLink>
+        );
+      })}
+    </div>
   );
 }

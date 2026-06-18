@@ -60,7 +60,7 @@ export function AdminDashboardCharts({
 
   return (
     <div className="mb-8 grid gap-6 lg:grid-cols-3">
-      <div className="min-h-fit rounded-[20px] border border-slate-200 bg-white p-4 shadow-[0_2px_15px_rgba(0,0,0,0.04)] sm:p-6 lg:col-span-3 dark:border-slate-800 dark:bg-slate-900">
+      <div className="min-h-fit min-w-0 rounded-[20px] border border-slate-200 bg-white p-4 shadow-[0_2px_15px_rgba(0,0,0,0.04)] sm:p-6 lg:col-span-3 dark:border-slate-800 dark:bg-slate-900">
         {/* Header — stacks on mobile, row on sm+ */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
