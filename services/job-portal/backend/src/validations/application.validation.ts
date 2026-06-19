@@ -65,10 +65,3 @@ export const updateApplicationStatusSchema = [
     .withMessage("Invalid interview date format"),
 ];
 
-export const withdrawApplicationSchema = [
-  param("id")
-    .notEmpty()
-    .withMessage("Application ID is required")
-    .isMongoId()
-    .withMessage("Invalid Application ID"),
-];

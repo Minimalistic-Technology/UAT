@@ -49,7 +49,6 @@ export const createApplication = async (
       listing: listingId,
       listingType,
       jobSeeker: req.user._id,
-      status: { $ne: ApplicationStatus.WITHDRAWN },
     });
 
     if (existingApplication) {
@@ -532,45 +531,3 @@ export const updateApplicationStatus = async (
   }
 };
 
-export const withdrawApplication = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { id } = req.params;
-    const application = await Application.findById(id);
-
-    if (!application) {
-      throw new ApiError(404, "Application not found");
-    }
-
-    // Verify application belongs to user
-    if (application.jobSeeker.toString() !== req.user._id.toString()) {
-      throw new ApiError(403, "Not authorized to withdraw this application");
-    }
-
-    if (application.status === ApplicationStatus.WITHDRAWN) {
-      throw new ApiError(400, "Application is already withdrawn");
-    }
-
-    const listing =
-      application.listingType === ListingType.JOB
-        ? await Job.findById(application.listing)
-        : await Internship.findById(application.listing);
-
-    if (listing && listing.applicationsCount > 0) {
-      listing.applicationsCount -= 1;
-      await listing.save();
-    }
-
-    application.status = ApplicationStatus.WITHDRAWN;
-    await application.save();
-
-    res
-      .status(200)
-      .json(new ApiResponse(200, null, "Application withdrawn successfully"));
-  } catch (error: any) {
-    next(error);
-  }
-};

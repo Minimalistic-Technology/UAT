@@ -5,7 +5,6 @@ import {
   getJobApplicants,
   getAllCompanyApplications,
   updateApplicationStatus,
-  withdrawApplication,
   getApplicationById,
   getMyApplicationStats,
 } from "../controllers/application.controller.js";
@@ -18,7 +17,6 @@ import {
   getJobApplicantsSchema,
   getJobApplicationByIdSchema,
   updateApplicationStatusSchema,
-  withdrawApplicationSchema,
 } from "../validations/application.validation.js";
 
 const router = express.Router();
@@ -75,14 +73,6 @@ router.put(
   authorize(GlobalRole.USER), // only for owner / hr
   validate(updateApplicationStatusSchema),
   updateApplicationStatus,
-);
-
-router.delete(
-  "/:id",
-  protect,
-  authorize(GlobalRole.USER), // only for job seeker
-  validate(withdrawApplicationSchema),
-  withdrawApplication,
 );
 
 export default router;
