@@ -120,26 +120,9 @@ function Reveal({ children, delay = 0, dir = "up" }:
 
 /* ─── Main Hero ──────────────────────────────────────────────────────── */
 export const Hero = ({ previewData }: { previewData?: any }) => {
-  const [heroContent, setHeroContent] = useState<any>(null);
-
-  useEffect(() => {
-    if (previewData) {
-      setHeroContent(previewData);
-      return;
-    }
-
-    const fetchContent = async () => {
-      try {
-        const res = await api.get('/public/content/home');
-        if (res.data?.data?.hero) {
-          setHeroContent(res.data.data.hero);
-        }
-      } catch (e) {
-        // fail silently, falls back to default layout
-      }
-    };
-    fetchContent();
-  }, [previewData]);
+  // ✅ FIX: previewData ab page.tsx se aata hai — koi internal fetch nahi
+  // Null hone pe default text use hoga (fallback already har field mein hai)
+  const heroContent = previewData ?? null;
 
   useEffect(() => {
     const id = "hero-kf";

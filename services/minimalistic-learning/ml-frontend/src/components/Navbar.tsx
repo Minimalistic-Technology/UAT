@@ -9,6 +9,7 @@ import { useAuth } from '@/features/auth/context/auth-context';
 import NotificationDropdown from './NotificationDropdown';
 import { api } from '@/lib/api';
 import { ThemeToggle } from './ThemeToggle';
+import { useQuery } from '@tanstack/react-query';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -16,19 +17,15 @@ export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [resourceHubEnabled, setResourceHubEnabled] = useState(false);
+  // ✅ FIX: React Query — 10 min cache, nahi dobara fetch hogi har page navigation pe
+  const { data: settingsData } = useQuery({
+    queryKey: ['public-settings'],
+    queryFn: () => api.get('/public/settings').then(res => res.data?.data),
+    staleTime: 10 * 60 * 1000,  // 10 minutes
+    gcTime: 15 * 60 * 1000,
+  });
+  const resourceHubEnabled = settingsData?.resourceHubEnabled ?? false;
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    api.get('/public/settings')
-      .then(res => {
-        setResourceHubEnabled(res.data?.data?.resourceHubEnabled ?? false);
-      })
-      .catch(() => {
-        // Fallback to false so it doesn't show unless explicitly on
-        setResourceHubEnabled(false);
-      });
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {

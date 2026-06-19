@@ -62,20 +62,21 @@ const RANK_STYLES = [
     "bg-amber-600 text-white shadow-amber-600/30",
 ];
 
-export default function TrendingSection() {
+interface TrendingSectionProps {
+    trendingBadge?: string;
+    trendingTitle?: string;
+}
+
+export default function TrendingSection({ trendingBadge, trendingTitle }: TrendingSectionProps = {}) {
     const [posts, setPosts] = useState<TrendPost[]>([]);
-    const [homeContent, setHomeContent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // ✅ FIX: /public/content/home duplicate call removed — props se milta hai page.tsx se
         api.get("/posts")
             .then((res: any) => setPosts(res.data?.data?.trending?.slice(0, 6) || []))
             .catch(() => { })
             .finally(() => setLoading(false));
-
-        api.get('/public/content/home')
-            .then((res: any) => { if (res.data?.data?.hero) setHomeContent(res.data.data.hero); })
-            .catch(() => { });
     }, []);
 
     if (loading) return (
@@ -103,10 +104,10 @@ export default function TrendingSection() {
                                 <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
                                     <Flame size={16} className="text-orange-500" />
                                 </div>
-                                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">{homeContent?.trendingBadge || 'Trending Now'}</p>
+                                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">{trendingBadge || 'Trending Now'}</p>
                             </div>
                             <h2 className="text-4xl sm:text-5xl font-black text-foreground tracking-tighter leading-tight relative">
-                                {homeContent?.trendingTitle || 'Most Viewed Blogs'}
+                                {trendingTitle || 'Most Viewed Blogs'}
                             </h2>
                         </div>
                         <Link href="/blog" className="group flex items-center gap-3 px-8 py-3.5 bg-foreground text-background rounded-full text-sm font-bold hover:scale-105 active:scale-95 shadow-md shadow-foreground/10 transition-all shrink-0">

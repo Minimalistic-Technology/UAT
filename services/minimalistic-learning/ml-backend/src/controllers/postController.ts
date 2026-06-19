@@ -79,10 +79,32 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
   const skip = (page - 1) * limit;
 
   // Run all queries simultaneously
+  // ✅ DB OPTIMIZATION: select sirf wahi columns jo blog card ko chahiye
+  // content (full HTML) aur viewedBy (large array) DB se hi nahi aate — bandwidth save
+  const CARD_SELECT = {
+    id: true,
+    title: true,
+    slug: true,
+    description: true,
+    coverImage: true,
+    readTime: true,
+    tags: true,
+    category: true,
+    viewCount: true,
+    likes: true,       // likesCount + hasLiked compute ke liye
+    createdAt: true,
+    author: { select: { firstName: true, lastName: true } },
+    // ❌ content   — heavy HTML, list cards mein nahi chahiye
+    // ❌ viewedBy  — large JSON array, list mein nahi chahiye
+    // ❌ updatedAt — cards pe nahi dikhta
+    // ❌ status    — filter se already published=true guarantee hai
+    // ❌ published — same reason
+  } as const;
+
   const [itemsRaw, total, trendingRaw] = await Promise.all([
     prisma.post.findMany({
       where,
-      include: { author: { select: { firstName: true, lastName: true } } },
+      select: CARD_SELECT,
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit
@@ -90,36 +112,31 @@ export const listPosts = asyncHandler(async (req: Request, res: Response) => {
     prisma.post.count({ where }),
     prisma.post.findMany({
       where: { published: true, status: POST_STATUS.published },
-      include: { author: { select: { firstName: true, lastName: true } } },
+      select: CARD_SELECT,
       orderBy: [{ viewCount: 'desc' }, { createdAt: 'desc' }],
       take: 6
     })
   ]);
 
   const mapPostContent = (postsRawArray: any[]) => postsRawArray.map(item => {
-    const post = { ...item, authorId: item.author };
-    const likesArr = parseArr(post.likes);
-    const coverImageObj = post.coverImage ? JSON.parse(post.coverImage) : null;
-    const readTime = Math.max(Math.ceil(((post.content || "").split(/\s+/).length) / 200), 1);
-
-    const mappedPost = {
-      ...post,
+    const likesArr = parseArr(item.likes);
+    const coverImageObj = item.coverImage ? JSON.parse(item.coverImage) : null;
+    // readTime already stored in DB — no need to re-calculate from content
+    return {
+      id: item.id,
+      title: item.title,
+      slug: item.slug,
+      description: item.description,
       coverImage: coverImageObj,
-      _likes: likesArr,
+      readTime: item.readTime || 1,
+      tags: parseArr(item.tags),
+      category: item.category,
+      viewCount: item.viewCount,
+      createdAt: item.createdAt,
+      authorId: item.author,          // { firstName, lastName }
       likesCount: likesArr.length,
-      readTime
+      _likes: likesArr,               // stored temporarily for hasLiked calculation
     };
-
-    // Strip only heavy / internal-only fields — keep everything the card UI needs
-    delete mappedPost.content;   // Heavy HTML — not needed in list cards
-    delete mappedPost.likes;     // Raw likes array — replaced by likesCount
-    delete mappedPost.viewedBy;  // Large viewer array — not needed in list
-    delete mappedPost.updatedAt; // Internal field — not displayed in cards
-    delete mappedPost.status;    // Internal — cards use published=true filter already
-    delete mappedPost.published; // Internal — always true for public list
-    delete mappedPost.author;    // Replaced by authorId (populated)
-
-    return mappedPost;
   });
 
   const parsedItems = mapPostContent(itemsRaw);
@@ -160,9 +177,17 @@ export const listMyPosts = asyncHandler(async (req: Request, res: Response) => {
   const where = { authorId: userId };
   const skip = (page - 1) * limit;
 
+  // ✅ DB OPTIMIZATION: select sirf zaroorat wale columns
   const [items, total] = await Promise.all([
     prisma.post.findMany({
       where,
+      select: {
+        id: true, title: true, slug: true, description: true,
+        coverImage: true, readTime: true, tags: true, category: true,
+        viewCount: true, likes: true, createdAt: true,
+        status: true, published: true,
+        // ❌ content, viewedBy — nahi chahiye list mein
+      },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit
@@ -174,18 +199,23 @@ export const listMyPosts = asyncHandler(async (req: Request, res: Response) => {
 
   const itemsResponse = items.map((post: any) => {
     const likesArr = parseArr(post.likes);
-    const likesCount = likesArr.length;
-    const hasLiked = likesArr.includes(userId);
-    const readTime = Math.max(Math.ceil(((post.content || "").split(/\s+/).length) / 200), 1);
-
     const coverImageObj = post.coverImage ? JSON.parse(post.coverImage) : null;
-    const mappedPost = { ...post, likesCount, hasLiked, coverImage: coverImageObj, readTime };
-
-    delete mappedPost.content;   // strip heavy HTML content — not needed in list
-    delete mappedPost.likes;     // strip raw likes array — already computed as likesCount
-    delete mappedPost.viewedBy;  // strip large viewedBy array — not needed in list
-
-    return mappedPost;
+    return {
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      description: post.description,
+      coverImage: coverImageObj,
+      readTime: post.readTime || 1,
+      tags: parseArr(post.tags),
+      category: post.category,
+      viewCount: post.viewCount,
+      createdAt: post.createdAt,
+      status: post.status,
+      published: post.published,
+      likesCount: likesArr.length,
+      hasLiked: likesArr.includes(userId),
+    };
   });
 
   const hasNextPage = page < totalPages;

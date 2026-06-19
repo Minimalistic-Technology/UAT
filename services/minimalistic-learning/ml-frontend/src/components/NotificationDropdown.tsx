@@ -27,11 +27,6 @@ const NotificationDropdown = () => {
   };
 
   useEffect(() => {
-    fetchNotifications();
-    // No polling — fetches once on mount and when dropdown opens
-  }, []);
-
-  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);

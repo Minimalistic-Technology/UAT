@@ -1,23 +1,23 @@
 import Redis from 'ioredis';
 import { env } from './env';
 
-const getRedisUrl = () => {
-    if (process.env.REDIS_URL) return process.env.REDIS_URL;
-    return 'redis://localhost:6379';
-};
+// env.REDIS_URL available hai (Zod schema mein add kar diya) — fallback local Redis
+const redisUrl = env.REDIS_URL ?? 'redis://localhost:6379';
 
-const redisUrl = getRedisUrl();
+// Upstash jaise cloud providers ke liye `rediss://` = TLS. ioredis ko explicitly batana padta hai.
+const isTlsRedis = redisUrl.startsWith('rediss://');
 
 export let isRedisConnected = false;
 
-// The actual external Redis Instance
 const redisClient = new Redis(redisUrl, {
     maxRetriesPerRequest: 1,
+    lazyConnect: true, // Startup pe crash nahi hogi agar Redis na mile
+    ...(isTlsRedis && { tls: {} }), // ✅ Upstash (rediss://) ke liye TLS required
     retryStrategy(times) {
         if (times >= 3) {
-            console.warn("[Cache] Redis not found. Switching to ultra-fast Local Memory Map() Fallback.");
+            console.warn('[Cache] Redis not reachable. Falling back to in-memory Map cache.');
             isRedisConnected = false;
-            return null;
+            return null; // retry band karo
         }
         return Math.min(times * 1000, 3000);
     },
@@ -35,7 +35,14 @@ redisClient.on('error', (err) => {
     }
 });
 
-// -------------- THE MAGIC: IN-MEMORY MAP FALLBACK -------------- //
+// lazyConnect hone ki wajah se manually connect karte hain — error aayi to silently ignore
+redisClient.connect().catch(() => {
+    console.warn('[Cache] Redis connect() failed — using in-memory Map fallback.');
+});
+
+// ────────────────────────────────────────────────────────
+// IN-MEMORY MAP FALLBACK (jab Redis offline ho)
+// ────────────────────────────────────────────────────────
 interface MapCacheItem {
     data: string;
     expiryTs: number;
@@ -47,23 +54,22 @@ export const CacheService = {
         if (isRedisConnected) {
             try { return await redisClient.get(key); }
             catch { return null; }
-        } else {
-            const item = memoryCache.get(key);
-            if (!item) return null;
-            if (Date.now() > item.expiryTs) {
-                memoryCache.delete(key);
-                return null;
-            }
-            return item.data;
         }
+        const item = memoryCache.get(key);
+        if (!item) return null;
+        if (Date.now() > item.expiryTs) {
+            memoryCache.delete(key);
+            return null;
+        }
+        return item.data;
     },
 
     async setex(key: string, seconds: number, data: string): Promise<void> {
         if (isRedisConnected) {
             try { await redisClient.setex(key, seconds, data); }
-            catch { /* fallback silently */ }
+            catch { /* silently fallthrough */ }
         } else {
-            memoryCache.set(key, { data, expiryTs: Date.now() + (seconds * 1000) });
+            memoryCache.set(key, { data, expiryTs: Date.now() + seconds * 1000 });
         }
     },
 
@@ -74,9 +80,7 @@ export const CacheService = {
                 if (keys.length > 0) await redisClient.del(keys);
             } catch { /* silently fail */ }
         } else {
-            // Local fallback match and delete
-            const regexStr = pattern.replace(/\*/g, '.*');
-            const regex = new RegExp(`^${regexStr}$`);
+            const regex = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`);
             for (const key of memoryCache.keys()) {
                 if (regex.test(key)) memoryCache.delete(key);
             }
@@ -89,7 +93,7 @@ export const CacheService = {
         } else {
             memoryCache.delete(key);
         }
-    }
+    },
 };
 
 export default CacheService;
