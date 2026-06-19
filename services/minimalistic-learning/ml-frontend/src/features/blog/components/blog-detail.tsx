@@ -212,7 +212,7 @@ export const BlogDetail: React.FC<BlogDetailProps> = ({ blog, latestBlogs = [] }
                   prose-blockquote:border-l-4 prose-blockquote:border-theme-action prose-blockquote:bg-theme-action/5 prose-blockquote:py-4 prose-blockquote:px-6 prose-blockquote:rounded-r-2xl prose-blockquote:italic prose-blockquote:text-foreground/90 font-medium
                   prose-pre:overflow-x-auto prose-pre:rounded-2xl prose-pre:bg-theme-element-sec prose-pre:border prose-pre:border-theme-accent/20 prose-pre:shadow-sm
                   prose-code:text-theme-action prose-code:bg-theme-action/10 prose-code:rounded-lg prose-code:px-2 prose-code:py-0.5 prose-code:font-bold"
-                dangerouslySetInnerHTML={{ __html: content }}
+                dangerouslySetInnerHTML={{ __html: content || "" }}
               />
             </div>
 
