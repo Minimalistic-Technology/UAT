@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function RegisterPage() {
   return (
-    <div className="flex-1 w-full flex flex-col lg:flex-row bg-white dark:bg-[#0a0a0a] overflow-hidden m-0 p-0">
+    <div className="h-[calc(100vh-64px)] w-full flex flex-col lg:flex-row bg-white dark:bg-[#0a0a0a] overflow-hidden m-0 p-0">
 
       {/* Left Full Height Split - Desktop Only */}
       <div className="hidden lg:flex w-1/2 relative bg-white dark:bg-gray-900 items-center justify-center flex-1">

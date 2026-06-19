@@ -21,7 +21,6 @@ const envSchema = z.object({
   BREVO_API_KEY: z.string().optional().default('xkeysib-example-key'),
   BREVO_FROM_EMAIL: z.string().optional().default('onboarding@minimalistic.com'),
   REDIS_URL: z.string().optional(),
-  RECAPTCHA_SECRET_KEY: z.string().optional(),
   FRONTEND_URL: z.string().optional(),
 });
 

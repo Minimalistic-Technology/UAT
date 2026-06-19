@@ -31,7 +31,7 @@ const DashboardPage = () => {
   const isAdmin = user?.role?.toLowerCase() === 'admin';
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-10">
       <DashboardHeader user={user} isAdmin={isAdmin} />
 
       {/* Strict Conditional Rendering to prevent logic overlap */}

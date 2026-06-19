@@ -10,7 +10,6 @@ export const signupSchema = z.object({
   email: z.string().email().trim().toLowerCase(),
   password: z.string().min(8),
   role: z.enum(["user", "admin"]).optional().default("user"),
-  recaptchaToken: z.string().min(1, "Captcha token is required for security"),
 });
 
 export const loginSchema = z.object({
