@@ -3,7 +3,18 @@ import {
   getApplicationsByJobId,
   getAllEmployerApplications,
   updateApplicationStatus,
+  getDashboardApplications,
 } from "../services/job-application.service";
+
+export const useGetDashboardApplications = (params: {
+  page: number;
+  limit: number;
+}) => {
+  return useQuery({
+    queryKey: ["dashboard-applications", params],
+    queryFn: () => getDashboardApplications(params),
+  });
+};
 
 export const useGetApplicationsByJobId = (
   listingId: string,
