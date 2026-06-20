@@ -626,6 +626,7 @@ const AdminPanel = () => {
 
                           <div className="flex items-center gap-2.5 md:ml-auto shrink-0 pt-3 md:pt-0 border-t border-theme-accent/10 md:border-none">
                             <Button
+                              variant="none"
                               onClick={() => handleApprove(postId)}
                               disabled={!!actionLoading}
                               className="flex items-center justify-center gap-2 px-5 py-2.5 bg-foreground hover:bg-theme-action text-background text-xs font-black rounded-xl transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed group/btn"
@@ -634,11 +635,12 @@ const AdminPanel = () => {
                               Approve
                             </Button>
                             <Button
+                              variant="none"
                               onClick={() => handleReject(postId)}
                               disabled={!!actionLoading}
-                              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-theme-element hover:bg-red-500/10 text-foreground/70 hover:text-red-500 text-xs font-black rounded-xl border border-theme-accent/20 hover:border-red-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed group/btn"
+                              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-theme-element hover:bg-red-500/10 text-foreground hover:text-red-500 text-xs font-black rounded-xl border border-theme-accent/20 hover:border-red-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed group/btn"
                             >
-                              {actionLoading === postId + '-reject' ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} className="group-hover/btn:scale-110 transition-transform" />}
+                              {actionLoading === postId + '-reject' ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} className="group-hover/btn:scale-110 transition-transform text-red-500" />}
                               Reject
                             </Button>
                           </div>

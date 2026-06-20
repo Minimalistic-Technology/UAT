@@ -13,6 +13,7 @@ import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import crypto from 'crypto';
 import CacheService from '../config/redis';
+import { cleanHtml } from '../utils/sanitizeHtml';
 
 // SQLite-compatible string constants (replaces Prisma enums)
 const POST_STATUS = { pending: 'pending', published: 'published', rejected: 'rejected' } as const;
@@ -375,7 +376,7 @@ export const createPost = asyncHandler(async (req: Request, res: Response) => {
     data: {
       title: safeTitle,
       slug,
-      content: (content || "").trim(),
+      content: cleanHtml((content || "").trim()),
       category: (category || "Uncategorized").trim(),
       coverImage: coverImage ? JSON.stringify(coverImage) : null,
       tags: stringifyArr(sanitizedTags),
@@ -442,6 +443,9 @@ export const updatePost = asyncHandler(async (req: Request, res: Response) => {
   }
 
   let updatePayload: any = { ...parsedBody };
+  if (updatePayload.content !== undefined) {
+    updatePayload.content = cleanHtml(updatePayload.content);
+  }
   if (sanitizedTags) updatePayload.tags = sanitizedTags;
 
   let setting = await prisma.siteSetting.findUnique({ where: { key: 'global' } });

@@ -10,6 +10,7 @@ export const signupSchema = z.object({
   email: z.string().email().trim().toLowerCase(),
   password: z.string().min(8),
   role: z.enum(["user", "admin"]).optional().default("user"),
+  turnstileToken: z.string().min(1, "Captcha verification is required"),
 });
 
 export const loginSchema = z.object({

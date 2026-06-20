@@ -13,27 +13,33 @@ const NotificationDropdown = () => {
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (isBackground = false) => {
     try {
-      setIsLoading(true);
+      if (!isBackground) setIsLoading(true);
       const res = await api.get("/notifications");
       setNotifications(res.data.data.notifications || []);
       setUnreadCount(res.data.data.unreadCount || 0);
     } catch (error) {
       console.error("Failed to fetch notifications", error);
     } finally {
-      setIsLoading(false);
+      if (!isBackground) setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // 1. Initial fast load on page load ONLY
+    fetchNotifications(true);
+
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const markAllAsRead = async () => {
@@ -94,7 +100,7 @@ const NotificationDropdown = () => {
         onClick={() => {
           const opening = !isOpen;
           setIsOpen(opening);
-          if (opening) fetchNotifications(); // Refresh when user opens
+          if (opening) fetchNotifications(true);
         }}
         className="relative w-10 h-10 rounded-full bg-theme-element-sec border border-theme-accent/20 flex items-center justify-center text-foreground/70 hover:text-foreground hover:bg-theme-element transition-all shadow-sm"
       >

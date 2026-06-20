@@ -22,6 +22,7 @@ const envSchema = z.object({
   BREVO_FROM_EMAIL: z.string().optional().default('onboarding@minimalistic.com'),
   REDIS_URL: z.string().optional(),
   FRONTEND_URL: z.string().optional(),
+  TURNSTILE_SECRET_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.parse(process.env);

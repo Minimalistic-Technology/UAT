@@ -91,28 +91,7 @@ export const BlogForm = ({ id }: { id?: string }) => {
     }
   }, [isEdit, blogData, reset]);
 
-  // Strict Auto-save
-  useEffect(() => {
-    if (isEdit) return;
-    const timer = setTimeout(async () => {
-      const { title, content: c, category, tags, coverImageUrl: ci } = currentValues;
-      const hasTitle = title && title.trim().length > 0;
-      const hasContent = c && c.replace(/<[^>]*>/g, '').trim().length > 0;
-      if (!hasTitle && !hasContent) return;
-      setIsAutoSaving(true);
-      try {
-        const payload = { title: title || "Untitled Draft", content: c || "", category: category || "Uncategorized", tags: tags || [], coverImageUrl: ci || "", published: false };
-        if (activeDraftId) await blogService.updateBlog({ id: activeDraftId, data: payload });
-        else {
-          const res = await blogService.createBlog(payload as any);
-          if (res.success && (res.data.id || res.data._id)) {
-            setActiveDraftId(res.data.id || res.data._id);
-          }
-        }
-      } catch { } finally { setIsAutoSaving(false); }
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, [currentValues, isEdit, activeDraftId]);
+  // Strict Auto-save has been removed to prevent duplicate post submissions and moderation queue spam.
 
   const handleEditorImage = useCallback((editorInstance: any) => {
     const input = document.createElement("input");
@@ -217,10 +196,11 @@ export const BlogForm = ({ id }: { id?: string }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-3 ml-1">Category</label>
-                  <select {...register("category")} className="w-full bg-theme-element-sec border border-theme-accent/20 rounded-2xl px-5 py-4 text-foreground font-bold focus:bg-theme-element focus:border-theme-action focus:ring-4 focus:ring-theme-action/10 outline-none transition-all appearance-none cursor-pointer">
+                  <select {...register("category")} className="w-full bg-theme-element-sec border border-theme-accent/20 rounded-2xl px-5 py-4 text-foreground font-bold focus:bg-theme-element focus:border-theme-action focus:ring-4 focus:ring-theme-action/10 outline-none transition-all cursor-pointer">
                     <option value="" disabled>Select category</option>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
+                  {errors.category && <p className="text-xs font-bold text-red-500 mt-2 ml-1">{errors.category.message}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-black text-foreground/50 uppercase tracking-widest mb-3 ml-1">Cover Image</label>
@@ -273,8 +253,14 @@ export const BlogForm = ({ id }: { id?: string }) => {
                     onKeyDown={handleAddTag}
                     placeholder="Type and press Enter to add tags..."
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-theme-element rounded-lg border border-theme-accent/20 text-foreground/50"><Plus size={16} /></div>
+                  <div
+                    onClick={() => handleAddTag({ key: "Enter", preventDefault: () => { } })}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-theme-element rounded-lg border border-theme-accent/20 text-foreground/50 cursor-pointer hover:bg-theme-action/10 hover:text-theme-action transition-colors"
+                  >
+                    <Plus size={16} />
+                  </div>
                 </div>
+                {errors.tags && <p className="text-xs font-bold text-red-500 mt-2 ml-1">{errors.tags.message}</p>}
               </div>
             </div>
           </Card>
@@ -361,6 +347,12 @@ export const BlogForm = ({ id }: { id?: string }) => {
                 imageHandler={handleEditorImage}
                 blogDataContent={blogData?.data?.content}
               />
+
+              {errors.content && (
+                <div className="p-4 bg-red-500/10 border-t border-red-500/20">
+                  <p className="text-sm font-bold text-red-500">{errors.content.message}</p>
+                </div>
+              )}
 
               {isUploadingMedia && (
                 <div className="flex items-center gap-2 text-xs font-bold text-theme-action p-4 border-t border-theme-accent/10 bg-theme-element animate-pulse">

@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "../context/auth-context";
 import { ShieldCheck, Loader2, ArrowRight, Mail } from "lucide-react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -241,7 +242,17 @@ const RegisterForm = () => {
             />
             {errors.confirmPassword && <p className="text-xs font-semibold text-red-500 mt-1">{errors.confirmPassword.message}</p>}
           </div>
-        </div>        <Button
+        </div>
+
+        <div className="flex flex-col items-center pt-2">
+          <Turnstile
+            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAADn3TrbiqdzPMzAM"}
+            onSuccess={(token) => setValue('turnstileToken', token || "")}
+          />
+          {errors.turnstileToken && <p className="text-xs font-semibold text-red-500 mt-2">{errors.turnstileToken.message}</p>}
+        </div>
+
+        <Button
           type="submit"
           disabled={isRegisterPending}
           fullWidth
