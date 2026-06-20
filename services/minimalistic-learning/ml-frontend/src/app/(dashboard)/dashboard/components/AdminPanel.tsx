@@ -423,7 +423,7 @@ const AdminPanel = () => {
         </div>
         <Link
           href="/dashboard/blog-history"
-          className="group flex items-center gap-2 px-5 py-2.5 bg-theme-element border border-theme-accent/20 text-foreground text-sm font-bold rounded-xl hover:bg-theme-element-sec hover:border-theme-accent/40 transition-all shadow-sm active:scale-95"
+          className="group flex items-center gap-2 px-5 py-2.5 bg-theme-element border border-theme-accent/20 text-foreground text-sm font-bold rounded-xl hover:bg-theme-element-sec hover:border-theme-accent/40 transition-all shadow-sm "
         >
           <Newspaper size={16} className="text-foreground/50 group-hover:text-theme-action transition-colors" />
           Access Content History
@@ -626,10 +626,10 @@ const AdminPanel = () => {
 
                           <div className="flex items-center gap-2.5 md:ml-auto shrink-0 pt-3 md:pt-0 border-t border-theme-accent/10 md:border-none">
                             <Button
-                              variant="none"
+                              variant="primary"
                               onClick={() => handleApprove(postId)}
                               disabled={!!actionLoading}
-                              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-foreground hover:bg-theme-action text-background text-xs font-black rounded-xl transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed group/btn"
+                              className="px-5 py-2.5 text-xs font-black shadow-sm group/btn"
                             >
                               {actionLoading === postId + '-approve' ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} className="group-hover/btn:scale-110 transition-transform" />}
                               Approve
@@ -804,7 +804,7 @@ const AdminPanel = () => {
                             variant="none"
                             size="none"
                             onClick={() => handleDeletePermission(perm.id)}
-                            className="p-2.5 bg-theme-element text-foreground/45 border border-theme-accent/20 rounded-xl hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-all shadow-sm active:scale-95"
+                            className="p-2.5 bg-theme-element text-foreground/45 border border-theme-accent/20 rounded-xl hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-all shadow-sm "
                             title="Delete Permission Rule"
                           >
                             <Trash2 size={16} />
@@ -906,7 +906,7 @@ const AdminPanel = () => {
                             variant="none"
                             size="none"
                             onClick={() => handleDeleteUser(item.id)}
-                            className="p-2.5 bg-theme-element text-foreground/45 border border-theme-accent/20 rounded-xl hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-all shadow-sm active:scale-95"
+                            className="p-2.5 bg-theme-element text-foreground/45 border border-theme-accent/20 rounded-xl hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-all shadow-sm "
                             title="Delete User Account"
                           >
                             <Trash2 size={16} />
@@ -1127,7 +1127,7 @@ const AdminPanel = () => {
                       <Button
                         type="submit"
                         disabled={isSavingHero}
-                        className="flex items-center justify-center gap-2 px-8 py-3 bg-theme-action text-white text-sm font-black rounded-xl transition-all disabled:opacity-60 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-theme-action/20"
+                        className="flex items-center justify-center gap-2 px-8 py-3 bg-theme-action text-white text-sm font-black rounded-xl transition-all disabled:opacity-60 hover:shadow-lg hover:shadow-theme-action/20"
                       >
                         {isSavingHero ? <Loader2 size={16} className="animate-spin" /> : <Settings2 size={16} />}
                         Save Hero Settings
@@ -1228,7 +1228,7 @@ const AdminPanel = () => {
                   setTeamForm({ name: '', role: '', bio: '', imageUrl: '', twitterUrl: '', githubUrl: '', linkedinUrl: '' });
                   setTeamModalOpen(true);
                 }}
-                className="px-5 py-2.5 bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg hover:shadow-emerald-500/20 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                className="px-5 py-2.5 bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center gap-2"
               >
                 <Plus size={16} /> Add Member
               </Button>
@@ -1362,7 +1362,7 @@ const AdminPanel = () => {
                   <Button onClick={() => setTeamModalOpen(false)} className="px-6 py-3 bg-theme-element-sec border border-theme-accent/20 text-foreground text-xs font-black uppercase tracking-wider rounded-xl hover:bg-background transition-all">
                     Cancel
                   </Button>
-                  <Button type="submit" form="team-form" disabled={isSavingTeam} className="px-6 py-3 bg-emerald-500 text-white text-xs font-black uppercase tracking-wider rounded-xl hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all min-w-[120px] disabled:opacity-60 disabled:transform-none">
+                  <Button type="submit" form="team-form" disabled={isSavingTeam} className="px-6 py-3 bg-emerald-500 text-white text-xs font-black uppercase tracking-wider rounded-xl hover:shadow-lg hover:shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all min-w-[120px] disabled:opacity-60 disabled:transform-none">
                     {isSavingTeam ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
                     {editingTeamId ? 'Save Changes' : 'Add Member'}
                   </Button>

@@ -47,8 +47,8 @@ function ResetPasswordForm() {
                 toast.success(res?.message || "Password reset successfully!");
                 setIsSuccess(true);
             },
-            onError: (err) => {
-                toast.error(isAxiosError(err) ? err.response?.data?.message : "Failed to reset password");
+            onError: (err: any) => {
+                toast.error(err?.response?.data?.message || err?.message || "Failed to reset password");
             }
         });
     };
@@ -64,7 +64,7 @@ function ResetPasswordForm() {
                     Your password has been successfully reset. You can now use your new password to login.
                 </p>
                 <Link href="/login" className="w-full">
-                    <Button fullWidth className="py-3.5 bg-[#111] dark:bg-white text-white dark:text-gray-900 hover:bg-black font-bold border-0 shadow-sm transition-all hover:-translate-y-0.5">
+                    <Button fullWidth>
                         Continue to Login
                     </Button>
                 </Link>
@@ -134,7 +134,6 @@ function ResetPasswordForm() {
                     type="submit"
                     disabled={isPending || !isValid}
                     fullWidth
-                    className="py-3.5 bg-[#1877F2] hover:bg-[#166FE5] text-white font-bold border-0 shadow-[0_4px_15px_rgba(24,119,242,0.3)] transition-all hover:shadow-[0_6px_20px_rgba(24,119,242,0.4)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isPending ? (
                         <Loader2 className="animate-spin" size={20} />

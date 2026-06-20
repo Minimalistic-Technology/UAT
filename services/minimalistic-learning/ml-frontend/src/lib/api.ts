@@ -6,17 +6,17 @@ export type { AxiosError };
 // Since we are using static HTML export (output: 'export'), we cannot use Next.js
 // API rewrites. Therefore, we must ALWAYS hit the exact absolute API base URL directly.
 const getBaseURL = () => {
-  const rawURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
-  return rawURL.endsWith("/api/v1") ? rawURL : `${rawURL}/api/v1`;
+ const rawURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+ return rawURL.endsWith("/api/v1") ? rawURL : `${rawURL}/api/v1`;
 };
 const baseURL = getBaseURL();
 
 export const api = axios.create({
-  baseURL,
-  withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
+ baseURL,
+ withCredentials: true,
+ headers: {
+ "Content-Type": "application/json",
+ },
 });
 
 // VERY IMPORTANT for Next.js Fast Refresh: 
@@ -26,121 +26,121 @@ api.interceptors.response.clear();
 
 // Request interceptor
 api.interceptors.request.use((config) => {
-  // If we have a token in localStorage, use it as a fallback
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
+ // If we have a token in localStorage, use it as a fallback
+ if (typeof window !== "undefined") {
+ const token = localStorage.getItem("access_token");
+ if (token) {
+ config.headers.Authorization = `Bearer ${token}`;
+ }
+ }
+ return config;
 });
 
 let isRefreshing = false;
 let failedQueue: Array<{
-  resolve: (value?: unknown) => void;
-  reject: (reason?: any) => void;
+ resolve: (value?: unknown) => void;
+ reject: (reason?: any) => void;
 }> = [];
 
 const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
+ failedQueue.forEach((prom) => {
+ if (error) {
+ prom.reject(error);
+ } else {
+ prom.resolve(token);
+ }
+ });
+ failedQueue = [];
 };
 
 // Response interceptor for consistent error handling and automatic token refresh
 api.interceptors.response.use(
-  (response) => {
-    // If backend returns a 200 status code but it's logically an error (success: false)
-    if (response.data && response.data.success === false) {
-      const pseudoErrorUrl = response.config?.url;
-      // Do not intercept auth me
-      if (pseudoErrorUrl && !pseudoErrorUrl.endsWith("/auth/me")) {
-        const error: any = new Error(response.data.message || "Request failed");
-        error.response = { status: 400, data: response.data }; // Trick React Query
-        return Promise.reject(error);
-      }
-    }
-    return response;
-  },
-  async (error) => {
-    const originalRequest = error.config;
+ (response) => {
+ // If backend returns a 200 status code but it's logically an error (success: false)
+ if (response.data && response.data.success === false) {
+ const pseudoErrorUrl = response.config?.url;
+ // Do not intercept auth me
+ if (pseudoErrorUrl && !pseudoErrorUrl.endsWith("/auth/me")) {
+ const error: any = new Error(response.data.message || "Request failed");
+ error.response = { status: 400, data: response.data }; // Trick React Query
+ return Promise.reject(error);
+ }
+ }
+ return response;
+ },
+ async (error) => {
+ const originalRequest = error.config;
 
 
-    if (error.response?.status === 401 && originalRequest.url?.endsWith("/auth/me")) {
-      return Promise.resolve({ data: { data: { user: null } } });
-    }
+ if (error.response?.status === 401 && originalRequest.url?.endsWith("/auth/me")) {
+ return Promise.resolve({ data: { data: { user: null } } });
+ }
 
-  
-    if (error.response?.status === 503) {
-      return Promise.reject(error);
-    }
+ 
+ if (error.response?.status === 503) {
+ return Promise.reject(error);
+ }
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !originalRequest.url?.endsWith("/auth/refresh-token") &&
-      !originalRequest.url?.endsWith("/auth/login")
-    ) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            if (token) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-            }
-            return api(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
+ if (
+ error.response?.status === 401 &&
+ !originalRequest._retry &&
+ !originalRequest.url?.endsWith("/auth/refresh-token") &&
+ !originalRequest.url?.endsWith("/auth/login")
+ ) {
+ if (isRefreshing) {
+ return new Promise((resolve, reject) => {
+ failedQueue.push({ resolve, reject });
+ })
+ .then((token) => {
+ if (token) {
+ originalRequest.headers.Authorization = `Bearer ${token}`;
+ }
+ return api(originalRequest);
+ })
+ .catch((err) => Promise.reject(err));
+ }
 
-      originalRequest._retry = true;
-      isRefreshing = true;
+ originalRequest._retry = true;
+ isRefreshing = true;
 
-      try {
-        const refreshResponse = await axios.post(
-          `${baseURL}/auth/refresh-token`,
-          {},
-          { withCredentials: true }
-        );
+ try {
+ const refreshResponse = await axios.post(
+ `${baseURL}/auth/refresh-token`,
+ {},
+ { withCredentials: true }
+ );
 
-        const newAccessToken = refreshResponse.data?.data?.accessToken;
+ const newAccessToken = refreshResponse.data?.data?.accessToken;
 
-        processQueue(null, newAccessToken);
+ processQueue(null, newAccessToken);
 
-        if (newAccessToken) {
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        }
+ if (newAccessToken) {
+ originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+ }
 
-        return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+ return api(originalRequest);
+ } catch (refreshError) {
+ processQueue(refreshError, null);
+ if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
 
-        }
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
-    }
+ }
+ return Promise.reject(refreshError);
+ } finally {
+ isRefreshing = false;
+ }
+ }
 
-    return Promise.reject(error);
-  }
+ return Promise.reject(error);
+ }
 );
 
 
 function getCookieValue(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
+ if (typeof document === "undefined") return null;
+ const value = `; ${document.cookie}`;
+ const parts = value.split(`; ${name}=`);
+ if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+ return null;
 }
 
 export default api;

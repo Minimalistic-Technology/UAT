@@ -28,8 +28,8 @@ export default function ForgotPasswordPage() {
                 toast.success(res?.message || "Reset link sent!");
                 setIsSuccess(true);
             },
-            onError: (err) => {
-                toast.error(isAxiosError(err) ? err.response?.data?.message : "Failed to send reset link");
+            onError: (err: any) => {
+                toast.error(err?.response?.data?.message || err?.message || "Failed to send reset link");
             }
         });
     };
@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
                             <span className="font-bold text-gray-900 dark:text-gray-200">{email}</span>
                         </p>
                         <Link href="/login" className="w-full">
-                            <Button fullWidth className="py-3.5 bg-[#111] dark:bg-white text-white dark:text-gray-900 hover:text-white dark:hover:text-black hover:bg-black font-bold">
+                            <Button fullWidth>
                                 Back to Login
                             </Button>
                         </Link>
@@ -84,7 +84,6 @@ export default function ForgotPasswordPage() {
                                 type="submit"
                                 disabled={isPending}
                                 fullWidth
-                                className="py-3.5 bg-[#111] dark:bg-white text-white dark:text-gray-900 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black border-0 shadow-sm font-bold"
                             >
                                 {isPending ? (
                                     <Loader2 className="animate-spin" size={20} />
