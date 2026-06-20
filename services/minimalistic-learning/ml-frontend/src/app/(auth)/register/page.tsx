@@ -24,7 +24,7 @@ export default function RegisterPage() {
 
       {/* Right Content Split */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-12 relative flex-1 bg-gray-50 dark:bg-[#0a0a0a] overflow-y-auto custom-scrollbar">
-        <div className="w-full max-w-[420px] z-10 flex flex-col justify-center">
+        <div className="w-full max-w-[500px] z-10 flex flex-col justify-center py-8">
           <RegisterForm />
         </div>
       </div>

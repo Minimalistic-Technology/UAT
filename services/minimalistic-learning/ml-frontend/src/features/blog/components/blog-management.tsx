@@ -9,6 +9,7 @@ import { isAxiosError } from "@/lib/api";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ErrorRetryBlock } from "@/components/ui/ErrorRetryBlock";
 
 export const BlogManagement = () => {
   const { data, isLoading, error, refetch } = useGetMyBlogs();
@@ -60,24 +61,7 @@ export const BlogManagement = () => {
   }
 
   if (error) {
-    return (
-      <Card className="bg-red-500/10 border-red-500/20 text-center">
-        <p className="text-red-500 font-bold mb-2">
-          Error loading blogs
-        </p>
-        <p className="text-red-500/70 text-sm mb-4">
-          {isAxiosError(error) ? error.message : "Something went wrong"}
-        </p>
-        <Button
-          variant="danger"
-          size="sm"
-          onClick={() => refetch()}
-          className="mx-auto"
-        >
-          Retry
-        </Button>
-      </Card>
-    );
+    return <ErrorRetryBlock error={error} onRetry={refetch} />;
   }
 
   const blogs = data?.data?.items || [];

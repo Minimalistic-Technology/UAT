@@ -55,21 +55,32 @@ const processQueue = (error: any, token: string | null = null) => {
 
 // Response interceptor for consistent error handling and automatic token refresh
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If backend returns a 200 status code but it's logically an error (success: false)
+    if (response.data && response.data.success === false) {
+      const pseudoErrorUrl = response.config?.url;
+      // Do not intercept auth me
+      if (pseudoErrorUrl && !pseudoErrorUrl.endsWith("/auth/me")) {
+        const error: any = new Error(response.data.message || "Request failed");
+        error.response = { status: 400, data: response.data }; // Trick React Query
+        return Promise.reject(error);
+      }
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
-    // Silently handle expected 401 for /me (guest mode)
+
     if (error.response?.status === 401 && originalRequest.url?.endsWith("/auth/me")) {
       return Promise.resolve({ data: { data: { user: null } } });
     }
 
-    // Globally intercept completely disabled functionality features
+  
     if (error.response?.status === 503) {
       return Promise.reject(error);
     }
 
-    // If 401 and not a retry yet, and not the refresh token endpoint itself
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -93,7 +104,6 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Important: use the exact configured baseURL, do not fallback to localhost in production
         const refreshResponse = await axios.post(
           `${baseURL}/auth/refresh-token`,
           {},
@@ -111,10 +121,8 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        // If refresh fails, user is fully logged out. Clear auth state if possible or redirect to login
         if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
-          // You could optionally redirect to login here
-          // window.location.href = "/login";
+
         }
         return Promise.reject(refreshError);
       } finally {
@@ -126,7 +134,7 @@ api.interceptors.response.use(
   }
 );
 
-// Helper function to read cookie value
+
 function getCookieValue(name: string): string | null {
   if (typeof document === "undefined") return null;
   const value = `; ${document.cookie}`;

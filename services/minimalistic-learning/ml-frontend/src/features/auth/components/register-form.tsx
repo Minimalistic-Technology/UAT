@@ -163,15 +163,15 @@ const RegisterForm = () => {
 
   // ── Register Form (New Minimalist Aesthetic) ────────────────────────────────
   return (
-    <Card className="w-full mx-auto animate-in fade-in zoom-in duration-300">
-      <div className="flex flex-col items-center mb-8">
-        <h2 className="text-[28px] font-bold text-gray-900 dark:text-white tracking-tight mb-2">
+    <Card className="w-full mx-auto animate-in fade-in zoom-in duration-300 p-5 sm:p-6">
+      <div className="flex flex-col items-center mb-5">
+        <h2 className="text-[24px] sm:text-[28px] font-bold text-gray-900 dark:text-white tracking-tight mb-1">
           Create Account
         </h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Join our exclusive community today</p>
+        <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Join our exclusive community today</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">First Name</label>
@@ -244,19 +244,19 @@ const RegisterForm = () => {
           </div>
         </div>
 
-        <div className="flex flex-col items-center pt-2">
+        <div className="flex flex-col items-center pt-1">
           <Turnstile
             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAADn3TrbiqdzPMzAM"}
             onSuccess={(token) => setValue('turnstileToken', token || "")}
           />
-          {errors.turnstileToken && <p className="text-xs font-semibold text-red-500 mt-2">{errors.turnstileToken.message}</p>}
+          {errors.turnstileToken && <p className="text-xs font-semibold text-red-500 mt-1">{errors.turnstileToken.message}</p>}
         </div>
 
         <Button
           type="submit"
           disabled={isRegisterPending}
           fullWidth
-          className="mt-2 py-3.5 bg-[#111] dark:bg-white hover:bg-black text-white dark:text-gray-900 hover:text-white border-0 shadow-sm"
+          className="mt-1 py-3 bg-[#111] dark:bg-white hover:bg-black text-white dark:text-gray-900 hover:text-white border-0 shadow-sm"
         >
           {isRegisterPending ? (
             <Loader2 className="animate-spin" size={18} />
@@ -269,7 +269,7 @@ const RegisterForm = () => {
         </Button>
       </form>
 
-      <div className="mt-8 text-center">
+      <div className="mt-4 text-center">
         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
           Already a member?{" "}
           <Link href="/login" className="text-gray-900 dark:text-white font-bold hover:underline">
