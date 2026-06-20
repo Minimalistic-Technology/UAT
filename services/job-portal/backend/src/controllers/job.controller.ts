@@ -15,6 +15,7 @@ import Subscription from "../models/Subscription.model.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
+import { getEmbedding, cosineSimilarity } from "../utils/embedding.js";
 
 export function isValidJobType(value: any): value is EmploymentType {
   return Object.values(EmploymentType).includes(value);
@@ -249,7 +250,17 @@ export const createJob = async (
       opportunityType: OpportunityType.JOB,
       postedBy: req.user.id,
       company: company._id,
+      embedding: [] as number[],
     };
+
+    // Pre-compute embedding
+    const topSkills = (req.body.skills || []).slice(0, 3).join(", ");
+    const textToEmbed = `${req.body.title} ${topSkills}`.trim();
+    try {
+      jobData.embedding = await getEmbedding(textToEmbed);
+    } catch (err) {
+      console.error("Failed to generate embedding:", err);
+    }
 
     const [job] = await Job.create([jobData], { session });
 
@@ -305,7 +316,19 @@ export const updateJob = async (
       return next(new ApiError(403, "Not authorized to update this job"));
     }
 
-    job = await Job.findByIdAndUpdate(req.params.id, req.body, {
+    // Update embedding if title or skills changed
+    const updateData = { ...req.body };
+    if (updateData.title || updateData.skills) {
+      const topSkills = (updateData.skills || job.skills || []).slice(0, 3).join(", ");
+      const textToEmbed = `${updateData.title || job.title} ${topSkills}`.trim();
+      try {
+        updateData.embedding = await getEmbedding(textToEmbed);
+      } catch (err) {
+        console.error("Failed to update embedding:", err);
+      }
+    }
+
+    job = await Job.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     });
@@ -393,6 +416,106 @@ export const getMyJobs = async (
     } else {
       return next(new ApiError(403, "Not authorized to fetch jobs"));
     }
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const getRelatedJobs = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const jobId = req.params.id;
+    const targetJob = await Job.findById(jobId).select("+embedding");
+    if (!targetJob) {
+      return next(new ApiError(404, "Job not found"));
+    }
+
+    // 1. Structured Field Matching (Category, City, Skills overlap)
+    const baseQuery: any = {
+      _id: { $ne: targetJob._id },
+      status: JobStatus.ACTIVE,
+      isDeleted: false,
+    };
+
+    const orConditions: any[] = [];
+    if (targetJob.roleCategory) {
+      orConditions.push({ roleCategory: targetJob.roleCategory });
+    }
+    if (targetJob.location?.city) {
+      orConditions.push({ "location.city": targetJob.location.city });
+    }
+    if (targetJob.skills && targetJob.skills.length > 0) {
+      orConditions.push({ skills: { $in: targetJob.skills } });
+    }
+
+    if (orConditions.length > 0) {
+      baseQuery.$or = orConditions;
+    }
+
+    // Fetch up to 50 candidates to keep it fast
+    const candidateJobs = await Job.find(baseQuery)
+      .select("+embedding")
+      .populate("company", "name logo location")
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    if (candidateJobs.length === 0) {
+      return res.status(200).json(new ApiResponse(200, [], "No related jobs found"));
+    }
+
+    // 2. Text Embedding Similarity
+    // Ensure target job has an embedding
+    if (!targetJob.embedding || targetJob.embedding.length === 0) {
+      const topSkills = targetJob.skills?.slice(0, 3).join(", ") || "";
+      const textToEmbed = `${targetJob.title} ${topSkills}`.trim();
+      targetJob.embedding = await getEmbedding(textToEmbed);
+      await targetJob.save({ validateBeforeSave: false });
+    }
+    const targetEmbedding = targetJob.embedding;
+
+    const scoredJobs = await Promise.all(
+      candidateJobs.map(async (job) => {
+        let jobEmbedding = job.embedding;
+        if (!jobEmbedding || jobEmbedding.length === 0) {
+           const jobTopSkills = job.skills?.slice(0, 3).join(", ") || "";
+           const textToEmbed = `${job.title} ${jobTopSkills}`.trim();
+           jobEmbedding = await getEmbedding(textToEmbed);
+           job.embedding = jobEmbedding;
+           await job.save({ validateBeforeSave: false });
+        }
+        
+        const sim = cosineSimilarity(targetEmbedding, jobEmbedding);
+        
+        // 3. Recency Boost
+        // Add up to 0.1 score for fresh jobs, decaying to 0 over 60 days
+        const ageInDays = (Date.now() - (job as any).createdAt.getTime()) / (1000 * 60 * 60 * 24);
+        let recencyBoost = 0;
+        if (ageInDays < 60 && ageInDays >= 0) {
+           recencyBoost = 0.1 * (1 - ageInDays / 60);
+        }
+        
+        const finalScore = sim + recencyBoost;
+        return {
+          job,
+          sim,
+          recencyBoost,
+          finalScore
+        };
+      })
+    );
+
+    // Sort by final score descending and take top 5
+    scoredJobs.sort((a, b) => b.finalScore - a.finalScore);
+    const topRelated = scoredJobs.slice(0, 5).map(s => {
+       const jobObj = s.job.toObject();
+       delete jobObj.embedding; // do not send embeddings to client
+       return jobObj;
+    });
+
+    return res.status(200).json(new ApiResponse(200, topRelated, "Related jobs fetched successfully"));
   } catch (error: any) {
     next(error);
   }

@@ -1,8 +1,5 @@
 "use client";
-import {
-  useGetApplicationById,
-  useWithdrawJobApplication,
-} from "@/features/user/hooks/use-job-application";
+import { useGetApplicationById } from "@/features/user/hooks/use-job-application";
 import { useParams, useRouter } from "next/navigation";
 import {
   Card,
@@ -45,9 +42,6 @@ const ViewApplicationPage = () => {
   } = useGetApplicationById(applicationId);
   const application = response?.data;
 
-  const { mutate: withdrawApplication, isPending: isWithdrawing } =
-    useWithdrawJobApplication();
-
   if (isLoading) return <LoadingSkeleton />;
 
   if (isError || !application) return <ErrorState />;
@@ -62,23 +56,9 @@ const ViewApplicationPage = () => {
     statusHistory,
   } = application;
 
-  const handleWithdraw = () => {
-    if (window.confirm("Are you sure you want to withdraw this application?")) {
-      withdrawApplication(applicationId, {
-        onSuccess: () => {
-          router.push("/user-dashboard/applications");
-        },
-      });
-    }
-  };
-
   return (
     <div className="animate-in fade-in w-full space-y-6 p-1 duration-500 md:space-y-8">
-      <TopActions
-        status={status}
-        isWithdrawing={isWithdrawing}
-        handleWithdraw={handleWithdraw}
-      />
+      <TopActions />
 
       {/* Main Content Layout */}
       <div className="grid grid-cols-1 items-start gap-6 md:gap-8 lg:grid-cols-3">
@@ -286,15 +266,7 @@ const ViewApplicationPage = () => {
 
 export default ViewApplicationPage;
 
-function TopActions({
-  status,
-  isWithdrawing,
-  handleWithdraw,
-}: {
-  status: string;
-  isWithdrawing: boolean;
-  handleWithdraw: () => void;
-}) {
+function TopActions() {
   const router = useRouter();
 
   return (
@@ -306,18 +278,6 @@ function TopActions({
       >
         <ArrowLeft className="mr-2 h-4 w-4" /> Back
       </Button>
-      {!["withdrawn", "rejected", "accepted", "selected"].includes(
-        status?.toLowerCase(),
-      ) && (
-        <Button
-          variant="destructive"
-          onClick={handleWithdraw}
-          disabled={isWithdrawing}
-          className="cursor-pointer"
-        >
-          {isWithdrawing ? "Withdrawing..." : "Withdraw Application"}
-        </Button>
-      )}
     </div>
   );
 }

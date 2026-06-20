@@ -33,3 +33,10 @@ export const getInternshipDetailsById = async (internshipId: string) => {
   >(`/internships/${internshipId}`);
   return response.data;
 };
+
+export const getRelatedInternshipsById = async (internshipId: string) => {
+  const response = await apiClient.get<ApiSuccessResponse<any>>(
+    `/internships/${internshipId}/related`,
+  );
+  return response.data;
+};

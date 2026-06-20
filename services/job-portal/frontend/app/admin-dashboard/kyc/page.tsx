@@ -71,7 +71,7 @@ export default function KycManagementPage() {
   }
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-end gap-4">
         {/* <div className="relative max-w-sm flex-1">
           <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />

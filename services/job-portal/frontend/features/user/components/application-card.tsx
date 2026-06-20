@@ -6,28 +6,15 @@ import { ApplicationStatus } from "@/types/enums";
 import { Briefcase, MapPin, Clock, Trash2, Eye, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import { useWithdrawJobApplication } from "@/features/user/hooks/use-job-application";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 interface ApplicationCardProps {
   application: any;
 }
 
 export function ApplicationCard({ application }: ApplicationCardProps) {
-  const { mutate: withdrawApplication } = useWithdrawJobApplication();
   const appStatus = application.status?.toLowerCase();
   const isActionDisabled = [
     ApplicationStatus.ACCEPTED,
@@ -127,39 +114,6 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
               <Eye className="h-4 w-4 text-slate-600" />
             </Link>
           </Button>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={isActionDisabled || appStatus === "withdrawn"}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-9 cursor-pointer rounded-full px-3 font-semibold disabled:cursor-not-allowed"
-              >
-                <Trash2 className="mr-1.5 h-4 w-4" />
-                Withdraw
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently withdraw
-                  your application for the{" "}
-                  <strong>{application.listing?.title}</strong> role.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => withdrawApplication(application._id)}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer font-bold"
-                >
-                  Withdraw Application
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       </div>
     </div>
