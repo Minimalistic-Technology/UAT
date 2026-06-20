@@ -10,6 +10,7 @@ import {
   getEmployeeById,
   updateEmployee,
   deleteCompany,
+  getMyCompanyDashboardDetails,
 } from "../services/company.service";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -101,6 +102,13 @@ export const useGetMyCompanyDetails = () => {
   return useQuery({
     queryKey: ["my-company-details"],
     queryFn: () => getMyCompany(),
+  });
+};
+
+export const useGetMyCompanyDashboardDetails = () => {
+  return useQuery({
+    queryKey: ["my-company-dashboard-details"],
+    queryFn: () => getMyCompanyDashboardDetails(),
   });
 };
 

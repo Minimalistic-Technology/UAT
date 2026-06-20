@@ -2,7 +2,6 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
 import { MobileSidebarHeader } from "@/components/mobile-sidebar-header";
 import { DashboardContainer } from "@/components/dashboard-container";
 

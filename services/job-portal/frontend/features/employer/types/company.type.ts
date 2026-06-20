@@ -23,3 +23,18 @@ export type GetMyCompanyResponse = Omit<Company, "owner"> &
     kycRejectionReason: string | null;
     remainingJobPosts: number | null;
   };
+
+export interface CompanyDashboardDetails {
+  id: string;
+  name: string;
+  isVerified: boolean;
+  industry: string;
+  activeListings: number;
+  totalMembers: number;
+  remainingJobPosts: number;
+  currentPlan?: {
+    name: string;
+  };
+  kycStatus: string;
+  kycRejectionReason?: string;
+}

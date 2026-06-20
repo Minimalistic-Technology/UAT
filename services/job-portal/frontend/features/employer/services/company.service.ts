@@ -1,6 +1,9 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
 import { Company } from "@/types/new-index";
+import { CompanyDashboardDetails } from "../types/company.type";
 import { GetMyCompanyResponse } from "../types/company.type";
+import { API_URL } from "@/constants";
+import { GET_MY_COMPANY_DASHBOARD_DETAILS_QUERY } from "../graphql/queries/company.queries";
 
 interface GetAllEmployeesResponse {
   count: number;
@@ -102,4 +105,23 @@ export const deleteCompany = async (id: string) => {
     `/companies/${id}`,
   );
   return response.data;
+};
+
+export const getMyCompanyDashboardDetails = async (): Promise<
+  ApiSuccessResponse<CompanyDashboardDetails>
+> => {
+  const response = await apiClient.post(
+    "/graphql",
+    {
+      query: GET_MY_COMPANY_DASHBOARD_DETAILS_QUERY,
+    },
+    {
+      baseURL: API_URL.replace("/api", ""),
+    },
+  );
+  return {
+    success: true,
+    data: response.data.data.getMyCompanyDashboardDetails,
+    message: "Dashboard details fetched successfully",
+  } as ApiSuccessResponse<CompanyDashboardDetails>;
 };
