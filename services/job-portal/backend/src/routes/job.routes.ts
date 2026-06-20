@@ -6,6 +6,7 @@ import {
   updateJob,
   deleteJob,
   getMyJobs,
+  getRelatedJobs,
 } from "../controllers/job.controller.js";
 import {
   protect,
@@ -20,6 +21,7 @@ const router = express.Router();
 
 router.get("/", optionalAuth, getJobs);
 router.get("/my-jobs", protect, authorize(GlobalRole.USER), getMyJobs); // only for owner / hr
+router.get("/:id/related", optionalAuth, getRelatedJobs);
 router.get(
   "/:id",
   validate(getJobByIdSchema),

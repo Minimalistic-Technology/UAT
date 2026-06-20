@@ -11,6 +11,7 @@ import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
 import { isValidExperienceType } from "./job.controller.js";
 import { JobStatus, OpportunityType } from "../models/BaseJob.model.js";
+import { getEmbedding, cosineSimilarity } from "../utils/embedding.js";
 
 export const getAllInternships = async (
   req: AuthRequest,
@@ -255,7 +256,17 @@ export const createInternship = async (
       opportunityType: OpportunityType.INTERNSHIP,
       postedBy: req.user.id,
       company: company._id,
+      embedding: [] as number[],
     };
+
+    // Pre-compute embedding
+    const topSkills = (req.body.skills || []).slice(0, 3).join(", ");
+    const textToEmbed = `${req.body.title} ${topSkills}`.trim();
+    try {
+      internshipData.embedding = await getEmbedding(textToEmbed);
+    } catch (err) {
+      console.error("Failed to generate embedding:", err);
+    }
 
     const [internship] = await Internship.create([internshipData], { session });
 
@@ -307,7 +318,19 @@ export const updateInternship = async (
       return next(new ApiError(403, "Not authorized to update this internship"));
     }
 
-    internship = await Internship.findByIdAndUpdate(req.params.id, req.body, {
+    // Update embedding if title or skills changed
+    const updateData = { ...req.body };
+    if (updateData.title || updateData.skills) {
+      const topSkills = (updateData.skills || internship.skills || []).slice(0, 3).join(", ");
+      const textToEmbed = `${updateData.title || internship.title} ${topSkills}`.trim();
+      try {
+        updateData.embedding = await getEmbedding(textToEmbed);
+      } catch (err) {
+        console.error("Failed to update embedding:", err);
+      }
+    }
+
+    internship = await Internship.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     });
@@ -356,6 +379,102 @@ export const deleteInternship = async (
     await internship.save();
 
     res.status(200).json(new ApiResponse(200, {}, "Internship deleted successfully"));
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+export const getRelatedInternships = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const internshipId = req.params.id;
+    const targetInternship = await Internship.findById(internshipId).select("+embedding");
+    if (!targetInternship) {
+      return next(new ApiError(404, "Internship not found"));
+    }
+
+    // 1. Structured Field Matching (Category, City, Skills overlap)
+    const baseQuery: any = {
+      _id: { $ne: targetInternship._id },
+      status: JobStatus.ACTIVE,
+      isDeleted: false,
+    };
+
+    const orConditions: any[] = [];
+    if (targetInternship.roleCategory) {
+      orConditions.push({ roleCategory: targetInternship.roleCategory });
+    }
+    if (targetInternship.location?.city) {
+      orConditions.push({ "location.city": targetInternship.location.city });
+    }
+    if (targetInternship.skills && targetInternship.skills.length > 0) {
+      orConditions.push({ skills: { $in: targetInternship.skills } });
+    }
+
+    if (orConditions.length > 0) {
+      baseQuery.$or = orConditions;
+    }
+
+    // Fetch up to 50 candidates
+    const candidateInternships = await Internship.find(baseQuery)
+      .select("+embedding")
+      .populate("company", "name logo location")
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    if (candidateInternships.length === 0) {
+      return res.status(200).json(new ApiResponse(200, [], "No related internships found"));
+    }
+
+    // 2. Text Embedding Similarity
+    if (!targetInternship.embedding || targetInternship.embedding.length === 0) {
+      const topSkills = targetInternship.skills?.slice(0, 3).join(", ") || "";
+      const textToEmbed = `${targetInternship.title} ${topSkills}`.trim();
+      targetInternship.embedding = await getEmbedding(textToEmbed);
+      await targetInternship.save({ validateBeforeSave: false });
+    }
+    const targetEmbedding = targetInternship.embedding;
+
+    const scoredInternships = await Promise.all(
+      candidateInternships.map(async (internship) => {
+        let internshipEmbedding = internship.embedding;
+        if (!internshipEmbedding || internshipEmbedding.length === 0) {
+           const topSkills = internship.skills?.slice(0, 3).join(", ") || "";
+           const textToEmbed = `${internship.title} ${topSkills}`.trim();
+           internshipEmbedding = await getEmbedding(textToEmbed);
+           internship.embedding = internshipEmbedding;
+           await internship.save({ validateBeforeSave: false });
+        }
+        
+        const sim = cosineSimilarity(targetEmbedding, internshipEmbedding);
+        
+        // 3. Recency Boost
+        const ageInDays = (Date.now() - (internship as any).createdAt.getTime()) / (1000 * 60 * 60 * 24);
+        let recencyBoost = 0;
+        if (ageInDays < 60 && ageInDays >= 0) {
+           recencyBoost = 0.1 * (1 - ageInDays / 60);
+        }
+        
+        const finalScore = sim + recencyBoost;
+        return {
+          internship,
+          finalScore
+        };
+      })
+    );
+
+    // Sort by final score descending and take top 5
+    scoredInternships.sort((a, b) => b.finalScore - a.finalScore);
+    const topRelated = scoredInternships.slice(0, 5).map(s => {
+       const obj = s.internship.toObject();
+       delete obj.embedding; // do not send embeddings to client
+       return obj;
+    });
+
+    return res.status(200).json(new ApiResponse(200, topRelated, "Related internships fetched successfully"));
   } catch (error: any) {
     next(error);
   }

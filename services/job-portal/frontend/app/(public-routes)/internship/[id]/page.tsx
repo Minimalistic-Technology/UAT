@@ -27,6 +27,7 @@ import { FormattedDescription } from "@/features/employer/components/formatted-d
 import { ListingType } from "@/types/enums";
 import { getCurrencySymbol } from "@/utils";
 import { format } from "date-fns";
+import { RelatedInternships } from "@/features/user/components/related-internships";
 
 const Page = () => {
   const params = useParams();
@@ -312,13 +313,14 @@ const Page = () => {
             </CardContent>
           </Card>
 
-          <div className="order-4 lg:order-0">
-            <CompanyCard
-              company={{
-                ...internship.company,
-                location: internship.company.location,
-              }}
-            />
+          <CompanyCard
+            company={{
+              ...internship.company,
+              location: internship.company.location,
+            }}
+          />
+          <div className="mt-6">
+            <RelatedInternships internshipId={internshipId as string} />
           </div>
         </div>
       </div>

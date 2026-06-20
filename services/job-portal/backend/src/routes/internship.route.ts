@@ -13,6 +13,7 @@ import {
   createInternship,
   deleteInternship,
   updateInternship,
+  getRelatedInternships,
 } from "../controllers/internship.controller.js";
 import {
   createInternshipSchema,
@@ -23,6 +24,7 @@ const router = express.Router();
 
 router.get("/", optionalAuth, getAllInternships);
 router.get("/my-internships", protect, authorize(GlobalRole.USER), getMyInternships); // only for owner / hr
+router.get("/:id/related", optionalAuth, getRelatedInternships);
 router.get("/:id", validate(getInternshipByIdSchema), getInternshipById);
 router.post(
   "/",
