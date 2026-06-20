@@ -5,6 +5,7 @@ import { useAuth } from "@/features/auth/context/auth-context";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { User, Lock, Bell, Shield, Loader2, Save, Eye, EyeOff, Mail, Calendar, CheckCircle } from "lucide-react";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 const SettingsPage = () => {
     const { user, refreshUser } = useAuth();
@@ -28,7 +29,7 @@ const SettingsPage = () => {
         if (user) {
             setFirstName(user.firstName || "");
             setLastName(user.lastName || "");
-            setContactNumber(((user as any).contactNumber || "").replace(/^\+91\s*/, ""));
+            setContactNumber((user as any).contactNumber || "");
         }
     }, [user]);
 
@@ -36,7 +37,7 @@ const SettingsPage = () => {
         e.preventDefault();
         setIsSavingProfile(true);
         try {
-            await api.patch("/auth/profile", { firstName, lastName, contactNumber: contactNumber ? `+91${contactNumber.replace(/\D/g, '')}` : "" });
+            await api.patch("/auth/profile", { firstName, lastName, contactNumber });
             toast.success("Profile updated successfully!");
             refreshUser();
         } catch (err: any) {
@@ -126,17 +127,10 @@ const SettingsPage = () => {
                             </div>
                             <div className="space-y-2">
                                 <label className="block text-xs font-bold uppercase tracking-widest text-foreground/60 mb-2">Contact Number</label>
-                                <div className="flex">
-                                    <select disabled className="px-3 py-3.5 bg-theme-element-sec border-2 border-theme-accent/10 border-r-0 rounded-l-2xl text-foreground font-bold focus:outline-none appearance-none cursor-not-allowed">
-                                        <option>🇮🇳 +91</option>
-                                    </select>
-                                    <input
-                                        value={contactNumber}
-                                        onChange={e => setContactNumber(e.target.value)}
-                                        className="w-full px-4 py-3.5 bg-theme-element-sec/50 border-2 border-theme-accent/10 rounded-r-2xl border-l-0 text-sm font-bold text-foreground outline-none transition-all focus:bg-background focus:border-theme-action hover:border-theme-accent/30"
-                                        placeholder="98765 43210"
-                                    />
-                                </div>
+                                <PhoneInput
+                                    value={contactNumber}
+                                    onChange={setContactNumber}
+                                />
                             </div>
                             <div className="pt-2">
                                 <button
