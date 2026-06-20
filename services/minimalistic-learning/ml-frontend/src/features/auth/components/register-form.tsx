@@ -197,13 +197,19 @@ const RegisterForm = () => {
 
                 <div className="space-y-1.5">
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Contact Number</label>
-                    <div className="relative">
-                        <Input
-                            {...register("contactNumber")}
-                            type="tel"
-                            placeholder="+91 9876543210"
-                            error={!!errors.contactNumber}
-                        />
+                    <div className="flex">
+                        <select disabled className="px-3 py-3 bg-theme-element-sec border border-theme-accent/20 border-r-0 rounded-l-xl text-foreground font-bold focus:outline-none appearance-none cursor-not-allowed">
+                            <option>🇮🇳 +91</option>
+                        </select>
+                        <div className="relative w-full">
+                            <Input
+                                {...register("contactNumber")}
+                                type="tel"
+                                placeholder="98765 43210"
+                                error={!!errors.contactNumber}
+                                className="rounded-l-none"
+                            />
+                        </div>
                     </div>
                     {errors.contactNumber && <p className="text-xs font-semibold text-red-500 mt-1">{errors.contactNumber.message}</p>}
                 </div>
@@ -244,12 +250,14 @@ const RegisterForm = () => {
                     </div>
                 </div>
 
-                <div className="flex flex-col items-center pt-1">
+                <div className="flex flex-col items-stretch w-full pt-1 [&>div]:w-full [&>div>iframe]:!w-full">
                     <Turnstile
                         siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAADn3TrbiqdzPMzAM"}
                         onSuccess={(token) => setValue('turnstileToken', token || "")}
+                        options={{ size: "flexible" }}
+                        style={{ width: "100%" }}
                     />
-                    {errors.turnstileToken && <p className="text-xs font-semibold text-red-500 mt-1">{errors.turnstileToken.message}</p>}
+                    {errors.turnstileToken && <p className="text-xs font-semibold text-red-500 mt-1 text-center">{errors.turnstileToken.message}</p>}
                 </div>
 
                 <Button
