@@ -5,6 +5,7 @@ import { blogService } from '../services/blog-service';
 import { BlogResponse } from '../types/blog-type';
 import { BlogCard } from './blog-card';
 import { Loader2, Newspaper, ArrowRight, Search } from 'lucide-react';
+import { ErrorRetryBlock } from "@/components/ui/ErrorRetryBlock";
 
 interface BlogListProps {
   limit?: number;
@@ -86,18 +87,7 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
   }, [blogs, sortBy]);
 
   if (error) {
-    return (
-      <div className="text-center py-20 px-6 bg-red-50/50 dark:bg-red-900/10 rounded-3xl border border-red-100 dark:border-red-900/30">
-        <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">Oops! Something went wrong</h3>
-        <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-6 px-6 py-2 bg-red-600 text-white rounded-full font-bold text-sm hover:bg-red-700 transition-colors shadow-sm"
-        >
-          Try Again
-        </button>
-      </div>
-    );
+    return <ErrorRetryBlock error={{ message: error }} onRetry={() => window.location.reload()} />;
   }
 
   return (

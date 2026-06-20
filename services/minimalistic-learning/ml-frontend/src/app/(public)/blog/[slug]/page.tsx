@@ -51,8 +51,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         }
       };
     }
-  } catch (error) {
-    console.error('Metadata generation error:', error);
+  } catch (error: any) {
+    // Silently ignore 404s for unpublished/invalid blogs to prevent terminal clutter
+    if (error?.response?.status !== 404) {
+      console.error('Metadata generation runtime error:', error?.message);
+    }
   }
 
   return {
@@ -69,9 +72,11 @@ const BlogDetailPage = async ({ params }: Props) => {
   let error: string | null = null;
 
   try {
-    // Fetch data on the server for speed and SEO (Resilient fetches)
     const blogRes = await blogService.getBlogBySlug(slug).catch(e => {
-      console.error("Blog fetch error:", e?.message);
+      // Don't clutter terminal with 404s when admin tries to preview a pending post
+      if (e?.response?.status !== 404) {
+        console.error("Blog fetch runtime error:", e?.message);
+      }
       return { success: false, message: e?.message || "Failed to fetch" };
     });
 

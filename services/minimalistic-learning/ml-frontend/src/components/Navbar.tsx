@@ -116,18 +116,20 @@ export const Navbar: React.FC = () => {
             </div>
 
             {/* Right side: Actions */}
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="hidden sm:block">
+            <div className="flex items-center gap-4">
+              <div className="hidden lg:block">
                 <ThemeToggle />
               </div>
 
               {isAuthenticated ? (
-                <div className="flex items-center gap-2 sm:gap-5">
+                <div className="flex items-center gap-4">
+                  {/* Notification Dropdown is ALWAYS visible */}
                   <div className="text-foreground/60 hover:text-foreground transition-colors">
                     <NotificationDropdown />
                   </div>
 
-                  <div className="relative" ref={dropdownRef}>
+                  {/* Desktop Profile Dropdown - HIDDEN on Mobile/Tablet */}
+                  <div className="hidden lg:block relative" ref={dropdownRef}>
                     <button
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                       className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-theme-accent/20 hover:bg-theme-element-sec transition-all focus:outline-none"
@@ -171,7 +173,7 @@ export const Navbar: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="hidden sm:flex items-center gap-3">
+                <div className="hidden lg:flex items-center gap-3">
                   <a href="/login" className="px-5 py-2 text-sm font-semibold text-foreground/70 hover:text-foreground transition-colors">
                     Login
                   </a>
@@ -184,26 +186,32 @@ export const Navbar: React.FC = () => {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-2 text-foreground focus:outline-none"
+                className="lg:hidden p-2 text-foreground focus:outline-none hover:bg-theme-element-sec rounded-lg transition-colors"
               >
-                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                <Menu size={24} />
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Menu Dropdown */}
-      <div className={`fixed inset-0 z-40 bg-foreground/10 backdrop-blur-sm lg:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsMobileMenuOpen(false)}>
+      {/* Mobile Sidebar (Right to Left) */}
+      <div className={`fixed inset-0 z-50 bg-foreground/20 backdrop-blur-sm lg:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsMobileMenuOpen(false)}>
         <div
-          className={`absolute inset-x-0 top-0 bg-theme-element shadow-2xl border-b border-theme-accent/20 transition-transform duration-300 ease-in-out transform pt-20 pb-6 px-4 ${isMobileMenuOpen ? 'translate-y-0' : '-translate-y-full'}`}
+          className={`absolute right-0 top-0 bottom-0 w-[280px] bg-theme-element shadow-2xl border-l border-theme-accent/20 transition-transform duration-300 ease-out transform overflow-y-auto flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex justify-between items-center mb-6 pl-2">
-            <ThemeToggle />
+          {/* Sidebar Header with Close Button */}
+          <div className="flex justify-between items-center px-6 py-5 border-b border-theme-accent/10">
+            <span className="font-bold text-lg text-theme-action">Menu</span>
+            <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 hover:bg-theme-element-sec rounded-full text-foreground/70 transition-colors">
+              <X size={20} />
+            </button>
           </div>
 
-          <div className="flex flex-col gap-1">
+          {/* Main Links */}
+          <div className="flex flex-col px-4 py-4 gap-1">
+            <div className="pl-4 mb-3"><ThemeToggle /></div>
             {tabs.map((tab) => {
               const isActive = pathname === tab.href || (tab.href !== '/' && pathname.startsWith(tab.href));
               return (
@@ -211,7 +219,7 @@ export const Navbar: React.FC = () => {
                   key={tab.id}
                   href={tab.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`px-4 py-3 rounded-xl text-base font-semibold ${isActive
+                  className={`px-4 py-3.5 rounded-xl text-base font-semibold transition-colors ${isActive
                     ? 'bg-theme-action/10 text-theme-action'
                     : 'text-foreground hover:bg-theme-element-sec'
                     }`}
@@ -222,24 +230,54 @@ export const Navbar: React.FC = () => {
             })}
           </div>
 
-          {!isAuthenticated && (
-            <div className="flex flex-col gap-3 mt-8 pt-6 border-t border-theme-accent/10 pl-2 pr-2">
-              <a
-                href="/login"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full py-3 text-center text-foreground font-semibold border border-theme-accent/20 rounded-xl hover:bg-theme-element-sec"
-              >
-                Login
-              </a>
-              <a
-                href="/register"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="w-full py-3 text-center bg-theme-action text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
-              >
-                Signup
-              </a>
-            </div>
-          )}
+          {/* Profile Section or Login/Signup */}
+          <div className="mt-auto border-t border-theme-accent/10 px-4 py-6 bg-theme-element-sec/30">
+            {isAuthenticated ? (
+              <div className="flex flex-col">
+                <div className="px-4 mb-4">
+                  <p className="text-base font-bold text-foreground truncate">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-sm text-foreground/60 truncate">{user?.email}</p>
+                </div>
+
+                <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-theme-element-sec rounded-xl transition-colors">
+                  <Home size={18} className="text-foreground/50" /> Dashboard
+                </Link>
+                {user?.role?.toLowerCase() === 'admin' ? (
+                  <Link href="/dashboard/blog-history" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-theme-element-sec rounded-xl transition-colors">
+                    <Newspaper size={18} className="text-foreground/50" /> Blog History
+                  </Link>
+                ) : (
+                  <Link href="/my-blogs" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-theme-element-sec rounded-xl transition-colors">
+                    <Newspaper size={18} className="text-foreground/50" /> Manage My Blogs
+                  </Link>
+                )}
+                <Link href="/dashboard/settings" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-theme-element-sec rounded-xl transition-colors">
+                  <Settings size={18} className="text-foreground/50" /> Settings
+                </Link>
+
+                <button onClick={() => { setIsMobileMenuOpen(false); logout(); }} className="flex w-full items-center gap-3 px-4 py-3 mt-2 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-colors">
+                  <LogOut size={18} /> Sign out
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <a
+                  href="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full py-3.5 text-center text-foreground font-semibold border border-theme-accent/20 rounded-xl hover:bg-theme-element-sec transition-colors"
+                >
+                  Login
+                </a>
+                <a
+                  href="/register"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full py-3.5 text-center bg-theme-action text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
+                >
+                  Create Account
+                </a>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>

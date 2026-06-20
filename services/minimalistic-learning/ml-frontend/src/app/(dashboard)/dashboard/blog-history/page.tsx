@@ -13,7 +13,9 @@ import {
   Loader2,
   ExternalLink,
   ArrowLeft,
-  Trash2
+  Trash2,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -98,6 +100,22 @@ const BlogHistoryPage = () => {
 
     return filtered;
   }, [posts, searchQuery, statusFilter, sortConfig]);
+
+  // Pagination Logic
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const totalPages = Math.ceil(processedPosts.length / itemsPerPage);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, sortConfig]);
+
+  const paginatedPosts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return processedPosts.slice(start, start + itemsPerPage);
+  }, [processedPosts, currentPage]);
 
   const requestSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -206,7 +224,7 @@ const BlogHistoryPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-theme-accent/10">
-              {processedPosts.length === 0 ? (
+              {paginatedPosts.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-8 py-32 text-center">
                     <div className="flex flex-col items-center justify-center text-foreground/50">
@@ -219,7 +237,7 @@ const BlogHistoryPage = () => {
                   </td>
                 </tr>
               ) : (
-                processedPosts.map((post) => {
+                paginatedPosts.map((post) => {
                   const postId = post.id || post._id;
                   return (
                     <tr key={postId} className="group hover:bg-theme-element-sec/50 transition-colors">
@@ -259,13 +277,6 @@ const BlogHistoryPage = () => {
                       </td>
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/blog/${post.slug}`}
-                            target="_blank"
-                            className="inline-flex items-center justify-center w-9 h-9 bg-theme-element border border-theme-accent/20 rounded-xl text-foreground/50 hover:text-theme-action hover:border-theme-action/30 hover:bg-theme-action/5 transition-all active:scale-95 shadow-sm"
-                          >
-                            <ExternalLink size={16} />
-                          </Link>
                           <button
                             onClick={() => handleDelete(postId)}
                             disabled={actionLoading === postId}
@@ -283,11 +294,36 @@ const BlogHistoryPage = () => {
           </table>
         </div>
 
-        <div className="bg-theme-element-sec px-8 py-5 border-t border-theme-accent/10 flex items-center justify-between">
+        <div className="bg-theme-element-sec px-8 py-4 border-t border-theme-accent/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">
-            Total Entries: <span className="text-foreground">{processedPosts.length}</span>
+            Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, processedPosts.length)} of <span className="text-foreground">{processedPosts.length}</span>
           </p>
-          <div className="flex items-center gap-2">
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-xl text-foreground/50 hover:bg-theme-element hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <div className="flex items-center gap-1 px-4 text-xs font-bold text-foreground">
+                <span className="text-theme-action">{currentPage}</span>
+                <span className="text-foreground/30">/</span>
+                <span>{totalPages}</span>
+              </div>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-xl text-foreground/50 hover:bg-theme-element hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+
+          <div className="hidden sm:flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             <p className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">Live Database Connection</p>
           </div>

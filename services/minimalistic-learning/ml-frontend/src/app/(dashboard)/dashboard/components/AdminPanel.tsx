@@ -801,8 +801,10 @@ const AdminPanel = () => {
                         </td>
                         <td className="py-4 px-6 text-right">
                           <Button
+                            variant="none"
+                            size="none"
                             onClick={() => handleDeletePermission(perm.id)}
-                            className="p-2 text-foreground/45 hover:text-red-500 transition-colors"
+                            className="p-2.5 bg-theme-element text-foreground/45 border border-theme-accent/20 rounded-xl hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-all shadow-sm active:scale-95"
                             title="Delete Permission Rule"
                           >
                             <Trash2 size={16} />
@@ -901,8 +903,10 @@ const AdminPanel = () => {
                         </td>
                         <td className="py-4 px-6 text-right">
                           <Button
+                            variant="none"
+                            size="none"
                             onClick={() => handleDeleteUser(item.id)}
-                            className="p-2 text-foreground/45 hover:text-red-500 transition-colors"
+                            className="p-2.5 bg-theme-element text-foreground/45 border border-theme-accent/20 rounded-xl hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-all shadow-sm active:scale-95"
                             title="Delete User Account"
                           >
                             <Trash2 size={16} />
