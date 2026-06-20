@@ -5,11 +5,6 @@ import { StatusCodes } from 'http-status-codes';
 export const cleanHtml = (dirty: string) => {
     if (!dirty) return dirty;
 
-    // Reject the request entirely if the user types potentially dangerous HTML explicitly
-    const maliciousPattern = /(<|&lt;)\/?(script|iframe|object|embed|applet)[\s\S]*?(>|&gt;)|onerror=|onload=|javascript:/gi;
-    if (maliciousPattern.test(dirty)) {
-        throw new ApiError(StatusCodes.BAD_REQUEST, "Malicious or scripting content detected. Submission rejected for security reasons.");
-    }
 
     // Pass the remaining safe content through the standard sanitize-html engine
     return sanitizeHtml(dirty, {
