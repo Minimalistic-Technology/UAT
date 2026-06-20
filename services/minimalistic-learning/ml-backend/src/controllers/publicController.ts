@@ -8,11 +8,23 @@ import { sendNewsletterWelcomeEmail } from '../utils/email';
 
 import CacheService from '../config/redis';
 
-/**
- * GET /api/v1/public/settings
- * Returns only the public-facing feature flags — no auth required.
- * Fully cached to prevent DB spam.
- */
+export const getSystemStatus = asyncHandler(async (_req: Request, res: Response) => {
+  const cacheKey = 'public:status';
+
+  const cachedStatus = await CacheService.get(cacheKey);
+  if (cachedStatus) {
+    return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, JSON.parse(cachedStatus), 'System status (Cached)'));
+  }
+
+  const setting = await prisma.siteSetting.findUnique({ where: { key: 'global' }, select: { maintenanceMode: true } });
+  const data = { maintenanceMode: setting?.maintenanceMode ?? false };
+
+  await CacheService.setex(cacheKey, 15, JSON.stringify(data));
+
+  return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, data, 'System status'));
+});
+
+
 export const getPublicSettings = asyncHandler(async (_req: Request, res: Response) => {
   const cacheKey = 'public:settings';
 
@@ -36,10 +48,7 @@ export const getPublicSettings = asyncHandler(async (_req: Request, res: Respons
   );
 });
 
-/**
- * POST /api/v1/public/subscribe
- * Newsletter subscription — saves to DB, checks duplicates, and sends a warm welcome email.
- */
+
 export const subscribeNewsletter = asyncHandler(async (req: Request, res: Response) => {
   const { email } = req.body;
 
@@ -68,10 +77,7 @@ export const subscribeNewsletter = asyncHandler(async (req: Request, res: Respon
   );
 });
 
-/**
- * GET /api/v1/public/content/:page
- * Gets content blocks for a specific page. Cached for 24 hours.
- */
+
 export const getSiteContent = asyncHandler(async (req: Request, res: Response) => {
   const { page } = req.params;
   const cacheKey = `public:content:${page}`;
@@ -93,10 +99,7 @@ export const getSiteContent = asyncHandler(async (req: Request, res: Response) =
   return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, contentMap, 'Page content fetched successfully'));
 });
 
-/**
- * GET /api/v1/public/team
- * Get all team members. Cached for 24 hours.
- */
+
 export const getTeamMembers = asyncHandler(async (_req: Request, res: Response) => {
   const cacheKey = `public:team`;
 

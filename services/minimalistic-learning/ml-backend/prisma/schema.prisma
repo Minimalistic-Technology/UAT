@@ -108,6 +108,7 @@ model SiteSetting {
   key                String   @unique @default("global")
   autoApprovePost    Boolean  @default(true)
   resourceHubEnabled Boolean  @default(true)
+  maintenanceMode    Boolean  @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
