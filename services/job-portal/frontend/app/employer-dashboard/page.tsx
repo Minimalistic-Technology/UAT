@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { AdminStatusCard as StatCard } from "@/features/admin/components/stats-card";
 import { useGetMyCompanyDashboardDetails } from "@/features/employer/hooks/use-company";
 import { useRouter } from "next/navigation";
-import { DashboardOverviewSkeleton } from "@/skeletons/employer/employer-dashboard";
+import {
+  DashboardOverviewSkeleton,
+  RecentApplicationsSkeleton,
+} from "@/skeletons/employer/employer-dashboard";
 import {
   DASHBOARD_STAT_CARDS,
   DASHBOARD_ALERTS,
@@ -29,10 +32,22 @@ const Page = () => {
   const companyDetails = responseData?.data;
 
   if ((isLoading || !companyDetails) && !isError) {
-    return <DashboardOverviewSkeleton />;
+    return (
+      <div className="flex w-full flex-col">
+        <DashboardOverviewSkeleton />
+        <RecentApplicationsSkeleton />
+      </div>
+    );
   }
 
-  if (isFetching && !companyDetails) return <DashboardOverviewSkeleton />;
+  if (isFetching && !companyDetails) {
+    return (
+      <div className="flex w-full flex-col">
+        <DashboardOverviewSkeleton />
+        <RecentApplicationsSkeleton />
+      </div>
+    );
+  }
 
   if (isError) {
     return (

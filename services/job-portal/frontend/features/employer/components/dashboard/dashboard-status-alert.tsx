@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DashboardAlertConfig } from "../../config/dashboard.config";
 import { ChevronRight } from "lucide-react";
+import { motion } from "motion/react";
 
 interface DashboardStatusAlertProps {
   config: DashboardAlertConfig;
@@ -75,48 +76,55 @@ export const DashboardStatusAlert: React.FC<DashboardStatusAlertProps> = ({
   }
 
   return (
-    <div
-      className={`flex flex-col gap-4 rounded-xl border p-4 sm:p-5 ${containerClass}`}
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
+      className="overflow-hidden"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex flex-1 items-start gap-4">
-          <div className={`rounded-full p-2 ${iconContainerClass}`}>
-            <Icon className={iconClass} />
+      <div
+        className={`flex flex-col gap-4 rounded-xl border p-4 sm:p-5 ${containerClass}`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex flex-1 items-start gap-4">
+            <div className={`rounded-full p-2 ${iconContainerClass}`}>
+              <Icon className={iconClass} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <h3 className={`text-sm font-bold sm:text-base ${titleClass}`}>
+                {title}
+              </h3>
+              <p className={`text-xs sm:text-sm ${descClass}`}>{description}</p>
+            </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <h3 className={`text-sm font-bold sm:text-base ${titleClass}`}>
-              {title}
-            </h3>
-            <p className={`text-xs sm:text-sm ${descClass}`}>{description}</p>
-          </div>
+          {actionLabel && actionLink && (
+            <Button
+              size="sm"
+              variant={buttonVariant}
+              asChild
+              className={`ml-4 shrink-0 rounded-lg font-bold shadow-lg ${buttonClass}`}
+            >
+              <Link href={actionLink}>
+                {actionLabel}
+                {variant !== "destructive" && (
+                  <ChevronRight className="ml-1 h-3 w-3" />
+                )}
+              </Link>
+            </Button>
+          )}
         </div>
-        {actionLabel && actionLink && (
-          <Button
-            size="sm"
-            variant={buttonVariant}
-            asChild
-            className={`ml-4 shrink-0 rounded-lg font-bold shadow-lg ${buttonClass}`}
-          >
-            <Link href={actionLink}>
-              {actionLabel}
-              {variant !== "destructive" && (
-                <ChevronRight className="ml-1 h-3 w-3" />
-              )}
-            </Link>
-          </Button>
+
+        {showRejectionReason && kycRejectionReason && (
+          <div className="bg-destructive/5 border-destructive/10 ml-14 rounded-lg border p-3">
+            <span className="text-destructive mb-1 block text-xs font-bold tracking-wider uppercase">
+              Feedback
+            </span>
+            <span className="text-destructive/90 text-sm font-medium">
+              {kycRejectionReason}
+            </span>
+          </div>
         )}
       </div>
-
-      {showRejectionReason && kycRejectionReason && (
-        <div className="bg-destructive/5 border-destructive/10 ml-14 rounded-lg border p-3">
-          <span className="text-destructive mb-1 block text-xs font-bold tracking-wider uppercase">
-            Feedback
-          </span>
-          <span className="text-destructive/90 text-sm font-medium">
-            {kycRejectionReason}
-          </span>
-        </div>
-      )}
-    </div>
+    </motion.div>
   );
 };
