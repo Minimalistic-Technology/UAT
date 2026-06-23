@@ -31,13 +31,19 @@ export const sendOtp = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'ReCAPTCHA token is required' });
         }
 
-        // Verify ReCAPTCHA
-        const secretKey = process.env.RECAPTCHA_SECRET_KEY;
-        if (secretKey) {
-            const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
-            const recaptchaRes = await axios.post(verifyUrl);
-            if (!recaptchaRes.data.success) {
-                return res.status(400).json({ msg: 'ReCAPTCHA verification failed. Please try again.' });
+        // Verify Cloudflare Turnstile
+        const secretKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
+        if (secretKey && recaptchaToken) {
+            const verifyUrl = `https://challenges.cloudflare.com/turnstile/v0/siteverify`;
+            const turnstileRes = await axios.post(verifyUrl, {
+                secret: secretKey,
+                response: recaptchaToken
+            }, {
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (!turnstileRes.data.success) {
+                console.error("[TURNSTILE ERROR]", turnstileRes.data);
+                return res.status(400).json({ msg: 'Bot verification failed. Please try again.' });
             }
         }
 
