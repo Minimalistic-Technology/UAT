@@ -19,7 +19,7 @@ export const getSystemStatus = asyncHandler(async (_req: Request, res: Response)
   const setting = await prisma.siteSetting.findUnique({ where: { key: 'global' }, select: { maintenanceMode: true } });
   const data = { maintenanceMode: setting?.maintenanceMode ?? false };
 
-  await CacheService.setex(cacheKey, 15, JSON.stringify(data));
+  await CacheService.setex(cacheKey, 1800, JSON.stringify(data)); // Increased to 30 mins for robust testing
 
   return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, data, 'System status'));
 });

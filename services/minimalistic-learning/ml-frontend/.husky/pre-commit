@@ -1,0 +1,2 @@
+cd services/minimalistic-learning/ml-frontend
+npx lint-staged

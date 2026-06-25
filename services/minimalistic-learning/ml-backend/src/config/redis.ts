@@ -12,7 +12,7 @@ export let isRedisConnected = false;
 const redisClient = new Redis(redisUrl, {
     maxRetriesPerRequest: 1,
     lazyConnect: true, // Startup pe crash nahi hogi agar Redis na mile
-    ...(isTlsRedis && { tls: {} }), // ✅ Upstash (rediss://) ke liye TLS required
+    ...(isTlsRedis && { tls: { rejectUnauthorized: false } }), // ✅ Upstash (rediss://) ke liye TLS required
     retryStrategy(times) {
         if (times >= 3) {
             console.warn('[Cache] Redis not reachable. Falling back to in-memory Map cache.');
