@@ -8,7 +8,7 @@ export const couponSchema = z
       .toUpperCase(),
     type: z.enum(["percentage", "amount"]),
     value: z
-      .number({ error: "Value must be a number" })
+      .number({ invalid_type_error: "Value must be a number" })
       .min(0, "Value cannot be negative"),
     isActive: z.boolean(),
     expiryDate: z.string().optional(),

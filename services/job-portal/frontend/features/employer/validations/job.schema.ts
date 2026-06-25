@@ -39,26 +39,29 @@ const salarySchema = z
     },
   );
 
-export const createJobSchema = BaseListingSchema.extend({
-  experienceLevel: z.enum(Experience_Level, {
-    error: "Experience level is required",
+export const createJobSchema = BaseListingSchema.and(
+  z.object({
+    experienceLevel: z.enum(Experience_Level, {
+      required_error: "Experience level is required",
+    }),
+    experienceInYears: z.preprocess(
+      (val) =>
+        val === "" ||
+        val === undefined ||
+        val === null ||
+        (typeof val === "number" && Number.isNaN(val))
+          ? undefined
+          : Number(val),
+      z
+        .number({
+          invalid_type_error: "Experience in years is required",
+          required_error: "Experience in years is required",
+        })
+        .int("Experience must be an integer")
+        .min(0, "Experience cannot be negative"),
+    ),
+    salary: salarySchema,
   }),
-  experienceInYears: z.preprocess(
-    (val) =>
-      val === "" ||
-      val === undefined ||
-      val === null ||
-      (typeof val === "number" && Number.isNaN(val))
-        ? undefined
-        : Number(val),
-    z
-      .number({
-        error: "Experience in years is required",
-      })
-      .int("Experience must be an integer")
-      .min(0, "Experience cannot be negative"),
-  ),
-  salary: salarySchema,
-});
+);
 
 export type CreateJobFormData = z.infer<typeof createJobSchema>;

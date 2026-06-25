@@ -1,6 +1,11 @@
 import z from "zod";
 
-export const Listing_Status = ["active", "closed", "pending", "rejected"];
+export const Listing_Status = [
+  "active",
+  "closed",
+  "pending",
+  "rejected",
+] as const;
 
 export const Job_Type = [
   "full_time",
@@ -8,20 +13,25 @@ export const Job_Type = [
   "contract",
   "internship",
   "freelance",
-];
+] as const;
 
-export const Opportunity_Type = ["job", "internship"];
+export const Opportunity_Type = ["job", "internship"] as const;
 
-export const Gender_Preference = ["any", "male", "female"];
+export const Gender_Preference = ["any", "male", "female"] as const;
 
-export const English_Fluency = ["none", "basic", "intermediate", "fluent"];
+export const English_Fluency = [
+  "none",
+  "basic",
+  "intermediate",
+  "fluent",
+] as const;
 
 export const Work_Mode = [
   "work from office",
   "remote",
   "hybrid",
   "temporary work from home",
-];
+] as const;
 
 export const Company_Type = [
   "startup",
@@ -31,9 +41,14 @@ export const Company_Type = [
   "corporate",
   "govt/psu",
   "others",
-];
+] as const;
 
-export const Experience_Level = ["entry", "intermediate", "senior", "expert"];
+export const Experience_Level = [
+  "entry",
+  "intermediate",
+  "senior",
+  "expert",
+] as const;
 
 export const ROLE_CATEGORIES = [
   "software_development",
@@ -66,7 +81,7 @@ export const ROLE_CATEGORIES = [
   "customer_support",
   "research",
   "other",
-];
+] as const;
 
 export const INDUSTRIES = [
   "information_technology",
@@ -93,7 +108,7 @@ export const INDUSTRIES = [
   "government",
   "nonprofit",
   "other",
-];
+] as const;
 
 export const Degree_Level = [
   "high_school",
@@ -102,7 +117,7 @@ export const Degree_Level = [
   "masters",
   "phd",
   "any",
-];
+] as const;
 
 const locationSchema = z
   .object({
@@ -114,7 +129,7 @@ const locationSchema = z
 
 const educationSchema = z.object({
   minimumDegree: z.enum(Degree_Level, {
-    error: "Minimum qualification is required",
+    required_error: "Minimum qualification is required",
   }),
   preferredFields: z
     .array(z.string().trim().min(1, "Preferred field cannot be empty"))
@@ -150,16 +165,20 @@ export const BaseListingSchema = z
     description: z.string().trim().min(1, "Job description is required"),
 
     // Select values
-    employmentType: z.enum(Job_Type, { error: "Job type is required" }),
+    employmentType: z.enum(Job_Type, {
+      required_error: "Job type is required",
+    }),
     opportunityType: z.enum(Opportunity_Type, {
-      error: "Opportunity type is required",
+      required_error: "Opportunity type is required",
     }),
-    workMode: z.enum(Work_Mode, { error: "Work mode is required" }),
-    companyType: z.enum(Company_Type, { error: "Company type is required" }),
+    workMode: z.enum(Work_Mode, { required_error: "Work mode is required" }),
+    companyType: z.enum(Company_Type, {
+      required_error: "Company type is required",
+    }),
     roleCategory: z.enum(ROLE_CATEGORIES, {
-      error: "Role category is required",
+      required_error: "Role category is required",
     }),
-    industry: z.enum(INDUSTRIES, { error: "Industry is required" }),
+    industry: z.enum(INDUSTRIES, { required_error: "Industry is required" }),
 
     genderPreference: z.enum(Gender_Preference).default("any"),
     englishFluency: z.enum(English_Fluency).default("none"),
