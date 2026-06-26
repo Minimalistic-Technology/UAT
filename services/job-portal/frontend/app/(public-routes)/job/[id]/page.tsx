@@ -27,6 +27,7 @@ import { FormattedDescription } from "@/features/employer/components/formatted-d
 import { ListingType } from "@/types/enums";
 import { getCurrencySymbol } from "@/utils";
 import { format } from "date-fns";
+import { RelatedJobs } from "@/features/user/components/related-jobs";
 
 const Page = () => {
   const params = useParams();
@@ -340,6 +341,9 @@ const Page = () => {
                 location: job.company.location,
               }}
             />
+            <div className="mt-6">
+              <RelatedJobs jobId={jobId as string} />
+            </div>
           </div>
         </div>
       </div>

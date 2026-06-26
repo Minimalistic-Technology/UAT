@@ -138,7 +138,7 @@ export function CreatePlanDialog({
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-1 flex-col overflow-hidden"
         >
-          <div className="scrollbar-hide flex-1 space-y-6 overflow-y-auto px-6 py-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="scrollbar-hide flex-1 [scrollbar-width:none] space-y-6 overflow-y-auto px-6 py-4 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {/* Basic Info */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">

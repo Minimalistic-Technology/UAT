@@ -6,7 +6,7 @@ import { config } from "../config/env.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { sendEmail } from "../utils/email.js";
 // import { sendOTP } from '../utils/sms.js';
-import CompanyMember from "../models/CompanyMember.model.js";
+import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
 import Company from "../models/Company.model.js";
 import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
@@ -284,12 +284,12 @@ export const confirmRegistrationOTP = async (
               email: tempUser.email,
               password: tempUser.password,
               phone: tempUser.phone,
-              role: tempUser.role,
+              role: tempUser.role as GlobalRole,
               isVerified: true,
             },
           ],
           { session },
-        ).then((res) => res[0]);
+        ).then((res) => (res ? res[0] : null));
       }
 
       if (!user) {
@@ -318,7 +318,7 @@ export const confirmRegistrationOTP = async (
             {
               user: user._id,
               company: company._id,
-              role: tempUser.companyRole,
+              role: tempUser.companyRole as CompanyRole,
             },
           ],
           { session },
@@ -341,7 +341,7 @@ export const confirmRegistrationOTP = async (
             email: tempUser.email,
             password: tempUser.password,
             phone: tempUser.phone,
-            role: tempUser.role,
+            role: tempUser.role as GlobalRole,
             isVerified: true,
           },
         ],

@@ -47,3 +47,10 @@ export const getJobDetailsById = async (jobId: string) => {
   );
   return response.data;
 };
+
+export const getRelatedJobsById = async (jobId: string) => {
+  const response = await apiClient.get<ApiSuccessResponse<any>>(
+    `/jobs/${jobId}/related`,
+  );
+  return response.data;
+};

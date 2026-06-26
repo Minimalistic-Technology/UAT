@@ -48,12 +48,36 @@ interface LockoutInfo {
 const loginLockoutMap = new Map<string, LockoutInfo>();
 const otpLockoutMap = new Map<string, LockoutInfo>();
 
+const verifyTurnstile = async (token: string, secret: string) => {
+  const formData = new URLSearchParams();
+  formData.append('secret', secret);
+  formData.append('response', token);
+  try {
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    return data.success;
+  } catch (err) {
+    console.error('Turnstile verification error:', err);
+    return false;
+  }
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SIGNUP - Original OTP flow (pendingUser → OTP email → verifyOTP to activate)
 // ─────────────────────────────────────────────────────────────────────────────
 export const signup = asyncHandler(async (req: Request, res: Response) => {
-  const payload = signupSchema.parse(req.body) as userService.CreateUserPayload;
+  const payload = signupSchema.parse(req.body) as userService.CreateUserPayload & { turnstileToken: string };
   const emailKey = payload.email.toLowerCase().trim();
+
+  if (env.TURNSTILE_SECRET_KEY && env.TURNSTILE_SECRET_KEY.startsWith("0x")) {
+    const isCaptchaValid = await verifyTurnstile(payload.turnstileToken, env.TURNSTILE_SECRET_KEY);
+    if (!isCaptchaValid) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, "Security verification failed. Please try again.");
+    }
+  }
 
   // Check OTP lockout
   const otpLockout = otpLockoutMap.get(emailKey);

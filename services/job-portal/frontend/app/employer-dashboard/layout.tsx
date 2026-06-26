@@ -2,8 +2,8 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
 import { MobileSidebarHeader } from "@/components/mobile-sidebar-header";
+import { DashboardContainer } from "@/components/dashboard-container";
 
 export default function EmployerLayout({
   children,
@@ -17,7 +17,7 @@ export default function EmployerLayout({
         <MobileSidebarHeader SidebarComponent={AppSidebar} />
 
         {/* Page Content */}
-        <div className="flex-1 px-4 py-8 sm:px-8">{children}</div>
+        <DashboardContainer>{children}</DashboardContainer>
       </SidebarInset>
     </SidebarProvider>
   );

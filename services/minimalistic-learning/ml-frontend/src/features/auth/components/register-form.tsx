@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "../schema/auth-schema";
 import { RegisterValues } from "../types/auth-type";
@@ -12,11 +12,13 @@ import { isAxiosError } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "../context/auth-context";
-import { UserPlus, Mail, Lock, Phone, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
-import ReCAPTCHA from "react-google-recaptcha";
+import { ShieldCheck, Loader2, ArrowRight, Mail } from "lucide-react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PhoneInput } from "@/components/ui/PhoneInput";
+import { Modal } from "@/components/ui/Modal";
 
 const RegisterForm = () => {
   const router = useRouter();
@@ -24,6 +26,7 @@ const RegisterForm = () => {
   const [showOTP, setShowOTP] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [otpValue, setOtpValue] = useState("");
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
   // OTP Countdown Timer State
   const [timer, setTimer] = useState(120);
@@ -49,12 +52,17 @@ const RegisterForm = () => {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const { mutate: registerMutate, isPending: isRegisterPending, error: registerError } = useRegister();
+  const {
+    mutate: registerMutate,
+    isPending: isRegisterPending,
+    error: registerError,
+  } = useRegister();
   const { mutate: verifyMutate, isPending: isVerifyPending } = useVerifyOTP();
 
   const {
     register,
     handleSubmit,
+    control,
     setValue,
     formState: { errors },
   } = useForm<RegisterValues>({
@@ -68,9 +76,11 @@ const RegisterForm = () => {
         setUserEmail(data.email);
         setShowOTP(true);
       },
-      onError: (err) => {
-        toast.error(isAxiosError(err) ? err.response?.data?.message : "Registration failed");
-      }
+      onError: (err: any) => {
+        toast.error(
+          err?.response?.data?.message || err?.message || "Registration failed",
+        );
+      },
     });
   };
 
@@ -81,41 +91,56 @@ const RegisterForm = () => {
       return;
     }
 
-    verifyMutate({ email: userEmail, otp: otpValue }, {
-      onSuccess: () => {
-        toast.success("Account verified! Welcome to Portal.");
-        refreshUser();
-        router.push("/dashboard");
+    verifyMutate(
+      { email: userEmail, otp: otpValue },
+      {
+        onSuccess: () => {
+          toast.success("Account verified! Welcome to Portal.");
+          refreshUser();
+          router.push("/dashboard");
+        },
+        onError: (err: any) => {
+          toast.error(
+            err?.response?.data?.message ||
+              err?.message ||
+              "Verification failed",
+          );
+        },
       },
-      onError: (err) => {
-        toast.error(isAxiosError(err) ? err.response?.data?.message : "Verification failed");
-      }
-    });
+    );
   };
 
   // ── OTP Screen (Unchanged Logic, Updated UI for Dark Mode) ───────────────────
   if (showOTP) {
     return (
-      <div className="w-full mx-auto p-8 sm:p-10 bg-white dark:bg-[#0a0a0a] rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-gray-100 dark:border-white/5 animate-in fade-in zoom-in duration-300">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-4">
+      <div className="animate-in fade-in zoom-in mx-auto w-full rounded-3xl border border-gray-100 bg-white p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] duration-300 sm:p-10 dark:border-white/5 dark:bg-[#0a0a0a] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
+        <div className="mb-8 flex flex-col items-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
             <ShieldCheck size={32} />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Verify Email</h2>
-          <p className="text-gray-500 dark:text-gray-400 mt-2 text-center text-sm font-medium">
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Verify Email
+          </h2>
+          <p className="mt-2 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
             Enter the code sent to <br />
-            <span className="text-gray-900 dark:text-gray-200 font-bold">{userEmail}</span>
+            <span className="font-bold text-gray-900 dark:text-gray-200">
+              {userEmail}
+            </span>
           </p>
         </div>
 
         <form onSubmit={onVerifyOTP} className="space-y-6">
           <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">Verification Code</label>
-              <span className={`text-xs font-bold ${timer === 0 ? "text-red-500 animate-pulse" : "text-[#1877F2] flex items-center gap-1"}`}>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">
+                Verification Code
+              </label>
+              <span
+                className={`text-xs font-bold ${timer === 0 ? "animate-pulse text-red-500" : "flex items-center gap-1 text-[#1877F2]"}`}
+              >
                 {timer > 0 ? (
                   <>
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+                    <span className="inline-block h-1.5 w-1.5 animate-ping rounded-full bg-blue-500" />
                     Expires in {formatTimer(timer)}
                   </>
                 ) : (
@@ -125,10 +150,12 @@ const RegisterForm = () => {
             </div>
             <input
               value={otpValue}
-              onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e) =>
+                setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
               type="text"
               maxLength={6}
-              className="w-full py-4 bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl text-2xl font-bold tracking-[1em] text-center text-gray-900 dark:text-white focus:border-blue-500 dark:focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-gray-300 dark:placeholder:text-gray-700"
+              className="w-full rounded-xl border border-gray-200 bg-white py-4 text-center text-2xl font-bold tracking-[1em] text-gray-900 transition-all outline-none placeholder:text-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-white/10 dark:bg-[#111] dark:text-white dark:placeholder:text-gray-700 dark:focus:border-blue-500"
               placeholder="000000"
               required
             />
@@ -137,14 +164,17 @@ const RegisterForm = () => {
           <button
             type="submit"
             disabled={isVerifyPending || otpValue.length !== 6 || timer === 0}
-            className="group w-full py-3.5 bg-[#1877F2] hover:bg-blue-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#1877F2] py-3.5 font-semibold text-white transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isVerifyPending ? (
               <Loader2 className="animate-spin" size={18} />
             ) : (
               <>
                 Create Account
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                <ArrowRight
+                  size={18}
+                  className="transition-transform group-hover:translate-x-1"
+                />
               </>
             )}
           </button>
@@ -152,7 +182,7 @@ const RegisterForm = () => {
           <button
             type="button"
             onClick={() => setShowOTP(false)}
-            className="w-full text-sm font-semibold text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            className="w-full text-sm font-semibold text-gray-400 transition-colors hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300"
           >
             Edit Registration Info
           </button>
@@ -163,53 +193,78 @@ const RegisterForm = () => {
 
   // ── Register Form (New Minimalist Aesthetic) ────────────────────────────────
   return (
-    <Card className="w-full mx-auto animate-in fade-in zoom-in duration-300">
-      <div className="flex flex-col items-center mb-8">
-        <h2 className="text-[28px] font-bold text-gray-900 dark:text-white tracking-tight mb-2">
+    <Card className="animate-in fade-in zoom-in mx-auto w-full p-5 duration-300 sm:p-6">
+      <div className="mb-5 flex flex-col items-center">
+        <h2 className="mb-1 text-[24px] font-bold tracking-tight text-gray-900 sm:text-[28px] dark:text-white">
           Create Account
         </h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Join our exclusive community today</p>
+        <p className="text-xs text-gray-500 sm:text-sm dark:text-gray-400">
+          Join our exclusive community today
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">First Name</label>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+              First Name
+            </label>
             <Input
               {...register("firstName")}
               type="text"
               placeholder="John"
               error={!!errors.firstName}
             />
-            {errors.firstName && <p className="text-xs font-semibold text-red-500 mt-1">{errors.firstName.message}</p>}
+            {errors.firstName && (
+              <p className="mt-1 text-xs font-semibold text-red-500">
+                {errors.firstName.message}
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Last Name</label>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Last Name
+            </label>
             <Input
               {...register("lastName")}
               type="text"
               placeholder="Doe"
               error={!!errors.lastName}
             />
-            {errors.lastName && <p className="text-xs font-semibold text-red-500 mt-1">{errors.lastName.message}</p>}
+            {errors.lastName && (
+              <p className="mt-1 text-xs font-semibold text-red-500">
+                {errors.lastName.message}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Contact Number</label>
-          <div className="relative">
-            <Input
-              {...register("contactNumber")}
-              type="tel"
-              placeholder="+91 9876543210"
-              error={!!errors.contactNumber}
-            />
-          </div>
-          {errors.contactNumber && <p className="text-xs font-semibold text-red-500 mt-1">{errors.contactNumber.message}</p>}
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+            Contact Number
+          </label>
+          <Controller
+            name="contactNumber"
+            control={control}
+            render={({ field }) => (
+              <PhoneInput
+                value={field.value}
+                onChange={field.onChange}
+                error={!!errors.contactNumber}
+              />
+            )}
+          />
+          {errors.contactNumber && (
+            <p className="mt-1 text-xs font-semibold text-red-500">
+              {errors.contactNumber.message}
+            </p>
+          )}
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Email Address</label>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+            Email Address
+          </label>
           <div className="relative">
             <Input
               {...register("email")}
@@ -218,47 +273,98 @@ const RegisterForm = () => {
               error={!!errors.email}
             />
           </div>
-          {errors.email && <p className="text-xs font-semibold text-red-500 mt-1">{errors.email.message}</p>}
+          {errors.email && (
+            <p className="mt-1 text-xs font-semibold text-red-500">
+              {errors.email.message}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Password</label>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Password
+            </label>
             <Input
               {...register("password")}
               type="password"
               placeholder="••••••••"
               error={!!errors.password}
             />
-            {errors.password && <p className="text-xs font-semibold text-red-500 mt-1">{errors.password.message}</p>}
+            {errors.password && (
+              <p className="mt-1 text-xs font-semibold text-red-500">
+                {errors.password.message}
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">Confirm</label>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Confirm
+            </label>
             <Input
               {...register("confirmPassword")}
               type="password"
               placeholder="••••••••"
               error={!!errors.confirmPassword}
             />
-            {errors.confirmPassword && <p className="text-xs font-semibold text-red-500 mt-1">{errors.confirmPassword.message}</p>}
+            {errors.confirmPassword && (
+              <p className="mt-1 text-xs font-semibold text-red-500">
+                {errors.confirmPassword.message}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Captcha bypassed
-        <div className="flex flex-col items-center pt-2">
-          <ReCAPTCHA
-            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"} // Default to test key
-            onChange={(token) => setValue('recaptchaToken', token || "")}
-          />
-          {errors.recaptchaToken && <p className="text-xs font-semibold text-red-500 mt-2">{errors.recaptchaToken.message}</p>}
+        <div className="mt-4 mb-2 flex items-start gap-3">
+          <div className="pt-0.5">
+            <input
+              type="checkbox"
+              id="acceptTerms"
+              {...register("acceptTerms")}
+              className="border-theme-accent/20 text-theme-action focus:ring-theme-action/20 bg-theme-element-sec h-4 w-4 rounded"
+            />
+          </div>
+          <div className="flex-1">
+            <label htmlFor="acceptTerms" className="text-foreground/70 text-sm">
+              I agree to the{" "}
+              <button
+                type="button"
+                onClick={() => setIsTermsModalOpen(true)}
+                className="text-theme-action font-bold hover:underline"
+              >
+                Terms and Conditions
+              </button>
+            </label>
+            {errors.acceptTerms && (
+              <p className="mt-1 text-xs font-semibold text-red-500">
+                {errors.acceptTerms.message}
+              </p>
+            )}
+          </div>
         </div>
-        */}
+
+        <div className="flex w-full flex-col items-stretch pt-1 [&>div]:w-full [&>div>iframe]:!w-full">
+          <Turnstile
+            siteKey={
+              process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
+              "0x4AAAAAADn3TrbiqdzPMzAM"
+            }
+            onSuccess={(token) => setValue("turnstileToken", token || "")}
+            options={{ size: "flexible" }}
+            style={{ width: "100%" }}
+          />
+          {errors.turnstileToken && (
+            <p className="mt-1 text-center text-xs font-semibold text-red-500">
+              {errors.turnstileToken.message}
+            </p>
+          )}
+        </div>
 
         <Button
           type="submit"
           disabled={isRegisterPending}
           fullWidth
-          className="mt-2 py-3.5 bg-[#111] dark:bg-white hover:bg-black text-white dark:text-gray-900 hover:text-white border-0 shadow-sm"
+          className="mt-1"
         >
           {isRegisterPending ? (
             <Loader2 className="animate-spin" size={18} />
@@ -271,40 +377,149 @@ const RegisterForm = () => {
         </Button>
       </form>
 
-      <div className="relative mt-8 mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-100 dark:border-white/10"></div>
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="px-3 bg-white dark:bg-[#0a0a0a] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">
-            Or continue with
-          </span>
-        </div>
-      </div>
-
-      <Button
-        variant="ghost"
-        type="button"
-        fullWidth
-        className="py-3 border border-gray-200 dark:border-white/10"
-      >
-        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-        </svg>
-        Google
-      </Button>
-
-      <div className="mt-8 text-center">
+      <div className="mt-4 text-center">
         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
           Already a member?{" "}
-          <Link href="/login" className="text-gray-900 dark:text-white font-bold hover:underline">
+          <Link
+            href="/login"
+            className="font-bold text-gray-900 hover:underline dark:text-white"
+          >
             Login here
           </Link>
         </p>
       </div>
+
+      <Modal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+        title="Terms and Conditions"
+      >
+        <div className="prose prose-sm dark:prose-invert">
+          <p className="mb-4 font-bold">Last Updated: June 20, 2026</p>
+          <p className="mb-6">
+            Website/Platform:{" "}
+            <Link
+              href="https://minimalistic-learning.onrender.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-theme-action font-bold hover:underline"
+            >
+              https://minimalistic-learning.onrender.com/
+            </Link>
+          </p>
+
+          <h3 className="text-foreground mt-6 mb-2 font-black">
+            1. Acceptance of Terms & Global Compliance
+          </h3>
+          <p>
+            <strong>Binding Agreement:</strong> By accessing, signing up, or
+            utilizing this website, you explicitly agree to comply with and be
+            bound by these Terms and Conditions. If you disagree with any part,
+            you must cease using our services immediately.
+          </p>
+          <p>
+            <strong>Regulatory Compliance:</strong> This platform operates under
+            global privacy framework guidelines, including the GDPR (General
+            Data Protection Regulation) for UK/EU users, and the Digital
+            Personal Data Protection (DPDP) Act / Information Technology Act for
+            Indian users.
+          </p>
+
+          <h3 className="text-foreground mt-6 mb-2 font-black">
+            2. User Accounts & Registration
+          </h3>
+          <p>
+            <strong>Eligibility:</strong> Users must be at least 13 years of age
+            (or 16 years within designated EU/UK jurisdictions) to establish an
+            authorized account.
+          </p>
+          <p>
+            <strong>Global Authentication:</strong> To serve a global audience,
+            the registration process requires a valid international contact
+            number accompanied by the respective country code.
+          </p>
+          <p>
+            <strong>Account Security:</strong> Users maintain sole
+            responsibility for safeguarding their login credentials. Any
+            unauthorized activity under your account must be reported
+            immediately.
+          </p>
+
+          <h3 className="text-foreground mt-6 mb-2 font-black">
+            3. Data Privacy, Storage & User Rights
+          </h3>
+          <p>
+            <strong>Data Processing:</strong> We securely collect minimal
+            required identifiers (Username, Email Address, Contact Number, and
+            IP Address) exclusively for operations and account maintenance.
+          </p>
+          <p>
+            <strong>Data Protection & Encryption:</strong> All captured data is
+            transmitted and stored securely using industrial-grade encryption
+            standards. We do not sell raw user databases.
+          </p>
+          <p>
+            <strong>Global Privacy Rights:</strong> Users retain absolute rights
+            regarding data access, rectification, portability, and the Right to
+            Erasure (Right to be Forgotten), allowing them to request permanent
+            deletion of their account records at any time.
+          </p>
+
+          <h3 className="text-foreground mt-6 mb-2 font-black">
+            4. Content Policy & Platform Integrity
+          </h3>
+          <p>
+            <strong>Media Standards:</strong> Users managing or posting blogs
+            are required to display or upload high-definition (HD) media.
+            Uploading copyrighted, defamatory, or unlawful material is strictly
+            forbidden.
+          </p>
+          <p>
+            <strong>System Security:</strong> Any attempt to compromise platform
+            integrity via malicious code injection, script execution, or
+            Cross-Site Scripting (XSS) testing/attacks on any input vector is an
+            absolute violation and will result in immediate termination.
+          </p>
+
+          <h3 className="text-foreground mt-6 mb-2 font-black">
+            5. Disclaimer of Warranties & Analytics
+          </h3>
+          <p>
+            <strong>Real-Time Data Accuracy:</strong> All statistical metrics,
+            dashboard analytics, and platform views are extracted and populated
+            in real-time. While we strive for system precision, we are not
+            liable for temporary data-sync or hosting propagation delays.
+          </p>
+          <p>
+            <strong>Limitation of Liability:</strong> The services are provided
+            on an "as-is" and "as-available" basis without warranties of any
+            kind.
+          </p>
+
+          <h3 className="text-foreground mt-6 mb-2 font-black">
+            6. Dispute Resolution & Official Support
+          </h3>
+          <p>
+            <strong>Governing Jurisdiction:</strong> These terms shall be
+            governed by applicable international cyber laws and local statutory
+            acts, without giving effect to conflict of law principles.
+          </p>
+          <p>
+            <strong>Corporate Support Desk:</strong> For general compliance
+            inquiries, technical reports, or data removal requests, users can
+            reach the administration directly through our formalized helpline:
+          </p>
+          <p>
+            <strong>Corporate Support Email:</strong>{" "}
+            <Link
+              href="mailto:Minimalisticlearning2024@gmail.com"
+              className="text-theme-action font-bold hover:underline"
+            >
+              Minimalisticlearning2024@gmail.com
+            </Link>
+          </p>
+        </div>
+      </Modal>
     </Card>
   );
 };

@@ -1,13 +1,13 @@
 import z from "zod";
 import { BaseListingSchema } from "./base-listing.schema";
 
-const Duration_Type = ["weeks", "months"];
+const Duration_Type = ["weeks", "months"] as const;
 const Stipend_Type = ["fixed", "performance_based", "unpaid"] as const;
 
 const stipendSchema = z
   .object({
     type: z.enum(Stipend_Type, {
-      error: "Stipend type is required",
+      required_error: "Stipend type is required",
     }),
     amount: z.preprocess(
       (val) =>
@@ -37,25 +37,30 @@ const durationSchema = z.object({
         ? undefined
         : Number(val),
     z
-      .number({ error: "Duration is required" })
+      .number({
+        invalid_type_error: "Duration is required",
+        required_error: "Duration is required",
+      })
       .min(1, "Duration must be at least 1"),
   ),
   unit: z.enum(Duration_Type, {
-    error: "Duration unit is required",
+    required_error: "Duration unit is required",
   }),
 });
 
-export const createInternshipSchema = BaseListingSchema.extend({
-  stipend: stipendSchema,
-  duration: durationSchema,
-  isPPO: z.boolean().default(false),
-  startDate: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || new Date(val) >= new Date(),
-      "Start date cannot be in the past",
-    ),
-});
+export const createInternshipSchema = BaseListingSchema.and(
+  z.object({
+    stipend: stipendSchema,
+    duration: durationSchema,
+    isPPO: z.boolean().default(false),
+    startDate: z
+      .string()
+      .optional()
+      .refine(
+        (val) => !val || new Date(val) >= new Date(),
+        "Start date cannot be in the past",
+      ),
+  }),
+);
 
 export type CreateInternshipFormData = z.infer<typeof createInternshipSchema>;

@@ -4,6 +4,13 @@ cd "$(dirname "$0")/.."
 # Create logs directory if it doesn't exist
 mkdir -p .husky/logs
 
+# Check if there are any staged files in this directory
+FRONTEND_DIR=$(git rev-parse --show-prefix)
+if ! git diff --cached --name-only | grep -q "^$FRONTEND_DIR"; then
+    echo "No frontend changes detected. Skipping frontend pre-commit checks."
+    exit 0
+fi
+
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'

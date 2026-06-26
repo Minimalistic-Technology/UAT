@@ -32,7 +32,7 @@ export const profileSchema = z.object({
           title: z.string().trim().min(3, "Title is required"),
           company: z.string().trim().min(3, "Company is required"),
           workType: z.enum(["wfo", "hybrid", "remote", "temporary_wfh"], {
-            error: "Work type is required",
+            required_error: "Work type is required",
           }),
           location: z.string().trim().optional(),
           startDate: z.string().min(1, "Start date is required"),

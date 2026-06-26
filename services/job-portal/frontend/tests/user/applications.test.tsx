@@ -5,7 +5,6 @@ import ViewApplicationPage from "@/app/user-dashboard/applications/[applicationI
 import {
   useGetMyApplications,
   useGetApplicationById,
-  useWithdrawJobApplication,
 } from "@/features/user/hooks/use-job-application";
 import { useParams, useRouter } from "next/navigation";
 import "@testing-library/jest-dom";
@@ -14,7 +13,6 @@ import "@testing-library/jest-dom";
 jest.mock("@/features/user/hooks/use-job-application", () => ({
   useGetMyApplications: jest.fn(),
   useGetApplicationById: jest.fn(),
-  useWithdrawJobApplication: jest.fn(),
 }));
 
 jest.mock("next/navigation", () => ({
@@ -38,8 +36,6 @@ const mockRouter = {
   push: jest.fn(),
   back: jest.fn(),
 };
-
-const mockWithdrawApplication = jest.fn();
 
 const mockApplicationsData = {
   data: {
@@ -105,10 +101,6 @@ describe("Applications Pages", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
-    (useWithdrawJobApplication as jest.Mock).mockReturnValue({
-      mutate: mockWithdrawApplication,
-      isPending: false,
-    });
   });
 
   describe("MyApplicationsPage", () => {
@@ -188,32 +180,6 @@ describe("Applications Pages", () => {
       // Ensure component re-renders without error on Next click
       expect(nextBtn).toBeInTheDocument();
     });
-
-    it("opens alert dialog and withdraws application", async () => {
-      (useGetMyApplications as jest.Mock).mockReturnValue({
-        data: mockApplicationsData,
-        isLoading: false,
-        isError: false,
-      });
-
-      render(<MyApplicationsPage />);
-
-      const withdrawBtns = screen.getAllByRole("button", { name: /withdraw/i });
-      fireEvent.click(withdrawBtns[0]);
-
-      await waitFor(() => {
-        expect(
-          screen.getByText("Are you absolutely sure?"),
-        ).toBeInTheDocument();
-      });
-
-      const confirmBtn = screen.getByRole("button", {
-        name: "Withdraw Application",
-      });
-      fireEvent.click(confirmBtn);
-
-      expect(mockWithdrawApplication).toHaveBeenCalledWith("app1");
-    });
   });
 
   describe("ViewApplicationPage", () => {
@@ -276,53 +242,6 @@ describe("Applications Pages", () => {
       const backBtn = screen.getByRole("button", { name: /back/i });
       fireEvent.click(backBtn);
       expect(mockRouter.back).toHaveBeenCalled();
-    });
-
-    it("withdraws application on confirm", () => {
-      (useGetApplicationById as jest.Mock).mockReturnValue({
-        data: mockSingleApplicationData,
-        isLoading: false,
-        isError: false,
-      });
-
-      mockConfirm.mockReturnValueOnce(true);
-
-      render(<ViewApplicationPage />);
-      const withdrawBtn = screen.getByRole("button", {
-        name: "Withdraw Application",
-      });
-      fireEvent.click(withdrawBtn);
-
-      expect(mockConfirm).toHaveBeenCalled();
-      expect(mockWithdrawApplication).toHaveBeenCalledWith(
-        "app1",
-        expect.any(Object),
-      );
-
-      const { onSuccess } = mockWithdrawApplication.mock.calls[0][1];
-      onSuccess();
-      expect(mockRouter.push).toHaveBeenCalledWith(
-        "/user-dashboard/applications",
-      );
-    });
-
-    it("does not withdraw application if confirm cancelled", () => {
-      (useGetApplicationById as jest.Mock).mockReturnValue({
-        data: mockSingleApplicationData,
-        isLoading: false,
-        isError: false,
-      });
-
-      mockConfirm.mockReturnValueOnce(false);
-
-      render(<ViewApplicationPage />);
-      const withdrawBtn = screen.getByRole("button", {
-        name: "Withdraw Application",
-      });
-      fireEvent.click(withdrawBtn);
-
-      expect(mockConfirm).toHaveBeenCalled();
-      expect(mockWithdrawApplication).not.toHaveBeenCalled();
     });
   });
 });

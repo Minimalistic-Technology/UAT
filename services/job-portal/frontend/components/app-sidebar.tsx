@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   LayoutDashboard,
   Users,
@@ -35,6 +36,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSkeleton,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -117,7 +119,8 @@ export const userMenuItems = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
-  const { session, isAdmin, isEmployer, isJobSeeker } = useNavSession();
+  const { session, isAdmin, isEmployer, isJobSeeker, isLoading } =
+    useNavSession();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
 
@@ -161,79 +164,128 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       className="bg-background/80 z-40 border-r shadow-sm backdrop-blur-xl"
     >
       <SidebarHeader className="border-border/50 flex h-16 justify-center border-b px-4">
-        <div className="flex h-full w-full items-center justify-between">
+        <AnimatePresence mode="wait">
           {!isCollapsed ? (
-            <>
+            <motion.div
+              key="expanded-header"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+              className="flex h-full w-full items-center justify-between"
+            >
               <Logo />
               <SidebarTrigger />
-            </>
+            </motion.div>
           ) : (
-            <div className="flex w-full items-center justify-center">
+            <motion.div
+              key="collapsed-header"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.2 }}
+              className="flex h-full w-full items-center justify-center"
+            >
               <SidebarTrigger />
-            </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-4">
         <SidebarMenu>
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <SidebarMenuItem key={item.label}>
-                <SidebarMenuButton
-                  asChild
-                  tooltip={item.label}
-                  isActive={isActive}
-                  className="font-medium"
-                >
-                  <Link
-                    href={item.href}
-                    onClick={() => {
-                      if (isMobile) {
-                        setOpenMobile(false);
-                      }
-                    }}
-                  >
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, index) => (
+              <SidebarMenuItem key={index}>
+                <SidebarMenuSkeleton showIcon />
               </SidebarMenuItem>
-            );
-          })}
+            ))
+          ) : (
+            <AnimatePresence>
+              {menuItems.map((item, index) => {
+                const isActive = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.label}>
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                    >
+                      <SidebarMenuButton
+                        asChild
+                        tooltip={item.label}
+                        isActive={isActive}
+                        className="font-medium"
+                      >
+                        <Link
+                          href={item.href}
+                          onClick={() => {
+                            if (isMobile) {
+                              setOpenMobile(false);
+                            }
+                          }}
+                        >
+                          <item.icon />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </motion.div>
+                  </SidebarMenuItem>
+                );
+              })}
+            </AnimatePresence>
+          )}
         </SidebarMenu>
 
         {isEmployer && (
           <div className="mt-auto px-2">
-            {isCollapsed ? (
-              <Link
-                href="/employer-dashboard/plans"
-                className="flex aspect-square w-full items-center justify-center rounded-xl bg-[#2563eb] text-white transition hover:bg-blue-700"
-              >
-                <Sparkles className="h-5 w-5" />
-              </Link>
-            ) : (
-              <div className="relative space-y-3 overflow-hidden rounded-xl bg-[#2563eb] p-4 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_4px_25px_rgba(37,99,235,0.5)]">
-                <div className="pointer-events-none absolute -top-6 -right-6 size-24 rounded-full bg-white/10 blur-2xl"></div>
-                <div className="relative z-10 flex flex-col gap-1">
-                  <span className="text-[10px] font-extrabold tracking-widest text-blue-100 uppercase drop-shadow-sm">
-                    Premium
-                  </span>
-                  <span className="font-heading text-lg leading-tight font-bold">
-                    Upgrade to Pro
-                  </span>
-                </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  asChild
-                  className="relative z-10 h-9 w-full cursor-pointer rounded-lg bg-white px-0 font-bold text-[#2563eb] shadow-sm hover:bg-slate-50"
+            <AnimatePresence mode="wait">
+              {isCollapsed ? (
+                <motion.div
+                  key="collapsed"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <Link href="/employer-dashboard/plans">Get Access</Link>
-                </Button>
-              </div>
-            )}
+                  <Link
+                    href="/employer-dashboard/plans"
+                    className="flex aspect-square w-full items-center justify-center rounded-xl bg-[#2563eb] text-white transition hover:bg-blue-700"
+                  >
+                    <Sparkles className="h-5 w-5" />
+                  </Link>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="expanded"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="relative space-y-3 overflow-hidden rounded-xl bg-[#2563eb] p-4 text-white shadow-[0_4px_20px_rgba(37,99,235,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_4px_25px_rgba(37,99,235,0.5)]">
+                    <div className="pointer-events-none absolute -top-6 -right-6 size-24 rounded-full bg-white/10 blur-2xl"></div>
+                    <div className="relative z-10 flex flex-col gap-1">
+                      <span className="text-[10px] font-extrabold tracking-widest text-blue-100 uppercase drop-shadow-sm">
+                        Premium
+                      </span>
+                      <span className="font-heading text-lg leading-tight font-bold">
+                        Upgrade to Pro
+                      </span>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      asChild
+                      className="relative z-10 h-9 w-full cursor-pointer rounded-lg bg-white px-0 font-bold text-[#2563eb] shadow-sm hover:bg-slate-50"
+                    >
+                      <Link href="/employer-dashboard/plans">Get Access</Link>
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </SidebarContent>

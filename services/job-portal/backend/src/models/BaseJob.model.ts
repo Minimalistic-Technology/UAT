@@ -185,6 +185,7 @@ export interface IBaseJob extends Document {
   viewsCount: number;
   opportunityType: OpportunityType;
   isDeleted: boolean;
+  embedding?: number[];
 }
 
 export const baseJobSchemaDefinition: SchemaDefinition<
@@ -297,5 +298,9 @@ export const baseJobSchemaDefinition: SchemaDefinition<
   isDeleted: {
     type: Boolean,
     default: false,
+  },
+  embedding: {
+    type: [Number],
+    select: false, // Do not fetch by default
   },
 };

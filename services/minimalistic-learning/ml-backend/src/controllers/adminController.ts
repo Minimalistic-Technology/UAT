@@ -6,6 +6,7 @@ import { ApiError } from '../utils/ApiError';
 import { ApiResponse } from '../utils/ApiResponse';
 import { sendPostApprovedEmail, sendPostRejectedEmail, sendPostDeletedEmail } from '../utils/email';
 import { env } from '../config/env';
+import CacheService from '../config/redis';
 
 // SQLite-compatible string constants (replaces Prisma enums)
 const POST_STATUS = { pending: 'pending', published: 'published', rejected: 'rejected' } as const;
@@ -80,6 +81,8 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
       resourceHubEnabled: typeof resourceHubEnabled === 'boolean' ? resourceHubEnabled : true
     }
   });
+
+  await CacheService.deleteExact('public:settings');
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, {
@@ -395,6 +398,8 @@ export const updateSiteContent = asyncHandler(async (req: Request, res: Response
     }
   });
 
+  await CacheService.deleteExact(`public:content:${page}`);
+
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, updatedContent, 'Site content updated successfully')
   );
@@ -421,6 +426,8 @@ export const addTeamMember = asyncHandler(async (req: Request, res: Response) =>
     data: { name, role, bio, image, github, twitter, linkedin, order: order || 0 }
   });
 
+  await CacheService.deleteExact('public:team');
+
   return res.status(StatusCodes.CREATED).json(
     new ApiResponse(StatusCodes.CREATED, newMember, 'Team member added successfully')
   );
@@ -438,6 +445,8 @@ export const updateTeamMember = asyncHandler(async (req: Request, res: Response)
     data: { name, role, bio, image, github, twitter, linkedin, order }
   });
 
+  await CacheService.deleteExact('public:team');
+
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, updatedMember, 'Team member updated successfully')
   );
@@ -450,6 +459,8 @@ export const deleteTeamMember = asyncHandler(async (req: Request, res: Response)
   if (!existing) throw new ApiError(StatusCodes.NOT_FOUND, 'Team member not found');
 
   await (prisma as any).teamMember.delete({ where: { id } });
+
+  await CacheService.deleteExact('public:team');
 
   return res.status(StatusCodes.OK).json(
     new ApiResponse(StatusCodes.OK, null, 'Team member removed successfully')

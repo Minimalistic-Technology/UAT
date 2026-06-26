@@ -111,8 +111,8 @@ export const getListingsByStatus = async (
   next: NextFunction,
 ) => {
   try {
-    const status = req.query.status;
-    const jobStatus = status ?? JobStatus.PENDING;
+    const status = req.query.status as string;
+    const jobStatus = status ? (status as JobStatus) : JobStatus.PENDING;
 
     const { page: currentPage, limit: pageSize } = getPagination(req.query);
     const skip = (currentPage - 1) * pageSize;
