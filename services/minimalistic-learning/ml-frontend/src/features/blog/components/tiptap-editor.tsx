@@ -6,6 +6,8 @@ import StarterKit from "@tiptap/starter-kit";
 import UnderlineExtension from "@tiptap/extension-underline";
 import LinkExtension from "@tiptap/extension-link";
 import ImageExtension from "@tiptap/extension-image";
+import { TextStyle } from "@tiptap/extension-text-style";
+import { Extension } from "@tiptap/core";
 import {
   Bold,
   Italic,
@@ -15,6 +17,48 @@ import {
   Quote,
   Image as ImageIcon,
 } from "lucide-react";
+
+const FontSize = Extension.create({
+  name: "fontSize",
+  addOptions() {
+    return { types: ["textStyle"] };
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (element: any) =>
+              element.style.fontSize.replace(/['"]+/g, ""),
+            renderHTML: (attributes: any) => {
+              if (!attributes.fontSize) return {};
+              return { style: `font-size: ${attributes.fontSize}` };
+            },
+          },
+        },
+      },
+    ];
+  },
+  addCommands() {
+    return {
+      setFontSize:
+        (fontSize: string) =>
+        ({ chain }: { chain: any }) => {
+          return chain().setMark("textStyle", { fontSize }).run();
+        },
+      unsetFontSize:
+        () =>
+        ({ chain }: { chain: any }) => {
+          return chain()
+            .setMark("textStyle", { fontSize: null })
+            .removeEmptyTextStyle()
+            .run();
+        },
+    } as any;
+  },
+});
 
 interface MenuBarProps {
   editor: any;
@@ -28,33 +72,34 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor, onAddImage }) => {
 
   return (
     <div className="bg-theme-element-sec border-theme-accent/10 sticky top-0 z-20 flex flex-wrap items-center gap-1.5 border-b p-3 px-4 backdrop-blur-md">
-      <select
-        onChange={(e) => {
-          const val = e.target.value;
-          if (val === "p") editor.chain().focus().setParagraph().run();
-          else if (val === "h1")
-            editor.chain().focus().toggleHeading({ level: 1 }).run();
-          else if (val === "h2")
-            editor.chain().focus().toggleHeading({ level: 2 }).run();
-          else if (val === "h3")
-            editor.chain().focus().toggleHeading({ level: 3 }).run();
-        }}
-        value={
-          editor.isActive("heading", { level: 1 })
-            ? "h1"
-            : editor.isActive("heading", { level: 2 })
-              ? "h2"
-              : editor.isActive("heading", { level: 3 })
-                ? "h3"
-                : "p"
-        }
-        className="bg-theme-element text-foreground/90 border-theme-accent/20 hover:border-theme-accent/40 cursor-pointer rounded-xl border px-3 py-2 font-sans text-xs font-bold transition-all outline-none"
-      >
-        <option value="p">Normal Text</option>
-        <option value="h1">Heading 1</option>
-        <option value="h2">Heading 2</option>
-        <option value="h3">Heading 3</option>
-      </select>
+      <div className="flex items-center">
+        <input
+          type="number"
+          list="fontSizes"
+          className="bg-theme-element text-foreground/90 border-theme-accent/20 hover:border-theme-accent/40 focus:ring-theme-action w-[70px] rounded-xl border px-2 py-1.5 text-center text-xs font-bold transition-all outline-none focus:ring-1"
+          placeholder="16"
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val && !isNaN(Number(val))) {
+              editor.chain().focus().setFontSize(`${val}px`).run();
+            }
+          }}
+          defaultValue={16}
+        />
+        <span className="text-foreground/50 mr-2 ml-1 text-[10px] font-bold uppercase">
+          pt
+        </span>
+        <datalist id="fontSizes">
+          <option value="10"></option>
+          <option value="12"></option>
+          <option value="14"></option>
+          <option value="16"></option>
+          <option value="18"></option>
+          <option value="20"></option>
+          <option value="24"></option>
+          <option value="32"></option>
+        </datalist>
+      </div>
       <div className="bg-theme-accent/15 mx-1 h-5 w-[1px]" />
 
       <button
@@ -206,6 +251,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   const editor = useEditor({
     extensions: [
       StarterKit,
+      TextStyle,
+      FontSize,
       UnderlineExtension,
       LinkExtension.configure({
         openOnClick: false,
