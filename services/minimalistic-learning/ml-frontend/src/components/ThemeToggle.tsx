@@ -5,39 +5,46 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
 export function ThemeToggle() {
- const [mounted, setMounted] = useState(false);
- const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
- useEffect(() => {
- setMounted(true);
- }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
- if (!mounted) {
- return <div className="w-[68px] h-8" />;
- }
+  if (!mounted) {
+    return <div className="h-8 w-[68px]" />;
+  }
 
- const isDark = resolvedTheme === "dark" || theme === "dark";
+  const isDark = resolvedTheme === "dark" || theme === "dark";
 
- return (
- <button
- onClick={() => setTheme(isDark ? "light" : "dark")}
- className="relative w-[68px] h-[34px] flex items-center bg-gray-200 dark:bg-gray-800 rounded-full p-1 transition-colors duration-500 focus:outline-none shadow-inner border border-gray-300 dark:border-gray-700 overflow-hidden"
- aria-label="Toggle theme"
- >
- <div
- className={`absolute w-[26px] h-[26px] rounded-full bg-white dark:bg-gray-950 shadow-[0_2px_10px_rgba(0,0,0,0.15)] dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)] transform transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex items-center justify-center ${isDark ? 'translate-x-[34px]' : 'translate-x-0'
- }`}
- >
- {isDark ? (
- <Moon size={14} className="text-[#1877F2]" />
- ) : (
- <Sun size={14} className="text-[#f59e0b]" />
- )}
- </div>
- <div className="w-full flex justify-between px-1 z-0 text-gray-400 dark:text-gray-500/80">
- <Sun size={14} className={isDark ? 'opacity-100 ml-[2px]' : 'opacity-0'} />
- <Moon size={14} className={isDark ? 'opacity-0' : 'opacity-100 mr-[2px]'} />
- </div>
- </button>
- );
+  return (
+    <button
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="relative flex h-[34px] w-[68px] items-center overflow-hidden rounded-full border border-gray-300 bg-gray-200 p-1 shadow-inner transition-colors duration-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
+      aria-label="Toggle theme"
+    >
+      <div
+        className={`absolute flex h-[26px] w-[26px] transform items-center justify-center rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.15)] transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] dark:bg-gray-950 dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)] ${
+          isDark ? "translate-x-[34px]" : "translate-x-0"
+        }`}
+      >
+        {isDark ? (
+          <Moon size={14} className="text-[#1877F2]" />
+        ) : (
+          <Sun size={14} className="text-[#f59e0b]" />
+        )}
+      </div>
+      <div className="z-0 flex w-full justify-between px-1 text-gray-400 dark:text-gray-500/80">
+        <Sun
+          size={14}
+          className={isDark ? "ml-[2px] opacity-100" : "opacity-0"}
+        />
+        <Moon
+          size={14}
+          className={isDark ? "opacity-0" : "mr-[2px] opacity-100"}
+        />
+      </div>
+    </button>
+  );
 }

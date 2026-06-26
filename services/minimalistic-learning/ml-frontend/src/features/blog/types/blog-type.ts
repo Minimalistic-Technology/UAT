@@ -4,72 +4,72 @@ import { blogSchema } from "../schema/blog-schema";
 export type BlogValues = z.infer<typeof blogSchema>;
 
 export interface BlogResponse {
- success: boolean;
- message: string;
- data: {
- _id: string;
- id?: string;
- title: string;
- slug: string;
- /** Full HTML content — only present on detail page, NOT on list endpoints */
- content?: string;
- excerpt?: string;
- coverImage?: {
- url: string;
- alt?: string;
- publicId?: string;
- };
- coverImageUrl?: string;
- tags: string[];
- /** Strip from list responses — only present on detail page */
- status?: "draft" | "published" | "pending";
- category?: string;
- /** Strip from list responses — only present on detail page */
- published?: boolean;
- authorId?: string | { _id?: string; firstName: string; lastName?: string };
- likesCount?: number;
- hasLiked?: boolean;
- readTime?: number;
- /** Only present on detail page */
- createdAt?: string;
- updatedAt?: string;
- };
+  success: boolean;
+  message: string;
+  data: {
+    _id: string;
+    id?: string;
+    title: string;
+    slug: string;
+    /** Full HTML content — only present on detail page, NOT on list endpoints */
+    content?: string;
+    excerpt?: string;
+    coverImage?: {
+      url: string;
+      alt?: string;
+      publicId?: string;
+    };
+    coverImageUrl?: string;
+    tags: string[];
+    /** Strip from list responses — only present on detail page */
+    status?: "draft" | "published" | "pending";
+    category?: string;
+    /** Strip from list responses — only present on detail page */
+    published?: boolean;
+    authorId?: string | { _id?: string; firstName: string; lastName?: string };
+    likesCount?: number;
+    hasLiked?: boolean;
+    readTime?: number;
+    /** Only present on detail page */
+    createdAt?: string;
+    updatedAt?: string;
+  };
 }
 
 export interface BlogListResponse {
- success: boolean;
- message: string;
- data: {
- items: BlogResponse["data"][];
- pagination: {
- total: number;
- totalPages: number;
- currentPage: number;
- limit: number;
- hasNextPage: boolean;
- hasPrevPage: boolean;
- };
- };
+  success: boolean;
+  message: string;
+  data: {
+    items: BlogResponse["data"][];
+    pagination: {
+      total: number;
+      totalPages: number;
+      currentPage: number;
+      limit: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  };
 }
 
 export interface Comment {
- _id: string;
- postId: string;
- authorId: {
- _id: string;
- firstName: string;
- lastName: string;
- };
- content: string;
- likesCount: number;
- hasLiked: boolean;
- parentId: string | null;
- createdAt: string;
- updatedAt: string;
+  _id: string;
+  postId: string;
+  authorId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
+  content: string;
+  likesCount: number;
+  hasLiked: boolean;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CommentListResponse {
- success: boolean;
- message: string;
- data: Comment[];
+  success: boolean;
+  message: string;
+  data: Comment[];
 }

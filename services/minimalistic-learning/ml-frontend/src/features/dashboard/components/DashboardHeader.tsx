@@ -12,21 +12,20 @@ const DashboardHeader = ({ user, isAdmin }: Props) => {
   return (
     <div className="relative mb-6 overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-8">
       {/* Background Decor */}
-      <div className="pointer-events-none absolute top-0 right-0 h-64 w-64 translate-x-1/3 -translate-y-1/2 rounded-full bg-gradient-to-br from-[#1877F2]/10 to-[#1877F2]/5 blur-3xl" />
+      <div className="pointer-events-none absolute top-0 right-0 h-64 w-64 translate-x-1/3 -translate-y-1/2 rounded-full bg-linear-to-br from-[#1877F2]/10 to-[#1877F2]/5 blur-3xl" />
       {isAdmin && (
-        <div className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 -translate-x-1/4 translate-y-1/3 rounded-full bg-gradient-to-tr from-red-500/10 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 -translate-x-1/4 translate-y-1/3 rounded-full bg-linear-to-tr from-red-500/10 to-transparent blur-3xl" />
       )}
 
       <div className="relative z-10 flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
         <div>
           <div className="mb-3 flex items-center gap-3">
-            {isAdmin && (
+            {isAdmin ? (
               <div className="flex items-center gap-1.5 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-[10px] font-black tracking-widest text-red-600 uppercase shadow-sm">
                 <ShieldAlert size={12} />
                 <span>Admin Privileges</span>
               </div>
-            )}
-            {!isAdmin && (
+            ) : (
               <div className="flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[10px] font-black tracking-widest text-[#1877F2] uppercase shadow-sm">
                 <Star size={12} />
                 <span>Member</span>
@@ -37,7 +36,7 @@ const DashboardHeader = ({ user, isAdmin }: Props) => {
             Welcome back,
             <br />
             <span
-              className={`bg-clip-text text-transparent ${isAdmin ? "bg-gradient-to-r from-red-600 to-red-400" : "bg-gradient-to-r from-[#1877F2] to-blue-400"}`}
+              className={`bg-clip-text text-transparent ${isAdmin ? "bg-linear-to-r from-red-600 to-red-400" : "bg-linear-to-r from-[#1877F2] to-blue-400"}`}
             >
               {user?.firstName} {user?.lastName}
             </span>
