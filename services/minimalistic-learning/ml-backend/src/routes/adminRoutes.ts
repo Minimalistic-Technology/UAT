@@ -17,9 +17,7 @@ import {
   togglePermission,
   deletePermission,
   updateSiteContent,
-  getNewsletterSubscribers,
-  getDatabaseTables,
-  executeDatabaseQuery
+  getNewsletterSubscribers
 } from '../controllers/adminController';
 
 const router = Router();
@@ -58,8 +56,5 @@ import { addTeamMember, updateTeamMember, deleteTeamMember } from '../controller
 router.post('/team', checkDbPermission, addTeamMember);
 router.put('/team/:id', checkDbPermission, updateTeamMember);
 router.delete('/team/:id', checkDbPermission, deleteTeamMember);
-// Database Management Studio
-router.get('/db/tables', checkDbPermission, getDatabaseTables);
-router.post('/db/query', checkDbPermission, executeDatabaseQuery);
 
 export default router;
