@@ -7,6 +7,14 @@ export type { AxiosError };
 // API rewrites. Therefore, we must ALWAYS hit the exact absolute API base URL directly.
 const getBaseURL = () => {
   const rawURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+  if (
+    process.env.NODE_ENV === "production" &&
+    rawURL === "http://localhost:5001"
+  ) {
+    console.error(
+      "⚠️ CRITICAL MISSING ENV: NEXT_PUBLIC_API_URL is not set for production. API calls will fail hitting localhost.",
+    );
+  }
   return rawURL.endsWith("/api/v1") ? rawURL : `${rawURL}/api/v1`;
 };
 const baseURL = getBaseURL();

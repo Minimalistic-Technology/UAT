@@ -249,6 +249,35 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   blogDataContent,
 }) => {
   const editor = useEditor({
+    editorProps: {
+      handlePaste: (view, event) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        const hasImage = items.some((item) => item.type.indexOf("image") === 0);
+        if (hasImage) {
+          event.preventDefault();
+          alert(
+            "Pasting images directly is disabled to save server space. Please use the 'Insert Image' button to upload.",
+          );
+          return true;
+        }
+        return false;
+      },
+      handleDrop: (view, event, slice, moved) => {
+        if (
+          !moved &&
+          event.dataTransfer &&
+          event.dataTransfer.files &&
+          event.dataTransfer.files.length > 0
+        ) {
+          event.preventDefault();
+          alert(
+            "Dropping images directly is disabled. Please use the 'Insert Image' button to upload.",
+          );
+          return true;
+        }
+        return false;
+      },
+    },
     extensions: [
       StarterKit,
       TextStyle,

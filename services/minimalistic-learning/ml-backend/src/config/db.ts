@@ -39,10 +39,6 @@ export const seedRoutePermissions = async () => {
     { path: '/api/v1/admin/permissions/:id/toggle', method: 'PATCH', role: 'admin', description: 'Toggle user route pattern status' },
     { path: '/api/v1/admin/permissions/:id', method: 'DELETE', role: 'admin', description: 'Remove dynamic route permission rule' },
 
-    // Database Studio (Admin only)
-    { path: '/api/v1/admin/db/tables', method: 'GET', role: 'admin', description: 'Get all database tables for SQLite' },
-    { path: '/api/v1/admin/db/query', method: 'POST', role: 'admin', description: 'Execute raw query against SQLite database' },
-
     // User Actions (Active for both Admin & User by default)
     { path: '/api/v1/posts', method: 'POST', role: 'user', description: 'Create and publish new blog posts' },
     { path: '/api/v1/posts', method: 'POST', role: 'admin', description: 'Create and publish new blog posts' },
