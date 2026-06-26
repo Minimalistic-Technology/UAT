@@ -1,4 +1,3 @@
-import React from "react";
 import { Button } from "@/components/ui/Button";
 import { Loader2 } from "lucide-react";
 
@@ -23,7 +22,7 @@ export const ModernSwitch = ({
   >
     <span className="sr-only">Toggle setting</span>
     <span
-      className={`pointer-events-none absolute left-0.5 flex inline-block h-6 w-6 transform items-center justify-center rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${checked ? "translate-x-[30px]" : "translate-x-0"}`}
+      className={`pointer-events-none absolute left-0.5 inline-block h-6 w-6 transform items-center justify-center rounded-full bg-white shadow-md ring-0 transition-transform duration-300 ease-in-out ${checked ? "translate-x-[30px]" : "translate-x-0"}`}
     >
       {loading ? (
         <Loader2 size={12} className="text-theme-action animate-spin" />
