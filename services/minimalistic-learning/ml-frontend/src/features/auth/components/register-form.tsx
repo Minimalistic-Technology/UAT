@@ -343,16 +343,17 @@ const RegisterForm = () => {
           </div>
         </div>
 
-        <div className="flex w-full flex-col items-stretch pt-1 [&>div]:w-full [&>div>iframe]:!w-full">
-          <Turnstile
-            siteKey={
-              process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
-              "0x4AAAAAADn3TrbiqdzPMzAM"
-            }
-            onSuccess={(token) => setValue("turnstileToken", token || "")}
-            options={{ size: "flexible" }}
-            style={{ width: "100%" }}
-          />
+        <div className="flex w-full flex-col items-center justify-center overflow-hidden rounded-xl pt-1">
+          <div className="-ml-2 flex w-full origin-center scale-[0.95] transform justify-center sm:ml-0 sm:w-auto sm:transform-none">
+            <Turnstile
+              siteKey={
+                process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
+                "0x4AAAAAADn3TrbiqdzPMzAM"
+              }
+              onSuccess={(token) => setValue("turnstileToken", token || "")}
+              options={{ size: "flexible" }}
+            />
+          </div>
           {errors.turnstileToken && (
             <p className="mt-1 text-center text-xs font-semibold text-red-500">
               {errors.turnstileToken.message}
