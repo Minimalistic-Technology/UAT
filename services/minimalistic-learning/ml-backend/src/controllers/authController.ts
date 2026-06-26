@@ -57,7 +57,7 @@ const verifyTurnstile = async (token: string, secret: string) => {
       method: 'POST',
       body: formData,
     });
-    const data = await res.json();
+    const data = (await res.json()) as any;
     return data.success;
   } catch (err) {
     console.error('Turnstile verification error:', err);
