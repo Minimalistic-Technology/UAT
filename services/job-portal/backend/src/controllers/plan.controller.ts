@@ -101,14 +101,14 @@ export const updatePlan = async (
         id,
         { ...updateData, isDefault: true },
         {
-          new: true,
+          returnDocument: "after",
           runValidators: true,
           session,
         },
       );
     } else {
       plan = await Plan.findByIdAndUpdate(id, updateData, {
-        new: true,
+        returnDocument: "after",
         runValidators: true,
         session,
       });

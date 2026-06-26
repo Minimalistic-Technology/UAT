@@ -20,6 +20,16 @@ export interface IUser extends Document {
   // Job Seeker Specific
   resume?: ICloudinaryAsset;
   resumeOriginalName?: string;
+  atsScore?: {
+    overallScore: number;
+    sectionScore: number;
+    formattingScore: number;
+    keywordScore: number;
+    contentScore: number;
+    sectionsFound: string[];
+    sectionsMissing: string[];
+    matchedKeywords: string[];
+  };
   skills?: string[];
   languages?: string[];
   experience?: Array<{
@@ -110,6 +120,16 @@ const userSchema = new Schema<IUser>(
     // Job Seeker Fields
     resume: cloudinaryAssetSchema,
     resumeOriginalName: String,
+    atsScore: {
+      overallScore: Number,
+      sectionScore: Number,
+      formattingScore: Number,
+      keywordScore: Number,
+      contentScore: Number,
+      sectionsFound: [String],
+      sectionsMissing: [String],
+      matchedKeywords: [String],
+    },
     skills: [String],
     languages: [String],
     experience: [

@@ -156,6 +156,7 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const currentResumeUrl = userData?.data?.resume?.url;
   const currentResumeName = userData?.data?.resumeOriginalName;
+  const atsScore = userData?.data?.atsScore;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -190,6 +191,24 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
                     >
                       View Current Resume
                     </a>
+                    
+                    {atsScore && (
+                      <div className="mt-3 flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-700">ATS Score:</span>
+                          <Badge 
+                            variant={atsScore.overallScore >= 70 ? "default" : atsScore.overallScore >= 40 ? "secondary" : "destructive"}
+                          >
+                            {atsScore.overallScore}/100
+                          </Badge>
+                        </div>
+                        {atsScore.sectionsMissing && atsScore.sectionsMissing.length > 0 && (
+                          <p className="text-xs text-orange-600 font-medium">
+                            Missing Sections: {atsScore.sectionsMissing.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (

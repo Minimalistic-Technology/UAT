@@ -99,6 +99,23 @@ export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
                     <p className="text-sm font-semibold text-slate-900">
                       {user.resumeOriginalName || "Resume.pdf"}
                     </p>
+                    {user.atsScore && (
+                      <div className="mt-2 flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-700">ATS Score:</span>
+                          <Badge 
+                            variant={user.atsScore.overallScore >= 70 ? "default" : user.atsScore.overallScore >= 40 ? "secondary" : "destructive"}
+                          >
+                            {user.atsScore.overallScore}/100
+                          </Badge>
+                        </div>
+                        {user.atsScore.sectionsMissing && user.atsScore.sectionsMissing.length > 0 && (
+                          <p className="text-xs text-orange-600 font-medium">
+                            Missing Sections: {user.atsScore.sectionsMissing.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

@@ -340,7 +340,7 @@ export const updateCompany = async (
 
     // Use company._id instead of req.params.id since this is the /me route
     company = await Company.findByIdAndUpdate(company._id, req.body, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 
@@ -509,7 +509,7 @@ export const uploadCompanyLogo = async (
           publicId: result.public_id,
         },
       },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     res

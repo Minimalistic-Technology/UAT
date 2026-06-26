@@ -331,7 +331,7 @@ export const updateInternship = async (
     }
 
     internship = await Internship.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 

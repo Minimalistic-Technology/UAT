@@ -329,7 +329,7 @@ export const updateJob = async (
     }
 
     job = await Job.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 
