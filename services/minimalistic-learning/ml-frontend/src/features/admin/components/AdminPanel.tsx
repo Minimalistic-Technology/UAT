@@ -40,7 +40,7 @@ const AdminPanel = () => {
           </div>
           <div>
             <h2 className="text-foreground text-2xl font-black tracking-tight">
-              System & DB Administration
+              System Administration
             </h2>
             <p className="text-foreground/50 text-xs font-bold tracking-widest uppercase">
               Admin Dashboard Engine
