@@ -110,6 +110,16 @@ export type User = {
   avatar?: CloudinaryAsset;
   resume?: CloudinaryAsset;
   resumeOriginalName?: string;
+  atsScore?: {
+    overallScore: number;
+    sectionScore: number;
+    formattingScore: number;
+    keywordScore: number;
+    contentScore: number;
+    sectionsFound: string[];
+    sectionsMissing: string[];
+    matchedKeywords: string[];
+  };
   skills?: string[];
   languages?: string[];
   experience?: ProfessionalExperience[];

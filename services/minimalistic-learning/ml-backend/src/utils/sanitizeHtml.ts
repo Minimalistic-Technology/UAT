@@ -19,7 +19,7 @@ export const cleanHtml = (dirty: string) => {
             'code': ['class'],
             'span': ['style'],
             'p': ['style', 'class'],
-            '*': ['class', 'id']
+            '*': ['class', 'id', 'style']
         },
         allowedSchemes: ['http', 'https', 'ftp', 'mailto'],
         allowedSchemesByTag: {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Settings2,
   Newspaper,
@@ -15,24 +15,19 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
-import { DatabaseStudio } from "./DatabaseStudio";
-import SystemTab from "./tabs/SystemTab";
-import PermissionsTab from "./tabs/PermissionsTab";
-import UsersTab from "./tabs/UsersTab";
-import HomepageTab from "./tabs/HomepageTab";
-import SubscribersTab from "./tabs/SubscribersTab";
-import TeamTab from "./tabs/TeamTab";
+import {
+  SystemTab,
+  PermissionsTab,
+  UsersTab,
+  HomepageTab,
+  SubscribersTab,
+  TeamTab,
+} from "./tabs";
 
 const AdminPanel = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<
-    | "system"
-    | "permissions"
-    | "users"
-    | "homepage"
-    | "subscribers"
-    | "team"
-    | "database"
+    "system" | "permissions" | "users" | "homepage" | "subscribers" | "team"
   >("system");
 
   return (
@@ -177,35 +172,6 @@ const AdminPanel = () => {
           />
           Team Management
         </Button>
-
-        <Button
-          variant="none"
-          size="none"
-          onClick={() => setActiveTab("database")}
-          className={`flex items-center gap-2 pb-2 text-xs font-black tracking-widest uppercase transition-all sm:text-sm ${activeTab === "database" ? "text-theme-action border-theme-action scale-100 border-b-2" : "text-foreground/50 hover:text-foreground scale-95"}`}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={
-              activeTab === "database"
-                ? "text-theme-action"
-                : "text-foreground/45"
-            }
-          >
-            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-          </svg>
-          SQLite Studio
-        </Button>
       </div>
 
       {/* ── TAB CONTENT RENDERING ──────────────────────────────── */}
@@ -215,7 +181,6 @@ const AdminPanel = () => {
       {activeTab === "homepage" && <HomepageTab />}
       {activeTab === "subscribers" && <SubscribersTab />}
       {activeTab === "team" && <TeamTab />}
-      {activeTab === "database" && <DatabaseStudio />}
     </div>
   );
 };

@@ -71,7 +71,7 @@ export const applyCoupon = async (
         $inc: { usageCount: 1 },
         $addToSet: { usedBy: (req as any).user?._id },
       },
-      { new: true, session },
+      { returnDocument: "after", session },
     );
 
     if (!coupon) {

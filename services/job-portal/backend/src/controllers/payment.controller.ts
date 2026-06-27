@@ -136,7 +136,7 @@ export const createOrder = async (
           $inc: { usageCount: 1 },
           $addToSet: { usedBy: userId },
         },
-        { new: true, session },
+        { returnDocument: "after", session },
       );
 
       if (!appliedCoupon) {

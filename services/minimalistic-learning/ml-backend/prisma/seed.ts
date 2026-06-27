@@ -209,18 +209,7 @@ async function main() {
         "role": "admin",
         "description": "Like or unlike user comments"
     },
-    {
-        "path": "/api/v1/admin/db/tables",
-        "method": "GET",
-        "role": "admin",
-        "description": "Get all database tables for SQLite"
-    },
-    {
-        "path": "/api/v1/admin/db/query",
-        "method": "POST",
-        "role": "admin",
-        "description": "Execute raw query against SQLite database"
-    },
+
     {
         "path": "/api/v1/admin/content/:page/:section",
         "method": "PUT",

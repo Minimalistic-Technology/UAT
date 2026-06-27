@@ -11,6 +11,8 @@ import { ApiError } from "../utils/apiError.js";
 import {ALLOWED_MIME_TYPES_FOR_AVATAR, ALLOWED_MIME_TYPES_FOR_RESUME} from "../constants/index.js";
 import Subscription from "../models/Subscription.model.js";
 import CompanyMember from "../models/CompanyMember.model.js";
+import { extractText } from "../lib/ats/extract-text.js";
+import { scoreResume } from "../lib/ats/scrorer.js";
 
 export const updateProfile = async (
   req: AuthRequest,
@@ -45,7 +47,7 @@ export const updateProfile = async (
     );
 
     const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 
@@ -93,7 +95,7 @@ export const uploadAvatar = async (
           publicId: result.public_id,
         },
       },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     res
@@ -132,6 +134,14 @@ export const uploadResume = async (
       );
     }
 
+    let atsData = null;
+    try {
+      const text = await extractText(req.file.buffer, req.file.mimetype);
+      atsData = scoreResume(text);
+    } catch (e) {
+      console.error("Failed to calculate ATS score on resume upload:", e);
+    }
+
     const result = await uploadToCloudinary(
       req.file.buffer,
       "job_portal/resumes",
@@ -148,8 +158,9 @@ export const uploadResume = async (
           publicId: result.public_id,
         },
         resumeOriginalName: req.file.originalname,
+        ...(atsData ? { atsScore: atsData } : {}),
       },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     res.status(200).json(
@@ -158,6 +169,7 @@ export const uploadResume = async (
         {
           resumeUrl: updatedUser?.resume?.url,
           resumeOriginalName: updatedUser?.resumeOriginalName,
+          atsScore: atsData,
         },
         "Resume uploaded successfully",
       ),

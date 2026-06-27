@@ -239,6 +239,7 @@ export default function PermissionsTab() {
             />
           </div>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>

@@ -51,7 +51,7 @@ export const updateTestimonial = async (
     const updatedTestimonial = await Testimonial.findByIdAndUpdate(
       id,
       req.body,
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     ).populate("user");
 
     res
