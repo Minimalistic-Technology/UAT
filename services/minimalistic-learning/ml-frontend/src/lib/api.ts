@@ -6,6 +6,12 @@ export type { AxiosError };
 // Since we are using static HTML export (output: 'export'), we cannot use Next.js
 // API rewrites. Therefore, we must ALWAYS hit the exact absolute API base URL directly.
 const getBaseURL = () => {
+  // Option 1: Internal network routing (bypasses internet & WAF entirely when SSR runs)
+  if (typeof window === "undefined" && process.env.INTERNAL_API_URL) {
+    const rawURL = process.env.INTERNAL_API_URL;
+    return rawURL.endsWith("/api/v1") ? rawURL : `${rawURL}/api/v1`;
+  }
+
   const rawURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
   if (
     process.env.NODE_ENV === "production" &&
@@ -24,6 +30,15 @@ export const api = axios.create({
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
+    ...(typeof window === "undefined" && {
+      // General Fallback for basic WAF bot protection
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      // Option 2: Custom Enterprise Secret Token (add your token in .env)
+      ...(process.env.SSR_SECRET_TOKEN && {
+        "X-Nextjs-Origin-Token": process.env.SSR_SECRET_TOKEN,
+      }),
+    }),
   },
 });
 

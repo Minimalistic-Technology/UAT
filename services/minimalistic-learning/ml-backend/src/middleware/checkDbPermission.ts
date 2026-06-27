@@ -39,13 +39,17 @@ export const checkDbPermission = async (req: Request, _res: Response, next: Next
 
         if (permission) {
             if (!permission.isActive) {
-                console.warn(`[checkDbPermission] FEATURE OFF: role=${role}, method=${method}, fullPath=${fullPath}`);
-                return next(
-                    new ApiError(
-                        StatusCodes.SERVICE_UNAVAILABLE,
-                        `This feature is temporarily disabled by the administrator.`
-                    )
-                );
+                if (role === 'admin') {
+                    console.warn(`[checkDbPermission] Bypassing FEATURE OFF for ADMIN on: ${fullPath}`);
+                } else {
+                    console.warn(`[checkDbPermission] FEATURE OFF: role=${role}, method=${method}, fullPath=${fullPath}`);
+                    return next(
+                        new ApiError(
+                            StatusCodes.SERVICE_UNAVAILABLE,
+                            `This feature is temporarily disabled by the administrator.`
+                        )
+                    );
+                }
             }
             // If exists and active, allow passage
         } else {

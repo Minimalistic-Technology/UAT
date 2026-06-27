@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { prisma } from '../config/db';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -12,7 +12,6 @@ import CacheService from '../config/redis';
 const POST_STATUS = { pending: 'pending', published: 'published', rejected: 'rejected' } as const;
 const NOTIFICATION_TYPE = { post_deleted: 'post_deleted', post_approved: 'post_approved', post_rejected: 'post_rejected', general: 'general' } as const;
 
-// ─── DELETE /admin/posts/:postId ──────────────────────────────────────────────
 export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = req.params;
   const { reason } = req.body;
@@ -43,7 +42,6 @@ export const deletePostAdmin = asyncHandler(async (req: Request, res: Response) 
   );
 });
 
-// ─── GET /admin/settings ─────────────────────────────────────────────────────
 export const getSettings = asyncHandler(async (req: Request, res: Response) => {
   let setting = await prisma.siteSetting.findUnique({ where: { key: 'global' } });
   if (!setting) {
@@ -60,7 +58,6 @@ export const getSettings = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-// ─── PATCH /admin/settings ───────────────────────────────────────────────────
 export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
   const { autoApprovePost, resourceHubEnabled } = req.body;
 
@@ -92,7 +89,6 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
   );
 });
 
-// ─── GET /admin/posts/pending ────────────────────────────────────────────────
 export const getPendingPosts = asyncHandler(async (req: Request, res: Response) => {
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 20, 50);
@@ -127,7 +123,6 @@ export const getPendingPosts = asyncHandler(async (req: Request, res: Response) 
   );
 });
 
-// ─── GET /admin/posts/all ────────────────────────────────────────────────────
 export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response) => {
   const page = Math.max(Number(req.query.page) || 1, 1);
   const limit = Math.min(Number(req.query.limit) || 20, 50);
@@ -168,7 +163,6 @@ export const getAllPostsAdmin = asyncHandler(async (req: Request, res: Response)
   );
 });
 
-// ─── PATCH /admin/posts/:postId/approve ──────────────────────────────────────
 export const approvePost = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = req.params;
 
@@ -183,7 +177,6 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
   await prisma.notification.create({
     data: {
       recipientId: updatedPost.authorId,
-      title: 'Post Approved! 🎉',
       message: `Great news! Your post "${updatedPost.title}" has been approved and is now live on the platform.`,
       type: NOTIFICATION_TYPE.post_approved
     }
@@ -199,7 +192,6 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-// ─── PATCH /admin/posts/:postId/reject ───────────────────────────────────────
 export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
   const { postId } = req.params;
   const { reason = 'Did not meet content guidelines.' } = req.body;
@@ -230,7 +222,6 @@ export const rejectPost = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-// ─── USER CONTROLLER ENDPOINTS ────────────────────────────────────────────────
 export const listUsers = asyncHandler(async (req: Request, res: Response) => {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
@@ -293,7 +284,6 @@ export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
   );
 });
 
-// ─── ROUTE PERMISSIONS ENDPOINTS ──────────────────────────────────────────────
 export const listPermissions = asyncHandler(async (req: Request, res: Response) => {
   const permissions = await prisma.routePermission.findMany({
     orderBy: [{ role: 'asc' }, { path: 'asc' }]
@@ -374,7 +364,6 @@ export const deletePermission = asyncHandler(async (req: Request, res: Response)
   );
 });
 
-// ─── SITE CONTENT ENDPOINTS ──────────────────────────────────────────────────
 export const updateSiteContent = asyncHandler(async (req: Request, res: Response) => {
   const { page, section } = req.params;
   const { content } = req.body;
@@ -405,7 +394,6 @@ export const updateSiteContent = asyncHandler(async (req: Request, res: Response
   );
 });
 
-// ─── SUBSCRIBERS ENDPOINTS ──────────────────────────────────────────────────
 export const getNewsletterSubscribers = asyncHandler(async (req: Request, res: Response) => {
   const subscribers = await (prisma as any).subscriber.findMany({
     orderBy: { createdAt: 'desc' }
@@ -416,7 +404,6 @@ export const getNewsletterSubscribers = asyncHandler(async (req: Request, res: R
   );
 });
 
-// ─── TEAM ENDPOINTS ───────────────────────────────────────────────────────────
 export const addTeamMember = asyncHandler(async (req: Request, res: Response) => {
   const { name, role, bio, image, github, twitter, linkedin, order } = req.body;
 
@@ -466,5 +453,3 @@ export const deleteTeamMember = asyncHandler(async (req: Request, res: Response)
     new ApiResponse(StatusCodes.OK, null, 'Team member removed successfully')
   );
 });
-
-
