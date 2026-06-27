@@ -121,7 +121,7 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
   }
 
   return (
-    <div className="space-y-12">
+    <div className="flex flex-1 flex-col space-y-12">
       {!hideControls && (
         <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
           <div className="flex flex-wrap gap-2.5">
@@ -197,7 +197,7 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
           </button>
         </div>
       ) : (
-        <div className="space-y-16">
+        <div className="flex flex-1 flex-col space-y-16">
           <div className="grid grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {processedBlogs.map((blog) => (
               <BlogCard key={blog.id || blog._id} blog={blog} />
@@ -206,7 +206,7 @@ export const BlogList: React.FC<BlogListProps> = ({ limit, hideControls }) => {
 
           {/* Pagination Controls */}
           {!limit && paginationInfo && paginationInfo.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-8">
+            <div className="mt-auto flex items-center justify-center gap-2 pt-8">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={!paginationInfo.hasPrevPage}
