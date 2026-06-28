@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import Product from '../models/Product';
+import Hub from '../models/Hub';
+import WarehouseStock from '../models/WarehouseStock';
 import redisClient from '../config/redis';
 
 // Helper to invalidate all product caches instantly
@@ -12,32 +14,66 @@ const clearProductCache = async () => {
 };
 export const getProducts = async (req: Request, res: Response) => {
     try {
-        const { showOnHome } = req.query;
-        const cacheKey = showOnHome === 'true' ? 'products:home' : 'products:all';
+        const { showOnHome, pincode } = req.query;
+
+        let cacheKey = showOnHome === 'true' ? 'products:home' : 'products:all';
+        if (pincode) cacheKey = `products:pin:${pincode}:${showOnHome || 'all'}`;
 
         // 1. CACHE CHECK: Ask Redis first (Takes <1ms)
         let cachedProducts = null;
         try {
             cachedProducts = await redisClient.get(cacheKey);
             if (cachedProducts) {
-                // Cache Hit! Instantly return without touching Mongoose/MongoDB
                 return res.json(JSON.parse(cachedProducts));
             }
         } catch (redisErr) {
             console.error('Redis cache unavailable, falling back to MongoDB...');
         }
 
-        // 2. CACHE MISS or FALLBACK: Fetch from Mongo
+        // 2. FETCH BASE CATALOG
         const filter: any = {};
         if (showOnHome === 'true') {
             filter.showOnHome = true;
         }
 
-        const products = await Product.find(filter).sort({ createdAt: -1 }).populate('category', 'name');
+        let products: any = await Product.find(filter).sort({ createdAt: -1 }).populate('category', 'name');
 
-        // 3. STORE IN CACHE: Save it in Redis for the next 24 Hours
+        // 3. APPLY BLINKIT-STYLE HYPER-LOCAL STOCK LIMITS
+        if (pincode && typeof pincode === 'string') {
+            // Find which hub serves this pincode
+            const hub = await Hub.findOne({ pincodes: pincode.trim(), isActive: true });
+
+            if (hub) {
+                // Fetch physical rack stocks belonging to THIS hub only
+                const localStocks = await WarehouseStock.find({ warehouseName: hub.name });
+
+                products = products.map((prod: any) => {
+                    const prodObj = prod.toObject();
+                    // Calculate total stock for this product across all racks in this specific Hub
+                    const hubSpecificStockObj = localStocks.filter(s => s.product.toString() === prodObj._id.toString());
+                    const localizedAvailableQuantity = hubSpecificStockObj.reduce((sum, s) => sum + s.quantity, 0);
+
+                    prodObj.stock = localizedAvailableQuantity; // Override global DB stock with hyper-local reality
+                    prodObj.hubId = hub._id;
+                    prodObj.hubName = hub.name;
+                    prodObj.inStock = localizedAvailableQuantity > 0;
+                    return prodObj;
+                });
+            } else {
+                // If NO hub serves this pincode, everything is Out of Stock!
+                products = products.map((prod: any) => {
+                    const prodObj = prod.toObject();
+                    prodObj.stock = 0;
+                    prodObj.inStock = false;
+                    prodObj.unserviceable = true; // Flag for UI to say "We don't deliver here yet"
+                    return prodObj;
+                });
+            }
+        }
+
+        // 4. STORE IN CACHE
         try {
-            await redisClient.set(cacheKey, JSON.stringify(products), 'EX', 86400);
+            await redisClient.set(cacheKey, JSON.stringify(products), 'EX', 1800); // 30 min cache for local stock
         } catch (e) { }
 
         res.json(products);

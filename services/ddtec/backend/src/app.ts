@@ -51,7 +51,17 @@ app.use(morgan('dev'));
 // Database Connection
 // Only connect if MONGO_URI is present to avoid crashing on start without it
 if (process.env.MONGO_URI) {
-    connectDB();
+    connectDB().then(async () => {
+        try {
+            const RouteConfig = require('./models/RouteConfig').default;
+            await RouteConfig.updateOne(
+                { path: '/warehouse' },
+                { $set: { path: '/warehouse', name: 'Inventory & Warehouse', description: 'Blinkit-style Rack & Aisle Stock Management', isActive: true } },
+                { upsert: true }
+            );
+            console.log('[SYSTEM] Warehouse/Inventory Route strictly dynamically seeded!');
+        } catch (e) { console.error('Warehouse route seed error', e); }
+    });
 } else {
     console.warn('MONGO_URI not found. Database not connected.');
 }
