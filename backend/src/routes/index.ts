@@ -12,7 +12,9 @@ import categoryRoutes from './category.routes';
 import billRoutes from './bill.routes';
 import settingsRoutes from './settings';
 import dynamicRouteRoutes from './route.routes';
-
+import accountingRoutes from './accounting.route';
+import inventoryRoutes from './inventory.route';
+import hubRoutes from './hub.route';
 const router = Router();
 
 router.get('/', getHome);
@@ -29,5 +31,8 @@ router.use('/categories', categoryRoutes);
 router.use('/bills', billRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/dynamic-routes', dynamicRouteRoutes);
+router.use('/accounting', accountingRoutes);
+router.use('/inventory', inventoryRoutes);
+router.use('/hubs', hubRoutes);
 
 export default router;

@@ -10,7 +10,8 @@ export interface IUser extends Document {
     phone?: string;
     isPhoneVerified: boolean;
     password?: string;
-    role: 'user' | 'super_admin' | 'product_manager' | 'order_manager' | 'customer_support' | 'finance' | 'marketing' | 'admin' | 'warehouse';
+    role: 'user' | 'super_admin' | 'product_manager' | 'order_manager' | 'customer_support' | 'finance' | 'marketing' | 'admin' | 'warehouse' | 'accountant' | 'inventory_manager';
+    hubId?: mongoose.Types.ObjectId; // Bound location for warehouse staff
     customPages?: string[];
     editPages?: string[];
     addPages?: string[];
@@ -67,8 +68,12 @@ const UserSchema: Schema = new Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'super_admin', 'product_manager', 'order_manager', 'customer_support', 'finance', 'marketing', 'admin', 'warehouse'],
+        enum: ['user', 'super_admin', 'product_manager', 'order_manager', 'customer_support', 'finance', 'marketing', 'admin', 'warehouse', 'accountant', 'inventory_manager'],
         default: 'user'
+    },
+    hubId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Hub'
     },
     customPages: [{
         type: String

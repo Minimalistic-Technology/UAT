@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IProduct extends Document {
     name: string;
     price: number;
+    costPrice: number; // For accounting / COGS
     description: string;
     image: string;
     images: string[];
@@ -25,6 +26,7 @@ export interface IProduct extends Document {
 const ProductSchema: Schema = new Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true },
+    costPrice: { type: Number, default: 0 },
     description: { type: String },
     image: { type: String },
     images: { type: [String], default: [] },
