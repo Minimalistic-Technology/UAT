@@ -46,6 +46,9 @@ if (REDIS_URI) {
         maxRetriesPerRequest: 1,
         commandTimeout: 3000,
         lazyConnect: true,
+        retryStrategy(times) {
+            return null; // Do not reconnect if it fails (silent fallback)
+        }
     });
 
     let redisOk = false;
