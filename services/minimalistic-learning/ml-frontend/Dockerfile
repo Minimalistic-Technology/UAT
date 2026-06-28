@@ -20,8 +20,8 @@ RUN pnpm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV PORT 3000
+ENV NODE_ENV=production
+ENV PORT=3000
 
 # Copy minimum required public assets
 COPY --from=builder /app/public ./public

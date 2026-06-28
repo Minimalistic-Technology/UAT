@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export async function middleware(req: NextRequest) {
+export default async function middleware(req: NextRequest) {
   // Ignore static files and api routes to prevent loops
   if (
     req.nextUrl.pathname.startsWith("/_next") ||

@@ -14,7 +14,7 @@ COPY tsconfig.json ./
 COPY src ./src
 
 # Generate prisma client types and compile TypeScript to JS (dist)
-RUN pnpm dlx prisma generate && pnpm run build
+RUN pnpm exec prisma generate && pnpm run build
 
 # Prune dev dependencies to reduce build size of final image
 RUN pnpm prune --prod
