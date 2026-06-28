@@ -8,7 +8,7 @@ COPY package.json pnpm-lock.yaml .npmrc ./
 COPY prisma ./prisma
 
 # Install all dependencies (including devDependencies) to enable tsc and prisma build tooling
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 COPY tsconfig.json ./
 COPY src ./src
