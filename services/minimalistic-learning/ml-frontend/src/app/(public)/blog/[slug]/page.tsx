@@ -3,67 +3,11 @@ import { BlogDetail } from "@/features/blog/components/blog-detail";
 import ViewTracker from "@/features/blog/components/ViewTracker";
 import { AlertCircle, Home } from "lucide-react";
 import Link from "next/link";
-import { Metadata } from "next";
 
 // Removed revalidate as it is incompatible with output: export
 
 interface Props {
   params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-  try {
-    const res = await blogService.getBlogs({ limit: 1000 });
-    if (res.success && res.data) {
-      return res.data.items.map((blog: any) => ({
-        slug: blog.slug,
-      }));
-    }
-  } catch (error) {
-    console.error("Failed to generate static params:", error);
-  }
-  return [{ slug: "fallback-slug" }]; // At least one generic to satisfy export if API fails
-}
-
-// Dynamic Metadata for SEO
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  try {
-    const res = await blogService.getBlogBySlug(slug);
-    if (res.success && res.data) {
-      const blog = res.data;
-      return {
-        title: `${blog.title} | Minimalistic Learning`,
-        description:
-          blog.excerpt ||
-          (blog.content?.substring(0, 160) ?? "").replace(/<[^>]*>/g, ""),
-        openGraph: {
-          title: blog.title,
-          description: blog.excerpt,
-          images: [blog.coverImage?.url || blog.coverImageUrl || ""],
-          type: "article",
-          publishedTime: blog.createdAt,
-          authors: [(blog.authorId as any)?.firstName || "Author"],
-        },
-        twitter: {
-          card: "summary_large_image",
-          title: blog.title,
-          description: blog.excerpt,
-          images: [blog.coverImage?.url || blog.coverImageUrl || ""],
-        },
-      };
-    }
-  } catch (error: any) {
-    // Silently ignore 404s for unpublished/invalid blogs to prevent terminal clutter
-    if (error?.response?.status !== 404) {
-      console.error("Metadata generation runtime error:", error?.message);
-    }
-  }
-
-  return {
-    title: "Story | Minimalistic Learning",
-    description: "Read interesting stories on Minimalistic Learning",
-  };
 }
 
 const BlogDetailPage = async ({ params }: Props) => {

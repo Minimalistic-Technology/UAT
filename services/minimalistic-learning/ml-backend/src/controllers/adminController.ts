@@ -1,4 +1,4 @@
-﻿import { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { prisma } from '../config/db';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -177,6 +177,7 @@ export const approvePost = asyncHandler(async (req: Request, res: Response) => {
   await prisma.notification.create({
     data: {
       recipientId: updatedPost.authorId,
+      title: 'Post Approved',
       message: `Great news! Your post "${updatedPost.title}" has been approved and is now live on the platform.`,
       type: NOTIFICATION_TYPE.post_approved
     }

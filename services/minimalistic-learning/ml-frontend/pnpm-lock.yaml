@@ -23,7 +23,7 @@ importers:
         specifier: ^5.101.0
         version: 5.101.1(react@19.2.1)
       "@tiptap/core":
-        specifier: ^3.27.1
+        specifier: ^3.26.1
         version: 3.27.1(@tiptap/pm@3.27.1)
       "@tiptap/extension-image":
         specifier: ^3.26.1
@@ -98,6 +98,9 @@ importers:
       "@types/react-dom":
         specifier: 19.2.3
         version: 19.2.3(@types/react@19.2.7)
+      baseline-browser-mapping:
+        specifier: ^2.10.40
+        version: 2.10.40
       eslint:
         specifier: 9.39.2
         version: 9.39.2(jiti@2.7.0)
@@ -112,10 +115,10 @@ importers:
         version: 16.4.0
       prettier:
         specifier: ^3.8.4
-        version: 3.8.5
+        version: 3.9.0
       prettier-plugin-tailwindcss:
         specifier: ^0.8.0
-        version: 0.8.0(prettier@3.8.5)
+        version: 0.8.0(prettier@3.9.0)
       tailwindcss:
         specifier: 4.1.17
         version: 4.1.17
@@ -5648,10 +5651,10 @@ packages:
       prettier-plugin-svelte:
         optional: true
 
-  prettier@3.8.5:
+  prettier@3.9.0:
     resolution:
       {
-        integrity: sha512-zxcTTCedNGJM4R8sj/Cq/F0W/c4iE0afWBcBwMTRtw4WHYP9TWkYjdiH3npPRUYsXQCPR0hTU9yjovOu+E6EQA==,
+        integrity: sha512-LjIqSIC5VYLzs9WedVmJ2ljNAGnU+DteIClbahu4L/DBeWjZ6iT/k1lAYyu9JUh+1xINxWadaPw/Pl63y/agAw==,
       }
     engines: { node: ">=14" }
     hasBin: true
@@ -10451,11 +10454,11 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier-plugin-tailwindcss@0.8.0(prettier@3.8.5):
+  prettier-plugin-tailwindcss@0.8.0(prettier@3.9.0):
     dependencies:
-      prettier: 3.8.5
+      prettier: 3.9.0
 
-  prettier@3.8.5: {}
+  prettier@3.9.0: {}
 
   prop-types@15.8.1:
     dependencies:

@@ -3,23 +3,25 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+RUN npm install -g pnpm
+
 # Copy package files and install dependencies
-COPY package*.json ./
-RUN npm ci
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile
 
 # Copy the rest of the application
 COPY . .
 
 # Build the Next.js static export
-RUN npm run build
+RUN pnpm run build
 
 
 # ── STAGE 2: Runner ──
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV PORT 3000
+ENV NODE_ENV=production
+ENV PORT=3000
 
 # Copy minimum required public assets
 COPY --from=builder /app/public ./public

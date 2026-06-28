@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  turbopack: {
+    root: __dirname, // explicitly set to ml-frontend's own directory
+  },
 };
 
 export default nextConfig;
