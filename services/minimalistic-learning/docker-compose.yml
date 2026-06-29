@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   backend:
@@ -26,20 +25,6 @@ services:
       - "6380:6379"
     volumes:
       - redis_data:/data
-    restart: always
-
-  frontend:
-    build:
-      context: ./ml-frontend
-      dockerfile: Dockerfile
-    container_name: ml-frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:5001/api # Ensure API endpoint connects efficiently
-    depends_on:
-      - backend
     restart: always
 
 volumes:
