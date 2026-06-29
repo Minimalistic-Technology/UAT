@@ -19,6 +19,29 @@ const BlogDetailPage = async ({ params }: Props) => {
 
   try {
     const blogRes = await blogService.getBlogBySlug(slug).catch((e) => {
+      // ---> PROD DEBUG LOGS START <---
+      console.log("========== PROD DEBUG START ==========");
+      console.log(
+        "Checking API URL Config (Is it set in Prod?):",
+        process.env.NEXT_PUBLIC_API_URL || "NOT_SET_OR_LOCAL",
+      );
+      console.log("Trying to fetch blog slug:", slug);
+
+      if (e?.response) {
+        console.error("API Responded With Network Error:", {
+          status: e.response.status,
+          statusText: e.response.statusText,
+          data: e.response.data,
+        });
+      } else {
+        console.error(
+          "Failed before reaching API (DNS/Timeout/Fetch Issue):",
+          e?.message || e,
+        );
+      }
+      console.log("========== PROD DEBUG END ==========");
+      // ---> PROD DEBUG LOGS END <---
+
       // Don't clutter terminal with 404s when admin tries to preview a pending post
       if (e?.response?.status !== 404) {
         console.error("Blog fetch runtime error:", e?.message);
