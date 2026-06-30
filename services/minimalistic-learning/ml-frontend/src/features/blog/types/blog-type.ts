@@ -41,6 +41,7 @@ export interface BlogListResponse {
   message: string;
   data: {
     items: BlogResponse["data"][];
+    trending?: BlogResponse["data"][];
     pagination: {
       total: number;
       totalPages: number;

@@ -223,10 +223,10 @@ const SettingsPage = () => {
                   <p className="text-foreground/90 text-sm font-bold">
                     {user?.createdAt
                       ? new Date(user.createdAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        })
                       : "—"}
                   </p>
                 </div>
@@ -307,10 +307,11 @@ const SettingsPage = () => {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`bg-theme-element-sec/50 text-foreground focus:bg-background hover:border-theme-accent/30 w-full rounded-2xl border-2 px-4 py-3.5 text-sm font-bold transition-all outline-none ${confirmPassword && confirmPassword !== newPassword
-                    ? "border-red-500/50 focus:border-red-500"
-                    : "border-theme-accent/10 focus:border-orange-500"
-                    }`}
+                  className={`bg-theme-element-sec/50 text-foreground focus:bg-background hover:border-theme-accent/30 w-full rounded-2xl border-2 px-4 py-3.5 text-sm font-bold transition-all outline-none ${
+                    confirmPassword && confirmPassword !== newPassword
+                      ? "border-red-500/50 focus:border-red-500"
+                      : "border-theme-accent/10 focus:border-orange-500"
+                  }`}
                   placeholder="Repeat new password"
                 />
                 {confirmPassword && confirmPassword !== newPassword && (

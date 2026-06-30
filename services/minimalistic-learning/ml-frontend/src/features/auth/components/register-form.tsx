@@ -102,8 +102,8 @@ const RegisterForm = () => {
         onError: (err: any) => {
           toast.error(
             err?.response?.data?.message ||
-            err?.message ||
-            "Verification failed",
+              err?.message ||
+              "Verification failed",
           );
         },
       },
@@ -151,7 +151,10 @@ const RegisterForm = () => {
                     className="flex items-center gap-1 text-red-500 transition-colors hover:text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isRegisterPending ? (
-                      <><Loader2 className="animate-spin" size={12} /> Resending...</>
+                      <>
+                        <Loader2 className="animate-spin" size={12} />{" "}
+                        Resending...
+                      </>
                     ) : (
                       "Resend OTP"
                     )}
@@ -214,7 +217,10 @@ const RegisterForm = () => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-2 sm:space-y-3">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-2 sm:space-y-3"
+      >
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-1.5">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -306,7 +312,7 @@ const RegisterForm = () => {
           </div>
         </div>
 
-        <div className="pt-2 pb-1 flex items-start gap-2">
+        <div className="flex items-start gap-2 pt-2 pb-1">
           <div className="pt-0.5">
             <input
               type="checkbox"
@@ -352,11 +358,7 @@ const RegisterForm = () => {
           )}
         </div>
 
-        <Button
-          type="submit"
-          disabled={isRegisterPending}
-          fullWidth
-        >
+        <Button type="submit" disabled={isRegisterPending} fullWidth>
           {isRegisterPending ? (
             <Loader2 className="animate-spin" size={16} />
           ) : (
