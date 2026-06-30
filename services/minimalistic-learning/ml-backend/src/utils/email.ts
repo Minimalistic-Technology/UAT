@@ -102,7 +102,7 @@ export const sendOTP = async (to: string, otp: string) => {
         <tr>
           <td style="padding:40px 40px 20px;text-align:center;">
             <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
-              Enter the code below to complete your login. This code expires in <strong style="color:#1e293b;">5 minutes</strong>.
+              Enter the code below to complete your login. This code expires in <strong style="color:#1e293b;">2 minutes</strong>.
             </p>
             <div style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:20px;padding:32px;margin:0 auto;display:inline-block;width:100%;box-sizing:border-box;">
               <p style="margin:0 0 8px;color:#1877F2;font-size:11px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;">Your verification code</p>

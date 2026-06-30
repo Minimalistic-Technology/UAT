@@ -38,7 +38,6 @@ export interface PublicUser {
   _id: string;
   firstName: string;
   lastName: string;
-  contactNumber: string;
   email: string;
   role: string;
   createdAt: Date;

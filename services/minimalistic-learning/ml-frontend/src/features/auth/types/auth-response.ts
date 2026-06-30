@@ -2,7 +2,6 @@ export interface AuthUser {
   _id: string;
   firstName: string;
   lastName: string;
-  contactNumber: string;
   email: string;
   role: string;
   createdAt: string;

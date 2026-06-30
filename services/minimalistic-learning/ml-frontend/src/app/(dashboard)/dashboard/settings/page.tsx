@@ -17,7 +17,6 @@ import {
   Calendar,
   CheckCircle,
 } from "lucide-react";
-import { PhoneInput } from "@/components/ui/PhoneInput";
 
 const SettingsPage = () => {
   const { user, refreshUser } = useAuth();
@@ -25,7 +24,6 @@ const SettingsPage = () => {
   // Profile form state
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Password form state
@@ -39,9 +37,8 @@ const SettingsPage = () => {
   // Prefill on load
   useEffect(() => {
     if (user) {
-      setFirstName(user.firstName || "");
-      setLastName(user.lastName || "");
-      setContactNumber((user as any).contactNumber || "");
+      setFirstName((user as any).firstName || "");
+      setLastName((user as any).lastName || "");
     }
   }, [user]);
 
@@ -49,7 +46,7 @@ const SettingsPage = () => {
     e.preventDefault();
     setIsSavingProfile(true);
     try {
-      await api.patch("/auth/profile", { firstName, lastName, contactNumber });
+      await api.patch("/auth/profile", { firstName, lastName });
       toast.success("Profile updated successfully!");
       refreshUser();
     } catch (err: any) {
@@ -114,7 +111,7 @@ const SettingsPage = () => {
                   Profile Information
                 </h2>
                 <p className="text-foreground/50 mt-1 text-sm">
-                  Update your name and contact details
+                  Update your name details
                 </p>
               </div>
             </div>
@@ -146,12 +143,6 @@ const SettingsPage = () => {
                     placeholder="Last name"
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-foreground/60 mb-2 block text-xs font-bold tracking-widest uppercase">
-                  Contact Number
-                </label>
-                <PhoneInput value={contactNumber} onChange={setContactNumber} />
               </div>
               <div className="pt-2">
                 <button
@@ -232,10 +223,10 @@ const SettingsPage = () => {
                   <p className="text-foreground/90 text-sm font-bold">
                     {user?.createdAt
                       ? new Date(user.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })
                       : "—"}
                   </p>
                 </div>
@@ -316,11 +307,10 @@ const SettingsPage = () => {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`bg-theme-element-sec/50 text-foreground focus:bg-background hover:border-theme-accent/30 w-full rounded-2xl border-2 px-4 py-3.5 text-sm font-bold transition-all outline-none ${
-                    confirmPassword && confirmPassword !== newPassword
-                      ? "border-red-500/50 focus:border-red-500"
-                      : "border-theme-accent/10 focus:border-orange-500"
-                  }`}
+                  className={`bg-theme-element-sec/50 text-foreground focus:bg-background hover:border-theme-accent/30 w-full rounded-2xl border-2 px-4 py-3.5 text-sm font-bold transition-all outline-none ${confirmPassword && confirmPassword !== newPassword
+                    ? "border-red-500/50 focus:border-red-500"
+                    : "border-theme-accent/10 focus:border-orange-500"
+                    }`}
                   placeholder="Repeat new password"
                 />
                 {confirmPassword && confirmPassword !== newPassword && (

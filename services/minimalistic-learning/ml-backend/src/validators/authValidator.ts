@@ -1,12 +1,8 @@
 import { z } from "zod";
-import { isValidPhoneNumber } from "libphonenumber-js";
 
 export const signupSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  contactNumber: z.string().refine((val) => isValidPhoneNumber(val), {
-    message: "Invalid phone number",
-  }),
   email: z.string().email().trim().toLowerCase(),
   password: z.string().min(8),
   role: z.enum(["user", "admin"]).optional().default("user"),

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "../schema/auth-schema";
 import { RegisterValues } from "../types/auth-type";
@@ -17,7 +17,6 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { PhoneInput } from "@/components/ui/PhoneInput";
 import { Modal } from "@/components/ui/Modal";
 
 const RegisterForm = () => {
@@ -251,29 +250,7 @@ const RegisterForm = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Contact Number
-            </label>
-            <Controller
-              name="contactNumber"
-              control={control}
-              render={({ field }) => (
-                <PhoneInput
-                  value={field.value}
-                  onChange={field.onChange}
-                  error={!!errors.contactNumber}
-                />
-              )}
-            />
-            {errors.contactNumber && (
-              <p className="mt-0.5 text-[10px] font-semibold text-red-500">
-                {errors.contactNumber.message}
-              </p>
-            )}
-          </div>
-
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
           <div className="space-y-1.5">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               Email Address

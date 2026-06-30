@@ -24,7 +24,6 @@ async function main() {
         data: {
             firstName: "System",
             lastName: "Admin",
-            contactNumber: "0000000000",
             email: adminEmail,
             password: hashedPassword,
             role: "admin",

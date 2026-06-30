@@ -109,7 +109,6 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   const pendingUserData = {
     firstName: payload.firstName,
     lastName: payload.lastName,
-    contactNumber: payload.contactNumber,
     email: payload.email,
     password: hashedPassword,
     otp,
@@ -283,7 +282,6 @@ export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
         ...userData,
         password: password || "",
         lastName: userData.lastName || "",
-        contactNumber: userData.contactNumber || "",
         isVerified: true
       }
     });
@@ -455,12 +453,11 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
   const user = req.user as User;
-  const { firstName, lastName, contactNumber, currentPassword, newPassword } = req.body;
+  const { firstName, lastName, currentPassword, newPassword } = req.body;
 
   const dataToUpdate: any = {};
   if (firstName && firstName.trim()) dataToUpdate.firstName = firstName.trim();
   if (lastName && lastName.trim()) dataToUpdate.lastName = lastName.trim();
-  if (contactNumber && contactNumber.trim()) dataToUpdate.contactNumber = contactNumber.trim();
 
   if (newPassword) {
     if (!currentPassword) {

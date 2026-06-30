@@ -28,7 +28,6 @@ export const toPublicUser = (user: User) => ({
   id: user.id,
   firstName: user.firstName,
   lastName: user.lastName,
-  contactNumber: user.contactNumber,
   email: user.email,
   role: user.role,
   createdAt: user.createdAt
