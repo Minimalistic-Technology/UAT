@@ -64,6 +64,7 @@ const RegisterForm = () => {
     handleSubmit,
     control,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -102,8 +103,8 @@ const RegisterForm = () => {
         onError: (err: any) => {
           toast.error(
             err?.response?.data?.message ||
-              err?.message ||
-              "Verification failed",
+            err?.message ||
+            "Verification failed",
           );
         },
       },
@@ -135,8 +136,8 @@ const RegisterForm = () => {
               <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">
                 Verification Code
               </label>
-              <span
-                className={`text-xs font-bold ${timer === 0 ? "animate-pulse text-red-500" : "flex items-center gap-1 text-[#1877F2]"}`}
+              <div
+                className={`text-xs font-bold ${timer === 0 ? "text-red-500" : "flex items-center gap-1 text-[#1877F2]"}`}
               >
                 {timer > 0 ? (
                   <>
@@ -144,9 +145,20 @@ const RegisterForm = () => {
                     Expires in {formatTimer(timer)}
                   </>
                 ) : (
-                  "Code expired"
+                  <button
+                    type="button"
+                    onClick={() => onSubmit(getValues())}
+                    disabled={isRegisterPending}
+                    className="flex items-center gap-1 text-red-500 transition-colors hover:text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isRegisterPending ? (
+                      <><Loader2 className="animate-spin" size={12} /> Resending...</>
+                    ) : (
+                      "Resend OTP"
+                    )}
+                  </button>
                 )}
-              </span>
+              </div>
             </div>
             <input
               value={otpValue}
@@ -193,18 +205,18 @@ const RegisterForm = () => {
 
   // ── Register Form (New Minimalist Aesthetic) ────────────────────────────────
   return (
-    <Card className="animate-in fade-in zoom-in mx-auto w-full p-5 duration-300 sm:p-6">
-      <div className="mb-5 flex flex-col items-center">
-        <h2 className="mb-1 text-[24px] font-bold tracking-tight text-gray-900 sm:text-[28px] dark:text-white">
+    <Card className="animate-in fade-in zoom-in mx-auto w-full p-4 duration-300 sm:p-5 sm:px-6">
+      <div className="mb-2 flex flex-col items-center">
+        <h2 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl dark:text-white">
           Create Account
         </h2>
-        <p className="text-xs text-gray-500 sm:text-sm dark:text-gray-400">
+        <p className="text-xs text-gray-500 sm:text-xs dark:text-gray-400">
           Join our exclusive community today
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-        <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-2 sm:space-y-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-1.5">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               First Name
@@ -239,48 +251,50 @@ const RegisterForm = () => {
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Contact Number
-          </label>
-          <Controller
-            name="contactNumber"
-            control={control}
-            render={({ field }) => (
-              <PhoneInput
-                value={field.value}
-                onChange={field.onChange}
-                error={!!errors.contactNumber}
-              />
-            )}
-          />
-          {errors.contactNumber && (
-            <p className="mt-1 text-xs font-semibold text-red-500">
-              {errors.contactNumber.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Email Address
-          </label>
-          <div className="relative">
-            <Input
-              {...register("email")}
-              type="email"
-              placeholder="you@example.com"
-              error={!!errors.email}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Contact Number
+            </label>
+            <Controller
+              name="contactNumber"
+              control={control}
+              render={({ field }) => (
+                <PhoneInput
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={!!errors.contactNumber}
+                />
+              )}
             />
+            {errors.contactNumber && (
+              <p className="mt-0.5 text-[10px] font-semibold text-red-500">
+                {errors.contactNumber.message}
+              </p>
+            )}
           </div>
-          {errors.email && (
-            <p className="mt-1 text-xs font-semibold text-red-500">
-              {errors.email.message}
-            </p>
-          )}
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Email Address
+            </label>
+            <div className="relative">
+              <Input
+                {...register("email")}
+                type="email"
+                placeholder="you@example.com"
+                error={!!errors.email}
+              />
+            </div>
+            {errors.email && (
+              <p className="mt-0.5 text-[10px] font-semibold text-red-500">
+                {errors.email.message}
+              </p>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-1.5">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
               Password
@@ -315,17 +329,17 @@ const RegisterForm = () => {
           </div>
         </div>
 
-        <div className="mt-4 mb-2 flex items-start gap-3">
+        <div className="pt-2 pb-1 flex items-start gap-2">
           <div className="pt-0.5">
             <input
               type="checkbox"
               id="acceptTerms"
               {...register("acceptTerms")}
-              className="border-theme-accent/20 text-theme-action focus:ring-theme-action/20 bg-theme-element-sec h-4 w-4 rounded"
+              className="border-theme-accent/20 text-theme-action focus:ring-theme-action/20 bg-theme-element-sec h-3.5 w-3.5 rounded"
             />
           </div>
           <div className="flex-1">
-            <label htmlFor="acceptTerms" className="text-foreground/70 text-sm">
+            <label htmlFor="acceptTerms" className="text-foreground/70 text-xs">
               I agree to the{" "}
               <button
                 type="button"
@@ -336,15 +350,15 @@ const RegisterForm = () => {
               </button>
             </label>
             {errors.acceptTerms && (
-              <p className="mt-1 text-xs font-semibold text-red-500">
+              <p className="mt-0.5 text-[10px] font-semibold text-red-500">
                 {errors.acceptTerms.message}
               </p>
             )}
           </div>
         </div>
 
-        <div className="flex w-full flex-col items-center justify-center overflow-hidden rounded-xl pt-1">
-          <div className="-ml-2 flex w-full origin-center scale-[0.95] transform justify-center sm:ml-0 sm:w-auto sm:transform-none">
+        <div className="mt-1 mb-4 w-full overflow-hidden">
+          <div className="w-full">
             <Turnstile
               siteKey={
                 process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
@@ -365,20 +379,19 @@ const RegisterForm = () => {
           type="submit"
           disabled={isRegisterPending}
           fullWidth
-          className="mt-1"
         >
           {isRegisterPending ? (
-            <Loader2 className="animate-spin" size={18} />
+            <Loader2 className="animate-spin" size={16} />
           ) : (
             <>
               <Mail size={16} />
-              Sign Up with Email
+              Sign Up
             </>
           )}
         </Button>
       </form>
 
-      <div className="mt-4 text-center">
+      <div className="mt-3 text-center">
         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
           Already a member?{" "}
           <Link

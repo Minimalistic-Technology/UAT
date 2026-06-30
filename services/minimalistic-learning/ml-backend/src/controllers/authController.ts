@@ -72,7 +72,10 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   const payload = signupSchema.parse(req.body) as userService.CreateUserPayload & { turnstileToken: string };
   const emailKey = payload.email.toLowerCase().trim();
 
-  if (env.TURNSTILE_SECRET_KEY && env.TURNSTILE_SECRET_KEY.startsWith("0x")) {
+  const pendingCheck = await prisma.pendingUser.findUnique({ where: { email: emailKey } });
+  const isResend = !!pendingCheck;
+
+  if (!isResend && env.TURNSTILE_SECRET_KEY && env.TURNSTILE_SECRET_KEY.startsWith("0x")) {
     const isCaptchaValid = await verifyTurnstile(payload.turnstileToken, env.TURNSTILE_SECRET_KEY);
     if (!isCaptchaValid) {
       throw new ApiError(StatusCodes.BAD_REQUEST, "Security verification failed. Please try again.");

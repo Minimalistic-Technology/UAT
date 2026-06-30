@@ -10,21 +10,21 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="m-0 flex min-h-[calc(100dvh-64px)] w-full flex-col bg-white p-0 lg:h-[calc(100dvh-64px)] lg:flex-row dark:bg-[#0a0a0a]">
-      {/* Left Full Height Split - Desktop Only */}
-      <div className="relative hidden w-1/2 flex-1 items-center justify-center bg-white lg:flex dark:bg-gray-900">
+    <div className="flex min-h-[calc(100dvh-64px)] w-full bg-white dark:bg-[#0a0a0a]">
+      {/* Left Half - Fixed on Desktop */}
+      <div className="hidden lg:block lg:fixed lg:top-[64px] lg:bottom-0 lg:left-0 lg:w-1/2 bg-gray-900 z-0">
         <Image
           src="/login-illustration.png"
           alt="Login Illustration"
           fill
           priority
-          className="scale-105 object-cover"
+          className="object-cover"
         />
       </div>
 
-      {/* Right Content Split */}
-      <div className="custom-scrollbar relative flex w-full flex-1 flex-col items-center justify-center overflow-y-auto bg-gray-50 p-6 sm:p-12 lg:w-1/2 dark:bg-[#0a0a0a]">
-        <div className="z-10 flex w-full max-w-[420px] flex-col justify-center">
+      {/* Right Content - Scrolls natively without double scrollbars */}
+      <div className="flex w-full lg:w-1/2 lg:ml-[50%] flex-col items-center justify-center bg-gray-50 p-4 lg:px-8 lg:py-2 dark:bg-[#0a0a0a] min-h-[calc(100dvh-64px)] z-10">
+        <div className="w-full max-w-[420px] flex flex-col justify-center">
           <LoginForm />
         </div>
       </div>
