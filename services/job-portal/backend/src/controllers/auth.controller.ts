@@ -1,23 +1,17 @@
 import type { Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import User, { GlobalRole } from "../models/User.model.js";
+import {prisma} from "../lib/prisma.js"
 import { config } from "../config/env.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { sendEmail } from "../utils/email.js";
-// import { sendOTP } from '../utils/sms.js';
-import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
-import Company from "../models/Company.model.js";
-import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import TempUser from "../models/TempUser.model.js";
 import { generateToken } from "../utils/jwt.js";
-import Feature, { FeatureStatus } from "../models/Feature.model.js";
-import FeaturePermission from "../models/FeaturePermission.model.js";
+import { GlobalRole } from "../../generated/prisma/client.js";
 
 const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
-  const token = generateToken(user._id);
+  const token = generateToken(user.id);
 
   const options = {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
@@ -30,7 +24,7 @@ const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
 
   if (user.role === GlobalRole.SUPER_ADMIN) {
     payload = {
-      id: user._id,
+      id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
@@ -42,7 +36,7 @@ const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
 
   if (user.role === GlobalRole.USER) {
     payload = {
-      id: user._id,
+      id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
@@ -61,8 +55,8 @@ const sendTokenResponse = (user: any, statusCode: number, res: Response) => {
     .json(new ApiResponse(statusCode, payload, "Login successful"));
 };
 
-const checkAndEnforceOTPBlock = async (email: string, session: mongoose.ClientSession) => {
-  const tempUser = await TempUser.findOne({ email }).session(session);
+const checkAndEnforceOTPBlock = async (email: string) => {
+  const tempUser = await prisma.tempUser.findUnique({ where: { email } })
   if (!tempUser) return null;
 
   if (tempUser.blockedUntil && tempUser.blockedUntil > new Date()) {
@@ -71,8 +65,13 @@ const checkAndEnforceOTPBlock = async (email: string, session: mongoose.ClientSe
   }
 
   if (tempUser.blockedUntil && tempUser.blockedUntil <= new Date()) {
-    tempUser.blockedUntil = undefined;
-    tempUser.resendAttempts = 0;
+    await prisma.tempUser.update({
+      where: { email },
+      data: {
+        blockedUntil: null,
+        resendAttempts: 0
+      }
+    });
   }
   return tempUser;
 };
@@ -82,19 +81,17 @@ export const requestUserRegistration = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
   try {
     const { firstName, lastName, email, password, phone } = req.body;
 
-    await checkAndEnforceOTPBlock(email, session);
+    await checkAndEnforceOTPBlock(email);
 
-    const existingUser = await User.findOne({ email }).session(session);
+    const existingUser = await prisma.user.findUnique({ where: { email } });
 
     if (existingUser) {
-      const companyOwner = await Company.findOne({
-        owner: existingUser._id,
-      }).session(session);
+      const companyOwner = await prisma.company.findUnique({
+        where: { ownerId: existingUser.id },
+      });
 
       if (companyOwner) {
         return next(
@@ -117,9 +114,18 @@ export const requestUserRegistration = async (
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    await TempUser.findOneAndUpdate(
-      { email },
-      {
+    await prisma.tempUser.upsert({
+      where: { email },
+      update: {
+        firstName,
+        lastName,
+        password: hashedPassword,
+        role: GlobalRole.USER,
+        phone,
+        otp: `${salt}:${hashedOtp}`,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+      },
+      create: {
         firstName,
         lastName,
         email,
@@ -128,9 +134,8 @@ export const requestUserRegistration = async (
         phone,
         otp: `${salt}:${hashedOtp}`,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
-      },
-      { upsert: true, session, runValidators: true },
-    ).session(session);
+      }
+    });
 
     await sendEmail({
       email,
@@ -138,13 +143,9 @@ export const requestUserRegistration = async (
       message: `Your registration OTP is ${otp}. It expires in 10 minutes.`,
     });
 
-    await session.commitTransaction();
     res.status(200).json(new ApiResponse(200, null, "OTP sent to email"));
   } catch (error: any) {
-    await session.abortTransaction();
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 
@@ -153,9 +154,6 @@ export const requestEmployerRegistration = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const {
       email,
@@ -168,15 +166,20 @@ export const requestEmployerRegistration = async (
       phone,
     } = req.body;
 
-    await checkAndEnforceOTPBlock(email, session);
+    await checkAndEnforceOTPBlock(email);
 
-    let user = await User.findOne({ email }).session(session);
+    let user = await prisma.user.findUnique({ where: { email } });
 
     if (user) {
-      const existingCompany = await Company.findOne({
-        owner: user._id,
-        name: { $regex: new RegExp(`^${companyName}$`, "i") },
-      }).session(session);
+      const existingCompany = await prisma.company.findFirst({
+        where: {
+          ownerId: user.id,
+          name: {
+            equals: companyName,
+            mode: 'insensitive'
+          }
+        },
+      });
 
       if (existingCompany) {
         throw new ApiError(400, "You are already registered with this company or email");
@@ -190,14 +193,27 @@ export const requestEmployerRegistration = async (
       .update(otp)
       .digest("hex");
 
-    let hashedPassword = undefined;
+    let hashedPassword = "";
     if (password) {
       hashedPassword = await bcrypt.hash(password, 12);
     }
 
-    await TempUser.findOneAndUpdate(
-      { email },
-      {
+    await prisma.tempUser.upsert({
+      where: { email },
+      update: {
+        firstName,
+        lastName,
+        password: hashedPassword,
+        role: GlobalRole.USER,
+        phone,
+        isEmployer: true,
+        companyName,
+        companyRole: role,
+        industry,
+        otp: `${salt}:${hashedOtp}`,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+      },
+      create: {
         firstName,
         lastName,
         email,
@@ -210,9 +226,8 @@ export const requestEmployerRegistration = async (
         industry,
         otp: `${salt}:${hashedOtp}`,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
-      },
-      { upsert: true, session, runValidators: true },
-    ).session(session);
+      }
+    });
 
     await sendEmail({
       email,
@@ -220,14 +235,10 @@ export const requestEmployerRegistration = async (
       message: `Your registration OTP is ${otp}. It expires in 10 minutes.`,
     });
 
-    await session.commitTransaction();
     res.status(200).json(new ApiResponse(200, null, "OTP sent to email"));
   } catch (error: any) {
-    await session.abortTransaction();
     console.error("Registration Error:", error);
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 
@@ -236,137 +247,121 @@ export const confirmRegistrationOTP = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const { email, otp } = req.body;
 
-    const tempUser = await TempUser.findOne({ email })
-      .select("+password")
-      .session(session);
-    if (!tempUser) {
-      throw new ApiError(
-        404,
-        "Registration session expired or not found. Please register again.",
-      );
-    }
+    const { userToReturn, isNewUser } = await prisma.$transaction(async (tx) => {
+      const tempUser = await tx.tempUser.findUnique({ where: { email } });
+      if (!tempUser) {
+        throw new ApiError(
+          404,
+          "Registration session expired or not found. Please register again.",
+        );
+      }
 
-    const [salt, storedHash] = tempUser.otp.split(":");
-    const computedHash = crypto
-      .createHmac("sha256", config.otpSecret!)
-      .update(otp)
-      .digest("hex");
+      const [salt, storedHash] = tempUser.otp.split(":");
+      const computedHash = crypto
+        .createHmac("sha256", config.otpSecret!)
+        .update(otp)
+        .digest("hex");
 
-    const storedHashBuffer = Buffer.from(storedHash);
-    const computedHashBuffer = Buffer.from(computedHash);
+      const storedHashBuffer = Buffer.from(storedHash);
+      const computedHashBuffer = Buffer.from(computedHash);
 
-    if (
-      storedHashBuffer.length !== computedHashBuffer.length ||
-      !crypto.timingSafeEqual(storedHashBuffer, computedHashBuffer)
-    ) {
-      throw new ApiError(401, "Invalid OTP code");
-    }
+      if (
+        storedHashBuffer.length !== computedHashBuffer.length ||
+        !crypto.timingSafeEqual(storedHashBuffer, computedHashBuffer)
+      ) {
+        throw new ApiError(401, "Invalid OTP code");
+      }
 
-    let userToReturn;
-    let isNewUser = true;
+      let userToReturn;
+      let isNewUser = true;
 
-    if (tempUser.isEmployer) {
-      let user = await User.findOne({ email }).session(session);
-      isNewUser = !user;
+      if (tempUser.isEmployer) {
+        let user = await tx.user.findUnique({ where: { email }, include: { avatar: true } });
+        isNewUser = !user;
 
-      if (isNewUser) {
-        user = await User.create(
-          [
-            {
+        if (isNewUser) {
+          user = await tx.user.create({
+            data: {
               firstName: tempUser.firstName,
               lastName: tempUser.lastName,
               email: tempUser.email,
               password: tempUser.password,
               phone: tempUser.phone,
-              role: tempUser.role as GlobalRole,
+              role: tempUser.role,
               isVerified: true,
             },
-          ],
-          { session },
-        ).then((res) => (res ? res[0] : null));
-      }
+            include: { avatar: true }
+          });
+        }
 
-      if (!user) {
-        throw new ApiError(500, "Failed to create user");
-      }
+        if (!user) {
+          throw new ApiError(500, "Failed to create user");
+        }
 
-      const existingCompany = await Company.findOne({
-        owner: user._id,
-        name: { $regex: new RegExp(`^${tempUser.companyName}$`, "i") },
-      }).session(session);
+        const existingCompany = await tx.company.findFirst({
+          where: {
+            ownerId: user.id,
+            name: {
+              equals: tempUser.companyName || '',
+              mode: 'insensitive'
+            }
+          }
+        });
 
-      if (!existingCompany) {
-        const [company] = await Company.create(
-          [
-            {
-              name: tempUser.companyName,
-              industry: tempUser.industry,
-              owner: user._id,
-            },
-          ],
-          { session },
-        );
+        if (!existingCompany) {
+          const slug = (tempUser.companyName || "company").toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + crypto.randomBytes(4).toString("hex");
+          
+          await tx.company.create({
+            data: {
+              name: tempUser.companyName || "Unknown",
+              slug,
+              industry: tempUser.industry || "Unknown",
+              ownerId: user.id,
+            }
+          });
+        }
+        
+        const company = await tx.company.findUnique({ where: { ownerId: user.id } });
 
-        await CompanyMember.create(
-          [
-            {
-              user: user._id,
-              company: company._id,
-              role: tempUser.companyRole as CompanyRole,
-            },
-          ],
-          { session },
-        );
-      }
-      const membership = await CompanyMember.findOne({ user: user._id }).session(session);
-
-      userToReturn = {
-        ...user.toObject(),
-        isEmployee: true,
-        companyId: membership?.company || null,
-        companyRole: membership?.role || null,
-      };
-    } else {
-      const [newUser] = await User.create(
-        [
-          {
+        userToReturn = {
+          ...user,
+          isEmployee: true,
+          companyId: company?.id || null,
+          companyRole: tempUser.companyRole || "OWNER",
+        };
+      } else {
+        const newUser = await tx.user.create({
+          data: {
             firstName: tempUser.firstName,
             lastName: tempUser.lastName,
             email: tempUser.email,
             password: tempUser.password,
             phone: tempUser.phone,
-            role: tempUser.role as GlobalRole,
+            role: tempUser.role,
             isVerified: true,
           },
-        ],
-        { session },
-      );
-      userToReturn = {
-        ...newUser.toObject(),
-        isEmployee: false,
-        companyId: null,
-        companyRole: null,
-      };
-    }
+          include: { avatar: true }
+        });
+        
+        userToReturn = {
+          ...newUser,
+          isEmployee: false,
+          companyId: null,
+          companyRole: null,
+        };
+      }
 
-    await TempUser.deleteOne({ _id: tempUser._id }).session(session);
-
-    await session.commitTransaction();
+      await tx.tempUser.delete({ where: { id: tempUser.id } });
+      
+      return { userToReturn, isNewUser };
+    });
 
     return sendTokenResponse(userToReturn, isNewUser ? 201 : 200, res);
   } catch (error: any) {
-    if (session.inTransaction()) {
-      await session.abortTransaction();
-    }
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 
@@ -375,13 +370,10 @@ export const resendRegistrationOTP = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const { email } = req.body;
 
-    const tempUser = await TempUser.findOne({ email }).session(session);
+    const tempUser = await prisma.tempUser.findUnique({ where: { email } });
 
     if (!tempUser) {
       throw new ApiError(
@@ -390,7 +382,6 @@ export const resendRegistrationOTP = async (
       );
     }
 
-    // Check if user is currently blocked from resending
     if (tempUser.blockedUntil && tempUser.blockedUntil > new Date()) {
       const remainingTime = Math.ceil(
         (tempUser.blockedUntil.getTime() - Date.now()) / 60000
@@ -401,21 +392,24 @@ export const resendRegistrationOTP = async (
       );
     }
 
-    // Unblock if time has passed
-    if (tempUser.blockedUntil && tempUser.blockedUntil <= new Date()) {
-      tempUser.blockedUntil = undefined;
-      tempUser.resendAttempts = 0;
+    let { blockedUntil, resendAttempts } = tempUser;
+
+    if (blockedUntil && blockedUntil <= new Date()) {
+      blockedUntil = null;
+      resendAttempts = 0;
     }
 
-    // Increment attempts
-    tempUser.resendAttempts = (tempUser.resendAttempts || 0) + 1;
+    resendAttempts = (resendAttempts || 0) + 1;
+    let expiresAt = new Date(Date.now() + 10 * 60 * 1000); 
 
-    // Block if exceeded 3 attempts
-    if (tempUser.resendAttempts > 3) {
-      tempUser.blockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes block
-      tempUser.expiresAt = new Date(Date.now() + 30 * 60 * 1000); // Keep doc alive
-      await tempUser.save({ session, validateBeforeSave: false });
-      await session.commitTransaction();
+    if (resendAttempts > 3) {
+      blockedUntil = new Date(Date.now() + 30 * 60 * 1000); 
+      expiresAt = new Date(Date.now() + 30 * 60 * 1000); 
+      
+      await prisma.tempUser.update({
+        where: { email },
+        data: { blockedUntil, expiresAt, resendAttempts }
+      });
       throw new ApiError(
         429,
         "Too many resend attempts. You have been blocked from sending OTPs for 30 minutes."
@@ -429,10 +423,15 @@ export const resendRegistrationOTP = async (
       .update(otp)
       .digest("hex");
 
-    tempUser.otp = `${salt}:${hashedOtp}`;
-    tempUser.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // extend by 10 mins
-
-    await tempUser.save({ session, validateBeforeSave: true });
+    await prisma.tempUser.update({
+      where: { email },
+      data: {
+        otp: `${salt}:${hashedOtp}`,
+        expiresAt,
+        resendAttempts,
+        blockedUntil
+      }
+    });
 
     await sendEmail({
       email,
@@ -440,15 +439,9 @@ export const resendRegistrationOTP = async (
       message: `Your new registration OTP is ${otp}. It expires in 10 minutes.`,
     });
 
-    await session.commitTransaction();
     res.status(200).json(new ApiResponse(200, null, "OTP resent to email"));
   } catch (error: any) {
-    if (session.inTransaction()) {
-      await session.abortTransaction();
-    }
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 
@@ -460,21 +453,22 @@ export const login = async (
   try {
     const { email, password } = req.body;
 
-    let user = await User.findOne({ email }).select("+password");
+    const user = await prisma.user.findUnique({ 
+      where: { email },
+      include: { avatar: true }
+    });
 
-    if (!user) {
+    if (!user || !user.password) {
       return next(new ApiError(401, "Invalid credentials"));
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return next(new ApiError(401, "Invalid credentials"));
     }
 
-    const isActive = user.isActive;
-
-    if (!isActive) {
+    if (!user.isActive) {
       return next(
         new ApiError(
           403,
@@ -485,20 +479,18 @@ export const login = async (
 
     if (user.role === GlobalRole.SUPER_ADMIN) {
       sendTokenResponse(user, 200, res);
-    }
-
-    if (user.role === GlobalRole.USER) {
-      const membership = await CompanyMember.findOne({
-        user: user._id,
+    } else if (user.role === GlobalRole.USER) {
+      const company = await prisma.company.findUnique({
+        where: { ownerId: user.id },
       });
 
-      const isEmployee = !!membership;
-      const companyId = membership?.company ?? null;
-      const companyRole = membership?.role ?? null;
+      const isEmployee = !!company;
+      const companyId = company?.id ?? null;
+      const companyRole = isEmployee ? "OWNER" : null;
 
       sendTokenResponse(
         {
-          ...user.toObject(),
+          ...user,
           isEmployee,
           companyId,
           companyRole,
@@ -534,32 +526,25 @@ export const getMe = async (
   next: NextFunction,
 ) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { avatar: true }
+    });
+    
     if (!user) throw new ApiError(404, "User not found");
 
-    const membership = await CompanyMember.findOne({ user: user._id });
+    const company = await prisma.company.findUnique({ where: { ownerId: user.id } });
 
-    // 1. Get strictly "public" features
-    const publicFeatures = await Feature.find({ status: FeatureStatus.PUBLIC }).select("slug");
-    const allowedSlugs = new Set(publicFeatures.map(f => f.slug));
+    // TODO: Change this and make it dynamic when you add features schema
+    const allowedFeatures: string[] = [];
 
-    // 2. Get specific "beta" features this user (or their company) has been granted
-    const userPermissions = await FeaturePermission.find({
-      $or: [
-        { user: user._id },
-        ...(membership ? [{ company: membership.company }] : [])
-      ]
-    }).populate("feature", "slug status");
-
-    userPermissions.forEach(perm => {
-      const f: any = perm.feature;
-      if (f && f.status === FeatureStatus.BETA) {
-        allowedSlugs.add(f.slug);
-      }
-    });
-
-    const userObj = user.toObject();
-    (userObj as any).allowedFeatures = Array.from(allowedSlugs);
+    const userObj = {
+      ...user,
+      isEmployee: !!company,
+      companyId: company?.id || null,
+      companyRole: company ? "OWNER" : null,
+      allowedFeatures
+    };
 
     res
       .status(200)
@@ -569,41 +554,6 @@ export const getMe = async (
   }
 };
 
-// @desc    Send OTP to phone
-// @route   POST /api/auth/send-otp
-// @access  Public
-
-// export const sendPhoneOTP = async (
-//   req: AuthRequest,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const { phone } = req.body;
-
-//     // Generate 6-digit OTP
-//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-//     // Store OTP in cache/database with expiration (5 minutes)
-//     // For now, we'll send it via SMS
-//     await sendOTP(phone, otp);
-
-//     res.status(200).json({
-//       success: true,
-//       message: 'OTP sent successfully',
-//     });
-//   } catch (error: any) {
-//     res.status(500).json({
-//       success: false,
-//       message: 'Error sending OTP',
-//       error: error.message,
-//     });
-//   }
-// };
-
-// @desc    Verify OTP
-// @route   POST /api/auth/verify-otp
-// @access  Public
 export const verifyOTP = async (
   req: AuthRequest,
   res: Response,
@@ -612,32 +562,33 @@ export const verifyOTP = async (
   try {
     const { phone, otp } = req.body;
 
-    // Verify OTP from cache/database
-    // If valid, create or login user
-
-    let user = await User.findOne({ phone });
+    let user = await prisma.user.findFirst({ 
+      where: { phone: phone },
+      include: { avatar: true }
+    });
 
     if (!user) {
-      // Create new user with phone
-      user = await User.create({
-        phone,
-        phoneVerified: true,
-        firstName: "User",
-        lastName: phone,
-        email: `${phone}@temp.com`, // Temporary email
+      user = await prisma.user.create({
+        data: {
+          phone,
+          firstName: "User",
+          lastName: phone,
+          email: `${phone}@temp.com`, 
+          isVerified: true, 
+        },
+        include: { avatar: true }
       });
     } else {
-      user.phoneVerified = true;
-      await user.save();
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { isVerified: true },
+        include: { avatar: true }
+      });
     }
 
     sendTokenResponse(user, 200, res);
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Error verifying OTP",
-      error: error.message,
-    });
+    next(error)
   }
 };
 
@@ -649,16 +600,32 @@ export const googleAuth = async (
   try {
     const { googleId, email, firstName, lastName, avatar } = req.body;
 
-    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+    let user = await prisma.user.findFirst({ 
+      where: { 
+        OR: [
+          { googleId },
+          { email }
+        ] 
+      },
+      include: { avatar: true }
+    });
 
     if (!user) {
-      user = await User.create({
-        googleId,
-        email,
-        firstName,
-        lastName,
-        avatar,
-        isVerified: true,
+      user = await prisma.user.create({
+        data: {
+          googleId,
+          email,
+          firstName,
+          lastName,
+          isVerified: true,
+          avatar: avatar ? {
+            create: {
+              url: avatar,
+              publicId: "google-avatar",
+            }
+          } : undefined
+        },
+        include: { avatar: true }
       });
     }
 
@@ -667,17 +634,17 @@ export const googleAuth = async (
     let companyRole = null;
 
     if (user.role === GlobalRole.USER) {
-      const membership = await CompanyMember.findOne({ user: user._id });
-      if (membership) {
+      const company = await prisma.company.findUnique({ where: { ownerId: user.id } });
+      if (company) {
         isEmployee = true;
-        companyId = membership.company;
-        companyRole = membership.role;
+        companyId = company.id;
+        companyRole = "OWNER";
       }
     }
 
     sendTokenResponse(
       {
-        ...user.toObject(),
+        ...user,
         isEmployee,
         companyId,
         companyRole,
@@ -699,16 +666,12 @@ export const forgotPassword = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email }).session(session);
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      await session.commitTransaction();
       return res
         .status(200)
         .json(
@@ -722,14 +685,17 @@ export const forgotPassword = async (
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     const hashedToken = crypto
-      .createHmac("sha256", config.otpSecret)
+      .createHmac("sha256", config.otpSecret!)
       .update(resetToken)
       .digest("hex");
 
-    user.resetPasswordOtp = hashedToken;
-    user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-
-    await user.save({ session, validateBeforeSave: false });
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordOtp: hashedToken,
+        resetPasswordExpires: new Date(Date.now() + 10 * 60 * 1000)
+      }
+    });
 
     try {
       const resetUrl = `${config.clientUrl}/reset-password/${resetToken}`;
@@ -739,8 +705,6 @@ export const forgotPassword = async (
         subject: "Your Password Reset Link",
         message: `You requested a password reset. Please click on the following link to reset your password:\n\n${resetUrl}\n\nThis link is valid for 10 minutes. If you did not request this, please ignore this email.`,
       });
-
-      await session.commitTransaction();
 
       return res
         .status(200)
@@ -752,17 +716,18 @@ export const forgotPassword = async (
           ),
         );
     } catch (emailError) {
-      await session.abortTransaction();
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          resetPasswordOtp: null,
+          resetPasswordExpires: null
+        }
+      });
       console.error("Email Delivery Failed:", emailError);
       throw new ApiError(500, "Failed to send email. Please try again later.");
     }
   } catch (error: any) {
-    if (session.inTransaction()) {
-      await session.abortTransaction();
-    }
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 
@@ -780,27 +745,35 @@ export const resetPassword = async (
     }
 
     const hashedToken = crypto
-      .createHmac("sha256", config.otpSecret)
+      .createHmac("sha256", config.otpSecret!)
       .update(token as string)
       .digest("hex");
 
-    const user = await User.findOne({
-      resetPasswordOtp: hashedToken,
-      resetPasswordExpires: { $gt: Date.now() },
-    }).select("+password");
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordOtp: hashedToken,
+        resetPasswordExpires: { gt: new Date() },
+      },
+      include: { avatar: true }
+    });
 
     if (!user) {
       return next(new ApiError(400, "Invalid or expired reset token"));
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-    user.password = hashedPassword;
-    user.resetPasswordOtp = undefined;
-    user.resetPasswordExpires = undefined;
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordOtp: null,
+        resetPasswordExpires: null
+      },
+      include: { avatar: true }
+    });
 
-    await user.save();
-
-    sendTokenResponse(user, 200, res);
+    sendTokenResponse(updatedUser, 200, res);
   } catch (error: any) {
     next(error);
   }
