@@ -42,6 +42,34 @@ enum CompanySize {
   SIZE_1000_PLUS
 }
 
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  DEPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  CREATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  UPI
+  NETBANKING
+  WALLET
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
 // -------------------- MODEL -------------------------
 
 model Avatar {
@@ -173,6 +201,9 @@ model User {
   // Testimonials
   testimonials Testimonial[]
 
+  // Payments
+  payments Payment[]
+
   // Company
   company Company?
 
@@ -292,7 +323,7 @@ model Company {
 
   logo Logo?
 
-  // subscriptions Subscription[]
+  subscriptions Subscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -325,6 +356,8 @@ model Plan {
 
   features String[]
 
+  subscriptions Subscription[]
+
   isDefault    Boolean @default(false)
   displayOrder Int     @default(0)
   isActive     Boolean @default(true)
@@ -333,4 +366,120 @@ model Plan {
   updatedAt DateTime @updatedAt
 
   @@index([isActive, displayOrder])
+}
+
+model Subscription {
+  id String @id @default(uuid())
+
+  // Employer
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Plan
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  // Payment
+  orderId    String? @unique
+  paymentRef String?
+
+  // Usage
+  postsRemaining    Int
+  totalPostsGranted Int
+
+  // Dates
+  startDate    DateTime @default(now())
+  expiryDate   DateTime
+  cancelledAt  DateTime?
+  lastBilledAt DateTime?
+
+  // Status
+  status SubscriptionStatus @default(ACTIVE)
+
+  // Payment
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@index([expiryDate])
+}
+
+model PaymentWebhookEvent {
+  id String @id @default(uuid())
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  eventId String  @unique
+  type    String
+
+  payload Json
+
+  processedAt DateTime?
+
+  receivedAt DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([type])
+}
+
+model Refund {
+  id String @id @default(uuid())
+
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  razorpayRefundId String       @unique
+  amount           Int
+  reason           String?
+  status           RefundStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([paymentId])
+  @@index([status])
+}
+
+model Payment {
+  id String @id @default(uuid())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  amount   Int
+  currency Currency @default(INR)
+
+  razorpayOrderId   String  @unique
+  razorpayPaymentId String? @unique
+  razorpaySignature String?
+
+  webhookEvents PaymentWebhookEvent[]
+
+  metadata Json?
+
+  method PaymentMethod?
+
+  failureReason String?
+
+  refunds Refund[]
+
+  status PaymentStatus @default(CREATED)
+
+  receipt String?
+
+  capturedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+  @@index([subscriptionId])
 }
