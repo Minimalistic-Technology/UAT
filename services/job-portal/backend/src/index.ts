@@ -3,8 +3,10 @@ import type { Application, NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import mongoose from 'mongoose';
+import cluster from 'node:cluster';
+import os from 'node:os';
 import { connectDB } from './config/database.js';
+import { prisma } from "./lib/prisma.js"
 // Trigger nodemon restart to clear rate limiter RAM
 import { config } from './config/env.js';
 import { generalLimiter } from './middleware/rateLimiter.js';
@@ -115,8 +117,14 @@ app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 // Health check
-app.get('/api/health', (req: Request, res: Response) => {
-  const isDbConnected = mongoose.connection.readyState === 1;
+app.get('/api/health', async (req: Request, res: Response) => {
+  let isDbConnected = false;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    isDbConnected = true;
+  } catch (error) {
+    isDbConnected = false;
+  }
   const status = isDbConnected ? 'operational' : 'degraded';
 
   res.status(isDbConnected ? 200 : 503).json(new ApiResponse(
@@ -155,10 +163,23 @@ app.use((req: Request, res: Response) => {
 });
 
 if (process.env.NODE_ENV !== "test") {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
+  if (cluster.isPrimary) {
+    const numCPUs = os.cpus().length;
+    console.log(`Primary ${process.pid} is running. Forking for ${numCPUs} CPUs.`);
+
+    for (let i = 0; i < numCPUs; i++) {
+      cluster.fork();
+    }
+
+    cluster.on('exit', (worker, code, signal) => {
+      console.warn(`Worker ${worker.process.pid} died. Restarting...`);
+      cluster.fork();
+    });
+  } else {
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT} (Worker ${process.pid})`);
+    });
+  }
 }
 
 export { app };
-
