@@ -6,7 +6,6 @@ import helmet from 'helmet';
 import cluster from 'node:cluster';
 import os from 'node:os';
 import { connectDB } from './config/database.js';
-import { prisma } from "./lib/prisma.js"
 // Trigger nodemon restart to clear rate limiter RAM
 import { config } from './config/env.js';
 import { generalLimiter } from './middleware/rateLimiter.js';
@@ -41,6 +40,7 @@ import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from '@as-integrations/express5';
 import { typeDefs, resolvers } from "./graphql/index.js";
 import { createContext } from "./graphql/context.js";
+import mongoose from 'mongoose';
 
 const app: Application = express();
 const apolloServer = new ApolloServer({
@@ -118,13 +118,7 @@ app.use("/api/notifications", notificationRoutes);
 
 // Health check
 app.get('/api/health', async (req: Request, res: Response) => {
-  let isDbConnected = false;
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    isDbConnected = true;
-  } catch (error) {
-    isDbConnected = false;
-  }
+  let isDbConnected = mongoose.connection.readyState === 1;
   const status = isDbConnected ? 'operational' : 'degraded';
 
   res.status(isDbConnected ? 200 : 503).json(new ApiResponse(
