@@ -1,0 +1,27 @@
+name: Deploy Job Portal to VPS
+
+on:
+  push:
+    branches:
+      - main-learning
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            cd UAT/services/minimalistic-learning/
+            git fetch origin
+            git checkout -B main-learning origin/main-learning
+            git reset --hard origin/main-learning
+            docker-compose up -d --build --remove-orphans
+            docker image prune -f
