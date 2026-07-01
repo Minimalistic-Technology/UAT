@@ -21,6 +21,10 @@ export const blogService = {
     const response = await api.get("/posts", { params });
     return response.data;
   },
+  getTrendingBlogs: async (): Promise<BlogResponse["data"][]> => {
+    const response = await api.get("/posts");
+    return response.data?.data?.trending?.slice(0, 6) || [];
+  },
   getBlogById: async (id: string): Promise<BlogResponse> => {
     const response = await api.get(`/posts/id/${id}`);
     return response.data;

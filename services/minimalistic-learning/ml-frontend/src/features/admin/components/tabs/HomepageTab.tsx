@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { toast } from "sonner";
-import { Hero } from "@/components/Hero";
+import { HeroFeatures, HeroHeader } from "@/features/landing/components";
 
 const DEFAULT_FORM = {
   badgeText: "",
@@ -334,7 +334,8 @@ export default function HomepageTab() {
                 style={{ transform: "scale(0.5)" }}
               >
                 <div className="custom-scrollbar bg-background pointer-events-none h-full w-full overflow-x-hidden overflow-y-auto select-none">
-                  <Hero previewData={formData} />
+                  <HeroHeader heroContent={formData ?? null} />
+                  <HeroFeatures heroContent={formData ?? null} />
                 </div>
               </div>
             </div>

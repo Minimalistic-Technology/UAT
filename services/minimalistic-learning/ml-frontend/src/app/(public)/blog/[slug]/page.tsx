@@ -20,7 +20,7 @@ const BlogDetailPage = async ({ params }: Props) => {
 
   if (false) {
     // =========================================
-    // OLD SERVER COMPONENT FETCHING LOGIC 
+    // OLD SERVER COMPONENT FETCHING LOGIC
     // (Hidden but safe, so it is never lost)
     // =========================================
     let blog: any = null;
@@ -111,7 +111,7 @@ const BlogDetailPage = async ({ params }: Props) => {
         {/* Silently tracks 1 unique view */}
         <ViewTracker slug={slug} />
         <BlogDetail blog={blog} latestBlogs={latestBlogs} />
-      </main >
+      </main>
     );
     // ----------- END OLD SERVER COMPONENT ------------
   } // End if(false)

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { Hero } from "@/components/Hero";
 import TrendingSection from "@/components/TrendingSection";
 import { usePublicGlobalStore } from "@/store/publicGlobalStore";
+import { HeroFeatures, HeroHeader } from "@/features/landing/components";
 
 export default function Home() {
   const { homeContent, fetchHomeContent } = usePublicGlobalStore();
@@ -14,7 +14,8 @@ export default function Home() {
 
   return (
     <main className="bg-background min-h-screen">
-      <Hero previewData={homeContent?.hero ?? null} />
+      <HeroHeader heroContent={homeContent?.hero ?? null} />
+      <HeroFeatures heroContent={homeContent?.hero ?? null} />
       <TrendingSection
         trendingBadge={homeContent?.hero?.trendingBadge}
         trendingTitle={homeContent?.hero?.trendingTitle}

@@ -1,10 +1,19 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { TrendingUp, Eye, Heart, Clock, ArrowRight, Flame } from "lucide-react";
-import { api } from "@/lib/api";
+import {
+  TrendingUp,
+  Eye,
+  Heart,
+  Clock,
+  ArrowRight,
+  Flame,
+  AlertTriangle,
+} from "lucide-react";
+import { useGetTrendingBlogs } from "@/features/blog/hooks/use-get-trending-blogs";
+import { Tilt } from "@/components/ui/tilt";
+import { Reveal } from "@/components/ui/reveal";
 
 interface TrendPost {
   id?: string;
@@ -23,94 +32,44 @@ interface TrendPost {
   createdAt: string;
 }
 
-/* ── Scroll Reveal ─────────────────────────────────────────────── */
-function Reveal({
-  children,
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [vis, setVis] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setVis(true);
-          obs.disconnect();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div
-      ref={ref}
-      style={{
-        opacity: vis ? 1 : 0,
-        transform: vis ? "none" : "translateY(28px)",
-        transition: `opacity .6s ease ${delay}ms, transform .6s ease ${delay}ms`,
-      }}
-    >
-      {children}
-    </div>
-  );
+interface TrendingSectionProps {
+  trendingBadge?: string;
+  trendingTitle?: string;
 }
 
-/* ── 3D Tilt Card ──────────────────────────────────────────────── */
-function TiltCard({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLAnchorElement>(null);
-  const move = (e: React.MouseEvent) => {
-    if (!ref.current) return;
-    const { left, top, width, height } = ref.current.getBoundingClientRect();
-    const x = (e.clientX - left) / width - 0.5;
-    const y = (e.clientY - top) / height - 0.5;
-    ref.current.style.transform = `perspective(800px) rotateY(${x * 5}deg) rotateX(${-y * 5}deg) translateZ(5px)`;
-  };
-  const leave = () => {
-    if (ref.current)
-      ref.current.style.transform =
-        "perspective(800px) rotateY(0) rotateX(0) translateZ(0)";
-  };
-  return React.cloneElement(children as React.ReactElement<any>, {
-    ref,
-    onMouseMove: move,
-    onMouseLeave: leave,
-  });
-}
-
-/* ── Rank badge colours ───────────────────────────────────────── */
 const RANK_STYLES = [
   "bg-yellow-500 text-white shadow-yellow-500/30",
   "bg-gray-400 text-white shadow-gray-400/30",
   "bg-amber-600 text-white shadow-amber-600/30",
 ];
 
-interface TrendingSectionProps {
-  trendingBadge?: string;
-  trendingTitle?: string;
-}
-
 export default function TrendingSection({
   trendingBadge,
   trendingTitle,
 }: TrendingSectionProps = {}) {
-  const [posts, setPosts] = useState<TrendPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: postsData = [],
+    isLoading: loading,
+    isError,
+  } = useGetTrendingBlogs();
+  const posts = postsData as unknown as TrendPost[];
 
-  useEffect(() => {
-    // ✅ FIX: /public/content/home duplicate call removed — props se milta hai page.tsx se
-    api
-      .get("/posts")
-      .then((res: any) => setPosts(res.data?.data?.trending?.slice(0, 6) || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  if (isError) {
+    return (
+      <section className="bg-background border-theme-accent/10 relative w-full border-t px-4 py-12 sm:px-6 lg:px-8">
+        <div className="relative z-10 w-full text-center">
+          <div className="mx-auto flex max-w-lg flex-col items-center justify-center rounded-2xl border border-dashed border-red-500/20 bg-red-500/5 px-6 py-12 text-red-500">
+            <AlertTriangle size={48} className="mb-4 text-red-500/40" />
+            <h3 className="text-xl font-bold">Unable to load trending posts</h3>
+            <p className="mt-2 text-sm text-red-500/80">
+              We encountered an issue while fetching the latest articles. Please
+              check back later.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (loading)
     return (
@@ -124,7 +83,23 @@ export default function TrendingSection({
       </section>
     );
 
-  if (!posts.length) return null;
+  if (!posts.length) {
+    return (
+      <section className="bg-background border-theme-accent/10 relative w-full border-t px-4 py-12 sm:px-6 lg:px-8">
+        <div className="relative z-10 w-full text-center">
+          <div className="border-theme-accent/20 bg-theme-element-sec mx-auto flex max-w-lg flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-12">
+            <TrendingUp size={48} className="text-foreground/20 mb-4" />
+            <h3 className="text-foreground text-xl font-bold">
+              No Trending Posts Yet
+            </h3>
+            <p className="text-foreground/60 mt-2 text-sm">
+              Check back later for the most popular articles and insights.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-background border-theme-accent/10 relative w-full border-t px-4 py-12 sm:px-6 lg:px-8">
@@ -162,10 +137,16 @@ export default function TrendingSection({
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:gap-10">
           {posts.map((post, i) => (
             <Reveal key={post.id || post._id} delay={i * 80}>
-              <TiltCard>
+              <Tilt
+                className="h-full"
+                rotationFactor={5}
+                scale={1}
+                perspective={800}
+                translateZ={5}
+              >
                 <Link
                   href={`/blog/${post.slug}`}
-                  className="group bg-theme-element border-theme-accent/20 hover:border-theme-action/40 flex h-full flex-col overflow-hidden rounded-[2rem] border shadow-sm transition-all duration-500 will-change-transform hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-none"
+                  className="group bg-theme-element border-theme-accent/20 hover:border-theme-action/40 flex h-full flex-col overflow-hidden rounded-4xl border shadow-sm transition-all duration-500 will-change-transform hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-none"
                 >
                   <div className="bg-theme-element-sec border-theme-accent/10 relative aspect-video w-full overflow-hidden border-b">
                     {post.coverImage?.url || post.coverImageUrl ? (
@@ -183,11 +164,11 @@ export default function TrendingSection({
                     )}
 
                     {/* Rank Badge */}
-                    <div
+                    {/* <div
                       className={`absolute top-4 left-4 flex h-9 w-9 items-center justify-center rounded-xl text-sm font-black shadow-md ${RANK_STYLES[i] || "bg-theme-element-sec text-foreground border-theme-accent/30 border shadow-sm"}`}
                     >
                       #{i + 1}
-                    </div>
+                    </div> */}
 
                     {/* View Count floating */}
                     <div className="bg-background/90 text-foreground border-theme-accent/20 absolute right-4 bottom-4 flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[10px] font-black backdrop-blur-md">
@@ -222,7 +203,7 @@ export default function TrendingSection({
                     </div>
                   </div>
                 </Link>
-              </TiltCard>
+              </Tilt>
             </Reveal>
           ))}
         </div>
