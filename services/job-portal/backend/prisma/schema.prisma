@@ -75,6 +75,22 @@ enum CouponType {
   AMOUNT
 }
 
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DocumentType {
+  GST_CERTIFICATE
+  COMPANY_PAN
+  INCORPORATION_CERTIFICATE
+  AADHAAR
+  PAN
+  PASSPORT
+  DRIVING_LICENSE
+}
+
 // -------------------- MODEL -------------------------
 
 model Avatar {
@@ -215,6 +231,9 @@ model User {
   // Company
   company Company?
 
+  kycSubmissions  KYC[] @relation("KycSubmitter")
+  kycReviewsGiven KYC[] @relation("KycReviewer")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -275,18 +294,6 @@ model Testimonial {
   @@index([status])
 }
 
-model Logo {
-  id       String @id @default(uuid())
-  url      String
-  publicId String
-
-  companyId String?  @unique
-  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model CompanyLocation {
   id String @id @default(uuid())
 
@@ -329,9 +336,12 @@ model Company {
   isVerified Boolean   @default(false)
   verifiedAt DateTime?
 
-  logo Logo?
+  logoId String?       @unique
+  logo   StorageAsset? @relation(fields: [logoId], references: [id], onDelete: SetNull)
 
   subscriptions Subscription[]
+
+  kycSubmissions KYC[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -534,4 +544,59 @@ model CouponUsage {
 
   @@unique([couponId, userId])
   @@index([userId])
+}
+
+model KYC {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation("KycSubmitter", fields: [userId], references: [id], onDelete: Cascade)
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  companyDocumentId   String
+  companyDocument     StorageAsset @relation("CompanyDocument", fields: [companyDocumentId], references: [id], onDelete: Cascade)
+  companyDocumentType DocumentType
+
+  personalDocumentId   String
+  personalDocument     StorageAsset @relation("PersonalDocument", fields: [personalDocumentId], references: [id], onDelete: Cascade)
+  personalDocumentType DocumentType
+
+  status KycStatus @default(PENDING)
+
+  rejectionReason String?
+
+  reviewedById String?
+  reviewedBy   User?     @relation("KycReviewer", fields: [reviewedById], references: [id])
+  reviewedAt   DateTime?
+
+  isLatest Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([status])
+  @@index([userId, isLatest])
+  @@index([companyDocumentId])
+  @@index([personalDocumentId])
+}
+
+model StorageAsset {
+  id String @id @default(uuid())
+
+  url      String
+  publicId String
+
+  mimeType  String?
+  sizeBytes Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company             Company?
+  companyDocumentFor  KYC[]    @relation("CompanyDocument")
+  personalDocumentFor KYC[]    @relation("PersonalDocument")
 }
