@@ -26,6 +26,22 @@ enum TestimonialStatus {
   REJECTED
 }
 
+enum Currency {
+  INR
+  USD
+  EUR
+  GBP
+}
+
+enum CompanySize {
+  SIZE_1_10
+  SIZE_11_50
+  SIZE_51_200
+  SIZE_201_500
+  SIZE_501_1000
+  SIZE_1000_PLUS
+}
+
 // -------------------- MODEL -------------------------
 
 model Avatar {
@@ -157,6 +173,9 @@ model User {
   // Testimonials
   testimonials Testimonial[]
 
+  // Company
+  company Company?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -215,4 +234,103 @@ model Testimonial {
 
   @@index([userId])
   @@index([status])
+}
+
+model Logo {
+  id       String @id @default(uuid())
+  url      String
+  publicId String
+
+  companyId String?  @unique
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CompanyLocation {
+  id String @id @default(uuid())
+
+  address String?
+  city    String?
+  state   String?
+  country String?
+  zipCode String?
+
+  isHeadquarters Boolean @default(false)
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([city, country])
+}
+
+model Company {
+  id String @id @default(uuid())
+
+  name        String
+  slug        String  @unique
+  description String?
+
+  website     String?
+  industry    String
+  companySize CompanySize       @default(SIZE_1_10)
+  locations   CompanyLocation[]
+
+  socialLinks Json?
+
+  // Owner
+  ownerId String @unique
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  isVerified Boolean   @default(false)
+  verifiedAt DateTime?
+
+  logo Logo?
+
+  // subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([industry])
+  @@index([isVerified])
+}
+
+model Plan {
+  id String @id @default(uuid())
+
+  name        String  @unique
+  description String?
+
+  /// Store the price in the smallest currency unit
+  /// Example: ₹10.89 -> 1089
+  price    Int
+  currency Currency @default(INR)
+
+  // Subscription lifecycle: how long the PLAN ITSELF is active
+  subscriptionDurationDays Int
+
+  // Usage limits: what the plan allows while active
+  maxActiveJobPosts Int // -1 means unlimited
+  maxTeamMembers    Int @default(0) // -1 means unlimited
+
+  // Per-job behavior: applies to EACH job posted under this plan
+  jobPostValidityDays Int
+  allowResumeDownload Boolean
+
+  features String[]
+
+  isDefault    Boolean @default(false)
+  displayOrder Int     @default(0)
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, displayOrder])
 }
