@@ -114,3 +114,5 @@ out
 .pnp.*
 
 /build
+
+/generated/prisma
