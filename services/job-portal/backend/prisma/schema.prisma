@@ -20,6 +20,12 @@ enum WorkType {
   ON_SITE
 }
 
+enum TestimonialStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // -------------------- MODEL -------------------------
 
 model Avatar {
@@ -95,7 +101,7 @@ model Experience {
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
+
   @@index([userId])
 }
 
@@ -148,8 +154,65 @@ model User {
   resetPasswordOtp     String?
   resetPasswordExpires DateTime?
 
+  // Testimonials
+  testimonials Testimonial[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([isActive])
+}
+
+model TempUser {
+  id String @id @default(uuid())
+
+  firstName String
+  lastName  String
+
+  email    String @unique
+  password String
+
+  phone String?
+
+  role GlobalRole @default(USER)
+
+  otp       String
+  expiresAt DateTime
+
+  isEmployer Boolean @default(false)
+
+  companyName String?
+  companyRole String?
+  industry    String?
+
+  resendAttempts Int @default(0)
+
+  blockedUntil DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // We'll schedule a cron job to delete the data for those user who just signedIn but never verified
+  @@index([expiresAt])
+}
+
+model Testimonial {
+  id      String @id @default(uuid())
+  content String
+  rating  Int    @default(5)
+
+  authorName    String
+  authorRole    String?
+  authorCompany String?
+
+  status TestimonialStatus @default(PENDING)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
