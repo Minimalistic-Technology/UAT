@@ -28,7 +28,7 @@ export const Testimonials = () => {
             </h2>
           </div>
 
-          <div
+          {/* <div
             className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-4"
             aria-label="Rated 4.9 stars by 2100 users"
           >
@@ -49,7 +49,7 @@ export const Testimonials = () => {
                 2,100+ reviews
               </span>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Testimonials Grid */}

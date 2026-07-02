@@ -6,78 +6,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, MapPin, Flame } from "lucide-react";
 import { useGetJobs } from "@/features/user/hooks/use-job";
 
-const JOBS = [
-  {
-    id: 1,
-    company: "Linear",
-    role: "Senior Product Designer",
-    logo: "L",
-    location: "Remote",
-    type: "Full-time",
-    salary: "₹12,00,000 - ₹15,00,000",
-    tags: ["Design Systems", "Figma", "B2B SaaS"],
-    category: "Design",
-    hot: true,
-  },
-  {
-    id: 2,
-    company: "Vercel",
-    role: "Staff Frontend Engineer",
-    logo: "V",
-    location: "SF / Remote",
-    type: "Full-time",
-    salary: "₹20,00,000 - ₹25,00,000",
-    tags: ["React", "Next.js", "TypeScript"],
-    category: "Engineering",
-    hot: true,
-  },
-  {
-    id: 3,
-    company: "Stripe",
-    role: "Machine Learning Engineer",
-    logo: "S",
-    location: "New York",
-    type: "Full-time",
-    salary: "₹18,00,000 - ₹24,00,000",
-    tags: ["PyTorch", "Fraud ML", "Python"],
-    category: "Data & AI",
-  },
-  {
-    id: 4,
-    company: "Figma",
-    role: "Growth Marketing Lead",
-    logo: "F",
-    location: "Remote — EU",
-    type: "Full-time",
-    salary: "₹9,00,000 - ₹12,00,000",
-    tags: ["Lifecycle", "SEO", "Analytics"],
-    category: "Marketing",
-  },
-  {
-    id: 5,
-    company: "Ramp",
-    role: "Senior DevOps Engineer",
-    logo: "R",
-    location: "Remote",
-    type: "Full-time",
-    salary: "₹15,00,000 - ₹20,00,000",
-    tags: ["AWS", "Terraform", "K8s"],
-    category: "Engineering",
-  },
-  {
-    id: 6,
-    company: "Notion",
-    role: "Product Manager, AI",
-    logo: "N",
-    location: "SF",
-    type: "Full-time",
-    salary: "₹20,00,000 - ₹25,00,000",
-    tags: ["LLM", "0-1", "Research"],
-    category: "Data & AI",
-    hot: true,
-  },
-];
-
 const FILTERS = ["All", "Engineering", "Design", "Data & AI", "Marketing"];
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -92,12 +20,7 @@ export const FeaturedJobs = () => {
   });
 
   const dbJobs = responseData?.data?.jobs || [];
-  console.log("Db jobs", dbJobs);
-  const filteredMockJobs = JOBS.filter(
-    (job) => activeTab === "All" || job.category === activeTab,
-  );
-
-  const displayJobs = dbJobs.length > 0 ? dbJobs.slice(0, 6) : filteredMockJobs;
+  const displayJobs = dbJobs.slice(0, 6);
 
   return (
     <section
@@ -140,7 +63,11 @@ export const FeaturedJobs = () => {
         <div className="scrollbar-hide max-h-[600px] overflow-y-scroll rounded-4xl border border-slate-200 bg-white shadow-sm">
           <motion.div layout className="divide-y divide-slate-100">
             <AnimatePresence mode="popLayout">
-              {displayJobs.length === 0 ? (
+              {isLoading ? (
+                <div className="p-16 text-center text-slate-400">
+                  <p className="text-lg font-bold">Loading jobs...</p>
+                </div>
+              ) : displayJobs.length === 0 ? (
                 <div className="p-16 text-center text-slate-400">
                   <p className="text-lg font-bold">No active jobs found</p>
                   <p className="mt-1 text-sm">
@@ -235,7 +162,7 @@ export const FeaturedJobs = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.98 }}
                       transition={{ duration: 0.4, ease: "easeIn" }}
-                      href={`/job/${jobId}`}
+                      href={job.listingType === "job" ? `/job/${jobId}` : `/internship/${jobId}`}
                       key={String(jobId)}
                       className="group hover:bg-primary/5 relative flex cursor-pointer flex-col gap-6 px-6 py-8 transition-colors md:flex-row md:items-center md:px-10"
                     >
@@ -305,7 +232,7 @@ export const FeaturedJobs = () => {
             onClick={() => router.push("/find-jobs")}
             className="group hover:border-primary hover:text-primary hover:shadow-primary/20 flex h-14 items-center gap-3 rounded-2xl border-2 border-slate-200 bg-white px-8 font-bold text-slate-900 shadow-sm transition-all duration-300 hover:bg-white hover:shadow-xl"
           >
-            Browse all 12,804 jobs
+            Browse all jobs
             <ArrowRight
               size={18}
               className="transition-transform group-hover:translate-x-1"

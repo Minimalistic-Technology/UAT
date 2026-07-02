@@ -157,22 +157,30 @@ app.use((req: Request, res: Response) => {
 });
 
 if (process.env.NODE_ENV !== "test") {
-  if (cluster.isPrimary) {
-    const numCPUs = os.cpus().length;
-    console.log(`Primary ${process.pid} is running. Forking for ${numCPUs} CPUs.`);
-
-    for (let i = 0; i < numCPUs; i++) {
-      cluster.fork();
-    }
-
-    cluster.on('exit', (worker, code, signal) => {
-      console.warn(`Worker ${worker.process.pid} died. Restarting...`);
-      cluster.fork();
+  if (process.env.NODE_ENV === "development") {
+    // Run without clustering in development
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT} (Development mode)`);
     });
   } else {
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT} (Worker ${process.pid})`);
-    });
+    // Run with clustering in production/other environments
+    if (cluster.isPrimary) {
+      const numCPUs = os.cpus().length;
+      console.log(`Primary ${process.pid} is running. Forking for ${numCPUs} CPUs.`);
+
+      for (let i = 0; i < numCPUs; i++) {
+        cluster.fork();
+      }
+
+      cluster.on('exit', (worker, code, signal) => {
+        console.warn(`Worker ${worker.process.pid} died. Restarting...`);
+        cluster.fork();
+      });
+    } else {
+      app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT} (Worker ${process.pid})`);
+      });
+    }
   }
 }
 
