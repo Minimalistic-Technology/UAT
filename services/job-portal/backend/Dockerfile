@@ -1,25 +1,27 @@
 # Stage 1
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
+RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml* ./
 
-RUN npm install
+RUN pnpm install
 
 COPY . .
 
-RUN npm run build
+RUN pnpm run build
 
 # Stage 2: Production environment
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-COPY package*.json ./
+RUN npm install -g pnpm
+COPY package.json pnpm-lock.yaml* ./
 
 # Install only production dependencies
-RUN npm install --omit=dev
+RUN pnpm install --prod --ignore-scripts
 
 # Copy compiled code from the builder stage
 COPY --from=builder /app/build ./build
@@ -29,4 +31,4 @@ ENV PORT=5000
 EXPOSE 5000
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
