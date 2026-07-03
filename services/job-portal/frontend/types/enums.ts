@@ -23,6 +23,12 @@ export enum WorkMode {
   TEMPWFH = "temporary work from home",
 }
 
+export enum WorkType {
+  REMOTE = "REMOTE",
+  HYBRID = "HYBRID",
+  ON_SITE = "ON_SITE"
+}
+
 export enum GlobalRole {
   SUPER_ADMIN = "super_admin",
   USER = "user",

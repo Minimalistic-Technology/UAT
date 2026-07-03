@@ -13,7 +13,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useUpdateProfile } from "@/hooks/use-user";
-import { User, Experience } from "@/types";
+import { User, ProfessionalExperience as Experience } from "@/types/new-index";
 import { ProfileFormValues, profileSchema } from "@/validations";
 import { BasicInfoTab } from "./_components/basic-info-tab";
 import { SkillsLanguagesTab } from "./_components/skills-languages-tab";
@@ -61,7 +61,7 @@ export const EditProfileDialog = ({
         skills: user.skills || [],
         languages: user.languages || [],
         experience:
-          user.experience?.map((e) => ({
+          user.experiences?.map((e) => ({
             title: e.title || "",
             company: e.company || "",
             location: e.location || "",
@@ -75,7 +75,7 @@ export const EditProfileDialog = ({
             description: e.description || "",
           })) || [],
         education:
-          user.education?.map((e) => ({
+          user.educations?.map((e) => ({
             degree: e.degree || "",
             institution: e.institution || "",
             graduationYear: e.graduationYear || new Date().getFullYear(),
@@ -94,7 +94,7 @@ export const EditProfileDialog = ({
         ...e,
         startDate: new Date(e.startDate),
         endDate: e.endDate ? new Date(e.endDate) : undefined,
-      })) as Experience[],
+      })) as unknown as Experience[],
     } as any;
 
     updateProfile(payload, {

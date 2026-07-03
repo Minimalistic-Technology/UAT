@@ -16,6 +16,7 @@ import {
   RoleCategory,
   StipendType,
   WorkMode,
+  WorkType
 } from "./enums";
 
 export type CloudinaryAsset = {
@@ -28,6 +29,7 @@ export type ProfessionalExperience = {
   company: string;
   location: string;
   startDate: Date;
+  workType?: WorkType; 
   endDate?: Date;
   current: boolean;
   description?: string;
@@ -99,7 +101,7 @@ export type Pagination = {
 };
 
 export type User = {
-  _id: string; // mongoose.objectId
+  id: string; // mongoose.objectId
   firstName: string;
   lastName: string;
   email: string;
@@ -122,8 +124,8 @@ export type User = {
   };
   skills?: string[];
   languages?: string[];
-  experience?: ProfessionalExperience[];
-  education?: UserEducationDetails[];
+  experiences?: ProfessionalExperience[];
+  educations?: UserEducationDetails[];
   location?: Location;
   company?: string; // mongoose.objectId
   googleId?: string;

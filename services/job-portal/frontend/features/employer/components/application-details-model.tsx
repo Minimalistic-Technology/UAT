@@ -20,6 +20,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { getInlineUrl } from "@/utils";
+import { ProfessionalExperience, UserEducationDetails } from "@/types/new-index";
 export const ApplicationDetailModal = ({
   application,
 }: {
@@ -141,7 +142,7 @@ export const ApplicationDetailModal = ({
               </div>
               <div className="space-y-4">
                 {jobSeeker.experience?.length > 0 ? (
-                  jobSeeker.experience.map((exp: any, i: number) => (
+                  jobSeeker.experience.map((exp: ProfessionalExperience, i: number) => (
                     <Card
                       key={i}
                       className="border-l-primary bg-muted/10 border-l-4 shadow-none"
@@ -187,7 +188,7 @@ export const ApplicationDetailModal = ({
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {jobSeeker.education?.length > 0 ? (
-                  jobSeeker.education.map((edu: any, i: number) => (
+                  jobSeeker.education.map((edu: UserEducationDetails, i: number) => (
                     <div
                       key={i}
                       className="bg-card text-card-foreground flex flex-col rounded-xl border p-4 shadow-sm"

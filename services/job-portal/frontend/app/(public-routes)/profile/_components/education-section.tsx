@@ -1,5 +1,5 @@
 import { GraduationCap } from "lucide-react";
-import { User } from "@/types";
+import { User } from "@/types/new-index";
 import { ProfileSectionCard } from "./profile-section-card";
 
 interface EducationSectionProps {
@@ -9,9 +9,9 @@ interface EducationSectionProps {
 export const EducationSection = ({ user }: EducationSectionProps) => {
   return (
     <ProfileSectionCard icon={GraduationCap} title="Education">
-      {user?.education && user.education.length > 0 ? (
+      {user?.educations && user.educations.length > 0 ? (
         <div className="space-y-6">
-          {user.education.map((edu: any, index: number) => (
+          {user.educations.map((edu: any, index: number) => (
             <div key={index} className="border-b pb-6 last:border-0 last:pb-0">
               <div className="flex items-start justify-between gap-4">
                 <div>

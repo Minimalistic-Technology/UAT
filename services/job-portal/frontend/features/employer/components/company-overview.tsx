@@ -18,7 +18,7 @@ export const CompanyOverview = ({
 }: CompanyOverviewProps) => {
   const { data: userDetailsResponse } = useGetUserDetails();
   const user = userDetailsResponse?.data;
-  const isOwner = user && company?.owner?._id === user._id;
+  const isOwner = user && company?.owner?.id === user.id;
 
   if (!company) return null;
 

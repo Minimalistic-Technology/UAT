@@ -1,5 +1,5 @@
 import { Briefcase, MapPin } from "lucide-react";
-import { User } from "@/types";
+import { User, ProfessionalExperience } from "@/types/new-index";
 import { ProfileSectionCard } from "./profile-section-card";
 
 interface ExperienceSectionProps {
@@ -20,9 +20,9 @@ const formatWorkType = (type?: string) => {
 export const ExperienceSection = ({ user }: ExperienceSectionProps) => {
   return (
     <ProfileSectionCard icon={Briefcase} title="Experience">
-      {user?.experience && user.experience.length > 0 ? (
+      {user?.experiences && user.experiences.length > 0 ? (
         <div className="space-y-6">
-          {user.experience.map((exp: any, index: number) => (
+          {user.experiences.map((exp: ProfessionalExperience, index: number) => (
             <div key={index} className="border-b pb-6 last:border-0 last:pb-0">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-3">

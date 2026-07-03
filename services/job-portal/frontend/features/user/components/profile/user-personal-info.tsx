@@ -15,8 +15,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { getInlineUrl } from "@/utils";
 
+import { User, ProfessionalExperience, UserEducationDetails } from "@/types/new-index";
+
 interface UserPersonalInfoProps {
-  user: any;
+  user: User;
 }
 
 export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
@@ -67,7 +69,7 @@ export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
               Key Skills
             </span>
             <div className="flex flex-wrap gap-2">
-              {user.skills?.length > 0 ? (
+              {user.skills && user.skills?.length > 0 ? (
                 user.skills.map((skill: string, index: number) => (
                   <Badge
                     key={index}
@@ -152,12 +154,12 @@ export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {user.experience?.length > 0 ? (
-            user.experience.map((exp: any, index: number) => (
+          {user.experiences && user.experiences.length > 0 ? (
+            user.experiences.map((exp: ProfessionalExperience, index: number) => (
               <div key={index} className="relative flex gap-4">
                 <div className="flex flex-col items-center">
                   <div className="bg-primary/20 border-primary z-10 h-3 w-3 rounded-full border-2" />
-                  {index !== user.experience.length - 1 && (
+                  {index !== user.experiences!.length - 1 && (
                     <div className="bg-border my-1 w-px flex-1" />
                   )}
                 </div>
@@ -225,12 +227,12 @@ export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {user.education?.length > 0 ? (
-            user.education.map((edu: any, index: number) => (
+          {user.educations && user.educations.length > 0 ? (
+            user.educations.map((edu: UserEducationDetails, index: number) => (
               <div key={index} className="relative flex gap-4">
                 <div className="flex flex-col items-center">
                   <div className="bg-primary/20 border-primary z-10 h-3 w-3 rounded-full border-2" />
-                  {index !== user.education.length - 1 && (
+                  {index !== user.educations!.length - 1 && (
                     <div className="bg-border my-1 w-px flex-1" />
                   )}
                 </div>

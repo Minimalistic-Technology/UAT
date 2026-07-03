@@ -67,7 +67,7 @@ const ActionCell = ({ user }: { user: UserWithCompany }) => {
                   : "border border-dashed border-slate-300 text-slate-400 hover:bg-green-100 hover:text-green-700 dark:border-slate-800 dark:hover:bg-green-900/30 dark:hover:text-green-400",
               )}
               disabled={isPending}
-              onClick={() => toggleUserStatus({ userId: user._id })}
+              onClick={() => toggleUserStatus({ userId: user.id })}
             >
               {user.isActive ? (
                 <UserMinus className="h-4 w-4" />
