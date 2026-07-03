@@ -243,6 +243,17 @@ enum SalaryPeriod {
   YEARLY
 }
 
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  SHORTLISTED
+  REJECTED
+  INTERVIEW
+  OFFERED
+  ACCEPTED
+  WITHDRAWN
+}
+
 // -------------------- MODEL -------------------------
 
 model Avatar {
@@ -267,6 +278,8 @@ model Resume {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   atsScore AtsScore?
+
+  applications Application[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -391,6 +404,10 @@ model User {
   drafts Draft[]
 
   baseListings BaseListing[]
+
+  applications Application[]
+
+  applicationStatusChanges ApplicationStatusHistory[] @relation("ApplicationStatusChangedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -850,8 +867,9 @@ model BaseListing {
   embedding Unsupported("vector(1536)")?
 
   internshipDetails Internship?
-
   jobDetails Job?
+
+  applications Application[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -904,4 +922,54 @@ model Job {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ApplicationStatusHistory {
+  id String @id @default(cuid())
+
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  status ApplicationStatus
+
+  changedAt DateTime @default(now())
+
+  changedById String?
+  changedBy   User?   @relation("ApplicationStatusChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  note String?
+
+  @@index([applicationId])
+  @@index([changedById])
+}
+
+model Application {
+  id String @id @default(cuid())
+
+  listingType DraftType
+
+  listingId String
+  listing   BaseListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  jobSeekerId String
+  jobSeeker   User         @relation(fields: [jobSeekerId], references: [id], onDelete: Cascade)
+
+  resumeId String?
+  resume   Resume? @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  status ApplicationStatus @default(PENDING)
+
+  interviewDate DateTime?
+  employerNotes String?
+
+  statusHistory ApplicationStatusHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([listingId, jobSeekerId])
+  @@index([jobSeekerId])
+  @@index([listingId])
+  @@index([status])
+  @@index([listingId, status])
 }
