@@ -100,8 +100,8 @@ app.use(
 
 // Routes
 app.use("/api/auth", authRoutes); // Done
-app.use("/api/jobs", jobRoutes);
-app.use("/api/internships", internshipRoutes);
+app.use("/api/jobs", jobRoutes); // Done
+app.use("/api/internships", internshipRoutes); // Done
 app.use("/api/drafts", draftRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/users", userRoutes); // Done
