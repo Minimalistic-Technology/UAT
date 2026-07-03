@@ -101,6 +101,148 @@ enum DraftType {
   INTERNSHIP
 }
 
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  FREELANCE
+}
+
+enum ExperienceLevel {
+  ENTRY
+  INTERMEDIATE
+  SENIOR
+  EXPERT
+}
+
+enum JobStatus {
+  ACTIVE
+  CLOSED
+  PENDING
+  REJECTED
+}
+
+enum GenderPreference {
+  ANY
+  MALE
+  FEMALE
+}
+
+enum EnglishFluency {
+  NONE
+  BASIC
+  INTERMEDIATE
+  FLUENT
+}
+
+enum WorkMode {
+  WORK_FROM_OFFICE
+  REMOTE
+  HYBRID
+  TEMPORARY_WFH
+}
+
+enum CompanyType {
+  STARTUP
+  MNC
+  FOREIGN_MNC
+  INDIAN_MNC
+  CORPORATE
+  GOVT_PSU
+  OTHERS
+}
+
+enum RoleCategory {
+  SOFTWARE_DEVELOPMENT
+  DATA_SCIENCE
+  DEVOPS
+  CYBERSECURITY
+  IT_SUPPORT
+  QA_TESTING
+  HARDWARE
+  UI_UX
+  GRAPHIC_DESIGN
+  PRODUCT_DESIGN
+  PRODUCT_MANAGEMENT
+  PROJECT_MANAGEMENT
+  BUSINESS_ANALYSIS
+  OPERATIONS
+  CONSULTING
+  SALES
+  DIGITAL_MARKETING
+  CONTENT
+  SEO_SEM
+  BRAND_MANAGEMENT
+  FINANCE
+  ACCOUNTING
+  LEGAL
+  COMPLIANCE
+  HUMAN_RESOURCES
+  RECRUITMENT
+  ADMINISTRATION
+  CUSTOMER_SUPPORT
+  RESEARCH
+  OTHER
+}
+
+enum Industry {
+  INFORMATION_TECHNOLOGY
+  SOFTWARE
+  ECOMMERCE
+  FINTECH
+  EDTECH
+  HEALTHTECH
+  BANKING
+  INSURANCE
+  HEALTHCARE
+  EDUCATION
+  MANUFACTURING
+  RETAIL
+  REAL_ESTATE
+  LOGISTICS
+  AUTOMOTIVE
+  ENERGY
+  TELECOM
+  MEDIA
+  ENTERTAINMENT
+  HOSPITALITY
+  AGRICULTURE
+  GOVERNMENT
+  NONPROFIT
+  OTHER
+}
+
+enum DegreeLevel {
+  HIGH_SCHOOL
+  DIPLOMA
+  BACHELORS
+  MASTERS
+  PHD
+  ANY
+}
+
+enum StipendType {
+  FIXED
+  PERFORMANCE_BASED
+  UNPAID
+}
+
+enum StipendPeriod {
+  MONTHLY
+  WEEKLY
+}
+
+enum DurationUnit {
+  WEEKS
+  MONTHS
+}
+
+enum SalaryPeriod {
+  HOURLY
+  MONTHLY
+  YEARLY
+}
+
 // -------------------- MODEL -------------------------
 
 model Avatar {
@@ -244,9 +386,11 @@ model User {
   kycSubmissions  KYC[] @relation("KycSubmitter")
   kycReviewsGiven KYC[] @relation("KycReviewer")
 
-  companyMembers  CompanyMember[]
+  companyMembers CompanyMember[]
 
   drafts Draft[]
+
+  baseListings BaseListing[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -360,6 +504,8 @@ model Company {
   members CompanyMember[]
 
   drafts Draft[]
+
+  baseListings BaseListing[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -622,19 +768,19 @@ model StorageAsset {
 model CompanyMember {
   id String @id @default(uuid())
 
-  userId    String
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   companyId String
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  role   CompanyRole
-  isActive   Boolean     @default(true)
+  role     CompanyRole
+  isActive Boolean     @default(true)
 
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-   @@unique([userId, companyId])
+  @@unique([userId, companyId])
 }
 
 model Draft {
@@ -655,4 +801,107 @@ model Draft {
 
   @@index([companyId])
   @@index([postedById])
+}
+
+model BaseListing {
+  id String @id @default(uuid())
+
+  title       String
+  description String
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  postedById String
+  postedBy   User   @relation(fields: [postedById], references: [id], onDelete: Cascade)
+
+  opportunityType DraftType
+  employmentType  EmploymentType
+  experienceLevel ExperienceLevel?
+  workMode        WorkMode
+  companyType     CompanyType
+  roleCategory    RoleCategory
+  industry        Industry
+
+  city    String?
+  state   String?
+  country String?
+
+  minimumDegree    DegreeLevel @default(ANY)
+  preferredFields  String[]
+  isDegreeRequired Boolean     @default(false)
+
+  skills       String[]
+  requirements String[]
+  benefits     String[]
+
+  genderPreference GenderPreference @default(ANY)
+  englishFluency   EnglishFluency   @default(NONE)
+
+  applicationDeadline DateTime?
+  openings            Int       @default(1)
+
+  status JobStatus @default(PENDING)
+
+  applicationsCount Int @default(0)
+
+  isDeleted Boolean @default(false)
+
+  embedding Unsupported("vector(1536)")?
+
+  internshipDetails Internship?
+
+  jobDetails Job?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([postedById])
+  @@index([status])
+  @@index([opportunityType])
+  @@index([city, country])
+  @@index([roleCategory])
+}
+
+model Internship {
+  id String @id @default(uuid())
+
+  listingId String      @unique
+  listing   BaseListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  stipendType     StipendType
+  stipendAmount   Int?
+  stipendCurrency Currency      @default(INR)
+  stipendPeriod   StipendPeriod @default(MONTHLY)
+
+  durationValue Int
+  durationUnit  DurationUnit
+
+  isPPO               Boolean   @default(false)
+  startDate           DateTime?
+  certificateProvided Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Job {
+  id String @id @default(uuid())
+
+  listingId String      @unique
+  listing   BaseListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  experienceLevel   ExperienceLevel
+  experienceInYears Int
+
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String       @default("USD")
+  salaryPeriod   SalaryPeriod @default(YEARLY)
+
+  // applications Application[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
