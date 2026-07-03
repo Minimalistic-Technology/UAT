@@ -1,12 +1,9 @@
 import type { NextFunction, Response } from "express";
-import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
+import { prisma } from "../lib/prisma.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
-import User, { GlobalRole } from "../models/User.model.js";
-import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import bcrypt from "bcryptjs";
-import Subscription from "../models/Subscription.model.js";
 
 export const getAllCompanyMembers = async (
   req: AuthRequest,
@@ -14,13 +11,15 @@ export const getAllCompanyMembers = async (
   next: NextFunction,
 ) => {
   try {
-    const currentUser = await CompanyMember.findOne({ user: req.user._id });
+    const currentUser = await prisma.companyMember.findFirst({
+      where: { userId: req.user?.id },
+    });
 
     if (!currentUser) {
       throw new ApiError(404, "Member record not found.");
     }
 
-    if (currentUser.role !== CompanyRole.OWNER) {
+    if (currentUser.role !== "OWNER") {
       throw new ApiError(403, "Access denied: Owners only.");
     }
 
@@ -28,12 +27,22 @@ export const getAllCompanyMembers = async (
       throw new ApiError(400, "Account deactivated.");
     }
 
-    const members = await CompanyMember.find({
-      company: currentUser.company,
-      _id: { $ne: currentUser._id },
-    })
-      .populate("user", "firstName lastName email avatar")
-      .lean();
+    const members = await prisma.companyMember.findMany({
+      where: {
+        companyId: currentUser.companyId,
+        id: { not: currentUser.id },
+      },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
+    });
 
     return res
       .status(200)
@@ -50,16 +59,14 @@ export const getAllCompanyMembers = async (
 };
 
 export const addMember = async (req: AuthRequest, res: Response) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const ownerMember = await CompanyMember.findOne({
-      user: req.user._id,
-    }).session(session);
+    const ownerMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user?.id },
+    });
+
     if (
       !ownerMember ||
-      ownerMember.role !== CompanyRole.OWNER ||
+      ownerMember.role !== "OWNER" ||
       !ownerMember.isActive
     ) {
       return res
@@ -67,35 +74,43 @@ export const addMember = async (req: AuthRequest, res: Response) => {
         .json({ success: false, message: "Unauthorized or invalid access." });
     }
 
-    const activeSubscription = await Subscription.findOne({
-      companyId: ownerMember.company,
-      status: "active",
-      expiryDate: { $gt: new Date() },
-    }).populate("planId").session(session);
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        companyId: ownerMember.companyId,
+        status: "ACTIVE",
+        expiryDate: { gt: new Date() },
+      },
+      include: { plan: true },
+    });
 
     if (!activeSubscription) {
-      return res.status(403).json({ success: false, message: "You must have an active subscription to add team members." });
+      return res.status(403).json({
+        success: false,
+        message: "You must have an active subscription to add team members.",
+      });
     }
 
-    const plan = activeSubscription.planId as any;
+    const plan = activeSubscription.plan;
 
-    if (plan.teamMemberLimit !== -1) {
-      const currentMemberCount = await CompanyMember.countDocuments({
-        company: ownerMember.company,
-        role: { $ne: CompanyRole.OWNER },
-      }).session(session);
+    if (plan.maxTeamMembers !== -1) {
+      const currentMemberCount = await prisma.companyMember.count({
+        where: {
+          companyId: ownerMember.companyId,
+          role: { not: "OWNER" },
+        },
+      });
 
-      if (currentMemberCount >= plan.teamMemberLimit) {
-        return res.status(403).json({ 
-          success: false, 
-          message: `Team member limit reached. Your current plan allows up to ${plan.teamMemberLimit} additional members.` 
+      if (currentMemberCount >= plan.maxTeamMembers) {
+        return res.status(403).json({
+          success: false,
+          message: `Team member limit reached. Your current plan allows up to ${plan.maxTeamMembers} additional members.`,
         });
       }
     }
 
     const { firstName, lastName, email, password } = req.body;
 
-    const existingUser = await User.findOne({ email }).session(session);
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res
         .status(400)
@@ -104,39 +119,32 @@ export const addMember = async (req: AuthRequest, res: Response) => {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const [newUser] = await User.create(
-      [
-        {
+    await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
           firstName,
           lastName,
           email,
           password: hashedPassword,
-          role: GlobalRole.USER,
+          role: "USER",
         },
-      ],
-      { session },
-    );
+      });
 
-    await CompanyMember.create(
-      [
-        {
-          user: newUser._id,
-          company: ownerMember.company,
-          role: CompanyRole.HR,
+      await tx.companyMember.create({
+        data: {
+          userId: newUser.id,
+          companyId: ownerMember.companyId,
+          role: "HR",
           isActive: true,
         },
-      ],
-      { session },
-    );
-
-    await session.commitTransaction();
+      });
+    });
 
     return res.status(201).json({
       success: true,
       message: "Employee added successfully",
     });
   } catch (error: any) {
-    await session.abortTransaction();
     return res.status(500).json({ success: false, message: "Server error." });
   }
 };
@@ -146,74 +154,73 @@ export const updateMember = async (
   res: Response,
   next: NextFunction,
 ) => {
-  let memberId = Array.isArray(req.params.memberId) 
-  ? req.params.memberId[0] 
-  : req.params.memberId;
+  const memberId = Array.isArray(req.params.memberId)
+    ? req.params.memberId[0]
+    : req.params.memberId;
 
   const { firstName, lastName, isActive } = req.body;
 
-  if (!memberId || !mongoose.Types.ObjectId.isValid(memberId)) {
+  if (!memberId) {
     return next(new ApiError(400, "Invalid member ID."));
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const ownerMember = await CompanyMember.findOne({
-      user: req.user._id,
-    }).session(session);
+    const ownerMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user?.id },
+    });
 
     if (
       !ownerMember ||
-      ownerMember.role !== CompanyRole.OWNER ||
+      ownerMember.role !== "OWNER" ||
       !ownerMember.isActive
     ) {
       throw new ApiError(403, "Unauthorized: Access denied.");
     }
 
-    const memberToUpdate = await CompanyMember.findById(memberId).session(
-      session,
-    );
+    const memberToUpdate = await prisma.companyMember.findUnique({
+      where: { id: memberId },
+    });
 
     if (!memberToUpdate) {
       throw new ApiError(404, "Member record not found.");
     }
 
-    if (memberToUpdate.company.toString() !== ownerMember.company.toString()) {
+    if (memberToUpdate.companyId !== ownerMember.companyId) {
       throw new ApiError(403, "Cannot update members from other companies.");
     }
 
-    if (isActive !== undefined) {
-      memberToUpdate.isActive = isActive;
-      await memberToUpdate.save({ session });
+    await prisma.$transaction(async (tx) => {
+      if (isActive !== undefined) {
+        await tx.companyMember.update({
+          where: { id: memberId },
+          data: { isActive },
+        });
 
-      if(isActive === false){
-        await User.findByIdAndUpdate(memberToUpdate.user, {
-          isActive: false,
-        }).session(session);
+        if (isActive === false) {
+          await tx.user.update({
+            where: { id: memberToUpdate.userId },
+            data: { isActive: false },
+          });
+        }
       }
-    }
 
-    if (firstName || lastName) {
-      const user = await User.findById(memberToUpdate.user).session(session);
-      if (user) {
-        if (firstName) user.firstName = firstName;
-        if (lastName) user.lastName = lastName;
-        await user.save({ session });
+      if (firstName || lastName) {
+        const updateData: any = {};
+        if (firstName) updateData.firstName = firstName;
+        if (lastName) updateData.lastName = lastName;
+
+        await tx.user.update({
+          where: { id: memberToUpdate.userId },
+          data: updateData,
+        });
       }
-    }
-
-    await session.commitTransaction();
+    });
 
     return res
       .status(200)
       .json(new ApiResponse(200, null, "Member updated successfully."));
   } catch (error: any) {
-    await session.abortTransaction();
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 
@@ -223,30 +230,41 @@ export const getCompanyMemberById = async (
   next: NextFunction,
 ) => {
   try {
-    const memberId = Array.isArray(req.params.memberId) 
-  ? req.params.memberId[0] 
-  : req.params.memberId;
+    const memberId = Array.isArray(req.params.memberId)
+      ? req.params.memberId[0]
+      : req.params.memberId;
 
-    if (!memberId || !mongoose.Types.ObjectId.isValid(memberId)) {
+    if (!memberId) {
       throw new ApiError(400, "Invalid member ID.");
     }
 
-    const currentUser = await CompanyMember.findOne({ user: req.user._id });
+    const currentUser = await prisma.companyMember.findFirst({
+      where: { userId: req.user?.id },
+    });
 
     if (!currentUser || !currentUser.isActive) {
       throw new ApiError(403, "Unauthorized or inactive account.");
     }
 
-    if (currentUser.role !== CompanyRole.OWNER) {
+    if (currentUser.role !== "OWNER") {
       throw new ApiError(403, "Access denied: Owners only.");
     }
 
-    const member = await CompanyMember.findOne({
-      _id: memberId,
-      company: currentUser.company,
-    })
-      .populate("user", "firstName lastName email")
-      .lean();
+    const member = await prisma.companyMember.findFirst({
+      where: {
+        id: memberId,
+        companyId: currentUser.companyId,
+      },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
 
     if (!member) {
       throw new ApiError(404, "Member not found.");
@@ -275,47 +293,35 @@ export const removeMember = async (
     memberId = memberId[0];
   }
 
-  if (!mongoose.Types.ObjectId.isValid(memberId)) {
-    throw new ApiError(400, "Invalid member ID format.");
-  }
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const ownerMember = await CompanyMember.findOne({
-      user: req.user._id,
-    }).session(session);
+    const ownerMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user?.id },
+    });
 
     if (
       !ownerMember ||
-      ownerMember.role !== CompanyRole.OWNER ||
+      ownerMember.role !== "OWNER" ||
       !ownerMember.isActive
     ) {
       throw new ApiError(403, "Unauthorized: Access denied.");
     }
 
-
-    const memberToRemove =
-      await CompanyMember.findById(memberId).session(session);
-
+    const memberToRemove = await prisma.companyMember.findUnique({
+      where: { id: memberId },
+    });
 
     if (!memberToRemove) {
       throw new ApiError(404, "Member record not found.");
     }
 
-    // 4. Cross-Company Security Check: Ensure member belongs to the owner's company
-    if (memberToRemove.company.toString() !== ownerMember.company.toString()) {
+    if (memberToRemove.companyId !== ownerMember.companyId) {
       throw new ApiError(403, "Cannot delete members from other companies.");
     }
 
-    // 5. Atomic Deletion: Remove the member link and the user account
-    // We remove the member link first
-    await CompanyMember.findByIdAndDelete(memberId, { session });
-    // Then remove the actual user document
-    await User.findByIdAndDelete(memberToRemove.user, { session });
-
-    await session.commitTransaction();
+    await prisma.$transaction(async (tx) => {
+      await tx.companyMember.delete({ where: { id: memberId } });
+      await tx.user.delete({ where: { id: memberToRemove.userId } });
+    });
 
     return res
       .status(200)
@@ -327,9 +333,6 @@ export const removeMember = async (
         ),
       );
   } catch (error: any) {
-    await session.abortTransaction();
     next(error);
-  } finally {
-    session.endSession();
   }
 };

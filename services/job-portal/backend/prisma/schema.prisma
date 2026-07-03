@@ -410,7 +410,6 @@ model User {
   company Company?
 
   kycSubmissions  KYC[] @relation("KycSubmitter")
-  kycReviewsGiven KYC[] @relation("KycReviewer")
 
   companyMembers CompanyMember[]
 
@@ -771,9 +770,6 @@ model KYC {
   status KycStatus @default(PENDING)
 
   rejectionReason String?
-
-  reviewedById String?
-  reviewedBy   User?     @relation("KycReviewer", fields: [reviewedById], references: [id])
   reviewedAt   DateTime?
 
   isLatest Boolean @default(true)
@@ -887,8 +883,6 @@ model BaseListing {
   applicationsCount Int @default(0)
 
   isDeleted Boolean @default(false)
-
-  embedding Unsupported("vector(1536)")?
 
   internshipDetails Internship?
   jobDetails        Job?
