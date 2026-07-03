@@ -407,6 +407,8 @@ model User {
 
   applications Application[]
 
+  aiChatLogs AiChatLog[]
+
   applicationStatusChanges ApplicationStatusHistory[] @relation("ApplicationStatusChangedBy")
 
   createdAt DateTime @default(now())
@@ -925,7 +927,7 @@ model Job {
 }
 
 model ApplicationStatusHistory {
-  id String @id @default(cuid())
+  id String @id @default(uuid())
 
   applicationId String
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
@@ -944,7 +946,7 @@ model ApplicationStatusHistory {
 }
 
 model Application {
-  id String @id @default(cuid())
+  id String @id @default(uuid())
 
   listingType DraftType
 
@@ -972,4 +974,19 @@ model Application {
   @@index([listingId])
   @@index([status])
   @@index([listingId, status])
+}
+
+model AiChatLog {
+  id        String   @id @default(uuid())
+
+  prompt    String
+  response  String
+
+  userId    String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
 }
