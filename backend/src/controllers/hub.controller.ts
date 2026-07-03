@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Hub from '../models/Hub';
+import bcrypt from 'bcryptjs';
 
 export const getHubs = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -12,14 +13,25 @@ export const getHubs = async (req: Request, res: Response): Promise<void> => {
 
 export const createHub = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { name, code, address, city, pincodes, contactPhone, contactEmail } = req.body;
+        const { name, code, address, city, pincodes, contactPhone, contactEmail, password } = req.body;
 
         // Pincodes should be a comma-separated string converted to array
         const pincodesArray = typeof pincodes === 'string' ? pincodes.split(',').map(p => p.trim()) : pincodes;
 
+        let finalCode = code;
+        if (!finalCode) {
+            const prefix = city ? city.substring(0, 3).toUpperCase() : 'HUB';
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            finalCode = `${prefix}-${randomNum}`;
+        }
+
         const newHub = new Hub({
-            name, code, address, city, pincodes: pincodesArray, contactPhone, contactEmail
+            name, code: finalCode, address, city, pincodes: pincodesArray, contactPhone, contactEmail, password
         });
+
+        if (password) {
+            // Hash the initial password here if not relying entirely on pre-save, but pre-save in Hub.ts will catch it anyway.
+        }
 
         await newHub.save();
         res.status(201).json({ message: 'Store Hub successfully registered', hub: newHub });
@@ -37,6 +49,11 @@ export const updateHub = async (req: Request, res: Response): Promise<void> => {
         let updateData = { ...req.body };
         if (updateData.pincodes && typeof updateData.pincodes === 'string') {
             updateData.pincodes = updateData.pincodes.split(',').map((p: string) => p.trim());
+        }
+
+        if (updateData.password) {
+            const salt = await bcrypt.genSalt(10);
+            updateData.password = await bcrypt.hash(updateData.password, salt);
         }
 
         const hub = await Hub.findByIdAndUpdate(req.params.id, updateData, { new: true });

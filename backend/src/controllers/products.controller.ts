@@ -203,3 +203,53 @@ export const toggleProductStatus = async (req: Request, res: Response) => {
         res.status(500).send('Server Error');
     }
 };
+
+export const checkProductDelivery = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { pincode } = req.query;
+        if (!pincode || typeof pincode !== 'string') return res.status(400).json({ msg: "Pincode parameter required" });
+
+        const product = await Product.findById(id).populate<{ warehouseStock: any }>('warehouseStock.hubId');
+        if (!product) return res.status(404).json({ msg: "Product not found" });
+
+        const allHubs = await Hub.find({ isActive: true });
+        const localHub = allHubs.find(h => h.pincodes && h.pincodes.includes(pincode.trim()));
+
+        let available = false;
+        let pInfo = "Currently Out of Stock for this location";
+        let edd = null;
+
+        // 1. Check local hub (Fast Delivery)
+        if (localHub && product.warehouseStock) {
+            const localStock = product.warehouseStock.find((ws: any) => ws.hubId && ws.hubId._id && ws.hubId._id.toString() === localHub._id.toString());
+            if (localStock && localStock.quantity > 0) {
+                available = true;
+                pInfo = "Available for Local Fast Delivery";
+                edd = "Get it by Tomorrow";
+            }
+        }
+
+        // 2. Check national hub (Standard Delivery)
+        if (!available && product.warehouseStock) {
+            const nationalStock = product.warehouseStock.find((ws: any) => ws.quantity > 0);
+            if (nationalStock) {
+                available = true;
+                pInfo = "Available for National Delivery";
+                edd = "Get it in 4-6 Days";
+            }
+        }
+
+        // 3. Fallback (Global Stock mechanism for legacy unassigned stock)
+        if (!available && product.stock > 0) {
+            available = true;
+            pInfo = "Available for Generic Delivery";
+            edd = "Get it in 3-5 Days";
+        }
+
+        res.json({ available, message: pInfo, edd });
+    } catch (e) {
+        console.error("Delivery check error", e);
+        res.status(500).send('Server Error');
+    }
+};

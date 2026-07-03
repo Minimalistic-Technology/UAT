@@ -7,6 +7,8 @@ export interface IOrder extends Document {
         product: string;
         quantity: number;
         price: number;
+        assignedHubId?: mongoose.Types.ObjectId | string;
+        itemStatus?: string;
     }>;
     totalAmount: number;
     shippingInfo: {
@@ -29,7 +31,9 @@ const OrderSchema: Schema = new Schema({
         {
             product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
             quantity: { type: Number, required: true },
-            price: { type: Number, required: true }
+            price: { type: Number, required: true },
+            assignedHubId: { type: Schema.Types.ObjectId, ref: 'Hub' },
+            itemStatus: { type: String, enum: ['pending', 'packed', 'shipped', 'delivered', 'cancelled'], default: 'pending' }
         }
     ],
     totalAmount: { type: Number, required: true },

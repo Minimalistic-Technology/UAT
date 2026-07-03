@@ -9,6 +9,10 @@ export interface IProduct extends Document {
     images: string[];
     category: mongoose.Types.ObjectId | string; // Allow string for legacy or populated objects
     stock: number;
+    warehouseStock: Array<{
+        hubId: mongoose.Types.ObjectId | string;
+        quantity: number;
+    }>;
     rating: number;
     numReviews: number;
     lastMonthSales: number;
@@ -32,6 +36,12 @@ const ProductSchema: Schema = new Schema({
     images: { type: [String], default: [] },
     category: { type: Schema.Types.ObjectId, ref: 'Category' },
     stock: { type: Number, required: true, default: 0 },
+    warehouseStock: [
+        {
+            hubId: { type: Schema.Types.ObjectId, ref: 'Hub' },
+            quantity: { type: Number, default: 0 }
+        }
+    ],
     rating: { type: Number, required: true, default: 0 },
     numReviews: { type: Number, required: true, default: 0 },
     lastMonthSales: { type: Number, required: true, default: 0 },

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import axios from 'axios';
+import Hub from '../models/Hub';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
@@ -295,61 +296,87 @@ export const login = async (req: Request, res: Response) => {
         }
 
         // Check if user exists
-        const user = await User.findOne({
+        let user = await User.findOne({
             $or: [{ email: identifier }, { phone: identifier }]
         });
 
+        let isHubLogin = false;
+        let hubRaw: any = null;
+
         if (!user) {
-            // Exponential Backoff for IP (Non-existent user brute force protection)
-            tracker.attempts += 1;
-            if (tracker.attempts >= 3) {
-                const blockMinutes = Math.pow(2, tracker.attempts - 3) * 2;
-                tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400); // max 24 hours lock in memory
-                return res.status(403).json({ msg: `Access blocked due to multiple failed login attempts. Please try again after ${blockMinutes} minute(s).` });
+            // Attempt Hub fallback login by contactEmail (case-insensitive)
+            hubRaw = await Hub.findOne({ contactEmail: new RegExp(`^${identifier}$`, 'i') });
+            if (!hubRaw) {
+                // Exponential Backoff for IP (Non-existent user brute force protection)
+                tracker.attempts += 1;
+                if (tracker.attempts >= 3) {
+                    const blockMinutes = Math.pow(2, tracker.attempts - 3) * 2;
+                    tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                    await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400); // max 24 hours lock in memory
+                    return res.status(403).json({ msg: `Access blocked due to multiple failed login attempts. Please try again after ${blockMinutes} minute(s).` });
+                }
+                await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400);
+                return res.status(400).json({ msg: 'Invalid credentials' });
             }
-            await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400);
-            return res.status(400).json({ msg: 'Invalid credentials' });
+            isHubLogin = true;
         }
 
         // Check if locked
-        if (user.lockUntil && user.lockUntil > Date.now()) {
+        if (!isHubLogin && user && user.lockUntil && user.lockUntil > Date.now()) {
             const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
             return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${minutesLeft} minute(s).` });
         }
 
         // Validate password
-        const isMatch = await bcrypt.compare(password, user.password as string);
+        let isMatch = false;
+        if (isHubLogin && hubRaw) {
+            isMatch = await bcrypt.compare(password, hubRaw.password as string);
+        } else if (user) {
+            isMatch = await bcrypt.compare(password, user.password as string);
+        }
+
         if (!isMatch) {
             // Memory lock tracking to sync with user attempts
             tracker.attempts += 1;
 
-            user.loginAttempts = (user.loginAttempts || 0) + 1;
-            if (user.loginAttempts >= 3) {
-                const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
-                user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+            if (!isHubLogin && user) {
+                user.loginAttempts = (user.loginAttempts || 0) + 1;
+                if (user.loginAttempts >= 3) {
+                    const blockMinutes = Math.pow(2, user.loginAttempts - 3) * 2; // 2, 4, 8, 16 mins etc.
+                    user.lockUntil = Date.now() + blockMinutes * 60 * 1000;
 
-                // Keep memory lock synced too in Redis
-                tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400);
+                    // Keep memory lock synced too in Redis
+                    tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                    await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400);
 
+                    await user.save();
+                    return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
+                }
                 await user.save();
-                return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
+            } else if (isHubLogin) {
+                if (tracker.attempts >= 3) {
+                    const blockMinutes = Math.pow(2, tracker.attempts - 3) * 2;
+                    tracker.lockUntil = Date.now() + blockMinutes * 60 * 1000;
+                    await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400);
+                    return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
+                }
             }
 
             await redisClient.set(`loginLock:${lockKey}`, JSON.stringify(tracker), 'EX', 86400);
-            await user.save();
             return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
         // Success - Reset lock and attempts
         await redisClient.del(`loginLock:${lockKey}`);
-        user.loginAttempts = 0;
-        user.lockUntil = undefined;
-        await user.save();
+
+        if (!isHubLogin && user) {
+            user.loginAttempts = 0;
+            user.lockUntil = undefined;
+            await user.save();
+        }
 
         // Check if user is active (bypass for admins to prevent lockout)
-        if (user.role === 'user') {
+        if (user && user.role === 'user') {
             if (!user.isActive) {
                 return res.status(403).json({ msg: 'Account is deactivated. Please contact admin.' });
             }
@@ -360,18 +387,31 @@ export const login = async (req: Request, res: Response) => {
             // But user said: "in disabled login existing user can login".
         }
 
-        const payload = {
+        const payload = isHubLogin && hubRaw ? {
+            id: hubRaw.id,
+            name: hubRaw.name,
+            firstName: hubRaw.name,
+            lastName: "(Warehouse)",
+            email: hubRaw.contactEmail,
+            role: 'warehouse',
+            hubId: hubRaw._id,       // Explicitly inject hubId so `getAllOrders` behaves perfectly!
+            customPages: [],
+            editPages: [],
+            addPages: [],
+            deletePages: []
+        } : user ? {
             id: user.id,
             name: user.name,
             firstName: user.firstName,
             lastName: user.lastName,
-            email: user.email, // Including email in payload is useful
+            email: user.email,
             role: user.role,
+            hubId: user.hubId,
             customPages: user.customPages,
             editPages: user.editPages,
             addPages: user.addPages,
             deletePages: user.deletePages
-        };
+        } : {};
 
         jwt.sign(
             payload,
@@ -390,7 +430,7 @@ export const login = async (req: Request, res: Response) => {
                 // Return token in body for fallback
 
                 // Send Login Alert (Only for standard users, not admins)
-                if (user.role === 'user' && user.email) {
+                if (user && user.role === 'user' && user.email) {
                     NotificationService.sendLoginAlert(user).catch(err => {
                         console.error('[EMAIL-ERROR] Failed to send login alert:', err);
                     });
@@ -416,8 +456,32 @@ export const logout = async (req: Request, res: Response) => {
 
 export const getMe = async (req: Request, res: Response) => {
     try {
-        const user = await User.findById((req as any).user.id).select('-password');
-        res.json(user);
+        const tokenUser = (req as any).user;
+        let userData: any = null;
+
+        if (tokenUser.role === 'warehouse' && tokenUser.hubId) {
+            const hubRaw = await Hub.findById(tokenUser.hubId).select('-password');
+            if (hubRaw) {
+                userData = {
+                    id: hubRaw.id,
+                    name: hubRaw.name,
+                    firstName: hubRaw.name,
+                    lastName: "(Warehouse)",
+                    email: hubRaw.contactEmail,
+                    role: 'warehouse',
+                    hubId: hubRaw._id,
+                    isActive: hubRaw.isActive
+                };
+            }
+        } else {
+            userData = await User.findById(tokenUser.id).select('-password');
+        }
+
+        if (!userData) {
+            return res.status(404).json({ msg: 'Account not found' });
+        }
+
+        res.json(userData);
     } catch (err) {
         if (err instanceof Error) {
             console.error(err.message);

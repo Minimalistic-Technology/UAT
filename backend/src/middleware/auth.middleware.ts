@@ -110,7 +110,8 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     finance: ['dashboard', 'billing'],
     marketing: ['coupons', 'blogs', 'dashboard'],
     admin: ['dashboard', 'categories', 'products', 'inventory', 'orders', 'billing', 'coupons', 'users', 'messages', 'blogs', 'components'],
-    warehouse: ['orders', 'inventory']
+    warehouse: ['orders', 'inventory'],
+    inventory_manager: ['inventory', 'orders', 'products', 'categories', 'dashboard']
 };
 
 export default auth;

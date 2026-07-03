@@ -4,6 +4,7 @@ import Cart from '../models/Cart';
 import Product from '../models/Product';
 import User from '../models/User';
 import Bill from '../models/Bill';
+import Hub from '../models/Hub';
 import RouteConfig from '../models/RouteConfig';
 import NotificationService from '../services/notification.service';
 
@@ -26,15 +27,11 @@ export const createOrder = async (req: Request | any, res: Response) => {
         }
 
         const orderData: any = {
-            items: items.map((item: any) => ({
-                product: item.product._id,
-                quantity: item.quantity,
-                price: item.product.price
-            })),
+            items: [], // We will push items dynamically after computing router assignments
             totalAmount,
             shippingInfo,
             paymentMethod,
-            status: 'pending', // Default status is pending
+            status: 'pending',
             coupon: req.body.coupon,
             discountAmount: req.body.discountAmount || 0
         };
@@ -58,22 +55,69 @@ export const createOrder = async (req: Request | any, res: Response) => {
             await user.save();
         }
 
-        const order = new Order(orderData);
+        // Order Routing Engine
+        const customerPincode = shippingInfo.zip.trim();
+        const allHubs = await Hub.find({ isActive: true });
 
-        // Decrement Stock
+        // Find Local Hub (nearest origin if pincode matches)
+        const localHub = allHubs.find(h => h.pincodes.includes(customerPincode));
+
+        const finalOrderItems = [];
+
         for (const item of items) {
             const product = await Product.findById(item.product._id);
-            if (product) {
-                if (product.stock < item.quantity) {
-                    res.status(400).json({ msg: `Insufficient stock for ${product.name}` });
-                    return;
-                }
-                product.stock -= item.quantity;
-                await product.save();
+            if (!product) {
+                return res.status(404).json({ msg: `Product not found for ID: ${item.product._id}` });
             }
+
+            const reqQty = item.quantity;
+            let assignedHubId = null;
+
+            // 1. Check Local Hub first
+            if (localHub && product.warehouseStock) {
+                const localStockEntry = product.warehouseStock.find(ws => ws.hubId.toString() === localHub._id.toString());
+                if (localStockEntry && localStockEntry.quantity >= reqQty) {
+                    assignedHubId = localHub._id;
+                    localStockEntry.quantity -= reqQty;
+                }
+            }
+
+            // 2. If Local Hub fails, check National Hubs (Any hub with stock)
+            if (!assignedHubId && product.warehouseStock) {
+                for (const ws of product.warehouseStock) {
+                    if (ws.quantity >= reqQty) {
+                        assignedHubId = ws.hubId;
+                        ws.quantity -= reqQty;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Fallback to Global Stock (Legacy compatibility if warehouseStock isn't strictly maintained yet)
+            if (!assignedHubId && product.stock >= reqQty) {
+                // If global stock has it, we just don't assign a hub explicitly (handled centrally), 
+                // OR logically we should fail it. But for smooth transition, we allow it.
+            } else if (!assignedHubId) {
+                return res.status(400).json({ msg: `Insufficient regional stock for product: ${product.name}` });
+            }
+
+            // Global stock decrement for sanity
+            product.stock -= reqQty;
+            await product.save();
+
+            finalOrderItems.push({
+                product: product._id,
+                quantity: reqQty,
+                price: item.product.price,
+                assignedHubId: assignedHubId || undefined,
+                itemStatus: 'pending'
+            });
         }
 
-        const savedOrder = await order.save();
+        orderData.items = finalOrderItems;
+        const newOrderObj = new Order(orderData);
+        const savedOrder = await newOrderObj.save();
+
 
         // Auto-create Bill
         try {
@@ -132,15 +176,37 @@ export const createOrder = async (req: Request | any, res: Response) => {
     }
 };
 
-// Get all orders (Admin only - placeholder for future)
-export const getAllOrders = async (req: Request, res: Response) => {
+// Get all orders (With Role-Based Hub Logic)
+export const getAllOrders = async (req: Request | any, res: Response) => {
     try {
-        const orders = await Order.find()
+        let filter: any = {};
+
+        // If the user is a warehouse staff, strictly limit visibility to orders containing items assigned to their hubId
+        if (req.user && req.user.role === 'warehouse' && req.user.hubId) {
+            filter = { 'items.assignedHubId': req.user.hubId };
+        }
+
+        let orders = await Order.find(filter)
             .populate('user', 'name email')
             .populate('items.product', 'name price image')
             .sort({ createdAt: -1 });
+
+        // Strip out items from the order that belong to other warehouses
+        if (req.user && req.user.role === 'warehouse' && req.user.hubId) {
+            const currentHubId = req.user.hubId.toString();
+            // Transform Mongoose docs to standard objects to manipulate the array
+            orders = orders.map((order: any) => {
+                const doc = order.toObject ? order.toObject() : order;
+                doc.items = doc.items.filter((item: any) =>
+                    item.assignedHubId && item.assignedHubId.toString() === currentHubId
+                );
+                return doc;
+            });
+        }
+
         res.json(orders);
     } catch (error) {
+        console.error('Error fetching filtered orders:', error);
         res.status(500).json({ msg: 'Server error' });
     }
 };
@@ -190,6 +256,51 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         res.status(500).json({ msg: 'Server error' });
     }
 };
+
+// Update Order Item Status (Warehouse / Admin)
+export const updateOrderItemStatus = async (req: Request | any, res: Response) => {
+    try {
+        const { orderId, itemId } = req.params;
+        const { status } = req.body;
+        const validStatuses = ['pending', 'packed', 'shipped', 'delivered', 'cancelled'];
+
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ msg: 'Invalid item status' });
+        }
+
+        const order: any = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ msg: 'Order not found' });
+        }
+
+        const item = order.items.find((i: any) => i._id.toString() === itemId);
+        if (!item) {
+            return res.status(404).json({ msg: 'Item not found in order' });
+        }
+
+        if (req.user && req.user.role === 'warehouse') {
+            if (!item.assignedHubId || item.assignedHubId.toString() !== req.user.hubId.toString()) {
+                return res.status(403).json({ msg: 'Not authorized to update this item' });
+            }
+        }
+
+        item.itemStatus = status;
+
+        // Auto-update parent order status based on items if we wanted to
+        const allPending = order.items.every((i: any) => i.itemStatus === 'pending');
+        const allDelivered = order.items.every((i: any) => i.itemStatus === 'delivered');
+        if (allDelivered) order.status = 'delivered';
+        else if (!allPending && order.status === 'pending') order.status = 'processing';
+
+        await order.save();
+
+        res.json(order);
+    } catch (error) {
+        console.error('Error updating order item:', error);
+        res.status(500).json({ msg: 'Server error updating order item' });
+    }
+};
+
 // Update Order (Admin only)
 export const updateOrder = async (req: Request, res: Response) => {
     try {
