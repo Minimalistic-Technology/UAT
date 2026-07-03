@@ -1,98 +1,147 @@
-import { Request, Response, NextFunction } from "express";
-import { AuthRequest } from "../middleware/auth.middleware.js";
-import Draft from "../models/Draft.model.js";
-import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
+import type { Response, NextFunction } from "express";
+import type { AuthRequest } from "../middleware/auth.middleware.js";
+import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 
-export const saveDraft = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const saveDraft = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id, type, formData } = req.body;
-    
-    if (!["job", "internship"].includes(type)) {
+
+    if (!["JOB", "INTERNSHIP"].includes(type?.toUpperCase())) {
       throw new ApiError(400, "Invalid draft type");
     }
 
-    const companyMember = await CompanyMember.findOne({ user: req.user._id });
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id },
+    });
     if (!companyMember) {
       throw new ApiError(403, "You are not a member of any company");
     }
 
-    if (companyMember.role !== CompanyRole.OWNER && companyMember.role !== CompanyRole.HR) {
+    if (companyMember.role !== "OWNER" && companyMember.role !== "HR") {
       throw new ApiError(403, "You're not authorized to save drafts");
     }
 
     let draft;
     if (id) {
-      draft = await Draft.findOne({ _id: id, company: companyMember.company });
-      if (!draft) {
+      draft = await prisma.draft.findUnique({ where: { id } });
+
+      if (!draft || draft.companyId !== companyMember.companyId) {
         throw new ApiError(404, "Draft not found");
       }
-      draft.formData = formData;
-      draft.type = type;
-      draft.markModified('formData');
-      await draft.save();
+
+      draft = await prisma.draft.update({
+        where: { id },
+        data: {
+          formData,
+          type: type.toUpperCase(),
+        },
+      });
     } else {
-      draft = await Draft.create({
-        company: companyMember.company,
-        postedBy: req.user._id,
-        type,
-        formData,
+      draft = await prisma.draft.create({
+        data: {
+          companyId: companyMember.companyId,
+          postedById: req.user.id,
+          type: type.toUpperCase(),
+          formData,
+        },
       });
     }
 
-    res.status(200).json(new ApiResponse(200, draft, "Draft saved successfully"));
+    res
+      .status(200)
+      .json(new ApiResponse(200, draft, "Draft saved successfully"));
   } catch (error: any) {
     next(error);
   }
 };
 
-export const getDrafts = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getDrafts = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const companyMember = await CompanyMember.findOne({ user: req.user._id });
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id },
+    });
     if (!companyMember) {
       throw new ApiError(403, "You are not a member of any company");
     }
 
-    const drafts = await Draft.find({ company: companyMember.company }).sort({ updatedAt: -1 });
+    const drafts = await prisma.draft.findMany({
+      where: { companyId: companyMember.companyId },
+      orderBy: { updatedAt: "desc" },
+    });
 
-    res.status(200).json(new ApiResponse(200, drafts, "Drafts fetched successfully"));
+    res
+      .status(200)
+      .json(new ApiResponse(200, drafts, "Drafts fetched successfully"));
   } catch (error: any) {
     next(error);
   }
 };
 
-export const getDraft = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const getDraft = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const companyMember = await CompanyMember.findOne({ user: req.user._id });
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id },
+    });
     if (!companyMember) {
       throw new ApiError(403, "You are not a member of any company");
     }
 
-    const draft = await Draft.findOne({ _id: req.params.id, company: companyMember.company });
-    if (!draft) {
+    const draft = await prisma.draft.findUnique({
+      where: { id: req.params.id as string },
+    });
+
+    if (!draft || draft.companyId !== companyMember.companyId) {
       throw new ApiError(404, "Draft not found");
     }
 
-    res.status(200).json(new ApiResponse(200, draft, "Draft fetched successfully"));
+    res
+      .status(200)
+      .json(new ApiResponse(200, draft, "Draft fetched successfully"));
   } catch (error: any) {
     next(error);
   }
 };
 
-export const deleteDraft = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const deleteDraft = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const companyMember = await CompanyMember.findOne({ user: req.user._id });
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id },
+    });
     if (!companyMember) {
       throw new ApiError(403, "You are not a member of any company");
     }
 
-    const draft = await Draft.findOneAndDelete({ _id: req.params.id, company: companyMember.company });
-    if (!draft) {
+    const draft = await prisma.draft.findUnique({
+      where: { id: req.params.id as string },
+    });
+
+    if (!draft || draft.companyId !== companyMember.companyId) {
       throw new ApiError(404, "Draft not found");
     }
 
-    res.status(200).json(new ApiResponse(200, null, "Draft deleted successfully"));
+    await prisma.draft.delete({ where: { id: req.params.id as string } });
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, null, "Draft deleted successfully"));
   } catch (error: any) {
     next(error);
   }
