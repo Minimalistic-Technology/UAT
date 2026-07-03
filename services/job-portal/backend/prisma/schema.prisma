@@ -254,6 +254,19 @@ enum ApplicationStatus {
   WITHDRAWN
 }
 
+enum FeatureStatus {
+  DISABLED
+  BETA
+  PUBLIC
+}
+
+enum NotificationType {
+  SYSTEM
+  MESSAGE
+  ALERT
+  PROMOTIONAL
+}
+
 // -------------------- MODEL -------------------------
 
 model Avatar {
@@ -411,6 +424,13 @@ model User {
 
   applicationStatusChanges ApplicationStatusHistory[] @relation("ApplicationStatusChangedBy")
 
+  featurePermissions FeaturePermission[]
+
+  receivedNotifications Notification[] @relation("NotificationRecipient")
+  sentNotifications     Notification[] @relation("NotificationSender")
+
+  notificationPreference NotificationPreference?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -525,6 +545,8 @@ model Company {
   drafts Draft[]
 
   baseListings BaseListing[]
+
+  featurePermissions FeaturePermission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -869,7 +891,7 @@ model BaseListing {
   embedding Unsupported("vector(1536)")?
 
   internshipDetails Internship?
-  jobDetails Job?
+  jobDetails        Job?
 
   applications Application[]
 
@@ -954,7 +976,7 @@ model Application {
   listing   BaseListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   jobSeekerId String
-  jobSeeker   User         @relation(fields: [jobSeekerId], references: [id], onDelete: Cascade)
+  jobSeeker   User   @relation(fields: [jobSeekerId], references: [id], onDelete: Cascade)
 
   resumeId String?
   resume   Resume? @relation(fields: [resumeId], references: [id], onDelete: SetNull)
@@ -977,16 +999,89 @@ model Application {
 }
 
 model AiChatLog {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  prompt    String
-  response  String
+  prompt   String
+  response String
 
-  userId    String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId, createdAt])
+}
+
+model Feature {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String  @unique
+  description String?
+
+  status FeatureStatus @default(DISABLED)
+
+  featurePermissions FeaturePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FeaturePermission {
+  id String @id @default(cuid())
+
+  featureId String
+  feature   Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([featureId, userId])
+  @@unique([featureId, companyId])
+  @@index([featureId])
+  @@index([userId])
+  @@index([companyId])
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  recipientId String
+  recipient   User   @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  senderId String?
+  sender   User?   @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  title   String
+  message String
+  type    NotificationType @default(SYSTEM)
+
+  isRead Boolean @default(false)
+
+  actionUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recipientId, isRead])
+  @@index([createdAt])
+}
+
+model NotificationPreference {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  isBlocked Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
