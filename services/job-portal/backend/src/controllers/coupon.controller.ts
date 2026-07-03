@@ -16,7 +16,7 @@ export const createCoupon = async (
     const existingCoupon = await prisma.coupon.findUnique({
       where: { code: code.toUpperCase() },
     });
-    
+
     if (existingCoupon) {
       return next(new ApiError(400, "Coupon code already exists"));
     }
@@ -32,7 +32,7 @@ export const createCoupon = async (
         value,
         isActive: isActive ?? true,
         expiryDate: expiryDate ? new Date(expiryDate) : null,
-        maxUses: maxUses === -1 ? -1 : maxUses, 
+        maxUses: maxUses === -1 ? -1 : maxUses,
       },
     });
 
@@ -220,7 +220,9 @@ export const updateCoupon = async (
     const { id } = req.params;
     const { code, type, value, isActive, expiryDate, maxUses } = req.body;
 
-    const coupon = await prisma.coupon.findUnique({ where: { id: String(id) } });
+    const coupon = await prisma.coupon.findUnique({
+      where: { id: String(id) },
+    });
 
     if (!coupon) {
       return next(new ApiError(404, "Coupon not found"));
@@ -242,7 +244,7 @@ export const updateCoupon = async (
     }
 
     if (type) updateData.type = type.toUpperCase();
-    
+
     if (value !== undefined) {
       const finalType = type ? type.toUpperCase() : coupon.type;
       if (finalType === "PERCENTAGE" && value > 100) {
@@ -269,8 +271,8 @@ export const updateCoupon = async (
           maxUses === -1
             ? -1
             : typeof maxUses === "string"
-            ? parseInt(maxUses)
-            : maxUses;
+              ? parseInt(maxUses)
+              : maxUses;
       }
     }
 
@@ -295,7 +297,9 @@ export const deleteCoupon = async (
   try {
     const { id } = req.params;
 
-    const coupon = await prisma.coupon.findUnique({ where: { id: String(id) } });
+    const coupon = await prisma.coupon.findUnique({
+      where: { id: String(id) },
+    });
 
     if (!coupon) {
       return next(new ApiError(404, "Coupon not found"));

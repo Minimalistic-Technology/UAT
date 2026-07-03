@@ -91,6 +91,16 @@ enum DocumentType {
   DRIVING_LICENSE
 }
 
+enum CompanyRole {
+  OWNER
+  HR
+}
+
+enum DraftType {
+  JOB
+  INTERNSHIP
+}
+
 // -------------------- MODEL -------------------------
 
 model Avatar {
@@ -234,6 +244,10 @@ model User {
   kycSubmissions  KYC[] @relation("KycSubmitter")
   kycReviewsGiven KYC[] @relation("KycReviewer")
 
+  companyMembers  CompanyMember[]
+
+  drafts Draft[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -342,6 +356,10 @@ model Company {
   subscriptions Subscription[]
 
   kycSubmissions KYC[]
+
+  members CompanyMember[]
+
+  drafts Draft[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -599,4 +617,42 @@ model StorageAsset {
   company             Company?
   companyDocumentFor  KYC[]    @relation("CompanyDocument")
   personalDocumentFor KYC[]    @relation("PersonalDocument")
+}
+
+model CompanyMember {
+  id String @id @default(uuid())
+
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  role   CompanyRole
+  isActive   Boolean     @default(true)
+
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+   @@unique([userId, companyId])
+}
+
+model Draft {
+  id String @id @default(uuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  postedById String
+  postedBy   User   @relation(fields: [postedById], references: [id], onDelete: Cascade)
+
+  type DraftType
+
+  formData Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([postedById])
 }
