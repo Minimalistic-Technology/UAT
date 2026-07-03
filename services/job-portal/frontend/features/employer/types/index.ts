@@ -33,9 +33,9 @@ export interface RazorpayOrder {
 }
 
 export interface Coupon {
-  _id: string;
+  id: string;
   code: string;
-  type: "percentage" | "amount";
+  type: "PERCENTAGE" | "AMOUNT";
   value: number;
   isActive: boolean;
   expiryDate?: Date;

@@ -99,12 +99,12 @@ app.use(
 );
 
 // Routes
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes); // Done
 app.use("/api/jobs", jobRoutes);
 app.use("/api/internships", internshipRoutes);
 app.use("/api/drafts", draftRoutes);
 app.use("/api/applications", applicationRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/users", userRoutes); // Done
 app.use("/api/companies", companyRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/developer", developerRoutes);
@@ -117,7 +117,7 @@ app.use("/api/demo", demoRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/features", featureRoutes);
 app.use("/api/ai", aiRoutes);
-app.use("/api/testimonials", testimonialRoutes);
+app.use("/api/testimonials", testimonialRoutes); // Done
 app.use("/api/notifications", notificationRoutes);
 
 // Health check

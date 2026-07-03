@@ -134,8 +134,8 @@ export enum KycStatus {
 }
 
 export enum CouponType {
-  PERCENTAGE = "percentage",
-  AMOUNT = "amount",
+  PERCENTAGE = "PERCENTAGE",
+  AMOUNT = "AMOUNT",
 }
 
 export enum CompanyType {

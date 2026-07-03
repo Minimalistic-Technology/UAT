@@ -6,7 +6,7 @@ export const couponSchema = z
       .string()
       .min(3, "Coupon code must be at least 3 characters")
       .toUpperCase(),
-    type: z.enum(["percentage", "amount"]),
+    type: z.enum(["PERCENTAGE", "AMOUNT"]),
     value: z
       .number({ invalid_type_error: "Value must be a number" })
       .min(0, "Value cannot be negative"),
@@ -20,7 +20,7 @@ export const couponSchema = z
       })
       .optional(),
   })
-  .refine((data) => !(data.type === "percentage" && data.value > 100), {
+  .refine((data) => !(data.type === "PERCENTAGE" && data.value > 100), {
     message: "Percentage discount cannot exceed 100%",
     path: ["value"],
   });

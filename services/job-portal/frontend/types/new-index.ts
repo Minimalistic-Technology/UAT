@@ -217,7 +217,7 @@ export type Plan = {
 };
 
 export type Coupon = {
-  _id: string; // mongoose.objectId
+  id: string;
   code: string;
   type: CouponType;
   value: number;

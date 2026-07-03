@@ -64,7 +64,7 @@ const ActionCell = ({ coupon }: { coupon: Coupon }) => {
               </AlertDialogCancel>
               <AlertDialogAction
                 className="rounded-xl bg-red-600 font-semibold text-white shadow-sm hover:bg-red-700"
-                onClick={() => deleteCoupon(coupon._id)}
+                onClick={() => deleteCoupon(coupon.id)}
               >
                 Delete Coupon
               </AlertDialogAction>
@@ -112,7 +112,7 @@ export const columns: ColumnDef<Coupon>[] = [
       const coupon = row.original;
       return (
         <div className="text-muted-foreground font-medium">
-          {coupon.type === "percentage"
+          {coupon.type === "PERCENTAGE"
             ? `${coupon.value}%`
             : `$${coupon.value}`}
         </div>
