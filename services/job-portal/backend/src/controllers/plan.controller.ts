@@ -16,7 +16,6 @@ export const createPlan = async (
       currency,
       durationDays,
       jobPostLimit,
-      isFeatured,
       isDefault,
       displayOrder,
       features,
@@ -48,18 +47,17 @@ export const createPlan = async (
         data: {
           name,
           description,
-          price,
+          price: price !== undefined ? Math.round(Number(price)) : 0,
           currency: currency || "INR",
-          durationDays,
-          jobPostLimit,
-          isFeatured: isFeatured !== undefined ? isFeatured : false,
+          subscriptionDurationDays: durationDays || 30,
+          maxActiveJobPosts: jobPostLimit || -1,
           isDefault: isDefault !== undefined ? isDefault : false,
           displayOrder: displayOrder !== undefined ? displayOrder : 0,
           features: features || [],
           isActive: isActive !== undefined ? isActive : true,
-          allowResumeDownload,
-          postValidityDays,
-          teamMemberLimit: teamMemberLimit !== undefined ? teamMemberLimit : 1,
+          allowResumeDownload: allowResumeDownload ?? false,
+          jobPostValidityDays: postValidityDays ?? 30,
+          maxTeamMembers: teamMemberLimit !== undefined ? teamMemberLimit : 1,
         },
       });
     });
@@ -68,7 +66,7 @@ export const createPlan = async (
       .status(201)
       .json(new ApiResponse(201, plan, "Plan created successfully"));
   } catch (error: any) {
-    if (error.code === 'P2002') {
+    if (error.code === "P2002") {
       return next(new ApiError(400, "A plan with this name already exists."));
     }
     next(new ApiError(500, error.message ?? "Server Error"));
@@ -82,7 +80,30 @@ export const updatePlan = async (
 ) => {
   try {
     const id = req.params.id as string;
-    const { isDefault, ...updateData } = req.body;
+    const {
+      isDefault,
+      durationDays,
+      jobPostLimit,
+      postValidityDays,
+      teamMemberLimit,
+      price,
+      allowResumeDownload,
+      ...updateData
+    } = req.body;
+
+    const formattedUpdateData: any = { ...updateData };
+    if (durationDays !== undefined)
+      formattedUpdateData.subscriptionDurationDays = durationDays;
+    if (jobPostLimit !== undefined)
+      formattedUpdateData.maxActiveJobPosts = jobPostLimit;
+    if (postValidityDays !== undefined)
+      formattedUpdateData.jobPostValidityDays = postValidityDays;
+    if (teamMemberLimit !== undefined)
+      formattedUpdateData.maxTeamMembers = teamMemberLimit;
+    if (price !== undefined)
+      formattedUpdateData.price = Math.round(Number(price));
+    if (allowResumeDownload !== undefined)
+      formattedUpdateData.allowResumeDownload = allowResumeDownload;
 
     const planToUpdate = await prisma.plan.findUnique({ where: { id } });
 
@@ -99,12 +120,12 @@ export const updatePlan = async (
 
         return tx.plan.update({
           where: { id },
-          data: { ...updateData, isDefault: true },
+          data: { ...formattedUpdateData, isDefault: true },
         });
       } else {
         return tx.plan.update({
           where: { id },
-          data: updateData,
+          data: formattedUpdateData,
         });
       }
     });
@@ -113,7 +134,7 @@ export const updatePlan = async (
       .status(200)
       .json(new ApiResponse(200, plan, "Plan updated successfully"));
   } catch (error: any) {
-    if (error.code === 'P2002') {
+    if (error.code === "P2002") {
       return next(new ApiError(400, "A plan with this name already exists."));
     }
     return next(error);

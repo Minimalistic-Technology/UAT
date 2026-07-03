@@ -102,7 +102,7 @@ app.use(
 app.use("/api/auth", authRoutes); // Done
 app.use("/api/jobs", jobRoutes); // Done
 app.use("/api/internships", internshipRoutes); // Done
-app.use("/api/drafts", draftRoutes);
+app.use("/api/drafts", draftRoutes); // Done
 app.use("/api/applications", applicationRoutes);
 app.use("/api/users", userRoutes); // Done
 app.use("/api/companies", companyRoutes);
@@ -114,7 +114,7 @@ app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/demo", demoRoutes);
-app.use("/api/listings", listingRoutes);
+app.use("/api/listings", listingRoutes); // Done
 app.use("/api/features", featureRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/testimonials", testimonialRoutes); // Done
