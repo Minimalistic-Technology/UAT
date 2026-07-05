@@ -106,7 +106,7 @@ app.use("/api/drafts", draftRoutes); // Done
 app.use("/api/applications", applicationRoutes);
 app.use("/api/users", userRoutes); // Done
 app.use("/api/companies", companyRoutes); // Done
-app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminRoutes); // Done
 app.use("/api/admin/developer", developerRoutes);
 app.use("/api/company-members", companyMemberRoutes);
 app.use("/api/plans", planRoutes); // Done
@@ -115,10 +115,10 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/demo", demoRoutes);
 app.use("/api/listings", listingRoutes); // Done
-app.use("/api/features", featureRoutes);
+app.use("/api/features", featureRoutes); // Done
 app.use("/api/ai", aiRoutes);
 app.use("/api/testimonials", testimonialRoutes); // Done
-app.use("/api/notifications", notificationRoutes);
+app.use("/api/notifications", notificationRoutes); // Done
 
 // Health check
 app.get("/api/health", async (req: Request, res: Response) => {
