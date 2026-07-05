@@ -157,7 +157,11 @@ app.use((req: Request, res: Response) => {
 });
 
 if (process.env.NODE_ENV !== "test") {
-  if (cluster.isPrimary) {
+  if (process.env.NODE_ENV === "development") {
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT} (Development mode - No clustering)`);
+    });
+  } else if (cluster.isPrimary) {
     const numCPUs = os.cpus().length;
     console.log(
       `Primary ${process.pid} is running. Forking for ${numCPUs} CPUs.`,

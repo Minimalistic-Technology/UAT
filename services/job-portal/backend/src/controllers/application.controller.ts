@@ -1,18 +1,9 @@
 import type { Response, NextFunction } from "express";
-import Application, {
-  ApplicationStatus,
-  ListingType,
-} from "../models/Application.model.js";
-import Job, { IJob } from "../models/Job.model.js";
-import Internship, { IInternship } from "../models/Internship.model.js";
+import { prisma } from "../lib/prisma.js";
+import { ApplicationStatus, DraftType, JobStatus, CompanyRole } from "../../generated/prisma/client.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-// import { sendEmail } from '../utils/email.js';
 import { ApiError } from "../utils/apiError.js";
-import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
-import { JobStatus } from "../models/BaseJob.model.js";
-import Subscription from "../models/Subscription.model.js";
-import User from "../models/User.model.js";
 
 export const createApplication = async (
   req: AuthRequest,
@@ -20,35 +11,42 @@ export const createApplication = async (
   next: NextFunction,
 ) => {
   try {
-    const { listingId, listingType } = req.body;
+    const { listingId, listingType } = req.body; // listingType is "JOB" | "INTERNSHIP"
 
-    if (!req.user.resume) {
+    // Find the user with their resume
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { resume: true }
+    });
+
+    if (!user?.resume) {
       throw new ApiError(
         400,
         "Resume is required to apply for this job. Please upload your resume in your profile.",
       );
     }
 
-    const listing =
-      listingType === ListingType.JOB
-        ? await Job.findById(listingId)
-        : await Internship.findById(listingId);
+    const listing = await prisma.baseListing.findUnique({
+      where: { id: listingId }
+    });
 
-    if (!listing) {
+    if (!listing || listing.opportunityType !== listingType) {
       throw new ApiError(404, `${listingType} not found`);
     }
 
-    if (listing.status === JobStatus.CLOSED) {
+    if (listing.status === ("CLOSED" as JobStatus)) {
       throw new ApiError(
         400,
         `This ${listingType} is no longer accepting applications`,
       );
     }
 
-    const existingApplication = await Application.findOne({
-      listing: listingId,
-      listingType,
-      jobSeeker: req.user._id,
+    const existingApplication = await prisma.application.findFirst({
+      where: {
+        listingId,
+        listingType: listingType as DraftType,
+        jobSeekerId: req.user.id,
+      }
     });
 
     if (existingApplication) {
@@ -58,23 +56,19 @@ export const createApplication = async (
       );
     }
 
-    const application = await Application.create({
-      listing: listingId,
-      listingType,
-      jobSeeker: req.user._id,
-      resume: req.user.resume.url,
+    const application = await prisma.application.create({
+      data: {
+        listingId,
+        listingType: listingType as DraftType,
+        jobSeekerId: req.user.id,
+        resumeId: user.resume.id,
+      }
     });
 
-    // Increment applications count
-    listing.applicationsCount += 1;
-    await listing.save();
-
-    // Send confirmation email
-    // await sendEmail({
-    //   email: req.user.email,
-    //   subject: 'Application Submitted Successfully',
-    //   message: `Your application for ${job.title} has been submitted successfully.`,
-    // });
+    await prisma.baseListing.update({
+      where: { id: listingId },
+      data: { applicationsCount: { increment: 1 } }
+    });
 
     res
       .status(201)
@@ -97,19 +91,23 @@ export const getMyApplications = async (
     const skip = (page - 1) * limit;
 
     const [applications, totalApplications] = await Promise.all([
-      Application.find({ jobSeeker: req.user._id })
-        .populate({
-          path: "listing",
-          select: "location jobType title company",
-          populate: {
-            path: "company",
-            select: "name",
-          },
-        })
-        .sort("-createdAt")
-        .skip(skip)
-        .limit(limit),
-      Application.countDocuments({ jobSeeker: req.user._id }),
+      prisma.application.findMany({
+        where: { jobSeekerId: req.user.id },
+        include: {
+          listing: {
+            select: {
+              title: true,
+              company: { select: { name: true } },
+              workMode: true,
+              opportunityType: true,
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      prisma.application.count({ where: { jobSeekerId: req.user.id } })
     ]);
 
     const totalPages = Math.ceil(totalApplications / limit);
@@ -140,15 +138,11 @@ export const getMyApplicationStats = async (
   next: NextFunction,
 ) => {
   try {
-    const stats = await Application.aggregate([
-      { $match: { jobSeeker: req.user._id } },
-      {
-        $group: {
-          _id: { status: "$status", listingType: "$listingType" },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+    const stats = await prisma.application.groupBy({
+      by: ['status', 'listingType'],
+      where: { jobSeekerId: req.user.id },
+      _count: { _all: true },
+    });
 
     const formattedStats = {
       total: 0,
@@ -157,15 +151,15 @@ export const getMyApplicationStats = async (
         {} as Record<ApplicationStatus, number>,
       ),
       byListingType: {
-        [ListingType.JOB]: 0,
-        [ListingType.INTERNSHIP]: 0,
+        [DraftType.JOB]: 0,
+        [DraftType.INTERNSHIP]: 0,
       },
     };
 
-    stats.forEach(({ _id, count }) => {
-      formattedStats.total += count;
-      formattedStats.byStatus[_id.status as ApplicationStatus] += count;
-      formattedStats.byListingType[_id.listingType as ListingType] += count;
+    stats.forEach(({ status, listingType, _count }) => {
+      formattedStats.total += _count._all;
+      formattedStats.byStatus[status as ApplicationStatus] += _count._all;
+      formattedStats.byListingType[listingType as DraftType] += _count._all;
     });
 
     return res
@@ -188,95 +182,76 @@ export const getAllCompanyApplications = async (
   next: NextFunction,
 ) => {
   try {
-    const companyMember = await CompanyMember.findOne({ user: req.user._id });
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id }
+    });
 
     if (!companyMember) {
       return next(new ApiError(400, "Company member not found"));
     }
 
-    const companyId = companyMember.company;
-
+    const companyId = companyMember.companyId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
     const { status, listingType, search } = req.query;
 
-    const [allJobs, allInternships] = await Promise.all([
-      Job.find({ company: companyId }).select("_id title"),
-      Internship.find({ company: companyId }).select("_id title"),
-    ]);
-
-    const allListings = [...allJobs, ...allInternships];
-
-    const query: any = { listing: { $in: allListings.map(l => l._id) } };
+    const query: any = {
+      listing: { companyId }
+    };
 
     if (status && status !== "all") {
       query.status = status;
     }
 
-    if (listingType && Object.values(ListingType).includes(listingType as ListingType)) {
+    if (listingType && Object.values(DraftType).includes(listingType as DraftType)) {
       query.listingType = listingType;
     }
 
     if (search) {
-      const searchRegex = new RegExp(search as string, "i");
-
-      const matchedUsers = await User.find({
-        $or: [
-          { firstName: searchRegex },
-          { lastName: searchRegex },
-          { email: searchRegex },
-        ]
-      }).select("_id");
-
-      const userIds = matchedUsers.map((u: any) => u._id);
-
-      const matchedListingIds = allListings
-        .filter(l => searchRegex.test(l.title))
-        .map(l => l._id);
-
-      query.$or = [
-        { jobSeeker: { $in: userIds } },
-        { listing: { $in: matchedListingIds } }
+      query.OR = [
+        { jobSeeker: { firstName: { contains: search as string, mode: 'insensitive' } } },
+        { jobSeeker: { lastName: { contains: search as string, mode: 'insensitive' } } },
+        { jobSeeker: { email: { contains: search as string, mode: 'insensitive' } } },
+        { listing: { title: { contains: search as string, mode: 'insensitive' } } }
       ];
     }
 
-    const activeSubscription = await Subscription.findOne({
-      companyId: companyId,
-      status: "active",
-      expiryDate: { $gt: new Date() },
-    }).populate("planId");
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        companyId,
+        status: "ACTIVE",
+        expiryDate: { gt: new Date() }
+      },
+      include: { plan: true }
+    });
 
-    const plan = activeSubscription?.planId as any;
-    const canViewResume = plan?.allowResumeDownload === true;
+    const canViewResume = activeSubscription?.plan?.allowResumeDownload === true;
 
     const [applicationsDocs, totalApplications] = await Promise.all([
-      Application.find(query)
-        .populate({
-          path: "listing",
-          select: "title location jobType company",
-          populate: {
-            path: "company",
-            select: "name",
+      prisma.application.findMany({
+        where: query,
+        include: {
+          listing: {
+            select: { title: true, company: { select: { name: true } }, opportunityType: true, workMode: true }
           },
-        })
-        .populate("jobSeeker", "firstName lastName email phone resume skills experience education portfolio urls")
-        .sort("-createdAt")
-        .skip(skip)
-        .limit(limit),
-      Application.countDocuments(query),
+          jobSeeker: {
+            select: { firstName: true, lastName: true, email: true, phone: true, skills: true, resume: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      prisma.application.count({ where: query })
     ]);
 
     const applications = applicationsDocs.map((app) => {
-      const appObj = app.toObject();
-      if (!canViewResume) {
-        delete (appObj as any).resume;
-        if (appObj.jobSeeker) {
-          delete (appObj.jobSeeker as any).resume;
-        }
+      if (!canViewResume && app.jobSeeker) {
+        (app.jobSeeker as any).resume = null;
       }
-      return appObj;
+      return app;
     });
 
     const totalPages = Math.ceil(totalApplications / limit);
@@ -309,57 +284,51 @@ export const getJobApplicants = async (
   try {
     const { listingType, listingId } = req.body;
 
-    const listing =
-      listingType === ListingType.JOB
-        ? await Job.findById(listingId)
-        : await Internship.findById(listingId);
-
+    const listing = await prisma.baseListing.findUnique({ where: { id: listingId } });
     if (!listing) {
       throw new ApiError(404, `${listingType} not found`);
     }
 
-    const companyMember = await CompanyMember.findOne({
-      company: listing.company,
-      user: req.user._id,
+    const companyMember = await prisma.companyMember.findFirst({
+      where: {
+        companyId: listing.companyId,
+        userId: req.user.id
+      }
     });
 
-    if (!companyMember) {
+    if (!companyMember || !["OWNER", "HR"].includes(companyMember.role)) {
       throw new ApiError(403, "Not authorized to view applicants");
     }
 
-    if (
-      companyMember.role != CompanyRole.OWNER &&
-      companyMember.role != CompanyRole.HR
-    ) {
-      throw new ApiError(403, "Not authorized to view applicants");
-    }
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        companyId: listing.companyId,
+        status: "ACTIVE",
+        expiryDate: { gt: new Date() }
+      },
+      include: { plan: true }
+    });
 
-    const activeSubscription = await Subscription.findOne({
-      companyId: listing.company,
-      status: "active",
-      expiryDate: { $gt: new Date() },
-    }).populate("planId");
+    const canViewResume = activeSubscription?.plan?.allowResumeDownload === true;
 
-    const plan = activeSubscription?.planId as any;
-    const canViewResume = plan?.allowResumeDownload === true;
-
-    const applicationsDocs = await Application.find({
-      listing: listingId,
-      listingType,
-    })
-      .populate(
-        "jobSeeker",
-        "firstName lastName email phone skills experience education",
-      )
-      .sort("-createdAt");
+    const applicationsDocs = await prisma.application.findMany({
+      where: {
+        listingId,
+        listingType: listingType as DraftType
+      },
+      include: {
+        jobSeeker: {
+          select: { firstName: true, lastName: true, email: true, phone: true, skills: true, resume: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
     const applications = applicationsDocs.map((app) => {
-      const appObj = app.toObject();
-      if (!canViewResume) {
-        //@ts-ignore
-        delete appObj.resume;
+      if (!canViewResume && app.jobSeeker) {
+        (app.jobSeeker as any).resume = null;
       }
-      return appObj;
+      return app;
     });
 
     res
@@ -384,37 +353,32 @@ export const getApplicationById = async (
   try {
     const { id } = req.params;
 
-    const application = await Application.findById(id)
-      .populate({
-        path: "listing",
-        select: "title location jobType company postedBy status",
-        populate: {
-          path: "company",
-          select: "name logo industry",
+    const application = await prisma.application.findUnique({
+      where: { id: id as string },
+      include: {
+        listing: {
+          include: { company: true }
         },
-      })
-      .populate({
-        path: "jobSeeker",
-        select:
-          "firstName lastName email phone skills experience education resume",
-      });
+        jobSeeker: {
+          include: { resume: true }
+        }
+      }
+    });
 
     if (!application) {
       throw new ApiError(404, "Application not found");
     }
 
-    const listing: any = application.listing;
-    const jobSeeker: any = application.jobSeeker;
-
-    // Authorization checks
-    const isJobSeeker = jobSeeker._id.toString() === req.user._id.toString();
-    const isEmployer = listing.postedBy.toString() === req.user._id.toString();
+    const isJobSeeker = application.jobSeekerId === req.user.id;
+    const isEmployer = application.listing.postedById === req.user.id;
 
     let isCompanyMember = false;
     if (!isJobSeeker && !isEmployer) {
-      const companyMember = await CompanyMember.findOne({
-        user: req.user._id,
-        company: listing.company,
+      const companyMember = await prisma.companyMember.findFirst({
+        where: {
+          userId: req.user.id,
+          companyId: application.listing.companyId
+        }
       });
       if (companyMember) isCompanyMember = true;
     }
@@ -423,30 +387,27 @@ export const getApplicationById = async (
       throw new ApiError(403, "Not authorized to view this application");
     }
 
-    const appObj = application.toObject();
-
     if (!isJobSeeker && (isEmployer || isCompanyMember)) {
-      const activeSubscription = await Subscription.findOne({
-        companyId: listing.company,
-        status: "active",
-        expiryDate: { $gt: new Date() },
-      }).populate("planId");
+      const activeSubscription = await prisma.subscription.findFirst({
+        where: {
+          companyId: application.listing.companyId,
+          status: "ACTIVE",
+          expiryDate: { gt: new Date() }
+        },
+        include: { plan: true }
+      });
 
-      const plan = activeSubscription?.planId as any;
-      const canViewResume = plan?.allowResumeDownload === true;
+      const canViewResume = activeSubscription?.plan?.allowResumeDownload === true;
 
-      if (!canViewResume) {
-        delete (appObj as any).resume;
-        if (appObj.jobSeeker) {
-          delete (appObj.jobSeeker as any).resume;
-        }
+      if (!canViewResume && application.jobSeeker) {
+        (application.jobSeeker as any).resume = null;
       }
     }
 
     res
       .status(200)
       .json(
-        new ApiResponse(200, appObj, "Application fetched successfully"),
+        new ApiResponse(200, application, "Application fetched successfully"),
       );
   } catch (error: any) {
     next(error);
@@ -462,67 +423,56 @@ export const updateApplicationStatus = async (
     const { id } = req.params;
     const { status, note, interviewDate } = req.body;
 
-    const application = await Application.findById(id)
-      .populate("listing")
-      .populate("jobSeeker", "email firstName lastName");
+    const application = await prisma.application.findUnique({
+      where: { id: id as string },
+      include: { listing: true, jobSeeker: true }
+    });
 
     if (!application) {
       throw new ApiError(404, "Application not found");
     }
 
-    // Verify job belongs to employer or user is HR/OWNER of the company
-    const listing: any = application.listing;
-
-    const companyMember = await CompanyMember.findOne({
-      user: req.user._id,
-      company: listing.company,
+    const companyMember = await prisma.companyMember.findFirst({
+      where: {
+        userId: req.user.id,
+        companyId: application.listing.companyId
+      }
     });
 
-    const isEmployer = listing.postedBy.toString() === req.user._id.toString();
-    const isAuthorizedMember =
-      companyMember &&
-      (companyMember.role === CompanyRole.HR ||
-        companyMember.role === CompanyRole.OWNER);
+    const isEmployer = application.listing.postedById === req.user.id;
+    const isAuthorizedMember = companyMember && ["OWNER", "HR"].includes(companyMember.role);
 
     if (!isEmployer && !isAuthorizedMember) {
       throw new ApiError(403, "Not authorized to update this application");
     }
 
-    // Update status
-    application.status = status;
+    const updateData: any = {
+      status: status as ApplicationStatus,
+    };
 
     if (interviewDate) {
-      application.interviewDate = new Date(interviewDate);
+      updateData.interviewDate = new Date(interviewDate);
     }
 
-    application.statusHistory.push({
-      status,
-      changedAt: new Date(),
-      changedBy: req.user._id,
-      note,
+    updateData.statusHistory = {
+      create: {
+        status: status as ApplicationStatus,
+        changedById: req.user.id,
+        note
+      }
+    };
+
+    const updatedApplication = await prisma.application.update({
+      where: { id: id as string },
+      data: updateData
     });
-
-    await application.save();
-
-    // Note: The logic that automatically closed the job when openings are filled has been removed
-    // to keep the vacancy open even if the employer accepts applications.
-
-    // Send notification email to job seeker
-    // const jobSeeker: any = application.jobSeeker;
-    // await sendEmail({
-    //   email: jobSeeker.email,
-    //   subject: `Application Status Update - ${job.title}`,
-    //   message: `Your application status has been updated to: ${status}${
-    //     note ? `\n\nNote: ${note}` : ''
-    //   }`,
-    // });
 
     res
       .status(200)
       .json(
         new ApiResponse(
           200,
-          application,
+          updatedApplication,
           "Application status updated successfully",
         ),
       );
@@ -530,4 +480,3 @@ export const updateApplicationStatus = async (
     next(error);
   }
 };
-

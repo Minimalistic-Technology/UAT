@@ -5,7 +5,7 @@ import {
   optionalAuth,
   protect,
 } from "../middleware/auth.middleware.js";
-import { GlobalRole } from "../models/User.model.js";
+import { GlobalRole } from "../../generated/prisma/client.js";
 import {
   getAllInternships,
   getInternshipById,

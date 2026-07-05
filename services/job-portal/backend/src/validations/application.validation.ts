@@ -1,5 +1,5 @@
 import { body, param, query } from "express-validator";
-import { ApplicationStatus } from "../models/Application.model.js";
+import { ApplicationStatus } from "../../generated/prisma/client.js";
 
 export const applyForJobSchema = [
   body("listingId")

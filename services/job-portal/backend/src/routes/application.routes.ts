@@ -9,7 +9,7 @@ import {
   getMyApplicationStats,
 } from "../controllers/application.controller.js";
 import { protect, authorize } from "../middleware/auth.middleware.js";
-import { GlobalRole } from "../models/User.model.js";
+import { GlobalRole } from "../../generated/prisma/client.js";
 import { applicationLimiter } from "../middleware/rateLimiter.js";
 import { validate } from "../middleware/validate.middleware.js";
 import {

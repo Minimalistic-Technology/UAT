@@ -14,7 +14,7 @@ import {
   optionalAuth,
 } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { GlobalRole } from "../models/User.model.js";
+import { GlobalRole } from "../../generated/prisma/client.js";
 import { createJobSchema, getJobByIdSchema } from "../validations/job.validation.js";
 
 const router = express.Router();
