@@ -1,5 +1,5 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
-import { User } from "@/types/new-index";
+import { User } from "@/types";
 
 export const getUserById = async (id: string) => {
   const response = await apiClient.get<ApiSuccessResponse<User>>(

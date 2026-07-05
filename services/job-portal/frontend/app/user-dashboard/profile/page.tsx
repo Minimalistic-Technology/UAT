@@ -36,7 +36,7 @@ export default function UserProfilePage() {
     if (user.skills && user.skills.length > 0) strength += 15;
     if (user.experiences && user.experiences.length > 0) strength += 15;
     if (user.educations && user.educations.length > 0) strength += 10;
-    if (user.resume?.url || user.resumeOriginalName) strength += 10;
+    if (user.resume?.originalName) strength += 10;
     return strength;
   }, [user]);
 

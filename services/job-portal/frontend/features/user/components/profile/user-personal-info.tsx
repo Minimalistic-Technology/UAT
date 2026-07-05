@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { getInlineUrl } from "@/utils";
 
-import { User, ProfessionalExperience, UserEducationDetails } from "@/types/new-index";
+import { User, Experience, Education } from "@/types";
 
 interface UserPersonalInfoProps {
   user: User;
@@ -99,23 +99,33 @@ export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-900">
-                      {user.resumeOriginalName || "Resume.pdf"}
+                      {user.resume?.originalName || "Resume.pdf"}
                     </p>
-                    {user.atsScore && (
+                    {user.resume?.atsScore && (
                       <div className="mt-2 flex flex-col gap-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-slate-700">ATS Score:</span>
-                          <Badge 
-                            variant={user.atsScore.overallScore >= 70 ? "default" : user.atsScore.overallScore >= 40 ? "secondary" : "destructive"}
+                          <span className="text-sm font-semibold text-slate-700">
+                            ATS Score:
+                          </span>
+                          <Badge
+                            variant={
+                              user.resume.atsScore.overallScore >= 70
+                                ? "default"
+                                : user.resume.atsScore.overallScore >= 40
+                                  ? "secondary"
+                                  : "destructive"
+                            }
                           >
-                            {user.atsScore.overallScore}/100
+                            {user.resume.atsScore.overallScore}/100
                           </Badge>
                         </div>
-                        {user.atsScore.sectionsMissing && user.atsScore.sectionsMissing.length > 0 && (
-                          <p className="text-xs text-orange-600 font-medium">
-                            Missing Sections: {user.atsScore.sectionsMissing.join(", ")}
-                          </p>
-                        )}
+                        {user.resume.atsScore.sectionsMissing &&
+                          user.resume.atsScore.sectionsMissing.length > 0 && (
+                            <p className="mt-2 text-xs text-red-500/80">
+                              Missing:{" "}
+                              {user.resume.atsScore.sectionsMissing.join(", ")}
+                            </p>
+                          )}
                       </div>
                     )}
                   </div>
@@ -155,7 +165,7 @@ export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           {user.experiences && user.experiences.length > 0 ? (
-            user.experiences.map((exp: ProfessionalExperience, index: number) => (
+            user.experiences.map((exp: Experience, index: number) => (
               <div key={index} className="relative flex gap-4">
                 <div className="flex flex-col items-center">
                   <div className="bg-primary/20 border-primary z-10 h-3 w-3 rounded-full border-2" />
@@ -228,7 +238,7 @@ export function UserPersonalInfo({ user }: UserPersonalInfoProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           {user.educations && user.educations.length > 0 ? (
-            user.educations.map((edu: UserEducationDetails, index: number) => (
+            user.educations.map((edu: Education, index: number) => (
               <div key={index} className="relative flex gap-4">
                 <div className="flex flex-col items-center">
                   <div className="bg-primary/20 border-primary z-10 h-3 w-3 rounded-full border-2" />

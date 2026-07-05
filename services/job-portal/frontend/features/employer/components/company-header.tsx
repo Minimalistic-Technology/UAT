@@ -1,4 +1,4 @@
-import { Company } from "@/types/new-index";
+import { Company } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Building2, MapPin, User, CheckCircle, Clock } from "lucide-react";
 import { CompanyMetrics } from "../types/company.type";
@@ -57,10 +57,10 @@ export const CompanyHeader = ({ company, isLoading }: CompanyHeaderProps) => {
                   </div>
                 )}
 
-                {company.location?.city && company.location?.country && (
+                {company.locations?.[0]?.city && company.locations?.[0]?.country && (
                   <div className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
-                    {company.location.city}, {company.location.country}
+                    {company.locations[0].city}, {company.locations[0].country}
                   </div>
                 )}
               </div>

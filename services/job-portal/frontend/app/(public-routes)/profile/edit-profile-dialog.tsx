@@ -13,7 +13,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useUpdateProfile } from "@/hooks/use-user";
-import { User, ProfessionalExperience as Experience } from "@/types/new-index";
+import { User, Experience } from "@/types";
 import { ProfileFormValues, profileSchema } from "@/validations";
 import { BasicInfoTab } from "./_components/basic-info-tab";
 import { SkillsLanguagesTab } from "./_components/skills-languages-tab";

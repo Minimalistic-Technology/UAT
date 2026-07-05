@@ -34,7 +34,7 @@ interface KycTableProps {
   isUpdating: boolean;
   onUpdateStatus: (
     id: string,
-    status: "approved" | "rejected" | "pending",
+    status: "APPROVED" | "REJECTED" | "PENDING",
     note?: string,
   ) => void;
 }
@@ -72,7 +72,7 @@ export const KycTable = ({
 
   const handleRejectConfirm = () => {
     if (rejectingId) {
-      onUpdateStatus(rejectingId, "rejected", rejectReason);
+      onUpdateStatus(rejectingId, "REJECTED", rejectReason);
       setRejectingId(null);
       setRejectReason("");
     }
@@ -109,7 +109,7 @@ export const KycTable = ({
           ) : applications.length > 0 ? (
             applications.map((app) => (
               <TableRow
-                key={app._id}
+                key={app.id}
                 className="group hover:bg-muted/20 transition-colors"
               >
                 <TableCell>
@@ -189,14 +189,14 @@ export const KycTable = ({
                 <TableCell>
                   <Badge
                     variant={
-                      app.status === "approved"
+                      app.status === "APPROVED"
                         ? "default"
-                        : app.status === "rejected"
+                        : app.status === "REJECTED"
                           ? "destructive"
                           : "outline"
                     }
                     className={
-                      app.status === "pending"
+                      app.status === "PENDING"
                         ? "border-amber-200 bg-amber-50 text-amber-700"
                         : ""
                     }
@@ -205,7 +205,7 @@ export const KycTable = ({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  {app.status === "pending" ? (
+                  {app.status === "PENDING" ? (
                     <div className="flex justify-end gap-1">
                       <TooltipProvider>
                         <Tooltip>
@@ -216,7 +216,7 @@ export const KycTable = ({
                               className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
                               disabled={isUpdating}
                               onClick={() =>
-                                onUpdateStatus(app._id, "approved")
+                                onUpdateStatus(app.id, "APPROVED")
                               }
                             >
                               <CheckCircle className="h-4 w-4" />
@@ -231,7 +231,7 @@ export const KycTable = ({
                               size="icon"
                               className="text-destructive h-8 w-8 hover:bg-red-50"
                               disabled={isUpdating}
-                              onClick={() => setRejectingId(app._id)}
+                              onClick={() => setRejectingId(app.id)}
                             >
                               <XCircle className="h-4 w-4" />
                             </Button>
@@ -242,7 +242,7 @@ export const KycTable = ({
                     </div>
                   ) : (
                     <div className="flex items-center justify-end gap-2">
-                      {app.status === "rejected" && app.rejectionReason && (
+                      {app.status === "REJECTED" && app.rejectionReason && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>

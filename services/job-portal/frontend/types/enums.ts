@@ -4,27 +4,27 @@ export enum CompanyRole {
 }
 
 export enum StipendType {
-  FIXED = "fixed",
-  PERFORMANCE_BASED = "performance_based",
-  UNPAID = "unpaid",
+  FIXED = "FIXED",
+  PERFORMANCE_BASED = "PERFORMANCE_BASED",
+  UNPAID = "UNPAID",
 }
 
 export enum DurationType {
-  WEEKS = "weeks",
-  MONTHS = "months",
+  WEEKS = "WEEKS",
+  MONTHS = "MONTHS",
 }
 
 export enum WorkMode {
-  WORKFROMOFFICE = "work from office",
-  REMOTE = "remote",
-  HYBRID = "hybrid",
-  TEMPWFH = "temporary work from home",
+  WORKFROMOFFICE = "WORK_FROM_OFFICE",
+  REMOTE = "REMOTE",
+  HYBRID = "HYBRID",
+  TEMPWFH = "TEMPORARY_WFH",
 }
 
 export enum WorkType {
   REMOTE = "REMOTE",
   HYBRID = "HYBRID",
-  ON_SITE = "ON_SITE"
+  ON_SITE = "ON_SITE",
 }
 
 export enum GlobalRole {
@@ -33,102 +33,86 @@ export enum GlobalRole {
 }
 
 export enum RoleCategory {
-  // Engineering & Tech
-  SOFTWARE_DEVELOPMENT = "software_development",
-  DATA_SCIENCE = "data_science",
-  DEVOPS = "devops",
-  CYBERSECURITY = "cybersecurity",
-  IT_SUPPORT = "it_support",
-  QA_TESTING = "qa_testing",
-  HARDWARE = "hardware",
-
-  // Design
-  UI_UX = "ui_ux",
-  GRAPHIC_DESIGN = "graphic_design",
-  PRODUCT_DESIGN = "product_design",
-
-  // Business & Management
-  PRODUCT_MANAGEMENT = "product_management",
-  PROJECT_MANAGEMENT = "project_management",
-  BUSINESS_ANALYSIS = "business_analysis",
-  OPERATIONS = "operations",
-  CONSULTING = "consulting",
-
-  // Sales & Marketing
-  SALES = "sales",
-  DIGITAL_MARKETING = "digital_marketing",
-  CONTENT = "content",
-  SEO_SEM = "seo_sem",
-  BRAND_MANAGEMENT = "brand_management",
-
-  // Finance & Legal
-  FINANCE = "finance",
-  ACCOUNTING = "accounting",
-  LEGAL = "legal",
-  COMPLIANCE = "compliance",
-
-  // HR & Admin
-  HUMAN_RESOURCES = "human_resources",
-  RECRUITMENT = "recruitment",
-  ADMINISTRATION = "administration",
-
-  // Other
-  CUSTOMER_SUPPORT = "customer_support",
-  RESEARCH = "research",
-  OTHER = "other",
+  SOFTWARE_DEVELOPMENT = "SOFTWARE_DEVELOPMENT",
+  DATA_SCIENCE = "DATA_SCIENCE",
+  DEVOPS = "DEVOPS",
+  CYBERSECURITY = "CYBERSECURITY",
+  IT_SUPPORT = "IT_SUPPORT",
+  QA_TESTING = "QA_TESTING",
+  HARDWARE = "HARDWARE",
+  UI_UX = "UI_UX",
+  GRAPHIC_DESIGN = "GRAPHIC_DESIGN",
+  PRODUCT_DESIGN = "PRODUCT_DESIGN",
+  PRODUCT_MANAGEMENT = "PRODUCT_MANAGEMENT",
+  PROJECT_MANAGEMENT = "PROJECT_MANAGEMENT",
+  BUSINESS_ANALYSIS = "BUSINESS_ANALYSIS",
+  OPERATIONS = "OPERATIONS",
+  CONSULTING = "CONSULTING",
+  SALES = "SALES",
+  DIGITAL_MARKETING = "DIGITAL_MARKETING",
+  CONTENT = "CONTENT",
+  SEO_SEM = "SEO_SEM",
+  BRAND_MANAGEMENT = "BRAND_MANAGEMENT",
+  FINANCE = "FINANCE",
+  ACCOUNTING = "ACCOUNTING",
+  LEGAL = "LEGAL",
+  COMPLIANCE = "COMPLIANCE",
+  HUMAN_RESOURCES = "HUMAN_RESOURCES",
+  RECRUITMENT = "RECRUITMENT",
+  ADMINISTRATION = "ADMINISTRATION",
+  CUSTOMER_SUPPORT = "CUSTOMER_SUPPORT",
+  RESEARCH = "RESEARCH",
+  OTHER = "OTHER",
 }
 
 export enum Industry {
-  // Tech
-  INFORMATION_TECHNOLOGY = "information_technology",
-  SOFTWARE = "software",
-  ECOMMERCE = "ecommerce",
-  FINTECH = "fintech",
-  EDTECH = "edtech",
-  HEALTHTECH = "healthtech",
-
-  // Traditional sectors
-  BANKING = "banking",
-  INSURANCE = "insurance",
-  HEALTHCARE = "healthcare",
-  EDUCATION = "education",
-  MANUFACTURING = "manufacturing",
-  RETAIL = "retail",
-  REAL_ESTATE = "real_estate",
-  LOGISTICS = "logistics",
-  AUTOMOTIVE = "automotive",
-  ENERGY = "energy",
-  TELECOM = "telecom",
-  MEDIA = "media",
-  ENTERTAINMENT = "entertainment",
-  HOSPITALITY = "hospitality",
-  AGRICULTURE = "agriculture",
-  GOVERNMENT = "government",
-  NONPROFIT = "nonprofit",
-  OTHER = "other",
+  INFORMATION_TECHNOLOGY = "INFORMATION_TECHNOLOGY",
+  SOFTWARE = "SOFTWARE",
+  ECOMMERCE = "ECOMMERCE",
+  FINTECH = "FINTECH",
+  EDTECH = "EDTECH",
+  HEALTHTECH = "HEALTHTECH",
+  BANKING = "BANKING",
+  INSURANCE = "INSURANCE",
+  HEALTHCARE = "HEALTHCARE",
+  EDUCATION = "EDUCATION",
+  MANUFACTURING = "MANUFACTURING",
+  RETAIL = "RETAIL",
+  REAL_ESTATE = "REAL_ESTATE",
+  LOGISTICS = "LOGISTICS",
+  AUTOMOTIVE = "AUTOMOTIVE",
+  ENERGY = "ENERGY",
+  TELECOM = "TELECOM",
+  MEDIA = "MEDIA",
+  ENTERTAINMENT = "ENTERTAINMENT",
+  HOSPITALITY = "HOSPITALITY",
+  AGRICULTURE = "AGRICULTURE",
+  GOVERNMENT = "GOVERNMENT",
+  NONPROFIT = "NONPROFIT",
+  OTHER = "OTHER",
 }
 
 export enum ListingType {
-  JOB = "job",
-  INTERNSHIP = "internship",
+  JOB = "JOB",
+  INTERNSHIP = "INTERNSHIP",
 }
 
 export enum PaymentMethod {
-  CARD = "card",
-  UPI = "upi",
-  NET_BANKING = "net banking",
-  WALLET = "wallet",
+  CARD = "CARD",
+  UPI = "UPI",
+  NET_BANKING = "NETBANKING",
+  WALLET = "WALLET",
 }
 
 export enum InternshipDurationType {
-  WEEKS = "weeks",
-  MONTHS = "months",
+  WEEKS = "WEEKS",
+  MONTHS = "MONTHS",
 }
 
 export enum KycStatus {
-  PENDING = "pending",
-  APPROVED = "approved",
-  REJECTED = "rejected",
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
 }
 
 export enum CouponType {
@@ -137,68 +121,68 @@ export enum CouponType {
 }
 
 export enum CompanyType {
-  STARTUP = "startup",
-  MNC = "mnc",
-  FOREIGN_MNC = "foreign mnc",
-  INDIAN_MNC = "indian mnc",
-  CORPORATE = "corporate",
-  "GOVT/PSU" = "govt/psu",
-  OTHERS = "others",
+  STARTUP = "STARTUP",
+  MNC = "MNC",
+  FOREIGN_MNC = "FOREIGN_MNC",
+  INDIAN_MNC = "INDIAN_MNC",
+  CORPORATE = "CORPORATE",
+  "GOVT/PSU" = "GOVT_PSU",
+  OTHERS = "OTHERS",
 }
 
 export enum DegreeLevel {
-  HIGH_SCHOOL = "high_school",
-  DIPLOMA = "diploma",
-  BACHELORS = "bachelors",
-  MASTERS = "masters",
-  PHD = "phd",
-  ANY = "any", // no hard requirement
+  HIGH_SCHOOL = "HIGH_SCHOOL",
+  DIPLOMA = "DIPLOMA",
+  BACHELORS = "BACHELORS",
+  MASTERS = "MASTERS",
+  PHD = "PHD",
+  ANY = "ANY",
 }
 
 export enum ApplicationStatus {
-  PENDING = "pending",
-  REVIEWED = "reviewed",
-  SHORTLISTED = "shortlisted",
-  REJECTED = "rejected",
-  INTERVIEW = "interview",
-  OFFERED = "offered",
-  ACCEPTED = "accepted",
-  WITHDRAWN = "withdrawn",
+  PENDING = "PENDING",
+  REVIEWED = "REVIEWED",
+  SHORTLISTED = "SHORTLISTED",
+  REJECTED = "REJECTED",
+  INTERVIEW = "INTERVIEW",
+  OFFERED = "OFFERED",
+  ACCEPTED = "ACCEPTED",
+  WITHDRAWN = "WITHDRAWN",
 }
 
 export enum SubscriptionStatus {
-  ACTIVE = "active",
-  EXPIRED = "expired",
-  DEPLETED = "depleted",
-  CANCELLED = "cancelled",
+  ACTIVE = "ACTIVE",
+  EXPIRED = "EXPIRED",
+  DEPLETED = "DEPLETED",
+  CANCELLED = "CANCELLED",
 }
 
 export enum ExperienceLevel {
-  ENTRY = "entry",
-  INTERMEDIATE = "intermediate",
-  SENIOR = "senior",
-  EXPERT = "expert",
+  ENTRY = "ENTRY",
+  INTERMEDIATE = "INTERMEDIATE",
+  SENIOR = "SENIOR",
+  EXPERT = "EXPERT",
 }
 
 export enum EmploymentType {
-  FULL_TIME = "full_time",
-  PART_TIME = "part_time",
-  CONTRACT = "contract",
-  INTERNSHIP = "internship",
-  FREELANCE = "freelance",
+  FULL_TIME = "FULL_TIME",
+  PART_TIME = "PART_TIME",
+  CONTRACT = "CONTRACT",
+  INTERNSHIP = "INTERNSHIP",
+  FREELANCE = "FREELANCE",
 }
 
 export enum PaymentStatus {
-  CREATED = "created",
-  AUTHORIZED = "authorized",
-  CAPTURED = "captured",
-  FAILED = "failed",
-  REFUNDED = "refunded",
+  CREATED = "CREATED",
+  AUTHORIZED = "AUTHORIZED",
+  CAPTURED = "CAPTURED",
+  FAILED = "FAILED",
+  REFUNDED = "REFUNDED",
 }
 
 export enum JobStatus {
-  ACTIVE = "active",
-  CLOSED = "closed",
-  PENDING = "pending",
-  REJECTED = "rejected",
+  ACTIVE = "ACTIVE",
+  CLOSED = "CLOSED",
+  PENDING = "PENDING",
+  REJECTED = "REJECTED",
 }

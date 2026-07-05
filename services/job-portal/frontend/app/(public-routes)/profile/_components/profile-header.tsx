@@ -2,7 +2,7 @@ import { ShieldCheck, Edit2 } from "lucide-react";
 import { CardDescription, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EditProfileDialog } from "../edit-profile-dialog";
-import { User } from "@/types/new-index";
+import { User } from "@/types";
 
 interface ProfileHeaderProps {
   user: User | undefined;

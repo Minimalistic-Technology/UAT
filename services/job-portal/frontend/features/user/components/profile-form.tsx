@@ -155,8 +155,8 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
   }
 
   const currentResumeUrl = userData?.data?.resume?.url;
-  const currentResumeName = userData?.data?.resumeOriginalName;
-  const atsScore = userData?.data?.atsScore;
+  const currentResumeName = userData?.data?.resume?.originalName;
+  const atsScore = userData?.data?.resume?.atsScore;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">

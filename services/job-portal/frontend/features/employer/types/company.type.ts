@@ -1,5 +1,5 @@
 import { KycStatus } from "@/types/enums";
-import { Company } from "@/types/new-index";
+import { Company } from "@/types";
 
 export type CompanyMetrics = {
   totalJobs: number;

@@ -1,5 +1,5 @@
 import { GraduationCap } from "lucide-react";
-import { User } from "@/types/new-index";
+import { User } from "@/types";
 import { ProfileSectionCard } from "./profile-section-card";
 
 interface EducationSectionProps {

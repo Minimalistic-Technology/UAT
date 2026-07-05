@@ -30,7 +30,7 @@ import {
   couponSchema,
 } from "@/features/admin/validations/coupon.schema";
 import { useUpdateCoupon } from "@/features/admin/hooks/use-coupon";
-import { Coupon } from "@/types/new-index";
+import { Coupon } from "@/types";
 
 interface CouponEditDialogProps {
   coupon: Coupon;

@@ -30,7 +30,7 @@ import {
   createPlanSchema,
 } from "@/features/admin/validations/plan.schema";
 import { useUpdatePlan } from "@/features/admin/hooks/use-plan";
-import { Plan } from "@/types/new-index";
+import { Plan } from "@/types";
 
 interface PlanEditDialogProps {
   plan: Plan;
@@ -84,7 +84,7 @@ export function PlanEditDialog({
         name: plan.name,
         description: plan.description || "",
         price: plan.price,
-        currency: plan.currency,
+        currency: plan.currency as "INR" | "USD" | "EUR" | "GBP",
         subscriptionDurationDays: plan.subscriptionDurationDays,
         maxActiveJobPosts: plan.maxActiveJobPosts,
         maxTeamMembers:
@@ -221,7 +221,9 @@ export function PlanEditDialog({
                   id="edit-duration"
                   type="number"
                   min={1}
-                  {...register("subscriptionDurationDays", { valueAsNumber: true })}
+                  {...register("subscriptionDurationDays", {
+                    valueAsNumber: true,
+                  })}
                 />
                 {errors.subscriptionDurationDays && (
                   <p className="text-destructive text-xs">
