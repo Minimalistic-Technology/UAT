@@ -1,0 +1,24 @@
+# Ignore artifacts:
+build
+coverage
+
+# Dependencies
+node_modules
+
+# Generated files
+generated
+
+# Package manager files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.*
+
+# Log files
+*.log
+
+# Husky
+.husky/logs

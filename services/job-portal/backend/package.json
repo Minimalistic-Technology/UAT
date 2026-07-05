@@ -8,7 +8,10 @@
     "dev": "tsx watch src/index.js",
     "build": "tsc",
     "start": "node build/src/index.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles",
+    "format:check": "npx prettier . --check",
+    "format": " npx prettier . --write",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
@@ -59,9 +62,11 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^7.2.0",
+    "husky": "^9.1.7",
     "jest": "^30.4.2",
     "mongodb-memory-server": "^11.2.0",
     "nodemon": "^3.1.11",
+    "prettier": "3.9.4",
     "prisma": "^7.8.0",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11",

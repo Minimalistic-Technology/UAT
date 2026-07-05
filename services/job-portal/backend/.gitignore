@@ -116,3 +116,6 @@ out
 /build
 
 /generated/prisma
+
+# Husky
+.husky/logs
