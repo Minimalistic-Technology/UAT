@@ -31,7 +31,7 @@ import {
   type EmployerRegisterInput,
 } from "@/features/auth/validations/auth.schema";
 import { useRegisterEmployer } from "@/features/auth/hooks/use-register";
-import { CompanyRole } from "@/types";
+import { CompanyRole } from "@/types/enums";
 import Image from "next/image";
 import { getValidationErrorMessage } from "@/lib/validation-error";
 

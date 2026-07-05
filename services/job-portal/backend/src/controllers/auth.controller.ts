@@ -158,7 +158,7 @@ export const requestEmployerRegistration = async (
     const {
       email,
       companyName,
-      role,
+      companyRole,
       industry,
       password,
       firstName,
@@ -208,7 +208,7 @@ export const requestEmployerRegistration = async (
         phone,
         isEmployer: true,
         companyName,
-        companyRole: role,
+        companyRole,
         industry,
         otp: `${salt}:${hashedOtp}`,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
@@ -222,7 +222,7 @@ export const requestEmployerRegistration = async (
         phone,
         isEmployer: true,
         companyName,
-        companyRole: role,
+        companyRole,
         industry,
         otp: `${salt}:${hashedOtp}`,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
@@ -301,7 +301,7 @@ export const confirmRegistrationOTP = async (
           throw new ApiError(500, "Failed to create user");
         }
 
-        const existingCompany = await tx.company.findFirst({
+        let company = await tx.company.findFirst({
           where: {
             ownerId: user.id,
             name: {
@@ -311,10 +311,10 @@ export const confirmRegistrationOTP = async (
           }
         });
 
-        if (!existingCompany) {
+        if (!company) {
           const slug = (tempUser.companyName || "company").toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + crypto.randomBytes(4).toString("hex");
           
-          await tx.company.create({
+          company = await tx.company.create({
             data: {
               name: tempUser.companyName || "Unknown",
               slug,
@@ -324,7 +324,22 @@ export const confirmRegistrationOTP = async (
           });
         }
         
-        const company = await tx.company.findUnique({ where: { ownerId: user.id } });
+        const existingMember = await tx.companyMember.findFirst({
+          where: {
+            userId: user.id,
+            companyId: company.id
+          }
+        });
+
+        if (!existingMember) {
+          await tx.companyMember.create({
+            data: {
+              userId: user.id,
+              companyId: company.id,
+              role: (tempUser.companyRole as any) || "OWNER"
+            }
+          });
+        }
 
         userToReturn = {
           ...user,

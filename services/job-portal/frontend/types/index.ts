@@ -1,10 +1,3 @@
-export enum CompanyRole {
-  OWNER = "owner",
-  ADMIN = "admin",
-  RECRUITER = "recruiter",
-  HR = "hr",
-}
-
 export enum StipendType {
   FIXED = "fixed",
   PERFORMANCE_BASED = "performance_based",

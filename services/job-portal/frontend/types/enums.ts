@@ -1,8 +1,6 @@
 export enum CompanyRole {
-  OWNER = "owner",
-  ADMIN = "admin",
-  RECRUITER = "recruiter",
-  HR = "hr",
+  OWNER = "OWNER",
+  HR = "HR",
 }
 
 export enum StipendType {

@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { UserWithCompany } from "@/features/admin/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { CompanyRole } from "@/types";
+import { CompanyRole } from "@/types/enums";
 import { CheckCircle2, XCircle, UserMinus, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToggleUserStatus } from "@/features/admin/hooks/use-user";
