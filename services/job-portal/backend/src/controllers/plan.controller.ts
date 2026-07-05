@@ -14,15 +14,15 @@ export const createPlan = async (
       description,
       price,
       currency,
-      durationDays,
-      jobPostLimit,
+      subscriptionDurationDays,
+      maxActiveJobPosts,
       isDefault,
       displayOrder,
       features,
       isActive,
       allowResumeDownload,
-      postValidityDays,
-      teamMemberLimit,
+      jobPostValidityDays,
+      maxTeamMembers,
     } = req.body;
 
     const existingPlan = await prisma.plan.findFirst({
@@ -49,15 +49,15 @@ export const createPlan = async (
           description,
           price: price !== undefined ? Math.round(Number(price)) : 0,
           currency: currency || "INR",
-          subscriptionDurationDays: durationDays || 30,
-          maxActiveJobPosts: jobPostLimit || -1,
+          subscriptionDurationDays: subscriptionDurationDays || 30,
+          maxActiveJobPosts: maxActiveJobPosts || -1,
           isDefault: isDefault !== undefined ? isDefault : false,
           displayOrder: displayOrder !== undefined ? displayOrder : 0,
           features: features || [],
           isActive: isActive !== undefined ? isActive : true,
           allowResumeDownload: allowResumeDownload ?? false,
-          jobPostValidityDays: postValidityDays ?? 30,
-          maxTeamMembers: teamMemberLimit !== undefined ? teamMemberLimit : 1,
+          jobPostValidityDays: jobPostValidityDays ?? 30,
+          maxTeamMembers: maxTeamMembers !== undefined ? maxTeamMembers : 1,
         },
       });
     });
@@ -82,24 +82,24 @@ export const updatePlan = async (
     const id = req.params.id as string;
     const {
       isDefault,
-      durationDays,
-      jobPostLimit,
-      postValidityDays,
-      teamMemberLimit,
+      subscriptionDurationDays,
+      maxActiveJobPosts,
+      jobPostValidityDays,
+      maxTeamMembers,
       price,
       allowResumeDownload,
       ...updateData
     } = req.body;
 
     const formattedUpdateData: any = { ...updateData };
-    if (durationDays !== undefined)
-      formattedUpdateData.subscriptionDurationDays = durationDays;
-    if (jobPostLimit !== undefined)
-      formattedUpdateData.maxActiveJobPosts = jobPostLimit;
-    if (postValidityDays !== undefined)
-      formattedUpdateData.jobPostValidityDays = postValidityDays;
-    if (teamMemberLimit !== undefined)
-      formattedUpdateData.maxTeamMembers = teamMemberLimit;
+    if (subscriptionDurationDays !== undefined)
+      formattedUpdateData.subscriptionDurationDays = subscriptionDurationDays;
+    if (maxActiveJobPosts !== undefined)
+      formattedUpdateData.maxActiveJobPosts = maxActiveJobPosts;
+    if (jobPostValidityDays !== undefined)
+      formattedUpdateData.jobPostValidityDays = jobPostValidityDays;
+    if (maxTeamMembers !== undefined)
+      formattedUpdateData.maxTeamMembers = maxTeamMembers;
     if (price !== undefined)
       formattedUpdateData.price = Math.round(Number(price));
     if (allowResumeDownload !== undefined)

@@ -23,7 +23,7 @@ export const planResolvers = {
     getAllAdminPlans: async (
       _: any,
       { page = 1, limit = 10 }: { page?: number; limit?: number },
-      context: MyContext
+      context: MyContext,
     ) => {
       try {
         if (!context.user) {
@@ -43,10 +43,7 @@ export const planResolvers = {
 
         const totalPlans = await prisma.plan.count();
         const plans = await prisma.plan.findMany({
-          orderBy: [
-            { displayOrder: "asc" },
-            { createdAt: "desc" },
-          ],
+          orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
           skip,
           take: limitNumber,
         });
@@ -68,5 +65,8 @@ export const planResolvers = {
         });
       }
     },
+  },
+  Plan: {
+    _id: (parent: any) => parent.id,
   },
 };

@@ -10,12 +10,15 @@ export const createPlanSchema = [
     .isString()
     .isIn(["INR", "USD", "EUR", "GBP"])
     .withMessage("Invalid currency"),
-  body("durationDays")
+  body("subscriptionDurationDays")
     .isInt({ min: 1 })
     .withMessage("Duration must be at least 1 day"),
-  body("jobPostLimit")
+  body("maxActiveJobPosts")
     .isInt({ min: -1 })
     .withMessage("Job post limit is required (-1 for unlimited)"),
+  body("maxTeamMembers")
+    .isInt({ min: -1 })
+    .withMessage("Team member limit is required (-1 for unlimited)"),
 
   body("features").isArray(),
   body("features.*")
@@ -24,14 +27,14 @@ export const createPlanSchema = [
     .notEmpty()
     .withMessage("Feature text cannot be empty"),
 
-  body("isFeatured").isBoolean().withMessage("isFeatured must be a boolean"),
+  body("isFeatured").optional().isBoolean().withMessage("isFeatured must be a boolean"),
   body("isActive").isBoolean().withMessage("isActive must be a boolean"),
   body("isDefault").isBoolean().withMessage("isDefault must be a boolean"),
   body("displayOrder").isInt().withMessage("Display order must be a number"),
   body("allowResumeDownload")
     .isBoolean()
     .withMessage("allowResumeDownload must be a boolean"),
-  body("postValidityDays")
+  body("jobPostValidityDays")
     .isInt({ min: 1 })
     .withMessage("Post validity is required"),
 ];
@@ -44,19 +47,23 @@ export const updatePlanSchema = [
     .isString()
     .isIn(["INR", "USD", "EUR", "GBP"])
     .withMessage("Invalid currency"),
-  body("durationDays")
+  body("subscriptionDurationDays")
     .optional()
     .isInt({ min: 1 })
     .withMessage("Duration must be at least 1 day"),
-  body("jobPostLimit")
+  body("maxActiveJobPosts")
     .optional()
     .isInt({ min: -1 })
     .withMessage("Job post limit must be at least -1"),
+  body("maxTeamMembers")
+    .optional()
+    .isInt({ min: -1 })
+    .withMessage("Team member limit must be at least -1"),
   body("allowResumeDownload")
     .optional()
     .isBoolean()
     .withMessage("allowResumeDownload must be a boolean"),
-  body("postValidityDays")
+  body("jobPostValidityDays")
     .optional()
     .isInt({ min: 1 })
     .withMessage("Post validity is required"),

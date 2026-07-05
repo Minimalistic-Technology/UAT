@@ -148,7 +148,7 @@ export function CreateCouponDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
-                    <SelectItem value="AMOUNT">Fixed Amount ($)</SelectItem>
+                    <SelectItem value="AMOUNT">Fixed Amount (Rs)</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.type && (
@@ -158,7 +158,7 @@ export function CreateCouponDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="value" className="flex items-center gap-1">
-                  Discount Value {selectedType === "PERCENTAGE" ? "(%)" : "($)"}{" "}
+                  Discount Value {selectedType === "PERCENTAGE" ? "(%)" : "(Rs)"}{" "}
                   <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Input

@@ -197,21 +197,20 @@ export type Kyc = {
 };
 
 export type Plan = {
-  _id: string; // mongoose.objectId
+  id: string; // mongoose.objectId
   name: string;
   description?: string;
   price: number;
   currency: "INR" | "USD" | "EUR" | "GBP";
-  durationDays: number;
-  jobPostLimit: number;
-  teamMemberLimit: number;
-  isFeatured: boolean;
+  subscriptionDurationDays: number;
+  maxActiveJobPosts: number;
+  maxTeamMembers: number;
   isDefault: boolean;
   displayOrder: number;
   features: string[];
   isActive: boolean;
   allowResumeDownload: boolean;
-  postValidityDays: number;
+  jobPostValidityDays: number;
   createdAt: Date;
   updatedAt: Date;
 };

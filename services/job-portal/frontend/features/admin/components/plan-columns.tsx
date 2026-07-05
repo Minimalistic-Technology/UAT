@@ -64,7 +64,7 @@ const ActionCell = ({ plan }: { plan: Plan }) => {
               </AlertDialogCancel>
               <AlertDialogAction
                 className="rounded-xl bg-red-600 font-semibold text-white shadow-sm hover:bg-red-700"
-                onClick={() => deletePlan(plan._id)}
+                onClick={() => deletePlan(plan.id)}
               >
                 Delete Plan
               </AlertDialogAction>
@@ -91,14 +91,6 @@ export const columns: ColumnDef<Plan>[] = [
       return (
         <>
           <div className="text-sm font-medium">{plan.name}</div>
-          {plan.isFeatured && (
-            <Badge
-              variant="secondary"
-              className="mt-1 bg-amber-100/50 text-[9px] font-bold tracking-widest text-amber-700 uppercase hover:bg-amber-100"
-            >
-              Featured
-            </Badge>
-          )}
           {plan.isDefault && (
             <Badge
               variant="secondary"
@@ -124,21 +116,21 @@ export const columns: ColumnDef<Plan>[] = [
     },
   },
   {
-    accessorKey: "durationDays",
+    accessorKey: "subscriptionDurationDays",
     header: () => <div className="hidden lg:block">Duration</div>,
     cell: ({ row }) => {
       return (
         <div className="text-muted-foreground hidden lg:block">
-          {row.original.durationDays} Days
+          {row.original.subscriptionDurationDays} Days
         </div>
       );
     },
   },
   {
-    accessorKey: "jobPostLimit",
+    accessorKey: "maxActiveJobPosts",
     header: () => <div className="hidden xl:block">Jobs Limit</div>,
     cell: ({ row }) => {
-      const limit = row.original.jobPostLimit;
+      const limit = row.original.maxActiveJobPosts;
       return (
         <div className="text-muted-foreground hidden xl:block">
           {limit === -1 ? "Unlimited" : limit}
@@ -147,10 +139,10 @@ export const columns: ColumnDef<Plan>[] = [
     },
   },
   {
-    accessorKey: "teamMemberLimit",
+    accessorKey: "maxTeamMembers",
     header: () => <div className="hidden xl:block">Team Limit</div>,
     cell: ({ row }) => {
-      const limit = row.original.teamMemberLimit;
+      const limit = row.original.maxTeamMembers;
       return (
         <div className="text-muted-foreground hidden xl:block">
           {limit === -1 ? "Unlimited" : limit}
@@ -159,12 +151,12 @@ export const columns: ColumnDef<Plan>[] = [
     },
   },
   {
-    accessorKey: "postValidityDays",
+    accessorKey: "jobPostValidityDays",
     header: () => <div className="hidden xl:block">Post Validity</div>,
     cell: ({ row }) => {
       return (
         <div className="text-muted-foreground hidden xl:block">
-          {row.original.postValidityDays}
+          {row.original.jobPostValidityDays}
         </div>
       );
     },

@@ -366,13 +366,15 @@ export interface Plan {
   description?: string;
   price: number; // Stored as an Integer (e.g., 1089 instead of 10.89)
   currency: string; // e.g., "INR", "USD"
-  durationDays: number;
-  jobPostLimit: number;
-  isFeatured: boolean;
+  subscriptionDurationDays: number;
+  maxActiveJobPosts: number;
+  maxTeamMembers: number;
   isDefault: boolean;
   displayOrder: number;
   features: string[];
   isActive: boolean;
+  jobPostValidityDays: number;
+  allowResumeDownload: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
