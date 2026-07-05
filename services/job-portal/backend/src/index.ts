@@ -111,8 +111,8 @@ app.use("/api/admin/developer", developerRoutes);
 app.use("/api/company-members", companyMemberRoutes);
 app.use("/api/plans", planRoutes); // Done
 app.use("/api/coupons", couponRoutes); // Done
-app.use("/api/payments", paymentRoutes);
-app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/payments", paymentRoutes); // Done
+app.use("/api/subscriptions", subscriptionRoutes); // Done
 app.use("/api/demo", demoRoutes);
 app.use("/api/listings", listingRoutes); // Done
 app.use("/api/features", featureRoutes); // Done
