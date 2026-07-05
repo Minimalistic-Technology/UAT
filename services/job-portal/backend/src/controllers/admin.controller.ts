@@ -377,7 +377,16 @@ export const getAdminAnalytics = async (
       prisma.coupon.findMany({
         where: { usageCount: { gt: 0 } },
         orderBy: { usageCount: "desc" },
-        take: 3
+        take: 3,
+        select: {
+          id: true,
+          isActive: true,
+          type: true,
+          value: true,
+          code: true,
+          usageCount: true,
+          maxUses: true
+        }
       }),
       prisma.user.findMany({
         where: { role: "USER", createdAt: { gte: sixMonthsAgo } },

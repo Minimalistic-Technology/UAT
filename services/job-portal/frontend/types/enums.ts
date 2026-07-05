@@ -30,8 +30,8 @@ export enum WorkType {
 }
 
 export enum GlobalRole {
-  SUPER_ADMIN = "super_admin",
-  USER = "user",
+  SUPER_ADMIN = "SUPER_ADMIN",
+  USER = "USER",
 }
 
 export enum RoleCategory {
