@@ -1,0 +1,75 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: hsl(82, 84%, 50%);
+  --color-primary-light: hsl(82, 84%, 65%);
+  --color-primary-dark: hsl(82, 84%, 35%);
+  --color-primary-glow: hsla(82, 84%, 50%, 0.15);
+
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+
+  --color-text-main: var(--text-main);
+  --color-text-dim: var(--text-dim);
+  --color-text-muted: var(--text-muted);
+  --color-text-bright: var(--text-bright);
+
+  --color-border: var(--border);
+  --color-border-bright: var(--border-bright);
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  --animate-float: float 10s ease-in-out infinite;
+  --animate-fade-in-up: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) rotate(0);
+    }
+    50% {
+      transform: translateY(-30px) rotate(2deg);
+    }
+  }
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  :root {
+    --background: hsl(0, 0%, 98%);
+    --surface: hsl(0, 0%, 100%);
+    --surface-hover: hsl(0, 0%, 96%);
+
+    --text-main: hsl(210, 40%, 2%);
+    --text-dim: hsl(215, 16%, 35%);
+    --text-muted: hsl(215, 16%, 55%);
+    --text-bright: hsl(210, 40%, 10%);
+
+    --border: hsla(0, 0%, 0%, 0.1);
+    --border-bright: hsla(0, 0%, 0%, 0.2);
+  }
+
+  .dark {
+    --background: hsl(0, 0%, 2%);
+    --surface: hsl(0, 0%, 5%);
+    --surface-hover: hsl(0, 0%, 8%);
+
+    --text-main: hsl(210, 40%, 98%);
+    --text-dim: hsl(215, 16%, 65%);
+    --text-muted: hsl(215, 16%, 45%);
+    --text-bright: hsl(210, 40%, 98%);
+
+    --border: hsla(82, 84%, 50%, 0.1);
+    --border-bright: hsla(82, 84%, 50%, 0.2);
+  }
+}
