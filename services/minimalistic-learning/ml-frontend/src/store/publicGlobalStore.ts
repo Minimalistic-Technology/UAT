@@ -21,11 +21,41 @@ export const usePublicGlobalStore = create<PublicStoreState>((set, get) => ({
   fetchHomeContent: async () => {
     // Only fetch if we don't have the data and are not already fetching
     if (get().homeContent || get().isFetchingHome) return;
+
+    // Local Storage 7-Day Caching Logic
+    const CACHE_KEY = "ml_home_content_cache";
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const { timestamp, data } = JSON.parse(cached);
+          if (Date.now() - timestamp < SEVEN_DAYS_MS) {
+            set({ homeContent: data });
+            return; // Exit early, NO API hit!
+          }
+        }
+      } catch (e) {
+        console.error("Cache read failed", e);
+      }
+    }
+
     set({ isFetchingHome: true });
     try {
       const res = await api.get("/public/content/home");
       if (res.data?.data) {
         set({ homeContent: res.data.data, isFetchingHome: false });
+
+        // Save to LocalStorage cache
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+              timestamp: Date.now(),
+              data: res.data.data
+            }));
+          } catch (e) { }
+        }
       }
     } catch (error) {
       console.error("Failed to fetch home content", error);
