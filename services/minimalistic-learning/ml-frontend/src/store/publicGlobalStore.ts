@@ -22,16 +22,16 @@ export const usePublicGlobalStore = create<PublicStoreState>((set, get) => ({
     // Only fetch if we don't have the data and are not already fetching
     if (get().homeContent || get().isFetchingHome) return;
 
-    // Local Storage 7-Day Caching Logic
+    // Local Storage 24-Hours Caching Logic
     const CACHE_KEY = "ml_home_content_cache";
-    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
     if (typeof window !== "undefined") {
       try {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           const { timestamp, data } = JSON.parse(cached);
-          if (Date.now() - timestamp < SEVEN_DAYS_MS) {
+          if (Date.now() - timestamp < TWENTY_FOUR_HOURS_MS) {
             set({ homeContent: data });
             return; // Exit early, NO API hit!
           }
