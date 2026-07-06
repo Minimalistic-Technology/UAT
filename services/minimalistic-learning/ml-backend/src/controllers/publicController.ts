@@ -94,6 +94,43 @@ export const getSiteContent = asyncHandler(async (req: Request, res: Response) =
     return acc;
   }, {});
 
+  // ====== DYNAMIC METRICS INJECTION ======
+  if (page === 'home') {
+    if (!contentMap.hero) contentMap.hero = {};
+
+    // Parallel processing for extreme speed
+    const [usersCount, postsCount, subCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.post.count(),
+      (prisma as any).subscriber.count()
+    ]);
+
+    // Override static fallback content with REAL database values
+    contentMap.hero.c1Stat = `${postsCount}+`;
+    contentMap.hero.c1StatLabel = 'Premium Posts';
+
+    contentMap.hero.c2Stat = `${subCount}+`;
+    contentMap.hero.c2StatLabel = 'Newsletter Readers';
+
+    contentMap.hero.c3Stat = `${usersCount}+`;
+    contentMap.hero.c3StatLabel = 'Active Members';
+  } else if (page === 'about') {
+    // Dynamic Stats for About Page
+    const [usersCount, postsCount, teamCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.post.count(),
+      (prisma as any).teamMember.count()
+    ]);
+
+    contentMap.dynamicStats = [
+      { value: usersCount || 1, suffix: "+", label: "Active Learners" },
+      { value: 98, suffix: "%", label: "Completion Rate" },
+      { value: postsCount || 1, suffix: "+", label: "Curated Guides" },
+      { value: teamCount || 1, suffix: "+", label: "Expert Authors" }
+    ];
+  }
+  // =======================================
+
   await CacheService.setex(cacheKey, 86400, JSON.stringify(contentMap)); // 24 hours
 
   return res.status(StatusCodes.OK).json(new ApiResponse(StatusCodes.OK, contentMap, 'Page content fetched successfully'));

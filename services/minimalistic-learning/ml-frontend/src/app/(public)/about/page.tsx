@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePublicGlobalStore } from "@/store/publicGlobalStore";
 
 /* ─── Scroll-reveal hook ─────────────────────────────────────────────── */
 function useScrollReveal() {
@@ -150,6 +151,14 @@ const VALUES = [
 
 /* ─── Main Component ─────────────────────────────────────────────────── */
 export default function AboutPage() {
+  const { aboutContent, fetchAboutContent } = usePublicGlobalStore();
+
+  useEffect(() => {
+    fetchAboutContent();
+  }, [fetchAboutContent]);
+
+  const displayStats = aboutContent?.dynamicStats || STATS;
+
   return (
     <main className="bg-background flex-1 overflow-hidden">
       {/* ── CLEAN HERO ───────────────────────────────────────────────── */}
@@ -210,7 +219,7 @@ export default function AboutPage() {
       <section className="w-full px-4 pb-32 sm:px-6 lg:px-8">
         <Reveal delay={400} direction="up">
           <div className="bg-theme-element-sec border-theme-accent/15 divide-theme-accent/10 mx-auto flex max-w-6xl flex-col divide-y rounded-3xl border shadow-sm md:flex-row md:divide-x md:divide-y-0">
-            {STATS.map((s, i) => (
+            {displayStats.map((s: any, i: number) => (
               <div
                 key={i}
                 className="group flex flex-1 flex-col items-center justify-center px-8 py-10 text-center"
