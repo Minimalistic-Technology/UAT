@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import {
   Shield,
   Zap,
@@ -15,98 +15,8 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { usePublicGlobalStore } from "@/store/publicGlobalStore";
-
-/* ─── Scroll-reveal hook ─────────────────────────────────────────────── */
-function useScrollReveal() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          // Small delay ensures the initial CSS (opacity 0) is painted before transitioning
-          setTimeout(() => setVisible(true), 50);
-          obs.disconnect();
-        }
-      },
-      { threshold: 0.1, rootMargin: "0px 0px -20px 0px" },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  return { ref, visible };
-}
-
-/* ─── Reveal wrapper ─────────────────────────────────────────────────── */
-function Reveal({
-  children,
-  delay = 0,
-  direction,
-  dir,
-  className = "",
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  direction?: "up" | "left" | "right" | "fade";
-  dir?: "up" | "left" | "right" | "fade";
-  className?: string;
-}) {
-  const finalDir = dir || direction || "up";
-  const { ref, visible } = useScrollReveal();
-  const transforms: Record<string, string> = {
-    up: "translateY(30px)",
-    left: "translateX(-30px)",
-    right: "translateX(30px)",
-    fade: "scale(0.95)",
-  };
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible
-          ? "translate(0px,0px) scale(1)"
-          : transforms[finalDir],
-        transition: `opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) ${delay}ms, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) ${delay}ms`,
-        willChange: "opacity, transform",
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-/* ─── Animated Counter ───────────────────────────────────────────────── */
-function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
-  const [count, setCount] = useState(0);
-  const { ref, visible } = useScrollReveal();
-
-  useEffect(() => {
-    if (!visible) return;
-    let cur = 0;
-    const step = Math.ceil(target / 40);
-    const t = setInterval(() => {
-      cur += step;
-      if (cur >= target) {
-        setCount(target);
-        clearInterval(t);
-      } else setCount(cur);
-    }, 30);
-    return () => clearInterval(t);
-  }, [visible, target]);
-
-  return (
-    <span ref={ref} className="tabular-nums">
-      {count.toLocaleString()}
-      {suffix}
-    </span>
-  );
-}
+import { Reveal } from "@/components/ui/reveal";
+import { Counter } from "@/components/ui/counter";
 
 /* ─── Page data ──────────────────────────────────────────────────────── */
 const STATS = [
@@ -168,7 +78,7 @@ export default function AboutPage() {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--color-theme-accent)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-theme-accent)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_10%,transparent_100%)] bg-[size:4rem_4rem] opacity-5"></div>
 
         <div className="mx-auto flex max-w-4xl flex-col items-center">
-          <Reveal delay={0} direction="up">
+          <Reveal delay={0} dir="up">
             <div className="bg-theme-element-sec border-theme-accent/20 mb-8 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 shadow-sm">
               <div className="bg-theme-action h-2 w-2 rounded-full"></div>
               <span className="text-foreground/80 mt-0.5 text-[11px] leading-none font-bold tracking-widest uppercase">
@@ -177,14 +87,14 @@ export default function AboutPage() {
             </div>
           </Reveal>
 
-          <Reveal delay={100} direction="up">
+          <Reveal delay={100} dir="up">
             <h1 className="text-foreground mb-6 text-4xl leading-[1.05] font-black tracking-tighter drop-shadow-sm sm:text-5xl md:text-6xl lg:text-7xl">
               The Platform Engineered <br className="hidden md:block" /> for
               Absolute <span className="text-theme-action">Focus.</span>
             </h1>
           </Reveal>
 
-          <Reveal delay={200} direction="up">
+          <Reveal delay={200} dir="up">
             <p className="text-foreground/70 mb-10 max-w-2xl text-lg leading-relaxed font-medium text-balance md:text-xl">
               Modern the web is loud. We built Minimalistic Learning as the
               ultimate quiet place—stripping away every distraction until only
@@ -192,7 +102,7 @@ export default function AboutPage() {
             </p>
           </Reveal>
 
-          <Reveal delay={300} direction="up">
+          <Reveal delay={300} dir="up">
             <div className="flex w-full flex-col items-center justify-center gap-4 sm:w-auto sm:flex-row">
               <Link
                 href="/blog"
@@ -217,7 +127,7 @@ export default function AboutPage() {
 
       {/* ── SLEEK STATS STRIP ────────────────────────────────────────── */}
       <section className="w-full px-4 pb-32 sm:px-6 lg:px-8">
-        <Reveal delay={400} direction="up">
+        <Reveal delay={400} dir="up">
           <div className="bg-theme-element-sec border-theme-accent/15 divide-theme-accent/10 mx-auto flex max-w-6xl flex-col divide-y rounded-3xl border shadow-sm md:flex-row md:divide-x md:divide-y-0">
             {displayStats.map((s: any, i: number) => (
               <div
@@ -239,7 +149,7 @@ export default function AboutPage() {
       {/* ── PHILOSOPHY (Z-PATTERN) ───────────────────────────────────── */}
       <section className="bg-theme-element border-theme-accent/10 w-full border-y px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-16 lg:grid-cols-2 lg:gap-24">
-          <Reveal direction="left" className="order-2 lg:order-1">
+          <Reveal dir="left" className="order-2 lg:order-1">
             <div className="border-theme-accent/20 bg-theme-element-sec group relative aspect-[4/3] overflow-hidden rounded-3xl border shadow-2xl">
               <div className="bg-theme-action/5 absolute inset-0 z-10 mix-blend-overlay transition-colors duration-500 group-hover:bg-transparent"></div>
               <Image
@@ -252,7 +162,7 @@ export default function AboutPage() {
             </div>
           </Reveal>
 
-          <Reveal direction="right" className="order-1 lg:order-2">
+          <Reveal dir="right" className="order-1 lg:order-2">
             <div>
               <h2 className="text-foreground mb-6 text-3xl leading-tight font-black tracking-tighter sm:text-4xl md:text-5xl">
                 Redefining the <br />{" "}
@@ -290,7 +200,7 @@ export default function AboutPage() {
       {/* ── CORE VALUES GRID ─────────────────────────────────────────── */}
       <section className="bg-background w-full px-4 py-32 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <Reveal direction="up">
+          <Reveal dir="up">
             <div className="mb-16 text-center md:mb-24">
               <h2 className="text-foreground mb-4 text-3xl font-black tracking-tighter sm:text-4xl md:text-5xl">
                 Our Core Values
@@ -304,7 +214,7 @@ export default function AboutPage() {
 
           <div className="grid auto-rows-[minmax(0,_1fr)] grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
             {VALUES.map((val, i) => (
-              <Reveal key={i} delay={i * 50} direction="up" className="h-full">
+              <Reveal key={i} delay={i * 50} dir="up" className="h-full">
                 <div className="bg-theme-element-sec border-theme-accent/20 hover:border-theme-action/30 group flex h-full flex-col rounded-3xl border p-8 transition-all duration-300 hover:shadow-lg">
                   <div className="bg-background border-theme-accent/15 text-foreground group-hover:bg-theme-action group-hover:border-theme-action mb-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border shadow-sm transition-all duration-300 group-hover:-rotate-3 group-hover:text-white">
                     <val.icon size={24} />
@@ -324,7 +234,7 @@ export default function AboutPage() {
 
       {/* ── CTA ──────────────────────────────────────────────────────── */}
       <section className="w-full px-4 pb-32 sm:px-6 lg:px-8">
-        <Reveal direction="up">
+        <Reveal dir="up">
           <div className="bg-foreground text-background group relative mx-auto flex max-w-5xl flex-col items-center overflow-hidden rounded-[2.5rem] px-8 py-16 text-center shadow-2xl">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] mix-blend-overlay dark:opacity-10"></div>
             <div className="bg-theme-action/40 absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px] transition-colors duration-1000 group-hover:bg-blue-400/50"></div>

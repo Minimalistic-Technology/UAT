@@ -28,7 +28,7 @@ export const usePublicGlobalStore = create<PublicStoreState>((set, get) => ({
     if (get().homeContent || get().isFetchingHome) return;
 
     // Local Storage 24-Hours Caching Logic
-    const CACHE_KEY = "ml_home_content_cache";
+    const CACHE_KEY = "ml_home_content_cache_v2";
     const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
     if (typeof window !== "undefined") {
@@ -86,7 +86,7 @@ export const usePublicGlobalStore = create<PublicStoreState>((set, get) => ({
   fetchAboutContent: async () => {
     if (get().aboutContent || get().isFetchingAbout) return;
 
-    const CACHE_KEY = "ml_about_content_cache";
+    const CACHE_KEY = "ml_about_content_cache_v2";
     const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
     if (typeof window !== "undefined") {
