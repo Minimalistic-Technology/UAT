@@ -8,7 +8,7 @@ export const errorHandler = (
   next: NextFunction,
 ) => {
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    handlePrismaError(err, res);
+    return handlePrismaError(err, res);
   }
 
   const statusCode = err.statusCode || 500;
@@ -46,9 +46,14 @@ function handlePrismaError(err: any, res: Response) {
       .status(400)
       .json({ success: false, message: "Invalid ID format" });
   }
+  if (err.code === "P2010") {
+    return res
+      .status(400)
+      .json({ success: false, message: `Raw query failed: ${err.meta?.message || err.message}` });
+  }
 
   // fallback for unhandled Prisma codes
   return res
     .status(400)
-    .json({ success: false, message: "Database request error" });
+    .json({ success: false, message: "Database request error: " + err.message });
 }
