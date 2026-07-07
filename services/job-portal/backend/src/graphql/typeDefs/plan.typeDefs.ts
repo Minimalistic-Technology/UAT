@@ -1,6 +1,6 @@
 export const planTypeDefs = `#graphql
   type Plan {
-    _id: ID!
+    id: ID!
     name: String!
     description: String
     price: Float!

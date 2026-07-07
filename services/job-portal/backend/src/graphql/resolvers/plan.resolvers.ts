@@ -66,7 +66,4 @@ export const planResolvers = {
       }
     },
   },
-  Plan: {
-    _id: (parent: any) => parent.id,
-  },
 };

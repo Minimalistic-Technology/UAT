@@ -10,7 +10,6 @@ import { config } from "../config/env.js";
 const provisionSubscription = async (userId: string, planId: string, razorpayOrderId: string, billingCycle: string = "monthly") => {
   const plan = await prisma.plan.findUnique({ where: { id: planId } });
   if (!plan) {
-    console.warn(`Provisioning: Plan not found ${planId}`);
     return;
   }
 
@@ -22,7 +21,6 @@ const provisionSubscription = async (userId: string, planId: string, razorpayOrd
   });
 
   if (!companyMember) {
-    console.warn(`Provisioning: Company not found for user ${userId}`);
     return;
   }
 
@@ -60,15 +58,13 @@ export const createOrder = async (
   try {
     const { planId, userId, couponCode, internalOrderId, billingCycle } = req.body;
 
-    // 1. Fetch the actual Plan from DB
     const plan = await prisma.plan.findUnique({ where: { id: planId } });
     if (!plan) throw new ApiError(404, "Plan not found");
 
-    // Fetch the company to ensure we're checking the subscription for this specific company
     const companyMember = await prisma.companyMember.findFirst({
       where: {
         userId,
-      role: { in: ["OWNER", "HR"] },
+        role: { in: ["OWNER", "HR"] },
       }
     });
 
@@ -76,7 +72,6 @@ export const createOrder = async (
       throw new ApiError(400, "You must be part of a company to purchase a plan.");
     }
 
-    // Prevent purchasing if there is an active plan with remaining posts for this company
     const activeSubscription = await prisma.subscription.findFirst({
       where: {
         companyId: companyMember.companyId,
@@ -90,7 +85,6 @@ export const createOrder = async (
       throw new ApiError(400, "You already have an active plan with remaining job posts. Please use them before purchasing a new plan.");
     }
 
-    // Prevent claiming the free plan multiple times
     if (plan.price === 0) {
       const existingFreeSub = await prisma.subscription.findFirst({
         where: {
@@ -166,7 +160,7 @@ export const createOrder = async (
       finalAmount = Number((basePlanPrice - discountValue).toFixed(2));
     }
 
-    // 3. Handle free plan or 100% discount
+    // Handle free plan or 100% discount
     if (finalAmount === 0) {
       const internalOrderIdString = internalOrderId || `FREE_${Date.now()}`;
 
@@ -182,7 +176,6 @@ export const createOrder = async (
         }
       });
 
-      // Provision Subscription for free plan
       await provisionSubscription(userId, planId, internalOrderIdString, billingCycle);
 
       return res.status(201).json(
@@ -336,7 +329,6 @@ export const handleRazorpayWebhook = async (
             await provisionSubscription(userId, planId, razorpayOrderId, billingCycle);
           }
         } catch (subErr) {
-          console.error("Webhook processing Subscription error:", subErr);
           // Catch the error so we still return 200 to Razorpay
         }
         break;
@@ -386,8 +378,6 @@ export const handleRazorpayWebhook = async (
       .status(200)
       .json(new ApiResponse(200, null, "Webhook processed successfully"));
   } catch (error) {
-    console.error("Webhook Error:", error);
-
     /**
      * Important:
      * Return 500 → Razorpay retries

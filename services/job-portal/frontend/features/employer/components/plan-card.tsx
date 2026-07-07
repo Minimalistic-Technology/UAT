@@ -52,6 +52,7 @@ export function PlanCard({
   const userId = session?.user.id;
   const isUnlimited = plan.maxActiveJobPosts === -1;
   const router = useRouter();
+  console.log("Plan", plan);
 
   const currentBasePrice = isYearly
     ? Math.round(plan.price * 12 * 0.8)
@@ -125,6 +126,8 @@ export function PlanCard({
       return;
     }
 
+    console.log("Crossed isLoaded")
+
     try {
       const payload = {
         planId: plan.id,
@@ -134,7 +137,10 @@ export function PlanCard({
         internalOrderId: `ORD_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       };
 
+      console.log("Payload created")
+
       const orderData = await createOrder(payload);
+      console.log("orderData", orderData)
 
       if (orderData.data.isFree) {
         toast.success("Plan activated successfully!");

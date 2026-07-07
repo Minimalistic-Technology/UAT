@@ -48,7 +48,7 @@ export const applicationResolvers = {
         ]);
 
         const applications = applicationsDocs.map((app) => ({
-          _id: app.id,
+          id: app.id,
           jobSeeker: app.jobSeeker,
           listing: app.listing,
           listingType: app.listingType,
