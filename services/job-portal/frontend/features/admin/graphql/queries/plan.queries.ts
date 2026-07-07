@@ -7,16 +7,15 @@ export const GET_ALL_ADMIN_PLANS_QUERY = `
         description
         price
         currency
-        durationDays
-        jobPostLimit
-        teamMemberLimit
-        isFeatured
+        subscriptionDurationDays
+        maxActiveJobPosts
+        maxTeamMembers
         isDefault
         displayOrder
         features
         isActive
         allowResumeDownload
-        postValidityDays
+        jobPostValidityDays
         createdAt
         updatedAt
       }

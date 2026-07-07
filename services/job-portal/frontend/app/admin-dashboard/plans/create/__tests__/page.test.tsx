@@ -71,7 +71,6 @@ describe("CreatePlanForm", () => {
     expect(screen.getByLabelText(/Job Post Limit/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Team Member Limit/i)).toBeInTheDocument();
     expect(screen.getByLabelText("Active Plan")).toBeInTheDocument();
-    expect(screen.getByLabelText("Featured Plan")).toBeInTheDocument();
     expect(screen.getByLabelText("Default Plan")).toBeInTheDocument();
     expect(screen.getByLabelText("Allow Resume Downloads")).toBeInTheDocument();
     expect(
@@ -132,12 +131,12 @@ describe("CreatePlanForm", () => {
       name: "Enterprise Plan",
       price: 5000,
       currency: "INR",
-      durationDays: 30, // default
-      postValidityDays: 30, // default
-      jobPostLimit: -1, // default
-      teamMemberLimit: -1, // default
+      description: "",
+      subscriptionDurationDays: 30, // default
+      jobPostValidityDays: 30, // default
+      maxActiveJobPosts: -1, // default
+      maxTeamMembers: -1, // default
       features: ["Unlimited Job Posts"],
-      isFeatured: false,
       isDefault: false,
       displayOrder: 1,
       isActive: true, // default

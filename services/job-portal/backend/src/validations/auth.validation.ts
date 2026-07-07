@@ -16,8 +16,8 @@ export const registerEmployerSchema = [
   body("password")
     .isLength({ min: 6, max: 30 })
     .withMessage("Password must be between 6 and 30 characters"),
-  body("role")
-    .isIn(["owner", "admin", "recruiter"])
+  body("companyRole")
+    .isIn(["OWNER"])
     .withMessage("Invalid role"),
   body("companyName").trim().notEmpty().withMessage("Company name is required"),
   body("industry").trim().notEmpty().withMessage("Industry is required"),

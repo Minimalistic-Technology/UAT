@@ -20,6 +20,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { getInlineUrl } from "@/utils";
+import { Experience, Education } from "@/types";
 export const ApplicationDetailModal = ({
   application,
 }: {
@@ -140,35 +141,39 @@ export const ApplicationDetailModal = ({
                 Professional Experience
               </div>
               <div className="space-y-4">
-                {jobSeeker.experience?.length > 0 ? (
-                  jobSeeker.experience.map((exp: any, i: number) => (
-                    <Card
-                      key={i}
-                      className="border-l-primary bg-muted/10 border-l-4 shadow-none"
-                    >
-                      <CardContent className="p-4">
-                        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <h4 className="text-base font-bold">{exp.title}</h4>
-                            <p className="text-muted-foreground text-sm font-medium">
-                              {exp.company} • {exp.location}
-                            </p>
+                {jobSeeker.experiences?.length > 0 ? (
+                  jobSeeker.experiences.map(
+                    (exp: Experience, i: number) => (
+                      <Card
+                        key={i}
+                        className="border-l-primary bg-muted/10 border-l-4 shadow-none"
+                      >
+                        <CardContent className="p-4">
+                          <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <h4 className="text-base font-bold">
+                                {exp.title}
+                              </h4>
+                              <p className="text-muted-foreground text-sm font-medium">
+                                {exp.company} • {exp.location}
+                              </p>
+                            </div>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {new Date(exp.startDate).toLocaleDateString()} -{" "}
+                              {exp.current
+                                ? "Present"
+                                : exp.endDate
+                                  ? new Date(exp.endDate).toLocaleDateString()
+                                  : ""}
+                            </Badge>
                           </div>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {new Date(exp.startDate).toLocaleDateString()} -{" "}
-                            {exp.current
-                              ? "Present"
-                              : exp.endDate
-                                ? new Date(exp.endDate).toLocaleDateString()
-                                : ""}
-                          </Badge>
-                        </div>
-                        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                          {exp.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))
+                          <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                            {exp.description}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ),
+                  )
                 ) : (
                   <p className="text-muted-foreground text-sm italic">
                     No experience provided.
@@ -186,26 +191,28 @@ export const ApplicationDetailModal = ({
                 Education
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {jobSeeker.education?.length > 0 ? (
-                  jobSeeker.education.map((edu: any, i: number) => (
-                    <div
-                      key={i}
-                      className="bg-card text-card-foreground flex flex-col rounded-xl border p-4 shadow-sm"
-                    >
-                      <span className="text-primary mb-1 text-xs font-bold">
-                        Class of {edu.graduationYear}
-                      </span>
-                      <h4 className="text-sm leading-tight font-bold">
-                        {edu.degree}
-                      </h4>
-                      <p className="text-muted-foreground mt-0.5 text-xs font-medium">
-                        {edu.fieldOfStudy}
-                      </p>
-                      <p className="text-muted-foreground mt-2 border-t pt-2 text-xs italic">
-                        {edu.institution}
-                      </p>
-                    </div>
-                  ))
+                {jobSeeker.educations?.length > 0 ? (
+                  jobSeeker.educations.map(
+                    (edu: Education, i: number) => (
+                      <div
+                        key={i}
+                        className="bg-card text-card-foreground flex flex-col rounded-xl border p-4 shadow-sm"
+                      >
+                        <span className="text-primary mb-1 text-xs font-bold">
+                          Class of {edu.graduationYear}
+                        </span>
+                        <h4 className="text-sm leading-tight font-bold">
+                          {edu.degree}
+                        </h4>
+                        <p className="text-muted-foreground mt-0.5 text-xs font-medium">
+                          {edu.fieldOfStudy}
+                        </p>
+                        <p className="text-muted-foreground mt-2 border-t pt-2 text-xs italic">
+                          {edu.institution}
+                        </p>
+                      </div>
+                    ),
+                  )
                 ) : (
                   <p className="text-muted-foreground col-span-2 text-sm italic">
                     No education history provided.

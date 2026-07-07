@@ -1,5 +1,5 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
-import { Draft } from "@/types/new-index";
+import { Draft } from "@/types";
 
 export const saveDraft = async (data: {
   id?: string;

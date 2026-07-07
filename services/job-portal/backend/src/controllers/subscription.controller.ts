@@ -1,12 +1,8 @@
 import { NextFunction, Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware.js";
-import Subscription from "../models/Subscription.model.js";
-import Company from "../models/Company.model.js";
-import Plan from "../models/Plan.model.js";
+import { prisma } from "../lib/prisma.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
-import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
-import Payment, { PaymentStatus } from "../models/Payment.model.js";
 import razorpay from "../config/razorpay.js";
 
 export const getMyActiveSubscription = async (
@@ -15,53 +11,44 @@ export const getMyActiveSubscription = async (
   next: NextFunction,
 ) => {
   try {
-    const member = await CompanyMember.findOne({ user: req.user.id });
+    const member = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id }
+    });
 
     if (!member) {
       throw new ApiError(404, "Company member not found");
     }
 
-    const isAuthorized = await CompanyMember.findOne({
-      company: member.company,
-      user: req.user.id,
-      role: {
-        $in: [CompanyRole.OWNER, CompanyRole.HR],
-      },
+    const isAuthorized = await prisma.companyMember.findFirst({
+      where: {
+        companyId: member.companyId,
+        userId: req.user.id,
+        role: { in: ["OWNER", "HR"] },
+      }
     });
 
     if (!isAuthorized) {
-      throw new ApiError(
-        403,
-        "You are not authorized to view this subscription",
-      );
+      throw new ApiError(403, "You are not authorized to view this subscription");
     }
 
-    const subscription = await Subscription.findOne({
-      companyId: member.company,
-      status: "active",
-      expiryDate: { $gt: new Date() },
-    }).populate("planId", "name currency price jobPostLimit durationDays");
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        companyId: member.companyId,
+        status: "ACTIVE",
+        expiryDate: { gt: new Date() },
+      },
+      include: {
+        plan: {
+          select: { name: true, currency: true, price: true, maxActiveJobPosts: true, subscriptionDurationDays: true }
+        }
+      }
+    });
 
     if (!subscription) {
-      return res
-        .status(200)
-        .json(
-          new ApiResponse(200, null, "You don't have any active subscription"),
-        );
+      return res.status(200).json(new ApiResponse(200, null, "You don't have any active subscription"));
     }
 
-    // If there's an active one but posts are depleted, isValid will be false, but the doc is returned.
-    // We can just return it. The frontend handles showing "Depleted" or similar.
-
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          subscription,
-          "Active subscription fetched successfully",
-        ),
-      );
+    res.status(200).json(new ApiResponse(200, subscription, "Active subscription fetched successfully"));
   } catch (error) {
     next(error);
   }
@@ -73,48 +60,41 @@ export const getMySubscriptionHistory = async (
   next: NextFunction,
 ) => {
   try {
-    const member = await CompanyMember.findOne({ user: req.user.id });
+    const member = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id }
+    });
 
     if (!member) {
       throw new ApiError(404, "Company member not found");
     }
 
-    const isAuthorized = await CompanyMember.findOne({
-      company: member.company,
-      user: req.user.id,
-      role: {
-        $in: [CompanyRole.OWNER, CompanyRole.HR],
-      },
+    const isAuthorized = await prisma.companyMember.findFirst({
+      where: {
+        companyId: member.companyId,
+        userId: req.user.id,
+        role: { in: ["OWNER", "HR"] },
+      }
     });
 
     if (!isAuthorized) {
-      throw new ApiError(
-        403,
-        "You are not authorized to view the history of this subscription",
-      );
+      throw new ApiError(403, "You are not authorized to view the history of this subscription");
     }
 
-    const subscriptions = await Subscription.find({ companyId: member.company })
-      .populate("planId", "name currency price jobPostLimit durationDays")
-      .sort({ createdAt: -1 });
+    const subscriptions = await prisma.subscription.findMany({
+      where: { companyId: member.companyId },
+      include: {
+        plan: {
+          select: { name: true, currency: true, price: true, maxActiveJobPosts: true, subscriptionDurationDays: true }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    });
 
-    if (!subscriptions) {
-      return res
-        .status(200)
-        .json(
-          new ApiResponse(200, null, "You didn't bought any subscription yet"),
-        );
+    if (!subscriptions.length) {
+      return res.status(200).json(new ApiResponse(200, null, "You didn't buy any subscription yet"));
     }
 
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          subscriptions,
-          "Subscription history fetched successfully",
-        ),
-      );
+    res.status(200).json(new ApiResponse(200, subscriptions, "Subscription history fetched successfully"));
   } catch (error) {
     next(error);
   }
@@ -127,136 +107,136 @@ export const cancelMySubscription = async (
 ) => {
   try {
     const { id: subscriptionId } = req.params;
-    const member = await CompanyMember.findOne({ user: req.user.id });
+    const member = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id }
+    });
 
     if (!member) {
       throw new ApiError(404, "Company member not found");
     }
 
-    const isAuthorized = await CompanyMember.findOne({
-      company: member.company,
-      user: req.user.id,
-      role: CompanyRole.OWNER,
+    const isAuthorized = await prisma.companyMember.findFirst({
+      where: {
+        companyId: member.companyId,
+        userId: req.user.id,
+        role: "OWNER",
+      }
     });
 
     if (!isAuthorized) {
-      throw new ApiError(
-        403,
-        "You are not authorized to cance; this subscription",
-      );
+      throw new ApiError(403, "You are not authorized to cancel this subscription");
     }
 
-    const subscription = await Subscription.findOne({
-      _id: subscriptionId,
-      employerId: req.user.id,
-      status: "active"
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        id: subscriptionId as string,
+        company: { ownerId: req.user.id },
+        status: "ACTIVE"
+      }
     });
 
     if (!subscription) {
       throw new ApiError(404, "You don't have any active subscription");
     }
 
-    if (subscription.status !== "active") {
-      throw new ApiError(
-        400,
-        `Cannot cancel a subscription that is ${subscription.status}`,
-      );
-    }
-
-    const postsUsed =
-      subscription.totalPostsGranted - subscription.postsRemaining;
+    const postsUsed = subscription.totalPostsGranted - subscription.postsRemaining;
 
     let refundProcessed = false;
     if (postsUsed === 0 && subscription.orderId) {
-      // Find the corresponding payment to get razorpayPaymentId
-      const payment = await Payment.findOne({
-        razorpayOrderId: subscription.orderId,
+      const payment = await prisma.payment.findUnique({
+        where: { razorpayOrderId: subscription.orderId }
       });
 
       if (!payment) {
-        throw new ApiError(
-          404,
-          "Payment record not found, please contact support",
-        );
+        throw new ApiError(404, "Payment record not found, please contact support");
       }
 
       if (!payment.razorpayPaymentId) {
         throw new ApiError(400, "Payment ID missing, please contact support");
       }
 
-      if (payment && payment.razorpayPaymentId) {
-        const refundAmount = Math.round(payment.amount * 0.5);
-        try {
-          await razorpay.payments.refund(payment.razorpayPaymentId, {
-            amount: refundAmount, // Payment amount is in paise
-            speed: "optimum",
-          });
+      const refundAmount = Math.round(payment.amount * 0.5);
+      try {
+        const refundObj = await razorpay.payments.refund(payment.razorpayPaymentId, {
+          amount: refundAmount,
+          speed: "optimum",
+        });
 
-          // Mark payment as refunded locally
-          payment.status = PaymentStatus.REFUNDED;
-          payment.refundAmount = refundAmount;
-          await payment.save();
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: "REFUNDED" }
+        });
+        
+        await prisma.refund.create({
+          data: {
+             paymentId: payment.id,
+             razorpayRefundId: refundObj.id,
+             amount: refundAmount,
+             status: "PROCESSED"
+          }
+        });
 
-          refundProcessed = true;
-        } catch (razorpayError) {
-          console.error("Razorpay Refund Error:", razorpayError);
-          throw new ApiError(
-            500,
-            "Failed to process refund from payment gateway",
-          );
-        }
+        refundProcessed = true;
+      } catch (razorpayError) {
+        console.error("Razorpay Refund Error:", razorpayError);
+        throw new ApiError(500, "Failed to process refund from payment gateway");
       }
     }
 
-    subscription.status = "cancelled";
-    await subscription.save();
+    const updatedSub = await prisma.subscription.update({
+      where: { id: subscription.id },
+      data: { status: "CANCELLED" }
+    });
 
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          subscription,
-          refundProcessed
-            ? "Subscription cancelled and 50% refund initiated successfully"
-            : "Subscription cancelled successfully",
-        ),
-      );
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        updatedSub,
+        refundProcessed
+          ? "Subscription cancelled and 50% refund initiated successfully"
+          : "Subscription cancelled successfully",
+      )
+    );
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * @desc    Get all subscriptions across the platform
- * @route   GET /api/subscriptions
- * @access  Private (Super Admin)
- */
 export const getAllSubscriptions = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    // Basic pagination
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    const query: any = {};
+    const where: any = {};
     if (req.query.status) {
-      query.status = req.query.status;
+      where.status = (req.query.status as string).toUpperCase();
     }
 
-    const subscriptions = await Subscription.find(query)
-      .populate("employerId", "name email")
-      .populate("companyId", "name logo")
-      .populate("planId", "name price")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const subscriptions = await prisma.subscription.findMany({
+      where,
+      include: {
+        company: {
+          select: {
+            name: true,
+            logo: true,
+            owner: { select: { firstName: true, lastName: true, email: true } }
+          }
+        },
+        plan: {
+          select: { name: true, price: true }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit
+    });
 
-    const total = await Subscription.countDocuments(query);
+    const total = await prisma.subscription.count({ where });
 
     res.status(200).json(
       new ApiResponse(
@@ -270,18 +250,13 @@ export const getAllSubscriptions = async (
           },
         },
         "All subscriptions fetched successfully",
-      ),
+      )
     );
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * @desc    Manually assign a subscription to a company
- * @route   POST /api/subscriptions/admin/assign
- * @access  Private (Super Admin)
- */
 export const adminAssignSubscription = async (
   req: AuthRequest,
   res: Response,
@@ -294,55 +269,48 @@ export const adminAssignSubscription = async (
       throw new ApiError(400, "Both companyId and planId are required");
     }
 
-    const company = await Company.findById(companyId);
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
     if (!company) {
       throw new ApiError(404, "Company not found");
     }
 
-    const plan = await Plan.findById(planId);
+    const plan = await prisma.plan.findUnique({ where: { id: planId } });
     if (!plan) {
       throw new ApiError(404, "Plan not found");
     }
 
-    const durationMilliseconds = plan.durationDays * 24 * 60 * 60 * 1000;
+    const durationMilliseconds = plan.subscriptionDurationDays * 24 * 60 * 60 * 1000;
     const expiryDate = new Date(Date.now() + durationMilliseconds);
 
-    // Cancel any currently active subscriptions for this employer to avoid conflicts
-    await Subscription.updateMany(
-      { employerId: company.owner, status: "active" },
-      { $set: { status: "cancelled" } },
-    );
-
-    const subscription = await Subscription.create({
-      employerId: company.owner,
-      companyId,
-      planId,
-      postsRemaining: plan.jobPostLimit,
-      totalPostsGranted: plan.jobPostLimit,
-      startDate: new Date(),
-      expiryDate,
-      status: "active",
+    await prisma.subscription.updateMany({
+      where: { companyId, status: "ACTIVE" },
+      data: { status: "CANCELLED" }
     });
 
-    res
-      .status(201)
-      .json(
-        new ApiResponse(
-          201,
-          subscription,
-          "Subscription manually assigned successfully",
-        ),
-      );
+    const subscription = await prisma.subscription.create({
+      data: {
+        companyId,
+        planId,
+        postsRemaining: plan.maxActiveJobPosts,
+        totalPostsGranted: plan.maxActiveJobPosts,
+        startDate: new Date(),
+        expiryDate,
+        status: "ACTIVE",
+      }
+    });
+
+    res.status(201).json(
+      new ApiResponse(
+        201,
+        subscription,
+        "Subscription manually assigned successfully",
+      )
+    );
   } catch (error) {
     next(error);
   }
 };
 
-/**
- * @desc    Update subscription status manually
- * @route   PATCH /api/subscriptions/:id/status
- * @access  Private (Super Admin)
- */
 export const updateSubscriptionStatus = async (
   req: AuthRequest,
   res: Response,
@@ -352,27 +320,28 @@ export const updateSubscriptionStatus = async (
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!["active", "expired", "depleted", "cancelled"].includes(status)) {
+    const validStatuses = ["ACTIVE", "EXPIRED", "DEPLETED", "CANCELLED"];
+    if (!validStatuses.includes(status.toUpperCase())) {
       throw new ApiError(400, "Invalid status provided");
     }
 
-    const subscription = await Subscription.findById(id);
+    const subscription = await prisma.subscription.findUnique({ where: { id: id as string } });
     if (!subscription) {
       throw new ApiError(404, "Subscription not found");
     }
 
-    subscription.status = status;
-    await subscription.save();
+    const updatedSub = await prisma.subscription.update({
+      where: { id: id as string },
+      data: { status: status.toUpperCase() as any }
+    });
 
-    res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          subscription,
-          "Subscription status updated successfully",
-        ),
-      );
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        updatedSub,
+        "Subscription status updated successfully",
+      )
+    );
   } catch (error) {
     next(error);
   }

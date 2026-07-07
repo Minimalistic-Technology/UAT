@@ -43,21 +43,10 @@ export default function PlansPage() {
   const plans: Plan[] = plansResponse?.data.plans ?? [];
 
   const sortedPlans = [...plans].sort((a, b) => {
-    // Force a specific order so Featured is usually in the middle visually
-    // However, if we just use DisplayOrder, keep it.
-    if (a.isFeatured && !b.isFeatured) return -1;
-    if (!a.isFeatured && b.isFeatured) return 1;
     return (a.displayOrder || 0) - (b.displayOrder || 0);
   });
 
-  // Re-adjust array visually for 3 columns: let featured be in middle if exactly 3 plans
-  // If array has 3 items and index 0 is featured, swap 0 and 1.
   const visualPlans = [...sortedPlans];
-  if (visualPlans.length === 3 && visualPlans[0].isFeatured) {
-    const temp = visualPlans[1];
-    visualPlans[1] = visualPlans[0];
-    visualPlans[0] = temp;
-  }
 
   // Ensure unique mapped features for Compare Table
   const allFeaturesRows = Array.from(new Set(plans.flatMap((p) => p.features)));
@@ -125,7 +114,7 @@ export default function PlansPage() {
             <EmptyState />
           ) : (
             visualPlans.map((plan) => (
-              <div key={plan._id} className="relative z-10 h-full w-full">
+              <div key={plan.id} className="relative z-10 h-full w-full">
                 <PlanCard plan={plan} isYearly={isYearly} />
               </div>
             ))
@@ -148,7 +137,7 @@ export default function PlansPage() {
                     </th>
                     {visualPlans.map((plan) => (
                       <th
-                        key={`head-${plan._id}`}
+                        key={`head-${plan.id}`}
                         className="px-4 py-5 text-center text-xs font-bold tracking-widest text-slate-900 uppercase dark:text-white"
                       >
                         {plan.name}
@@ -163,12 +152,12 @@ export default function PlansPage() {
                     </td>
                     {visualPlans.map((plan) => (
                       <td
-                        key={`job-${plan._id}`}
+                        key={`job-${plan.id}`}
                         className="px-4 py-5 text-center font-medium text-slate-600 dark:text-slate-400"
                       >
-                        {plan.jobPostLimit === -1
+                        {plan.maxActiveJobPosts === -1
                           ? "Unlimited"
-                          : `${plan.jobPostLimit} Active`}
+                          : `${plan.maxActiveJobPosts} Active`}
                       </td>
                     ))}
                   </tr>
@@ -178,10 +167,10 @@ export default function PlansPage() {
                     </td>
                     {visualPlans.map((plan) => (
                       <td
-                        key={`dur-${plan._id}`}
+                        key={`dur-${plan.id}`}
                         className="px-4 py-5 text-center font-medium text-slate-600 dark:text-slate-400"
                       >
-                        {plan.postValidityDays} Days
+                        {plan.jobPostValidityDays} Days
                       </td>
                     ))}
                   </tr>
@@ -191,7 +180,7 @@ export default function PlansPage() {
                     </td>
                     {visualPlans.map((plan) => (
                       <td
-                        key={`res-${plan._id}`}
+                        key={`res-${plan.id}`}
                         className="flex justify-center px-4 py-5 text-center"
                       >
                         {plan.allowResumeDownload ? (
@@ -214,7 +203,7 @@ export default function PlansPage() {
                         const hasFeat = plan.features.includes(featureText);
                         return (
                           <td
-                            key={`featcol-${plan._id}-${idx}`}
+                            key={`featcol-${plan.id}-${idx}`}
                             className="flex justify-center px-4 py-5 text-center"
                           >
                             {hasFeat ? (

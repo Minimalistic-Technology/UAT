@@ -2,21 +2,21 @@ import z from "zod";
 
 export const createPlanSchema = z.object({
   name: z.string().min(1, "Plan name is required"),
+  description: z.string().optional(),
   price: z
     .number({ message: "Price must be an integer" })
     .min(0, "Price cannot be negative"),
   currency: z.enum(["INR", "USD", "EUR", "GBP"]),
-  durationDays: z
+  subscriptionDurationDays: z
     .number({ message: "Duration must be an integer" })
     .min(-1, "Duration must be at least 1 day"),
-  jobPostLimit: z
+  maxActiveJobPosts: z
     .number({ message: "Job post limit must be an integer" })
     .min(-1, "Use -1 for unlimited, or a positive number"),
-  teamMemberLimit: z
+  maxTeamMembers: z
     .number({ message: "Team member limit must be an integer" })
     .min(-1, "Use -1 for unlimited, or a positive number"),
   features: z.array(z.string()),
-  isFeatured: z.boolean(),
   isDefault: z.boolean(),
   displayOrder: z
     .number({ message: "Display order must be a number" })
@@ -25,7 +25,7 @@ export const createPlanSchema = z.object({
   allowResumeDownload: z.boolean({
     message: "allowResumeDowload field is required",
   }),
-  postValidityDays: z
+  jobPostValidityDays: z
     .number({ message: "Post Validity Days must be a number" })
     .min(1, { message: "Post Validity Days should be atleast 1" }),
 });

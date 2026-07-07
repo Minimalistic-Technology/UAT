@@ -14,9 +14,9 @@ const Logo = () => {
     if (!session?.user) return "/";
 
     switch (session.user.role) {
-      case "super_admin":
+      case "SUPER_ADMIN":
         return "/admin-dashboard";
-      case "user":
+      case "USER":
         if (session?.user.isEmployee) return "/employer-dashboard";
         else return "/user-dashboard";
       default:
