@@ -14,7 +14,7 @@ import { Plan } from "@/features/employer/types";
 import { cn } from "@/lib/utils";
 import { useGetPlans } from "@/features/employer/hooks/use-plans";
 import { PlanCard } from "@/features/employer/components/plan-card";
-import { useGetMyCompanyDetails } from "@/features/employer/hooks/use-company";
+
 import { Button } from "@/components/ui/button";
 import {
   formatJobLimit,
@@ -32,14 +32,6 @@ import {
 } from "@/components/ui/table";
 export default function PlansPage() {
   const { data: plansResponse, isLoading, isError } = useGetPlans();
-  const {
-    data: companyResponse,
-    isLoading: companyIsLoading,
-    isError: companyIsError,
-  } = useGetMyCompanyDetails();
-
-  const companyDetails = companyResponse?.data;
-  const isUnverified = companyDetails?.isVerified === false;
 
   const plans: Plan[] = plansResponse?.data.plans ?? [];
 
@@ -52,7 +44,7 @@ export default function PlansPage() {
 
   const [isYearly, setIsYearly] = useState(false);
 
-  const isLoadingState = isLoading || companyIsLoading;
+  const isLoadingState = isLoading;
   const skeletonCount = sortedPlans.length > 0 ? sortedPlans.length : 3;
   const displayCount = isLoadingState ? skeletonCount : sortedPlans.length;
 
@@ -88,7 +80,7 @@ export default function PlansPage() {
 
       <div className="px-6 lg:px-10">
         {/* Error State */}
-        {(isError || companyIsError) && (
+        {isError && (
           <Alert variant="destructive" className="mx-auto mb-8 max-w-2xl py-2">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>

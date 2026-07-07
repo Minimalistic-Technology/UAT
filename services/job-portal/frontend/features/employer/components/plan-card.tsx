@@ -66,8 +66,9 @@ export function PlanCard({
   const validateMutation = useValidateCoupon();
   const { data: companyResponse, isLoading: isCompanyLoading } =
     useGetMyCompanyDetails();
+    
   const companyDetails = companyResponse?.data;
-  const hasActivePlan = companyDetails?.subscription?.status === "active";
+  const hasActivePlan = companyDetails?.subscription?.status?.toUpperCase() === "ACTIVE";
   const remainingJobPosts = companyDetails?.remainingJobPosts;
   const canPurchase =
     !isCompanyLoading && (!hasActivePlan || remainingJobPosts === 0);
@@ -458,7 +459,7 @@ export function PlanCard({
 
       <CardFooter className="px-8 pb-10">
         <div className="flex w-full flex-col gap-3">
-          {companyDetails?.currentPlan?._id === plan.id && hasActivePlan ? (
+          {companyDetails?.currentPlan?.id === plan.id && hasActivePlan ? (
             <Button
               disabled
               size="lg"
