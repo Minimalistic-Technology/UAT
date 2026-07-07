@@ -73,7 +73,7 @@ export function CreateCouponDialog({
     resolver: zodResolver(couponSchema),
     defaultValues: {
       code: "",
-      type: "percentage",
+      type: "PERCENTAGE",
       value: 0,
       isActive: true,
       expiryDate: undefined,
@@ -84,7 +84,7 @@ export function CreateCouponDialog({
   const resetForm = () => {
     reset({
       code: "",
-      type: "percentage",
+      type: "PERCENTAGE",
       value: 0,
       isActive: true,
       expiryDate: undefined,
@@ -140,15 +140,15 @@ export function CreateCouponDialog({
                 </Label>
                 <Select
                   onValueChange={(val: any) => setValue("type", val)}
-                  defaultValue="percentage"
+                  defaultValue="PERCENTAGE"
                   value={selectedType}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="amount">Fixed Amount ($)</SelectItem>
+                    <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                    <SelectItem value="AMOUNT">Fixed Amount (Rs)</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.type && (
@@ -158,7 +158,7 @@ export function CreateCouponDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="value" className="flex items-center gap-1">
-                  Discount Value {selectedType === "percentage" ? "(%)" : "($)"}{" "}
+                  Discount Value {selectedType === "PERCENTAGE" ? "(%)" : "(Rs)"}{" "}
                   <Asterisk className="text-destructive size-3" />
                 </Label>
                 <Input
@@ -166,8 +166,8 @@ export function CreateCouponDialog({
                   {...register("value", { valueAsNumber: true })}
                   type="number"
                   min={0}
-                  max={selectedType === "percentage" ? 100 : undefined}
-                  step={selectedType === "percentage" ? "1" : "0.01"}
+                  max={selectedType === "PERCENTAGE" ? 100 : undefined}
+                  step={selectedType === "PERCENTAGE" ? "1" : "0.01"}
                   placeholder="0"
                 />
                 {errors.value && (

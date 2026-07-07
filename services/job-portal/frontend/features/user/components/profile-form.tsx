@@ -110,7 +110,7 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
         skills: user.skills || [],
         languages: user.languages || [],
         experience:
-          user.experience?.map((e) => ({
+          user.experiences?.map((e: any) => ({
             ...e,
             startDate: e.startDate
               ? new Date(e.startDate).toISOString().split("T")[0]
@@ -120,7 +120,7 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
               : "",
           })) || [],
         education:
-          user.education?.map((e: any) => ({
+          user.educations?.map((e: any) => ({
             ...e,
             graduationYear: e.graduationYear ? String(e.graduationYear) : "",
           })) || [],
@@ -155,8 +155,8 @@ export function UserProfileForm({ onSuccess }: { onSuccess?: () => void }) {
   }
 
   const currentResumeUrl = userData?.data?.resume?.url;
-  const currentResumeName = userData?.data?.resumeOriginalName;
-  const atsScore = userData?.data?.atsScore;
+  const currentResumeName = userData?.data?.resume?.originalName;
+  const atsScore = userData?.data?.resume?.atsScore;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">

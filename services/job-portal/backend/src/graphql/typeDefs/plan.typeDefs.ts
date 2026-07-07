@@ -1,20 +1,19 @@
 export const planTypeDefs = `#graphql
   type Plan {
-    _id: ID!
+    id: ID!
     name: String!
     description: String
     price: Float!
     currency: String!
-    durationDays: Int!
-    jobPostLimit: Int!
-    teamMemberLimit: Int!
-    isFeatured: Boolean!
+    subscriptionDurationDays: Int!
+    maxActiveJobPosts: Int!
+    maxTeamMembers: Int!
     isDefault: Boolean!
     displayOrder: Int!
     features: [String!]!
     isActive: Boolean!
     allowResumeDownload: Boolean!
-    postValidityDays: Int!
+    jobPostValidityDays: Int!
     createdAt: String!
     updatedAt: String!
   }

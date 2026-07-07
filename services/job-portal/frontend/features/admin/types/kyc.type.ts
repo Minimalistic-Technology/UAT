@@ -1,4 +1,4 @@
-import { Kyc, Pagination } from "@/types/new-index";
+import { KYC, Pagination } from "@/types";
 
 export type GetKycApplicationsParams = {
   page: number;
@@ -6,12 +6,14 @@ export type GetKycApplicationsParams = {
   status?: string;
 };
 
-export type KycWithUser = Omit<Kyc, "user"> & {
+export type KycWithUser = Omit<KYC, "userId"> & {
   user: {
     firstName: string;
     lastName: string;
     email: string;
   };
+  companyDocument?: any; // StorageAsset
+  personalDocument?: any; // StorageAsset
 };
 
 export type GetKycApplicationsResponse = {
@@ -27,5 +29,5 @@ export type UpdateKycApplicationStatusParams = {
 };
 
 export type UpdateKycApplicationStatusResponse = {
-  kycApplication: Kyc;
+  kycApplication: KYC;
 };

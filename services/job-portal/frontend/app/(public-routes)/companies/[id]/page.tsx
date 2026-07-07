@@ -66,7 +66,7 @@ export default function CompanyDetailsPage() {
 
       {/* Hero Section */}
       <Card className="mb-8 overflow-hidden border-none shadow-lg">
-        <div className="from-primary/20 to-primary/5 h-32 bg-gradient-to-r md:h-48" />
+        <div className="from-primary/20 to-primary/5 h-32 bg-linear-to-r md:h-48" />
         <CardContent className="relative px-6 pt-0 pb-8 sm:px-8">
           <div className="-mt-16 mb-6 flex flex-col gap-6 sm:-mt-20 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
@@ -91,10 +91,10 @@ export default function CompanyDetailsPage() {
                       {company.industry}
                     </div>
                   )}
-                  {company.location && (
+                  {company.locations && company.locations.length > 0 && (
                     <div className="flex items-center gap-1.5">
                       <MapPin className="h-4 w-4" />
-                      {company.location.city}, {company.location.country}
+                      {company.locations[0].city}, {company.locations[0].country}
                     </div>
                   )}
                   {company.companySize && (
@@ -198,7 +198,7 @@ export default function CompanyDetailsPage() {
         ) : jobs.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
             {jobs.map((job) => (
-              <JobCard key={job._id} job={job} />
+              <JobCard key={job.id} job={job} />
             ))}
           </div>
         ) : (

@@ -10,7 +10,7 @@ import {
 } from '../controllers/company.controller.js';
 import { protect, authorize } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
-import { GlobalRole } from '../models/User.model.js';
+import { GlobalRole } from "../../generated/prisma/client.js";
 import { createCompanySchema, deleteCompanySchema } from '../validations/company.validation.js';
 import { logoUpload } from '../constants/index.js';
 

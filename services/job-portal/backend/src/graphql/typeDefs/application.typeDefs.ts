@@ -10,7 +10,7 @@ export const applicationTypeDefs = `#graphql
   }
 
   type MinimalApplication {
-    _id: ID!
+    id: ID!
     jobSeeker: MinimalUser
     listing: MinimalListing
     listingType: String

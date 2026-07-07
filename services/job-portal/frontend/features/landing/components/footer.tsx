@@ -37,7 +37,7 @@ export const Footer = () => {
 
             <p className="mt-6 max-w-sm text-lg leading-relaxed text-slate-500">
               The career platform for people who care about the work. Join
-              120,000+ professionals finding roles they actually want.
+              other professionals finding roles they actually want.
             </p>
 
             {/* Newsletter Container */}

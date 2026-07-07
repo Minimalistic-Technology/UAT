@@ -1,4 +1,4 @@
-import { CompanyRole, GlobalRole } from "@/types";
+import { CompanyRole } from "@/types/enums";
 import z from "zod";
 
 export const registerUserSchema = z.object({
@@ -18,7 +18,6 @@ export const registerUserSchema = z.object({
     .regex(/^\d{10}$/, "Phone number must be exactly 10 digits")
     .optional()
     .or(z.literal("")),
-  role: z.enum([GlobalRole.USER]).default(GlobalRole.USER),
   captchaToken: z.string().min(1, "Captcha is required"),
 });
 

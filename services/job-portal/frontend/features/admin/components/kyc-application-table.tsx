@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { Eye, ExternalLink, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -34,7 +34,7 @@ interface KycTableProps {
   isUpdating: boolean;
   onUpdateStatus: (
     id: string,
-    status: "approved" | "rejected" | "pending",
+    status: "APPROVED" | "REJECTED" | "PENDING",
     note?: string,
   ) => void;
 }
@@ -69,10 +69,16 @@ export const KycTable = ({
   const [viewingReason, setViewingReason] = useState<string | undefined | null>(
     undefined,
   );
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [processingAction, setProcessingAction] = useState<
+    "APPROVED" | "REJECTED" | null
+  >(null);
 
   const handleRejectConfirm = () => {
     if (rejectingId) {
-      onUpdateStatus(rejectingId, "rejected", rejectReason);
+      setProcessingId(rejectingId);
+      setProcessingAction("REJECTED");
+      onUpdateStatus(rejectingId, "REJECTED", rejectReason);
       setRejectingId(null);
       setRejectReason("");
     }
@@ -109,7 +115,7 @@ export const KycTable = ({
           ) : applications.length > 0 ? (
             applications.map((app) => (
               <TableRow
-                key={app._id}
+                key={app.id}
                 className="group hover:bg-muted/20 transition-colors"
               >
                 <TableCell>
@@ -189,14 +195,14 @@ export const KycTable = ({
                 <TableCell>
                   <Badge
                     variant={
-                      app.status === "approved"
+                      app.status === "APPROVED"
                         ? "default"
-                        : app.status === "rejected"
+                        : app.status === "REJECTED"
                           ? "destructive"
                           : "outline"
                     }
                     className={
-                      app.status === "pending"
+                      app.status === "PENDING"
                         ? "border-amber-200 bg-amber-50 text-amber-700"
                         : ""
                     }
@@ -205,7 +211,7 @@ export const KycTable = ({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  {app.status === "pending" ? (
+                  {app.status === "PENDING" ? (
                     <div className="flex justify-end gap-1">
                       <TooltipProvider>
                         <Tooltip>
@@ -215,11 +221,17 @@ export const KycTable = ({
                               size="icon"
                               className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
                               disabled={isUpdating}
-                              onClick={() =>
-                                onUpdateStatus(app._id, "approved")
-                              }
+                              onClick={() => {
+                                setProcessingId(app.id);
+                                setProcessingAction("APPROVED");
+                                onUpdateStatus(app.id, "APPROVED");
+                              }}
                             >
-                              <CheckCircle className="h-4 w-4" />
+                              {isUpdating && processingId === app.id && processingAction === "APPROVED" ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CheckCircle className="h-4 w-4" />
+                              )}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Approve</TooltipContent>
@@ -231,9 +243,13 @@ export const KycTable = ({
                               size="icon"
                               className="text-destructive h-8 w-8 hover:bg-red-50"
                               disabled={isUpdating}
-                              onClick={() => setRejectingId(app._id)}
+                              onClick={() => setRejectingId(app.id)}
                             >
-                              <XCircle className="h-4 w-4" />
+                              {isUpdating && processingId === app.id && processingAction === "REJECTED" ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <XCircle className="h-4 w-4" />
+                              )}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Reject</TooltipContent>
@@ -242,7 +258,7 @@ export const KycTable = ({
                     </div>
                   ) : (
                     <div className="flex items-center justify-end gap-2">
-                      {app.status === "rejected" && app.rejectionReason && (
+                      {app.status === "REJECTED" && app.rejectionReason && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>

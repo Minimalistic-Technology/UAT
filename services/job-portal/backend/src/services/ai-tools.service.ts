@@ -1,14 +1,11 @@
-import Coupon from "../models/Coupon.model.js";
-import KYC from "../models/KYC.model.js";
-import User from "../models/User.model.js";
-import Job from "../models/Job.model.js";
+import { prisma } from "../lib/prisma.js";
 
 // Ensure returning string representations of results for the LLM
 
 export const adminToolsService = {
     get_pending_kyc: async () => {
         try {
-            const pendingCount = await KYC.countDocuments({ status: "pending" });
+            const pendingCount = await prisma.kYC.count({ where: { status: "PENDING" } });
             if (pendingCount === 0) return "Success: There are no pending KYC applications. Everything is verified.";
             return `Success: There are ${pendingCount} companies pending KYC approval.`;
         } catch (e: any) {
@@ -18,7 +15,7 @@ export const adminToolsService = {
 
     get_user_stats: async () => {
         try {
-            const totalUsers = await User.countDocuments();
+            const totalUsers = await prisma.user.count();
             return `Success: The total number of registered users on the platform is ${totalUsers}.`;
         } catch (e: any) {
             return `Error fetching user stats: ${e.message}`;
@@ -27,29 +24,33 @@ export const adminToolsService = {
 
     search_jobs: async (args: { keyword?: string; days_ago?: number }) => {
         try {
-            let filter: any = { status: "active" };
+            let filter: any = { status: "ACTIVE" };
 
             if (args.keyword) {
-                filter.$or = [
-                    { title: { $regex: args.keyword, $options: "i" } },
-                    { skills: { $regex: args.keyword, $options: "i" } }
+                filter.OR = [
+                    { title: { contains: args.keyword, mode: 'insensitive' } },
+                    { skills: { hasSome: [args.keyword] } }
                 ];
             }
 
             if (args.days_ago && args.days_ago > 0) {
                 const dateLimit = new Date();
                 dateLimit.setDate(dateLimit.getDate() - args.days_ago);
-                filter.createdAt = { $gte: dateLimit };
+                filter.createdAt = { gte: dateLimit };
             }
 
-            const jobs = await Job.find(filter).limit(5).select("_id title");
+            const jobs = await prisma.baseListing.findMany({
+                where: filter,
+                take: 5,
+                select: { id: true, title: true }
+            });
 
             if (!jobs || jobs.length === 0) {
                 let msg = args.keyword ? `"${args.keyword}"` : "the criteria";
                 return `Result: No active jobs found matching ${msg}.`;
             }
 
-            const jobLinks = jobs.map(j => `- [${j.title}](/job/${j._id})`).join("\n");
+            const jobLinks = jobs.map((j: any) => `- [${j.title}](/job/${j.id})`).join("\n");
             return `Result: Found the following jobs. Present them to the user exactly as these markdown links:\n${jobLinks}`;
         } catch (e: any) {
             return `Error searching jobs: ${e.message}`;

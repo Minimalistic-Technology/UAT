@@ -1,22 +1,14 @@
 import type { Response, NextFunction } from "express";
-import Company from "../models/Company.model.js";
-import User, { GlobalRole } from "../models/User.model.js";
+import { prisma } from "../lib/prisma.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
-import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
-import mongoose from "mongoose";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import { JobStatus } from "../models/BaseJob.model.js";
-import Job from "../models/Job.model.js";
-import Internship from "../models/Internship.model.js";
-import Subscription from "../models/Subscription.model.js";
-import KYC from "../models/KYC.model.js";
-import Application, { ListingType } from "../models/Application.model.js";
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
 } from "../utils/cloudinary.js";
 import { ALLOWED_MIME_TYPES_FOR_AVATAR } from "../constants/index.js";
+import bcrypt from "bcryptjs";
 
 // @desc    Create new company
 // @route   POST /api/companies
@@ -33,89 +25,72 @@ export const createCompany = async (req: AuthRequest, res: Response) => {
     industry,
   } = req.body;
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    let owner = await User.findOne({ email }).session(session);
+    const result = await prisma.$transaction(async (tx) => {
+      let owner = await tx.user.findUnique({ where: { email } });
 
-    if (!owner) {
-      const ownerRecords = await User.create(
-        [
-          {
+      if (!owner) {
+        const hashedPassword = await bcrypt.hash(password, 12);
+        owner = await tx.user.create({
+          data: {
             firstName,
             lastName,
             email,
-            password,
+            password: hashedPassword,
             phone,
-            role: GlobalRole.USER,
+            role: "USER",
           },
-        ],
-        { session },
-      );
+        });
+      }
 
-      owner = ownerRecords[0];
-    }
-
-    // Check if owner already has a company
-    const existingOwnership = await Company.findOne({
-      owner: owner._id,
-    }).session(session);
-    if (existingOwnership) {
-      await session.abortTransaction();
-      return res.status(400).json({
-        success: false,
-        message: "This user is already an owner of an existing company.",
+      const existingOwnership = await tx.company.findUnique({
+        where: { ownerId: owner.id },
       });
-    }
 
-    const newCompany = await Company.create(
-      [
-        {
+      if (existingOwnership) {
+        throw new ApiError(400, "This user is already an owner of an existing company.");
+      }
+
+      const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now();
+
+      const newCompany = await tx.company.create({
+        data: {
           name: companyName,
-          owner: owner._id,
+          slug,
+          ownerId: owner.id,
           description: companyDescription,
           industry,
         },
-      ],
-      { session },
-    );
-    const company = newCompany[0];
+      });
 
-    await CompanyMember.create(
-      [
-        {
-          user: owner._id,
-          company: company._id,
-          role: CompanyRole.OWNER,
+      await tx.companyMember.create({
+        data: {
+          userId: owner.id,
+          companyId: newCompany.id,
+          role: "OWNER",
           isActive: true,
         },
-      ],
-      { session },
-    );
+      });
 
-    await session.commitTransaction();
-    session.endSession();
+      return { owner, newCompany };
+    });
 
     return res.status(201).json({
       success: true,
       message: "Company and Owner account set up successfully",
       data: {
-        company,
+        company: result.newCompany,
         owner: {
-          id: owner._id,
-          email: owner.email,
-          fullName: `${owner.firstName} ${owner.lastName}`,
+          id: result.owner.id,
+          email: result.owner.email,
+          fullName: `${result.owner.firstName} ${result.owner.lastName}`,
         },
       },
     });
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
-
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: "Error creating company",
+      message: error.message || "Error creating company",
       error: error.message,
     });
   }
@@ -141,31 +116,31 @@ export const getCompanies = async (
 
     const query: any = {};
 
-    // Search by name
     if (search) {
-      query.name = { $regex: search as string, $options: "i" };
+      query.name = { contains: search as string, mode: "insensitive" };
     }
-
-    // Filter by industry
     if (industry) {
       query.industry = industry;
     }
-
-    // Filter by location (city)
     if (location) {
-      query["location.city"] = { $regex: location as string, $options: "i" };
+      query.locations = { some: { city: { contains: location as string, mode: "insensitive" } } };
     }
 
-    const pageNum = parseInt(page as string, 10);
-    const limitNum = parseInt(limit as string, 10);
+    const pageNum = parseInt(page as string, 10) || 1;
+    const limitNum = parseInt(limit as string, 10) || 10;
     const skip = (pageNum - 1) * limitNum;
 
-    const companies = await Company.find(query)
-      .sort(sort as string)
-      .skip(skip)
-      .limit(limitNum);
+    const sortField = (sort as string).startsWith("-") ? (sort as string).substring(1) : sort;
+    const sortOrder = (sort as string).startsWith("-") ? "desc" : "asc";
 
-    const total = await Company.countDocuments(query);
+    const companies = await prisma.company.findMany({
+      where: query,
+      orderBy: { [sortField as string]: sortOrder },
+      skip,
+      take: limitNum,
+    });
+
+    const total = await prisma.company.count({ where: query });
 
     res.status(200).json({
       success: true,
@@ -194,35 +169,37 @@ export const getCompany = async (
   next: NextFunction,
 ) => {
   try {
-    const company = await Company.findById(req.params.id).populate(
-      "owner",
-      "firstName lastName email",
-    );
+    const company = await prisma.company.findUnique({
+      where: { id: String(req.params.id) },
+      include: {
+        owner: { select: { firstName: true, lastName: true, email: true } },
+      },
+    });
 
     if (!company) {
       throw new ApiError(404, "Company not found");
     }
 
-    const totalJobs = await Job.countDocuments({ company: company._id });
-    const activeJobs = await Job.countDocuments({
-      company: company._id,
-      status: JobStatus.ACTIVE,
+    const totalJobs = await prisma.baseListing.count({
+      where: { companyId: company.id, opportunityType: "JOB", isDeleted: false },
     });
-    const totalMembers = await CompanyMember.countDocuments({
-      company: company._id,
-      isActive: true,
+    const activeJobs = await prisma.baseListing.count({
+      where: { companyId: company.id, opportunityType: "JOB", status: "ACTIVE", isDeleted: false },
     });
-    const currentSubscription = await Subscription.findOne({
-      companyId: company._id,
-      status: "active",
-    }).populate("planId");
+    const totalMembers = await prisma.companyMember.count({
+      where: { companyId: company.id, isActive: true },
+    });
+    const currentSubscription = await prisma.subscription.findFirst({
+      where: { companyId: company.id, status: "ACTIVE" },
+      include: { plan: true },
+    });
 
     const companyData = {
-      ...company.toObject(),
+      ...company,
       totalJobs,
       activeJobs,
       totalMembers,
-      currentPlan: currentSubscription ? currentSubscription.planId : null,
+      currentPlan: currentSubscription ? currentSubscription.plan : null,
       subscription: currentSubscription,
       remainingJobPosts: currentSubscription
         ? currentSubscription.postsRemaining
@@ -243,16 +220,21 @@ export const getMyCompany = async (
   next: NextFunction,
 ) => {
   try {
-    const companyMember = await CompanyMember.findOne({ user: req.user._id });
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user?.id },
+    });
 
     if (!companyMember) {
       return next(new ApiError(400, "Company member not found"));
     }
 
-    const company = await Company.findById(companyMember.company).populate(
-      "owner",
-      "firstName lastName email",
-    );
+    const company = await prisma.company.findUnique({
+      where: { id: companyMember.companyId },
+      include: {
+        owner: { select: { firstName: true, lastName: true, email: true } },
+        logo: true,
+      },
+    });
 
     if (!company) {
       throw new ApiError(404, "You have not created a company yet");
@@ -267,23 +249,22 @@ export const getMyCompany = async (
       currentSubscription,
       kyc,
     ] = await Promise.all([
-      Job.countDocuments({ company: company._id }),
-      Job.countDocuments({ company: company._id, status: JobStatus.ACTIVE }),
-      Internship.countDocuments({ company: company._id }),
-      Internship.countDocuments({
-        company: company._id,
-        status: JobStatus.ACTIVE,
+      prisma.baseListing.count({ where: { companyId: company.id, opportunityType: "JOB", isDeleted: false } }),
+      prisma.baseListing.count({ where: { companyId: company.id, opportunityType: "JOB", status: "ACTIVE", isDeleted: false } }),
+      prisma.baseListing.count({ where: { companyId: company.id, opportunityType: "INTERNSHIP", isDeleted: false } }),
+      prisma.baseListing.count({
+        where: { companyId: company.id, opportunityType: "INTERNSHIP", status: "ACTIVE", isDeleted: false },
       }),
-      CompanyMember.countDocuments({ company: company._id, isActive: true }),
-      Subscription.findOne({
-        companyId: company._id,
-        status: "active",
-      }).populate("planId", "name"),
-      KYC.findOne({ user: req.user.id }),
+      prisma.companyMember.count({ where: { companyId: company.id, isActive: true } }),
+      prisma.subscription.findFirst({
+        where: { companyId: company.id, status: "ACTIVE" },
+        include: { plan: { select: { name: true } } },
+      }),
+      prisma.kYC.findFirst({ where: { userId: req.user?.id }, orderBy: { createdAt: "desc" } }),
     ]);
 
     const companyData = {
-      ...company.toObject(),
+      ...company,
       totalJobs,
       activeJobs,
       totalInternships,
@@ -291,7 +272,7 @@ export const getMyCompany = async (
       totalListings: totalJobs + totalInternships,
       activeListings: activeJobs + activeInternships,
       totalMembers,
-      currentPlan: currentSubscription ? currentSubscription.planId : null,
+      currentPlan: currentSubscription ? currentSubscription.plan : null,
       subscription: currentSubscription,
       remainingJobPosts: currentSubscription
         ? currentSubscription.postsRemaining
@@ -314,10 +295,8 @@ export const updateCompany = async (
   next: NextFunction,
 ) => {
   try {
-    const isCompanyOwner = await CompanyMember.findOne({
-      user: req.user._id,
-      role: CompanyRole.OWNER,
-      isActive: true,
+    const isCompanyOwner = await prisma.companyMember.findFirst({
+      where: { userId: req.user?.id, role: "OWNER", isActive: true },
     });
 
     if (!isCompanyOwner) {
@@ -329,19 +308,17 @@ export const updateCompany = async (
       );
     }
 
-    let company = await Company.findById(isCompanyOwner.company);
-
-    if (!company) {
-      return res.status(404).json({
-        success: false,
-        message: "Company not found",
-      });
+    const allowedFields = ['name', 'description', 'website', 'industry', 'companySize', 'socialLinks'];
+    const updateData: any = {};
+    for (const key of Object.keys(req.body)) {
+      if (allowedFields.includes(key)) {
+        updateData[key] = req.body[key];
+      }
     }
 
-    // Use company._id instead of req.params.id since this is the /me route
-    company = await Company.findByIdAndUpdate(company._id, req.body, {
-      returnDocument: "after",
-      runValidators: true,
+    const company = await prisma.company.update({
+      where: { id: isCompanyOwner.companyId },
+      data: updateData,
     });
 
     res.status(200).json({
@@ -362,91 +339,27 @@ export const deleteCompany = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const isCompanyOwner = await CompanyMember.findOne({
-      user: req.user._id,
-      role: CompanyRole.OWNER,
-      isActive: true,
-    }).session(session);
+    const isCompanyOwner = await prisma.companyMember.findFirst({
+      where: { userId: req.user?.id, role: "OWNER", isActive: true },
+    });
 
     if (!isCompanyOwner) {
-      await session.abortTransaction();
-      session.endSession();
       return next(
         new ApiError(403, "You are not authorized to delete this company"),
       );
     }
 
-    const company = await Company.findById(req.params.id).session(session);
-
-    if (!company) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(404).json({
-        success: false,
-        message: "Company not found",
-      });
-    }
-
-    // Find all members
-    const members = await CompanyMember.find({ company: company._id }).session(
-      session,
-    );
-    const userIds = members.map((m) => m.user);
-
-    // Unset company from all members' users
-    await User.updateMany(
-      { _id: { $in: userIds } },
-      { $unset: { company: 1 } },
-    ).session(session);
-
-    // Find all jobs and internships for the company in parallel
-    const [jobs, internships] = await Promise.all([
-      Job.find({ company: company._id }, "_id").session(session),
-      Internship.find({ company: company._id }, "_id").session(session),
-    ]);
-
-    const jobIds = jobs.map((j: any) => j._id);
-    const internshipIds = internships.map((i: any) => i._id);
-
-    // Delete all applications for both using listingType to scope correctly
-    await Promise.all([
-      jobIds.length > 0 &&
-        Application.deleteMany({
-          listing: { $in: jobIds },
-          listingType: ListingType.JOB,
-        }).session(session),
-
-      internshipIds.length > 0 &&
-        Application.deleteMany({
-          listing: { $in: internshipIds },
-          listingType: ListingType.INTERNSHIP,
-        }).session(session),
-
-      // Delete the listings themselves
-      Job.deleteMany({ company: company._id }).session(session),
-      Internship.deleteMany({ company: company._id }).session(session),
-    ]);
-
-    // Delete all members
-    await CompanyMember.deleteMany({ company: company._id }).session(session);
-
-    // Delete company
-    await Company.deleteOne({ _id: company._id }).session(session);
-
-    await session.commitTransaction();
-    session.endSession();
+    // Prisma onDelete: Cascade will handle relations (CompanyMember, BaseListing, etc.)
+    await prisma.company.delete({
+      where: { id: isCompanyOwner.companyId },
+    });
 
     res.status(200).json({
       success: true,
       message: "Company deleted successfully",
     });
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
     res.status(500).json({
       success: false,
       message: "Error deleting company",
@@ -461,10 +374,8 @@ export const uploadCompanyLogo = async (
   next: NextFunction,
 ) => {
   try {
-    const isCompanyOwner = await CompanyMember.findOne({
-      user: req.user._id,
-      role: CompanyRole.OWNER,
-      isActive: true,
+    const isCompanyOwner = await prisma.companyMember.findFirst({
+      where: { userId: req.user?.id, role: "OWNER", isActive: true },
     });
 
     if (!isCompanyOwner) {
@@ -484,40 +395,49 @@ export const uploadCompanyLogo = async (
       throw new ApiError(400, "Only images are allowed");
     }
 
-    let company = await Company.findById(isCompanyOwner.company);
+    let company = await prisma.company.findUnique({
+      where: { id: isCompanyOwner.companyId },
+      include: { logo: true },
+    });
 
     if (!company) {
       throw new ApiError(404, "Company not found");
     }
 
-    if (company?.logo?.publicId) {
-      await deleteFromCloudinary(company.logo?.publicId);
+    if (company.logo?.publicId) {
+      await deleteFromCloudinary(company.logo.publicId);
     }
 
     const result = await uploadToCloudinary(
       req.file.buffer,
       "job_portal/company_logos",
       "image",
-      `logo-${company._id}-${Date.now()}`,
+      `logo-${company.id}-${Date.now()}`,
     );
 
-    company = await Company.findByIdAndUpdate(
-      company._id,
-      {
-        logo: {
+    const updatedCompany = await prisma.$transaction(async (tx) => {
+      const asset = await tx.storageAsset.create({
+        data: {
           url: result.secure_url,
           publicId: result.public_id,
+          mimeType: req.file!.mimetype,
+          sizeBytes: req.file!.size,
         },
-      },
-      { returnDocument: "after", runValidators: true },
-    );
+      });
+
+      return tx.company.update({
+        where: { id: company.id },
+        data: { logoId: asset.id },
+        include: { logo: true },
+      });
+    });
 
     res
       .status(200)
       .json(
         new ApiResponse(
           200,
-          { logoUrl: company?.logo },
+          { logoUrl: updatedCompany.logo },
           "Company logo uploaded successfully",
         ),
       );

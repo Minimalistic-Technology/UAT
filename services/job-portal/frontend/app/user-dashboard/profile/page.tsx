@@ -34,9 +34,9 @@ export default function UserProfilePage() {
     if (user.phone) strength += 15;
     if (user.location?.city || user.location?.country) strength += 10;
     if (user.skills && user.skills.length > 0) strength += 15;
-    if (user.experience && user.experience.length > 0) strength += 15;
-    if (user.education && user.education.length > 0) strength += 10;
-    if (user.resume?.url || user.resumeOriginalName) strength += 10;
+    if (user.experiences && user.experiences.length > 0) strength += 15;
+    if (user.educations && user.educations.length > 0) strength += 10;
+    if (user.resume?.originalName) strength += 10;
     return strength;
   }, [user]);
 
@@ -108,7 +108,7 @@ export default function UserProfilePage() {
         {/* Right Column */}
         <div className="space-y-6 lg:col-span-2">
           <div className="animate-in fade-in zoom-in-95 duration-200">
-            <UserPersonalInfo user={user} />
+            {user && <UserPersonalInfo user={user} />}
           </div>
         </div>
       </div>

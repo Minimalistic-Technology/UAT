@@ -30,7 +30,7 @@ const STEPS = [
   {
     n: "03",
     title: "Apply once. Hear back fast.",
-    desc: "Employers on Hireloop commit to a 72-hour response SLA. No ghosting, guaranteed.",
+    desc: "Employers on JobMadeEasy commit to a 72-hour response SLA. No ghosting, guaranteed.",
     icon: Handshake,
     details:
       "The hiring process shouldn't be a black hole. When you apply through our platform, employers are committed to a Service Level Agreement (SLA) to respond within 72 hours. Whether it's an interview request or a polite rejection, you will always know where you stand. Say goodbye to the anxiety of ghosting.",

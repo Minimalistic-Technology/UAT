@@ -1,4 +1,4 @@
-import { Pagination, User } from "@/types/new-index";
+import { Pagination, User } from "@/types";
 
 export type FetchAllUsersParams = {
   page?: number;

@@ -2,7 +2,7 @@ export const GET_ADMIN_COUPONS_QUERY = `
   query GetCoupons($page: Int, $limit: Int) {
     getCoupons(page: $page, limit: $limit) {
       coupons {
-        _id
+        id
         code
         type
         value

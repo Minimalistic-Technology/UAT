@@ -69,7 +69,8 @@ export const Hero = () => {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2563eb] opacity-75"></span>
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[#2563eb]"></span>
             </span>
-            <span className="mt-px">Over 10,000 top companies hiring</span>
+            {/* <span className="mt-px">Over 10,000 top companies hiring</span> */}
+            <span className="mt-px">Find your next career opportunity</span>
           </motion.div>
 
           {/* Main Headline */}
@@ -108,7 +109,7 @@ export const Hero = () => {
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
             className="mx-auto mt-8 max-w-3xl text-lg leading-relaxed font-medium text-slate-600 md:text-xl dark:text-slate-400"
           >
-            Search through 12,000+ vetted opportunities from top startups and
+            Search through various vetted opportunities from top startups and
             Fortune 500s. No recruiter spam. No ghosting. Just exact matches.
           </motion.p>
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authorize, protect } from "../middleware/auth.middleware.js";
-import { GlobalRole } from "../models/User.model.js";
+import { GlobalRole } from "../../generated/prisma/client.js";
 import { validate } from "../middleware/validate.middleware.js";
 import {
   getMyActiveSubscription,

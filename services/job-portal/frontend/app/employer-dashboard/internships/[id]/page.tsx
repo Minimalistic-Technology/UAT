@@ -46,7 +46,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { FormattedDescription } from "@/features/employer/components/formatted-description";
-import { Internship } from "@/types/new-index";
+import { FlattenedInternship } from "@/types";
 import {
   getCurrencyIcon,
   getCurrencySymbol,
@@ -63,7 +63,7 @@ const Page = () => {
     isLoading,
     isError,
   } = useGetInternshipPostById(internshipId as string);
-  const internship: Internship = responseData?.data;
+  const internship: FlattenedInternship = responseData?.data;
 
   if (isLoading) return <InternshipSkeleton />;
   if (isError || !internship)
@@ -85,7 +85,7 @@ const Page = () => {
             variant="outline"
             className="cursor-pointer"
             size="sm"
-            disabled={internship.status === "closed"}
+            disabled={internship.status === "CLOSED"}
             onClick={() => {
               router.push(
                 `/employer-dashboard/internships/${internshipId}/edit`,
@@ -137,11 +137,6 @@ const Page = () => {
                 >
                   {internship.status.replace("_", " ").toLowerCase()}
                 </Badge>
-                {internship.isFeatured && (
-                  <Badge className="border-0 bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1 text-white shadow-sm">
-                    Featured
-                  </Badge>
-                )}
                 {internship.isPPO && (
                   <Badge
                     variant="outline"
@@ -258,12 +253,12 @@ const Page = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
-                {getCurrencyIcon(internship.stipend.currency || "INR")}
+                {getCurrencyIcon(internship.stipendCurrency || "INR")}
                 <span className="font-medium">
-                  {internship.stipend.type === "fixed" &&
-                  internship.stipend.amount
-                    ? `${getCurrencySymbol(internship.stipend.currency || "INR")}${internship.stipend.amount.toLocaleString()} / ${internship.stipend.period}`
-                    : internship.stipend.type === "unpaid"
+                  {internship.stipendType === "FIXED" &&
+                  internship.stipendAmount
+                    ? `${getCurrencySymbol(internship.stipendCurrency || "INR")}${internship.stipendAmount.toLocaleString()} / ${internship.stipendPeriod}`
+                    : internship.stipendType === "UNPAID"
                       ? "Unpaid"
                       : "Performance Based"}
                 </span>
@@ -271,10 +266,10 @@ const Page = () => {
               <div className="flex items-center gap-3 text-sm">
                 <Clock className="text-muted-foreground h-4 w-4" />
                 <span className="capitalize">
-                  {internship.duration.value}{" "}
-                  {internship.duration.unit.toLowerCase()}
-                  {internship.duration.value > 1 &&
-                  !internship.duration.unit.endsWith("s")
+                  {internship.durationValue}{" "}
+                  {internship.durationUnit.toLowerCase()}
+                  {internship.durationValue > 1 &&
+                  !internship.durationUnit.endsWith("s")
                     ? "s"
                     : ""}
                 </span>
@@ -288,10 +283,10 @@ const Page = () => {
               <div className="flex items-center gap-3 text-sm">
                 <MapPin className="text-muted-foreground h-4 w-4" />
                 <span className="capitalize">
-                  {internship.workMode === "remote"
+                  {internship.workMode === "REMOTE"
                     ? "Remote"
-                    : internship.location?.city && internship.location?.country
-                      ? `${internship.location.city}, ${internship.location.country}`
+                    : internship.city && internship.country
+                      ? `${internship.city}, ${internship.country}`
                       : "Location Not Specified"}
                 </span>
               </div>

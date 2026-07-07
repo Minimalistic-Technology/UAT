@@ -114,3 +114,8 @@ out
 .pnp.*
 
 /build
+
+/generated/prisma
+
+# Husky
+.husky/logs

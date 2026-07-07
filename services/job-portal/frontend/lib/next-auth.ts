@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import axios from "axios";
 import { API_URL } from "@/constants";
 
+const SERVER_API_URL = process.env.INTERNAL_API_URL || API_URL;
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -18,12 +19,12 @@ export const authOptions: NextAuthOptions = {
         try {
           let response;
           if (credentials?.otp) {
-            response = await axios.post(`${API_URL}/auth/register/confirm`, {
+            response = await axios.post(`${SERVER_API_URL}/auth/register/confirm`, {
               email: credentials.email,
               otp: credentials.otp,
             });
           } else {
-            response = await axios.post(`${API_URL}/auth/login`, {
+            response = await axios.post(`${SERVER_API_URL}/auth/login`, {
               email: credentials?.email,
               password: credentials?.password,
             });
@@ -112,7 +113,7 @@ export const authOptions: NextAuthOptions = {
       // Handle Google OAuth
       if (account?.provider === "google") {
         try {
-          const response = await axios.post(`${API_URL}/auth/google`, {
+          const response = await axios.post(`${SERVER_API_URL}/auth/google`, {
             googleId: account.providerAccountId,
             email: user?.email,
             firstName: user?.name?.split(" ")[0],

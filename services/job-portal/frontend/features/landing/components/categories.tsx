@@ -14,14 +14,14 @@ import {
 } from "lucide-react";
 
 const CATEGORIES = [
-  { label: "Engineering", count: "3,214", icon: Code2, accent: "purple" },
-  { label: "Design", count: "982", icon: Palette, accent: "blue" },
-  { label: "Data & AI", count: "1,406", icon: Sparkles, accent: "purple" },
-  { label: "Marketing", count: "612", icon: Megaphone, accent: "blue" },
-  { label: "Sales", count: "889", icon: LineChart, accent: "purple" },
-  { label: "Operations", count: "544", icon: Briefcase, accent: "blue" },
-  { label: "Support", count: "331", icon: Headphones, accent: "purple" },
-  { label: "DevOps", count: "276", icon: Server, accent: "blue" },
+  { label: "Engineering", icon: Code2, accent: "purple" },
+  { label: "Design", icon: Palette, accent: "blue" },
+  { label: "Data & AI", icon: Sparkles, accent: "purple" },
+  { label: "Marketing", icon: Megaphone, accent: "blue" },
+  { label: "Sales", icon: LineChart, accent: "purple" },
+  { label: "Operations", icon: Briefcase, accent: "blue" },
+  { label: "Support", icon: Headphones, accent: "purple" },
+  { label: "DevOps", icon: Server, accent: "blue" },
 ];
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -81,12 +81,12 @@ export const Categories = () => {
                     transition: { duration: 0.5, ease: "easeInOut" },
                   },
                 }}
-                className="group relative border-r border-b border-slate-200 bg-white p-8 transition-all duration-300 hover:bg-slate-50 md:p-10"
+                className="group relative flex items-center gap-5 border-r border-b border-slate-200 bg-white p-6 transition-all duration-300 hover:bg-slate-50 sm:p-8"
                 aria-label={`View ${category.label} jobs`}
               >
                 {/* Icon Container */}
                 <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-300 ${
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-all duration-300 ${
                     isPurple
                       ? "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white"
                       : "bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white"
@@ -95,17 +95,17 @@ export const Categories = () => {
                   <Icon size={24} strokeWidth={2} />
                 </div>
 
-                <div className="mt-8">
-                  <h3 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
+                <div>
+                  <h3 className="text-lg font-bold tracking-tight text-slate-900 md:text-xl">
                     {category.label}
                   </h3>
-                  <p className="mt-1 text-sm font-medium text-slate-500">
+                  {/* <p className="mt-1 text-sm font-medium text-slate-500">
                     {category.count} open roles
-                  </p>
+                  </p> */}
                 </div>
 
                 {/* Hover Reveal Arrow */}
-                <div className="absolute top-6 right-6 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                <div className="absolute top-1/2 right-6 -translate-y-1/2 translate-x-2 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
                   <ArrowUpRight size={20} className="text-blue-600" />
                 </div>
               </motion.a>

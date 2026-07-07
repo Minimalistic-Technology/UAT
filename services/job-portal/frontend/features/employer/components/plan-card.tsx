@@ -50,8 +50,9 @@ export function PlanCard({
   const { data: session } = useSession();
   const companyRole = session?.user.companyRole;
   const userId = session?.user.id;
-  const isUnlimited = plan.jobPostLimit === -1;
+  const isUnlimited = plan.maxActiveJobPosts === -1;
   const router = useRouter();
+  console.log("Plan", plan);
 
   const currentBasePrice = isYearly
     ? Math.round(plan.price * 12 * 0.8)
@@ -65,8 +66,9 @@ export function PlanCard({
   const validateMutation = useValidateCoupon();
   const { data: companyResponse, isLoading: isCompanyLoading } =
     useGetMyCompanyDetails();
+    
   const companyDetails = companyResponse?.data;
-  const hasActivePlan = companyDetails?.subscription?.status === "active";
+  const hasActivePlan = companyDetails?.subscription?.status?.toUpperCase() === "ACTIVE";
   const remainingJobPosts = companyDetails?.remainingJobPosts;
   const canPurchase =
     !isCompanyLoading && (!hasActivePlan || remainingJobPosts === 0);
@@ -113,7 +115,7 @@ export function PlanCard({
   };
 
   const handlePayment = async () => {
-    if (companyRole !== "owner") {
+    if (companyRole !== "OWNER") {
       toast.error("Only owner can buy plans");
       return;
     }
@@ -125,16 +127,21 @@ export function PlanCard({
       return;
     }
 
+    console.log("Crossed isLoaded")
+
     try {
       const payload = {
-        planId: plan._id,
+        planId: plan.id,
         userId: userId!,
         couponCode: appliedCoupon?.code,
         billingCycle: isYearly ? "yearly" : "monthly",
         internalOrderId: `ORD_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       };
 
+      console.log("Payload created")
+
       const orderData = await createOrder(payload);
+      console.log("orderData", orderData)
 
       if (orderData.data.isFree) {
         toast.success("Plan activated successfully!");
@@ -168,7 +175,7 @@ export function PlanCard({
           email: session?.user?.email || "",
         },
         theme: {
-          color: plan.isFeatured ? "#2563eb" : "#0f172a",
+          color: "#2563eb",
         },
       };
 
@@ -182,14 +189,14 @@ export function PlanCard({
     }
   };
 
-  const isFeatured = plan.isFeatured;
+  const isFeatured = false;
 
   return (
     <Card
       className={cn(
         "relative flex h-full flex-col overflow-hidden rounded-3xl border shadow-sm transition-all duration-300",
         isFeatured
-          ? "border-primary/50 bg-gradient-to-b from-[#e3ecff] to-[#e4deff] shadow-2xl lg:-translate-y-4 dark:from-blue-950 dark:to-indigo-950"
+          ? "border-primary/50 bg-linear-to-b from-[#e3ecff] to-[#e4deff] shadow-2xl lg:-translate-y-4 dark:from-blue-950 dark:to-indigo-950"
           : "border-border bg-card dark:bg-card hover:shadow-lg",
       )}
     >
@@ -345,7 +352,7 @@ export function PlanCard({
                     : "text-foreground",
                 )}
               >
-                {isUnlimited ? "Unlimited" : formatJobLimit(plan.jobPostLimit)}
+                {isUnlimited ? "Unlimited" : formatJobLimit(plan.maxActiveJobPosts)}
               </strong>{" "}
               Active Job Posts
             </span>
@@ -391,7 +398,7 @@ export function PlanCard({
                     : "text-foreground",
                 )}
               >
-                {plan.postValidityDays} Days
+                {plan.jobPostValidityDays} Days
               </strong>
             </span>
           </li>
@@ -452,7 +459,7 @@ export function PlanCard({
 
       <CardFooter className="px-8 pb-10">
         <div className="flex w-full flex-col gap-3">
-          {companyDetails?.currentPlan?._id === plan._id && hasActivePlan ? (
+          {companyDetails?.currentPlan?.id === plan.id && hasActivePlan ? (
             <Button
               disabled
               size="lg"

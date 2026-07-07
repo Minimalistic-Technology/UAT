@@ -1,17 +1,17 @@
 export interface Plan {
-  _id: string;
+  id: string;
   name: string;
   description?: string;
   price: number;
   currency: string;
-  durationDays: number;
-  jobPostLimit: number;
-  isFeatured: boolean;
+  subscriptionDurationDays: number;
+  maxActiveJobPosts: number;
+  maxTeamMembers: number;
   isDefault: boolean;
   displayOrder: number;
   features: string[];
   isActive: boolean;
-  postValidityDays: number;
+  jobPostValidityDays: number;
   allowResumeDownload: boolean;
   createdAt: string;
   updatedAt: string;
@@ -33,9 +33,9 @@ export interface RazorpayOrder {
 }
 
 export interface Coupon {
-  _id: string;
+  id: string;
   code: string;
-  type: "percentage" | "amount";
+  type: "PERCENTAGE" | "AMOUNT";
   value: number;
   isActive: boolean;
   expiryDate?: Date;

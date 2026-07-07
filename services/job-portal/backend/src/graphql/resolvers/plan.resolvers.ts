@@ -1,14 +1,14 @@
 import { GraphQLError } from "graphql";
-import Plan from "../../models/Plan.model.js";
+import { prisma } from "../../lib/prisma.js";
 import { MyContext } from "../context.js";
-import { GlobalRole } from "../../models/User.model.js";
 
 export const planResolvers = {
   Query: {
     getPlans: async () => {
       try {
-        const plans = await Plan.find({ isActive: true }).sort({
-          displayOrder: 1,
+        const plans = await prisma.plan.findMany({
+          where: { isActive: true },
+          orderBy: { displayOrder: "asc" },
         });
         return {
           count: plans.length,
@@ -23,16 +23,15 @@ export const planResolvers = {
     getAllAdminPlans: async (
       _: any,
       { page = 1, limit = 10 }: { page?: number; limit?: number },
-      context: MyContext
+      context: MyContext,
     ) => {
       try {
-        // Authorization check
         if (!context.user) {
           throw new GraphQLError("Not authenticated", {
             extensions: { code: "UNAUTHENTICATED" },
           });
         }
-        if (context.user.role !== GlobalRole.SUPER_ADMIN) {
+        if (context.user.role !== "SUPER_ADMIN") {
           throw new GraphQLError("Forbidden", {
             extensions: { code: "FORBIDDEN" },
           });
@@ -40,12 +39,14 @@ export const planResolvers = {
 
         const pageNumber = Math.max(1, page || 1);
         const limitNumber = Math.min(100, Math.max(1, limit || 10));
+        const skip = (pageNumber - 1) * limitNumber;
 
-        const totalPlans = await Plan.countDocuments();
-        const plans = await Plan.find()
-          .sort({ displayOrder: 1, createdAt: -1 })
-          .skip((pageNumber - 1) * limitNumber)
-          .limit(limitNumber);
+        const totalPlans = await prisma.plan.count();
+        const plans = await prisma.plan.findMany({
+          orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
+          skip,
+          take: limitNumber,
+        });
 
         return {
           plans,
