@@ -2,7 +2,7 @@ export const GET_ALL_ADMIN_PLANS_QUERY = `
   query GetAllAdminPlans($page: Int, $limit: Int) {
     getAllAdminPlans(page: $page, limit: $limit) {
       plans {
-        _id
+        id
         name
         description
         price

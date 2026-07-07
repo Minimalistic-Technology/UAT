@@ -417,6 +417,7 @@ export const getAdminAnalytics = async (
     }
 
     const recentEmployersAggr = recentCompanies.map(c => ({
+      id: c.id,
       name: c.name,
       createdAt: c.createdAt,
       isVerified: c.isVerified,

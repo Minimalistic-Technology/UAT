@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { Eye, ExternalLink, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -69,9 +69,15 @@ export const KycTable = ({
   const [viewingReason, setViewingReason] = useState<string | undefined | null>(
     undefined,
   );
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [processingAction, setProcessingAction] = useState<
+    "APPROVED" | "REJECTED" | null
+  >(null);
 
   const handleRejectConfirm = () => {
     if (rejectingId) {
+      setProcessingId(rejectingId);
+      setProcessingAction("REJECTED");
       onUpdateStatus(rejectingId, "REJECTED", rejectReason);
       setRejectingId(null);
       setRejectReason("");
@@ -215,11 +221,17 @@ export const KycTable = ({
                               size="icon"
                               className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
                               disabled={isUpdating}
-                              onClick={() =>
-                                onUpdateStatus(app.id, "APPROVED")
-                              }
+                              onClick={() => {
+                                setProcessingId(app.id);
+                                setProcessingAction("APPROVED");
+                                onUpdateStatus(app.id, "APPROVED");
+                              }}
                             >
-                              <CheckCircle className="h-4 w-4" />
+                              {isUpdating && processingId === app.id && processingAction === "APPROVED" ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CheckCircle className="h-4 w-4" />
+                              )}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Approve</TooltipContent>
@@ -233,7 +245,11 @@ export const KycTable = ({
                               disabled={isUpdating}
                               onClick={() => setRejectingId(app.id)}
                             >
-                              <XCircle className="h-4 w-4" />
+                              {isUpdating && processingId === app.id && processingAction === "REJECTED" ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <XCircle className="h-4 w-4" />
+                              )}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Reject</TooltipContent>
