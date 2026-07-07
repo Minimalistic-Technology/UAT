@@ -26,16 +26,16 @@ WORKDIR /app
 # Install openssl for prisma engine
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g pnpm prisma
+RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml* ./
 
-# Install only production dependencies
+# Install only production dependencies + prisma for migrations
 RUN pnpm install --prod --ignore-scripts
+RUN pnpm add prisma
 
-# Copy prisma schema and generate client
+# Copy prisma files
 COPY prisma ./prisma
 COPY prisma.config.ts ./
-RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" prisma generate
 
 # Copy compiled code from the builder stage
 COPY --from=builder /app/build ./build
@@ -45,4 +45,4 @@ ENV PORT=5000
 EXPOSE 5000
 
 # Start the application by applying migrations and then running node
-CMD ["sh", "-c", "prisma migrate deploy && pnpm start"]
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm start"]
