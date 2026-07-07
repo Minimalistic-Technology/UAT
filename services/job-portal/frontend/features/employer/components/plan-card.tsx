@@ -113,7 +113,7 @@ export function PlanCard({
   };
 
   const handlePayment = async () => {
-    if (companyRole !== "owner") {
+    if (companyRole !== "OWNER") {
       toast.error("Only owner can buy plans");
       return;
     }
