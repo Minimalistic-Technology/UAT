@@ -7,10 +7,11 @@ import {
   HowItWorks,
   Testimonials,
 } from "@/features/landing/components";
+import ComingSoonWrapper from "@/components/coming-soon-wrapper";
 
 export default function Home() {
   return (
-    <>
+    <ComingSoonWrapper>
       <Hero />
       {/* <TrustedBy /> */}
       <Categories />
@@ -20,6 +21,7 @@ export default function Home() {
       {/* <Testimonials /> */}
       <EmployerCTA />
       <Footer />
-    </>
+    </ComingSoonWrapper>
   );
 }
+
