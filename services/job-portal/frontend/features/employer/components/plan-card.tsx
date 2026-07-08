@@ -163,8 +163,8 @@ export function PlanCard({
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
-            toast.success("Payment successful!");
-            router.push("/employer-dashboard");
+            toast.success("Payment successful! You can view and download your invoice in the Billing section.");
+            router.push("/employer-dashboard/billing");
           } catch (error) {
             console.error("Payment verification failed", error);
             toast.error("Payment verification failed. Please contact support.");

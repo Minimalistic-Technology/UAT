@@ -48,7 +48,7 @@ export const registerEmployerSchema = z.object({
     .min(6, "Password must be at least 6 characters")
     .max(30, "Password at max can have 30 characters"),
   phone: z.string().optional(),
-  role: z.enum([CompanyRole.OWNER]).default(CompanyRole.OWNER),
+  companyRole: z.enum([CompanyRole.OWNER]).default(CompanyRole.OWNER),
   captchaToken: z.string().min(1, "Captcha is required"),
 });
 

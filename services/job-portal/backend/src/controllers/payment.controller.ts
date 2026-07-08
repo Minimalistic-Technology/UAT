@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import crypto from "crypto";
 import { config } from "../config/env.js";
+import { AuthRequest } from "../middleware/auth.middleware.js";
 
 // Helper to provision subscription
 const provisionSubscription = async (userId: string, planId: string, razorpayOrderId: string, billingCycle: string = "monthly") => {
@@ -439,6 +440,28 @@ export const verifyPayment = async (
     }
 
     res.status(200).json(new ApiResponse(200, { success: true }, "Payment verified successfully"));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMyPayments = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    const payments = await prisma.payment.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.status(200).json(new ApiResponse(200, payments, "Payments retrieved successfully"));
   } catch (error) {
     next(error);
   }
