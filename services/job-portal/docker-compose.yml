@@ -1,22 +1,4 @@
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: job_portal_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: job_portal
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d job_portal"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ./backend
@@ -27,12 +9,5 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      - DATABASE_URL=postgresql://user:password@postgres:5432/job_portal
       - PORT=5000
-    depends_on:
-      postgres:
-        condition: service_healthy
     restart: unless-stopped
-
-volumes:
-  postgres_data:
