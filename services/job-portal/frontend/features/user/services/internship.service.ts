@@ -1,20 +1,20 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
-import { Internship } from "@/types/new-index";
+import { FlattenedInternship } from "@/types";
 
 // -------------------- Interface ------------------------
 
 export type InternshipDetailsResponse = Omit<
-  Internship,
-  "postedBy" | "company"
+  FlattenedInternship,
+  "postedById" | "companyId" | "postedBy" | "company"
 > & {
   postedBy: {
-    _id: string;
+    id: string;
     firstName: string;
     lastName: string;
     email: string;
   };
   company: {
-    _id: string;
+    id: string;
     name: string;
     logo: string;
     description: string;

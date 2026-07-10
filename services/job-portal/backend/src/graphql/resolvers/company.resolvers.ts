@@ -1,11 +1,5 @@
 import { GraphQLError } from "graphql";
-import Company from "../../models/Company.model.js";
-import CompanyMember from "../../models/CompanyMember.model.js";
-import Job from "../../models/Job.model.js";
-import Internship from "../../models/Internship.model.js";
-import Subscription from "../../models/Subscription.model.js";
-import KYC from "../../models/KYC.model.js";
-import { JobStatus } from "../../models/BaseJob.model.js";
+import { prisma } from "../../lib/prisma.js";
 import { MyContext } from "../context.js";
 
 export const companyResolvers = {
@@ -18,7 +12,11 @@ export const companyResolvers = {
           });
         }
 
-        const companyMember = await CompanyMember.findOne({ user: context.user._id });
+        const userId = context.user.id;
+
+        const companyMember = await prisma.companyMember.findFirst({
+          where: { userId },
+        });
 
         if (!companyMember) {
           throw new GraphQLError("Company member not found", {
@@ -26,7 +24,9 @@ export const companyResolvers = {
           });
         }
 
-        const company = await Company.findById(companyMember.company);
+        const company = await prisma.company.findUnique({
+          where: { id: companyMember.companyId },
+        });
 
         if (!company) {
           throw new GraphQLError("You have not created a company yet", {
@@ -41,21 +41,25 @@ export const companyResolvers = {
           currentSubscription,
           kyc,
         ] = await Promise.all([
-          Job.countDocuments({ company: company._id, status: JobStatus.ACTIVE }),
-          Internship.countDocuments({
-            company: company._id,
-            status: JobStatus.ACTIVE,
+          prisma.baseListing.count({
+            where: { companyId: company.id, opportunityType: "JOB", status: "ACTIVE", isDeleted: false },
           }),
-          CompanyMember.countDocuments({ company: company._id, isActive: true }),
-          Subscription.findOne({
-            companyId: company._id,
-            status: "active",
-          }).populate("planId", "name"),
-          KYC.findOne({ user: context.user._id }),
+          prisma.baseListing.count({
+            where: { companyId: company.id, opportunityType: "INTERNSHIP", status: "ACTIVE", isDeleted: false },
+          }),
+          prisma.companyMember.count({ where: { companyId: company.id, isActive: true } }),
+          prisma.subscription.findFirst({
+            where: { companyId: company.id, status: "ACTIVE" },
+            include: { plan: true },
+          }),
+          prisma.kYC.findFirst({
+            where: { userId },
+            orderBy: { createdAt: "desc" },
+          }),
         ]);
 
         return {
-          id: company._id.toString(),
+          id: company.id,
           name: company.name,
           isVerified: company.isVerified,
           industry: company.industry,
@@ -64,7 +68,7 @@ export const companyResolvers = {
           remainingJobPosts: currentSubscription
             ? currentSubscription.postsRemaining
             : null,
-          currentPlan: currentSubscription ? currentSubscription.planId : null,
+          currentPlan: currentSubscription ? currentSubscription.plan : null,
           kycStatus: kyc ? kyc.status : null,
           kycRejectionReason: kyc?.rejectionReason || null,
         };

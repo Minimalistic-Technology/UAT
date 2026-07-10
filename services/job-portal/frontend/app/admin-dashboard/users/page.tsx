@@ -33,7 +33,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { columns } from "@/features/admin/components/user-columns";
 
 import { useFetchAllUsers } from "@/features/admin/hooks/use-user";
-import { CompanyRole } from "@/types";
+import { CompanyRole } from "@/types/enums";
 import { UserWithCompany } from "@/features/admin/types";
 
 const COLUMNS = [
@@ -55,6 +55,7 @@ const Page = () => {
     isError,
     refetch: refetchUsers,
   } = useFetchAllUsers(page, 10);
+  console.log("response data", responseData)
 
   if (isError) return <ErrorState onRetry={() => refetchUsers()} />;
 
@@ -90,7 +91,7 @@ const Page = () => {
       [
         `"${user.firstName} ${user.lastName}"`,
         `"${user.email}"`,
-        `"${user.companyRole === CompanyRole.OWNER ? "Owner" : user.companyRole === CompanyRole.ADMIN ? "Admin" : user.companyRole === CompanyRole.RECRUITER ? "Recruiter" : "Job Seeker"}"`,
+        `"${user.companyRole === CompanyRole.OWNER ? "Owner" : user.companyRole === CompanyRole.HR ? "Hr" : "Job Seeker"}"`,
         `"${user.isActive ? "Active" : "Inactive"}"`,
         `"${new Date(user.createdAt).toLocaleDateString()}"`,
       ].join(","),

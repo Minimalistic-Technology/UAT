@@ -105,6 +105,7 @@ export const employerMenuItems = [
   },
   { label: "Manage Team", icon: Users, href: "/employer-dashboard/team" },
   { label: "Settings", icon: Settings2, href: "/employer-dashboard/settings" },
+  { label: "Billing", icon: FileText, href: "/employer-dashboard/billing" },
 ];
 
 export const userMenuItems = [

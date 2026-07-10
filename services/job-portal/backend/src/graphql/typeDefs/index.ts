@@ -12,6 +12,7 @@ import { couponTypeDefs } from "./coupon.typeDefs.js";
 import { planTypeDefs } from "./plan.typeDefs.js";
 import { companyTypeDefs } from "./company.typeDefs.js";
 import { applicationTypeDefs } from "./application.typeDefs.js";
+import { userTypeDefs } from "./user.typeDefs.js";
 
 export const typeDefs = [
   rootTypeDefs,
@@ -20,4 +21,5 @@ export const typeDefs = [
   planTypeDefs,
   companyTypeDefs,
   applicationTypeDefs,
+  userTypeDefs,
 ];

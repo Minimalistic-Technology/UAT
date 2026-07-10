@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import mongoose from "mongoose";
-import Coupon from "../models/Coupon.model.js";
+import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import { AuthRequest } from "../middleware/auth.middleware.js";
 
 export const createCoupon = async (
   req: Request,
@@ -13,22 +13,27 @@ export const createCoupon = async (
     const { code, type, value, isActive, expiryDate, maxUses } = req.body;
 
     // Check if coupon code already exists
-    const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() });
+    const existingCoupon = await prisma.coupon.findUnique({
+      where: { code: code.toUpperCase() },
+    });
+
     if (existingCoupon) {
       return next(new ApiError(400, "Coupon code already exists"));
     }
 
-    if (type === "percentage" && value > 100) {
+    if (type.toLowerCase() === "percentage" && value > 100) {
       return next(new ApiError(400, "Percentage value cannot exceed 100"));
     }
 
-    const coupon = await Coupon.create({
-      code: code.toUpperCase(),
-      type,
-      value,
-      isActive,
-      expiryDate,
-      maxUses: maxUses === -1 ? -1 : maxUses,
+    const coupon = await prisma.coupon.create({
+      data: {
+        code: code.toUpperCase(),
+        type: type.toUpperCase(), // PERCENTAGE or AMOUNT
+        value,
+        isActive: isActive ?? true,
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        maxUses: maxUses === -1 ? -1 : maxUses,
+      },
     });
 
     res
@@ -39,119 +44,147 @@ export const createCoupon = async (
   }
 };
 
-
 export const applyCoupon = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
     const { code, baseAmount } = req.body;
+    const userId = req.user?.id;
 
-    // Atomically find the valid coupon and increment its usageCount
-    const coupon = await Coupon.findOneAndUpdate(
-      {
-        code: code.toUpperCase(),
-        isActive: true,
-        usedBy: { $ne: (req as any).user?._id },
-        $or: [
-          { expiryDate: { $gt: new Date() } },
-          { expiryDate: null },
-          { expiryDate: { $exists: false } },
-          { maxUses: { $exists: false } },
-          { maxUses: null },
-          { maxUses: -1 },
-          { $expr: { $lt: ["$usageCount", "$maxUses"] } },
-        ],
-      },
-      {
-        $inc: { usageCount: 1 },
-        $addToSet: { usedBy: (req as any).user?._id },
-      },
-      { returnDocument: "after", session },
-    );
-
-    if (!coupon) {
-      throw new ApiError(
-        400,
-        "Coupon is invalid, expired, or has already been used by you",
-      );
+    if (!userId) {
+      throw new ApiError(401, "Unauthorized");
     }
 
-    // Calculate discounted amount
-    let discountValue = 0;
-    if (coupon.type === "percentage") {
-      discountValue = Number(((baseAmount * coupon.value) / 100).toFixed(2));
-    } else if (coupon.type === "amount") {
-      discountValue = coupon.value;
-    }
-
-    // Ensure discount doesn't exceed original price
-    if (discountValue > baseAmount) {
-      discountValue = baseAmount;
-    }
-
-    const finalPrice = Number((baseAmount - discountValue).toFixed(2));
-
-    await session.commitTransaction();
-
-    res.status(200).json(
-      new ApiResponse(
-        200,
-        {
-          coupon,
-          baseAmount,
-          discountValue,
-          finalPrice,
+    const result = await prisma.$transaction(async (tx) => {
+      const coupon = await tx.coupon.findUnique({
+        where: { code: code.toUpperCase() },
+        include: {
+          usages: {
+            where: { userId },
+          },
         },
-        "Coupon applied successfully",
-      ),
-    );
+      });
+
+      if (!coupon) {
+        throw new ApiError(400, "Coupon is invalid or does not exist");
+      }
+
+      if (!coupon.isActive) {
+        throw new ApiError(400, "Coupon is not active");
+      }
+
+      if (coupon.expiryDate && coupon.expiryDate < new Date()) {
+        throw new ApiError(400, "Coupon has expired");
+      }
+
+      if (
+        coupon.maxUses !== null &&
+        coupon.maxUses !== -1 &&
+        coupon.usageCount >= coupon.maxUses
+      ) {
+        throw new ApiError(400, "Coupon usage limit reached");
+      }
+
+      if (coupon.usages.length > 0) {
+        throw new ApiError(400, "Coupon has already been used by you");
+      }
+
+      // Calculate discounted amount
+      let discountValue = 0;
+      if (coupon.type === "PERCENTAGE") {
+        discountValue = Number(((baseAmount * coupon.value) / 100).toFixed(2));
+      } else if (coupon.type === "AMOUNT") {
+        discountValue = coupon.value;
+      }
+
+      if (discountValue > baseAmount) {
+        discountValue = baseAmount;
+      }
+
+      const finalPrice = Number((baseAmount - discountValue).toFixed(2));
+
+      // Update usage count and create usage record
+      const updatedCoupon = await tx.coupon.update({
+        where: { id: coupon.id },
+        data: {
+          usageCount: { increment: 1 },
+          usages: {
+            create: {
+              userId,
+              discountApplied: Math.round(discountValue),
+            },
+          },
+        },
+      });
+
+      return {
+        coupon: updatedCoupon,
+        baseAmount,
+        discountValue,
+        finalPrice,
+      };
+    });
+
+    res
+      .status(200)
+      .json(new ApiResponse(200, result, "Coupon applied successfully"));
   } catch (error: any) {
-    await session.abortTransaction();
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 
 export const validateCoupon = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
     const { code, baseAmount } = req.body;
+    const userId = req.user?.id;
 
-    const coupon = await Coupon.findOne({
-      code: code.toUpperCase(),
-      isActive: true,
-      usedBy: { $ne: (req as any).user?._id },
-      $or: [
-        { expiryDate: { $gt: new Date() } },
-        { expiryDate: null },
-        { expiryDate: { $exists: false } },
-        { maxUses: { $exists: false } },
-        { maxUses: null },
-        { maxUses: -1 },
-        { $expr: { $lt: ["$usageCount", "$maxUses"] } },
-      ],
+    if (!userId) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    const coupon = await prisma.coupon.findUnique({
+      where: { code: code.toUpperCase() },
+      include: {
+        usages: {
+          where: { userId },
+        },
+      },
     });
 
     if (!coupon) {
-      throw new ApiError(
-        400,
-        "Coupon is invalid, expired, or has already been used by you",
-      );
+      throw new ApiError(400, "Coupon is invalid or does not exist");
+    }
+
+    if (!coupon.isActive) {
+      throw new ApiError(400, "Coupon is not active");
+    }
+
+    if (coupon.expiryDate && coupon.expiryDate < new Date()) {
+      throw new ApiError(400, "Coupon has expired");
+    }
+
+    if (
+      coupon.maxUses !== null &&
+      coupon.maxUses !== -1 &&
+      coupon.usageCount >= coupon.maxUses
+    ) {
+      throw new ApiError(400, "Coupon usage limit reached");
+    }
+
+    if (coupon.usages.length > 0) {
+      throw new ApiError(400, "Coupon has already been used by you");
     }
 
     let discountValue = 0;
-    if (coupon.type === "percentage") {
+    if (coupon.type === "PERCENTAGE") {
       discountValue = Number(((baseAmount * coupon.value) / 100).toFixed(2));
-    } else if (coupon.type === "amount") {
+    } else if (coupon.type === "AMOUNT") {
       discountValue = coupon.value;
     }
 
@@ -187,53 +220,70 @@ export const updateCoupon = async (
     const { id } = req.params;
     const { code, type, value, isActive, expiryDate, maxUses } = req.body;
 
-    const coupon = await Coupon.findById(id);
+    const coupon = await prisma.coupon.findUnique({
+      where: { id: String(id) },
+    });
 
     if (!coupon) {
       return next(new ApiError(404, "Coupon not found"));
     }
 
+    const updateData: any = {};
+
     if (code) {
-      //@ts-ignore
-      const existingCoupon = await Coupon.findOne({
-        code: code.toUpperCase(),
-        _id: { $ne: id },
+      const existingCoupon = await prisma.coupon.findFirst({
+        where: {
+          code: code.toUpperCase(),
+          id: { not: String(id) },
+        },
       });
       if (existingCoupon) {
         return next(new ApiError(400, "Coupon code already exists"));
       }
-      coupon.code = code.toUpperCase();
+      updateData.code = code.toUpperCase();
     }
 
-    if (type) coupon.type = type;
+    if (type) updateData.type = type.toUpperCase();
+
     if (value !== undefined) {
-      if (coupon.type === "percentage" && value > 100) {
+      const finalType = type ? type.toUpperCase() : coupon.type;
+      if (finalType === "PERCENTAGE" && value > 100) {
         return next(new ApiError(400, "Percentage value cannot exceed 100"));
       }
-      coupon.value = value;
+      updateData.value = value;
     }
 
-    if (isActive !== undefined) coupon.isActive = isActive;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
     if (expiryDate !== undefined) {
       if (expiryDate === "" || expiryDate === null) {
-        coupon.expiryDate = undefined;
+        updateData.expiryDate = null;
       } else {
-        coupon.expiryDate = new Date(expiryDate);
-      }
-    }
-    if (maxUses !== undefined) {
-      if (maxUses === null || maxUses === "") {
-        coupon.maxUses = -1;
-      } else {
-        coupon.maxUses = maxUses === -1 ? -1 : typeof maxUses === "string" ? parseInt(maxUses) : maxUses;
+        updateData.expiryDate = new Date(expiryDate);
       }
     }
 
-    await coupon.save();
+    if (maxUses !== undefined) {
+      if (maxUses === null || maxUses === "") {
+        updateData.maxUses = -1;
+      } else {
+        updateData.maxUses =
+          maxUses === -1
+            ? -1
+            : typeof maxUses === "string"
+              ? parseInt(maxUses)
+              : maxUses;
+      }
+    }
+
+    const updatedCoupon = await prisma.coupon.update({
+      where: { id: String(id) },
+      data: updateData,
+    });
 
     res
       .status(200)
-      .json(new ApiResponse(200, coupon, "Coupon updated successfully"));
+      .json(new ApiResponse(200, updatedCoupon, "Coupon updated successfully"));
   } catch (error: any) {
     next(error);
   }
@@ -247,11 +297,15 @@ export const deleteCoupon = async (
   try {
     const { id } = req.params;
 
-    const coupon = await Coupon.findByIdAndDelete(id);
+    const coupon = await prisma.coupon.findUnique({
+      where: { id: String(id) },
+    });
 
     if (!coupon) {
       return next(new ApiError(404, "Coupon not found"));
     }
+
+    await prisma.coupon.delete({ where: { id: String(id) } });
 
     res
       .status(200)

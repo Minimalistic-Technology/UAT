@@ -1,19 +1,23 @@
 import { Router } from "express";
 import {
-    createTestimonial,
-    updateTestimonial,
-    deleteTestimonial
+  createTestimonial,
+  updateTestimonial,
+  deleteTestimonial,
 } from "../controllers/testimonial.controller.js";
-import { protect, authorize } from "../middleware/auth.middleware.js";
-import { GlobalRole } from "../models/User.model.js";
+import { protect } from "../middleware/auth.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
+import {
+  createTestimonialValidator,
+  updateTestimonialValidator,
+} from "../validations/testimonial.validation.js";
 
 const router = Router();
 
 // Authenticated routes
 router.use(protect);
 
-router.post("/", createTestimonial);
-router.put("/:id", updateTestimonial);
+router.post("/", validate(createTestimonialValidator), createTestimonial);
+router.put("/:id", validate(updateTestimonialValidator), updateTestimonial);
 router.delete("/:id", deleteTestimonial);
 
 export default router;

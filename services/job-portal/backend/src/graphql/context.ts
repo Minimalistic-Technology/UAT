@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../config/env.js";
-import User, { IUser } from "../models/User.model.js";
+import { prisma } from "../lib/prisma.js";
+import { User } from "../../generated/prisma/client.js";
 
 export interface MyContext {
   req: Request;
   res: Response;
-  user?: IUser | null;
+  user?: User | null;
 }
 
 export const createContext = async ({ req, res }: { req: Request, res: Response }): Promise<MyContext> => {
@@ -25,14 +26,15 @@ export const createContext = async ({ req, res }: { req: Request, res: Response 
   if (token) {
     try {
       const decoded: any = jwt.verify(token, config.jwtSecret);
-      const foundUser = await User.findById(decoded.id);
+      const foundUser = await prisma.user.findUnique({
+        where: { id: decoded.id },
+      });
 
       if (foundUser && foundUser.isActive) {
         user = foundUser;
       }
     } catch (error) {
-      // Invalid token, just proceed without user (or throw if we want all graphql to be strictly authenticated, but usually we handle auth at the resolver level)
-      // console.warn("GraphQL Context Auth Error:", error);
+      console.error("JWT verification error:", error);
     }
   }
 

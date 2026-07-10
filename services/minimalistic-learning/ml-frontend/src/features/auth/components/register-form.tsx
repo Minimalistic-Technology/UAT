@@ -17,39 +17,15 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Modal } from "@/components/ui/Modal";
+import { TermsModal } from "./terms-modal";
+import { OtpScreen } from "./otp-screen";
 
 const RegisterForm = () => {
   const router = useRouter();
   const { refreshUser } = useAuth();
   const [showOTP, setShowOTP] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const [otpValue, setOtpValue] = useState("");
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
-
-  // OTP Countdown Timer State
-  const [timer, setTimer] = useState(120);
-
-  React.useEffect(() => {
-    if (!showOTP) return;
-    setTimer(120);
-    const interval = setInterval(() => {
-      setTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [showOTP]);
-
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
 
   const {
     mutate: registerMutate,
@@ -64,10 +40,13 @@ const RegisterForm = () => {
     control,
     setValue,
     getValues,
+    watch,
     formState: { errors },
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
   });
+
+  const turnstileToken = watch("turnstileToken");
 
   const onSubmit = (data: RegisterValues) => {
     registerMutate(data, {
@@ -84,13 +63,7 @@ const RegisterForm = () => {
     });
   };
 
-  const onVerifyOTP = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otpValue.length !== 6) {
-      toast.error("Please enter 6-digit OTP");
-      return;
-    }
-
+  const onVerifyOTP = (otpValue: string) => {
     verifyMutate(
       { email: userEmail, otp: otpValue },
       {
@@ -101,107 +74,24 @@ const RegisterForm = () => {
         },
         onError: (err: any) => {
           toast.error(
-            err?.response?.data?.message ||
-              err?.message ||
-              "Verification failed",
+            err?.response?.data?.message || err?.message || "Verification failed",
           );
         },
       },
     );
   };
 
-  // ── OTP Screen (Unchanged Logic, Updated UI for Dark Mode) ───────────────────
+  // ── OTP Screen ───────────────────────────────────────────────────────────
   if (showOTP) {
     return (
-      <div className="animate-in fade-in zoom-in mx-auto w-full rounded-3xl border border-gray-100 bg-white p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] duration-300 sm:p-10 dark:border-white/5 dark:bg-[#0a0a0a] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
-        <div className="mb-8 flex flex-col items-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-            <ShieldCheck size={32} />
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Verify Email
-          </h2>
-          <p className="mt-2 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
-            Enter the code sent to <br />
-            <span className="font-bold text-gray-900 dark:text-gray-200">
-              {userEmail}
-            </span>
-          </p>
-        </div>
-
-        <form onSubmit={onVerifyOTP} className="space-y-6">
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">
-                Verification Code
-              </label>
-              <div
-                className={`text-xs font-bold ${timer === 0 ? "text-red-500" : "flex items-center gap-1 text-[#1877F2]"}`}
-              >
-                {timer > 0 ? (
-                  <>
-                    <span className="inline-block h-1.5 w-1.5 animate-ping rounded-full bg-blue-500" />
-                    Expires in {formatTimer(timer)}
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => onSubmit(getValues())}
-                    disabled={isRegisterPending}
-                    className="flex items-center gap-1 text-red-500 transition-colors hover:text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isRegisterPending ? (
-                      <>
-                        <Loader2 className="animate-spin" size={12} />{" "}
-                        Resending...
-                      </>
-                    ) : (
-                      "Resend OTP"
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-            <input
-              value={otpValue}
-              onChange={(e) =>
-                setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))
-              }
-              type="text"
-              maxLength={6}
-              className="w-full rounded-xl border border-gray-200 bg-white py-4 text-center text-2xl font-bold tracking-[1em] text-gray-900 transition-all outline-none placeholder:text-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-white/10 dark:bg-[#111] dark:text-white dark:placeholder:text-gray-700 dark:focus:border-blue-500"
-              placeholder="000000"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isVerifyPending || otpValue.length !== 6 || timer === 0}
-            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#1877F2] py-3.5 font-semibold text-white transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isVerifyPending ? (
-              <Loader2 className="animate-spin" size={18} />
-            ) : (
-              <>
-                Create Account
-                <ArrowRight
-                  size={18}
-                  className="transition-transform group-hover:translate-x-1"
-                />
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowOTP(false)}
-            className="w-full text-sm font-semibold text-gray-400 transition-colors hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300"
-          >
-            Edit Registration Info
-          </button>
-        </form>
-      </div>
+      <OtpScreen
+        userEmail={userEmail}
+        isVerifyPending={isVerifyPending}
+        isResendPending={isRegisterPending}
+        onVerify={onVerifyOTP}
+        onResend={() => onSubmit(getValues())}
+        onCancel={() => setShowOTP(false)}
+      />
     );
   }
 
@@ -358,7 +248,11 @@ const RegisterForm = () => {
           )}
         </div>
 
-        <Button type="submit" disabled={isRegisterPending} fullWidth>
+        <Button
+          type="submit"
+          disabled={isRegisterPending || !turnstileToken}
+          fullWidth
+        >
           {isRegisterPending ? (
             <Loader2 className="animate-spin" size={16} />
           ) : (
@@ -382,137 +276,10 @@ const RegisterForm = () => {
         </p>
       </div>
 
-      <Modal
+      <TermsModal
         isOpen={isTermsModalOpen}
         onClose={() => setIsTermsModalOpen(false)}
-        title="Terms and Conditions"
-      >
-        <div className="prose prose-sm dark:prose-invert">
-          <p className="mb-4 font-bold">Last Updated: June 20, 2026</p>
-          <p className="mb-6">
-            Website/Platform:{" "}
-            <Link
-              href="https://minimalistic-learning.onrender.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-theme-action font-bold hover:underline"
-            >
-              https://minimalistic-learning.onrender.com/
-            </Link>
-          </p>
-
-          <h3 className="text-foreground mt-6 mb-2 font-black">
-            1. Acceptance of Terms & Global Compliance
-          </h3>
-          <p>
-            <strong>Binding Agreement:</strong> By accessing, signing up, or
-            utilizing this website, you explicitly agree to comply with and be
-            bound by these Terms and Conditions. If you disagree with any part,
-            you must cease using our services immediately.
-          </p>
-          <p>
-            <strong>Regulatory Compliance:</strong> This platform operates under
-            global privacy framework guidelines, including the GDPR (General
-            Data Protection Regulation) for UK/EU users, and the Digital
-            Personal Data Protection (DPDP) Act / Information Technology Act for
-            Indian users.
-          </p>
-
-          <h3 className="text-foreground mt-6 mb-2 font-black">
-            2. User Accounts & Registration
-          </h3>
-          <p>
-            <strong>Eligibility:</strong> Users must be at least 13 years of age
-            (or 16 years within designated EU/UK jurisdictions) to establish an
-            authorized account.
-          </p>
-          <p>
-            <strong>Global Authentication:</strong> To serve a global audience,
-            the registration process requires a valid international contact
-            number accompanied by the respective country code.
-          </p>
-          <p>
-            <strong>Account Security:</strong> Users maintain sole
-            responsibility for safeguarding their login credentials. Any
-            unauthorized activity under your account must be reported
-            immediately.
-          </p>
-
-          <h3 className="text-foreground mt-6 mb-2 font-black">
-            3. Data Privacy, Storage & User Rights
-          </h3>
-          <p>
-            <strong>Data Processing:</strong> We securely collect minimal
-            required identifiers (Username, Email Address, Contact Number, and
-            IP Address) exclusively for operations and account maintenance.
-          </p>
-          <p>
-            <strong>Data Protection & Encryption:</strong> All captured data is
-            transmitted and stored securely using industrial-grade encryption
-            standards. We do not sell raw user databases.
-          </p>
-          <p>
-            <strong>Global Privacy Rights:</strong> Users retain absolute rights
-            regarding data access, rectification, portability, and the Right to
-            Erasure (Right to be Forgotten), allowing them to request permanent
-            deletion of their account records at any time.
-          </p>
-
-          <h3 className="text-foreground mt-6 mb-2 font-black">
-            4. Content Policy & Platform Integrity
-          </h3>
-          <p>
-            <strong>Media Standards:</strong> Users managing or posting blogs
-            are required to display or upload high-definition (HD) media.
-            Uploading copyrighted, defamatory, or unlawful material is strictly
-            forbidden.
-          </p>
-          <p>
-            <strong>System Security:</strong> Any attempt to compromise platform
-            integrity via malicious code injection, script execution, or
-            Cross-Site Scripting (XSS) testing/attacks on any input vector is an
-            absolute violation and will result in immediate termination.
-          </p>
-
-          <h3 className="text-foreground mt-6 mb-2 font-black">
-            5. Disclaimer of Warranties & Analytics
-          </h3>
-          <p>
-            <strong>Real-Time Data Accuracy:</strong> All statistical metrics,
-            dashboard analytics, and platform views are extracted and populated
-            in real-time. While we strive for system precision, we are not
-            liable for temporary data-sync or hosting propagation delays.
-          </p>
-          <p>
-            <strong>Limitation of Liability:</strong> The services are provided
-            on an "as-is" and "as-available" basis without warranties of any
-            kind.
-          </p>
-
-          <h3 className="text-foreground mt-6 mb-2 font-black">
-            6. Dispute Resolution & Official Support
-          </h3>
-          <p>
-            <strong>Governing Jurisdiction:</strong> These terms shall be
-            governed by applicable international cyber laws and local statutory
-            acts, without giving effect to conflict of law principles.
-          </p>
-          <p>
-            <strong>Corporate Support Desk:</strong> For general compliance
-            inquiries, technical reports, or data removal requests, users can
-            reach the administration directly through our formalized helpline:
-          </p>
-          <p>
-            <strong>Corporate Support Email:</strong>{" "}
-            <Link
-              href="mailto:Minimalisticlearning2024@gmail.com"
-              className="text-theme-action font-bold hover:underline"
-            >
-              Minimalisticlearning2024@gmail.com
-            </Link>
-          </p>
-        </div>
-      </Modal>
+      />
     </Card>
   );
 };

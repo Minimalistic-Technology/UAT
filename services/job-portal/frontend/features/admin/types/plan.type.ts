@@ -1,4 +1,4 @@
-import { Pagination, Plan } from "@/types/new-index";
+import { Pagination, Plan } from "@/types";
 
 export type GetAllAdminPlans = {
   plans: Plan[];

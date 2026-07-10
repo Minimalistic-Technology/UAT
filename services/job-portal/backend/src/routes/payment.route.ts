@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createOrder, verifyPayment } from "../controllers/payment.controller.js";
+import { createOrder, verifyPayment, getMyPayments } from "../controllers/payment.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
 import { createOrderSchema, verifyPaymentSchema } from "../validations/payment.validation.js";
 import { protect } from "../middleware/auth.middleware.js";
@@ -19,5 +19,7 @@ router.post(
   validate(verifyPaymentSchema),
   verifyPayment,
 );
+
+router.get("/my-payments", getMyPayments);
 
 export default router;

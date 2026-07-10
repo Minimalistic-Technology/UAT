@@ -33,3 +33,8 @@ export const verifyPayment = async (verificationPayload: {
 
   return response.data;
 };
+
+export const getMyPayments = async () => {
+  const response = await apiClient.get<ApiSuccessResponse<any[]>>("/payments/my-payments");
+  return response.data;
+};

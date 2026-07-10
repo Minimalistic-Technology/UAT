@@ -2,21 +2,20 @@ export const GET_ALL_ADMIN_PLANS_QUERY = `
   query GetAllAdminPlans($page: Int, $limit: Int) {
     getAllAdminPlans(page: $page, limit: $limit) {
       plans {
-        _id
+        id
         name
         description
         price
         currency
-        durationDays
-        jobPostLimit
-        teamMemberLimit
-        isFeatured
+        subscriptionDurationDays
+        maxActiveJobPosts
+        maxTeamMembers
         isDefault
         displayOrder
         features
         isActive
         allowResumeDownload
-        postValidityDays
+        jobPostValidityDays
         createdAt
         updatedAt
       }

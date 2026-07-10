@@ -4,12 +4,14 @@ export const GET_TESTIMONIALS_QUERY = `
       id
       content
       rating
+      authorName
+      authorRole
+      authorCompany
       user {
         id
         firstName
         lastName
         avatarUrl
-        role
       }
     }
   }

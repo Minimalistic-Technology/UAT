@@ -1,4 +1,4 @@
-import { CompanyRole, GlobalRole } from "@/types";
+import { CompanyRole } from "@/types/enums";
 import z from "zod";
 
 export const registerUserSchema = z.object({
@@ -18,7 +18,6 @@ export const registerUserSchema = z.object({
     .regex(/^\d{10}$/, "Phone number must be exactly 10 digits")
     .optional()
     .or(z.literal("")),
-  role: z.enum([GlobalRole.USER]).default(GlobalRole.USER),
   captchaToken: z.string().min(1, "Captcha is required"),
 });
 
@@ -49,7 +48,7 @@ export const registerEmployerSchema = z.object({
     .min(6, "Password must be at least 6 characters")
     .max(30, "Password at max can have 30 characters"),
   phone: z.string().optional(),
-  role: z.enum([CompanyRole.OWNER]).default(CompanyRole.OWNER),
+  companyRole: z.enum([CompanyRole.OWNER]).default(CompanyRole.OWNER),
   captchaToken: z.string().min(1, "Captcha is required"),
 });
 

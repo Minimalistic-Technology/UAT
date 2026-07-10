@@ -1,5 +1,5 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
-import { Company } from "@/types/new-index";
+import { Company } from "@/types";
 import { CompanyDashboardDetails } from "../types/company.type";
 import { GetMyCompanyResponse } from "../types/company.type";
 import { API_URL } from "@/constants";

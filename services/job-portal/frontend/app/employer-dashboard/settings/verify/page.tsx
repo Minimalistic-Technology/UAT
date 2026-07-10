@@ -24,22 +24,16 @@ import {
 import { Input } from "@/components/ui/input";
 
 export const COMPANY_DOCUMENT_TYPES = [
-  "Company GSTIN",
-  "Company PAN Card",
-  "Udyog Aadhaar Number",
-  "Shops And Establishment Act",
-  "Food License",
-  "Corporate Identity Number",
-  "Other",
+  { label: "GST Certificate", value: "GST_CERTIFICATE" },
+  { label: "Company PAN Card", value: "COMPANY_PAN" },
+  { label: "Incorporation Certificate", value: "INCORPORATION_CERTIFICATE" },
 ];
 
 export const PERSONAL_DOCUMENT_TYPES = [
-  "Visiting Card",
-  "Personal Aadhar",
-  "Personal PAN Card",
-  "Employee ID Card",
-  "DigiLocker Aadhaar",
-  "Other",
+  { label: "Aadhaar Card", value: "AADHAAR" },
+  { label: "PAN Card", value: "PAN" },
+  { label: "Passport", value: "PASSPORT" },
+  { label: "Driving License", value: "DRIVING_LICENSE" },
 ];
 
 const VerifyPage = () => {
@@ -82,12 +76,17 @@ const VerifyPage = () => {
         setCompanyFile(null);
         setPersonalDocType("");
         setPersonalFile(null);
+        toast.success("KYC documents submitted successfully.");
       },
+      onError: (error: any) => {
+        const msg = error?.response?.data?.message || "Failed to submit KYC documents.";
+        toast.error(msg);
+      }
     });
   };
 
   return (
-    <div className="bg-background text-foreground flex min-h-screen flex-col items-center justify-start p-6">
+    <div className="bg-background text-foreground flex flex-col items-center justify-start">
       <Card className="w-full max-w-3xl border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] sm:rounded-[24px] dark:bg-slate-900">
         <CardHeader className="space-y-1 border-b px-8 pt-8 pb-4">
           <CardTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-white">
@@ -170,7 +169,7 @@ const DocumentUploadSection = ({
   inputId,
 }: {
   title: string;
-  options: string[];
+  options: { label: string; value: string }[];
   selectedType: string;
   setSelectedType: (val: string) => void;
   selectedFile: File | null;
@@ -193,9 +192,9 @@ const DocumentUploadSection = ({
             <SelectValue placeholder="Select Document Type" />
           </SelectTrigger>
           <SelectContent>
-            {options.map((type) => (
-              <SelectItem key={type} value={type} className="cursor-pointer">
-                {type}
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                {option.label}
               </SelectItem>
             ))}
           </SelectContent>

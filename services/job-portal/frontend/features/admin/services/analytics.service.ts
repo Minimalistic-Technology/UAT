@@ -22,6 +22,24 @@ export interface AdminAnalyticsSummary {
   revenueCurrency: "INR" | "USD" | "EUR" | "GBP";
 }
 
+export interface RecentEmployer {
+  id: string;
+  name: string;
+  isVerified: boolean;
+  kycStatus: "PENDING" | "REJECTED" | "APPROVED";
+  createdAt: Date;
+}
+
+export interface TopCoupon {
+  id: string;
+  code: string;
+  type: "PERCENTAGE" | "FIXED_AMOUNT" | "percentage" | "fixed";
+  value: number;
+  isActive: boolean;
+  usageCount: number;
+  maxUses: number;
+}
+
 export interface AdminAnalyticsResponse {
   summary: AdminAnalyticsSummary;
   graphs: {
@@ -30,8 +48,8 @@ export interface AdminAnalyticsResponse {
     jobs: GraphData[];
     internships: GraphData[];
   };
-  recentEmployers: any[];
-  topCoupons: any[];
+  recentEmployers: RecentEmployer[];
+  topCoupons: TopCoupon[];
 }
 
 // -------------------------------- Service ---------------------------
@@ -41,5 +59,6 @@ export const fetchAdminAnalytics = async () => {
     await apiClient.get<ApiSuccessResponse<AdminAnalyticsResponse>>(
       `/admin/analytics`,
     );
+    console.log("response data", response.data)
   return response.data;
 };

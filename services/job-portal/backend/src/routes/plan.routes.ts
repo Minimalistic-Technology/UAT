@@ -6,7 +6,7 @@ import {
   deletePlan,
 } from "../controllers/plan.controller.js";
 import { authorize, protect } from "../middleware/auth.middleware.js";
-import { GlobalRole } from "../models/User.model.js";
+import { GlobalRole } from "../../generated/prisma/client.js";
 import { createPlanSchema, updatePlanSchema } from "../validations/plan.validation.js";
 
 const router = Router();

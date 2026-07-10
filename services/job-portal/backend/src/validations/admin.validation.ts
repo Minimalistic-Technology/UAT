@@ -7,7 +7,7 @@ export const updateKycStatusSchema = [
     .withMessage("Status is required")
     .isString()
     .withMessage("Status must be a string")
-    .isIn(["approved", "rejected"])
+    .isIn(["APPROVED", "REJECTED"])
     .withMessage("Status must be either 'approved' or 'rejected'"),
   body("note")
     .optional()

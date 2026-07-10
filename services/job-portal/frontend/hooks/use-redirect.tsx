@@ -13,9 +13,9 @@ export const useRedirectAsPerRole = () => {
 
     const { role, isEmployee } = session.user;
 
-    if (role === "super_admin") {
+    if (role === "SUPER_ADMIN") {
       router.push("/admin-dashboard");
-    } else if (role === "user") {
+    } else if (role === "USER") {
       if (isEmployee) {
         router.push("/employer-dashboard");
       } else {

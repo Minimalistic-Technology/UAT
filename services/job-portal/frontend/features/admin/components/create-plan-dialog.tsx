@@ -77,12 +77,12 @@ export function CreatePlanDialog({
       name: "",
       price: 0,
       currency: "INR",
-      durationDays: 30,
-      postValidityDays: 30,
-      jobPostLimit: -1,
-      teamMemberLimit: -1,
+      subscriptionDurationDays: 30,
+      jobPostValidityDays: 30,
+      maxActiveJobPosts: -1,
+      maxTeamMembers: -1,
       features: [""],
-      isFeatured: false,
+      description: "",
       isDefault: false,
       displayOrder: 0,
       isActive: true,
@@ -95,12 +95,12 @@ export function CreatePlanDialog({
       name: "",
       price: 0,
       currency: "INR",
-      durationDays: 30,
-      postValidityDays: 30,
-      jobPostLimit: -1,
-      teamMemberLimit: -1,
+      subscriptionDurationDays: 30,
+      jobPostValidityDays: 30,
+      maxActiveJobPosts: -1,
+      maxTeamMembers: 0,
       features: [""],
-      isFeatured: false,
+      description: "",
       isDefault: false,
       displayOrder: 0,
       isActive: true,
@@ -178,6 +178,19 @@ export function CreatePlanDialog({
               </div>
             </div>
 
+            <div className="grid grid-cols-1 gap-6 border-t pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="description" className="flex items-center gap-1">
+                  Description
+                </Label>
+                <Input
+                  id="description"
+                  {...register("description")}
+                  placeholder="e.g. Best for growing startups"
+                />
+              </div>
+            </div>
+
             {/* Pricing */}
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -232,11 +245,11 @@ export function CreatePlanDialog({
                   id="duration"
                   type="number"
                   min={1}
-                  {...register("durationDays", { valueAsNumber: true })}
+                  {...register("subscriptionDurationDays", { valueAsNumber: true })}
                 />
-                {errors.durationDays && (
+                {errors.subscriptionDurationDays && (
                   <p className="text-destructive text-xs">
-                    {errors.durationDays.message}
+                    {errors.subscriptionDurationDays.message}
                   </p>
                 )}
               </div>
@@ -253,11 +266,11 @@ export function CreatePlanDialog({
                   id="postValidityDays"
                   type="number"
                   min={1}
-                  {...register("postValidityDays", { valueAsNumber: true })}
+                  {...register("jobPostValidityDays", { valueAsNumber: true })}
                 />
-                {errors.postValidityDays && (
+                {errors.jobPostValidityDays && (
                   <p className="text-destructive text-xs">
-                    {errors.postValidityDays.message}
+                    {errors.jobPostValidityDays.message}
                   </p>
                 )}
               </div>
@@ -274,11 +287,11 @@ export function CreatePlanDialog({
                   id="jobLimit"
                   type="number"
                   min={-1}
-                  {...register("jobPostLimit", { valueAsNumber: true })}
+                  {...register("maxActiveJobPosts", { valueAsNumber: true })}
                 />
-                {errors.jobPostLimit && (
+                {errors.maxActiveJobPosts && (
                   <p className="text-destructive text-xs">
-                    {errors.jobPostLimit.message}
+                    {errors.maxActiveJobPosts.message}
                   </p>
                 )}
               </div>
@@ -295,11 +308,11 @@ export function CreatePlanDialog({
                   id="teamMemberLimit"
                   type="number"
                   min={-1}
-                  {...register("teamMemberLimit", { valueAsNumber: true })}
+                  {...register("maxTeamMembers", { valueAsNumber: true })}
                 />
-                {errors.teamMemberLimit && (
+                {errors.maxTeamMembers && (
                   <p className="text-destructive text-xs">
-                    {errors.teamMemberLimit.message}
+                    {errors.maxTeamMembers.message}
                   </p>
                 )}
               </div>
@@ -315,16 +328,6 @@ export function CreatePlanDialog({
                 />
                 <Label htmlFor="isActive" className="cursor-pointer">
                   Active Plan
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isFeatured"
-                  checked={watch("isFeatured")}
-                  onCheckedChange={(val) => setValue("isFeatured", val)}
-                />
-                <Label htmlFor="isFeatured" className="cursor-pointer">
-                  Featured Plan
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
