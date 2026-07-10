@@ -250,105 +250,39 @@ export const confirmRegistrationOTP = async (
   try {
     const { email, otp } = req.body;
 
-    const { userToReturn, isNewUser } = await prisma.$transaction(async (tx) => {
-      const tempUser = await tx.tempUser.findUnique({ where: { email } });
-      if (!tempUser) {
-        throw new ApiError(
-          404,
-          "Registration session expired or not found. Please register again.",
-        );
-      }
+    const tempUser = await prisma.tempUser.findUnique({ where: { email } });
+    if (!tempUser) {
+      throw new ApiError(
+        404,
+        "Registration session expired or not found. Please register again.",
+      );
+    }
 
-      const [salt, storedHash] = tempUser.otp.split(":");
-      const computedHash = crypto
-        .createHmac("sha256", config.otpSecret!)
-        .update(otp)
-        .digest("hex");
+    const [salt, storedHash] = tempUser.otp.split(":");
+    const computedHash = crypto
+      .createHmac("sha256", config.otpSecret!)
+      .update(otp)
+      .digest("hex");
 
-      const storedHashBuffer = Buffer.from(storedHash);
-      const computedHashBuffer = Buffer.from(computedHash);
+    const storedHashBuffer = Buffer.from(storedHash);
+    const computedHashBuffer = Buffer.from(computedHash);
 
-      if (
-        storedHashBuffer.length !== computedHashBuffer.length ||
-        !crypto.timingSafeEqual(storedHashBuffer, computedHashBuffer)
-      ) {
-        throw new ApiError(401, "Invalid OTP code");
-      }
+    if (
+      storedHashBuffer.length !== computedHashBuffer.length ||
+      !crypto.timingSafeEqual(storedHashBuffer, computedHashBuffer)
+    ) {
+      throw new ApiError(401, "Invalid OTP code");
+    }
 
-      let userToReturn;
-      let isNewUser = true;
+    let userToReturn;
+    let isNewUser = true;
 
-      if (tempUser.isEmployer) {
-        let user = await tx.user.findUnique({ where: { email }, include: { avatar: true } });
-        isNewUser = !user;
+    if (tempUser.isEmployer) {
+      let user = await prisma.user.findUnique({ where: { email }, include: { avatar: true } });
+      isNewUser = !user;
 
-        if (isNewUser) {
-          user = await tx.user.create({
-            data: {
-              firstName: tempUser.firstName,
-              lastName: tempUser.lastName,
-              email: tempUser.email,
-              password: tempUser.password,
-              phone: tempUser.phone,
-              role: tempUser.role,
-              isVerified: true,
-            },
-            include: { avatar: true }
-          });
-        }
-
-        if (!user) {
-          throw new ApiError(500, "Failed to create user");
-        }
-
-        let company = await tx.company.findFirst({
-          where: {
-            ownerId: user.id,
-            name: {
-              equals: tempUser.companyName || '',
-              mode: 'insensitive'
-            }
-          }
-        });
-
-        if (!company) {
-          const slug = (tempUser.companyName || "company").toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + crypto.randomBytes(4).toString("hex");
-          
-          company = await tx.company.create({
-            data: {
-              name: tempUser.companyName || "Unknown",
-              slug,
-              industry: tempUser.industry || "Unknown",
-              ownerId: user.id,
-            }
-          });
-        }
-        
-        const existingMember = await tx.companyMember.findFirst({
-          where: {
-            userId: user.id,
-            companyId: company.id
-          }
-        });
-
-        if (!existingMember) {
-          await tx.companyMember.create({
-            data: {
-              userId: user.id,
-              companyId: company.id,
-              role: (tempUser.companyRole as any) || "OWNER"
-            }
-          });
-        }
-
-        userToReturn = {
-          ...user,
-          isEmployee: true,
-          companyId: company?.id || null,
-          companyRole: tempUser.companyRole || "OWNER",
-        };
-      } else {
-        const newUser = await tx.user.create({
+      if (isNewUser) {
+        user = await prisma.user.create({
           data: {
             firstName: tempUser.firstName,
             lastName: tempUser.lastName,
@@ -360,19 +294,81 @@ export const confirmRegistrationOTP = async (
           },
           include: { avatar: true }
         });
-        
-        userToReturn = {
-          ...newUser,
-          isEmployee: false,
-          companyId: null,
-          companyRole: null,
-        };
       }
 
-      await tx.tempUser.delete({ where: { id: tempUser.id } });
+      if (!user) {
+        throw new ApiError(500, "Failed to create user");
+      }
+
+      let company = await prisma.company.findFirst({
+        where: {
+          ownerId: user.id,
+          name: {
+            equals: tempUser.companyName || '',
+            mode: 'insensitive'
+          }
+        }
+      });
+
+      if (!company) {
+        const slug = (tempUser.companyName || "company").toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + crypto.randomBytes(4).toString("hex");
+        
+        company = await prisma.company.create({
+          data: {
+            name: tempUser.companyName || "Unknown",
+            slug,
+            industry: tempUser.industry || "Unknown",
+            ownerId: user.id,
+          }
+        });
+      }
       
-      return { userToReturn, isNewUser };
-    });
+      const existingMember = await prisma.companyMember.findFirst({
+        where: {
+          userId: user.id,
+          companyId: company.id
+        }
+      });
+
+      if (!existingMember) {
+        await prisma.companyMember.create({
+          data: {
+            userId: user.id,
+            companyId: company.id,
+            role: (tempUser.companyRole as any) || "OWNER"
+          }
+        });
+      }
+
+      userToReturn = {
+        ...user,
+        isEmployee: true,
+        companyId: company?.id || null,
+        companyRole: tempUser.companyRole || "OWNER",
+      };
+    } else {
+      const newUser = await prisma.user.create({
+        data: {
+          firstName: tempUser.firstName,
+          lastName: tempUser.lastName,
+          email: tempUser.email,
+          password: tempUser.password,
+          phone: tempUser.phone,
+          role: tempUser.role,
+          isVerified: true,
+        },
+        include: { avatar: true }
+      });
+      
+      userToReturn = {
+        ...newUser,
+        isEmployee: false,
+        companyId: null,
+        companyRole: null,
+      };
+    }
+
+    await prisma.tempUser.delete({ where: { id: tempUser.id } });
 
     return sendTokenResponse(userToReturn, isNewUser ? 201 : 200, res);
   } catch (error: any) {
