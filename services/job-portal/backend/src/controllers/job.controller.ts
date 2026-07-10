@@ -155,24 +155,52 @@ export const createJob = async (
       throw new ApiError(403, "You're not authorized to create a job");
     }
 
-    const job = await prisma.$transaction(async (tx) => {
-      const subscription = await tx.subscription.findFirst({
-        where: {
-          companyId: company.id,
-          status: "ACTIVE",
-          expiryDate: { gt: new Date() },
-          OR: [{ postsRemaining: { gt: 0 } }, { postsRemaining: -1 }],
-        },
-      });
+const job = await prisma.$transaction(async (tx) => {
+  const subscription = await tx.subscription.findFirst({
+    where: {
+      companyId: company.id,
+      status: "ACTIVE",
+      expiryDate: { gt: new Date() },
+      OR: [{ postsRemaining: { gt: 0 } }, { postsRemaining: -1 }],
+    },
+  });
 
-      if (!subscription) {
-        throw new ApiError(
-          402,
-          "You must have an active subscription with remaining job posts. Please upgrade your plan.",
-        );
-      }
+  if (!subscription) {
+    throw new ApiError(
+      402,
+      "You must have an active subscription with remaining job posts. Please upgrade your plan.",
+    );
+  }
 
-      const newListing = await tx.baseListing.create({
+  // Unlimited plans: skip the decrement entirely
+  if (subscription.postsRemaining !== -1) {
+    // Atomic, conditional decrement — guards against concurrent over-draft
+    const result = await tx.subscription.updateMany({
+      where: {
+        id: subscription.id,
+        postsRemaining: { gt: 0 }, // re-checked at write time, not just read time
+      },
+      data: {
+        postsRemaining: { decrement: 1 },
+      },
+    });
+
+    if (result.count === 0) {
+      // Someone else consumed the last slot between our read and this write
+      throw new ApiError(
+        402,
+        "You must have an active subscription with remaining job posts. Please upgrade your plan.",
+      );
+    }
+
+    // Optional: flip to DEPLETED once it hits 0
+    await tx.subscription.updateMany({
+      where: { id: subscription.id, postsRemaining: 0, status: "ACTIVE" },
+      data: { status: "DEPLETED" },
+    });
+  }
+
+  return await tx.baseListing.create({
         data: {
           title: req.body.title,
           description: req.body.description,
@@ -212,19 +240,7 @@ export const createJob = async (
         },
         include: { jobDetails: true }
       });
-
-      if (subscription.postsRemaining !== -1) {
-        await tx.subscription.update({
-          where: { id: subscription.id },
-          data: {
-            postsRemaining: subscription.postsRemaining - 1,
-            status: subscription.postsRemaining - 1 === 0 ? "DEPLETED" : "ACTIVE",
-          },
-        });
-      }
-
-      return newListing;
-    });
+});
 
     res.status(201).json(new ApiResponse(201, job, "Job created successfully"));
   } catch (error: any) {
@@ -239,7 +255,8 @@ export const updateJob = async (
 ) => {
   try {
     const jobId = req.params.id as string;
-    let job = await prisma.baseListing.findUnique({
+
+    const job = await prisma.baseListing.findUnique({
       where: { id: jobId },
       include: { jobDetails: true },
     });
@@ -261,29 +278,20 @@ export const updateJob = async (
       );
     }
 
-    if (
-      companyMember.role !== "HR" &&
-      companyMember.role !== "OWNER"
-    ) {
+    if (companyMember.role !== "HR" && companyMember.role !== "OWNER") {
       return next(new ApiError(403, "Not authorized to update this job"));
     }
 
-    const {
-      salary,
-      experienceInYears,
-      education,
-      location,
-      ...baseUpdates
-    } = req.body;
+    const { salary, experienceInYears, education, location, ...baseUpdates } = req.body;
 
-    // Filter out Prisma-incompatible fields and keep only scalar values
     const allowedBaseUpdates = [
-      "title", "description", "employmentType", "workMode", "companyType", 
-      "roleCategory", "industry", "experienceLevel", "openings", "skills", 
-      "requirements", "benefits", "genderPreference", "englishFluency", 
-      "applicationDeadline", "status", "isDeleted"
+      "title", "description", "employmentType", "workMode", "companyType",
+      "roleCategory", "industry", "experienceLevel", "openings", "skills",
+      "requirements", "benefits", "genderPreference", "englishFluency",
+      "applicationDeadline",
+      // status/isDeleted removed — see note below
     ];
-    
+
     const filteredBaseUpdates: any = {};
     for (const key of allowedBaseUpdates) {
       if (baseUpdates[key] !== undefined) {
@@ -292,40 +300,51 @@ export const updateJob = async (
     }
 
     const updatedJob = await prisma.$transaction(async (tx) => {
+      // Re-verify existence + type inside the transaction, right before writing.
+      // Closes the TOCTOU gap between the outer read and this write.
+      const currentJob = await tx.baseListing.findUnique({
+        where: { id: jobId },
+        select: { id: true, opportunityType: true },
+      });
+
+      if (!currentJob || currentJob.opportunityType !== "JOB") {
+        throw new ApiError(404, "Job not found");
+      }
+
       await tx.baseListing.update({
-        where: { id: job.id },
+        where: { id: currentJob.id },
         data: {
           ...filteredBaseUpdates,
           ...(location && {
-             city: location.city,
-             state: location.state,
-             country: location.country
+            city: location.city,
+            state: location.state,
+            country: location.country,
           }),
           ...(education && {
-             minimumDegree: education.minimumDegree,
-             preferredFields: education.preferredFields,
-             isDegreeRequired: education.isRequired
-          })
+            minimumDegree: education.minimumDegree,
+            preferredFields: education.preferredFields,
+            isDegreeRequired: education.isRequired,
+          }),
         },
       });
 
       if (salary || experienceInYears !== undefined || req.body.experienceLevel !== undefined) {
         await tx.job.update({
-          where: { listingId: job.id },
+          where: { listingId: currentJob.id },
           data: {
-             ...(req.body.experienceLevel !== undefined && { experienceLevel: req.body.experienceLevel }),
-             ...(experienceInYears !== undefined && { experienceInYears: experienceInYears }),
-             ...(salary?.min !== undefined && { salaryMin: salary.min }),
-             ...(salary?.max !== undefined && { salaryMax: salary.max }),
-             ...(salary?.currency && { salaryCurrency: salary.currency }),
-             ...(salary?.period && { salaryPeriod: salary.period })
-          }
+            ...(req.body.experienceLevel !== undefined && { experienceLevel: req.body.experienceLevel }),
+            ...(experienceInYears !== undefined && { experienceInYears }),
+            ...(salary?.min !== undefined && { salaryMin: salary.min }),
+            ...(salary?.max !== undefined && { salaryMax: salary.max }),
+            ...(salary?.currency && { salaryCurrency: salary.currency }),
+            ...(salary?.period && { salaryPeriod: salary.period }),
+          },
         });
       }
 
       return tx.baseListing.findUnique({
-         where: { id: job.id },
-         include: { jobDetails: true }
+        where: { id: currentJob.id },
+        include: { jobDetails: true },
       });
     });
 

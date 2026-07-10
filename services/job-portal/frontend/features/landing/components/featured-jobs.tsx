@@ -4,23 +4,24 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MapPin, Flame } from "lucide-react";
-import { useGetJobs } from "@/features/user/hooks/use-job";
 
 const FILTERS = ["All", "Engineering", "Design", "Data & AI", "Marketing"];
 const EASE = [0.22, 1, 0.36, 1];
 
-export const FeaturedJobs = () => {
+export const FeaturedJobs = ({ jobs = [] }: { jobs?: any[] }) => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("All");
 
-  // Dynamic Query from Database
-  const { data: responseData, isLoading } = useGetJobs({
-    limit: 6,
-    search: activeTab === "All" ? undefined : activeTab,
+  const filteredJobs = jobs.filter((job) => {
+    if (activeTab === "All") return true;
+    return (
+      job.title?.toLowerCase().includes(activeTab.toLowerCase()) ||
+      job.roleCategory?.toLowerCase().replace(/_/g, " ") === activeTab.toLowerCase()
+    );
   });
 
-  const dbJobs = responseData?.data?.jobs || [];
-  const displayJobs = dbJobs.slice(0, 6);
+  const displayJobs = filteredJobs.slice(0, 6);
+  const isLoading = false;
 
   return (
     <section

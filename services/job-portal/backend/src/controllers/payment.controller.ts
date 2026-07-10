@@ -110,36 +110,46 @@ export const createOrder = async (
     let appliedCoupon = null;
 
     if (couponCode) {
-      appliedCoupon = await prisma.$transaction(async (tx) => {
-        const coupon = await tx.coupon.findFirst({
-          where: {
-            code: couponCode.toUpperCase(),
-            isActive: true,
-            usages: { none: { userId } },
-            OR: [
-              { expiryDate: { gt: new Date() } },
-              { expiryDate: null },
-            ],
+      const coupon = await prisma.coupon.findFirst({
+        where: {
+          code: couponCode.toUpperCase(),
+          isActive: true,
+          usages: { none: { userId } },
+          OR: [
+            { expiryDate: { gt: new Date() } },
+            { expiryDate: null },
+          ],
+        },
+      });
+
+      if (!coupon) {
+        throw new ApiError(400, "Coupon is invalid, expired, or has already been used by you");
+      }
+      
+      if (coupon.maxUses && coupon.maxUses !== -1 && coupon.usageCount >= coupon.maxUses) {
+        throw new ApiError(400, "Coupon has reached its maximum usage limit");
+      }
+
+      // Calculate Discount
+      if (coupon.type === "PERCENTAGE") {
+        discountValue = Number(
+          ((basePlanPrice * coupon.value) / 100).toFixed(2),
+        );
+      } else {
+        discountValue = coupon.value;
+      }
+
+      // Cap discount at plan price
+      discountValue = Math.min(discountValue, basePlanPrice);
+
+      try {
+        appliedCoupon = await prisma.coupon.update({
+          where: { 
+            id: coupon.id,
+            ...(coupon.maxUses && coupon.maxUses !== -1 
+              ? { usageCount: { lt: coupon.maxUses } } 
+              : {})
           },
-        });
-
-        if (!coupon) return null;
-        if (coupon.maxUses && coupon.maxUses !== -1 && coupon.usageCount >= coupon.maxUses) return null;
-
-        // Calculate Discount
-        if (coupon.type === "PERCENTAGE") {
-          discountValue = Number(
-            ((basePlanPrice * coupon.value) / 100).toFixed(2),
-          );
-        } else {
-          discountValue = coupon.value;
-        }
-
-        // Cap discount at plan price
-        discountValue = Math.min(discountValue, basePlanPrice);
-
-        const updatedCoupon = await tx.coupon.update({
-          where: { id: coupon.id },
           data: {
             usageCount: { increment: 1 },
             usages: {
@@ -150,12 +160,14 @@ export const createOrder = async (
             }
           }
         });
-
-        return updatedCoupon;
-      });
-
-      if (!appliedCoupon) {
-        throw new ApiError(400, "Coupon is invalid, expired, or has already been used by you");
+      } catch (error: any) {
+        if (error.code === 'P2025') {
+          throw new ApiError(400, "Coupon has reached its maximum usage limit or is no longer available");
+        }
+        if (error.code === 'P2002') {
+          throw new ApiError(400, "Coupon has already been used by you");
+        }
+        throw new ApiError(400, "Failed to apply coupon. Please try again.");
       }
 
       finalAmount = Number((basePlanPrice - discountValue).toFixed(2));

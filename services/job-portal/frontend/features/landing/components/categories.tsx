@@ -26,7 +26,21 @@ const CATEGORIES = [
 
 const EASE = [0.22, 1, 0.36, 1];
 
-export const Categories = () => {
+export const Categories = ({ categories = [] }: { categories?: any[] }) => {
+  const apiCategories = categories.length > 0 ? categories : CATEGORIES;
+
+  const getCategoryDetails = (label: string, index: number) => {
+    const match = CATEGORIES.find(
+      (c) => c.label.toLowerCase() === label.toLowerCase()
+    );
+    if (match) return match;
+    return {
+      label,
+      icon: Briefcase, // fallback icon
+      accent: index % 2 === 0 ? "purple" : "blue",
+    };
+  };
+
   return (
     <section className="bg-white py-24" data-testid="categories-section">
       <div className="mx-auto max-w-[88rem] px-6 md:px-12">
@@ -65,9 +79,10 @@ export const Categories = () => {
           }}
           className="grid grid-cols-2 overflow-hidden rounded-2xl border-t border-l border-slate-200 shadow-sm md:grid-cols-3 lg:grid-cols-4"
         >
-          {CATEGORIES.map((category) => {
-            const Icon = category.icon;
-            const isPurple = category.accent === "purple";
+          {apiCategories.map((category: any, index: number) => {
+            const details = getCategoryDetails(category.label, index);
+            const Icon = details.icon;
+            const isPurple = details.accent === "purple";
 
             return (
               <motion.a
@@ -99,9 +114,11 @@ export const Categories = () => {
                   <h3 className="text-lg font-bold tracking-tight text-slate-900 md:text-xl">
                     {category.label}
                   </h3>
-                  {/* <p className="mt-1 text-sm font-medium text-slate-500">
-                    {category.count} open roles
-                  </p> */}
+                  {category.count !== undefined && (
+                    <p className="mt-1 text-sm font-medium text-slate-500">
+                      {category.count} open roles
+                    </p>
+                  )}
                 </div>
 
                 {/* Hover Reveal Arrow */}

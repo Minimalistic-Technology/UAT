@@ -205,79 +205,94 @@ export const createInternship = async (
       throw new ApiError(403, "You're not authorized to create an internship");
     }
 
-    const internship = await prisma.$transaction(async (tx) => {
-      const subscription = await tx.subscription.findFirst({
-        where: {
-          companyId: company.id,
-          status: "ACTIVE",
-          expiryDate: { gt: new Date() },
-          OR: [{ postsRemaining: { gt: 0 } }, { postsRemaining: -1 }],
-        },
-      });
+const internship = await prisma.$transaction(async (tx) => {
+  const subscription = await tx.subscription.findFirst({
+    where: {
+      companyId: company.id,
+      status: "ACTIVE",
+      expiryDate: { gt: new Date() },
+      OR: [{ postsRemaining: { gt: 0 } }, { postsRemaining: -1 }],
+    },
+  });
 
-      if (!subscription) {
-        throw new ApiError(
-          402,
-          "You must have an active subscription with remaining job posts. Please upgrade your plan.",
-        );
-      }
+  if (!subscription) {
+    throw new ApiError(
+      402,
+      "You must have an active subscription with remaining job posts. Please upgrade your plan.",
+    );
+  }
 
-      const newListing = await tx.baseListing.create({
-        data: {
-          title: req.body.title,
-          description: req.body.description,
-          employmentType: req.body.employmentType,
-          workMode: req.body.workMode,
-          companyType: req.body.companyType,
-          roleCategory: req.body.roleCategory,
-          industry: req.body.industry,
-          experienceLevel: req.body.experienceLevel, // in BaseListing
-          openings: req.body.openings,
-          city: req.body.location?.city,
-          state: req.body.location?.state,
-          country: req.body.location?.country,
-          minimumDegree: req.body.education?.minimumDegree || "ANY",
-          preferredFields: req.body.education?.preferredFields || [],
-          isDegreeRequired: req.body.education?.isRequired ?? false,
-          skills: req.body.skills || [],
-          requirements: req.body.requirements || [],
-          benefits: req.body.benefits || [],
-          genderPreference: req.body.genderPreference || "ANY",
-          englishFluency: req.body.englishFluency || "NONE",
-          applicationDeadline: req.body.applicationDeadline,
-          status: req.body.status ?? "ACTIVE",
-          opportunityType: "INTERNSHIP",
-          postedById: userId,
-          companyId: company.id,
-          internshipDetails: {
-            create: {
-              durationValue: req.body.duration || 1,
-              durationUnit: "MONTHS",
-              stipendAmount: req.body.stipend?.amount,
-              stipendType: req.body.stipend?.type || "FIXED",
-              stipendCurrency: req.body.stipend?.currency || "USD",
-              stipendPeriod: req.body.stipend?.period || "MONTHLY",
-              isPPO: req.body.isPPO ?? false,
-              certificateProvided: req.body.certificateProvided ?? true,
-              startDate: req.body.startDate ? new Date(req.body.startDate) : null,
-            }
-          }
-        },
-        include: { internshipDetails: true }
-      });
-
-      if (subscription.postsRemaining !== -1) {
-        await tx.subscription.update({
-          where: { id: subscription.id },
-          data: {
-            postsRemaining: subscription.postsRemaining - 1,
-            status: subscription.postsRemaining - 1 === 0 ? "DEPLETED" : "ACTIVE",
-          },
-        });
-      }
-
-      return newListing;
+  // Unlimited plans: skip the decrement entirely
+  if (subscription.postsRemaining !== -1) {
+    const result = await tx.subscription.updateMany({
+      where: {
+        id: subscription.id,
+        postsRemaining: { gt: 0 }, // re-checked at write time, not read time
+      },
+      data: {
+        postsRemaining: { decrement: 1 },
+      },
     });
+
+    if (result.count === 0) {
+      throw new ApiError(
+        402,
+        "You must have an active subscription with remaining job posts. Please upgrade your plan.",
+      );
+    }
+
+    await tx.subscription.updateMany({
+      where: { id: subscription.id, postsRemaining: 0, status: "ACTIVE" },
+      data: { status: "DEPLETED" },
+    });
+  }
+
+  const newListing = await tx.baseListing.create({
+    data: {
+      title: req.body.title,
+      description: req.body.description,
+      employmentType: req.body.employmentType,
+      workMode: req.body.workMode,
+      companyType: req.body.companyType,
+      roleCategory: req.body.roleCategory,
+      industry: req.body.industry,
+      experienceLevel: req.body.experienceLevel,
+      openings: req.body.openings,
+      city: req.body.location?.city,
+      state: req.body.location?.state,
+      country: req.body.location?.country,
+      minimumDegree: req.body.education?.minimumDegree || "ANY",
+      preferredFields: req.body.education?.preferredFields || [],
+      isDegreeRequired: req.body.education?.isRequired ?? false,
+      skills: req.body.skills || [],
+      requirements: req.body.requirements || [],
+      benefits: req.body.benefits || [],
+      genderPreference: req.body.genderPreference || "ANY",
+      englishFluency: req.body.englishFluency || "NONE",
+      applicationDeadline: req.body.applicationDeadline,
+      status: req.body.status ?? "ACTIVE",
+      opportunityType: "INTERNSHIP",
+      postedById: userId,
+      companyId: company.id,
+      internshipDetails: {
+        create: {
+          durationValue: req.body.duration || 1,
+          durationUnit: "MONTHS",
+          stipendAmount: req.body.stipend?.amount,
+          stipendType: req.body.stipend?.type || "FIXED",
+          stipendCurrency: req.body.stipend?.currency || "USD",
+          stipendPeriod: req.body.stipend?.period || "MONTHLY",
+          isPPO: req.body.isPPO ?? false,
+          certificateProvided: req.body.certificateProvided ?? true,
+          startDate: req.body.startDate ? new Date(req.body.startDate) : null,
+        },
+      },
+    },
+    include: { internshipDetails: true },
+  });
+
+  return newListing;
+});
 
     res.status(201).json(new ApiResponse(201, internship, "Internship created successfully"));
   } catch (error: any) {
@@ -346,45 +361,54 @@ export const updateInternship = async (
       }
     }
 
-    const updatedInternship = await prisma.$transaction(async (tx) => {
-      await tx.baseListing.update({
-        where: { id: internship.id },
-        data: {
-          ...filteredBaseUpdates,
-          ...(location && {
-             city: location.city,
-             state: location.state,
-             country: location.country
-          }),
-          ...(education && {
-             minimumDegree: education.minimumDegree,
-             preferredFields: education.preferredFields,
-             isDegreeRequired: education.isRequired
-          })
-        },
-      });
+const updatedInternship = await prisma.$transaction(async (tx) => {
+  const currentInternship = await tx.baseListing.findUnique({
+    where: { id: internship.id },
+    select: { id: true, opportunityType: true },
+  });
 
-      if (stipend || duration !== undefined || isPPO !== undefined || startDate !== undefined || certificateProvided !== undefined) {
-        await tx.internship.update({
-          where: { listingId: internship.id },
-          data: {
-             ...(duration !== undefined && { durationValue: duration, durationUnit: "MONTHS" }),
-             ...(stipend?.amount !== undefined && { stipendAmount: stipend.amount }),
-             ...(stipend?.type && { stipendType: stipend.type }),
-             ...(stipend?.currency && { stipendCurrency: stipend.currency }),
-             ...(stipend?.period && { stipendPeriod: stipend.period }),
-             ...(isPPO !== undefined && { isPPO }),
-             ...(certificateProvided !== undefined && { certificateProvided }),
-             ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
-          }
-        });
-      }
+  if (!currentInternship || currentInternship.opportunityType !== "INTERNSHIP") {
+    throw new ApiError(404, "Internship not found");
+  }
 
-      return tx.baseListing.findUnique({
-         where: { id: internship.id },
-         include: { internshipDetails: true }
-      });
+  await tx.baseListing.update({
+    where: { id: currentInternship.id },
+    data: {
+      ...filteredBaseUpdates,
+      ...(location && {
+        city: location.city,
+        state: location.state,
+        country: location.country,
+      }),
+      ...(education && {
+        minimumDegree: education.minimumDegree,
+        preferredFields: education.preferredFields,
+        isDegreeRequired: education.isRequired,
+      }),
+    },
+  });
+
+  if (stipend || duration !== undefined || isPPO !== undefined || startDate !== undefined || certificateProvided !== undefined) {
+    await tx.internship.update({
+      where: { listingId: currentInternship.id },
+      data: {
+        ...(duration !== undefined && { durationValue: duration, durationUnit: "MONTHS" }),
+        ...(stipend?.amount !== undefined && { stipendAmount: stipend.amount }),
+        ...(stipend?.type && { stipendType: stipend.type }),
+        ...(stipend?.currency && { stipendCurrency: stipend.currency }),
+        ...(stipend?.period && { stipendPeriod: stipend.period }),
+        ...(isPPO !== undefined && { isPPO }),
+        ...(certificateProvided !== undefined && { certificateProvided }),
+        ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
+      },
     });
+  }
+
+  return tx.baseListing.findUnique({
+    where: { id: currentInternship.id },
+    include: { internshipDetails: true },
+  });
+});
 
     res.status(200).json(new ApiResponse(200, updatedInternship, "Internship updated successfully"));
   } catch (error: any) {
