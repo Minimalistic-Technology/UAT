@@ -1,0 +1,15 @@
+node_modules
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+build
+dist
+coverage
+.nyc_output
+.git
+.dockerignore
+Dockerfile
+.env
+.env.example
