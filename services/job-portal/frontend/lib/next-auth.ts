@@ -4,8 +4,10 @@ import GoogleProvider from "next-auth/providers/google";
 import axios from "axios";
 import { API_URL } from "@/constants";
 
-const SERVER_API_URL = process.env.INTERNAL_API_URL || API_URL;
+const SERVER_API_URL = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || API_URL;
+
 export const authOptions: NextAuthOptions = {
+  trustHost: true, // Important for production domains
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -167,4 +169,5 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development",
 };
