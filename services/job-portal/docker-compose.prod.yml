@@ -4,7 +4,7 @@ services:
     container_name: job_portal_postgres_prod
     restart: always
     env_file:
-      - ./backend/.env.production
+      - ./backend/.env
     # Notice: No ports exposed to the host for the DB to ensure security
     volumes:
       - job_portal_data_prod:/var/lib/postgresql/data
@@ -13,11 +13,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
 
   backend:
     build:
@@ -28,7 +23,7 @@ services:
       # Ideally this sits behind an Nginx reverse proxy
       - "5000:5000"
     env_file:
-      - ./backend/.env.production
+      - ./backend/.env
     environment:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL}
@@ -42,11 +37,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
 
 volumes:
   job_portal_data_prod:
