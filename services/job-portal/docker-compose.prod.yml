@@ -26,7 +26,6 @@ services:
       - ./backend/.env
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
     restart: always
     depends_on:
       postgres:
