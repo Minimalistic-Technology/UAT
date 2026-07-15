@@ -5,8 +5,7 @@ services:
     restart: always
     env_file:
       - ./backend/.env
-    ports:
-      - "5432:5432"
+    # Notice: No ports exposed to the host for the DB to ensure security
     volumes:
       - job_portal_data_prod:/var/lib/postgresql/data
     healthcheck:
