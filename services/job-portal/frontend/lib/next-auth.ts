@@ -7,7 +7,6 @@ import { API_URL } from "@/constants";
 const SERVER_API_URL = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || API_URL;
 
 export const authOptions: NextAuthOptions = {
-  trustHost: true, // Important for production domains
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -94,10 +93,6 @@ export const authOptions: NextAuthOptions = {
           throw new Error(message);
         }
       },
-    }),
-    GoogleProvider({
-      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET!,
     }),
   ],
   callbacks: {
