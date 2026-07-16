@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
+  env: {
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    INTERNAL_API_URL: process.env.INTERNAL_API_URL,
+  },
 };
 
 export default nextConfig;
