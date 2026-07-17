@@ -1,6 +1,6 @@
 export const couponTypeDefs = `#graphql
   type Coupon {
-    _id: ID!
+    id: ID!
     code: String!
     type: String!
     value: Float!
@@ -8,7 +8,6 @@ export const couponTypeDefs = `#graphql
     expiryDate: String
     maxUses: Int
     usageCount: Int!
-    usedBy: [ID!]
   }
 
   type CouponPagination {

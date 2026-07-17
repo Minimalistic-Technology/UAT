@@ -1,6 +1,5 @@
 import type { Response, NextFunction } from "express";
-import User from "../models/User.model.js";
-import KYC from "../models/KYC.model.js";
+import { prisma } from "../lib/prisma.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import {
   uploadToCloudinary,
@@ -8,9 +7,10 @@ import {
 } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
-import {ALLOWED_MIME_TYPES_FOR_AVATAR, ALLOWED_MIME_TYPES_FOR_RESUME} from "../constants/index.js";
-import Subscription from "../models/Subscription.model.js";
-import CompanyMember from "../models/CompanyMember.model.js";
+import {
+  ALLOWED_MIME_TYPES_FOR_AVATAR,
+  ALLOWED_MIME_TYPES_FOR_RESUME,
+} from "../constants/index.js";
 import { extractText } from "../lib/ats/extract-text.js";
 import { scoreResume } from "../lib/ats/scrorer.js";
 
@@ -31,34 +31,55 @@ export const updateProfile = async (
       location,
     } = req.body;
 
-    const fieldsToUpdate: any = {
-      firstName,
-      lastName,
-      phone,
-      skills,
-      languages,
-      experience,
-      education,
-      location,
-    };
+    const fieldsToUpdate: any = {};
+    if (firstName !== undefined) fieldsToUpdate.firstName = firstName;
+    if (lastName !== undefined) fieldsToUpdate.lastName = lastName;
+    if (phone !== undefined) fieldsToUpdate.phone = phone;
+    if (skills !== undefined) fieldsToUpdate.skills = skills;
+    if (languages !== undefined) fieldsToUpdate.languages = languages;
 
-    Object.keys(fieldsToUpdate).forEach(
-      (key) => fieldsToUpdate[key] === undefined && delete fieldsToUpdate[key],
-    );
-
-    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
-      returnDocument: "after",
-      runValidators: true,
-    });
-
-    if (!user) {
-      throw new ApiError(404, "User not found");
+    if (experience !== undefined) {
+      fieldsToUpdate.experiences = {
+        deleteMany: {},
+        create: experience,
+      };
     }
+
+    if (education !== undefined) {
+      fieldsToUpdate.educations = {
+        deleteMany: {},
+        create: education,
+      };
+    }
+
+    if (location !== undefined) {
+      fieldsToUpdate.location = {
+        upsert: {
+          create: location,
+          update: location,
+        },
+      };
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: fieldsToUpdate,
+      include: {
+        experiences: true,
+        educations: true,
+        location: true,
+        avatar: true,
+        resume: { include: { atsScore: true } },
+      },
+    });
 
     return res
       .status(200)
       .json(new ApiResponse(200, user, "Profile updated successfully"));
   } catch (error: any) {
+    if (error.code === "P2025") {
+      return next(new ApiError(404, "User not found"));
+    }
     next(error);
   }
 };
@@ -76,8 +97,14 @@ export const uploadAvatar = async (
     if (!ALLOWED_MIME_TYPES_FOR_AVATAR.includes(req.file.mimetype)) {
       throw new ApiError(400, "Only images are allowed");
     }
-    if (req.user.avatar?.publicId) {
-      await deleteFromCloudinary(req.user.avatar.publicId, "image");
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { avatar: true },
+    });
+
+    if (user?.avatar?.publicId) {
+      await deleteFromCloudinary(user.avatar.publicId, "image");
     }
 
     const result = await uploadToCloudinary(
@@ -87,23 +114,31 @@ export const uploadAvatar = async (
       `avatar-${req.user.id}-${Date.now()}`,
     );
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.id,
-      {
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
         avatar: {
-          url: result.secure_url,
-          publicId: result.public_id,
+          upsert: {
+            create: {
+              url: result.secure_url,
+              publicId: result.public_id,
+            },
+            update: {
+              url: result.secure_url,
+              publicId: result.public_id,
+            },
+          },
         },
       },
-      { returnDocument: "after" },
-    );
+      include: { avatar: true },
+    });
 
     res
       .status(200)
       .json(
         new ApiResponse(
           200,
-          { avatarUrl: updatedUser?.avatar?.url },
+          { avatarUrl: updatedUser.avatar?.url },
           "Avatar uploaded successfully",
         ),
       );
@@ -126,15 +161,17 @@ export const uploadResume = async (
       throw new ApiError(400, "Only PDF files are allowed");
     }
 
-    if (req.user.resume?.publicId) {
-      const isRaw = req.user.resume?.url.includes("/raw/upload/");
-      await deleteFromCloudinary(
-        req.user.resume?.publicId,
-        isRaw ? "raw" : "image",
-      );
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { resume: true },
+    });
+
+    if (user?.resume?.publicId) {
+      const isRaw = user.resume.url.includes("/raw/upload/");
+      await deleteFromCloudinary(user.resume.publicId, isRaw ? "raw" : "image");
     }
 
-    let atsData = null;
+    let atsData: any = null;
     try {
       const text = await extractText(req.file.buffer, req.file.mimetype);
       atsData = scoreResume(text);
@@ -150,26 +187,66 @@ export const uploadResume = async (
       "pdf",
     );
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.id,
-      {
+    const atsScoreCreate = atsData
+      ? {
+          overallScore: atsData.overallScore,
+          sectionScore: atsData.sectionScore,
+          formattingScore: atsData.formattingScore,
+          keywordScore: atsData.keywordScore,
+          contentScore: atsData.contentScore,
+          sectionsFound: atsData.sectionsFound || [],
+          sectionsMissing: atsData.sectionsMissing || [],
+          matchedKeywords: atsData.matchedKeywords || [],
+        }
+      : undefined;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
         resume: {
-          url: result.secure_url,
-          publicId: result.public_id,
+          upsert: {
+            create: {
+              url: result.secure_url,
+              publicId: result.public_id,
+              originalName: req.file.originalname,
+              ...(atsScoreCreate
+                ? { atsScore: { create: atsScoreCreate } }
+                : {}),
+            },
+            update: {
+              url: result.secure_url,
+              publicId: result.public_id,
+              originalName: req.file.originalname,
+              ...(atsScoreCreate
+                ? {
+                    atsScore: {
+                      upsert: {
+                        create: atsScoreCreate,
+                        update: atsScoreCreate,
+                      },
+                    },
+                  }
+                : {}),
+            },
+          },
         },
-        resumeOriginalName: req.file.originalname,
-        ...(atsData ? { atsScore: atsData } : {}),
       },
-      { returnDocument: "after" },
-    );
+      include: {
+        resume: {
+          include: {
+            atsScore: true,
+          },
+        },
+      },
+    });
 
     res.status(200).json(
       new ApiResponse(
         200,
         {
-          resumeUrl: updatedUser?.resume?.url,
-          resumeOriginalName: updatedUser?.resumeOriginalName,
-          atsScore: atsData,
+          resumeUrl: updatedUser.resume?.url,
+          resumeOriginalName: updatedUser.resume?.originalName,
+          atsScore: updatedUser.resume?.atsScore,
         },
         "Resume uploaded successfully",
       ),
@@ -187,18 +264,26 @@ export const submitKyc = async (
   try {
     const { companyDocumentType, personalDocumentType } = req.body;
 
-    const companyMember = await CompanyMember.findOne({ user: req.user.id, isActive: true });
-    if (!companyMember) {
+    const company = await prisma.company.findUnique({
+      where: { ownerId: req.user.id },
+    });
+
+    if (!company) {
       throw new ApiError(403, "You must create a company first.");
     }
 
-    const activeSubscription = await Subscription.findOne({
-      companyId: companyMember.company,
-      status: "active",
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        companyId: company.id,
+        status: "ACTIVE",
+      },
     });
 
     if (!activeSubscription) {
-      throw new ApiError(403, "You must purchase a plan before submitting KYC details.");
+      throw new ApiError(
+        403,
+        "You must purchase a plan before submitting KYC details.",
+      );
     }
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -210,75 +295,83 @@ export const submitKyc = async (
       );
     }
 
-    let existingKyc = await KYC.findOne({ user: req.user.id });
+    let existingKyc = await prisma.kYC.findFirst({
+      where: { userId: req.user.id, isLatest: true },
+    });
 
-    if (existingKyc && existingKyc.status === "approved") {
+    if (existingKyc && existingKyc.status === "APPROVED") {
       throw new ApiError(400, "Your KYC is already approved.");
     }
 
-    if (existingKyc && existingKyc.status === "pending") {
+    if (existingKyc && existingKyc.status === "PENDING") {
       throw new ApiError(400, "Your KYC is already submitted.");
     }
 
-    if (existingKyc && existingKyc.status === "rejected") {
-      existingKyc.isLatest = false;
-      await existingKyc.save();
+    if (existingKyc && existingKyc.status === "REJECTED") {
+      await prisma.kYC.update({
+        where: { id: existingKyc.id },
+        data: { isLatest: false },
+      });
     }
 
-    const isPersonalDocPdf = files.personalDocument[0].mimetype === "application/pdf";
+    const isPersonalDocPdf =
+      files.personalDocument[0].mimetype === "application/pdf";
+
     const personalDocResult = await uploadToCloudinary(
       files.personalDocument[0].buffer,
       "job_portal/kyc_personal",
       isPersonalDocPdf ? "raw" : "image",
-      `kyc-personal-${req.user.id}-${Date.now()}`,
+      `kyc-personal-${company.name}-${req.user.id}-${Date.now()}`,
       isPersonalDocPdf ? "pdf" : undefined,
     );
 
-    const isCompanyDocPdf = files.companyDocument[0].mimetype === "application/pdf";
+    const isCompanyDocPdf =
+      files.companyDocument[0].mimetype === "application/pdf";
+
     const companyDocResult = await uploadToCloudinary(
       files.companyDocument[0].buffer,
       "job_portal/kyc_company",
       isCompanyDocPdf ? "raw" : "image",
-      `kyc-company-${req.user.id}-${Date.now()}`,
+      `kyc-company-${company.name}-${req.user.id}-${Date.now()}`,
       isCompanyDocPdf ? "pdf" : undefined,
     );
 
-    const kycData = {
-      user: req.user.id,
-      companyDocumentType,
-      personalDocumentType,
-      personalDocument: {
-        url: personalDocResult.secure_url,
-        publicId: personalDocResult.public_id,
-      },
-      companyDocument: {
+    const companyDoc = await prisma.storageAsset.create({
+      data: {
         url: companyDocResult.secure_url,
         publicId: companyDocResult.public_id,
+        mimeType: files.companyDocument[0].mimetype,
+        sizeBytes: files.companyDocument[0].size,
       },
-      status: "pending" as const,
-    };
+    });
 
-    const kyc = await KYC.create(kycData);
+    const personalDoc = await prisma.storageAsset.create({
+      data: {
+        url: personalDocResult.secure_url,
+        publicId: personalDocResult.public_id,
+        mimeType: files.personalDocument[0].mimetype,
+        sizeBytes: files.personalDocument[0].size,
+      },
+    });
 
-    if (!kyc) {
-      // optionally delete the uploaded images
-      await Promise.allSettled([
-        deleteFromCloudinary(personalDocResult.public_id),
-        deleteFromCloudinary(companyDocResult.public_id),
-      ]);
-
-      throw new ApiError(
-        500,
-        "Failed to submit KYC details. Please try again later.",
-      );
-    }
+    const kyc = await prisma.kYC.create({
+      data: {
+        userId: req.user.id,
+        companyId: company.id,
+        companyDocumentType,
+        personalDocumentType,
+        status: "PENDING",
+        companyDocumentId: companyDoc.id,
+        personalDocumentId: personalDoc.id,
+      },
+    });
 
     const responseToSend = {
-      companyDocumentType: kyc?.companyDocumentType,
-      personalDocumentType: kyc?.personalDocumentType,
+      companyDocumentType: kyc.companyDocumentType,
+      personalDocumentType: kyc.personalDocumentType,
       documents: {
-        personalDocumentUrl: kyc?.personalDocument.url,
-        companyDocumentUrl: kyc?.companyDocument.url,
+        personalDocumentUrl: personalDoc.url,
+        companyDocumentUrl: companyDoc.url,
       },
     };
 
@@ -302,7 +395,20 @@ export const getUserById = async (
   next: NextFunction,
 ) => {
   try {
-    const user = await User.findById(req.params.id);
+    if (!req.params.id) {
+      throw new ApiError(400, "User id is required");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: String(req.params.id) },
+      include: {
+        avatar: true,
+        resume: { include: { atsScore: true } },
+        experiences: true,
+        educations: true,
+        location: true,
+      },
+    });
 
     if (!user) {
       throw new ApiError(404, "User not found");

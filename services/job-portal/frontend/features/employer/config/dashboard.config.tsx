@@ -116,7 +116,7 @@ export const DASHBOARD_ALERTS: DashboardAlertConfig[] = [
     condition: (companyDetails) =>
       companyDetails?.isVerified === false &&
       !!companyDetails?.currentPlan &&
-      companyDetails?.kycStatus === "pending",
+      companyDetails?.kycStatus === "PENDING",
     icon: Loader2,
     title: "Verification in Progress",
     description:
@@ -128,7 +128,7 @@ export const DASHBOARD_ALERTS: DashboardAlertConfig[] = [
     condition: (companyDetails) =>
       companyDetails?.isVerified === false &&
       !!companyDetails?.currentPlan &&
-      companyDetails?.kycStatus === "rejected",
+      companyDetails?.kycStatus === "REJECTED",
     icon: ShieldAlert,
     title: "KYC Rejected",
     description:

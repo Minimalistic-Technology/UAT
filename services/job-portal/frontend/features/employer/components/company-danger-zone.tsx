@@ -26,7 +26,7 @@ export const CompanyDangerZone = ({ company }: CompanyDangerZoneProps) => {
 
   if (!company) return null;
 
-  const isOwner = user && company.owner?._id === user._id;
+  const isOwner = user && company.owner?.id === user.id;
 
   if (!isOwner) {
     return null;
@@ -62,7 +62,7 @@ export const CompanyDangerZone = ({ company }: CompanyDangerZoneProps) => {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 className="cursor-pointer bg-red-600 text-white hover:bg-red-700"
-                onClick={() => deleteCompany(company._id)}
+                onClick={() => deleteCompany(company.id)}
                 disabled={isDeleting}
               >
                 {isDeleting ? (

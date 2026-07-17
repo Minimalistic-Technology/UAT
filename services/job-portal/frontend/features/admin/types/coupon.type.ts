@@ -1,4 +1,4 @@
-import { Coupon, Pagination } from "@/types/new-index";
+import { Coupon, Pagination } from "@/types";
 
 export type GetAllCouponsResponse = {
   coupons: Coupon;

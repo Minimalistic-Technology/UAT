@@ -1,5 +1,5 @@
 import { KycStatus } from "@/types/enums";
-import { Company } from "@/types/new-index";
+import { Company } from "@/types";
 
 export type CompanyMetrics = {
   totalJobs: number;
@@ -7,14 +7,14 @@ export type CompanyMetrics = {
   activeInternships: number;
   activeListings: number;
   totalMembers: number;
-  currentPlan: { _id: string; name: string } | null;
+  currentPlan: { id: string; name: string } | null;
   subscription: any | null;
 };
 
 export type GetMyCompanyResponse = Omit<Company, "owner"> &
   CompanyMetrics & {
     owner: {
-      _id: string;
+      id: string;
       firstName: string;
       lastName: string;
       email: string;

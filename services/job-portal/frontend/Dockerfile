@@ -2,28 +2,32 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+RUN npm install -g pnpm
+
 # Copy dependency files
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml* ./
 
 # Install all dependencies (including devDependencies for building)
-RUN npm install
+RUN pnpm install
 
 # Copy source code
 COPY . .
 
 # Build the Next.js application
-RUN npm run build
+RUN pnpm run build
 
 # Stage 2: Production environment
 FROM node:20-alpine
 
 WORKDIR /app
 
+RUN npm install -g pnpm
+
 # Copy dependency files
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml* ./
 
 # Install only production dependencies
-RUN npm install --omit=dev
+RUN pnpm install --prod --ignore-scripts
 
 # Copy the built output from builder
 COPY --from=builder /app/.next ./.next
@@ -34,4 +38,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Start the Next.js application
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]

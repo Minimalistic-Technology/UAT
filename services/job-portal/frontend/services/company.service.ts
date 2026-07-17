@@ -1,5 +1,5 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
-import { Company, Job } from "@/types/new-index";
+import { Company, Job } from "@/types";
 
 // ----------------------- Interfaces ---------------------------
 

@@ -30,7 +30,7 @@ import {
   createPlanSchema,
 } from "@/features/admin/validations/plan.schema";
 import { useUpdatePlan } from "@/features/admin/hooks/use-plan";
-import { Plan } from "@/types/new-index";
+import { Plan } from "@/types";
 
 interface PlanEditDialogProps {
   plan: Plan;
@@ -57,18 +57,18 @@ export function PlanEditDialog({
     resolver: zodResolver(createPlanSchema),
     defaultValues: {
       name: "",
+      description: "",
       price: 0,
       currency: "INR",
-      durationDays: 30,
-      jobPostLimit: -1,
-      teamMemberLimit: -1,
+      subscriptionDurationDays: 30,
+      maxActiveJobPosts: -1,
+      maxTeamMembers: -1,
       features: [""],
-      isFeatured: false,
       isDefault: false,
       displayOrder: 0,
       isActive: true,
       allowResumeDownload: false,
-      postValidityDays: 30,
+      jobPostValidityDays: 30,
     },
   });
 
@@ -82,30 +82,30 @@ export function PlanEditDialog({
     if (plan && open) {
       reset({
         name: plan.name,
+        description: plan.description || "",
         price: plan.price,
-        currency: plan.currency,
-        durationDays: plan.durationDays,
-        jobPostLimit: plan.jobPostLimit,
-        teamMemberLimit:
-          plan.teamMemberLimit !== undefined ? plan.teamMemberLimit : -1,
+        currency: plan.currency as "INR" | "USD" | "EUR" | "GBP",
+        subscriptionDurationDays: plan.subscriptionDurationDays,
+        maxActiveJobPosts: plan.maxActiveJobPosts,
+        maxTeamMembers:
+          plan.maxTeamMembers !== undefined ? plan.maxTeamMembers : -1,
         features: plan.features?.length ? plan.features : [""],
-        isFeatured: plan.isFeatured,
         isDefault: plan.isDefault,
         displayOrder: plan.displayOrder,
         isActive: plan.isActive,
         allowResumeDownload: plan.allowResumeDownload || false,
-        postValidityDays: plan.postValidityDays || 30,
+        jobPostValidityDays: plan.jobPostValidityDays || 30,
       });
     }
   }, [plan, open, reset]);
 
   const onSubmit = (data: CreatePlanFormValues) => {
-    if (!plan?._id) return;
+    if (!plan?.id) return;
     const cleanedFeatures = data.features.filter(
       (f) => f && f.trim().length > 0,
     );
     updatePlan(
-      { id: plan._id, data: { ...data, features: cleanedFeatures } },
+      { id: plan.id, data: { ...data, features: cleanedFeatures } },
       {
         onSuccess: () => {
           onOpenChange(false);
@@ -162,6 +162,17 @@ export function PlanEditDialog({
               </div>
             </div>
 
+            <div className="grid grid-cols-1 gap-6 border-t pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Input
+                  id="edit-description"
+                  {...register("description")}
+                  placeholder="e.g. Best for growing startups"
+                />
+              </div>
+            </div>
+
             {/* Pricing */}
             <div className="grid grid-cols-1 gap-6 border-t pt-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -210,16 +221,18 @@ export function PlanEditDialog({
                   id="edit-duration"
                   type="number"
                   min={1}
-                  {...register("durationDays", { valueAsNumber: true })}
+                  {...register("subscriptionDurationDays", {
+                    valueAsNumber: true,
+                  })}
                 />
-                {errors.durationDays && (
+                {errors.subscriptionDurationDays && (
                   <p className="text-destructive text-xs">
-                    {errors.durationDays.message}
+                    {errors.subscriptionDurationDays.message}
                   </p>
                 )}
               </div>
 
-              {/* New Input Field: postValidityDays */}
+              {/* New Input Field: jobPostValidityDays */}
               <div className="space-y-2">
                 <Label
                   htmlFor="edit-postValidityDays"
@@ -232,11 +245,11 @@ export function PlanEditDialog({
                   id="edit-postValidityDays"
                   type="number"
                   min={1}
-                  {...register("postValidityDays", { valueAsNumber: true })}
+                  {...register("jobPostValidityDays", { valueAsNumber: true })}
                 />
-                {errors.postValidityDays && (
+                {errors.jobPostValidityDays && (
                   <p className="text-destructive text-xs">
-                    {errors.postValidityDays.message}
+                    {errors.jobPostValidityDays.message}
                   </p>
                 )}
               </div>
@@ -252,11 +265,11 @@ export function PlanEditDialog({
                   id="edit-jobLimit"
                   type="number"
                   min={-1}
-                  {...register("jobPostLimit", { valueAsNumber: true })}
+                  {...register("maxActiveJobPosts", { valueAsNumber: true })}
                 />
-                {errors.jobPostLimit && (
+                {errors.maxActiveJobPosts && (
                   <p className="text-destructive text-xs">
-                    {errors.jobPostLimit.message}
+                    {errors.maxActiveJobPosts.message}
                   </p>
                 )}
               </div>
@@ -268,11 +281,11 @@ export function PlanEditDialog({
                   id="edit-teamMemberLimit"
                   type="number"
                   min={-1}
-                  {...register("teamMemberLimit", { valueAsNumber: true })}
+                  {...register("maxTeamMembers", { valueAsNumber: true })}
                 />
-                {errors.teamMemberLimit && (
+                {errors.maxTeamMembers && (
                   <p className="text-destructive text-xs">
-                    {errors.teamMemberLimit.message}
+                    {errors.maxTeamMembers.message}
                   </p>
                 )}
               </div>
@@ -288,16 +301,6 @@ export function PlanEditDialog({
                 />
                 <Label htmlFor="edit-isActive" className="cursor-pointer">
                   Active Plan
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="edit-isFeatured"
-                  checked={watch("isFeatured")}
-                  onCheckedChange={(val) => setValue("isFeatured", val)}
-                />
-                <Label htmlFor="edit-isFeatured" className="cursor-pointer">
-                  Featured Plan
                 </Label>
               </div>
               <div className="flex items-center space-x-2">

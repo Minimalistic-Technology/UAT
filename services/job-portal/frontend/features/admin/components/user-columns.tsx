@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { UserWithCompany } from "@/features/admin/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { CompanyRole } from "@/types";
+import { CompanyRole } from "@/types/enums";
 import { CheckCircle2, XCircle, UserMinus, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToggleUserStatus } from "@/features/admin/hooks/use-user";
@@ -67,7 +67,7 @@ const ActionCell = ({ user }: { user: UserWithCompany }) => {
                   : "border border-dashed border-slate-300 text-slate-400 hover:bg-green-100 hover:text-green-700 dark:border-slate-800 dark:hover:bg-green-900/30 dark:hover:text-green-400",
               )}
               disabled={isPending}
-              onClick={() => toggleUserStatus({ userId: user._id })}
+              onClick={() => toggleUserStatus({ userId: user.id })}
             >
               {user.isActive ? (
                 <UserMinus className="h-4 w-4" />

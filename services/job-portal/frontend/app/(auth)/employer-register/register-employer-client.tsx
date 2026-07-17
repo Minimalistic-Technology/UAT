@@ -31,11 +31,11 @@ import {
   type EmployerRegisterInput,
 } from "@/features/auth/validations/auth.schema";
 import { useRegisterEmployer } from "@/features/auth/hooks/use-register";
-import { CompanyRole } from "@/types";
+import { CompanyRole } from "@/types/enums";
 import Image from "next/image";
 import { getValidationErrorMessage } from "@/lib/validation-error";
 
-type EmployerRegisterFormValues = Omit<EmployerRegisterInput, "role">;
+type EmployerRegisterFormValues = Omit<EmployerRegisterInput, "companyRole">;
 
 const industries = [
   "Technology",
@@ -80,7 +80,7 @@ export default function EmployerRegisterPage() {
 
     const payload: EmployerRegisterInput = {
       ...data,
-      role: CompanyRole.OWNER,
+      companyRole: CompanyRole.OWNER,
     };
 
     registerMutation.mutate(payload, {

@@ -1,416 +1,460 @@
-export enum CompanyRole {
-  OWNER = "owner",
-  ADMIN = "admin",
-  RECRUITER = "recruiter",
-  HR = "hr",
-}
+import {
+  ApplicationStatus,
+  CompanyType,
+  CouponType,
+  DegreeLevel,
+  ExperienceLevel,
+  GlobalRole,
+  Industry,
+  JobStatus,
+  EmploymentType,
+  KycStatus,
+  PaymentMethod,
+  PaymentStatus,
+  RoleCategory,
+  StipendType,
+  WorkMode,
+  WorkType,
+  SubscriptionStatus,
+  CompanyRole
+} from "./enums";
 
-export enum StipendType {
-  FIXED = "fixed",
-  PERFORMANCE_BASED = "performance_based",
-  UNPAID = "unpaid",
-}
+export * from "./enums";
 
-export enum DurationType {
-  WEEKS = "weeks",
-  MONTHS = "months",
-}
+export type CloudinaryAsset = {
+  url: string;
+  publicId: string;
+};
 
-export enum WorkMode {
-  WORKFROMOFFICE = "work from office",
-  REMOTE = "remote",
-  HYBRID = "hybrid",
-  TEMPWFH = "temporary work from home",
-}
-
-export enum GlobalRole {
-  SUPER_ADMIN = "super_admin",
-  USER = "user",
-}
-
-export enum RoleCategory {
-  // Engineering & Tech
-  SOFTWARE_DEVELOPMENT = "software_development",
-  DATA_SCIENCE = "data_science",
-  DEVOPS = "devops",
-  CYBERSECURITY = "cybersecurity",
-  IT_SUPPORT = "it_support",
-  QA_TESTING = "qa_testing",
-  HARDWARE = "hardware",
-
-  // Design
-  UI_UX = "ui_ux",
-  GRAPHIC_DESIGN = "graphic_design",
-  PRODUCT_DESIGN = "product_design",
-
-  // Business & Management
-  PRODUCT_MANAGEMENT = "product_management",
-  PROJECT_MANAGEMENT = "project_management",
-  BUSINESS_ANALYSIS = "business_analysis",
-  OPERATIONS = "operations",
-  CONSULTING = "consulting",
-
-  // Sales & Marketing
-  SALES = "sales",
-  DIGITAL_MARKETING = "digital_marketing",
-  CONTENT = "content",
-  SEO_SEM = "seo_sem",
-  BRAND_MANAGEMENT = "brand_management",
-
-  // Finance & Legal
-  FINANCE = "finance",
-  ACCOUNTING = "accounting",
-  LEGAL = "legal",
-  COMPLIANCE = "compliance",
-
-  // HR & Admin
-  HUMAN_RESOURCES = "human_resources",
-  RECRUITMENT = "recruitment",
-  ADMINISTRATION = "administration",
-
-  // Other
-  CUSTOMER_SUPPORT = "customer_support",
-  RESEARCH = "research",
-  OTHER = "other",
-}
-
-export enum Industry {
-  // Tech
-  INFORMATION_TECHNOLOGY = "information_technology",
-  SOFTWARE = "software",
-  ECOMMERCE = "ecommerce",
-  FINTECH = "fintech",
-  EDTECH = "edtech",
-  HEALTHTECH = "healthtech",
-
-  // Traditional sectors
-  BANKING = "banking",
-  INSURANCE = "insurance",
-  HEALTHCARE = "healthcare",
-  EDUCATION = "education",
-  MANUFACTURING = "manufacturing",
-  RETAIL = "retail",
-  REAL_ESTATE = "real_estate",
-  LOGISTICS = "logistics",
-  AUTOMOTIVE = "automotive",
-  ENERGY = "energy",
-  TELECOM = "telecom",
-  MEDIA = "media",
-  ENTERTAINMENT = "entertainment",
-  HOSPITALITY = "hospitality",
-  AGRICULTURE = "agriculture",
-  GOVERNMENT = "government",
-  NONPROFIT = "nonprofit",
-  OTHER = "other",
-}
-
-export enum CompanyType {
-  STARTUP = "startup",
-  MNC = "mnc",
-  FOREIGN_MNC = "foreign mnc",
-  INDIAN_MNC = "indian mnc",
-  CORPORATE = "corporate",
-  "GOVT/PSU" = "govt/psu",
-  OTHERS = "others",
-}
-
-export enum DegreeLevel {
-  HIGH_SCHOOL = "high_school",
-  DIPLOMA = "diploma",
-  BACHELORS = "bachelors",
-  MASTERS = "masters",
-  PHD = "phd",
-  ANY = "any", // no hard requirement
-}
-
-export enum ApplicationStatus {
-  PENDING = "pending",
-  REVIEWED = "reviewed",
-  SHORTLISTED = "shortlisted",
-  REJECTED = "rejected",
-  INTERVIEW = "interview",
-  OFFERED = "offered",
-  ACCEPTED = "accepted",
-  WITHDRAWN = "withdrawn",
-}
-
-export enum ExperienceLevel {
-  ENTRY = "entry",
-  INTERMEDIATE = "intermediate",
-  SENIOR = "senior",
-  EXPERT = "expert",
-}
-
-export enum JobType {
-  FULL_TIME = "full_time",
-  PART_TIME = "part_time",
-  CONTRACT = "contract",
-  INTERNSHIP = "internship",
-  FREELANCE = "freelance",
-}
-
-export enum PaymentStatus {
-  CREATED = "created",
-  AUTHORIZED = "authorized",
-  CAPTURED = "captured",
-  FAILED = "failed",
-  REFUNDED = "refunded",
-}
-
-export interface User {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  role: GlobalRole;
-  avatar?: {
-    url: string;
-    publicId: string;
-  };
-
-  // Job Seeker Specific
-  resume?: {
-    url: string;
-    publicId: string;
-  };
-  resumeOriginalName?: string;
-  atsScore?: {
-    overallScore: number;
-    sectionScore: number;
-    formattingScore: number;
-    keywordScore: number;
-    contentScore: number;
-    sectionsFound: string[];
-    sectionsMissing: string[];
-    matchedKeywords: string[];
-  };
-  skills?: string[];
-  languages?: string[];
-  experience?: Array<{
-    title: string;
-    company: string;
-    location: string;
-    startDate: Date;
-    endDate?: Date;
-    current: boolean;
-    description: string;
-  }>;
-  education?: Array<{
-    degree: string;
-    institution: string;
-    graduationYear: number;
-    fieldOfStudy: string;
-  }>;
-  location?: {
-    city: string;
-    state: string;
-    country: string;
-  };
-
-  // Employer Specific
-  company?: string; // ObjectId
-
-  // OAuth
-  googleId?: string;
-
-  // Status
-  isActive: boolean;
-  isVerified: boolean;
-
-  // Timestamps
+export type Avatar = {
+  id: string;
+  url: string;
+  publicId: string;
+  userId: string;
   createdAt: Date;
   updatedAt: Date;
-}
+};
 
-export interface Job {
-  title: string;
-  description: string;
-  company: string; // ObjectId
-  postedBy: string; // ObjectId
-
-  jobType: JobType;
-  experienceLevel: ExperienceLevel;
-
-  location: {
-    city: string;
-    state: string;
-    country: string;
-    remote: boolean;
-  };
-
-  salary: {
-    min?: number;
-    max?: number;
-    currency: string;
-    period: "hourly" | "monthly" | "yearly";
-  };
-
-  skills: string[];
-  requirements: string[];
-  benefits?: string[];
-
-  applicationDeadline?: string;
-  openings: number;
-
-  status: "active" | "closed" | "draft";
-  isFeatured: boolean;
-
-  applicationsCount: number;
-  viewsCount: number;
-
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Application {
-  job: string; // ObjectId
-  resume: string;
-  coverLetter?: string;
-  status: ApplicationStatus;
-  statusHistory: Array<{
-    status: ApplicationStatus;
-    changedAt: string;
-    changedBy?: string;
-    note?: string;
-  }>;
-
-  employerNotes?: string;
-
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Payment {
-  userId: string; // ObjectId
-  amount: number; // in paise
-  currency: string;
-
-  razorpayOrderId: string;
-  razorpayPaymentId?: string;
-  razorpaySignature?: string;
-
-  webhookEvents: {
-    eventId?: string;
-    type?: string;
-    receivedAt: string;
-  }[];
-
-  metadata: Record<string, any>;
-
-  method?: "card" | "upi" | "netbanking" | "wallet";
-
-  failureReason?: string;
-
-  refundId?: string;
-  refundAmount?: number;
-
-  status: PaymentStatus;
-  receipt?: string;
-
-  capturedAt?: string;
-
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Coupon {
-  code: string;
-  type: "percentage" | "amount";
-  value: number;
-  isActive: boolean;
-  expiryDate?: string;
-  maxUses?: number;
-  usageCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Plan {
-  //
-}
-
-export interface Company {
-  name: string;
-  description: string;
-  logo?: string;
-  website?: string;
-  industry: string;
-  companySize: string;
-  location: {
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    zipCode: string;
-  };
-  owner: string; // ObjectId
-  socialLinks?: {
-    linkedin?: string;
-    twitter?: string;
-    facebook?: string;
-  };
-  isVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface KycDocument {
-  user: string; // ObjectId
-  companyName: string;
-  aadharNo: string;
-  gstNo: string;
-  cinNo: string;
-  photo: { publicId: string; url: string };
-  lightbill: { publicId: string; url: string };
-  status: "pending" | "approved" | "rejected";
-  rejectionReason?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Plan {
-  name: string;
-  description?: string;
-  price: number; // Stored as an Integer (e.g., 1089 instead of 10.89)
-  currency: string; // e.g., "INR", "USD"
-  durationDays: number;
-  jobPostLimit: number;
-  isFeatured: boolean;
-  isDefault: boolean;
-  displayOrder: number;
-  features: string[];
-  isActive: boolean;
+export type Resume = {
+  id: string;
+  url: string;
+  publicId: string;
+  originalName?: string;
+  userId: string;
+  atsScore?: AtsScore;
   createdAt: Date;
   updatedAt: Date;
-}
+};
 
-export interface Subscription {
-  employerId: string; // ObjectId
-  planId: string; // ObjectId
-  orderId?: string; // Link to your payment gateway (Stripe/Razorpay)
-  postsRemaining: number;
-  totalPostsGranted: number; // To track original limit (useful for analytics)
-  startDate: Date;
-  expiryDate: Date;
-  status: "active" | "expired" | "depleted" | "cancelled";
-  lastBilledAt?: Date; // Useful for recurring billing logic
+export type AtsScore = {
+  id: string;
+  overallScore: number;
+  sectionScore: number;
+  formattingScore: number;
+  keywordScore: number;
+  contentScore: number;
+  sectionsFound: string[];
+  sectionsMissing: string[];
+  matchedKeywords: string[];
+  resumeId: string;
   createdAt: Date;
   updatedAt: Date;
-}
+};
 
-export interface Experience {
+export type Location = {
+  id: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  userId: string;
+};
+
+export type Experience = {
+  id: string;
   title: string;
   company: string;
-  location: string;
+  workType?: WorkType;
+  location?: string;
   startDate: Date;
   endDate?: Date;
   current: boolean;
-  description: string;
-}
+  description?: string;
+  userId: string;
+};
 
-export interface Education {
+export type Education = {
+  id: string;
   degree: string;
   institution: string;
   graduationYear: number;
   fieldOfStudy: string;
-}
+  userId: string;
+};
+
+export type User = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password?: string;
+  phone?: string;
+  role: GlobalRole;
+  avatar?: Avatar;
+  resume?: Resume;
+  skills: string[];
+  languages: string[];
+  experiences?: Experience[];
+  educations?: Education[];
+  location?: Location;
+  googleId?: string;
+  isActive: boolean;
+  isVerified: boolean;
+  company?: Company;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Testimonial = {
+  id: string;
+  content: string;
+  rating: number;
+  authorName: string;
+  authorRole?: string;
+  authorCompany?: string;
+  status: string; // TestimonialStatus
+  userId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type CompanyLocation = {
+  id: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zipCode?: string;
+  isHeadquarters: boolean;
+  companyId: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type CompanyMember = {
+  id: string;
+  userId: string;
+  companyId: string;
+  role: CompanyRole;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Company = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  website?: string;
+  industry: string;
+  companySize: string; // CompanySize
+  locations?: CompanyLocation[];
+  socialLinks?: any; // Json
+  ownerId: string;
+  isVerified: boolean;
+  verifiedAt?: Date;
+  logoId?: string;
+  logo?: StorageAsset;
+  members?: CompanyMember[];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type StorageAsset = {
+  id: string;
+  url: string;
+  publicId: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Plan = {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  currency: string; // Currency
+  subscriptionDurationDays: number;
+  maxActiveJobPosts: number;
+  maxTeamMembers: number;
+  jobPostValidityDays: number;
+  allowResumeDownload: boolean;
+  features: string[];
+  isDefault: boolean;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Subscription = {
+  id: string;
+  companyId: string;
+  planId: string;
+  plan?: Plan;
+  orderId?: string;
+  paymentRef?: string;
+  postsRemaining: number;
+  totalPostsGranted: number;
+  startDate: Date;
+  expiryDate: Date;
+  cancelledAt?: Date;
+  lastBilledAt?: Date;
+  status: SubscriptionStatus;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type PaymentWebhookEvent = {
+  id: string;
+  paymentId?: string;
+  eventId: string;
+  type: string;
+  payload: any; // Json
+  processedAt?: Date;
+  receivedAt: Date;
+};
+
+export type Refund = {
+  id: string;
+  paymentId: string;
+  razorpayRefundId: string;
+  amount: number;
+  reason?: string;
+  status: string; // RefundStatus
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Payment = {
+  id: string;
+  userId: string;
+  subscriptionId?: string;
+  amount: number;
+  currency: string; // Currency
+  razorpayOrderId: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+  webhookEvents?: PaymentWebhookEvent[];
+  metadata?: any; // Json
+  method?: PaymentMethod;
+  failureReason?: string;
+  status: PaymentStatus;
+  receipt?: string;
+  capturedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Coupon = {
+  id: string;
+  code: string;
+  type: CouponType;
+  value: number;
+  isActive: boolean;
+  expiryDate?: Date;
+  maxUses?: number;
+  usageCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type CouponUsage = {
+  id: string;
+  couponId: string;
+  userId: string;
+  paymentId?: string;
+  discountApplied: number;
+  usedAt: Date;
+};
+
+export type KYC = {
+  id: string;
+  userId: string;
+  companyId?: string;
+  companyDocumentId: string;
+  companyDocumentType: string; // DocumentType
+  personalDocumentId: string;
+  personalDocumentType: string; // DocumentType
+  status: KycStatus;
+  rejectionReason?: string;
+  reviewedAt?: Date;
+  isLatest: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Draft = {
+  id: string;
+  companyId: string;
+  postedById: string;
+  type: string; // DraftType
+  formData: any; // Json
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type BaseListing = {
+  id: string;
+  title: string;
+  description: string;
+  companyId: string;
+  postedById: string;
+  opportunityType: string; // DraftType
+  employmentType: EmploymentType;
+  experienceLevel?: ExperienceLevel;
+  workMode: WorkMode;
+  companyType: CompanyType;
+  roleCategory: RoleCategory;
+  industry: Industry;
+  city?: string;
+  state?: string;
+  country?: string;
+  minimumDegree: DegreeLevel;
+  preferredFields: string[];
+  isDegreeRequired: boolean;
+  skills: string[];
+  requirements: string[];
+  benefits: string[];
+  genderPreference: string; // GenderPreference
+  englishFluency: string; // EnglishFluency
+  applicationDeadline?: Date;
+  openings: number;
+  status: JobStatus;
+  applicationsCount: number;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Internship = {
+  id: string;
+  listingId: string;
+  listing?: BaseListing;
+  stipendType: StipendType;
+  stipendAmount?: number;
+  stipendCurrency: string; // Currency
+  stipendPeriod: string; // StipendPeriod
+  durationValue: number;
+  durationUnit: string; // DurationUnit
+  isPPO: boolean;
+  startDate?: Date;
+  certificateProvided: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Job = {
+  id: string;
+  listingId: string;
+  listing?: BaseListing;
+  experienceLevel: ExperienceLevel;
+  experienceInYears: number;
+  salaryMin?: number;
+  salaryMax?: number;
+  salaryCurrency: string;
+  salaryPeriod: string; // SalaryPeriod
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ApplicationStatusHistory = {
+  id: string;
+  applicationId: string;
+  status: ApplicationStatus;
+  changedAt: Date;
+  changedById?: string;
+  note?: string;
+};
+
+export type Application = {
+  id: string;
+  listingType: string; // DraftType
+  listingId: string;
+  jobSeekerId: string;
+  resumeId?: string;
+  status: ApplicationStatus;
+  interviewDate?: Date;
+  employerNotes?: string;
+  statusHistory?: ApplicationStatusHistory[];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type AiChatLog = {
+  id: string;
+  prompt: string;
+  response: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Feature = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  status: string; // FeatureStatus
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type FeaturePermission = {
+  id: string;
+  featureId: string;
+  userId?: string;
+  companyId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Notification = {
+  id: string;
+  recipientId: string;
+  senderId?: string;
+  title: string;
+  message: string;
+  type: string; // NotificationType
+  isRead: boolean;
+  actionUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type NotificationPreference = {
+  id: string;
+  userId: string;
+  isBlocked: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Pagination = {
+  totalPages: number;
+  currentPage: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
+// Flattened types for frontend convenience (combining BaseListing with Job/Internship)
+export type FlattenedJob = BaseListing & Omit<Job, "id" | "listingId" | "listing" | "createdAt" | "updatedAt"> & {
+  jobId: string;
+};
+
+export type FlattenedInternship = BaseListing & Omit<Internship, "id" | "listingId" | "listing" | "createdAt" | "updatedAt"> & {
+  internshipId: string;
+};

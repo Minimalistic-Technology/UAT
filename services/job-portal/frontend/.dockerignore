@@ -4,7 +4,5 @@ Dockerfile
 .dockerignore
 .git
 .gitignore
-.env
-.env.*
 .next
 README.md

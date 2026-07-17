@@ -49,9 +49,9 @@ export default function JobSeekerDashboard() {
     if (user.phone) profileStrength += 15;
     if (user.location?.city || user.location?.country) profileStrength += 10;
     if (user.skills && user.skills.length > 0) profileStrength += 15;
-    if (user.experience && user.experience.length > 0) profileStrength += 15;
-    if (user.education && user.education.length > 0) profileStrength += 10;
-    if (user.resume?.url || user.resumeOriginalName) profileStrength += 10;
+    if (user.experiences && user.experiences.length > 0) profileStrength += 15;
+    if (user.educations && user.educations.length > 0) profileStrength += 10;
+    if (user.resume?.originalName) profileStrength += 10;
   }
 
   const stats = [

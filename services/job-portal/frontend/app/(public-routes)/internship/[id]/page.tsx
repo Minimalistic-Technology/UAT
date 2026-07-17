@@ -79,14 +79,6 @@ const Page = () => {
                     {internship.company.name}
                   </p>
                 </div>
-                {internship.isFeatured && (
-                  <Badge
-                    variant="secondary"
-                    className="bg-yellow-100 text-yellow-700"
-                  >
-                    Featured
-                  </Badge>
-                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -94,26 +86,26 @@ const Page = () => {
                 <div className="text-muted-foreground flex items-center text-sm capitalize">
                   <MapPinIcon className="mr-1 h-4 w-4 shrink-0" />
                   <span>
-                    {internship.workMode === "remote"
+                    {internship.workMode === "REMOTE"
                       ? "Remote"
-                      : internship.location?.city &&
-                        internship.location?.country}
+                      : internship.city &&
+                        internship.country}
                   </span>
                 </div>
 
-                {internship.workMode && internship.workMode !== "remote" && (
+                {internship.workMode && internship.workMode !== "REMOTE" && (
                   <div className="text-muted-foreground flex items-center text-sm capitalize">
                     <MonitorIcon className="mr-1 h-4 w-4" />
                     {internship.workMode.replace(/_/g, " ")}
                   </div>
                 )}
 
-                {internship.stipend && (
+                {internship.stipendType && (
                   <div className="text-muted-foreground flex items-center text-sm capitalize">
                     <WalletIcon className="mr-1 h-4 w-4" />
-                    {internship.stipend.type === "unpaid"
+                    {internship.stipendType === "UNPAID"
                       ? "Unpaid"
-                      : `${getCurrencySymbol(internship.stipend.currency || "INR")} ${internship.stipend.amount?.toLocaleString() || "Variable"}/${internship.stipend.period}`}
+                      : `${getCurrencySymbol(internship.stipendCurrency || "INR")} ${internship.stipendAmount?.toLocaleString() || "Variable"}/${internship.stipendPeriod}`}
                   </div>
                 )}
 
@@ -231,13 +223,13 @@ const Page = () => {
                 </span>
               </div>
 
-              {internship.duration && (
+              {internship.durationValue && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground flex items-center">
                     <ClockIcon className="mr-2 h-4 w-4" /> Duration
                   </span>
                   <span className="text-right font-medium capitalize">
-                    {internship.duration.value} {internship.duration.unit}
+                    {internship.durationValue} {internship.durationUnit}
                   </span>
                 </div>
               )}
@@ -275,14 +267,14 @@ const Page = () => {
                 </div>
               )}
 
-              {internship.education && (
+              {internship.minimumDegree && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground flex items-center">
                     <GraduationCapIcon className="mr-2 h-4 w-4" /> Education
                   </span>
                   <span className="text-right font-medium capitalize">
-                    {internship.education.minimumDegree?.replace(/_/g, " ")}
-                    {internship.education.isRequired ? " (Req)" : ""}
+                    {internship.minimumDegree?.replace(/_/g, " ")}
+                    {internship.isDegreeRequired ? " (Req)" : ""}
                   </span>
                 </div>
               )}
@@ -316,8 +308,9 @@ const Page = () => {
           <CompanyCard
             company={{
               ...internship.company,
-              location: internship.company.location,
-            }}
+              _id: internship.company.id,
+              locations: [],
+            } as any}
           />
           <div className="mt-6">
             <RelatedInternships internshipId={internshipId as string} />

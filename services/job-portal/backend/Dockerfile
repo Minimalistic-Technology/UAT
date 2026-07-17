@@ -1,32 +1,33 @@
-# Stage 1
-FROM node:20-alpine AS builder
+FROM node:20-slim
 
 WORKDIR /app
 
-COPY package*.json ./
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y openssl && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN npm install
+# Install pnpm
+RUN npm install -g pnpm
 
+# Copy dependency files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN pnpm install
+
+# Copy application source
 COPY . .
 
-RUN npm run build
+# Generate Prisma Client
+RUN pnpm run db:generate
 
-# Stage 2: Production environment
-FROM node:20-alpine
+# Build the application
+RUN pnpm run build
 
-WORKDIR /app
-
-COPY package*.json ./
-
-# Install only production dependencies
-RUN npm install --omit=dev
-
-# Copy compiled code from the builder stage
-COPY --from=builder /app/build ./build
-
-# Expose the default port
+# Expose application port
 ENV PORT=5000
 EXPOSE 5000
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm start"]

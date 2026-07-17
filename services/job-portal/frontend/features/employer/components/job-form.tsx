@@ -1,6 +1,6 @@
 import { useCreateMyJobPosting, useUpdateMyJobPosting } from "../hooks/use-job";
 import { useSaveDraft, useDeleteDraft } from "../hooks/use-draft";
-import { Job } from "@/types/new-index";
+import { FlattenedJob as Job } from "@/types";
 import { CreateJobFormData, createJobSchema } from "../validations/job.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -30,7 +30,7 @@ export function JobForm({
 }) {
   const { mutate: createJob, isPending: isCreating } = useCreateMyJobPosting();
   const { mutate: updateJob, isPending: isUpdating } = useUpdateMyJobPosting(
-    initialData?._id as string,
+    initialData?.id as string,
   );
   const { mutate: saveDraft, isPending: isSavingDraft } = useSaveDraft();
   const { mutate: deleteDraft } = useDeleteDraft();
@@ -53,20 +53,20 @@ export function JobForm({
             roleCategory: initialData.roleCategory as any,
             industry: initialData.industry as any,
             location: {
-              city: initialData.location?.city || "",
-              state: initialData.location?.state || "",
-              country: initialData.location?.country || "",
+              city: initialData.city || "",
+              state: initialData.state || "",
+              country: initialData.country || "",
             },
             education: {
-              minimumDegree: initialData.education.minimumDegree as any,
-              preferredFields: initialData.education.preferredFields || [],
-              isRequired: initialData.education.isRequired,
+              minimumDegree: initialData.minimumDegree as any,
+              preferredFields: initialData.preferredFields || [],
+              isRequired: initialData.isDegreeRequired,
             },
             salary: {
-              min: initialData.salary.min,
-              max: initialData.salary.max,
-              currency: initialData.salary.currency || "INR",
-              period: initialData.salary.period || "yearly",
+              min: initialData.salaryMin,
+              max: initialData.salaryMax,
+              currency: initialData.salaryCurrency || "INR",
+              period: initialData.salaryPeriod || "yearly",
             },
             skills: initialData.skills,
             requirements: initialData.requirements,
@@ -75,7 +75,6 @@ export function JobForm({
             applicationDeadline: initialData.applicationDeadline
               ? (new Date(initialData.applicationDeadline).toISOString() as any)
               : undefined,
-            isFeatured: initialData.isFeatured,
             status: initialData.status as any,
             opportunityType: "job",
             genderPreference: (initialData as any).genderPreference || "any",

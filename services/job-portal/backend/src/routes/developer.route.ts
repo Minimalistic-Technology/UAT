@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { protect, authorize } from "../middleware/auth.middleware.js";
 import { getCollections, runQuery } from "../controllers/developer.controller.js";
-import { GlobalRole } from "../models/User.model.js";
+import { GlobalRole } from "../../generated/prisma/client.js";
 
 const router = Router();
 

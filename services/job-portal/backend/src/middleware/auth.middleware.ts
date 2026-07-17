@@ -1,9 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../config/env.js";
-import User, { GlobalRole } from "../models/User.model.js";
+import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../utils/apiError.js";
-import CompanyMember from "../models/CompanyMember.model.js";
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -23,7 +22,7 @@ export const protect = async (
       req.headers.authorization.startsWith("Bearer")
     ) {
       token = req.headers.authorization.split(" ")[1];
-    } else if (req.cookies.token) {
+    } else if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
     }
 
@@ -35,7 +34,9 @@ export const protect = async (
     const decoded: any = jwt.verify(token, config.jwtSecret);
 
     // Get user from token
-    req.user = await User.findById(decoded.id);
+    req.user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+    });
 
     if (!req.user) {
       return next(new ApiError(401, "User not found"));
@@ -76,7 +77,9 @@ export const optionalAuth = async (
     }
 
     const decoded: any = jwt.verify(token, config.jwtSecret);
-    const user = await User.findById(decoded.id);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+    });
 
     if (user && user.isActive) {
       req.user = user;
@@ -89,7 +92,7 @@ export const optionalAuth = async (
   }
 };
 
-export const authorize = (...roles: GlobalRole[]) => {
+export const authorize = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!roles.includes(req.user.role)) {
       return next(
@@ -113,7 +116,9 @@ export const isEmployer = async (
       return next(new ApiError(401, "Not authorized to access this route"));
     }
 
-    const companyMember = await CompanyMember.findOne({ user: req.user._id });
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id },
+    });
 
     if (!companyMember || !companyMember.isActive) {
       return next(
@@ -126,7 +131,7 @@ export const isEmployer = async (
 
     // Assign company related data to req.user for downstream use if needed
     req.user.isEmployer = true;
-    req.user.companyId = companyMember.company;
+    req.user.companyId = companyMember.companyId;
 
     next();
   } catch (error: any) {

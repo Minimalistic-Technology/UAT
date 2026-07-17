@@ -1,5 +1,5 @@
 import { Response, NextFunction } from "express";
-import { Testimonial } from "../models/Testimonial.model.js";
+import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
@@ -10,19 +10,21 @@ export const createTestimonial = async (
   next: NextFunction,
 ) => {
   try {
-    const { content, rating } = req.body;
+    const { content, rating, authorName, authorRole, authorCompany } = req.body;
 
-    if (!content) {
-      throw new ApiError(400, "Content is required");
-    }
-
-    const testimonial = await Testimonial.create({
-      user: req.user?._id,
-      content,
-      rating,
+    const testimonial = await prisma.testimonial.create({
+      data: {
+        userId: req.user?.id,
+        content,
+        rating: rating || 5,
+        authorName,
+        authorRole,
+        authorCompany,
+      },
+      include: {
+        user: true,
+      },
     });
-
-    await testimonial.populate("user");
 
     res
       .status(201)
@@ -41,18 +43,29 @@ export const updateTestimonial = async (
 ) => {
   try {
     const { id } = req.params;
+    const { content, rating, authorName, authorRole, authorCompany } = req.body;
 
-    const testimonial = await Testimonial.findById(id);
+    const testimonial = await prisma.testimonial.findUnique({
+      where: { id: String(id) },
+    });
 
     if (!testimonial) {
       throw new ApiError(404, "Testimonial not found");
     }
 
-    const updatedTestimonial = await Testimonial.findByIdAndUpdate(
-      id,
-      req.body,
-      { returnDocument: "after", runValidators: true },
-    ).populate("user");
+    const updatedTestimonial = await prisma.testimonial.update({
+      where: { id: String(id) },
+      data: {
+        content,
+        rating,
+        authorName,
+        authorRole,
+        authorCompany,
+      },
+      include: {
+        user: true,
+      },
+    });
 
     res
       .status(200)
@@ -76,13 +89,17 @@ export const deleteTestimonial = async (
   try {
     const { id } = req.params;
 
-    const testimonial = await Testimonial.findById(id);
+    const testimonial = await prisma.testimonial.findUnique({
+      where: { id: String(id) },
+    });
 
     if (!testimonial) {
       throw new ApiError(404, "Testimonial not found");
     }
 
-    await Testimonial.findByIdAndDelete(id);
+    await prisma.testimonial.delete({
+      where: { id: String(id) },
+    });
 
     res
       .status(200)

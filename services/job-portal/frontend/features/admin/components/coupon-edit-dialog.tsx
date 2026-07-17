@@ -30,7 +30,7 @@ import {
   couponSchema,
 } from "@/features/admin/validations/coupon.schema";
 import { useUpdateCoupon } from "@/features/admin/hooks/use-coupon";
-import { Coupon } from "@/types/new-index";
+import { Coupon } from "@/types";
 
 interface CouponEditDialogProps {
   coupon: Coupon;
@@ -56,7 +56,7 @@ export function CouponEditDialog({
     resolver: zodResolver(couponSchema),
     defaultValues: {
       code: "",
-      type: "percentage",
+      type: "PERCENTAGE",
       value: 0,
       isActive: true,
       expiryDate: undefined,
@@ -81,7 +81,7 @@ export function CouponEditDialog({
   }, [coupon, open, reset]);
 
   const onSubmit = (data: CouponFormValues) => {
-    if (!coupon?._id) return;
+    if (!coupon?.id) return;
 
     const payload = {
       ...data,
@@ -90,7 +90,7 @@ export function CouponEditDialog({
     };
 
     updateCoupon(
-      { id: coupon._id, data: payload as Partial<CouponFormValues> },
+      { id: coupon.id, data: payload as Partial<CouponFormValues> },
       {
         onSuccess: () => {
           onOpenChange(false);
@@ -145,8 +145,8 @@ export function CouponEditDialog({
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="amount">Fixed Amount ($)</SelectItem>
+                    <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                    <SelectItem value="AMOUNT">Fixed Amount ($)</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.type && (
@@ -158,14 +158,14 @@ export function CouponEditDialog({
 
               <div className="space-y-2">
                 <Label htmlFor="edit-value">
-                  Discount Value {selectedType === "percentage" ? "(%)" : "($)"}
+                  Discount Value {selectedType === "PERCENTAGE" ? "(%)" : "($)"}
                 </Label>
                 <Input
                   id="edit-value"
                   {...register("value", { valueAsNumber: true })}
                   type="number"
                   min="0"
-                  step={selectedType === "percentage" ? "1" : "0.01"}
+                  step={selectedType === "PERCENTAGE" ? "1" : "0.01"}
                   placeholder="0"
                 />
                 {errors.value && (

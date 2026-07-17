@@ -301,7 +301,7 @@ export const EmployerCTA = () => {
             </div>
 
             {/* Right Card / Social Proof */}
-            <div className="lg:col-span-5">
+            {/* <div className="lg:col-span-5">
               <motion.div
                 animate={{ y: [0, -12, 0] }}
                 transition={{
@@ -311,7 +311,7 @@ export const EmployerCTA = () => {
                 }}
                 className="relative rounded-[2rem] bg-slate-950 p-10 text-white shadow-2xl shadow-slate-900/40"
               >
-                {/* Status Indicator */}
+                // Status Indicator
                 <div className="mb-8 flex items-center justify-between">
                   <div className="rounded-full border border-slate-800 bg-slate-900 px-3 py-1 text-[10px] font-black tracking-widest text-blue-400 uppercase">
                     Verified Result
@@ -341,12 +341,13 @@ export const EmployerCTA = () => {
                   </div>
                 </div>
 
-                {/* Decorative corner element */}
+                // Decorative corner element
                 <div className="absolute top-0 right-0 p-8 opacity-10">
                   <CheckCircle2 size={120} />
                 </div>
               </motion.div>
-            </div>
+            </div> 
+            */}
           </div>
         </motion.div>
       </div>

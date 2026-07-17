@@ -3,7 +3,7 @@ import { Ollama } from "ollama";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { adminToolsService, adminToolDefinitions } from "../services/ai-tools.service.js";
-import AiChatLog from "../models/AiChatLog.model.js";
+import { prisma } from "../lib/prisma.js";
 
 const OLLAMA_HOST = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
 const LLM_MODEL = process.env.LLM_MODEL || "llama3.2:1b";
@@ -132,11 +132,13 @@ export const chatWithAi = async (req: Request, res: Response, next: NextFunction
 
         // Save conversation log to Database seamlessly
         const userObj = (req as any).user;
-        if (userObj && userObj._id) {
-            await AiChatLog.create({
-                user: userObj._id,
-                prompt: userPrompt,
-                response: finalContent
+        if (userObj && userObj.id) {
+            await prisma.aiChatLog.create({
+                data: {
+                    userId: userObj.id,
+                    prompt: userPrompt,
+                    response: finalContent
+                }
             });
         }
 

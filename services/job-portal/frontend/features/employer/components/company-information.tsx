@@ -26,7 +26,7 @@ export const CompanyInformation = ({ company }: { company: any }) => {
   const { data: userDetailsResponse } = useGetUserDetails();
 
   const user = userDetailsResponse?.data;
-  const isOwner = user && company?.owner?._id === user._id;
+  const isOwner = user && company?.owner?.id === user.id;
   const isKycCompleted = company?.isVerified;
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),

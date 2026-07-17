@@ -28,7 +28,7 @@ export const Testimonials = () => {
             </h2>
           </div>
 
-          <div
+          {/* <div
             className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-4"
             aria-label="Rated 4.9 stars by 2100 users"
           >
@@ -49,7 +49,7 @@ export const Testimonials = () => {
                 2,100+ reviews
               </span>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Testimonials Grid */}
@@ -82,10 +82,10 @@ export const Testimonials = () => {
                 </div>
               ))
             : testimonials?.map((t: any, i: number) => {
-                const name = `${t.user.firstName} ${t.user.lastName}`;
-                const role = t.user.role || "User";
+                const name = t.authorName;
+                const role = [t.authorRole, t.authorCompany].filter(Boolean).join(" at ") || "User";
                 const img =
-                  t.user.avatarUrl ||
+                  t.user?.avatarUrl ||
                   `https://api.dicebear.com/7.x/initials/svg?seed=${name}`;
                 const quote = t.content;
                 const accent = i % 2 === 0 ? "indigo" : "blue";

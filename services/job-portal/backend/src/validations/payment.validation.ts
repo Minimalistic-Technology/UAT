@@ -4,12 +4,12 @@ export const createOrderSchema = [
   body("planId")
     .notEmpty()
     .withMessage("Plan ID is required")
-    .isMongoId()
+    .isString()
     .withMessage("Invalid plan ID"),
   body("userId")
     .notEmpty()
     .withMessage("User ID is required")
-    .isMongoId()
+    .isString()
     .withMessage("Invalid user ID"),
   body("internalOrderId")
     .notEmpty()

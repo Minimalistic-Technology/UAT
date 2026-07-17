@@ -1,5 +1,5 @@
 import { GraphQLError } from "graphql";
-import Coupon from "../../models/Coupon.model.js";
+import { prisma } from "../../lib/prisma.js";
 import { MyContext } from "../context.js";
 
 export const couponResolvers = {
@@ -20,12 +20,12 @@ export const couponResolvers = {
         const limitNumber = Math.min(100, Math.max(1, limit || 10));
         const skip = (pageNumber - 1) * limitNumber;
 
-        const totalCoupons = await Coupon.countDocuments();
-        const coupons = await Coupon.find()
-          .sort("-createdAt")
-          .skip(skip)
-          .limit(limitNumber)
-          .select("-createdAt -updatedAt");
+        const totalCoupons = await prisma.coupon.count();
+        const coupons = await prisma.coupon.findMany({
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limitNumber,
+        });
 
         const totalPages = Math.ceil(totalCoupons / limitNumber);
 
@@ -47,3 +47,4 @@ export const couponResolvers = {
     },
   },
 };
+

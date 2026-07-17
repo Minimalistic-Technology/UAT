@@ -51,6 +51,7 @@ export default function TrendingSection({
     data: postsData = [],
     isLoading: loading,
     isError,
+    error
   } = useGetTrendingBlogs();
   const posts = postsData as unknown as TrendPost[];
 
@@ -62,8 +63,7 @@ export default function TrendingSection({
             <AlertTriangle size={48} className="mb-4 text-red-500/40" />
             <h3 className="text-xl font-bold">Unable to load trending posts</h3>
             <p className="mt-2 text-sm text-red-500/80">
-              We encountered an issue while fetching the latest articles. Please
-              check back later.
+              {error?.message || "We encountered an issue while fetching the latest articles. Please check back later."}
             </p>
           </div>
         </div>

@@ -1,9 +1,9 @@
 import express, { Request, Response } from "express";
-import cluster from "node:cluster";
-import os from "node:os";
+import cluster from "cluster";
+import os from "os";
 import app from "./app";
-import { connectDatabase } from "./config/db";
-import { env } from "./config/env";
+import { connectDatabase } from './config/db';
+import { env } from './config/env';
 
 const PORT = env.PORT || 5001;
 
@@ -15,31 +15,28 @@ const startServer = async () => {
   try {
     await connectDatabase(); // PostgreSQL (Prisma) connection
     app.listen(PORT, () => {
-      console.log(
-        `[server] Service listening on port ${PORT} in ${env.NODE_ENV} mode`,
-      );
-      console.log(`[server] CORS origins: ${env.corsOrigins.join(", ")}`);
+      console.log(`[server] Service listening on port ${PORT} in ${env.NODE_ENV} mode`);
+      console.log(`[server] CORS origins: ${env.corsOrigins.join(', ')}`);
     });
   } catch (err) {
     console.error("Failed to start server because of DB connection:", err);
     process.exit(1);
   }
 };
-
 if (cluster.isPrimary) {
   const numCPUs = os.cpus().length;
-  console.log(
-    `[server] Primary ${process.pid} is running. Forking for ${numCPUs} CPUs.`,
-  );
+  console.log(`[server] Primary ${process.pid} is running`);
+  console.log(`[server] Forking ${numCPUs} workers...`);
 
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
 
   cluster.on("exit", (worker, code, signal) => {
-    console.warn(`[server] Worker ${worker.process.pid} died. Restarting...`);
+    console.log(`[server] Worker ${worker.process.pid} died (code: ${code}, signal: ${signal}). Restarting...`);
     cluster.fork();
   });
 } else {
   startServer();
+  console.log(`[server] Worker ${process.pid} started`);
 }

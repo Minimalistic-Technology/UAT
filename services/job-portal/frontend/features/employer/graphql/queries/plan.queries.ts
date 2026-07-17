@@ -3,21 +3,20 @@ export const GET_ACTIVE_PLANS_QUERY = `
     getPlans {
       count
       plans {
-        _id
+        id
         name
         description
         price
         currency
-        durationDays
-        jobPostLimit
-        teamMemberLimit
-        isFeatured
+        subscriptionDurationDays
+        maxActiveJobPosts
+        maxTeamMembers
         isDefault
         displayOrder
         features
         isActive
         allowResumeDownload
-        postValidityDays
+        jobPostValidityDays
         createdAt
         updatedAt
       }

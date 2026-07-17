@@ -1,39 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
-import {
-  ExperienceLevel,
-  JobStatus,
-  EmploymentType,
-  OpportunityType,
-} from "../models/BaseJob.model.js";
-import Job from "../models/Job.model.js";
+import { prisma } from "../lib/prisma.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
-import { GlobalRole } from "../models/User.model.js";
-import mongoose from "mongoose";
-import CompanyMember, { CompanyRole } from "../models/CompanyMember.model.js";
-import Company from "../models/Company.model.js";
-import Subscription from "../models/Subscription.model.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
-import { getEmbedding, cosineSimilarity } from "../utils/embedding.js";
-
-export function isValidJobType(value: any): value is EmploymentType {
-  return Object.values(EmploymentType).includes(value);
-}
-
-export function isValidExperienceType(value: any): value is ExperienceLevel {
-  return Object.values(ExperienceLevel).includes(value);
-}
-
-export function isValidWorkMode(value: any): value is string {
-  const validWorkModes = [
-    "remote",
-    "work from office",
-    "hybrid",
-    "temporary work from home",
-  ];
-  return validWorkModes.includes(value);
-}
 
 export const getJobs = async (
   req: AuthRequest,
@@ -41,62 +11,66 @@ export const getJobs = async (
   next: NextFunction,
 ) => {
   try {
-    const query = buildBaseJobQuery(req.query as Record<string, any>);
+    const query = buildBaseJobQuery(req.query as Record<string, any>, true);
+    query.opportunityType = "JOB";
 
     const { experienceLevel, minSalary, maxSalary } = req.query;
 
     if (experienceLevel) {
-      if (!isValidExperienceType(experienceLevel))
-        return next(new ApiError(400, "Invalid experience type"));
-      query.experienceLevel = experienceLevel;
+      if (!query.jobDetails) query.jobDetails = { is: {} };
+      query.jobDetails.is.experienceLevel = experienceLevel.toString().toUpperCase();
     }
 
     if (minSalary || maxSalary) {
-      query["salary.min"] = {};
-      if (minSalary) query["salary.min"].$gte = Number(minSalary);
-      if (maxSalary) query["salary.max"] = { $lte: Number(maxSalary) };
+      if (!query.jobDetails) query.jobDetails = { is: {} };
+      if (minSalary) {
+        if (!query.jobDetails.is.salaryMin) query.jobDetails.is.salaryMin = {};
+        query.jobDetails.is.salaryMin.gte = Number(minSalary);
+      }
+      if (maxSalary) {
+        if (!query.jobDetails.is.salaryMax) query.jobDetails.is.salaryMax = {};
+        query.jobDetails.is.salaryMax.lte = Number(maxSalary);
+      }
     }
 
-    const { page, limit } = req.query;
-
-    const pageNumber = Number(page) || 1;
-    const limitNumber = Number(limit) || 10;
+    const pageNumber = Number(req.query.page) || 1;
+    const limitNumber = Number(req.query.limit) || 10;
     const skip = (pageNumber - 1) * limitNumber;
 
     const [jobs, total] = await Promise.all([
-      Job.find(query)
-        .sort({ createdAt: -1 })
-        .populate("postedBy", "firstName lastName")
-        .populate("company", "name logo location industry")
-        .skip(skip)
-        .limit(limitNumber),
-      Job.countDocuments(query),
+      prisma.baseListing.findMany({
+        where: query,
+        orderBy: { createdAt: "desc" },
+        include: {
+          postedBy: { select: { firstName: true, lastName: true } },
+          company: { select: { name: true, logo: true, locations: { select: { city: true, state: true, country: true } }, industry: true } },
+          jobDetails: true,
+        },
+        skip,
+        take: limitNumber,
+      }),
+      prisma.baseListing.count({ where: query }),
     ]);
 
-    // Format plain objects so we can append properties
-    const jobsWithDetails: any[] = jobs.map((job) => job.toObject());
-    let formattedJobs = [...jobsWithDetails];
+    let formattedJobs = [...jobs];
 
-    // Check if user is logged in as a job seeker to attach 'hasApplied' field
-    if (req.user && req.user.role === GlobalRole.USER && !req.user.isEmployer) {
-      // Import Application model locally to avoid circular dependencies if any are introduced later
-      const Application = (await import("../models/Application.model.js"))
-        .default;
+    if (req.user && req.user.role === "USER" && !req.user.isEmployer) {
+      const jobIds = jobs.map((job) => job.id);
 
-      const jobIds = jobsWithDetails.map((job) => job._id);
-
-      const applications = await Application.find({
-        jobSeeker: req.user._id,
-        job: { $in: jobIds },
+      const applications = await prisma.application.findMany({
+        where: {
+          jobSeekerId: req.user.id,
+          listingId: { in: jobIds },
+        },
       });
 
       const appliedJobIds = new Set(
-        applications.map((app) => app.listing.toString()),
+        applications.map((app) => app.listingId),
       );
 
-      formattedJobs = jobsWithDetails.map((job) => ({
+      formattedJobs = jobs.map((job) => ({
         ...job,
-        hasApplied: appliedJobIds.has(job._id.toString()),
+        hasApplied: appliedJobIds.has(job.id),
       }));
     }
 
@@ -125,21 +99,20 @@ export const getJob = async (
   next: NextFunction,
 ) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
 
-    const job = await Job.findById(id)
-      .populate("postedBy", "firstName lastName email")
-      .populate(
-        "company",
-        "name logo description website location industry companySize",
-      );
+    const job = await prisma.baseListing.findUnique({
+      where: { id },
+      include: {
+        postedBy: { select: { firstName: true, lastName: true, email: true } },
+        company: { select: { name: true, logo: true, description: true, website: true, locations: true, industry: true, companySize: true } },
+        jobDetails: true,
+      }
+    });
 
-    if (!job) {
+    if (!job || job.opportunityType !== "JOB") {
       return next(new ApiError(404, "Job not found"));
     }
-
-    job.viewsCount = (job.viewsCount || 0) + 1;
-    await job.save();
 
     return res
       .status(200)
@@ -154,28 +127,19 @@ export const createJob = async (
   res: Response,
   next: NextFunction,
 ) => {
-  // 1. Start a Session for the Transaction
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
 
-    const companyMember = await CompanyMember.findOne({ user: userId }).session(
-      session,
-    );
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId },
+      include: { company: true },
+    });
 
     if (!companyMember) {
       throw new ApiError(400, "Company member doesn't exist.");
     }
 
-    const company = await Company.findById(companyMember.company).session(
-      session,
-    );
-
-    if (!company) {
-      throw new ApiError(404, "No such company exists");
-    }
+    const company = companyMember.company;
 
     if (!company.isVerified) {
       throw new ApiError(
@@ -185,101 +149,102 @@ export const createJob = async (
     }
 
     if (
-      companyMember.role !== CompanyRole.OWNER &&
-      companyMember.role !== CompanyRole.HR
+      companyMember.role !== "OWNER" &&
+      companyMember.role !== "HR"
     ) {
       throw new ApiError(403, "You're not authorized to create a job");
     }
 
-    // Validate active subscription within the session
-    const subscription = await Subscription.findOne({
-      employerId: company.owner,
-      status: "active",
-      expiryDate: { $gt: new Date() },
-      $or: [{ postsRemaining: { $gt: 0 } }, { postsRemaining: -1 }],
-    }).session(session);
+const job = await prisma.$transaction(async (tx) => {
+  const subscription = await tx.subscription.findFirst({
+    where: {
+      companyId: company.id,
+      status: "ACTIVE",
+      expiryDate: { gt: new Date() },
+      OR: [{ postsRemaining: { gt: 0 } }, { postsRemaining: -1 }],
+    },
+  });
 
-    if (!subscription) {
+  if (!subscription) {
+    throw new ApiError(
+      402,
+      "You must have an active subscription with remaining job posts. Please upgrade your plan.",
+    );
+  }
+
+  // Unlimited plans: skip the decrement entirely
+  if (subscription.postsRemaining !== -1) {
+    // Atomic, conditional decrement — guards against concurrent over-draft
+    const result = await tx.subscription.updateMany({
+      where: {
+        id: subscription.id,
+        postsRemaining: { gt: 0 }, // re-checked at write time, not just read time
+      },
+      data: {
+        postsRemaining: { decrement: 1 },
+      },
+    });
+
+    if (result.count === 0) {
+      // Someone else consumed the last slot between our read and this write
       throw new ApiError(
         402,
         "You must have an active subscription with remaining job posts. Please upgrade your plan.",
       );
     }
 
-    const jobData = {
-      title: req.body.title,
-      description: req.body.description,
-      employmentType: req.body.employmentType,
-      workMode: req.body.workMode,
-      companyType: req.body.companyType,
-      roleCategory: req.body.roleCategory,
-      industry: req.body.industry,
-      experienceLevel: req.body.experienceLevel,
-      experienceInYears: req.body.experienceInYears,
-      openings: req.body.openings,
+    // Optional: flip to DEPLETED once it hits 0
+    await tx.subscription.updateMany({
+      where: { id: subscription.id, postsRemaining: 0, status: "ACTIVE" },
+      data: { status: "DEPLETED" },
+    });
+  }
 
-      location: {
-        city: req.body.location?.city,
-        state: req.body.location?.state,
-        country: req.body.location?.country,
-      },
-
-      education: {
-        minimumDegree: req.body.education.minimumDegree,
-        preferredFields: req.body.education.preferredFields,
-        isRequired: req.body.education.isRequired ?? false,
-      },
-
-      salary: {
-
-        min: req.body.salary?.min,
-        max: req.body.salary?.max,
-        currency: req.body.salary?.currency,
-        period: req.body.salary?.period,
-      },
-
-      skills: req.body.skills,
-      requirements: req.body.requirements,
-      benefits: req.body.benefits,
-      genderPreference: req.body.genderPreference,
-      englishFluency: req.body.englishFluency,
-
-      applicationDeadline: req.body.applicationDeadline,
-      isFeatured: req.body.isFeatured ?? false,
-      status: req.body.status ?? "active",
-      opportunityType: OpportunityType.JOB,
-      postedBy: req.user.id,
-      company: company._id,
-      embedding: [] as number[],
-    };
-
-    // Pre-compute embedding
-    const topSkills = (req.body.skills || []).slice(0, 3).join(", ");
-    const textToEmbed = `${req.body.title} ${topSkills}`.trim();
-    try {
-      jobData.embedding = await getEmbedding(textToEmbed);
-    } catch (err) {
-      console.error("Failed to generate embedding:", err);
-    }
-
-    const [job] = await Job.create([jobData], { session });
-
-    // Deduct from plan tally (Update local object and save with session)
-    if (subscription.postsRemaining !== -1) {
-      subscription.postsRemaining -= 1;
-      // The pre-save hook we wrote earlier will handle status: "depleted" automatically
-      await subscription.save({ session });
-    }
-
-    await session.commitTransaction();
+  return await tx.baseListing.create({
+        data: {
+          title: req.body.title,
+          description: req.body.description,
+          employmentType: req.body.employmentType,
+          workMode: req.body.workMode,
+          companyType: req.body.companyType,
+          roleCategory: req.body.roleCategory,
+          industry: req.body.industry,
+          experienceLevel: req.body.experienceLevel,
+          openings: req.body.openings,
+          city: req.body.location?.city,
+          state: req.body.location?.state,
+          country: req.body.location?.country,
+          minimumDegree: req.body.education?.minimumDegree || "ANY",
+          preferredFields: req.body.education?.preferredFields || [],
+          isDegreeRequired: req.body.education?.isRequired ?? false,
+          skills: req.body.skills || [],
+          requirements: req.body.requirements || [],
+          benefits: req.body.benefits || [],
+          genderPreference: req.body.genderPreference || "ANY",
+          englishFluency: req.body.englishFluency || "NONE",
+          applicationDeadline: req.body.applicationDeadline,
+          status: req.body.status ?? "ACTIVE",
+          opportunityType: "JOB",
+          postedById: userId,
+          companyId: company.id,
+          jobDetails: {
+            create: {
+              experienceLevel: req.body.experienceLevel,
+              experienceInYears: req.body.experienceInYears,
+              salaryMin: req.body.salary?.min,
+              salaryMax: req.body.salary?.max,
+              salaryCurrency: req.body.salary?.currency || "USD",
+              salaryPeriod: req.body.salary?.period || "YEARLY",
+            }
+          }
+        },
+        include: { jobDetails: true }
+      });
+});
 
     res.status(201).json(new ApiResponse(201, job, "Job created successfully"));
   } catch (error: any) {
-    await session.abortTransaction();
-
     next(error);
-  } finally {
-    await session.endSession();
   }
 };
 
@@ -289,51 +254,101 @@ export const updateJob = async (
   next: NextFunction,
 ) => {
   try {
-    let job = await Job.findById(req.params.id);
+    const jobId = req.params.id as string;
 
-    if (!job) {
+    const job = await prisma.baseListing.findUnique({
+      where: { id: jobId },
+      include: { jobDetails: true },
+    });
+
+    if (!job || job.opportunityType !== "JOB") {
       return next(new ApiError(404, "Job not found"));
     }
 
-    const companyMember = await CompanyMember.findOne({
-      user: req.user._id,
-    }).populate("company", "name");
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id },
+    });
 
-    if (!companyMember) {
+    if (!companyMember || companyMember.companyId !== job.companyId) {
       return next(
         new ApiError(
-          404,
-          `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`,
+          403,
+          `${req.user.firstName} ${req.user.lastName} is not authorized for this company`,
         ),
       );
     }
 
-    // Only hr and owner can update job details
-    if (
-      companyMember.role !== CompanyRole.HR &&
-      companyMember.role !== CompanyRole.OWNER
-    ) {
+    if (companyMember.role !== "HR" && companyMember.role !== "OWNER") {
       return next(new ApiError(403, "Not authorized to update this job"));
     }
 
-    // Update embedding if title or skills changed
-    const updateData = { ...req.body };
-    if (updateData.title || updateData.skills) {
-      const topSkills = (updateData.skills || job.skills || []).slice(0, 3).join(", ");
-      const textToEmbed = `${updateData.title || job.title} ${topSkills}`.trim();
-      try {
-        updateData.embedding = await getEmbedding(textToEmbed);
-      } catch (err) {
-        console.error("Failed to update embedding:", err);
+    const { salary, experienceInYears, education, location, ...baseUpdates } = req.body;
+
+    const allowedBaseUpdates = [
+      "title", "description", "employmentType", "workMode", "companyType",
+      "roleCategory", "industry", "experienceLevel", "openings", "skills",
+      "requirements", "benefits", "genderPreference", "englishFluency",
+      "applicationDeadline",
+      // status/isDeleted removed — see note below
+    ];
+
+    const filteredBaseUpdates: any = {};
+    for (const key of allowedBaseUpdates) {
+      if (baseUpdates[key] !== undefined) {
+        filteredBaseUpdates[key] = baseUpdates[key];
       }
     }
 
-    job = await Job.findByIdAndUpdate(req.params.id, updateData, {
-      returnDocument: "after",
-      runValidators: true,
+    const updatedJob = await prisma.$transaction(async (tx) => {
+      // Re-verify existence + type inside the transaction, right before writing.
+      // Closes the TOCTOU gap between the outer read and this write.
+      const currentJob = await tx.baseListing.findUnique({
+        where: { id: jobId },
+        select: { id: true, opportunityType: true },
+      });
+
+      if (!currentJob || currentJob.opportunityType !== "JOB") {
+        throw new ApiError(404, "Job not found");
+      }
+
+      await tx.baseListing.update({
+        where: { id: currentJob.id },
+        data: {
+          ...filteredBaseUpdates,
+          ...(location && {
+            city: location.city,
+            state: location.state,
+            country: location.country,
+          }),
+          ...(education && {
+            minimumDegree: education.minimumDegree,
+            preferredFields: education.preferredFields,
+            isDegreeRequired: education.isRequired,
+          }),
+        },
+      });
+
+      if (salary || experienceInYears !== undefined || req.body.experienceLevel !== undefined) {
+        await tx.job.update({
+          where: { listingId: currentJob.id },
+          data: {
+            ...(req.body.experienceLevel !== undefined && { experienceLevel: req.body.experienceLevel }),
+            ...(experienceInYears !== undefined && { experienceInYears }),
+            ...(salary?.min !== undefined && { salaryMin: salary.min }),
+            ...(salary?.max !== undefined && { salaryMax: salary.max }),
+            ...(salary?.currency && { salaryCurrency: salary.currency }),
+            ...(salary?.period && { salaryPeriod: salary.period }),
+          },
+        });
+      }
+
+      return tx.baseListing.findUnique({
+        where: { id: currentJob.id },
+        include: { jobDetails: true },
+      });
     });
 
-    res.status(200).json(new ApiResponse(200, job, "Job updated successfully"));
+    res.status(200).json(new ApiResponse(200, updatedJob, "Job updated successfully"));
   } catch (error: any) {
     next(error);
   }
@@ -345,37 +360,37 @@ export const deleteJob = async (
   next: NextFunction,
 ) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const jobId = req.params.id as string;
+    const job = await prisma.baseListing.findUnique({
+      where: { id: jobId },
+    });
 
-    if (!job) {
+    if (!job || job.opportunityType !== "JOB") {
       return next(new ApiError(404, "Job not found"));
     }
 
-    const companyMember = await CompanyMember.findOne({
-      user: req.user._id,
-    }).populate("company", "name");
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id },
+    });
 
-    if (!companyMember) {
-      return next(
-        new ApiError(
-          404,
-          `${req.user.firstName} ${req.user.lastName} is not a memeber of the company`,
-        ),
-      );
+    if (!companyMember || companyMember.companyId !== job.companyId) {
+       return next(new ApiError(403, "You're not authorized to delete the job"));
     }
 
-    // Only hr and owner can delete the job
     if (
-      companyMember.role !== CompanyRole.HR &&
-      companyMember.role !== CompanyRole.OWNER
+      companyMember.role !== "HR" &&
+      companyMember.role !== "OWNER"
     ) {
       return next(new ApiError(403, "You're not authorized to delete the job"));
     }
 
-    // Soft delete the job so that job seekers who applied don't lose the listing details
-    job.isDeleted = true;
-    job.status = JobStatus.CLOSED; // Ensure it's not active anymore
-    await job.save();
+    await prisma.baseListing.update({
+      where: { id: job.id },
+      data: {
+         isDeleted: true,
+         status: "CLOSED"
+      }
+    });
 
     res.status(200).json(new ApiResponse(200, {}, "Job deleted successfully"));
   } catch (error: any) {
@@ -389,19 +404,30 @@ export const getMyJobs = async (
   next: NextFunction,
 ) => {
   try {
-    const companyMember = await CompanyMember.findOne({ user: req.user._id });
+    const companyMember = await prisma.companyMember.findFirst({
+      where: { userId: req.user.id },
+    });
 
     if (!companyMember) {
       return next(new ApiError(400, "Company member not found"));
     }
 
     if (
-      companyMember.role === CompanyRole.HR ||
-      companyMember.role === CompanyRole.OWNER
+      companyMember.role === "HR" ||
+      companyMember.role === "OWNER"
     ) {
-      const jobs = await Job.find({ company: companyMember.company, isDeleted: { $ne: true } })
-        .populate("company", "name logo")
-        .populate("postedBy", "firstName lastName");
+      const jobs = await prisma.baseListing.findMany({
+        where: {
+           companyId: companyMember.companyId,
+           isDeleted: false,
+           opportunityType: "JOB"
+        },
+        include: {
+           company: { select: { name: true, logo: true } },
+           postedBy: { select: { firstName: true, lastName: true } },
+           jobDetails: true
+        }
+      });
 
       return res.status(200).json(
         new ApiResponse(
@@ -427,95 +453,49 @@ export const getRelatedJobs = async (
   next: NextFunction
 ) => {
   try {
-    const jobId = req.params.id;
-    const targetJob = await Job.findById(jobId).select("+embedding");
-    if (!targetJob) {
+    const jobId = req.params.id as string;
+    const targetJob = await prisma.baseListing.findUnique({
+      where: { id: jobId }
+    });
+    
+    if (!targetJob || targetJob.opportunityType !== "JOB") {
       return next(new ApiError(404, "Job not found"));
     }
 
-    // 1. Structured Field Matching (Category, City, Skills overlap)
+    // Basic related logic since vector embeddings are removed from postgres schema
     const baseQuery: any = {
-      _id: { $ne: targetJob._id },
-      status: JobStatus.ACTIVE,
+      id: { not: targetJob.id },
+      status: "ACTIVE",
       isDeleted: false,
+      opportunityType: "JOB",
     };
 
     const orConditions: any[] = [];
     if (targetJob.roleCategory) {
       orConditions.push({ roleCategory: targetJob.roleCategory });
     }
-    if (targetJob.location?.city) {
-      orConditions.push({ "location.city": targetJob.location.city });
+    if (targetJob.city) {
+      orConditions.push({ city: targetJob.city });
     }
     if (targetJob.skills && targetJob.skills.length > 0) {
-      orConditions.push({ skills: { $in: targetJob.skills } });
+      orConditions.push({ skills: { hasSome: targetJob.skills } });
     }
 
     if (orConditions.length > 0) {
-      baseQuery.$or = orConditions;
+      baseQuery.OR = orConditions;
     }
 
-    // Fetch up to 50 candidates to keep it fast
-    const candidateJobs = await Job.find(baseQuery)
-      .select("+embedding")
-      .populate("company", "name logo location")
-      .sort({ createdAt: -1 })
-      .limit(50);
-
-    if (candidateJobs.length === 0) {
-      return res.status(200).json(new ApiResponse(200, [], "No related jobs found"));
-    }
-
-    // 2. Text Embedding Similarity
-    // Ensure target job has an embedding
-    if (!targetJob.embedding || targetJob.embedding.length === 0) {
-      const topSkills = targetJob.skills?.slice(0, 3).join(", ") || "";
-      const textToEmbed = `${targetJob.title} ${topSkills}`.trim();
-      targetJob.embedding = await getEmbedding(textToEmbed);
-      await targetJob.save({ validateBeforeSave: false });
-    }
-    const targetEmbedding = targetJob.embedding;
-
-    const scoredJobs = await Promise.all(
-      candidateJobs.map(async (job) => {
-        let jobEmbedding = job.embedding;
-        if (!jobEmbedding || jobEmbedding.length === 0) {
-           const jobTopSkills = job.skills?.slice(0, 3).join(", ") || "";
-           const textToEmbed = `${job.title} ${jobTopSkills}`.trim();
-           jobEmbedding = await getEmbedding(textToEmbed);
-           job.embedding = jobEmbedding;
-           await job.save({ validateBeforeSave: false });
-        }
-        
-        const sim = cosineSimilarity(targetEmbedding, jobEmbedding);
-        
-        // 3. Recency Boost
-        // Add up to 0.1 score for fresh jobs, decaying to 0 over 60 days
-        const ageInDays = (Date.now() - (job as any).createdAt.getTime()) / (1000 * 60 * 60 * 24);
-        let recencyBoost = 0;
-        if (ageInDays < 60 && ageInDays >= 0) {
-           recencyBoost = 0.1 * (1 - ageInDays / 60);
-        }
-        
-        const finalScore = sim + recencyBoost;
-        return {
-          job,
-          sim,
-          recencyBoost,
-          finalScore
-        };
-      })
-    );
-
-    // Sort by final score descending and take top 5
-    scoredJobs.sort((a, b) => b.finalScore - a.finalScore);
-    const topRelated = scoredJobs.slice(0, 5).map(s => {
-       const jobObj = s.job.toObject();
-       delete jobObj.embedding; // do not send embeddings to client
-       return jobObj;
+    const candidateJobs = await prisma.baseListing.findMany({
+      where: baseQuery,
+      include: {
+         company: { select: { name: true, logo: true, locations: { select: { city: true } } } },
+         jobDetails: true
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5
     });
 
-    return res.status(200).json(new ApiResponse(200, topRelated, "Related jobs fetched successfully"));
+    return res.status(200).json(new ApiResponse(200, candidateJobs, "Related jobs fetched successfully"));
   } catch (error: any) {
     next(error);
   }
