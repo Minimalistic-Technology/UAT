@@ -3,9 +3,26 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { prisma } from "../lib/prisma.js";
 import { RoleCategory } from "../../generated/prisma/enums.js";
+import redisClient from "../config/redis.js";
 
 export const getLandingPageSettings = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        const titleQuery = req.query.title as string;
+        
+        // Define cache key based on the titleQuery (or lack thereof)
+        const cacheKey = titleQuery ? `landingSettings:${titleQuery.toLowerCase()}` : `landingSettings:default`;
+        
+        // Try fetching from cache
+        try {
+            const cachedData = await redisClient.get(cacheKey);
+            if (cachedData) {
+                return res.status(200).json(new ApiResponse(200, JSON.parse(cachedData), "Landing page settings fetched from cache successfully"));
+            }
+        } catch (redisError) {
+            console.error("Redis Cache Error:", redisError);
+            // Non-fatal error, proceed to fetch from DB
+        }
+
         // 1. Dynamic Logo
         // Currently returning a default platform logo or you can integrate with a global settings table later
         const logo = "/logo.png"; 
@@ -50,8 +67,6 @@ export const getLandingPageSettings = async (req: Request, res: Response, next: 
         }
 
         // 3. Jobs based on title
-        // If a title query parameter is provided, filter jobs by title
-        const titleQuery = req.query.title as string;
         const jobsQuery: any = {
             status: 'ACTIVE',
             isDeleted: false
@@ -82,11 +97,16 @@ export const getLandingPageSettings = async (req: Request, res: Response, next: 
             take: 50
         });
 
-        res.status(200).json(new ApiResponse(200, {
-            logo,
-            categories,
-            jobs
-        }, "Landing page settings fetched successfully"));
+        const responseData = { logo, categories, jobs };
+
+        // Save to cache before sending response (expire in 1 hour)
+        try {
+            await redisClient.setEx(cacheKey, 3600, JSON.stringify(responseData));
+        } catch (redisError) {
+            console.error("Redis Cache Save Error:", redisError);
+        }
+
+        res.status(200).json(new ApiResponse(200, responseData, "Landing page settings fetched successfully"));
     } catch (error: any) {
         next(new ApiError(500, "Failed to fetch settings: " + error.message));
     }
