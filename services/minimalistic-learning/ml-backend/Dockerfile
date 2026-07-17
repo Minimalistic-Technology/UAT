@@ -23,4 +23,4 @@ ENV NODE_ENV=production
 ENV PORT=5001
 EXPOSE 5001
 
-CMD ["node", "dist/server.js"]
+CMD ["sh", "-c", "pnpm prisma migrate deploy && node dist/server.js"]
