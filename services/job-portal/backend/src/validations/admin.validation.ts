@@ -1,6 +1,7 @@
 import { body, query } from "express-validator";
 import { ApiError } from "../utils/apiError.js";
 
+
 export const updateKycStatusSchema = [
   body("status")
     .exists({ checkNull: true })
