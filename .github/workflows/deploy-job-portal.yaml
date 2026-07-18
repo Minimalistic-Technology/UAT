@@ -20,6 +20,8 @@ jobs:
             set -e
             cd UAT/services/job-portal
             git fetch origin
+            git clean -fd
+            git reset --hard HEAD
             git checkout -B main-job-portal origin/main-job-portal
             git reset --hard origin/main-job-portal
             docker-compose -f docker-compose.prod.yml up -d --build --remove-orphans
