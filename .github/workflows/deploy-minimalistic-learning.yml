@@ -20,6 +20,7 @@ jobs:
             set -e
             cd UAT/services/minimalistic-learning
             git fetch origin
+            git reset --hard origin/main-learning
             git checkout -B main-learning origin/main-learning
             git reset --hard origin/main-learning
             docker-compose up -d --build --remove-orphans
