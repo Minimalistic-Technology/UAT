@@ -15,6 +15,19 @@ services:
       timeout: 5s
       retries: 5
 
+  job-portal-redis:
+    image: redis:alpine
+    container_name: job_portal_redis_prod
+    restart: always
+    volumes:
+      - job_portal_redis_data_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   backend:
     build:
       context: ./backend
@@ -31,6 +44,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      job-portal-redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:5000/api/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))\""]
       interval: 30s
@@ -40,3 +55,4 @@ services:
 
 volumes:
   job_portal_data_prod:
+  job_portal_redis_data_prod:

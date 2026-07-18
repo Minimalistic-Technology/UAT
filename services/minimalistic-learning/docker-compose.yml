@@ -8,15 +8,15 @@ services:
       - "5001:5001"
     environment:
       - NODE_ENV=production
-      # Note: Add the rest of your backend .env variables here OR ensure the ml-backend/.env is used.
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://ml-redis:6379
     env_file:
       - ./ml-backend/.env
     restart: always
     depends_on:
-      - redis
+      ml-redis:
+        condition: service_healthy
 
-  redis:
+  ml-redis:
     image: redis:alpine
     container_name: ml-redis
     ports:
@@ -24,6 +24,12 @@ services:
     volumes:
       - redis_data:/data
     restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
 volumes:
   redis_data:

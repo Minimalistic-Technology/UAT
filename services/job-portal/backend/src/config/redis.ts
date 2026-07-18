@@ -11,6 +11,11 @@ redisClient.on('error', (err) => {
   console.error('Redis Client Error', err);
 });
 
+
+redisClient.on('connect', () => {
+  console.log('Redis connected successfully');
+});
+
 // Connect immediately, but handle errors gracefully so app doesn't crash if redis is down
 redisClient.connect().catch(console.error);
 
