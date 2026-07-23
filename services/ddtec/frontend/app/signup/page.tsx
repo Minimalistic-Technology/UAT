@@ -8,7 +8,7 @@ import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import ReCAPTCHA from "react-google-recaptcha";
+import Turnstile from "../_components/Turnstile";
 import api from "@/lib/api";
 
 const SignupForm = () => {
@@ -28,8 +28,20 @@ const SignupForm = () => {
 
     // OTP State
     const [otp, setOtp] = useState("");
-    const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+
+    const handleTurnstileVerify = React.useCallback((token: string) => {
+        setTurnstileToken(token);
+    }, []);
+
+    const handleTurnstileExpire = React.useCallback(() => {
+        setTurnstileToken(null);
+    }, []);
+
+    const handleTurnstileError = React.useCallback(() => {
+        setTurnstileToken(null);
+    }, []);
 
     const handleSendOtp = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,8 +55,8 @@ const SignupForm = () => {
             return;
         }
 
-        if (!recaptchaToken) {
-            showToast("Please complete the reCAPTCHA verification.", "error");
+        if (!turnstileToken) {
+            showToast("Please complete the Cloudflare Turnstile verification.", "error");
             return;
         }
 
@@ -73,7 +85,7 @@ const SignupForm = () => {
 
             // Send OTP
             if (resCheck.data.otpRequired !== false) {
-                await api.post('/auth/send-otp', { identifier, recaptchaToken });
+                await api.post('/auth/send-otp', { identifier, recaptchaToken: turnstileToken, turnstileToken });
                 showToast(`Verification code sent to ${identifier}`, "success");
                 setStep("otp");
             } else {
@@ -279,10 +291,10 @@ const SignupForm = () => {
                                 </div>
 
                                 <div className="flex justify-center mt-2 mb-2 pt-4">
-                                    <ReCAPTCHA
-                                        sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}
-                                        onChange={(token) => setRecaptchaToken(token)}
-                                        theme="light"
+                                    <Turnstile
+                                        onVerify={handleTurnstileVerify}
+                                        onExpire={handleTurnstileExpire}
+                                        onError={handleTurnstileError}
                                     />
                                 </div>
 
