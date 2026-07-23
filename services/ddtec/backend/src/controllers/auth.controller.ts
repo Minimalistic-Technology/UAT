@@ -21,23 +21,25 @@ const generateOTP = () => {
 
 export const sendOtp = async (req: Request, res: Response) => {
     try {
-        let { identifier, recaptchaToken } = req.body; // email or phone
+        let { identifier, turnstileToken, recaptchaToken, captchaToken } = req.body; // email or phone
+        const token = turnstileToken || recaptchaToken || captchaToken;
+
         if (!identifier) {
             return res.status(400).json({ msg: 'Identifier (email or phone) is required' });
         }
         identifier = identifier.trim();
 
-        if (!recaptchaToken) {
-            return res.status(400).json({ msg: 'ReCAPTCHA token is required' });
+        if (!token) {
+            return res.status(400).json({ msg: 'Cloudflare Turnstile token is required' });
         }
 
         // Verify Cloudflare Turnstile
         const secretKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
-        if (secretKey && recaptchaToken) {
+        if (secretKey && token) {
             const verifyUrl = `https://challenges.cloudflare.com/turnstile/v0/siteverify`;
             const turnstileRes = await axios.post(verifyUrl, {
                 secret: secretKey,
-                response: recaptchaToken
+                response: token
             }, {
                 headers: { 'Content-Type': 'application/json' }
             });
