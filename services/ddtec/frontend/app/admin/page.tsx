@@ -4,10 +4,11 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../_context/AuthContext";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity } from "lucide-react";
+import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "./components/ToggleSwitch";
 import CategoriesView from "./components/CategoriesView";
+import QuotationProductsView from "./components/QuotationProductsView";
 import { useDynamicRoutes, RouteConfig } from "@/app/_context/RouteContext";
 import { useToast } from "../_context/ToastContext";
 
@@ -79,7 +80,7 @@ const AdminDashboard = () => {
     const { showToast } = useToast();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
-    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes'>('dashboard');
+    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products'>('dashboard');
 
     // Data for Manage Views
     const [usersList, setUsersList] = useState<User[]>([]);
@@ -424,7 +425,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes') => {
+    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products') => {
         setActiveView(view);
         if (view === 'users') fetchUsers();
         if (view === 'products' || view === 'inventory') fetchProducts();
@@ -776,6 +777,12 @@ const AdminDashboard = () => {
                             <button onClick={() => handleViewChange('inventory')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'inventory' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                                 <Layers className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
                                 {!isSidebarCollapsed && <span className="ms-3">Inventory</span>}
+                            </button>
+                        </li>
+                        <li>
+                            <button onClick={() => handleViewChange('quotation_products')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'quotation_products' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+                                <FileText className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
+                                {!isSidebarCollapsed && <span className="ms-3">Quotation Products</span>}
                             </button>
                         </li>
                         <li>
@@ -1438,6 +1445,8 @@ const AdminDashboard = () => {
                     )}
 
                     {activeView === 'categories' && <CategoriesView />}
+
+                    {activeView === 'quotation_products' && <QuotationProductsView />}
 
                     {/* Add Product Modal */}
                     <AnimatePresence>
