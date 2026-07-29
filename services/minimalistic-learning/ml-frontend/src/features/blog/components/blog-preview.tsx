@@ -15,6 +15,8 @@ export const BlogPreview: React.FC<BlogPreviewProps> = ({
   coverImageUrl,
   tags,
 }) => {
+  const safeTags = Array.isArray(tags) ? tags : [];
+
   return (
     <div className="h-full w-full bg-white">
       <div className="w-full space-y-12 px-8 py-16 md:px-24">
@@ -57,9 +59,9 @@ export const BlogPreview: React.FC<BlogPreviewProps> = ({
         )}
 
         <div className="space-y-4">
-          {tags.length > 0 && (
+          {safeTags.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-2">
-              {tags.map((tag, idx) => (
+              {safeTags.map((tag, idx) => (
                 <span
                   key={idx}
                   className="rounded-full border border-emerald-200/50 bg-emerald-100/50 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm backdrop-blur-sm transition-all"
