@@ -15,6 +15,8 @@ import dynamicRouteRoutes from './route.routes';
 import accountingRoutes from './accounting.route';
 import inventoryRoutes from './inventory.route';
 import hubRoutes from './hub.route';
+import quotationItemRoutes from './quotationItem.routes';
+import quotationRoutes from './quotation.routes';
 const router = Router();
 
 router.get('/', getHome);
@@ -34,5 +36,7 @@ router.use('/dynamic-routes', dynamicRouteRoutes);
 router.use('/accounting', accountingRoutes);
 router.use('/inventory', inventoryRoutes);
 router.use('/hubs', hubRoutes);
+router.use('/quotation-items', quotationItemRoutes);
+router.use('/quotation', quotationRoutes);
 
 export default router;

@@ -134,6 +134,7 @@ export default function Navbar() {
     { name: "Who we are", href: "/who" },
     { name: "What we offer", href: "/what" },
     { name: "Blog", href: "/blogs" },
+    { name: "Quotation", href: "/quotation" },
     { name: "Contact", href: "/contact" },
     ...(user && user.role === 'admin' ? [{ name: "Dashboard", href: "/admin" }] : []),
     ...(user && user.role === 'warehouse' ? [{ name: "Warehouse", href: "/warehouse" }] : [])
