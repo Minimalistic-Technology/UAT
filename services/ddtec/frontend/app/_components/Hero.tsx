@@ -6,7 +6,6 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
   Pause,
@@ -230,8 +229,6 @@ export default function Hero() {
       className="relative min-h-[90vh] md:min-h-screen flex items-center justify-center overflow-hidden pt-20 group/hero select-none bg-slate-950"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      onMouseEnter={() => setIsPlaying(false)}
-      onMouseLeave={() => setIsPlaying(true)}
     >
       {/* Background Image Carousel Layer */}
       <div className="absolute inset-0 z-0">
@@ -283,56 +280,28 @@ export default function Hero() {
       )}
 
       {/* Hero Content Container */}
-      <div className="container mx-auto px-6 relative z-20 text-center text-white pointer-events-none my-auto py-12">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentSlide.id}
-            initial={{ opacity: 0, y: 25 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -25 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="max-w-4xl mx-auto pointer-events-auto"
-          >
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-300 text-sm font-medium mb-6 backdrop-blur-md shadow-lg shadow-teal-950/50">
-              <Sparkles className="size-4 text-teal-400 animate-pulse" />
-              <span>{currentSlide.badge}</span>
-            </div>
+      <div className="container mx-auto px-6 relative z-20 text-center text-white pointer-events-none my-auto py-12 h-150 flex flex-col justify-end">
+        <div className="max-w-4xl mx-auto pointer-events-auto">
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href={currentSlide.ctaPrimaryLink}
+              onClick={(e) => handleScroll(e, currentSlide.ctaPrimaryLink)}
+              className="w-full sm:w-auto px-8 py-4 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-full font-bold transition-all duration-300 shadow-xl shadow-teal-500/25 hover:shadow-teal-400/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 group cursor-pointer"
+            >
+              {currentSlide.ctaPrimaryText}
+              <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
 
-            {/* Main Headline */}
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1] drop-shadow-md">
-              {currentSlide.title} <br />
-              <span className="bg-gradient-to-r from-teal-300 via-emerald-400 to-teal-200 bg-clip-text text-transparent drop-shadow-sm">
-                {currentSlide.highlightText}
-              </span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-base sm:text-lg md:text-xl text-slate-200 mb-10 max-w-2xl mx-auto leading-relaxed drop-shadow">
-              {currentSlide.subtitle}
-            </p>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href={currentSlide.ctaPrimaryLink}
-                onClick={(e) => handleScroll(e, currentSlide.ctaPrimaryLink)}
-                className="w-full sm:w-auto px-8 py-4 bg-teal-500 hover:bg-teal-400 text-slate-950 rounded-full font-bold transition-all duration-300 shadow-xl shadow-teal-500/25 hover:shadow-teal-400/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 group cursor-pointer"
-              >
-                {currentSlide.ctaPrimaryText}
-                <ArrowRight className="size-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-
-              <Link
-                href={currentSlide.ctaSecondaryLink}
-                onClick={(e) => handleScroll(e, currentSlide.ctaSecondaryLink)}
-                className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full font-semibold backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-center cursor-pointer"
-              >
-                {currentSlide.ctaSecondaryText}
-              </Link>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+            <Link
+              href={currentSlide.ctaSecondaryLink}
+              onClick={(e) => handleScroll(e, currentSlide.ctaSecondaryLink)}
+              className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full font-semibold backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 flex items-center justify-center cursor-pointer"
+            >
+              {currentSlide.ctaSecondaryText}
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Navigation Arrow Controls */}

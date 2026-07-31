@@ -250,7 +250,7 @@ export default function Navbar() {
             </div>
             <div className="flex flex-col">
               <span className={cn("font-bold text-xl tracking-tight transition-colors leading-none",
-                scrolled ? "text-slate-900 dark:text-white" : "text-slate-800 dark:text-white"
+                scrolled ? "text-slate-900 dark:text-white" : "text-slate-200 dark:text-white"
               )}>
                 DDTEC
               </span>
@@ -279,7 +279,7 @@ export default function Navbar() {
                       ? "text-teal-600 dark:text-teal-400"
                       : scrolled
                         ? "text-slate-600 dark:text-slate-300"
-                        : "text-slate-700 dark:text-slate-200 hover:text-teal-600"
+                        : "text-slate-200 dark:text-slate-200 hover:text-teal-600"
                   )}
                 >
                   {isActive(link.href) && (
@@ -334,7 +334,7 @@ export default function Navbar() {
                   "p-2 rounded-full transition-colors relative group",
                   scrolled
                     ? "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
-                    : "text-slate-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
+                    : "text-slate-200 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
                 )}
               >
                 <ShoppingBag className="size-5" />
@@ -353,7 +353,7 @@ export default function Navbar() {
                   "p-2 rounded-full transition-colors",
                   scrolled
                     ? "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
-                    : "text-slate-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
+                    : "text-slate-200 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
                 )}
               >
                 {theme === "light" ? <Moon className="size-5" /> : <Sun className="size-5" />}
@@ -433,7 +433,7 @@ export default function Navbar() {
                         "flex px-5 py-2 rounded-full text-sm font-bold transition-all items-center gap-2 border",
                         scrolled
                           ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
-                          : "border-white/20 bg-white/10 backdrop-blur-md text-slate-900 dark:text-white hover:bg-white/20"
+                          : "border-white/20 bg-white/10 backdrop-blur-md text-slate-200 dark:text-white hover:bg-white/20"
                       )}
                     >
                       <User className="size-4" /> Login
