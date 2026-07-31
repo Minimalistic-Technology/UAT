@@ -121,6 +121,10 @@ export const BlogManagement = () => {
         <div className="grid gap-4">
           {blogs.map((blog: any) => {
             const blogId = blog.id || blog._id;
+            const currentStatus =
+              blog.status || (blog.published ? "published" : "pending");
+            const isPendingApproval = currentStatus === "pending";
+
             return (
               <div
                 key={blogId}
@@ -146,16 +150,13 @@ export const BlogManagement = () => {
                   <div className="mb-1 flex flex-wrap items-center justify-center gap-2 md:justify-start">
                     {/* Status Badge based on new 'status' field */}
                     {(() => {
-                      const s =
-                        blog.status ||
-                        (blog.published ? "published" : "pending");
-                      if (s === "published")
+                      if (currentStatus === "published")
                         return (
                           <span className="rounded-md border border-green-500/20 bg-green-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-green-600 uppercase">
                             ✓ Live
                           </span>
                         );
-                      if (s === "rejected")
+                      if (currentStatus === "rejected")
                         return (
                           <span className="rounded-md border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-red-600 uppercase">
                             ✗ Rejected
@@ -207,9 +208,21 @@ export const BlogManagement = () => {
                     </Button>
                   )}
                   <Link
-                    href={`/blog/edit/${blogId}`}
+                    href={isPendingApproval ? "#" : `/blog/edit/${blogId}`}
+                    onClick={(e) => {
+                      if (isPendingApproval) {
+                        e.preventDefault();
+                        toast.info(
+                          "This post is currently pending approval. You will be able to edit it once it has been approved by an admin."
+                        );
+                      }
+                    }}
                     className="text-foreground/70 hover:text-theme-action hover:bg-theme-element cursor-pointer rounded-xl p-3 shadow-sm transition-all group-hover:shadow"
-                    title="Edit post"
+                    title={
+                      isPendingApproval
+                        ? "Pending approval - editing disabled"
+                        : "Edit post"
+                    }
                   >
                     <Edit2 size={18} />
                   </Link>

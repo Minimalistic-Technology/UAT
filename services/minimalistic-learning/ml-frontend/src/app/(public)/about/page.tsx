@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { usePublicGlobalStore } from "@/store/publicGlobalStore";
+import { useAuth } from "@/features/auth/context/auth-context";
 import { Reveal } from "@/components/ui/reveal";
 import { Counter } from "@/components/ui/counter";
 
@@ -62,6 +63,7 @@ const VALUES = [
 /* ─── Main Component ─────────────────────────────────────────────────── */
 export default function AboutPage() {
   const { aboutContent, fetchAboutContent } = usePublicGlobalStore();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     fetchAboutContent();
@@ -114,12 +116,14 @@ export default function AboutPage() {
                   className="transition-transform group-hover:translate-x-1"
                 />
               </Link>
-              <Link
-                href="/register"
-                className="bg-theme-element-sec border-theme-accent/20 text-foreground hover:border-theme-action/40 w-full rounded-xl border px-8 py-3.5 text-center text-sm font-bold transition-all sm:w-auto"
-              >
-                Join Community
-              </Link>
+              {!isAuthenticated && (
+                <Link
+                  href="/register"
+                  className="bg-theme-element-sec border-theme-accent/20 text-foreground hover:border-theme-action/40 w-full rounded-xl border px-8 py-3.5 text-center text-sm font-bold transition-all sm:w-auto"
+                >
+                  Join Community
+                </Link>
+              )}
             </div>
           </Reveal>
         </div>

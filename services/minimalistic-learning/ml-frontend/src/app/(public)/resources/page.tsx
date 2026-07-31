@@ -68,36 +68,6 @@ const ResourcesHub = () => {
         </p>
       </section>
 
-      {/* Resources Grid */}
-      <section className="mb-12 grid w-full grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {resourceCategories.map((category, index) => (
-          <div
-            key={index}
-            className="group rounded-[2rem] border border-gray-100 bg-white p-10 shadow-[0_8px_40px_rgba(0,0,0,0.02)] transition-all hover:border-blue-200 hover:shadow-[0_20px_50px_rgba(24,119,242,0.1)]"
-          >
-            <div className="group- mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-[#1877F2] transition-transform">
-              <category.icon size={28} />
-            </div>
-            <h3 className="mb-4 text-2xl font-bold tracking-tight text-gray-900">
-              {category.title}
-            </h3>
-            <p className="mb-8 min-h-[60px] text-sm leading-relaxed text-gray-500">
-              {category.description}
-            </p>
-            <div className="space-y-3">
-              {category.items.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex cursor-pointer items-center justify-between rounded-2xl border border-transparent bg-gray-50/50 p-4 text-sm font-bold text-gray-700 transition-all hover:border-blue-100 hover:bg-blue-50 hover:text-[#1877F2]"
-                >
-                  {item}
-                  <ArrowRightCircle size={16} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </section>
 
       {/* Explore Categories Banner */}
       <section className="mb-12 w-full">
