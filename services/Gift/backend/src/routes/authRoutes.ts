@@ -1,0 +1,15 @@
+import express from 'express';
+import { register, login, getAllUsers, verifyOtp, updateUserRole, deleteUser, resendOtp } from '../controllers/authController';
+import { protect, adminMode, adminOrHRAdminMode } from '../middleware/authMiddleware';
+
+const router = express.Router();
+
+router.post('/register', register);
+router.post('/verify-otp', verifyOtp);
+router.post('/resend-otp', resendOtp);
+router.post('/login', login);
+router.get('/users', protect, adminOrHRAdminMode, getAllUsers);
+router.put('/users/:id/role', protect, adminMode, updateUserRole);
+router.delete('/users/:id', protect, adminMode, deleteUser);
+
+export default router;

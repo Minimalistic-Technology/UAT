@@ -1,0 +1,353 @@
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import {
+  MapPin,
+  Briefcase,
+  Clock,
+  Users,
+  IndianRupee,
+  DollarSign,
+  Euro,
+  PoundSterling,
+  Banknote,
+  ChevronLeft,
+  Pencil,
+  Trash2,
+  FileUser,
+  Calendar,
+  Award,
+  Building2,
+  Tags,
+} from "lucide-react";
+import { format } from "date-fns";
+
+import { useGetInternshipPostById } from "@/features/employer/hooks/use-internship";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { FormattedDescription } from "@/features/employer/components/formatted-description";
+import { FlattenedInternship } from "@/types";
+import {
+  getCurrencyIcon,
+  getCurrencySymbol,
+  getListingStatusColor,
+} from "@/utils";
+
+const Page = () => {
+  const params = useParams();
+  const router = useRouter();
+  const internshipId = Array.isArray(params.id) ? params.id[0] : params.id;
+
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+  } = useGetInternshipPostById(internshipId as string);
+  const internship: FlattenedInternship = responseData?.data;
+
+  if (isLoading) return <InternshipSkeleton />;
+  if (isError || !internship)
+    return <div className="p-10 text-center">Internship not found.</div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Top Navigation & Actions */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="-ml-2 gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" /> Back
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="cursor-pointer"
+            size="sm"
+            disabled={internship.status === "CLOSED"}
+            onClick={() => {
+              router.push(
+                `/employer-dashboard/internships/${internshipId}/edit`,
+              );
+            }}
+          >
+            <Pencil className="mr-2 h-4 w-4" /> Edit Details
+          </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="cursor-pointer"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Internship Posting?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently remove{" "}
+                  <strong>{internship.title}</strong>. This action cannot be
+                  undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left Column: Internship Info */}
+        <div className="space-y-6 lg:col-span-2">
+          <Card className="overflow-hidden rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+            <CardHeader className="border-b bg-slate-50/50 pb-6 dark:bg-slate-800/50">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Badge
+                  variant="secondary"
+                  className={`px-3 py-1 capitalize shadow-sm ${getListingStatusColor(internship.status)}`}
+                >
+                  {internship.status.replace("_", " ").toLowerCase()}
+                </Badge>
+                {internship.isPPO && (
+                  <Badge
+                    variant="outline"
+                    className="border-green-500/50 bg-green-50 px-3 py-1 text-green-700 shadow-sm dark:bg-green-500/10 dark:text-green-400"
+                  >
+                    PPO Available
+                  </Badge>
+                )}
+                {internship.certificateProvided && (
+                  <Badge
+                    variant="outline"
+                    className="border-blue-500/50 bg-blue-50 px-3 py-1 text-blue-700 shadow-sm dark:bg-blue-500/10 dark:text-blue-400"
+                  >
+                    Certificate
+                  </Badge>
+                )}
+              </div>
+              <CardTitle className="text-3xl font-bold">
+                {internship.title}
+              </CardTitle>
+              <CardDescription>
+                Posted on {format(new Date(internship.createdAt), "PPP")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="text-muted-foreground bg-muted/30 border-border/50 flex flex-wrap items-center gap-4 rounded-lg border p-3 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <Tags className="text-primary/70 h-4 w-4 shrink-0" />
+                  <span className="capitalize">
+                    <span className="text-foreground mr-1 font-semibold">
+                      Role:
+                    </span>
+                    {internship.roleCategory
+                      ?.replace(/_/g, " ")
+                      .toLowerCase() || "Not Specified"}
+                  </span>
+                </div>
+                <Separator
+                  orientation="vertical"
+                  className="hidden h-4 sm:block"
+                />
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="text-primary/70 h-4 w-4 shrink-0" />
+                  <span className="capitalize">
+                    <span className="text-foreground mr-1 font-semibold">
+                      Industry:
+                    </span>
+                    {internship.industry?.replace(/_/g, " ").toLowerCase() ||
+                      "Not Specified"}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="mb-2 font-semibold">Description</h4>
+                <FormattedDescription text={internship.description} />
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="mb-3 font-semibold">Requirements</h4>
+                <ul className="text-muted-foreground list-disc space-y-2 pl-5 text-sm">
+                  {internship.requirements.map((req: string, i: number) => (
+                    <li key={i}>{req}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="mb-3 font-semibold">Skills</h4>
+                <div className="flex flex-wrap gap-2">
+                  {internship.skills.map((skill: string) => (
+                    <Badge key={skill} variant="outline" className="px-3 py-1">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column: Stats & Meta */}
+        <div className="space-y-6">
+          {/* Quick Stats Card */}
+          <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
+                Post Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4">
+              <div className="bg-muted/50 flex flex-col items-center justify-center rounded-lg border p-3">
+                <FileUser className="text-primary mb-1 h-4 w-4" />
+                <span className="text-xl font-bold">
+                  {internship.applicationsCount}
+                </span>
+                <span className="text-muted-foreground text-[10px] uppercase">
+                  Applicants
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Internship Details Card */}
+          <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] dark:bg-slate-900">
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
+                Listing Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3 text-sm">
+                {getCurrencyIcon(internship.stipendCurrency || "INR")}
+                <span className="font-medium">
+                  {internship.stipendType === "FIXED" &&
+                  internship.stipendAmount
+                    ? `${getCurrencySymbol(internship.stipendCurrency || "INR")}${internship.stipendAmount.toLocaleString()} / ${internship.stipendPeriod}`
+                    : internship.stipendType === "UNPAID"
+                      ? "Unpaid"
+                      : "Performance Based"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <Clock className="text-muted-foreground h-4 w-4" />
+                <span className="capitalize">
+                  {internship.durationValue}{" "}
+                  {internship.durationUnit.toLowerCase()}
+                  {internship.durationValue > 1 &&
+                  !internship.durationUnit.endsWith("s")
+                    ? "s"
+                    : ""}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <Briefcase className="text-muted-foreground h-4 w-4" />
+                <span className="capitalize">
+                  {internship.employmentType.replace("_", " ").toLowerCase()}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <MapPin className="text-muted-foreground h-4 w-4" />
+                <span className="capitalize">
+                  {internship.workMode === "REMOTE"
+                    ? "Remote"
+                    : internship.city && internship.country
+                      ? `${internship.city}, ${internship.country}`
+                      : "Location Not Specified"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <Users className="text-muted-foreground h-4 w-4" />
+                <span>{internship.openings} Openings</span>
+              </div>
+              {internship.startDate && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Calendar className="text-muted-foreground h-4 w-4" />
+                  <span>
+                    Start: {format(new Date(internship.startDate), "PP")}
+                  </span>
+                </div>
+              )}
+              {internship.certificateProvided && (
+                <div className="flex items-center gap-3 text-sm text-blue-600">
+                  <Award className="h-4 w-4" />
+                  <span>Certificate Provided</span>
+                </div>
+              )}
+            </CardContent>
+            <Separator />
+            <div className="p-4">
+              <Button
+                onClick={() =>
+                  router.push(
+                    `/employer-dashboard/internships/${internshipId}/applications`,
+                  )
+                }
+                className="w-full cursor-pointer"
+                variant="outline"
+              >
+                Manage Applicants
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Page;
+
+function InternshipSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between">
+        <Skeleton className="h-9 w-24 rounded-full" />
+        <Skeleton className="h-9 w-40 rounded-full" />
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Skeleton className="h-[600px] w-full rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)]" />
+        </div>
+        <div className="space-y-6">
+          <Skeleton className="h-[200px] w-full rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)]" />
+          <Skeleton className="h-[300px] w-full rounded-[20px] shadow-[0_2px_15px_rgba(0,0,0,0.04)]" />
+        </div>
+      </div>
+    </div>
+  );
+}

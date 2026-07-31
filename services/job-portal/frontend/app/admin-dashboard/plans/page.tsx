@@ -1,0 +1,224 @@
+"use client";
+
+import * as React from "react";
+import { Search, Plus } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { DataTable } from "@/components/ui/data-table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+
+import { useFetchAdminPlans } from "@/features/admin/hooks/use-plan";
+import { columns } from "@/features/admin/components/plan-columns";
+import { CreatePlanDialog } from "@/features/admin/components/create-plan-dialog";
+
+const COLUMNS = [
+  { key: "plan", label: "Plan Name" },
+  { key: "price", label: "Price", className: "hidden md:table-cell" },
+  { key: "duration", label: "Duration", className: "hidden lg:table-cell" },
+  { key: "limit", label: "Job Limit", className: "hidden xl:table-cell" },
+  { key: "teamLimit", label: "Team Limit", className: "hidden xl:table-cell" },
+  {
+    key: "listingLifespan",
+    label: "Listing Lifespan",
+    className: "hidden xl:table-cell",
+  },
+  { key: "status", label: "Status" },
+  { key: "created", label: "Created At", className: "hidden md:table-cell" },
+  { key: "actions", label: "Actions" },
+];
+
+export default function PlansPage() {
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [page, setPage] = React.useState(1);
+
+  const {
+    data: responseData,
+    isLoading,
+    isError,
+    refetch,
+  } = useFetchAdminPlans(page, 10);
+
+  if (isError) {
+    return (
+      <Card className="border-destructive/20 bg-destructive/5">
+        <CardContent className="p-12 text-center">
+          <p className="text-destructive mb-4 font-medium">
+            Failed to load plans data.
+          </p>
+          <Button variant="outline" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <Skeleton className="h-10 w-full max-w-sm" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Card>
+          <CardHeader className="pb-3">
+            <Skeleton className="mb-2 h-6 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    {COLUMNS.map((column) => (
+                      <TableHead
+                        key={column.key}
+                        className={
+                          column.key === "actions"
+                            ? "text-right"
+                            : column.className || ""
+                        }
+                      >
+                        {column.label}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {COLUMNS.map((col) => (
+                        <TableCell
+                          key={col.key}
+                          className={col.className || ""}
+                        >
+                          <Skeleton
+                            className={`h-5 ${
+                              col.key === "actions" ? "ml-auto w-20" : "w-full"
+                            }`}
+                          />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex items-center justify-end space-x-2 py-4">
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-20" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const plans = responseData?.data.plans;
+  const pagination = responseData?.data.pagination;
+
+  // Client-side filtering (optional, backend usually does this but we'll do simple filtering based on searchTerm)
+  const filteredPlans = plans?.filter((plan) =>
+    plan.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Search and Filters Area */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute top-3 left-3 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search plans..."
+            className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-9 focus-visible:ring-[#2563eb] dark:border-slate-800 dark:bg-slate-900"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <CreatePlanDialog>
+          <Button className="h-10 rounded-xl bg-[#2563eb] px-5 font-semibold text-white shadow-sm hover:bg-blue-700">
+            <Plus className="mr-2 h-4 w-4" /> Create Plan
+          </Button>
+        </CreatePlanDialog>
+      </div>
+
+      <Card className="rounded-[20px] border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] shadow-sm dark:bg-slate-900">
+        <CardHeader className="px-7 pt-6 pb-4">
+          <CardTitle className="text-xl font-bold text-slate-900 dark:text-white">
+            Plans Management
+          </CardTitle>
+          <CardDescription className="text-sm text-slate-500">
+            Manage subscription plans, pricing, limits, and visibility.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-7 pb-6">
+          <DataTable columns={columns} data={filteredPlans || []} />
+
+          <div className="py-4">
+            <Pagination className="justify-end">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination?.hasPrevPage)
+                        setPage((p) => Math.max(1, p - 1));
+                    }}
+                    className={
+                      !pagination?.hasPrevPage
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+                <PaginationItem className="text-muted-foreground flex items-center px-4 text-xs font-medium">
+                  Page {pagination?.currentPage || 1} of{" "}
+                  {pagination?.totalPages || 1}
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (pagination?.hasNextPage) setPage((p) => p + 1);
+                    }}
+                    className={
+                      !pagination?.hasNextPage
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

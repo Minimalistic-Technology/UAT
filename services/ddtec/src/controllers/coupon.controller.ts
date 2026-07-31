@@ -120,7 +120,28 @@ export const validateCoupon = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Coupon code is required' });
         }
 
-        const coupon = await Coupon.findOne({ code: code.toUpperCase(), isActive: true });
+        let coupon = await Coupon.findOne({ code: code.toUpperCase(), isActive: true });
+
+        if (!coupon) {
+            // Check if it exists as a product-level coupon
+            const productWithCoupon = await Product.findOne({ couponCode: code.toUpperCase() });
+            if (productWithCoupon) {
+                // Construct a virtual coupon that follows the Coupon schema structure
+                coupon = {
+                    code: productWithCoupon.couponCode,
+                    description: `Special discount for ${productWithCoupon.name}`,
+                    discountType: 'percentage', // Product-level currently only supports percentage in UI
+                    discountValue: productWithCoupon.discountPercentage || 0,
+                    minOrderValue: 0,
+                    type: 'product',
+                    applicableProducts: [productWithCoupon._id],
+                    isActive: true,
+                    usedCount: 0,
+                    usageLimit: null,
+                    expiresAt: null
+                } as any;
+            }
+        }
 
         if (!coupon) {
             return res.status(404).json({ message: 'Invalid or inactive coupon code' });

@@ -1,0 +1,52 @@
+services:
+  # ─── Backend (Node.js + Express) ─────────────────────────────────────────────
+  - type: web
+    name: onedrive-audit-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: MICROSOFT_CLIENT_ID
+        sync: false
+      - key: MICROSOFT_CLIENT_SECRET
+        sync: false
+      - key: MICROSOFT_TENANT_ID
+        value: common
+      - key: TOKEN_ENCRYPTION_KEY
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: FRONTEND_URL
+        sync: false
+
+  # ─── Frontend (Next.js) ──────────────────────────────────────────────────────
+  - type: web
+    name: onedrive-audit-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_MICROSOFT_CLIENT_ID
+        sync: false
+      - key: NEXT_PUBLIC_MICROSOFT_TENANT_ID
+        value: common
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: AZURE_AD_CLIENT_ID
+        sync: false
+      - key: AZURE_AD_CLIENT_SECRET
+        sync: false
+      - key: AZURE_AD_TENANT_ID
+        value: common

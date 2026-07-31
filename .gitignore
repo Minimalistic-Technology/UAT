@@ -1,2 +1,7 @@
 /node_modules
 /dist
+.env
+.env.*
+
+# Frontend repo — tracked separately in ml-starter-project GitHub repo
+services/minimalistic-learning/ml-starter-project

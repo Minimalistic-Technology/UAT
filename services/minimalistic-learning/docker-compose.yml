@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: ./ml-backend
+      dockerfile: Dockerfile
+    container_name: ml-backend
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://ml-redis:6379
+    env_file:
+      - ./ml-backend/.env
+    restart: always
+    depends_on:
+      ml-redis:
+        condition: service_healthy
+
+  ml-redis:
+    image: redis:alpine
+    container_name: ml-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  redis_data:

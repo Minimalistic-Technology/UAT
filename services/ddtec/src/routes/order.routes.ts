@@ -1,27 +1,26 @@
 import { Router } from 'express';
 import { createOrder, deleteOrder, getAllOrders, getMyOrders, updateOrder, updateOrderStatus } from '../controllers/order.controller';
-import authMiddleware from '../middleware/auth.middleware';
-import optionalAuthMiddleware from '../middleware/optionalAuth.middleware';
-import adminMiddleware from '../middleware/admin.middleware';
+import { auth, checkPermission } from '../middleware/auth.middleware';
+import optionalAuth from '../middleware/optionalAuth.middleware';
 
 const router = Router();
 
 // Create Order (Guest or User)
-router.post('/', optionalAuthMiddleware as any, createOrder);
+router.post('/', optionalAuth as any, createOrder);
 
 // Get My Orders (Logged in User)
-router.get('/my-orders', authMiddleware as any, getMyOrders);
+router.get('/my-orders', auth as any, getMyOrders);
 
 // Get All Orders (Admin Only)
-router.get('/', authMiddleware as any, adminMiddleware, getAllOrders);
+router.get('/', auth as any, checkPermission(['order_manager', 'customer_support']), getAllOrders);
 
 // Update Order Status (Admin Only)
-router.put('/:id/status', authMiddleware as any, adminMiddleware, updateOrderStatus);
+router.put('/:id/status', auth as any, checkPermission(['order_manager']), updateOrderStatus);
 
 // Update Order (Admin Only)
-router.put('/:id', authMiddleware as any, adminMiddleware, updateOrder);
+router.put('/:id', auth as any, checkPermission(['order_manager']), updateOrder);
 
 // Delete Order (Admin Only)
-router.delete('/:id', authMiddleware as any, adminMiddleware, deleteOrder);
+router.delete('/:id', auth as any, checkPermission(['order_manager']), deleteOrder);
 
 export default router;

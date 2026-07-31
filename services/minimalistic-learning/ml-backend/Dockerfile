@@ -1,0 +1,26 @@
+FROM node:20-alpine
+
+WORKDIR /usr/src/app
+
+RUN npm install -g pnpm
+
+COPY package.json pnpm-lock.yaml .npmrc ./
+COPY prisma ./prisma
+
+# Install all dependencies (including devDependencies) to enable tsc and prisma build tooling
+RUN pnpm install --no-frozen-lockfile
+
+COPY tsconfig.json ./
+COPY src ./src
+
+# Generate prisma client types and compile TypeScript to JS (dist)
+RUN pnpm exec prisma generate && pnpm run build
+
+# Prune dev dependencies to reduce build size of final image
+RUN pnpm prune --prod
+
+ENV NODE_ENV=production
+ENV PORT=5001
+EXPOSE 5001
+
+CMD ["sh", "-c", "pnpm prisma migrate deploy && node dist/server.js"]
