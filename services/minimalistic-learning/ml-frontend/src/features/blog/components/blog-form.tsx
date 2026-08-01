@@ -105,7 +105,12 @@ export const BlogForm = ({ id }: { id?: string }) => {
 
   const currentValues = watch();
   const coverImageUrl = watch("coverImageUrl");
-  const currentTags = watch("tags") || [];
+  const rawTags = watch("tags");
+  const currentTags: string[] = Array.isArray(rawTags)
+    ? rawTags
+    : typeof rawTags === "string"
+      ? (rawTags as string).split(",").map((t) => t.trim()).filter(Boolean)
+      : [];
   const content = watch("content");
 
   useEffect(() => {
@@ -115,17 +120,45 @@ export const BlogForm = ({ id }: { id?: string }) => {
   useEffect(() => {
     if (isEdit && blogData?.data) {
       const blog = blogData.data;
+      const currentStatus =
+        blog.status || (blog.published ? "published" : "pending");
+
+      if (currentStatus === "pending") {
+        toast.info(
+          "This post is currently pending approval. You will be able to edit it once it has been approved by an admin."
+        );
+        router.push("/my-blogs");
+        return;
+      }
+
+      let parsedTags: string[] = [];
+      const rawBlogTags = blog.tags as unknown;
+      if (Array.isArray(rawBlogTags)) {
+        parsedTags = rawBlogTags as string[];
+      } else if (typeof rawBlogTags === "string") {
+        try {
+          const jsonParsed = JSON.parse(rawBlogTags);
+          if (Array.isArray(jsonParsed)) {
+            parsedTags = jsonParsed;
+          } else {
+            parsedTags = rawBlogTags.split(",").map((t: string) => t.trim()).filter(Boolean);
+          }
+        } catch {
+          parsedTags = rawBlogTags.split(",").map((t: string) => t.trim()).filter(Boolean);
+        }
+      }
+
       reset({
         title: blog.title || "",
         content: blog.content || "",
         excerpt: blog.excerpt || "",
         coverImageUrl: blog.coverImage?.url || blog.coverImageUrl || "",
-        tags: blog.tags || [],
+        tags: parsedTags,
         category: blog.category || "",
         status: blog.published ? "published" : "draft",
       });
     }
-  }, [isEdit, blogData, reset]);
+  }, [isEdit, blogData, reset, router]);
 
   // Strict Auto-save has been removed to prevent duplicate post submissions and moderation queue spam.
 
@@ -396,7 +429,7 @@ export const BlogForm = ({ id }: { id?: string }) => {
                   />
                   <div
                     onClick={() =>
-                      handleAddTag({ key: "Enter", preventDefault: () => {} })
+                      handleAddTag({ key: "Enter", preventDefault: () => { } })
                     }
                     className="bg-theme-element border-theme-accent/20 text-foreground/50 hover:bg-theme-action/10 hover:text-theme-action absolute top-1/2 right-4 -translate-y-1/2 cursor-pointer rounded-lg border p-2 transition-colors"
                   >
@@ -571,7 +604,7 @@ export const BlogForm = ({ id }: { id?: string }) => {
               content={currentValues.content}
               excerpt={currentValues.excerpt}
               coverImageUrl={currentValues.coverImageUrl}
-              tags={currentValues.tags || []}
+              tags={currentTags}
             />
           </div>
         </div>
