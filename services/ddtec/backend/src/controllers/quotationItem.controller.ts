@@ -23,8 +23,9 @@ export const getAllQuotationItemsAdmin = async (req: Request, res: Response) => 
 
 export const createQuotationItem = async (req: Request, res: Response) => {
     try {
-        const { name, price, hsnCode, unit, description } = req.body;
-        const item = new QuotationItem({ name, price, hsnCode, unit, description });
+        const { name, price, hsnCode, unit, description, image } = req.body;
+        const uploadedImage = (req.file as Express.Multer.File & { path?: string })?.path;
+        const item = new QuotationItem({ name, price, hsnCode, unit, description, image: uploadedImage ?? image });
         await item.save();
         res.status(201).json(item);
     } catch (err) {
@@ -35,7 +36,8 @@ export const createQuotationItem = async (req: Request, res: Response) => {
 
 export const updateQuotationItem = async (req: Request, res: Response) => {
     try {
-        const { name, price, hsnCode, unit, description, isActive } = req.body;
+        const { name, price, hsnCode, unit, description, image, isActive } = req.body;
+        const uploadedImage = (req.file as Express.Multer.File & { path?: string })?.path;
         const item = await QuotationItem.findById(req.params.id);
         if (!item) return res.status(404).json({ msg: 'Item not found' });
 
@@ -44,6 +46,7 @@ export const updateQuotationItem = async (req: Request, res: Response) => {
         item.hsnCode = hsnCode ?? item.hsnCode;
         item.unit = unit ?? item.unit;
         item.description = description ?? item.description;
+        item.image = uploadedImage ?? image ?? item.image;
         item.isActive = isActive ?? item.isActive;
 
         await item.save();

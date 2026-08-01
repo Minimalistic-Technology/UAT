@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FileText, Plus, Minus, Trash2, Loader2, Download, Search } from "lucide-react";
+import { FileText, Plus, Minus, Trash2, Loader2, Download, Search, ImageOff } from "lucide-react";
 import api from "@/lib/api";
 
 interface QuotationProduct {
@@ -11,6 +11,7 @@ interface QuotationProduct {
     hsnCode?: string;
     unit?: string;
     description?: string;
+    image?: string;
 }
 
 interface SelectedItem {
@@ -161,24 +162,35 @@ export default function QuotationPage() {
                                 <p className="text-slate-500 dark:text-slate-400 text-lg">No products available</p>
                             </div>
                         ) : (
-                            <div className="divide-y divide-slate-100 dark:divide-slate-700 max-h-[60vh] overflow-y-auto">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-5 max-h-[60vh] overflow-y-auto">
                                 {filteredProducts.map(product => (
-                                    <div key={product._id} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-                                        <div>
-                                            <p className="font-medium text-slate-900 dark:text-white">{product.name}</p>
-                                            {product.description && (
-                                                <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">{product.description}</p>
+                                    <div
+                                        key={product._id}
+                                        className="flex flex-col rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow bg-white dark:bg-slate-800/50"
+                                    >
+                                        <div className="aspect-square w-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
+                                            {product.image ? (
+                                                <img
+                                                    src={product.image}
+                                                    alt={product.name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <ImageOff className="size-8 text-slate-300 dark:text-slate-500" />
                                             )}
+                                        </div>
+                                        <div className="p-3 flex flex-col flex-1">
+                                            <p className="font-medium text-slate-900 dark:text-white text-sm line-clamp-2">{product.name}</p>
                                             <p className="text-sm text-teal-600 dark:text-teal-400 font-semibold mt-1">
                                                 ₹{product.price.toLocaleString("en-IN")} / {product.unit || "Nos"}
                                             </p>
+                                            <button
+                                                onClick={() => addItem(product)}
+                                                className="mt-auto pt-2 flex items-center justify-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors"
+                                            >
+                                                <Plus className="size-4" /> Add
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => addItem(product)}
-                                            className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors shrink-0"
-                                        >
-                                            <Plus className="size-4" /> Add
-                                        </button>
                                     </div>
                                 ))}
                             </div>

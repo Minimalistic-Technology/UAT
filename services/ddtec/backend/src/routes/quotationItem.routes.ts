@@ -7,6 +7,7 @@ import {
     deleteQuotationItem
 } from '../controllers/quotationItem.controller';
 import { auth, checkPermission } from '../middleware/auth.middleware';
+import { uploadQuotationItemImage } from '../middleware/upload.middleware';
 
 const router = Router();
 
@@ -23,12 +24,12 @@ router.get('/all', auth as any, checkPermission(['product_manager']), getAllQuot
 // @route   POST api/quotation-items
 // @desc    Create a quotation item
 // @access  Private/Admin
-router.post('/', auth as any, checkPermission(['product_manager']), createQuotationItem);
+router.post('/', auth as any, checkPermission(['product_manager']), uploadQuotationItemImage.single('image'), createQuotationItem);
 
 // @route   PUT api/quotation-items/:id
 // @desc    Update a quotation item
 // @access  Private/Admin
-router.put('/:id', auth as any, checkPermission(['product_manager']), updateQuotationItem);
+router.put('/:id', auth as any, checkPermission(['product_manager']), uploadQuotationItemImage.single('image'), updateQuotationItem);
 
 // @route   DELETE api/quotation-items/:id
 // @desc    Delete a quotation item

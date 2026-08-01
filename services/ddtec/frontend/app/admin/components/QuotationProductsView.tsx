@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, FileText, X, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, X, Loader2, ImagePlus, ImageOff } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -10,7 +10,43 @@ interface QuotationItem {
     hsnCode?: string;
     unit?: string;
     description?: string;
+    image?: string;
     isActive: boolean;
+}
+
+const MAX_IMAGE_DIMENSION = 800;
+
+function fileToCompressedFile(file: File): Promise<File> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(reader.error);
+        reader.onload = () => {
+            const img = new window.Image();
+            img.onerror = reject;
+            img.onload = () => {
+                let { width, height } = img;
+                if (width > height && width > MAX_IMAGE_DIMENSION) {
+                    height = Math.round((height * MAX_IMAGE_DIMENSION) / width);
+                    width = MAX_IMAGE_DIMENSION;
+                } else if (height > MAX_IMAGE_DIMENSION) {
+                    width = Math.round((width * MAX_IMAGE_DIMENSION) / height);
+                    height = MAX_IMAGE_DIMENSION;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return reject(new Error('Canvas not supported'));
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => {
+                    if (!blob) return reject(new Error('Failed to compress image'));
+                    resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+                }, 'image/jpeg', 0.8);
+            };
+            img.src = reader.result as string;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 const QuotationProductsView = () => {
@@ -19,6 +55,10 @@ const QuotationProductsView = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [editingItem, setEditingItem] = useState<QuotationItem | null>(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState('');
+    const [imageRemoved, setImageRemoved] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -48,7 +88,18 @@ const QuotationProductsView = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const payload = { ...formData, price: Number(formData.price) };
+            const payload = new FormData();
+            payload.append('name', formData.name);
+            payload.append('price', String(Number(formData.price)));
+            payload.append('hsnCode', formData.hsnCode);
+            payload.append('unit', formData.unit);
+            payload.append('description', formData.description);
+            if (imageFile) {
+                payload.append('image', imageFile);
+            } else if (imageRemoved) {
+                payload.append('image', '');
+            }
+
             if (editingItem) {
                 await api.put(`/quotation-items/${editingItem._id}`, payload);
                 alert('Quotation product updated successfully');
@@ -86,6 +137,9 @@ const QuotationProductsView = () => {
             unit: item.unit || 'Nos',
             description: item.description || ''
         });
+        setImageFile(null);
+        setImageRemoved(false);
+        setImagePreview(item.image || '');
         setIsModalOpen(true);
     };
 
@@ -93,6 +147,33 @@ const QuotationProductsView = () => {
         setIsModalOpen(false);
         setEditingItem(null);
         setFormData({ name: '', price: '', hsnCode: '', unit: 'Nos', description: '' });
+        setImageFile(null);
+        setImagePreview('');
+        setImageRemoved(false);
+    };
+
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setIsUploadingImage(true);
+        try {
+            const compressed = await fileToCompressedFile(file);
+            setImageFile(compressed);
+            setImagePreview(URL.createObjectURL(compressed));
+            setImageRemoved(false);
+        } catch (error) {
+            console.error('Failed to process image', error);
+            alert('Failed to process image');
+        } finally {
+            setIsUploadingImage(false);
+            e.target.value = '';
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setImageFile(null);
+        setImagePreview('');
+        setImageRemoved(true);
     };
 
     return (
@@ -126,6 +207,7 @@ const QuotationProductsView = () => {
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-sm uppercase">
                                 <tr>
+                                    <th className="p-4">Image</th>
                                     <th className="p-4">Name</th>
                                     <th className="p-4">HSN/SAC</th>
                                     <th className="p-4">Unit</th>
@@ -136,6 +218,15 @@ const QuotationProductsView = () => {
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                 {items.map(item => (
                                     <tr key={item._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                                        <td className="p-4">
+                                            {item.image ? (
+                                                <img src={item.image} alt={item.name} className="size-12 rounded-lg object-cover border border-slate-200 dark:border-slate-600" />
+                                            ) : (
+                                                <div className="size-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                                                    <ImageOff className="size-5 text-slate-400" />
+                                                </div>
+                                            )}
+                                        </td>
                                         <td className="p-4">
                                             <div className="font-medium text-slate-900 dark:text-white">{item.name}</div>
                                             {item.description && (
@@ -188,6 +279,42 @@ const QuotationProductsView = () => {
                             </div>
 
                             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Image</label>
+                                    <div className="flex items-center gap-4">
+                                        <div className="size-20 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-700/50 shrink-0">
+                                            {isUploadingImage ? (
+                                                <Loader2 className="animate-spin size-5 text-teal-600" />
+                                            ) : imagePreview ? (
+                                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <ImagePlus className="size-6 text-slate-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors">
+                                                <ImagePlus className="size-4" />
+                                                {imagePreview ? 'Change Image' : 'Upload Image'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleImageChange}
+                                                    className="hidden"
+                                                />
+                                            </label>
+                                            {imagePreview && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRemoveImage}
+                                                    className="ml-2 text-sm text-red-500 hover:text-red-700"
+                                                >
+                                                    Remove
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name</label>
                                     <input
@@ -258,7 +385,7 @@ const QuotationProductsView = () => {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={isSubmitting}
+                                        disabled={isSubmitting || isUploadingImage}
                                         className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 disabled:opacity-50 flex items-center gap-2"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin size-4" /> : null}

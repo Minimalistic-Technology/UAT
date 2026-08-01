@@ -6,6 +6,7 @@ export interface IQuotationItem extends Document {
     hsnCode: string;
     unit: string;
     description: string;
+    image: string;
     isActive: boolean;
 }
 
@@ -15,6 +16,7 @@ const QuotationItemSchema: Schema = new Schema({
     hsnCode: { type: String, default: '' },
     unit: { type: String, default: 'Nos' },
     description: { type: String, default: '' },
+    image: { type: String, default: '' },
     isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
