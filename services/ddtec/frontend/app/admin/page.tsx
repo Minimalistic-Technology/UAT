@@ -50,6 +50,8 @@ interface Product {
     discountPercentage?: number;
     discountType?: 'percentage' | 'fixed';
     discountValue?: number;
+    cgst?: number;
+    sgst?: number;
     isActive: boolean;
 }
 
@@ -120,7 +122,9 @@ const AdminDashboard = () => {
         rating: "",
         lastMonthSales: "",
         couponCode: "",
-        discountPercentage: ""
+        discountPercentage: "",
+        cgst: "",
+        sgst: ""
     });
 
     const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -335,6 +339,13 @@ const AdminDashboard = () => {
 
     const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if ([newProduct.price, newProduct.stock, newProduct.discountPercentage, newProduct.cgst, newProduct.sgst]
+            .some(v => v !== "" && Number(v) < 0)) {
+            alert("Price, stock, discount, CGST and SGST cannot be negative");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const imageList = newProduct.imagesInput.split(',').map(url => url.trim()).filter(url => url.length > 0);
@@ -350,7 +361,9 @@ const AdminDashboard = () => {
                 brand: newProduct.brand,
                 modelName: newProduct.modelName,
                 couponCode: newProduct.couponCode || undefined,
-                discountPercentage: Number(newProduct.discountPercentage) || 0
+                discountPercentage: Number(newProduct.discountPercentage) || 0,
+                cgst: Number(newProduct.cgst) || 0,
+                sgst: Number(newProduct.sgst) || 0
             });
 
             if (res.status === 200 || res.status === 201) {
@@ -358,7 +371,7 @@ const AdminDashboard = () => {
                 setIsAddModalOpen(false);
                 setNewProduct({
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", brand: "",
-                    modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: ""
+                    modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: ""
                 });
                 alert("Product Added Successfully");
             }
@@ -388,13 +401,22 @@ const AdminDashboard = () => {
             rating: String((product as any).rating || 0),
             lastMonthSales: String((product as any).lastMonthSales || 0),
             couponCode: (product as any).couponCode || "",
-            discountPercentage: String((product as any).discountPercentage || 0)
+            discountPercentage: String((product as any).discountPercentage || 0),
+            cgst: String((product as any).cgst || 0),
+            sgst: String((product as any).sgst || 0)
         });
         setIsEditModalOpen(true);
     };
 
     const handleUpdateProduct = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if ([editingProduct.price, editingProduct.stock, editingProduct.discountPercentage, editingProduct.cgst, editingProduct.sgst]
+            .some((v: string) => v !== "" && Number(v) < 0)) {
+            alert("Price, stock, discount, CGST and SGST cannot be negative");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const imageList = editingProduct.imagesInput.split(',').map((url: string) => url.trim()).filter((url: string) => url.length > 0);
@@ -408,7 +430,9 @@ const AdminDashboard = () => {
                 rating: Number(editingProduct.rating),
                 lastMonthSales: Number(editingProduct.lastMonthSales),
                 couponCode: editingProduct.couponCode || undefined,
-                discountPercentage: Number(editingProduct.discountPercentage) || 0
+                discountPercentage: Number(editingProduct.discountPercentage) || 0,
+                cgst: Number(editingProduct.cgst) || 0,
+                sgst: Number(editingProduct.sgst) || 0
             });
 
             if (res.status === 200) {
@@ -1489,6 +1513,7 @@ const AdminDashboard = () => {
                                                             <input
                                                                 required
                                                                 type="number"
+                                                                min="0"
                                                                 value={newProduct.price}
                                                                 onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
                                                                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
@@ -1501,10 +1526,37 @@ const AdminDashboard = () => {
                                                         <input
                                                             required
                                                             type="number"
+                                                            min="0"
                                                             value={newProduct.stock}
                                                             onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
                                                             className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
                                                             placeholder="100"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={newProduct.cgst}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, cgst: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="9"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={newProduct.sgst}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, sgst: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="9"
                                                         />
                                                     </div>
                                                 </div>
@@ -1570,6 +1622,7 @@ const AdminDashboard = () => {
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Discount (%)</label>
                                                         <input
                                                             type="number"
+                                                            min="0"
                                                             value={newProduct.discountPercentage}
                                                             onChange={(e) => setNewProduct({ ...newProduct, discountPercentage: e.target.value })}
                                                             className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
@@ -1681,6 +1734,7 @@ const AdminDashboard = () => {
                                                             <input
                                                                 required
                                                                 type="number"
+                                                                min="0"
                                                                 value={editingProduct.price}
                                                                 onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
                                                                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
@@ -1693,10 +1747,37 @@ const AdminDashboard = () => {
                                                         <input
                                                             required
                                                             type="number"
+                                                            min="0"
                                                             value={editingProduct.stock}
                                                             onChange={(e) => setEditingProduct({ ...editingProduct, stock: e.target.value })}
                                                             className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
                                                             placeholder="100"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={editingProduct.cgst}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, cgst: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="9"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={editingProduct.sgst}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, sgst: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="9"
                                                         />
                                                     </div>
                                                 </div>

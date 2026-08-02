@@ -97,13 +97,25 @@ export const getProductById = async (req: Request, res: Response) => {
     }
 };
 
+// Fields that must never be negative
+const NON_NEGATIVE_FIELDS = ['price', 'costPrice', 'stock', 'discountPercentage', 'discountValue', 'cgst', 'sgst'] as const;
+
+const findNegativeField = (body: Record<string, any>) =>
+    NON_NEGATIVE_FIELDS.find((field) => body[field] !== undefined && Number(body[field]) < 0);
+
 export const createProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome } = req.body;
+        const negativeField = findNegativeField(req.body);
+        if (negativeField) {
+            return res.status(400).json({ msg: `${negativeField} cannot be negative` });
+        }
+
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, cgst, sgst, costPrice } = req.body;
 
         const newProduct = new Product({
             name,
             price,
+            costPrice: costPrice || 0,
             description,
             image,
             images: images || [],
@@ -117,7 +129,9 @@ export const createProduct = async (req: Request, res: Response) => {
             discountPercentage: discountPercentage || 0,
             discountType: discountType || 'percentage',
             discountValue: discountValue || 0,
-            showOnHome: showOnHome || false
+            showOnHome: showOnHome || false,
+            cgst: cgst || 0,
+            sgst: sgst || 0
         });
 
         const product = await newProduct.save();
@@ -134,13 +148,19 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome } = req.body;
+        const negativeField = findNegativeField(req.body);
+        if (negativeField) {
+            return res.status(400).json({ msg: `${negativeField} cannot be negative` });
+        }
+
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, cgst, sgst, costPrice } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
 
         product.name = name || product.name;
         product.price = price || product.price;
+        product.costPrice = costPrice !== undefined ? costPrice : product.costPrice;
         product.description = description || product.description;
         product.image = image || product.image;
         product.images = images || product.images;
@@ -155,6 +175,8 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.discountType = discountType || product.discountType;
         product.discountValue = discountValue !== undefined ? discountValue : product.discountValue;
         product.showOnHome = showOnHome !== undefined ? showOnHome : product.showOnHome;
+        product.cgst = cgst !== undefined ? cgst : product.cgst;
+        product.sgst = sgst !== undefined ? sgst : product.sgst;
 
         await product.save();
 

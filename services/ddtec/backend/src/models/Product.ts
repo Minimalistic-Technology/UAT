@@ -21,28 +21,32 @@ export interface IProduct extends Document {
     isActive: boolean;
     showOnHome: boolean;
     taxes: Array<{ name: string; rate: number }>;
+    cgst: number;
+    sgst: number;
 }
 
 const ProductSchema: Schema = new Schema({
     name: { type: String, required: true },
-    price: { type: Number, required: true },
-    costPrice: { type: Number, default: 0 },
+    price: { type: Number, required: true, min: 0 },
+    costPrice: { type: Number, default: 0, min: 0 },
     description: { type: String },
     image: { type: String },
     images: { type: [String], default: [] },
     category: { type: Schema.Types.ObjectId, ref: 'Category' },
-    stock: { type: Number, required: true, default: 0 },
-    rating: { type: Number, required: true, default: 0 },
-    numReviews: { type: Number, required: true, default: 0 },
-    lastMonthSales: { type: Number, required: true, default: 0 },
+    stock: { type: Number, required: true, default: 0, min: 0 },
+    rating: { type: Number, required: true, default: 0, min: 0 },
+    numReviews: { type: Number, required: true, default: 0, min: 0 },
+    lastMonthSales: { type: Number, required: true, default: 0, min: 0 },
     brand: { type: String },
     modelName: { type: String },
     couponCode: { type: String, unique: true, sparse: true },
-    discountPercentage: { type: Number, default: 0 }, // Deprecated, use discountValue
+    discountPercentage: { type: Number, default: 0, min: 0 }, // Deprecated, use discountValue
     discountType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
-    discountValue: { type: Number, default: 0 },
+    discountValue: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true },
     showOnHome: { type: Boolean, default: false },
+    cgst: { type: Number, default: 0, min: 0 },
+    sgst: { type: Number, default: 0, min: 0 },
     taxes: [
         {
             name: { type: String },
