@@ -331,7 +331,7 @@ const QuotationProductsView = () => {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700"
+                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -342,8 +342,8 @@ const QuotationProductsView = () => {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                                <div>
+                            <form onSubmit={handleSubmit} className="p-6 grid grid-cols-2 gap-x-6 gap-y-4">
+                                <div className="col-span-2">
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Prefill from Product (Optional)</label>
                                     <select
                                         value={formData.product}
@@ -481,7 +481,7 @@ const QuotationProductsView = () => {
                                     />
                                 </div>
 
-                                <div className="pt-4 flex justify-end gap-3">
+                                <div className="col-span-2 pt-4 flex justify-end gap-3">
                                     <button
                                         type="button"
                                         onClick={handleCloseModal}

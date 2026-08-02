@@ -924,14 +924,6 @@ const AdminDashboard = () => {
                 </AnimatePresence>
 
                 <div className="max-w-7xl mx-auto">
-                    <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
-                            <p className="text-slate-600 dark:text-slate-400 mt-1">
-                                Welcome back, {user.firstName || user.name?.split(' ')[0] || user.email?.split('@')[0] || user.phone || 'Admin'}.
-                            </p>
-                        </div>
-                    </div>
 
                     {activeView === 'dashboard' && (
                         <>
