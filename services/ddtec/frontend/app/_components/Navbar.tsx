@@ -70,7 +70,6 @@ export default function Navbar() {
   const { isRouteActive } = useDynamicRoutes();
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [currentHash, setCurrentHash] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
@@ -85,11 +84,6 @@ export default function Navbar() {
     if (window.location.hash) {
       setCurrentHash(window.location.hash.substring(1));
     }
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-
     const fetchCategories = async () => {
       try {
         const { data } = await api.get('/categories');
@@ -100,8 +94,6 @@ export default function Navbar() {
       }
     };
     fetchCategories();
-
-    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Scroll Spy Logic
@@ -235,12 +227,7 @@ export default function Navbar() {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
-        className={cn(
-          "fixed top-0 inset-x-0 z-50 transition-all duration-300 border-b",
-          scrolled
-            ? "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-slate-200 dark:border-slate-800 shadow-sm"
-            : "bg-transparent border-transparent"
-        )}
+        className="fixed top-0 inset-x-0 z-50 border-b bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm"
       >
         <nav className={cn("px-4 md:px-6 h-16 flex items-center justify-between relative", (pathname?.startsWith('/admin') || pathname?.startsWith('/warehouse')) ? "w-full" : "container mx-auto")}>
 
@@ -249,9 +236,7 @@ export default function Navbar() {
               D
             </div>
             <div className="flex flex-col">
-              <span className={cn("font-bold text-xl tracking-tight transition-colors leading-none",
-                scrolled ? "text-slate-900 dark:text-white" : "text-slate-200 dark:text-white"
-              )}>
+              <span className="font-bold text-xl tracking-tight leading-none text-slate-900 dark:text-white">
                 DDTEC
               </span>
               {pathname?.startsWith('/warehouse') && (
@@ -277,9 +262,7 @@ export default function Navbar() {
                     "relative px-4 py-2 rounded-full text-sm font-medium transition-colors hover:text-teal-600 dark:hover:text-teal-400 block",
                     isActive(link.href)
                       ? "text-teal-600 dark:text-teal-400"
-                      : scrolled
-                        ? "text-slate-600 dark:text-slate-300"
-                        : "text-slate-200 dark:text-slate-200 hover:text-teal-600"
+                      : "text-slate-600 dark:text-slate-300"
                   )}
                 >
                   {isActive(link.href) && (
@@ -330,12 +313,7 @@ export default function Navbar() {
                   router.push('/cart');
                   setMenuOpen(false);
                 }}
-                className={cn(
-                  "p-2 rounded-full transition-colors relative group",
-                  scrolled
-                    ? "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
-                    : "text-slate-200 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
-                )}
+                className="p-2 rounded-full transition-colors relative group hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
               >
                 <ShoppingBag className="size-5" />
                 {cartCount > 0 && (
@@ -349,12 +327,7 @@ export default function Navbar() {
             {mounted && (
               <button
                 onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-                className={cn(
-                  "p-2 rounded-full transition-colors",
-                  scrolled
-                    ? "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
-                    : "text-slate-200 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
-                )}
+                className="p-2 rounded-full transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
               >
                 {theme === "light" ? <Moon className="size-5" /> : <Sun className="size-5" />}
               </button>
@@ -368,10 +341,7 @@ export default function Navbar() {
                   <button
                     onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                     onBlur={() => setTimeout(() => setShowProfileDropdown(false), 200)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:bg-slate-100 dark:hover:bg-slate-800",
-                      scrolled ? "text-slate-700 dark:text-slate-200" : "text-slate-700 dark:text-slate-200"
-                    )}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
                   >
                     <div className="size-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600">
                       <User className="size-4" />
@@ -429,12 +399,7 @@ export default function Navbar() {
                   {isRouteActive('/login') && (
                     <Link
                       href="/login"
-                      className={cn(
-                        "flex px-5 py-2 rounded-full text-sm font-bold transition-all items-center gap-2 border",
-                        scrolled
-                          ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
-                          : "border-white/20 bg-white/10 backdrop-blur-md text-slate-200 dark:text-white hover:bg-white/20"
-                      )}
+                      className="flex px-5 py-2 rounded-full text-sm font-bold transition-all items-center gap-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
                     >
                       <User className="size-4" /> Login
                     </Link>
@@ -442,12 +407,7 @@ export default function Navbar() {
                   {isRouteActive('/signup') && (
                     <Link
                       href="/signup"
-                      className={cn(
-                        "flex px-5 py-2 rounded-full text-sm font-bold transition-all items-center gap-2",
-                        scrolled
-                          ? "bg-teal-600 text-white hover:bg-teal-700"
-                          : "bg-teal-600 text-white hover:bg-teal-700 shadow-lg shadow-teal-500/30"
-                      )}
+                      className="flex px-5 py-2 rounded-full text-sm font-bold transition-all items-center gap-2 bg-teal-600 text-white hover:bg-teal-700"
                     >
                       Sign Up
                     </Link>
@@ -458,12 +418,7 @@ export default function Navbar() {
 
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className={cn(
-                "md:hidden p-2 rounded-full transition-colors",
-                scrolled
-                  ? "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
-                  : "text-slate-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
-              )}
+              className="md:hidden p-2 rounded-full transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
             >
               {menuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
             </button>
