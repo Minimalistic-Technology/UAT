@@ -12,6 +12,18 @@ interface QuotationItem {
     description?: string;
     image?: string;
     isActive: boolean;
+    cgst?: number;
+    sgst?: number;
+    product?: string;
+}
+
+interface CatalogProduct {
+    _id: string;
+    name: string;
+    price: number;
+    image?: string;
+    cgst?: number;
+    sgst?: number;
 }
 
 const MAX_IMAGE_DIMENSION = 800;
@@ -65,11 +77,17 @@ const QuotationProductsView = () => {
         price: '',
         hsnCode: '',
         unit: 'Nos',
-        description: ''
+        description: '',
+        cgst: '',
+        sgst: '',
+        product: '',
+        image: ''
     });
+    const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([]);
 
     useEffect(() => {
         fetchItems();
+        fetchCatalogProducts();
     }, []);
 
     const fetchItems = async () => {
@@ -84,20 +102,60 @@ const QuotationProductsView = () => {
         }
     };
 
+    const fetchCatalogProducts = async () => {
+        try {
+            const { data } = await api.get('/products');
+            setCatalogProducts(data);
+        } catch (error) {
+            console.error('Failed to fetch products', error);
+        }
+    };
+
+    const handleSelectProduct = (productId: string) => {
+        const product = catalogProducts.find(p => p._id === productId);
+        if (!product) {
+            setFormData({ ...formData, product: '' });
+            return;
+        }
+        setFormData({
+            ...formData,
+            product: product._id,
+            name: product.name,
+            price: String(product.price),
+            cgst: String(product.cgst ?? 0),
+            sgst: String(product.sgst ?? 0),
+            image: product.image || ''
+        });
+        setImageFile(null);
+        setImageRemoved(false);
+        setImagePreview(product.image || '');
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
+            if (Number(formData.price) < 0 || Number(formData.cgst) < 0 || Number(formData.sgst) < 0) {
+                alert('Price, CGST and SGST cannot be negative');
+                setIsSubmitting(false);
+                return;
+            }
+
             const payload = new FormData();
             payload.append('name', formData.name);
             payload.append('price', String(Number(formData.price)));
             payload.append('hsnCode', formData.hsnCode);
             payload.append('unit', formData.unit);
             payload.append('description', formData.description);
+            payload.append('cgst', String(Number(formData.cgst) || 0));
+            payload.append('sgst', String(Number(formData.sgst) || 0));
+            payload.append('product', formData.product);
             if (imageFile) {
                 payload.append('image', imageFile);
             } else if (imageRemoved) {
                 payload.append('image', '');
+            } else if (formData.image) {
+                payload.append('image', formData.image);
             }
 
             if (editingItem) {
@@ -135,7 +193,11 @@ const QuotationProductsView = () => {
             price: String(item.price),
             hsnCode: item.hsnCode || '',
             unit: item.unit || 'Nos',
-            description: item.description || ''
+            description: item.description || '',
+            cgst: String(item.cgst ?? 0),
+            sgst: String(item.sgst ?? 0),
+            product: item.product || '',
+            image: ''
         });
         setImageFile(null);
         setImageRemoved(false);
@@ -146,7 +208,7 @@ const QuotationProductsView = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingItem(null);
-        setFormData({ name: '', price: '', hsnCode: '', unit: 'Nos', description: '' });
+        setFormData({ name: '', price: '', hsnCode: '', unit: 'Nos', description: '', cgst: '', sgst: '', product: '', image: '' });
         setImageFile(null);
         setImagePreview('');
         setImageRemoved(false);
@@ -212,6 +274,7 @@ const QuotationProductsView = () => {
                                     <th className="p-4">HSN/SAC</th>
                                     <th className="p-4">Unit</th>
                                     <th className="p-4">Price</th>
+                                    <th className="p-4">GST</th>
                                     <th className="p-4 text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -236,6 +299,7 @@ const QuotationProductsView = () => {
                                         <td className="p-4 text-slate-500 dark:text-slate-400 font-mono text-sm">{item.hsnCode || '-'}</td>
                                         <td className="p-4 text-slate-600 dark:text-slate-400">{item.unit}</td>
                                         <td className="p-4 text-slate-900 dark:text-white font-semibold">₹{item.price.toLocaleString('en-IN')}</td>
+                                        <td className="p-4 text-slate-600 dark:text-slate-400 text-sm">CGST {item.cgst ?? 0}% / SGST {item.sgst ?? 0}%</td>
                                         <td className="p-4 text-right flex justify-end items-center gap-2">
                                             <button
                                                 onClick={() => handleEditClick(item)}
@@ -279,6 +343,21 @@ const QuotationProductsView = () => {
                             </div>
 
                             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Prefill from Product (Optional)</label>
+                                    <select
+                                        value={formData.product}
+                                        onChange={(e) => handleSelectProduct(e.target.value)}
+                                        className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                    >
+                                        <option value="">— Select a product to copy details —</option>
+                                        {catalogProducts.map(p => (
+                                            <option key={p._id} value={p._id}>{p.name} (₹{p.price.toLocaleString('en-IN')})</option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">Copies name, price, image, CGST &amp; SGST — all fields below stay fully editable.</p>
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Image</label>
                                     <div className="flex items-center gap-4">
@@ -349,6 +428,33 @@ const QuotationProductsView = () => {
                                             onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                                             className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
                                             placeholder="Nos"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={formData.cgst}
+                                            onChange={(e) => setFormData({ ...formData, cgst: e.target.value })}
+                                            className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                            placeholder="9"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={formData.sgst}
+                                            onChange={(e) => setFormData({ ...formData, sgst: e.target.value })}
+                                            className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                            placeholder="9"
                                         />
                                     </div>
                                 </div>

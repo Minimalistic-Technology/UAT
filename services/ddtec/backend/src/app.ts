@@ -42,7 +42,8 @@ app.use(cors({
         callback(null, true);
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    exposedHeaders: ['Content-Disposition']
 }));
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));

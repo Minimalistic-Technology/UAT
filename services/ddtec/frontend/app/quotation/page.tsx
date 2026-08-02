@@ -12,6 +12,8 @@ interface QuotationProduct {
     unit?: string;
     description?: string;
     image?: string;
+    cgst?: number;
+    sgst?: number;
 }
 
 interface SelectedItem {
@@ -20,10 +22,9 @@ interface SelectedItem {
     price: number;
     unit: string;
     quantity: number;
+    cgst: number;
+    sgst: number;
 }
-
-const CGST_RATE = 9;
-const SGST_RATE = 9;
 
 export default function QuotationPage() {
     const [products, setProducts] = useState<QuotationProduct[]>([]);
@@ -65,7 +66,15 @@ export default function QuotationPage() {
             if (existing) {
                 return prev.map(i => i.itemId === product._id ? { ...i, quantity: i.quantity + 1 } : i);
             }
-            return [...prev, { itemId: product._id, name: product.name, price: product.price, unit: product.unit || "Nos", quantity: 1 }];
+            return [...prev, {
+                itemId: product._id,
+                name: product.name,
+                price: product.price,
+                unit: product.unit || "Nos",
+                quantity: 1,
+                cgst: product.cgst ?? 0,
+                sgst: product.sgst ?? 0
+            }];
         });
     };
 
@@ -79,8 +88,8 @@ export default function QuotationPage() {
     };
 
     const subtotal = selectedItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-    const cgstAmount = (subtotal * CGST_RATE) / 100;
-    const sgstAmount = (subtotal * SGST_RATE) / 100;
+    const cgstAmount = selectedItems.reduce((sum, i) => sum + (i.price * i.quantity * i.cgst) / 100, 0);
+    const sgstAmount = selectedItems.reduce((sum, i) => sum + (i.price * i.quantity * i.sgst) / 100, 0);
     const grandTotal = subtotal + cgstAmount + sgstAmount;
 
     const handleGenerateQuotation = async () => {
@@ -99,18 +108,20 @@ export default function QuotationPage() {
                 "/quotation/generate",
                 {
                     items: selectedItems.map(i => ({ itemId: i.itemId, quantity: i.quantity })),
-                    buyer,
-                    cgstRate: CGST_RATE,
-                    sgstRate: SGST_RATE
+                    buyer
                 },
                 { responseType: "blob" }
             );
+
+            const disposition = response.headers["content-disposition"];
+            const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+            const filename = filenameMatch?.[1] || `quotation-${Date.now()}.pdf`;
 
             const blob = new Blob([response.data], { type: "application/pdf" });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
-            link.download = `quotation-${Date.now()}.pdf`;
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -245,11 +256,11 @@ export default function QuotationPage() {
                                 <span>₹{subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                                <span>CGST ({CGST_RATE}%)</span>
+                                <span>CGST</span>
                                 <span>₹{cgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                                <span>SGST ({SGST_RATE}%)</span>
+                                <span>SGST</span>
                                 <span>₹{sgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex justify-between text-slate-900 dark:text-white font-bold text-base pt-1.5 border-t border-slate-100 dark:border-slate-700">

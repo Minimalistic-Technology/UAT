@@ -54,9 +54,13 @@ function amountInWords(amount: number): string {
     return `INR ${numberToWordsIndian(rupees)} Only`;
 }
 
+function sanitizeForFilename(str: string): string {
+    return str.trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
 export const generateQuotationPdf = async (req: Request, res: Response) => {
     try {
-        const { items, buyer, cgstRate = 9, sgstRate = 9 } = req.body;
+        const { items, buyer } = req.body;
 
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ msg: 'No items provided' });
@@ -71,21 +75,38 @@ export const generateQuotationPdf = async (req: Request, res: Response) => {
             if (!dbItem) throw new Error(`Item ${i.itemId} not found`);
             const quantity = Number(i.quantity) || 1;
             const amount = (dbItem as any).price * quantity;
+            const itemCgstRate = (dbItem as any).cgst || 0;
+            const itemSgstRate = (dbItem as any).sgst || 0;
             return {
                 name: (dbItem as any).name,
                 hsnCode: (dbItem as any).hsnCode || '',
                 unit: (dbItem as any).unit || 'Nos',
                 price: (dbItem as any).price,
                 quantity,
-                amount
+                amount,
+                cgstRate: itemCgstRate,
+                sgstRate: itemSgstRate,
+                cgstAmount: (amount * itemCgstRate) / 100,
+                sgstAmount: (amount * itemSgstRate) / 100
             };
         });
 
         const totalQuantity = lineItems.reduce((sum, i) => sum + i.quantity, 0);
         const taxableValue = lineItems.reduce((sum, i) => sum + i.amount, 0);
-        const cgstAmount = (taxableValue * cgstRate) / 100;
-        const sgstAmount = (taxableValue * sgstRate) / 100;
+        const cgstAmount = lineItems.reduce((sum, i) => sum + i.cgstAmount, 0);
+        const sgstAmount = lineItems.reduce((sum, i) => sum + i.sgstAmount, 0);
         const grandTotal = taxableValue + cgstAmount + sgstAmount;
+
+        // Group line items by their (cgstRate, sgstRate) pair for the per-rate tax summary table
+        const taxGroups = new Map<string, { cgstRate: number; sgstRate: number; taxableValue: number; cgstAmount: number; sgstAmount: number }>();
+        for (const item of lineItems) {
+            const key = `${item.cgstRate}-${item.sgstRate}`;
+            const group = taxGroups.get(key) || { cgstRate: item.cgstRate, sgstRate: item.sgstRate, taxableValue: 0, cgstAmount: 0, sgstAmount: 0 };
+            group.taxableValue += item.amount;
+            group.cgstAmount += item.cgstAmount;
+            group.sgstAmount += item.sgstAmount;
+            taxGroups.set(key, group);
+        }
 
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -110,6 +131,9 @@ export const generateQuotationPdf = async (req: Request, res: Response) => {
 
         const rightX = pageWidth / 2 + 2;
         const invoiceNo = `QT-${Date.now()}`;
+        const dateForFilename = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); // DD-MM-YYYY
+        const buyerNameForFilename = sanitizeForFilename(buyer?.name || '') || 'Customer';
+        const downloadFilename = `QT-${buyerNameForFilename}-${dateForFilename}.pdf`;
         doc.text(`Invoice No.: ${invoiceNo}`, rightX, 26);
         doc.text(`Dated: ${new Date().toLocaleDateString('en-IN')}`, rightX, 31);
 
@@ -163,16 +187,23 @@ export const generateQuotationPdf = async (req: Request, res: Response) => {
         autoTable(doc, {
             startY: finalY,
             head: [['Taxable Value', `Central Tax Rate`, 'Central Tax Amount', 'State Tax Rate', 'State Tax Amount', 'Total Tax Amount']],
-            body: [[
-                taxableValue.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-                `${cgstRate}%`,
-                cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-                `${sgstRate}%`,
-                sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+            body: Array.from(taxGroups.values()).map(g => [
+                g.taxableValue.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+                `${g.cgstRate}%`,
+                g.cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+                `${g.sgstRate}%`,
+                g.sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+                (g.cgstAmount + g.sgstAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })
+            ]),
+            foot: [[
+                'Total',
+                '', cgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+                '', sgstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
                 (cgstAmount + sgstAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })
             ]],
             theme: 'grid',
             headStyles: { fillColor: [20, 184, 166], halign: 'center' },
+            footStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: 'bold', halign: 'center' },
             styles: { fontSize: 8, halign: 'center' }
         });
 
@@ -195,7 +226,7 @@ export const generateQuotationPdf = async (req: Request, res: Response) => {
         const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=${invoiceNo}.pdf`);
+        res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
         res.send(pdfBuffer);
     } catch (err: any) {
         console.error('Error generating quotation PDF:', err);
