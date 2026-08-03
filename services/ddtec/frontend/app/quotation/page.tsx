@@ -9,6 +9,7 @@ interface QuotationProduct {
     _id: string;
     name: string;
     price: number;
+    quantity?: number;
     hsnCode?: string;
     unit?: string;
     description?: string;
@@ -63,17 +64,18 @@ export default function QuotationPage() {
     );
 
     const addItem = (product: QuotationProduct) => {
+        const initialQty = product.quantity || 1;
         setSelectedItems(prev => {
             const existing = prev.find(i => i.itemId === product._id);
             if (existing) {
-                return prev.map(i => i.itemId === product._id ? { ...i, quantity: i.quantity + 1 } : i);
+                return prev.map(i => i.itemId === product._id ? { ...i, quantity: i.quantity + initialQty } : i);
             }
             return [...prev, {
                 itemId: product._id,
                 name: product.name,
                 price: product.price,
                 unit: product.unit || "Nos",
-                quantity: 1,
+                quantity: initialQty,
                 cgst: product.cgst ?? 0,
                 sgst: product.sgst ?? 0
             }];

@@ -24,7 +24,7 @@ export const getAllQuotationItemsAdmin = async (req: Request, res: Response) => 
 
 export const createQuotationItem = async (req: Request, res: Response) => {
     try {
-        const { name, price, hsnCode, unit, description, image, product, cgst, sgst } = req.body;
+        const { name, price, quantity, hsnCode, unit, description, image, product, cgst, sgst } = req.body;
 
         if (!name || String(name).trim() === '') {
             return res.status(400).json({ msg: 'Product name is required' });
@@ -35,11 +35,12 @@ export const createQuotationItem = async (req: Request, res: Response) => {
         }
 
         const numPrice = Number(price);
+        const numQuantity = (quantity !== undefined && quantity !== '' && !isNaN(Number(quantity))) ? Math.max(1, Number(quantity)) : 1;
         const numCgst = (cgst !== undefined && cgst !== '' && !isNaN(Number(cgst))) ? Number(cgst) : 0;
         const numSgst = (sgst !== undefined && sgst !== '' && !isNaN(Number(sgst))) ? Number(sgst) : 0;
 
-        if (numPrice < 0 || numCgst < 0 || numSgst < 0) {
-            return res.status(400).json({ msg: 'Price, CGST and SGST cannot be negative' });
+        if (numPrice < 0 || numQuantity < 1 || numCgst < 0 || numSgst < 0) {
+            return res.status(400).json({ msg: 'Price, CGST and SGST cannot be negative, and quantity must be at least 1' });
         }
 
         // Handle Cloudinary uploaded file
@@ -53,6 +54,7 @@ export const createQuotationItem = async (req: Request, res: Response) => {
         const item = new QuotationItem({
             name: String(name).trim(),
             price: numPrice,
+            quantity: numQuantity,
             hsnCode: hsnCode ? String(hsnCode).trim() : '',
             unit: unit ? String(unit).trim() : 'Nos',
             description: description ? String(description).trim() : '',
@@ -71,12 +73,13 @@ export const createQuotationItem = async (req: Request, res: Response) => {
 
 export const updateQuotationItem = async (req: Request, res: Response) => {
     try {
-        const { name, price, hsnCode, unit, description, image, isActive, product, cgst, sgst } = req.body;
+        const { name, price, quantity, hsnCode, unit, description, image, isActive, product, cgst, sgst } = req.body;
 
         if ((price !== undefined && price !== '' && (isNaN(Number(price)) || Number(price) < 0)) ||
+            (quantity !== undefined && quantity !== '' && (isNaN(Number(quantity)) || Number(quantity) < 1)) ||
             (cgst !== undefined && cgst !== '' && (isNaN(Number(cgst)) || Number(cgst) < 0)) ||
             (sgst !== undefined && sgst !== '' && (isNaN(Number(sgst)) || Number(sgst) < 0))) {
-            return res.status(400).json({ msg: 'Price, CGST and SGST cannot be negative' });
+            return res.status(400).json({ msg: 'Price, CGST and SGST cannot be negative, and quantity must be at least 1' });
         }
 
         const uploadedImage = (req.file as Express.Multer.File & { path?: string; secure_url?: string })?.path || (req.file as any)?.secure_url;
@@ -85,6 +88,7 @@ export const updateQuotationItem = async (req: Request, res: Response) => {
 
         if (name !== undefined) item.name = String(name).trim();
         if (price !== undefined && price !== '') item.price = Number(price);
+        if (quantity !== undefined && quantity !== '') item.quantity = Math.max(1, Number(quantity));
         if (hsnCode !== undefined) item.hsnCode = String(hsnCode).trim();
         if (unit !== undefined) item.unit = String(unit).trim();
         if (description !== undefined) item.description = String(description).trim();

@@ -8,6 +8,7 @@ interface QuotationItem {
     _id: string;
     name: string;
     price: number;
+    quantity?: number;
     hsnCode?: string;
     unit?: string;
     description?: string;
@@ -28,6 +29,7 @@ interface CatalogProduct {
 }
 
 const MAX_IMAGE_DIMENSION = 800;
+const UNIT_OPTIONS = ['Nos', 'Kg', 'Pcs', 'Set', 'Meter', 'Ltr', 'Box', 'Gram', 'Tone', 'Dozen', 'Packet', 'Pair', 'Roll'];
 
 function fileToCompressedFile(file: File): Promise<File> {
     return new Promise((resolve, reject) => {
@@ -77,6 +79,7 @@ const QuotationProductsView = () => {
     const [formData, setFormData] = useState({
         name: '',
         price: '',
+        quantity: '1',
         hsnCode: '',
         unit: 'Nos',
         description: '',
@@ -137,8 +140,8 @@ const QuotationProductsView = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            if (Number(formData.price) < 0 || Number(formData.cgst) < 0 || Number(formData.sgst) < 0) {
-                showToast('Price, CGST and SGST cannot be negative', 'error');
+            if (Number(formData.price) < 0 || Number(formData.quantity) < 1 || Number(formData.cgst) < 0 || Number(formData.sgst) < 0) {
+                showToast('Price, CGST and SGST cannot be negative, and quantity must be at least 1', 'error');
                 setIsSubmitting(false);
                 return;
             }
@@ -146,6 +149,7 @@ const QuotationProductsView = () => {
             const payload = new FormData();
             payload.append('name', formData.name);
             payload.append('price', String(Number(formData.price)));
+            payload.append('quantity', String(Number(formData.quantity) || 1));
             payload.append('hsnCode', formData.hsnCode);
             payload.append('unit', formData.unit);
             payload.append('description', formData.description);
@@ -194,6 +198,7 @@ const QuotationProductsView = () => {
         setFormData({
             name: item.name,
             price: String(item.price),
+            quantity: String(item.quantity ?? 1),
             hsnCode: item.hsnCode || '',
             unit: item.unit || 'Nos',
             description: item.description || '',
@@ -211,7 +216,7 @@ const QuotationProductsView = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingItem(null);
-        setFormData({ name: '', price: '', hsnCode: '', unit: 'Nos', description: '', cgst: '', sgst: '', product: '', image: '' });
+        setFormData({ name: '', price: '', quantity: '1', hsnCode: '', unit: 'Nos', description: '', cgst: '', sgst: '', product: '', image: '' });
         setImageFile(null);
         setImagePreview('');
         setImageRemoved(false);
@@ -240,6 +245,16 @@ const QuotationProductsView = () => {
         setImagePreview('');
         setImageRemoved(true);
     };
+
+    const availableCatalogProducts = catalogProducts.filter(p => {
+        if (editingItem && editingItem.product === p._id) return true;
+        const isAlreadyAdded = items.some(item => {
+            if (editingItem && item._id === editingItem._id) return false;
+            return (item.product && String(item.product) === String(p._id)) ||
+                (item.name && item.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+        });
+        return !isAlreadyAdded;
+    });
 
     return (
         <div>
@@ -275,7 +290,7 @@ const QuotationProductsView = () => {
                                     <th className="p-4">Image</th>
                                     <th className="p-4">Name</th>
                                     <th className="p-4">HSN/SAC</th>
-                                    <th className="p-4">Unit</th>
+                                    <th className="p-4">Qty &amp; Unit</th>
                                     <th className="p-4">Price</th>
                                     <th className="p-4">GST</th>
                                     <th className="p-4 text-right">Actions</th>
@@ -300,7 +315,7 @@ const QuotationProductsView = () => {
                                             )}
                                         </td>
                                         <td className="p-4 text-slate-500 dark:text-slate-400 font-mono text-sm">{item.hsnCode || '-'}</td>
-                                        <td className="p-4 text-slate-600 dark:text-slate-400">{item.unit}</td>
+                                        <td className="p-4 text-slate-600 dark:text-slate-400 font-medium">{item.quantity || 1} {item.unit || 'Nos'}</td>
                                         <td className="p-4 text-slate-900 dark:text-white font-semibold">₹{item.price.toLocaleString('en-IN')}</td>
                                         <td className="p-4 text-slate-600 dark:text-slate-400 text-sm">CGST {item.cgst ?? 0}% / SGST {item.sgst ?? 0}%</td>
                                         <td className="p-4 text-right flex justify-end items-center gap-2">
@@ -354,7 +369,7 @@ const QuotationProductsView = () => {
                                         className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
                                     >
                                         <option value="">— Select a product to copy details —</option>
-                                        {catalogProducts.map(p => (
+                                        {availableCatalogProducts.map(p => (
                                             <option key={p._id} value={p._id}>{p.name} (₹{p.price.toLocaleString('en-IN')})</option>
                                         ))}
                                     </select>
@@ -409,7 +424,7 @@ const QuotationProductsView = () => {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2 grid grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Price (₹)</label>
                                         <input
@@ -424,42 +439,55 @@ const QuotationProductsView = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity</label>
                                         <input
-                                            type="text"
+                                            type="number"
+                                            required
+                                            min="1"
+                                            step="1"
+                                            value={formData.quantity}
+                                            onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                                            className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                            placeholder="1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity Unit</label>
+                                        <select
                                             value={formData.unit}
                                             onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                                             className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
-                                            placeholder="Nos"
-                                        />
+                                        >
+                                            {UNIT_OPTIONS.map(u => (
+                                                <option key={u} value={u}>{u}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={formData.cgst}
-                                            onChange={(e) => setFormData({ ...formData, cgst: e.target.value })}
-                                            className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
-                                            placeholder="9"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={formData.sgst}
-                                            onChange={(e) => setFormData({ ...formData, sgst: e.target.value })}
-                                            className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
-                                            placeholder="9"
-                                        />
-                                    </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.cgst}
+                                        onChange={(e) => setFormData({ ...formData, cgst: e.target.value })}
+                                        className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                        placeholder="9"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.sgst}
+                                        onChange={(e) => setFormData({ ...formData, sgst: e.target.value })}
+                                        className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                        placeholder="9"
+                                    />
                                 </div>
 
                                 <div>

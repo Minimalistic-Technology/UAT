@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IQuotationItem extends Document {
     name: string;
     price: number;
+    quantity: number;
     hsnCode: string;
     unit: string;
     description: string;
@@ -16,6 +17,7 @@ export interface IQuotationItem extends Document {
 const QuotationItemSchema: Schema = new Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
+    quantity: { type: Number, default: 1, min: 1 },
     hsnCode: { type: String, default: '' },
     unit: { type: String, default: 'Nos' },
     description: { type: String, default: '' },
