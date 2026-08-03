@@ -210,11 +210,85 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             };
         }));
 
+        // 7. Delivered Orders Stats & Trends (Last 365 Days)
+        const oneYearAgo = new Date();
+        oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+
+        const deliveredOrderTrends = await Order.aggregate([
+            {
+                $match: {
+                    status: 'delivered',
+                    createdAt: { $gte: oneYearAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    count: { $sum: 1 },
+                    revenue: { $sum: "$totalAmount" }
+                }
+            }
+        ]);
+
+        const deliveredTrendsMap: Record<string, { count: number; revenue: number }> = {};
+        deliveredOrderTrends.forEach(t => {
+            deliveredTrendsMap[t._id] = { count: t.count, revenue: t.revenue };
+        });
+
+        const formattedDeliveredTrends = [];
+        for (let i = 364; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            const data = deliveredTrendsMap[dateStr] || { count: 0, revenue: 0 };
+            formattedDeliveredTrends.push({
+                date: dateStr,
+                label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                count: data.count,
+                revenue: Math.round(data.revenue)
+            });
+        }
+
+        // Status Breakdown Map
+        const statusBreakdownRaw = await Order.aggregate([
+            {
+                $group: {
+                    _id: "$status",
+                    count: { $sum: 1 },
+                    revenue: { $sum: "$totalAmount" }
+                }
+            }
+        ]);
+
+        const statusBreakdown: Record<string, { count: number; revenue: number }> = {
+            delivered: { count: 0, revenue: 0 },
+            shipped: { count: 0, revenue: 0 },
+            processing: { count: 0, revenue: 0 },
+            pending: { count: 0, revenue: 0 },
+            cancelled: { count: 0, revenue: 0 }
+        };
+
+        statusBreakdownRaw.forEach(item => {
+            if (item._id && statusBreakdown[item._id.toLowerCase()] !== undefined) {
+                statusBreakdown[item._id.toLowerCase()] = {
+                    count: item.count,
+                    revenue: Math.round(item.revenue)
+                };
+            }
+        });
+
         res.json({
             users: userCount,
             products: productCount,
             revenue: Math.round(totalRevenue),
             orders: orderCount + billCount,
+            deliveredStats: {
+                totalDeliveredCount: statusBreakdown.delivered.count + billCount,
+                totalDeliveredRevenue: statusBreakdown.delivered.revenue + totalBillRevenue,
+                trends: formattedDeliveredTrends,
+                statusBreakdown
+            },
             stock: {
                 totalStock,
                 lowStock,

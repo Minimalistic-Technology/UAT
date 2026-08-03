@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import ToggleSwitch from "./components/ToggleSwitch";
 import CategoriesView from "./components/CategoriesView";
 import QuotationProductsView from "./components/QuotationProductsView";
+import DeliveredOrdersGraph from "./components/DeliveredOrdersGraph";
 import { useDynamicRoutes, RouteConfig } from "@/app/_context/RouteContext";
 import { useToast } from "../_context/ToastContext";
 
@@ -17,6 +18,18 @@ interface DashboardStats {
     products: number;
     revenue: number;
     orders: number;
+    deliveredStats?: {
+        totalDeliveredCount: number;
+        totalDeliveredRevenue: number;
+        trends: Array<{
+            date: string;
+            label: string;
+            day: string;
+            count: number;
+            revenue: number;
+        }>;
+        statusBreakdown: Record<string, { count: number; revenue: number }>;
+    };
     recentActivity: Array<{
         _id: string;
         totalAmount: number;
@@ -1252,11 +1265,13 @@ const AdminDashboard = () => {
 
 
                     {activeView === 'orders' && (
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Order Management</h2>
-                                <span className="text-sm text-slate-500">{ordersList.length} Total Orders</span>
-                            </div>
+                        <div className="space-y-8">
+                            <DeliveredOrdersGraph deliveredStats={stats?.deliveredStats} allOrders={ordersList} />
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+                                <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Order Management</h2>
+                                    <span className="text-sm text-slate-500">{ordersList.length} Total Orders</span>
+                                </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-sm uppercase">
@@ -1324,6 +1339,7 @@ const AdminDashboard = () => {
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
                         </div>
                     )}
 
