@@ -23,3 +23,14 @@ export const uploadQuotationItemImage = multer({
     fileFilter,
     limits: { fileSize: 5 * 1024 * 1024 }
 });
+
+export const uploadQuotationItemImageMiddleware = (req: any, res: any, next: any) => {
+    uploadQuotationItemImage.single('image')(req, res, (err: any) => {
+        if (err) {
+            console.error('[UPLOAD ERROR] Quotation item image upload error:', err);
+            return res.status(400).json({ msg: err.message || 'Failed to upload quotation item image' });
+        }
+        next();
+    });
+};
+

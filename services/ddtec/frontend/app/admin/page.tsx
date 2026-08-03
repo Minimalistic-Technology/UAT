@@ -342,7 +342,7 @@ const AdminDashboard = () => {
 
         if ([newProduct.price, newProduct.stock, newProduct.discountPercentage, newProduct.cgst, newProduct.sgst]
             .some(v => v !== "" && Number(v) < 0)) {
-            alert("Price, stock, discount, CGST and SGST cannot be negative");
+            showToast("Price, stock, discount, CGST and SGST cannot be negative", "error");
             return;
         }
 
@@ -373,11 +373,11 @@ const AdminDashboard = () => {
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", brand: "",
                     modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: ""
                 });
-                alert("Product Added Successfully");
+                showToast("Product Added Successfully", "success");
             }
         } catch (error: any) {
             console.error(error);
-            alert(`Error: ${error.response?.data?.msg || 'Failed to add product'}`);
+            showToast(error.response?.data?.msg || 'Failed to add product', "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -413,7 +413,7 @@ const AdminDashboard = () => {
 
         if ([editingProduct.price, editingProduct.stock, editingProduct.discountPercentage, editingProduct.cgst, editingProduct.sgst]
             .some((v: string) => v !== "" && Number(v) < 0)) {
-            alert("Price, stock, discount, CGST and SGST cannot be negative");
+            showToast("Price, stock, discount, CGST and SGST cannot be negative", "error");
             return;
         }
 
@@ -439,11 +439,11 @@ const AdminDashboard = () => {
                 fetchProducts();
                 setIsEditModalOpen(false);
                 setEditingProduct(null);
-                alert("Product Updated Successfully");
+                showToast("Product Updated Successfully", "success");
             }
         } catch (error: any) {
             console.error(error);
-            alert(`Error: ${error.response?.data?.msg || 'Failed to update product'}`);
+            showToast(error.response?.data?.msg || 'Failed to update product', "error");
         } finally {
             setIsSubmitting(false);
         }

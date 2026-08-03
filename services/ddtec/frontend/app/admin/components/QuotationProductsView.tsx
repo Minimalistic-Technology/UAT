@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, FileText, X, Loader2, ImagePlus, ImageOff } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/app/_context/ToastContext';
 
 interface QuotationItem {
     _id: string;
@@ -62,6 +63,7 @@ function fileToCompressedFile(file: File): Promise<File> {
 }
 
 const QuotationProductsView = () => {
+    const { showToast } = useToast();
     const [items, setItems] = useState<QuotationItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -136,7 +138,7 @@ const QuotationProductsView = () => {
         setIsSubmitting(true);
         try {
             if (Number(formData.price) < 0 || Number(formData.cgst) < 0 || Number(formData.sgst) < 0) {
-                alert('Price, CGST and SGST cannot be negative');
+                showToast('Price, CGST and SGST cannot be negative', 'error');
                 setIsSubmitting(false);
                 return;
             }
@@ -160,16 +162,16 @@ const QuotationProductsView = () => {
 
             if (editingItem) {
                 await api.put(`/quotation-items/${editingItem._id}`, payload);
-                alert('Quotation product updated successfully');
+                showToast('Quotation product updated successfully', 'success');
             } else {
                 await api.post('/quotation-items', payload);
-                alert('Quotation product created successfully');
+                showToast('Quotation product created successfully', 'success');
             }
             fetchItems();
             handleCloseModal();
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || 'Failed to save quotation product');
+            showToast(error.response?.data?.msg || 'Failed to save quotation product', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -180,9 +182,10 @@ const QuotationProductsView = () => {
         try {
             await api.delete(`/quotation-items/${id}`);
             setItems(prev => prev.filter(i => i._id !== id));
-        } catch (error) {
+            showToast('Quotation product deleted successfully', 'success');
+        } catch (error: any) {
             console.error(error);
-            alert('Failed to delete quotation product');
+            showToast(error.response?.data?.msg || 'Failed to delete quotation product', 'error');
         }
     };
 
@@ -225,7 +228,7 @@ const QuotationProductsView = () => {
             setImageRemoved(false);
         } catch (error) {
             console.error('Failed to process image', error);
-            alert('Failed to process image');
+            showToast('Failed to process image', 'error');
         } finally {
             setIsUploadingImage(false);
             e.target.value = '';

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { FileText, Plus, Minus, Trash2, Loader2, Download, Search, ImageOff } from "lucide-react";
 import api from "@/lib/api";
+import { useToast } from "../_context/ToastContext";
 
 interface QuotationProduct {
     _id: string;
@@ -27,6 +28,7 @@ interface SelectedItem {
 }
 
 export default function QuotationPage() {
+    const { showToast } = useToast();
     const [products, setProducts] = useState<QuotationProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -76,6 +78,7 @@ export default function QuotationPage() {
                 sgst: product.sgst ?? 0
             }];
         });
+        showToast(`Added ${product.name} to quotation`, "success");
     };
 
     const updateQuantity = (itemId: string, quantity: number) => {
@@ -94,11 +97,11 @@ export default function QuotationPage() {
 
     const handleGenerateQuotation = async () => {
         if (selectedItems.length === 0) {
-            alert("Please add at least one product to generate a quotation.");
+            showToast("Please add at least one product to generate a quotation.", "warning");
             return;
         }
         if (!buyer.name.trim()) {
-            alert("Please enter buyer name.");
+            showToast("Please enter buyer name.", "warning");
             return;
         }
 
@@ -126,9 +129,10 @@ export default function QuotationPage() {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
+            showToast("Quotation PDF generated successfully!", "success");
         } catch (error: any) {
             console.error(error);
-            alert("Failed to generate quotation. Please try again.");
+            showToast(error.response?.data?.msg || "Failed to generate quotation. Please try again.", "error");
         } finally {
             setIsGenerating(false);
         }
