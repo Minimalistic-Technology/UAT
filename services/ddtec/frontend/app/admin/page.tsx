@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../_context/AuthContext";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar } from "lucide-react";
+import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "./components/ToggleSwitch";
 import CategoriesView from "./components/CategoriesView";
@@ -57,9 +57,18 @@ interface User {
 interface Product {
     _id: string;
     name: string;
+    description?: string;
     price: number;
+    costPrice?: number;
+    image?: string;
+    images?: string[];
     category: string | { _id: string; name: string };
     stock: number;
+    rating?: number;
+    numReviews?: number;
+    lastMonthSales?: number;
+    brand?: string;
+    modelName?: string;
     couponCode?: string;
     discountPercentage?: number;
     discountType?: 'percentage' | 'fixed';
@@ -67,6 +76,8 @@ interface Product {
     cgst?: number;
     sgst?: number;
     isActive: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 interface Blog {
@@ -109,6 +120,7 @@ const AdminDashboard = () => {
     const [blogsList, setBlogsList] = useState<Blog[]>([]);
 
     const [productsList, setProductsList] = useState<Product[]>([]);
+    const [viewingProductDetails, setViewingProductDetails] = useState<Product | null>(null);
     const [loadingData, setLoadingData] = useState(false);
     const [categoriesList, setCategoriesList] = useState<any[]>([]);
 
@@ -1122,6 +1134,7 @@ const AdminDashboard = () => {
                                             <th className="p-4">Price</th>
                                             <th className="p-4">Coupons</th>
                                             <th className="p-4">Stock</th>
+                                            <th className="p-4">Last Updated</th>
                                             <th className="p-4">Status</th>
                                             <th className="p-4 text-right">Actions</th>
                                         </tr>
@@ -1160,12 +1173,28 @@ const AdminDashboard = () => {
                                                         {p.stock}
                                                     </span>
                                                 </td>
+                                                <td className="p-4 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                                            {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : 'N/A'}
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-400">
+                                                            {p.updatedAt ? new Date(p.updatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : ''}
+                                                        </span>
+                                                    </div>
+                                                </td>
                                                 <td className="p-4">
                                                     <span className={`text-xs font-bold px-2 py-1 rounded-full ${p.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                         {p.isActive ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </td>
-                                                <td className="p-4 text-right flex justify-end items-center gap-2">
+                                                <td className="p-4 text-right flex justify-end items-center gap-1">
+                                                    <button onClick={() => setViewingProductDetails(p)} className="text-teal-600 hover:text-teal-800 p-2 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-full transition-colors" title="View Full Product Details & Timestamps">
+                                                        <Eye className="size-4" />
+                                                    </button>
+                                                    <a href={`/product/${p._id}`} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-teal-600 p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-full transition-colors" title="Preview Public Storefront">
+                                                        <ExternalLink className="size-4" />
+                                                    </a>
                                                     <ToggleSwitch isOn={p.isActive} onToggle={() => toggleProductStatus(p._id, p.isActive)} />
                                                     <button onClick={() => handleEditClick(p)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors" title="Edit Product">
                                                         <Edit className="size-4" />
@@ -3119,6 +3148,119 @@ const AdminDashboard = () => {
                             </div>
                         </motion.div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* View Product Details Modal for Admin */}
+            <AnimatePresence>
+                {viewingProductDetails && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 dark:border-slate-700"
+                        >
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-teal-600 text-white rounded-xl">
+                                        <Eye className="size-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{viewingProductDetails.name}</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">SKU: {viewingProductDetails._id}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <a
+                                        href={`/product/${viewingProductDetails._id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3 py-1.5 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 rounded-xl text-xs font-bold hover:bg-teal-100 transition-colors flex items-center gap-1"
+                                    >
+                                        <ExternalLink className="size-3.5" /> View Live Page
+                                    </a>
+                                    <button onClick={() => setViewingProductDetails(null)} className="text-slate-400 hover:text-rose-500 transition-colors p-1">
+                                        <X className="size-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="p-6 max-h-[75vh] overflow-y-auto space-y-6">
+                                {/* Timestamp Banner */}
+                                <div className="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-4 text-xs">
+                                    <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-medium">
+                                        <Clock className="size-4 text-teal-600 dark:text-teal-400" />
+                                        <span><strong>Last Updated:</strong> {viewingProductDetails.updatedAt ? new Date(viewingProductDetails.updatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : 'N/A'} at {viewingProductDetails.updatedAt ? new Date(viewingProductDetails.updatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : 'N/A'}</span>
+                                    </div>
+                                    {viewingProductDetails.createdAt && (
+                                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                                            <Calendar className="size-3.5 text-teal-600" />
+                                            <span>Created: {new Date(viewingProductDetails.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Specifications Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Pricing & Financials</span>
+                                        <div className="space-y-1.5 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Selling Price:</span>
+                                                <span className="font-bold text-teal-600 dark:text-teal-400">₹{viewingProductDetails.price}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Cost Price (COGS):</span>
+                                                <span className="font-semibold text-slate-700 dark:text-slate-300">₹{viewingProductDetails.costPrice || 0}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">CGST / SGST Rate:</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300">{viewingProductDetails.cgst || 0}% / {viewingProductDetails.sgst || 0}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Inventory & Brand</span>
+                                        <div className="space-y-1.5 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Stock Quantity:</span>
+                                                <span className={`font-bold ${viewingProductDetails.stock > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{viewingProductDetails.stock} units</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Brand / Model:</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300">{viewingProductDetails.brand || 'N/A'} / {viewingProductDetails.modelName || 'N/A'}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Category:</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300">{typeof viewingProductDetails.category === 'object' ? (viewingProductDetails.category as any).name : viewingProductDetails.category}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+                                {viewingProductDetails.description && (
+                                    <div>
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Description</h4>
+                                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            {viewingProductDetails.description}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end">
+                                <button
+                                    onClick={() => setViewingProductDetails(null)}
+                                    className="px-6 py-2.5 rounded-xl font-bold bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-sm"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
         </div>
