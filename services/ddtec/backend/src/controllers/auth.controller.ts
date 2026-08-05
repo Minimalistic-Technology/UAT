@@ -8,6 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 import OTP from '../models/OTP';
 import RouteConfig from '../models/RouteConfig';
+import Settings from '../models/Settings';
 import NotificationService from '../services/notification.service';
 import ValidationService from '../services/validation.service';
 import redisClient from '../config/redis';
@@ -191,11 +192,25 @@ export const register = async (req: Request, res: Response) => {
             }
         }
 
-        // Block new user registrations if public signup is disabled
+        // Block/restrict new user registrations based on Onboarding settings & route status
+        const settings = await Settings.findOne();
+        const onboarding = settings?.onboarding || { mode: 'open', inviteCode: 'DDTEC-INVITE-2026', closedMessage: 'New user onboarding is currently restricted by administrator.' };
+
         if (!role || role === 'user') {
+            if (onboarding.mode === 'closed') {
+                return res.status(403).json({ msg: onboarding.closedMessage || 'New user onboarding is currently restricted by administrator.' });
+            }
+
+            if (onboarding.mode === 'invite_only') {
+                const reqInvite = (req.body.inviteCode || '').trim();
+                if (!reqInvite || reqInvite !== onboarding.inviteCode) {
+                    return res.status(400).json({ msg: 'Invalid or missing invitation code. Registration requires a valid invitation code.' });
+                }
+            }
+
             const signupRoute = await RouteConfig.findOne({ path: '/signup' });
             if (signupRoute && !signupRoute.isActive) {
-                return res.status(403).json({ msg: 'Public registration is currently disabled by administrator.' });
+                return res.status(403).json({ msg: onboarding.closedMessage || 'Public registration is currently disabled by administrator.' });
             }
         }
 
@@ -219,6 +234,8 @@ export const register = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'User already exists' });
         }
 
+        const isPendingApproval = (!role || role === 'user') && onboarding.mode === 'admin_approval';
+
         user = new User({
             firstName,
             lastName,
@@ -229,9 +246,17 @@ export const register = async (req: Request, res: Response) => {
             role: role || 'user',
             isEmailVerified: !!email,
             isPhoneVerified: !!phone,
+            isActive: !isPendingApproval
         });
 
         await user.save();
+
+        if (isPendingApproval) {
+            return res.json({
+                pendingApproval: true,
+                msg: 'Account registration submitted successfully! Your account requires administrator approval before you can log in.'
+            });
+        }
 
         if (user.email) {
             NotificationService.sendWelcomeEmail(user.email, user.firstName || user.name || 'User');
@@ -622,13 +647,19 @@ export const checkUser = async (req: Request, res: Response) => {
             $or: [{ email: identifier }, { phone: identifier }]
         });
 
-        // Get dynamic route config to see if public signup is active
+        // Fetch Settings & Route Config to evaluate onboarding status
+        const settings = await Settings.findOne();
+        const onboarding = settings?.onboarding || { mode: 'open', inviteCode: 'DDTEC-INVITE-2026', closedMessage: 'New user onboarding is currently restricted by administrator.' };
         const signupRoute = await RouteConfig.findOne({ path: '/signup' });
-        const signupAllowed = signupRoute ? signupRoute.isActive : true;
+        const isRouteActive = signupRoute ? signupRoute.isActive : true;
+
+        const signupAllowed = onboarding.mode !== 'closed' && isRouteActive;
 
         res.json({
             exists: !!user,
             signupAllowed,
+            onboardingMode: onboarding.mode,
+            closedMessage: onboarding.closedMessage,
             otpRequired: process.env.DISABLE_OTP !== 'true'
         });
     } catch (err) {

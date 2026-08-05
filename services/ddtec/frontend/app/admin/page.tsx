@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../_context/AuthContext";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator } from "lucide-react";
+import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator, CheckCircle2 } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "./components/ToggleSwitch";
 import CategoriesView from "./components/CategoriesView";
@@ -307,6 +307,29 @@ const AdminDashboard = () => {
             setSiteSettings(res.data);
         } catch (error: any) {
             alert(error.response?.data?.msg || "Failed to update settings");
+        }
+    };
+
+    const updateOnboardingSetting = (key: string, value: any) => {
+        const updatedOnboarding = {
+            ...(siteSettings?.onboarding || { mode: 'open', inviteCode: 'DDTEC-INVITE-2026', closedMessage: 'New user onboarding is currently restricted by administrator.' }),
+            [key]: value
+        };
+        setSiteSettings((prev: any) => ({
+            ...prev,
+            onboarding: updatedOnboarding
+        }));
+        saveOnboardingConfig(updatedOnboarding);
+    };
+
+    const saveOnboardingConfig = async (onboardingPayload?: any) => {
+        try {
+            const payload = onboardingPayload || siteSettings?.onboarding;
+            const res = await api.put('/settings', { onboarding: payload });
+            setSiteSettings(res.data);
+            showToast?.("User onboarding restriction settings updated!", "success");
+        } catch (error: any) {
+            showToast?.("Failed to update onboarding settings", "error");
         }
     };
 
@@ -1108,11 +1131,20 @@ const AdminDashboard = () => {
                                                         </td>
                                                     )}
                                                     <td className="p-4 text-right flex justify-end items-center gap-2">
+                                                        {!u.isActive && (
+                                                            <button
+                                                                onClick={() => toggleUserStatus(u._id, u.isActive)}
+                                                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                                                                title="Approve User Account"
+                                                            >
+                                                                <CheckCircle2 className="size-3.5" /> Approve Account
+                                                            </button>
+                                                        )}
                                                         <ToggleSwitch isOn={u.isActive} onToggle={() => toggleUserStatus(u._id, u.isActive)} />
-                                                        <button onClick={() => handleEditUserClick(u)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors">
+                                                        <button onClick={() => handleEditUserClick(u)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors" title="Edit User">
                                                             <Edit className="size-4" />
                                                         </button>
-                                                        <button onClick={() => handleDeleteUser(u._id)} className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors">
+                                                        <button onClick={() => handleDeleteUser(u._id)} className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Delete User">
                                                             <Trash2 className="size-4" />
                                                         </button>
                                                     </td>
@@ -2943,6 +2975,132 @@ const AdminDashboard = () => {
                                                     />
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        {/* User Onboarding Restrictions Control Card */}
+                                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-6 col-span-1 md:col-span-2">
+                                            <div className="border-b border-slate-100 dark:border-slate-700 pb-4 flex flex-wrap items-center justify-between gap-2">
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                        <Shield className="size-5 text-teal-600" /> Restrict New User Onboarding
+                                                    </h3>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                        Select how new users can register on your platform. Restrict, require invitation code, or demand manual admin approval.
+                                                    </p>
+                                                </div>
+                                                <span className="px-3 py-1 bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-xs font-bold rounded-lg uppercase">
+                                                    Mode: {siteSettings.onboarding?.mode || 'open'}
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                {/* Mode 1: Open */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateOnboardingSetting('mode', 'open')}
+                                                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${siteSettings.onboarding?.mode === 'open' ? 'border-teal-600 bg-teal-50/50 dark:bg-teal-950/30 ring-2 ring-teal-600/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-bold text-sm text-slate-900 dark:text-white">🟢 Open Registration</span>
+                                                        {siteSettings.onboarding?.mode === 'open' && <CheckCircle2 className="size-4 text-teal-600" />}
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                        Anyone can sign up freely without restriction.
+                                                    </p>
+                                                </button>
+
+                                                {/* Mode 2: Closed */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateOnboardingSetting('mode', 'closed')}
+                                                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${siteSettings.onboarding?.mode === 'closed' ? 'border-rose-600 bg-rose-50/50 dark:bg-rose-950/30 ring-2 ring-rose-600/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-bold text-sm text-slate-900 dark:text-white">🔴 Closed / Paused</span>
+                                                        {siteSettings.onboarding?.mode === 'closed' && <CheckCircle2 className="size-4 text-rose-600" />}
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                        Completely block all new user signups.
+                                                    </p>
+                                                </button>
+
+                                                {/* Mode 3: Invite Only */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateOnboardingSetting('mode', 'invite_only')}
+                                                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${siteSettings.onboarding?.mode === 'invite_only' ? 'border-cyan-600 bg-cyan-50/50 dark:bg-cyan-950/30 ring-2 ring-cyan-600/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-bold text-sm text-slate-900 dark:text-white">🔑 Invite-Only Code</span>
+                                                        {siteSettings.onboarding?.mode === 'invite_only' && <CheckCircle2 className="size-4 text-cyan-600" />}
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                        Requires entering secret invitation code.
+                                                    </p>
+                                                </button>
+
+                                                {/* Mode 4: Admin Approval */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateOnboardingSetting('mode', 'admin_approval')}
+                                                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${siteSettings.onboarding?.mode === 'admin_approval' ? 'border-amber-600 bg-amber-50/50 dark:bg-amber-950/30 ring-2 ring-amber-600/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-bold text-sm text-slate-900 dark:text-white">🛡️ Admin Approval</span>
+                                                        {siteSettings.onboarding?.mode === 'admin_approval' && <CheckCircle2 className="size-4 text-amber-600" />}
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                        New accounts stay inactive until Admin approves.
+                                                    </p>
+                                                </button>
+                                            </div>
+
+                                            {/* Config Inputs */}
+                                            {siteSettings.onboarding?.mode === 'invite_only' && (
+                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 space-y-2">
+                                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                                        Secret Invitation Code (Users must provide this code during registration)
+                                                    </label>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={siteSettings.onboarding?.inviteCode || 'DDTEC-INVITE-2026'}
+                                                            onChange={(e) => updateOnboardingSetting('inviteCode', e.target.value.toUpperCase())}
+                                                            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-teal-500 outline-none"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => saveOnboardingConfig()}
+                                                            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition"
+                                                        >
+                                                            Save Code
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {siteSettings.onboarding?.mode === 'closed' && (
+                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 space-y-2">
+                                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                                        Custom Registration Closed Message
+                                                    </label>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={siteSettings.onboarding?.closedMessage || 'New user onboarding is currently restricted by administrator.'}
+                                                            onChange={(e) => updateOnboardingSetting('closedMessage', e.target.value)}
+                                                            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-teal-500 outline-none"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => saveOnboardingConfig()}
+                                                            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition"
+                                                        >
+                                                            Save Message
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Home Page Sections Control */}
