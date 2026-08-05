@@ -66,22 +66,33 @@ export const generateQuotationPdf = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'No items provided' });
         }
 
-        const itemIds = items.map((i: any) => i.itemId);
+        const itemIds = items.map((i: any) => i.itemId).filter(Boolean);
         const dbItems = await QuotationItem.find({ _id: { $in: itemIds } });
         const dbItemMap = new Map(dbItems.map((i: any) => [String(i._id), i]));
 
-        const lineItems = items.map((i: any) => {
-            const dbItem = dbItemMap.get(String(i.itemId));
-            if (!dbItem) throw new Error(`Item ${i.itemId} not found`);
+        const lineItems = items.map((i: any, idx: number) => {
+            const dbItem = i.itemId ? dbItemMap.get(String(i.itemId)) : null;
+
             const quantity = Number(i.quantity) || 1;
-            const amount = (dbItem as any).price * quantity;
-            const itemCgstRate = (dbItem as any).cgst || 0;
-            const itemSgstRate = (dbItem as any).sgst || 0;
+            const price = i.price !== undefined && i.price !== null && i.price !== ''
+                ? Number(i.price)
+                : (dbItem ? (dbItem as any).price : 0);
+            const name = i.name || (dbItem ? (dbItem as any).name : `Item #${idx + 1}`);
+            const hsnCode = i.hsnCode !== undefined ? i.hsnCode : (dbItem ? ((dbItem as any).hsnCode || '') : '');
+            const unit = i.unit || (dbItem ? ((dbItem as any).unit || 'Nos') : 'Nos');
+            const itemCgstRate = i.cgst !== undefined && i.cgst !== null && i.cgst !== ''
+                ? Number(i.cgst)
+                : (dbItem ? ((dbItem as any).cgst || 0) : 0);
+            const itemSgstRate = i.sgst !== undefined && i.sgst !== null && i.sgst !== ''
+                ? Number(i.sgst)
+                : (dbItem ? ((dbItem as any).sgst || 0) : 0);
+
+            const amount = price * quantity;
             return {
-                name: (dbItem as any).name,
-                hsnCode: (dbItem as any).hsnCode || '',
-                unit: (dbItem as any).unit || 'Nos',
-                price: (dbItem as any).price,
+                name,
+                hsnCode,
+                unit,
+                price,
                 quantity,
                 amount,
                 cgstRate: itemCgstRate,
