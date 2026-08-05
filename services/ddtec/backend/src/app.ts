@@ -14,6 +14,7 @@ console.log(' - MONGO_URI:', process.env.MONGO_URI ? 'FOUND' : 'CONNECTED (HIDDE
 
 // Trigger Email Verification on start
 import NotificationService from './services/notification.service';
+import SchedulerService from './services/scheduler.service';
 NotificationService.checkStatus().then(status => {
     if (status.success) {
         console.log('[NOTIFICATION] ✅ Email Service Status:', status.message);
@@ -21,6 +22,9 @@ NotificationService.checkStatus().then(status => {
         console.error('[NOTIFICATION] ❌ Email Service Status:', status.message);
     }
 });
+
+// Start Email Scheduler Background Task
+SchedulerService.startEmailScheduler();
 
 import express from 'express';
 import cors from 'cors';

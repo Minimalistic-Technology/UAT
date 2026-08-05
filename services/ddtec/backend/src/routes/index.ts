@@ -17,6 +17,8 @@ import inventoryRoutes from './inventory.route';
 import hubRoutes from './hub.route';
 import quotationItemRoutes from './quotationItem.routes';
 import quotationRoutes from './quotation.routes';
+import scheduledEmailRoutes from './scheduledEmail.routes';
+
 const router = Router();
 
 router.get('/', getHome);
@@ -25,6 +27,8 @@ router.use('/auth', authRoutes);
 router.use('/contact', contactRoutes);
 router.use('/products', productsRoutes);
 router.use('/cart', cartRoutes);
+router.use('/admin/scheduled-emails', scheduledEmailRoutes);
+router.use('/scheduled-emails', scheduledEmailRoutes);
 router.use('/admin', adminRoutes);
 router.use('/orders', orderRoutes);
 router.use('/coupons', couponRoutes);

@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 // @ts-ignore
 import { BrevoClient } from '@getbrevo/brevo';
 import { jsPDF } from 'jspdf';
@@ -9,60 +10,95 @@ class NotificationService {
     private static _isTestAccount: boolean = false;
 
     private static async getEmailTransporter() {
-        console.log('[NOTIFICATION] Transporter logic superseded by BrevoClient integration.');
-        return null;
+        if (!this._emailTransporter) {
+            if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+                this._emailTransporter = nodemailer.createTransport({
+                    service: process.env.EMAIL_SERVICE || 'gmail',
+                    host: process.env.EMAIL_HOST,
+                    port: process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : undefined,
+                    secure: process.env.EMAIL_SECURE === 'true',
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS
+                    }
+                });
+            }
+        }
+        return this._emailTransporter;
     }
 
     /**
-     * Helper to send email via Brevo transactional pipeline
+     * Helper to send email via Brevo transactional pipeline with Nodemailer fallback
      */
     private static async sendBrevoEmail(mailOptions: any): Promise<{ success: boolean, method: string }> {
+        // 1. Try Brevo if valid API Key is provided
+        if (process.env.BREVO_API_KEY && process.env.BREVO_API_KEY !== 'YOUR_BREVO_API_KEY_HERE') {
+            try {
+                const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
+
+                const sender = {
+                    name: process.env.BREVO_SENDER_NAME || 'DDTECH',
+                    email: process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_USER || 'parthdoshi480@gmail.com'
+                };
+
+                let toList = [];
+                if (typeof mailOptions.to === 'string') {
+                    toList.push({ email: mailOptions.to });
+                } else if (Array.isArray(mailOptions.to)) {
+                    toList = mailOptions.to.map((t: string) => ({ email: t }));
+                }
+
+                let bccList = undefined;
+                if (mailOptions.bcc) {
+                    bccList = [{ email: mailOptions.bcc }];
+                }
+
+                let brevoAttachments = undefined;
+                if (mailOptions.attachments && mailOptions.attachments.length > 0) {
+                    brevoAttachments = mailOptions.attachments.map((att: any) => ({
+                        name: att.filename,
+                        content: att.content
+                    }));
+                }
+
+                const result = await brevo.transactionalEmails.sendTransacEmail({
+                    subject: mailOptions.subject,
+                    htmlContent: mailOptions.html,
+                    sender: sender,
+                    to: toList,
+                    bcc: bccList,
+                    attachment: brevoAttachments
+                });
+
+                console.log(`[NOTIFICATION] Email sent via Brevo to ${mailOptions.to}. Message ID:`, result.messageId);
+                return { success: true, method: 'brevo' };
+            } catch (error: any) {
+                console.error('[NOTIFICATION] Brevo failed, falling back to Nodemailer:', error.message || error);
+            }
+        }
+
+        // 2. Fallback to Nodemailer (Gmail / SMTP)
         try {
-            const apiKey = process.env.BREVO_API_KEY || 'YOUR_BREVO_API_KEY_HERE';
-            const brevo = new BrevoClient({ apiKey });
-
-            const sender = {
-                name: process.env.BREVO_SENDER_NAME || 'DDTECH',
-                email: process.env.BREVO_SENDER_EMAIL || 'parthdoshi480@gmail.com'
-            };
-
-            let toList = [];
-            if (typeof mailOptions.to === 'string') {
-                toList.push({ email: mailOptions.to });
-            } else if (Array.isArray(mailOptions.to)) {
-                toList = mailOptions.to.map((t: string) => ({ email: t }));
+            const transporter = await this.getEmailTransporter();
+            if (!transporter) {
+                console.error('[NOTIFICATION] Neither valid BREVO_API_KEY nor Nodemailer (EMAIL_USER/EMAIL_PASS) are available.');
+                return { success: false, method: 'nodemailer' };
             }
 
-            let bccList = undefined;
-            if (mailOptions.bcc) {
-                bccList = [{ email: mailOptions.bcc }];
-            }
-
-            let brevoAttachments = undefined;
-            if (mailOptions.attachments && mailOptions.attachments.length > 0) {
-                brevoAttachments = mailOptions.attachments.map((att: any) => ({
-                    name: att.filename,
-                    content: att.content
-                }));
-            }
-
-            const result = await brevo.transactionalEmails.sendTransacEmail({
+            const from = mailOptions.from || (process.env.EMAIL_USER ? `"DDTEC Official" <${process.env.EMAIL_USER}>` : undefined);
+            const info = await transporter.sendMail({
+                from,
+                to: mailOptions.to,
                 subject: mailOptions.subject,
-                htmlContent: mailOptions.html,
-                sender: sender,
-                to: toList,
-                bcc: bccList,
-                attachment: brevoAttachments
+                html: mailOptions.html,
+                bcc: mailOptions.bcc,
+                attachments: mailOptions.attachments
             });
-
-            console.log(`[NOTIFICATION] Email sent via Brevo to ${mailOptions.to}. Message ID:`, result.messageId);
-            return { success: true, method: 'brevo' };
+            console.log(`[NOTIFICATION] Email sent via Nodemailer to ${mailOptions.to}. MessageId:`, info.messageId);
+            return { success: true, method: 'nodemailer' };
         } catch (error: any) {
-            console.error('[NOTIFICATION] Brevo failed:', error);
-            if (error.response) {
-                console.error('[NOTIFICATION] Brevo Error Body:', error.response.body);
-            }
-            return { success: false, method: 'brevo' };
+            console.error('[NOTIFICATION] Nodemailer fallback also failed:', error.message || error);
+            return { success: false, method: 'nodemailer' };
         }
     }
 
@@ -464,6 +500,40 @@ class NotificationService {
         } catch (error) {
             console.error('[STRICT-ERROR] Order status update email failed:', error);
             return false;
+        }
+    }
+
+    /**
+     * Sends custom or scheduled email with predefined HTML
+     */
+    static async sendCustomEmail(to: string | string[], subject: string, html: string): Promise<{ success: boolean; msg?: string }> {
+        try {
+            const recipients = Array.isArray(to) ? to.join(',') : to;
+            if (!recipients) {
+                return { success: false, msg: 'No recipient email addresses provided.' };
+            }
+
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'noreply@ddtec.com'}>`);
+
+            const mailOptions = {
+                from,
+                to: recipients,
+                subject,
+                html
+            };
+
+            console.log(`[NOTIFICATION] Sending custom email to: ${recipients} | Subject: "${subject}"`);
+            const result = await this.sendBrevoEmail(mailOptions);
+
+            if (!result.success) {
+                return { success: false, msg: 'Failed to send email via Brevo.' };
+            }
+
+            return { success: true, msg: 'Email dispatched successfully.' };
+        } catch (error: any) {
+            console.error('[NOTIFICATION-ERROR] Failed to send custom email:', error);
+            const errorMsg = error.response?.body?.errors?.[0]?.message || error.message || 'Unknown error';
+            return { success: false, msg: errorMsg };
         }
     }
 
