@@ -12,6 +12,7 @@ import QuotationProductsView from "./components/QuotationProductsView";
 import CreateQuotationView from "./components/CreateQuotationView";
 import ScheduleMailView from "./components/ScheduleMailView";
 import DeliveredOrdersGraph from "./components/DeliveredOrdersGraph";
+import PurchasesGraph from "./components/PurchasesGraph";
 import { useDynamicRoutes, RouteConfig } from "@/app/_context/RouteContext";
 import { useToast } from "../_context/ToastContext";
 
@@ -275,7 +276,7 @@ const AdminDashboard = () => {
     };
 
     useEffect(() => {
-        if (activeView === 'products' || activeView === 'inventory') fetchProducts();
+        if (activeView === 'products' || activeView === 'inventory' || activeView === 'dashboard') fetchProducts();
         if (activeView === 'users') fetchUsers();
         if (activeView === 'orders' || activeView === 'dashboard') fetchOrders();
         if (activeView === 'messages') fetchMessages();
@@ -502,7 +503,7 @@ const AdminDashboard = () => {
     const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'schedule_mail') => {
         setActiveView(view);
         if (view === 'users') fetchUsers();
-        if (view === 'products' || view === 'inventory') fetchProducts();
+        if (view === 'products' || view === 'inventory' || view === 'dashboard') fetchProducts();
         if (view === 'orders' || view === 'dashboard') fetchOrders();
         if (view === 'messages') fetchMessages();
         if (view === 'coupons') fetchCoupons();
@@ -1018,9 +1019,10 @@ const AdminDashboard = () => {
                                 />
                             </div>
 
-                            {/* Orders Graph */}
-                            <div className="mb-8">
+                            {/* Orders & Purchases Analytics Graphs */}
+                            <div className="space-y-8 mb-8">
                                 <DeliveredOrdersGraph deliveredStats={stats?.deliveredStats} allOrders={ordersList} />
+                                <PurchasesGraph products={productsList} />
                             </div>
 
                             {/* Recent Activity */}
