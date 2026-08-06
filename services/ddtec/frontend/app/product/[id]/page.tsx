@@ -236,9 +236,6 @@ export default function ProductDetailsPage() {
     }
 
     const categoryName = typeof product.category === 'object' ? product.category.name : product.category;
-    const updatedAtDate = product.updatedAt ? formatDate(product.updatedAt) : formatDate(new Date().toISOString());
-    const updatedAtTime = product.updatedAt ? formatTime(product.updatedAt) : formatTime(new Date().toISOString());
-    const relativeUpdated = product.updatedAt ? getRelativeTime(product.updatedAt) : "Just updated";
     const createdAtDate = product.createdAt ? formatDate(product.createdAt) : "N/A";
 
     const hasDiscount = (product.discountPercentage && product.discountPercentage > 0) || (product.discountValue && product.discountValue > 0);
@@ -262,38 +259,7 @@ export default function ProductDetailsPage() {
                     <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[200px] sm:max-w-[300px]">{product.name}</span>
                 </nav>
 
-                {/* Prominent Last Updated & System Freshness Banner */}
-                <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-teal-500/10 via-cyan-500/10 to-blue-500/10 dark:from-teal-900/30 dark:via-cyan-900/30 dark:to-blue-900/30 border border-teal-500/20 dark:border-teal-500/30 backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-teal-600 text-white rounded-xl shadow-md shadow-teal-600/20">
-                            <Clock className="size-5 animate-pulse" />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">Live Product Status</span>
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-700">
-                                    <Sparkles className="size-3" /> {relativeUpdated}
-                                </span>
-                            </div>
-                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
-                                Last Updated: <span className="text-teal-700 dark:text-teal-300 font-bold">{updatedAtDate}</span> at <span className="text-teal-700 dark:text-teal-300 font-bold">{updatedAtTime}</span>
-                            </p>
-                        </div>
-                    </div>
 
-                    <div className="flex items-center gap-4 text-xs font-medium text-slate-600 dark:text-slate-400">
-                        {product.createdAt && (
-                            <div className="flex items-center gap-1.5 bg-white/60 dark:bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
-                                <Calendar className="size-3.5 text-teal-600 dark:text-teal-400" />
-                                <span>Listed: {createdAtDate}</span>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-1.5 bg-white/60 dark:bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
-                            <RefreshCw className="size-3.5 text-teal-600 dark:text-teal-400" />
-                            <span>Verified Info</span>
-                        </div>
-                    </div>
-                </div>
 
                 {/* Main Product Display Card */}
                 <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl overflow-hidden border border-slate-200/80 dark:border-slate-700/80 mb-12">
@@ -503,16 +469,7 @@ export default function ProductDetailsPage() {
                                     </p>
                                 </div>
 
-                                {/* Last Updated Stamp Box */}
-                                <div className="mb-6 p-4 rounded-xl bg-slate-100/70 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
-                                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                                        <Clock className="size-4 text-teal-600 dark:text-teal-400" />
-                                        <span><strong>Last Updated:</strong> {updatedAtDate} at {updatedAtTime}</span>
-                                    </div>
-                                    <span className="text-teal-600 dark:text-teal-400 font-bold bg-teal-50 dark:bg-teal-950/60 px-2.5 py-1 rounded-md border border-teal-200 dark:border-teal-800">
-                                        {relativeUpdated}
-                                    </span>
-                                </div>
+
                             </div>
 
                             {/* Action Toolbar */}
@@ -704,22 +661,8 @@ export default function ProductDetailsPage() {
                                             CGST: {product.cgst || 0}% | SGST: {product.sgst || 0}% (Total GST: {((product.cgst || 0) + (product.sgst || 0))}%)
                                         </span>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 p-4 text-sm bg-teal-50/30 dark:bg-teal-950/20">
-                                        <span className="font-bold text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
-                                            <Clock className="size-4 text-teal-600" /> Last Updated Date
-                                        </span>
-                                        <span className="sm:col-span-2 font-bold text-slate-900 dark:text-white">
-                                            {updatedAtDate}
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 p-4 text-sm bg-teal-50/30 dark:bg-teal-950/20">
-                                        <span className="font-bold text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
-                                            <Clock className="size-4 text-teal-600" /> Last Updated Time
-                                        </span>
-                                        <span className="sm:col-span-2 font-bold text-slate-900 dark:text-white">
-                                            {updatedAtTime} ({relativeUpdated})
-                                        </span>
-                                    </div>
+
+
                                     <div className="grid grid-cols-1 sm:grid-cols-3 p-4 bg-slate-50 dark:bg-slate-900/50 text-sm">
                                         <span className="font-bold text-slate-500 dark:text-slate-400">Product Added Date</span>
                                         <span className="sm:col-span-2 text-slate-800 dark:text-slate-200">{createdAtDate}</span>
