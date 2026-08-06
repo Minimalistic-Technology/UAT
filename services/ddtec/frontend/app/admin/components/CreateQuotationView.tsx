@@ -17,7 +17,9 @@ import {
     Sparkles,
     RefreshCw,
     CheckCircle2,
-    Save
+    Save,
+    Mail,
+    Send
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "@/app/_context/ToastContext";
@@ -56,8 +58,10 @@ export default function CreateQuotationView() {
         name: "",
         address: "",
         gstin: "",
-        stateName: ""
+        stateName: "",
+        toEmail: ""
     });
+    const [isSendingEmail, setIsSendingEmail] = useState(false);
 
     // Quotation Line Items State
     const [items, setItems] = useState<QuotationLineItem[]>([
@@ -241,6 +245,48 @@ export default function CreateQuotationView() {
         }
     };
 
+    const handleSendEmail = async () => {
+        if (items.length === 0) {
+            showToast("Please add at least one line item to send a quotation email.", "warning");
+            return;
+        }
+        if (!buyer.name.trim()) {
+            showToast("Please specify Buyer Name / Organization.", "warning");
+            return;
+        }
+        if (!buyer.toEmail || !buyer.toEmail.includes("@")) {
+            showToast("Please enter a valid Recipient Email Address (TO).", "warning");
+            return;
+        }
+
+        setIsSendingEmail(true);
+        try {
+            const payloadItems = items.map(item => ({
+                itemId: item.itemId || undefined,
+                name: item.name,
+                price: Number(item.price) || 0,
+                unit: item.unit || "Nos",
+                quantity: Number(item.quantity) || 1,
+                hsnCode: item.hsnCode || "",
+                cgst: Number(item.cgst) || 0,
+                sgst: Number(item.sgst) || 0
+            }));
+
+            const { data } = await api.post("/quotation/send-email", {
+                items: payloadItems,
+                buyer,
+                toEmail: buyer.toEmail
+            });
+
+            showToast(data.msg || `Quotation PDF successfully emailed to ${buyer.toEmail}`, "success");
+        } catch (error: any) {
+            console.error("Email sending error:", error);
+            showToast(error.response?.data?.msg || "Failed to send quotation email.", "error");
+        } finally {
+            setIsSendingEmail(false);
+        }
+    };
+
     return (
         <div className="space-y-8">
             {/* Header Banner */}
@@ -274,7 +320,7 @@ export default function CreateQuotationView() {
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Customer / Buyer Details</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div>
                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                             Buyer Name / Organization <span className="text-rose-500">*</span>
@@ -334,6 +380,23 @@ export default function CreateQuotationView() {
                             onChange={(e) => setBuyer({ ...buyer, stateName: e.target.value })}
                             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                            <span>Recipient Email (TO)</span>
+                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-400">Admin Only</span>
+                        </label>
+                        <div className="relative">
+                            <Mail className="absolute left-3.5 top-3 size-4 text-teal-600 dark:text-teal-400" />
+                            <input
+                                type="email"
+                                placeholder="client@company.com"
+                                value={buyer.toEmail}
+                                onChange={(e) => setBuyer({ ...buyer, toEmail: e.target.value })}
+                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-teal-200 dark:border-teal-900/60 bg-teal-50/40 dark:bg-teal-950/20 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -585,25 +648,46 @@ export default function CreateQuotationView() {
                         </span>
                     </div>
 
-                    {/* PDF Generation Trigger */}
-                    <button
-                        type="button"
-                        onClick={handleGeneratePdf}
-                        disabled={isGenerating || items.length === 0}
-                        className="w-full mt-4 py-3.5 px-6 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 text-slate-950 font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                        {isGenerating ? (
-                            <>
-                                <Loader2 className="size-5 animate-spin" />
-                                <span>Generating Quotation PDF...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Download className="size-5" />
-                                <span>Generate & Download Quotation PDF</span>
-                            </>
-                        )}
-                    </button>
+                    {/* Action Buttons: Download PDF & Send Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                        <button
+                            type="button"
+                            onClick={handleGeneratePdf}
+                            disabled={isGenerating || items.length === 0}
+                            className="w-full py-3.5 px-4 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-extrabold rounded-2xl border border-slate-700 shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm"
+                        >
+                            {isGenerating ? (
+                                <>
+                                    <Loader2 className="size-4 animate-spin" />
+                                    <span>Generating PDF...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Download className="size-4 text-teal-400" />
+                                    <span>Download PDF</span>
+                                </>
+                            )}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleSendEmail}
+                            disabled={isSendingEmail || items.length === 0}
+                            className="w-full py-3.5 px-4 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 text-slate-950 font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm"
+                        >
+                            {isSendingEmail ? (
+                                <>
+                                    <Loader2 className="size-4 animate-spin" />
+                                    <span>Sending Email...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Send className="size-4" />
+                                    <span>Send Email to (TO)</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
 
             </div>

@@ -103,6 +103,54 @@ class NotificationService {
     }
 
     /**
+     * Sends official quotation email with PDF attachment to a recipient email (TO field)
+     */
+    static async sendQuotationEmail(
+        toEmail: string,
+        buyerName: string,
+        pdfBuffer: Buffer,
+        filename: string,
+        customSubject?: string,
+        notes?: string
+    ): Promise<{ success: boolean; msg?: string }> {
+        if (!toEmail || !toEmail.includes('@')) {
+            return { success: false, msg: 'Valid recipient email address (TO) is required.' };
+        }
+
+        const subject = customSubject || `Official Price Quotation from DDTEC - ${buyerName || 'Valued Client'}`;
+        const html = `
+            <div style="font-family: Arial, sans-serif; color: #1e293b; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+                <div style="background-color: #0d9488; color: #ffffff; padding: 24px; text-align: center;">
+                    <h1 style="margin: 0; font-size: 22px; font-weight: bold;">DDTEC Official Quotation</h1>
+                    <p style="margin: 6px 0 0 0; font-size: 13px; color: #ccfbf1;">Industrial Products & Tech Solutions</p>
+                </div>
+                <div style="padding: 24px;">
+                    <p style="font-size: 15px;">Hello <strong>${buyerName || 'Valued Client'}</strong>,</p>
+                    <p style="font-size: 14px; color: #334155;">Please find attached the official price quotation requested from <strong>DDTEC</strong>.</p>
+                    ${notes ? `<div style="background-color: #f0fdf4; padding: 14px; border-left: 4px solid #0d9488; border-radius: 6px; margin: 16px 0; font-size: 13px; color: #115e59;"><strong>Note from Admin:</strong><br/>${notes}</div>` : ''}
+                    <p style="font-size: 13px; color: #64748b;">The attached PDF contains itemized specifications, tax calculations, and official commercial terms.</p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+                    <p style="font-size: 12px; color: #94a3b8; text-align: center;">Sent via DDTEC Official Admin System</p>
+                </div>
+            </div>
+        `;
+
+        const attachments = [{
+            filename: filename || `Quotation-${Date.now()}.pdf`,
+            content: pdfBuffer.toString('base64')
+        }];
+
+        const result = await this.sendBrevoEmail({
+            to: toEmail,
+            subject,
+            html,
+            attachments
+        });
+
+        return { success: result.success, msg: result.success ? `Quotation emailed successfully to ${toEmail}` : `Failed to send quotation email to ${toEmail}` };
+    }
+
+    /**
      * Sends a real OTP via Email. SMS is currently disabled.
      */
     static async sendOTP(identifier: string, otp: string): Promise<{ success: boolean; msg?: string }> {
