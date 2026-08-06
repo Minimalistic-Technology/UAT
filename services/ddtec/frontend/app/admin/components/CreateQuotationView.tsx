@@ -612,7 +612,7 @@ export default function CreateQuotationView() {
                             type="button"
                             onClick={() => {
                                 setItems([]);
-                                setBuyer({ name: "", address: "", gstin: "", stateName: "" });
+                                setBuyer({ name: "", address: "", gstin: "", stateName: "", toEmail: "" });
                                 showToast("Cleared quotation form", "info");
                             }}
                             className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition"
