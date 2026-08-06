@@ -277,7 +277,7 @@ const AdminDashboard = () => {
     useEffect(() => {
         if (activeView === 'products' || activeView === 'inventory') fetchProducts();
         if (activeView === 'users') fetchUsers();
-        if (activeView === 'orders') fetchOrders();
+        if (activeView === 'orders' || activeView === 'dashboard') fetchOrders();
         if (activeView === 'messages') fetchMessages();
         if (activeView === 'coupons') fetchCoupons();
         if (activeView === 'blogs') fetchBlogs();
@@ -503,7 +503,7 @@ const AdminDashboard = () => {
         setActiveView(view);
         if (view === 'users') fetchUsers();
         if (view === 'products' || view === 'inventory') fetchProducts();
-        if (view === 'orders') fetchOrders();
+        if (view === 'orders' || view === 'dashboard') fetchOrders();
         if (view === 'messages') fetchMessages();
         if (view === 'coupons') fetchCoupons();
         if (view === 'blogs') fetchBlogs();
@@ -1016,6 +1016,11 @@ const AdminDashboard = () => {
                                     icon={<DollarSign className="size-6 text-green-600" />}
                                     bg="bg-green-50 dark:bg-green-900/20"
                                 />
+                            </div>
+
+                            {/* Orders Graph */}
+                            <div className="mb-8">
+                                <DeliveredOrdersGraph deliveredStats={stats?.deliveredStats} allOrders={ordersList} />
                             </div>
 
                             {/* Recent Activity */}
