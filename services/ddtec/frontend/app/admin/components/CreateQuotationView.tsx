@@ -181,6 +181,11 @@ export default function CreateQuotationView() {
         showToast("Removed line item", "info");
     };
 
+    // Filter out catalog items that are already added to quotation line items
+    const availableCatalogItems = catalogItems.filter(c =>
+        !items.some(item => (item.itemId && item.itemId === c._id) || item.name.trim().toLowerCase() === c.name.trim().toLowerCase())
+    );
+
     // Financial Calculations
     const taxableTotal = items.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
     const cgstTotal = items.reduce((sum, item) => {
@@ -315,8 +320,9 @@ export default function CreateQuotationView() {
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Customer / Buyer Details</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Buyer Name / Organization */}
+                    <div className="col-span-1">
                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                             Buyer Name / Organization <span className="text-rose-500">*</span>
                         </label>
@@ -332,23 +338,8 @@ export default function CreateQuotationView() {
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                            Address / Location
-                        </label>
-                        <div className="relative">
-                            <MapPin className="absolute left-3.5 top-3 size-4 text-slate-400" />
-                            <input
-                                type="text"
-                                placeholder="Plot 42, Tech Park, Pune"
-                                value={buyer.address}
-                                onChange={(e) => setBuyer({ ...buyer, address: e.target.value })}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
-                            />
-                        </div>
-                    </div>
-
-                    <div>
+                    {/* GSTIN / UIN Number */}
+                    <div className="col-span-1">
                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                             GSTIN / UIN Number
                         </label>
@@ -364,7 +355,8 @@ export default function CreateQuotationView() {
                         </div>
                     </div>
 
-                    <div>
+                    {/* State Name */}
+                    <div className="col-span-1">
                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                             State Name
                         </label>
@@ -377,7 +369,8 @@ export default function CreateQuotationView() {
                         />
                     </div>
 
-                    <div>
+                    {/* Recipient Email (TO) */}
+                    <div className="col-span-1">
                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
                             <span>Recipient Email (TO)</span>
                             <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-400">Admin Only</span>
@@ -390,6 +383,23 @@ export default function CreateQuotationView() {
                                 value={buyer.toEmail}
                                 onChange={(e) => setBuyer({ ...buyer, toEmail: e.target.value })}
                                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-teal-200 dark:border-teal-900/60 bg-teal-50/40 dark:bg-teal-950/20 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Address / Location */}
+                    <div className="col-span-1 md:col-span-2">
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                            Address / Location
+                        </label>
+                        <div className="relative">
+                            <MapPin className="absolute left-3.5 top-3 size-4 text-slate-400" />
+                            <textarea
+                                rows={3}
+                                placeholder="Plot 42, Tech Park, Pune..."
+                                value={buyer.address}
+                                onChange={(e) => setBuyer({ ...buyer, address: e.target.value })}
+                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none resize-y"
                             />
                         </div>
                     </div>
@@ -414,8 +424,10 @@ export default function CreateQuotationView() {
                                 onChange={(e) => setSelectedCatalogId(e.target.value)}
                                 className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none max-w-[240px]"
                             >
-                                <option value="">-- Add from Catalog --</option>
-                                {catalogItems.map(c => (
+                                <option value="">
+                                    {availableCatalogItems.length === 0 ? "-- All items added --" : "-- Add from Catalog --"}
+                                </option>
+                                {availableCatalogItems.map(c => (
                                     <option key={c._id} value={c._id}>
                                         {c.name} (₹{c.price})
                                     </option>
