@@ -355,11 +355,11 @@ export default function CreateQuotationView() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-5">
             {/* Page Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div>
-                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                         Create & Manipulate Quotation
                     </h2>
                 </div>
@@ -367,59 +367,59 @@ export default function CreateQuotationView() {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={fetchCatalogItems}
-                        className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+                        className="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
                         title="Reload catalog items"
                     >
-                        <RefreshCw className={`size-4 ${loadingCatalog ? 'animate-spin' : ''}`} /> Refresh Catalog
+                        <RefreshCw className={`size-3.5 ${loadingCatalog ? 'animate-spin' : ''}`} /> Refresh Catalog
                     </button>
                 </div>
             </div>
 
             {/* Buyer / Customer Info Form */}
-            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-700 space-y-6">
-                <div className="flex items-center gap-2 pb-4 border-b border-slate-100 dark:border-slate-700">
-                    <Building className="size-5 text-teal-600 dark:text-teal-400" />
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Customer / Buyer Details</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-200 dark:border-slate-700 space-y-4">
+                <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-700">
+                    <Building className="size-4.5 text-teal-600 dark:text-teal-400" />
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Customer / Buyer Details</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {/* Buyer Name / Organization */}
                     <div className="col-span-1">
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                             Buyer Name / Organization <span className="text-rose-500">*</span>
                         </label>
                         <div className="relative">
-                            <User className="absolute left-3.5 top-3 size-4 text-slate-400" />
+                            <User className="absolute left-3.5 top-2.5 size-4 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="e.g. Acme Infra Ltd."
                                 value={buyer.name}
                                 onChange={(e) => setBuyer({ ...buyer, name: e.target.value })}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
+                                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
                             />
                         </div>
                     </div>
 
                     {/* GSTIN / UIN Number */}
                     <div className="col-span-1">
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                             GSTIN / UIN Number
                         </label>
                         <div className="relative">
-                            <Hash className="absolute left-3.5 top-3 size-4 text-slate-400" />
+                            <Hash className="absolute left-3.5 top-2.5 size-4 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="27AAACG0000A1Z5"
                                 value={buyer.gstin}
                                 onChange={(e) => setBuyer({ ...buyer, gstin: e.target.value })}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-semibold font-mono uppercase focus:ring-2 focus:ring-teal-500 outline-none"
+                                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold font-mono uppercase focus:ring-2 focus:ring-teal-500 outline-none"
                             />
                         </div>
                     </div>
 
                     {/* State Name */}
                     <div className="col-span-1">
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                             State Name
                         </label>
                         <input
@@ -427,7 +427,7 @@ export default function CreateQuotationView() {
                             placeholder="Maharashtra (27)"
                             value={buyer.stateName}
                             onChange={(e) => setBuyer({ ...buyer, stateName: e.target.value })}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
+                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
                         />
                     </div>
 
@@ -535,13 +535,13 @@ export default function CreateQuotationView() {
             </div>
 
             {/* Item Selector & Manipulation Workspace */}
-            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-700 space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200 dark:border-slate-700 space-y-4">
 
                 {/* Bar to Add from Catalog or Custom */}
-                <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-700">
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
                     <div className="flex items-center gap-2">
-                        <FileText className="size-5 text-teal-600 dark:text-teal-400" />
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Quotation Line Items</h3>
+                        <FileText className="size-4.5 text-teal-600 dark:text-teal-400" />
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Quotation Line Items</h3>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -637,156 +637,153 @@ export default function CreateQuotationView() {
                     </div>
                 </div>
 
-                {/* Items Editable Table */}
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50 dark:bg-slate-900/40">
-                                <th className="py-3 px-3 min-w-[220px]">Item Description</th>
-                                <th className="py-3 px-2 w-[130px]">Rate (₹) <span className="text-teal-600 dark:text-teal-400 text-[10px] lowercase">(customizable)</span></th>
-                                <th className="py-3 px-2 w-[90px]">Qty</th>
-                                <th className="py-3 px-2 w-[90px]">Unit</th>
-                                <th className="py-3 px-2 w-[95px]">HSN Code</th>
-                                <th className="py-3 px-2 w-[80px]">CGST %</th>
-                                <th className="py-3 px-2 w-[80px]">SGST %</th>
-                                <th className="py-3 px-3 text-right w-[120px]">Amount (₹)</th>
-                                <th className="py-3 px-2 text-center w-[50px]"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 text-sm">
-                            {items.length === 0 ? (
-                                <tr>
-                                    <td colSpan={9} className="py-8 text-center text-slate-400 text-sm">
-                                        No items added yet. Click <strong>"Add Catalog Item"</strong> or <strong>"+ Add Custom Line Item"</strong> above.
-                                    </td>
-                                </tr>
-                            ) : (
-                                items.map((item, index) => {
-                                    const qty = Number(item.quantity) || 0;
-                                    const rate = Number(item.price) || 0;
-                                    const lineTaxable = qty * rate;
-                                    const cgstVal = (lineTaxable * (Number(item.cgst) || 0)) / 100;
-                                    const sgstVal = (lineTaxable * (Number(item.sgst) || 0)) / 100;
-                                    const lineTotal = lineTaxable + cgstVal + sgstVal;
+                {/* Items Line Items Workspace */}
+                {items.length === 0 ? (
+                    <div className="py-10 text-center text-slate-400 text-xs sm:text-sm bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                        No items added yet. Click <strong>"Search catalog items..."</strong> or <strong>"+ Add Custom Line Item"</strong> above.
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {items.map((item, index) => {
+                            const qty = Number(item.quantity) || 0;
+                            const rate = Number(item.price) || 0;
+                            const lineTaxable = qty * rate;
+                            const cgstVal = (lineTaxable * (Number(item.cgst) || 0)) / 100;
+                            const sgstVal = (lineTaxable * (Number(item.sgst) || 0)) / 100;
+                            const lineTotal = lineTaxable + cgstVal + sgstVal;
 
-                                    return (
-                                        <tr key={item.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/20 transition-colors">
-                                            {/* Name / Description */}
-                                            <td className="py-3 px-3">
-                                                <input
-                                                    type="text"
-                                                    value={item.name}
-                                                    onChange={(e) => handleItemChange(item.id, "name", e.target.value)}
-                                                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
-                                                    placeholder="Item title..."
-                                                />
-                                            </td>
+                            return (
+                                <div key={item.id} className="p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-slate-50/40 dark:bg-slate-900/40 hover:border-teal-500/40 transition-all space-y-2.5">
+                                    {/* Line 1: Item # Badge, Description (Wide Focus), Line Total & Delete Button */}
+                                    <div className="flex flex-wrap items-center gap-2.5">
+                                        <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 shrink-0">
+                                            Item #{index + 1}
+                                        </span>
 
-                                            {/* Rate (Price) - FULL ADMIN MANIPULATION */}
-                                            <td className="py-3 px-2">
-                                                <div className="relative">
-                                                    <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">₹</span>
-                                                    <input
-                                                        type="number"
-                                                        value={item.price}
-                                                        onChange={(e) => handleItemChange(item.id, "price", e.target.value)}
-                                                        className="w-full pl-6 pr-2 py-1.5 rounded-lg border border-teal-500/40 dark:border-teal-500/40 bg-teal-50/20 dark:bg-teal-950/20 text-teal-700 dark:text-teal-300 text-xs font-bold focus:ring-2 focus:ring-teal-500 outline-none"
-                                                        placeholder="0"
-                                                        min="0"
-                                                        step="any"
-                                                    />
-                                                </div>
-                                            </td>
+                                        <div className="flex-1 min-w-[200px]">
+                                            <input
+                                                type="text"
+                                                value={item.name}
+                                                onChange={(e) => handleItemChange(item.id, "name", e.target.value)}
+                                                className="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
+                                                placeholder="Item title / product description..."
+                                            />
+                                        </div>
 
-                                            {/* Quantity */}
-                                            <td className="py-3 px-2">
+                                        <div className="flex items-center gap-3 shrink-0 ml-auto">
+                                            <div className="text-right">
+                                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Line Total</span>
+                                                <span className="text-xs font-black text-slate-900 dark:text-white font-mono">
+                                                    ₹{lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveItem(item.id)}
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                                                title="Remove item"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Line 2: Segregated Parameters Grid (Rate, Qty, Unit, HSN Code (Wider), CGST %, SGST %) */}
+                                    <div className="grid grid-cols-12 gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-800">
+                                        {/* Rate (₹) */}
+                                        <div className="col-span-6 sm:col-span-3 lg:col-span-2">
+                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Rate (₹)</label>
+                                            <div className="relative">
+                                                <span className="absolute left-2.5 top-1.5 text-xs text-slate-400 font-semibold">₹</span>
                                                 <input
                                                     type="number"
-                                                    value={item.quantity}
-                                                    onChange={(e) => handleItemChange(item.id, "quantity", Math.max(1, parseInt(e.target.value) || 1))}
-                                                    className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-bold text-center focus:ring-2 focus:ring-teal-500 outline-none"
-                                                    min="1"
-                                                />
-                                            </td>
-
-                                            {/* Unit */}
-                                            <td className="py-3 px-2">
-                                                <input
-                                                    type="text"
-                                                    value={item.unit}
-                                                    onChange={(e) => handleItemChange(item.id, "unit", e.target.value)}
-                                                    className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium text-center focus:ring-2 focus:ring-teal-500 outline-none"
-                                                    placeholder="Nos"
-                                                />
-                                            </td>
-
-                                            {/* HSN Code */}
-                                            <td className="py-3 px-2">
-                                                <input
-                                                    type="text"
-                                                    value={item.hsnCode}
-                                                    onChange={(e) => handleItemChange(item.id, "hsnCode", e.target.value)}
-                                                    className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-mono uppercase text-center focus:ring-2 focus:ring-teal-500 outline-none"
-                                                    placeholder="HSN"
-                                                />
-                                            </td>
-
-                                            {/* CGST % */}
-                                            <td className="py-3 px-2">
-                                                <input
-                                                    type="number"
-                                                    value={item.cgst}
-                                                    onChange={(e) => handleItemChange(item.id, "cgst", parseFloat(e.target.value) || 0)}
-                                                    className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-medium text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                                                    value={item.price}
+                                                    onChange={(e) => handleItemChange(item.id, "price", e.target.value)}
+                                                    className="w-full pl-6 pr-2 py-1 rounded-lg border border-teal-500/40 bg-teal-50/30 dark:bg-teal-950/30 text-teal-800 dark:text-teal-200 text-xs font-extrabold focus:ring-2 focus:ring-teal-500 outline-none"
+                                                    placeholder="0"
                                                     min="0"
-                                                    step="0.5"
+                                                    step="any"
                                                 />
-                                            </td>
+                                            </div>
+                                        </div>
 
-                                            {/* SGST % */}
-                                            <td className="py-3 px-2">
-                                                <input
-                                                    type="number"
-                                                    value={item.sgst}
-                                                    onChange={(e) => handleItemChange(item.id, "sgst", parseFloat(e.target.value) || 0)}
-                                                    className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-medium text-center focus:ring-2 focus:ring-teal-500 outline-none"
-                                                    min="0"
-                                                    step="0.5"
-                                                />
-                                            </td>
+                                        {/* Quantity */}
+                                        <div className="col-span-3 sm:col-span-2 lg:col-span-1">
+                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Qty</label>
+                                            <input
+                                                type="number"
+                                                value={item.quantity}
+                                                onChange={(e) => handleItemChange(item.id, "quantity", Math.max(1, parseInt(e.target.value) || 1))}
+                                                className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-bold text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                                                min="1"
+                                            />
+                                        </div>
 
-                                            {/* Line Total */}
-                                            <td className="py-3 px-3 text-right font-bold text-slate-900 dark:text-white text-xs">
-                                                ₹{lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </td>
+                                        {/* Unit */}
+                                        <div className="col-span-3 sm:col-span-2 lg:col-span-2">
+                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Unit</label>
+                                            <input
+                                                type="text"
+                                                value={item.unit}
+                                                onChange={(e) => handleItemChange(item.id, "unit", e.target.value)}
+                                                className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                                                placeholder="Nos"
+                                            />
+                                        </div>
 
-                                            {/* Delete Row */}
-                                            <td className="py-3 px-2 text-center">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveItem(item.id)}
-                                                    className="text-slate-400 hover:text-rose-600 transition-colors p-1"
-                                                    title="Remove item"
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                        {/* HSN Code (Wider Field for 8-digit HSN/SAC codes) */}
+                                        <div className="col-span-6 sm:col-span-5 lg:col-span-3">
+                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">HSN / SAC Code</label>
+                                            <input
+                                                type="text"
+                                                value={item.hsnCode}
+                                                onChange={(e) => handleItemChange(item.id, "hsnCode", e.target.value)}
+                                                className="w-full px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono uppercase focus:ring-2 focus:ring-teal-500 outline-none font-semibold tracking-wide"
+                                                placeholder="e.g. 84713010"
+                                            />
+                                        </div>
+
+                                        {/* CGST % */}
+                                        <div className="col-span-3 sm:col-span-2 lg:col-span-2">
+                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">CGST %</label>
+                                            <input
+                                                type="number"
+                                                value={item.cgst}
+                                                onChange={(e) => handleItemChange(item.id, "cgst", parseFloat(e.target.value) || 0)}
+                                                className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-medium text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                                                min="0"
+                                                step="0.5"
+                                            />
+                                        </div>
+
+                                        {/* SGST % */}
+                                        <div className="col-span-3 sm:col-span-2 lg:col-span-2">
+                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">SGST %</label>
+                                            <input
+                                                type="number"
+                                                value={item.sgst}
+                                                onChange={(e) => handleItemChange(item.id, "sgst", parseFloat(e.target.value) || 0)}
+                                                className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-medium text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                                                min="0"
+                                                step="0.5"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* Financial Summary & Actions Toolbar */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
                 {/* Left Column: Quick Notes / Verification */}
-                <div className="lg:col-span-6 bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                <div className="lg:col-span-6 bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
                     <div>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
                             <CheckCircle2 className="size-4 text-emerald-500" /> Admin Quotation Summary
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -794,7 +791,7 @@ export default function CreateQuotationView() {
                         </p>
                     </div>
 
-                    <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center gap-3">
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center gap-3">
                         <button
                             type="button"
                             onClick={() => {
@@ -802,7 +799,7 @@ export default function CreateQuotationView() {
                                 setBuyer({ name: "", address: "", gstin: "", stateName: "", toEmail: "" });
                                 showToast("Cleared quotation form", "info");
                             }}
-                            className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition"
+                            className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition"
                         >
                             Reset Form
                         </button>
@@ -810,7 +807,7 @@ export default function CreateQuotationView() {
                 </div>
 
                 {/* Right Column: Grand Total Calculations & Download PDF */}
-                <div className="lg:col-span-6 bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
+                <div className="lg:col-span-6 bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Financial Calculation Matrix</h4>
 
                     <div className="space-y-2 text-sm border-b border-slate-800 pb-4">
