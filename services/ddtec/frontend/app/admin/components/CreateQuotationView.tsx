@@ -19,7 +19,9 @@ import {
     CheckCircle2,
     Save,
     Mail,
-    Send
+    Send,
+    ChevronDown,
+    X
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "@/app/_context/ToastContext";
@@ -52,6 +54,22 @@ export default function CreateQuotationView() {
     const [loadingCatalog, setLoadingCatalog] = useState(true);
     const [selectedCatalogId, setSelectedCatalogId] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Searchable catalog combobox state (Local search, zero network calls)
+    const [catalogSearch, setCatalogSearch] = useState("");
+    const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+    const catalogDropdownRef = React.useRef<HTMLDivElement>(null);
+
+    // Close catalog dropdown on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (catalogDropdownRef.current && !catalogDropdownRef.current.contains(event.target as Node)) {
+                setIsCatalogOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // Buyer Information State
     const [buyer, setBuyer] = useState({
@@ -129,11 +147,7 @@ export default function CreateQuotationView() {
         }
     };
 
-    const handleAddFromCatalog = () => {
-        if (!selectedCatalogId) return;
-        const catalogObj = catalogItems.find(c => c._id === selectedCatalogId);
-        if (!catalogObj) return;
-
+    const handleAddSpecificCatalogItem = (catalogObj: CatalogItem) => {
         const newItem: QuotationLineItem = {
             id: Math.random().toString(36).substr(2, 9),
             itemId: catalogObj._id,
@@ -148,7 +162,14 @@ export default function CreateQuotationView() {
 
         setItems(prev => [...prev, newItem]);
         setSelectedCatalogId("");
-        showToast(`Added "${catalogObj.name}" to quotation draft`, "success");
+    };
+
+    const handleAddFromCatalog = () => {
+        if (!selectedCatalogId) return;
+        const catalogObj = catalogItems.find(c => c._id === selectedCatalogId);
+        if (catalogObj) {
+            handleAddSpecificCatalogItem(catalogObj);
+        }
     };
 
     const handleAddCustomItem = () => {
@@ -184,6 +205,12 @@ export default function CreateQuotationView() {
     // Filter out catalog items that are already added to quotation line items
     const availableCatalogItems = catalogItems.filter(c =>
         !items.some(item => (item.itemId && item.itemId === c._id) || item.name.trim().toLowerCase() === c.name.trim().toLowerCase())
+    );
+
+    // Filter available catalog items locally in-memory by search query (zero backend calls)
+    const filteredCatalogItems = availableCatalogItems.filter(c =>
+        c.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+        (c.hsnCode && c.hsnCode.toLowerCase().includes(catalogSearch.toLowerCase()))
     );
 
     // Financial Calculations
@@ -417,31 +444,83 @@ export default function CreateQuotationView() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                        {/* Add from Catalog Dropdown */}
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                            <select
-                                value={selectedCatalogId}
-                                onChange={(e) => setSelectedCatalogId(e.target.value)}
-                                className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none max-w-[240px]"
-                            >
-                                <option value="">
-                                    {availableCatalogItems.length === 0 ? "-- All items added --" : "-- Add from Catalog --"}
-                                </option>
-                                {availableCatalogItems.map(c => (
-                                    <option key={c._id} value={c._id}>
-                                        {c.name} (₹{c.price})
-                                    </option>
-                                ))}
-                            </select>
+                        {/* Searchable Catalog Items Combobox */}
+                        <div className="relative w-full sm:w-72" ref={catalogDropdownRef}>
+                            <div className="relative flex items-center">
+                                <Search className="absolute left-3 size-4 text-slate-400 pointer-events-none" />
+                                <input
+                                    type="text"
+                                    placeholder={availableCatalogItems.length === 0 ? "-- All items added --" : "Search catalog items..."}
+                                    value={catalogSearch}
+                                    onChange={(e) => {
+                                        setCatalogSearch(e.target.value);
+                                        setIsCatalogOpen(true);
+                                    }}
+                                    onFocus={() => setIsCatalogOpen(true)}
+                                    disabled={availableCatalogItems.length === 0}
+                                    className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none disabled:opacity-50 transition"
+                                />
+                                {catalogSearch ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setCatalogSearch("")}
+                                        className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+                                        title="Clear search"
+                                    >
+                                        <X className="size-3.5" />
+                                    </button>
+                                ) : (
+                                    <ChevronDown className="absolute right-2.5 size-3.5 text-slate-400 pointer-events-none" />
+                                )}
+                            </div>
 
-                            <button
-                                type="button"
-                                onClick={handleAddFromCatalog}
-                                disabled={!selectedCatalogId}
-                                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shrink-0"
-                            >
-                                <Plus className="size-3.5" /> Add Catalog Item
-                            </button>
+                            {/* Dropdown Menu Popup */}
+                            {isCatalogOpen && availableCatalogItems.length > 0 && (
+                                <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                                    <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        <span>Catalog Items ({filteredCatalogItems.length})</span>
+                                        <span>Click to add</span>
+                                    </div>
+                                    {filteredCatalogItems.length === 0 ? (
+                                        <div className="px-4 py-4 text-xs text-slate-400 text-center">
+                                            No matching catalog items found
+                                        </div>
+                                    ) : (
+                                        filteredCatalogItems.map(item => (
+                                            <button
+                                                key={item._id}
+                                                type="button"
+                                                onClick={() => handleAddSpecificCatalogItem(item)}
+                                                className="w-full text-left px-3.5 py-2.5 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-2 group cursor-pointer"
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
+                                                        {item.name}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        {item.hsnCode && (
+                                                            <span className="text-[10px] text-slate-400 font-mono">
+                                                                HSN: {item.hsnCode}
+                                                            </span>
+                                                        )}
+                                                        {item.unit && (
+                                                            <span className="text-[10px] text-slate-400">
+                                                                • {item.unit}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 shrink-0">
+                                                    <span className="text-xs font-extrabold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/40 px-2 py-0.5 rounded-lg border border-teal-100 dark:border-teal-800">
+                                                        ₹{item.price}
+                                                    </span>
+                                                    <Plus className="size-3.5 text-slate-400 group-hover:text-teal-600 dark:group-hover:text-teal-400" />
+                                                </div>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
