@@ -289,23 +289,18 @@ export default function CreateQuotationView() {
 
     return (
         <div className="space-y-8">
-            {/* Header Banner */}
-            <div className="p-6 rounded-3xl bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 text-white shadow-xl flex flex-wrap items-center justify-between gap-4">
+            {/* Page Header */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
                 <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <Calculator className="size-6 text-teal-200" />
-                        <span className="px-3 py-0.5 rounded-full text-xs font-extrabold uppercase bg-white/20 backdrop-blur-md">Admin Workspace</span>
-                    </div>
-                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Create & Manipulate Quotation</h2>
-                    <p className="text-teal-100 text-xs sm:text-sm mt-1">
-                        Full admin authority to customize item rates, discounts, tax percentages, and ad-hoc billing line items in real-time.
-                    </p>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                        Create & Manipulate Quotation
+                    </h2>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button
                         onClick={fetchCatalogItems}
-                        className="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 backdrop-blur-md"
+                        className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
                         title="Reload catalog items"
                     >
                         <RefreshCw className={`size-4 ${loadingCatalog ? 'animate-spin' : ''}`} /> Refresh Catalog
