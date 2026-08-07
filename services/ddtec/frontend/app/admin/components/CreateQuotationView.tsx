@@ -267,16 +267,21 @@ export default function CreateQuotationView() {
 
         setIsGenerating(true);
         try {
-            const payloadItems = items.map(item => ({
-                itemId: item.itemId || undefined,
-                name: item.name,
-                price: Number(item.price) || 0,
-                unit: item.unit || "Nos",
-                quantity: Number(item.quantity) || 1,
-                hsnCode: item.hsnCode || "",
-                cgst: Number(item.cgst) || 0,
-                sgst: Number(item.sgst) || 0
-            }));
+            const payloadItems = items.map(item => {
+                const obj: any = {
+                    name: item.name,
+                    price: Number(item.price) || 0,
+                    unit: item.unit || "Nos",
+                    quantity: Number(item.quantity) || 1,
+                    hsnCode: item.hsnCode || "",
+                    cgst: Number(item.cgst) || 0,
+                    sgst: Number(item.sgst) || 0
+                };
+                if (item.itemId && typeof item.itemId === 'string' && /^[0-9a-fA-F]{24}$/.test(item.itemId)) {
+                    obj.itemId = item.itemId;
+                }
+                return obj;
+            });
 
             const response = await api.post(
                 "/quotation/generate",
@@ -286,7 +291,7 @@ export default function CreateQuotationView() {
 
             const disposition = response.headers["content-disposition"];
             const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-            const filename = filenameMatch?.[1] || `QT-${buyer.name.replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}.pdf`;
+            const filename = filenameMatch?.[1] || `QT-${(buyer.name || 'Quotation').replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}.pdf`;
 
             const blob = new Blob([response.data], { type: "application/pdf" });
             const url = window.URL.createObjectURL(blob);
@@ -301,7 +306,17 @@ export default function CreateQuotationView() {
             showToast("Quotation PDF generated and downloaded successfully!", "success");
         } catch (error: any) {
             console.error("Quotation generation error:", error);
-            showToast(error.response?.data?.msg || "Failed to generate quotation PDF.", "error");
+            let errMsg = "Failed to generate quotation PDF.";
+            if (error.response?.data instanceof Blob) {
+                try {
+                    const text = await error.response.data.text();
+                    const json = JSON.parse(text);
+                    errMsg = json.msg || json.message || errMsg;
+                } catch (_) {}
+            } else if (error.response?.data?.msg) {
+                errMsg = error.response.data.msg;
+            }
+            showToast(errMsg, "error");
         } finally {
             setIsGenerating(false);
         }
@@ -328,16 +343,21 @@ export default function CreateQuotationView() {
 
         setIsSendingEmail(true);
         try {
-            const payloadItems = items.map(item => ({
-                itemId: item.itemId || undefined,
-                name: item.name,
-                price: Number(item.price) || 0,
-                unit: item.unit || "Nos",
-                quantity: Number(item.quantity) || 1,
-                hsnCode: item.hsnCode || "",
-                cgst: Number(item.cgst) || 0,
-                sgst: Number(item.sgst) || 0
-            }));
+            const payloadItems = items.map(item => {
+                const obj: any = {
+                    name: item.name,
+                    price: Number(item.price) || 0,
+                    unit: item.unit || "Nos",
+                    quantity: Number(item.quantity) || 1,
+                    hsnCode: item.hsnCode || "",
+                    cgst: Number(item.cgst) || 0,
+                    sgst: Number(item.sgst) || 0
+                };
+                if (item.itemId && typeof item.itemId === 'string' && /^[0-9a-fA-F]{24}$/.test(item.itemId)) {
+                    obj.itemId = item.itemId;
+                }
+                return obj;
+            });
 
             const { data } = await api.post("/quotation/send-email", {
                 items: payloadItems,

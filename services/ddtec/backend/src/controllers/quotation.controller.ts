@@ -60,12 +60,22 @@ function sanitizeForFilename(str: string): string {
 }
 
 async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfBuffer: Buffer; downloadFilename: string }> {
-    const itemIds = items.map((i: any) => i.itemId).filter(Boolean);
-    const dbItems = await QuotationItem.find({ _id: { $in: itemIds } });
-    const dbItemMap = new Map(dbItems.map((i: any) => [String(i._id), i]));
+    const itemIds = items
+        .map((i: any) => i.itemId)
+        .filter((id: any) => id && typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id));
+
+    let dbItemMap = new Map<string, any>();
+    if (itemIds.length > 0) {
+        try {
+            const dbItems = await QuotationItem.find({ _id: { $in: itemIds } });
+            dbItemMap = new Map(dbItems.map((i: any) => [String(i._id), i]));
+        } catch (e) {
+            console.warn('[QUOTATION] Warning fetching dbItems:', e);
+        }
+    }
 
     const lineItems = items.map((i: any, idx: number) => {
-        const dbItem = i.itemId ? dbItemMap.get(String(i.itemId)) : null;
+        const dbItem = (i.itemId && dbItemMap.has(String(i.itemId))) ? dbItemMap.get(String(i.itemId)) : null;
 
         const quantity = Number(i.quantity) || 1;
         const price = i.price !== undefined && i.price !== null && i.price !== ''
