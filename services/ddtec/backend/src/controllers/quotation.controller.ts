@@ -256,8 +256,15 @@ export const sendQuotationEmail = async (req: Request, res: Response) => {
 
         const targetEmail = toEmail || buyer?.toEmail;
 
-        if (!targetEmail || !targetEmail.includes('@')) {
+        if (!targetEmail) {
             return res.status(400).json({ msg: 'Valid recipient email address (TO field) is required.' });
+        }
+
+        const rawEmailString = typeof targetEmail === 'string' ? targetEmail : (Array.isArray(targetEmail) ? targetEmail.join(',') : '');
+        const recipientList = rawEmailString.split(/[,;\s]+/).map((e: string) => e.trim()).filter((e: string) => e.length > 0 && e.includes('@'));
+
+        if (recipientList.length === 0) {
+            return res.status(400).json({ msg: 'At least one valid recipient email address (TO field) is required.' });
         }
 
         if (!Array.isArray(items) || items.length === 0) {
@@ -267,7 +274,7 @@ export const sendQuotationEmail = async (req: Request, res: Response) => {
         const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer);
 
         const emailResult = await NotificationService.sendQuotationEmail(
-            targetEmail,
+            recipientList,
             buyer?.name || 'Valued Customer',
             pdfBuffer,
             downloadFilename,
@@ -276,7 +283,8 @@ export const sendQuotationEmail = async (req: Request, res: Response) => {
         );
 
         if (emailResult.success) {
-            return res.status(200).json({ success: true, msg: `Quotation email successfully sent to ${targetEmail}` });
+            const recipientsDisplay = recipientList.join(', ');
+            return res.status(200).json({ success: true, msg: `Quotation email successfully sent to ${recipientsDisplay}` });
         } else {
             return res.status(500).json({ success: false, msg: emailResult.msg || 'Failed to dispatch quotation email.' });
         }

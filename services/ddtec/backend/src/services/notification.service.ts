@@ -11,17 +11,49 @@ class NotificationService {
 
     private static async getEmailTransporter() {
         if (!this._emailTransporter) {
-            if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-                this._emailTransporter = nodemailer.createTransport({
-                    service: process.env.EMAIL_SERVICE || 'gmail',
-                    host: process.env.EMAIL_HOST,
-                    port: process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : undefined,
-                    secure: process.env.EMAIL_SECURE === 'true',
+            if (process.env.EMAIL_SANDBOX === 'true' || (!process.env.EMAIL_USER && !process.env.EMAIL_PASS)) {
+                try {
+                    const testAccount = await nodemailer.createTestAccount();
+                    this._isTestAccount = true;
+                    this._emailTransporter = nodemailer.createTransport({
+                        host: testAccount.smtp.host,
+                        port: testAccount.smtp.port,
+                        secure: testAccount.smtp.secure,
+                        auth: {
+                            user: testAccount.user,
+                            pass: testAccount.pass,
+                        },
+                    });
+                    console.log(`[NOTIFICATION] Initialized Nodemailer Ethereal Sandbox Mode (Account: ${testAccount.user})`);
+                } catch (err: any) {
+                    console.error('[NOTIFICATION] Failed to create Ethereal test account:', err.message || err);
+                }
+            } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+                const transportOptions: any = {
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS
                     }
-                });
+                };
+
+                if (process.env.EMAIL_HOST) {
+                    transportOptions.host = process.env.EMAIL_HOST;
+                    const port = process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : 587;
+                    transportOptions.port = port;
+                    // Port 587 uses STARTTLS (secure: false), while 465 uses SSL/TLS (secure: true)
+                    transportOptions.secure = process.env.EMAIL_SECURE !== undefined ? (process.env.EMAIL_SECURE === 'true' && port === 465) : port === 465;
+
+                    // SendGrid SMTP authentication requires user to be 'apikey' when using SG API Key
+                    if (process.env.EMAIL_HOST.includes('sendgrid') && process.env.EMAIL_PASS.startsWith('SG.')) {
+                        transportOptions.auth.user = 'apikey';
+                    }
+                } else if (process.env.EMAIL_SERVICE) {
+                    transportOptions.service = process.env.EMAIL_SERVICE;
+                } else {
+                    transportOptions.service = 'gmail';
+                }
+
+                this._emailTransporter = nodemailer.createTransport(transportOptions);
             }
         }
         return this._emailTransporter;
@@ -77,7 +109,7 @@ class NotificationService {
             }
         }
 
-        // 2. Fallback to Nodemailer (Gmail / SMTP)
+        // 2. Fallback to Nodemailer (Gmail / SMTP / Ethereal Sandbox)
         try {
             const transporter = await this.getEmailTransporter();
             if (!transporter) {
@@ -85,17 +117,43 @@ class NotificationService {
                 return { success: false, method: 'nodemailer' };
             }
 
-            const from = mailOptions.from || (process.env.EMAIL_USER ? `"DDTEC Official" <${process.env.EMAIL_USER}>` : undefined);
+            const defaultSender = this._isTestAccount ? '"DDTEC Test Sandbox" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'noreply@ddtec.com'}>`;
+            const from = mailOptions.from || process.env.EMAIL_FROM || defaultSender;
+
+            let nodemailerAttachments = undefined;
+            if (mailOptions.attachments && mailOptions.attachments.length > 0) {
+                nodemailerAttachments = mailOptions.attachments.map((att: any) => {
+                    if (typeof att.content === 'string') {
+                        return {
+                            filename: att.filename,
+                            content: Buffer.from(att.content, 'base64'),
+                            contentType: att.type || 'application/pdf'
+                        };
+                    }
+                    return att;
+                });
+            }
+
             const info = await transporter.sendMail({
                 from,
                 to: mailOptions.to,
                 subject: mailOptions.subject,
                 html: mailOptions.html,
                 bcc: mailOptions.bcc,
-                attachments: mailOptions.attachments
+                attachments: nodemailerAttachments
             });
+
             console.log(`[NOTIFICATION] Email sent via Nodemailer to ${mailOptions.to}. MessageId:`, info.messageId);
-            return { success: true, method: 'nodemailer' };
+
+            const previewUrl = nodemailer.getTestMessageUrl(info);
+            if (previewUrl) {
+                console.log('\n==================================================');
+                console.log(`✉️  [ETHEREAL EMAIL PREVIEW URL] View email online:`);
+                console.log(`👉 ${previewUrl} 👈`);
+                console.log('==================================================\n');
+            }
+
+            return { success: true, method: this._isTestAccount ? 'ethereal-sandbox' : 'nodemailer' };
         } catch (error: any) {
             console.error('[NOTIFICATION] Nodemailer fallback also failed:', error.message || error);
             return { success: false, method: 'nodemailer' };
@@ -106,14 +164,17 @@ class NotificationService {
      * Sends official quotation email with PDF attachment to a recipient email (TO field)
      */
     static async sendQuotationEmail(
-        toEmail: string,
+        toEmail: string | string[],
         buyerName: string,
         pdfBuffer: Buffer,
         filename: string,
         customSubject?: string,
         notes?: string
     ): Promise<{ success: boolean; msg?: string }> {
-        if (!toEmail || !toEmail.includes('@')) {
+        const rawEmailString = typeof toEmail === 'string' ? toEmail : (Array.isArray(toEmail) ? toEmail.join(',') : '');
+        const recipientList = rawEmailString.split(/[,;\s]+/).map((e: string) => e.trim()).filter((e: string) => e.length > 0 && e.includes('@'));
+
+        if (recipientList.length === 0) {
             return { success: false, msg: 'Valid recipient email address (TO) is required.' };
         }
 
@@ -141,13 +202,14 @@ class NotificationService {
         }];
 
         const result = await this.sendBrevoEmail({
-            to: toEmail,
+            to: recipientList,
             subject,
             html,
             attachments
         });
 
-        return { success: result.success, msg: result.success ? `Quotation emailed successfully to ${toEmail}` : `Failed to send quotation email to ${toEmail}` };
+        const recipientsDisplay = recipientList.join(', ');
+        return { success: result.success, msg: result.success ? `Quotation emailed successfully to ${recipientsDisplay}` : `Failed to send quotation email to ${recipientsDisplay}` };
     }
 
     /**

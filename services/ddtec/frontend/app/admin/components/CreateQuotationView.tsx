@@ -79,7 +79,37 @@ export default function CreateQuotationView() {
         stateName: "",
         toEmail: ""
     });
+    const [emailInput, setEmailInput] = useState("");
     const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+    // Helper to add email tag(s)
+    const handleAddEmailTag = (rawText: string) => {
+        if (!rawText || !rawText.trim()) return;
+
+        const newEmails = rawText
+            .split(/[,;\s]+/)
+            .map(e => e.trim())
+            .filter(e => e.length > 0 && e.includes("@"));
+
+        if (newEmails.length === 0) return;
+
+        const existingEmails = buyer.toEmail
+            ? buyer.toEmail.split(/[,;\s]+/).map(e => e.trim()).filter(e => e.includes("@"))
+            : [];
+
+        const updatedEmails = Array.from(new Set([...existingEmails, ...newEmails]));
+        setBuyer(prev => ({ ...prev, toEmail: updatedEmails.join(", ") }));
+        setEmailInput("");
+    };
+
+    // Helper to remove an email tag by index
+    const handleRemoveEmailTag = (indexToRemove: number) => {
+        const existingEmails = buyer.toEmail
+            ? buyer.toEmail.split(/[,;\s]+/).map(e => e.trim()).filter(e => e.includes("@"))
+            : [];
+        const updated = existingEmails.filter((_, idx) => idx !== indexToRemove);
+        setBuyer(prev => ({ ...prev, toEmail: updated.join(", ") }));
+    };
 
     // Quotation Line Items State
     const [items, setItems] = useState<QuotationLineItem[]>([
@@ -286,8 +316,13 @@ export default function CreateQuotationView() {
             showToast("Please specify Buyer Name / Organization.", "warning");
             return;
         }
-        if (!buyer.toEmail || !buyer.toEmail.includes("@")) {
-            showToast("Please enter a valid Recipient Email Address (TO).", "warning");
+
+        const emailList = buyer.toEmail
+            ? buyer.toEmail.split(/[,;\s]+/).map(e => e.trim()).filter(e => e.includes("@"))
+            : [];
+
+        if (emailList.length === 0) {
+            showToast("Please enter at least one valid Recipient Email Address (TO).", "warning");
             return;
         }
 
@@ -310,7 +345,7 @@ export default function CreateQuotationView() {
                 toEmail: buyer.toEmail
             });
 
-            showToast(data.msg || `Quotation PDF successfully emailed to ${buyer.toEmail}`, "success");
+            showToast(data.msg || `Quotation PDF successfully emailed to ${emailList.join(", ")}`, "success");
         } catch (error: any) {
             console.error("Email sending error:", error);
             showToast(error.response?.data?.msg || "Failed to send quotation email.", "error");
@@ -396,22 +431,88 @@ export default function CreateQuotationView() {
                         />
                     </div>
 
-                    {/* Recipient Email (TO) */}
+                    {/* Recipient Email(s) (TO) */}
                     <div className="col-span-1">
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-                            <span>Recipient Email (TO)</span>
-                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-400">Admin Only</span>
-                        </label>
-                        <div className="relative">
-                            <Mail className="absolute left-3.5 top-3 size-4 text-teal-600 dark:text-teal-400" />
-                            <input
-                                type="email"
-                                placeholder="client@company.com"
-                                value={buyer.toEmail}
-                                onChange={(e) => setBuyer({ ...buyer, toEmail: e.target.value })}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-teal-200 dark:border-teal-900/60 bg-teal-50/40 dark:bg-teal-950/20 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
-                            />
-                        </div>
+                        {(() => {
+                            const parsedEmails = buyer.toEmail
+                                ? buyer.toEmail.split(/[,;\s]+/).map(e => e.trim()).filter(e => e.includes("@"))
+                                : [];
+
+                            return (
+                                <>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                        <span>Recipient Email(s) (TO)</span>
+                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-400">
+                                            Press Enter to add
+                                        </span>
+                                    </label>
+                                    <div className="relative flex items-center">
+                                        <Mail className="absolute left-3.5 top-3 size-4 text-teal-600 dark:text-teal-400 pointer-events-none" />
+                                        <input
+                                            type="text"
+                                            placeholder={parsedEmails.length > 0 ? "Add another email & press Enter..." : "e.g. client@acme.com (Press Enter)"}
+                                            value={emailInput}
+                                            onChange={(e) => setEmailInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === 'Tab' || e.key === ',' || e.key === ';') {
+                                                    e.preventDefault();
+                                                    handleAddEmailTag(emailInput);
+                                                } else if (e.key === 'Backspace' && emailInput === '') {
+                                                    if (parsedEmails.length > 0) {
+                                                        handleRemoveEmailTag(parsedEmails.length - 1);
+                                                    }
+                                                }
+                                            }}
+                                            onBlur={() => handleAddEmailTag(emailInput)}
+                                            onPaste={(e) => {
+                                                const pastedText = e.clipboardData.getData('text');
+                                                if (pastedText && pastedText.includes('@')) {
+                                                    e.preventDefault();
+                                                    handleAddEmailTag(pastedText);
+                                                }
+                                            }}
+                                            className="w-full pl-10 pr-16 py-2.5 rounded-xl border border-teal-200 dark:border-teal-900/60 bg-teal-50/40 dark:bg-teal-950/20 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none transition"
+                                        />
+                                        {emailInput.trim() && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAddEmailTag(emailInput)}
+                                                className="absolute right-2 px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-extrabold rounded-lg transition cursor-pointer"
+                                            >
+                                                + Add
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Email Badges List */}
+                                    {parsedEmails.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                                            {parsedEmails.map((email, idx) => (
+                                                <span
+                                                    key={idx}
+                                                    className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-xl bg-teal-100/90 dark:bg-teal-950/90 text-teal-900 dark:text-teal-200 border border-teal-200 dark:border-teal-800/80 shadow-xs"
+                                                >
+                                                    <Mail className="size-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+                                                    <span className="truncate max-w-[200px]">{email}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveEmailTag(idx)}
+                                                        className="p-0.5 rounded-md hover:bg-teal-200 dark:hover:bg-teal-800 text-teal-600 dark:text-teal-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors ml-0.5 cursor-pointer"
+                                                        title={`Remove ${email}`}
+                                                    >
+                                                        <X className="size-3.5" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-[10px] text-slate-400 mt-1.5">
+                                            Type an email address and press <kbd className="px-1 py-0.5 text-[9px] font-mono bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">Enter</kbd> or <kbd className="px-1 py-0.5 text-[9px] font-mono bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">,</kbd> to add.
+                                        </p>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
 
                     {/* Address / Location */}
