@@ -1,6 +1,6 @@
 "use client";
 
-import { Hammer, Wrench, Drill, Mail } from "lucide-react";
+import { Hammer, Wrench, Drill, Mail, Phone } from "lucide-react";
 
 export default function ComingSoonPage() {
   return (
@@ -46,17 +46,30 @@ export default function ComingSoonPage() {
           DDTEC will be back online shortly &mdash; stay tuned.
         </p>
 
-        <div className="glass-card rounded-full px-6 py-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-          <Mail className="size-4 text-teal-600 dark:text-teal-400" />
-          <span>
-            Questions? Reach us at{" "}
-            <a
-              href="mailto:support@ddtec.com"
-              className="font-semibold text-teal-600 dark:text-teal-400 hover:underline"
-            >
-              support@ddtec.com
-            </a>
-          </span>
+        <div className="flex flex-col sm:flex-row items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+          <div className="glass-card rounded-full px-5 py-2.5 flex items-center gap-2">
+            <Mail className="size-4 text-teal-600 dark:text-teal-400 shrink-0" />
+            <span>
+              <a
+                href="mailto:support@ddtec.com"
+                className="font-semibold text-teal-600 dark:text-teal-400 hover:underline"
+              >
+                support@ddtec.com
+              </a>
+            </span>
+          </div>
+
+          <div className="glass-card rounded-full px-5 py-2.5 flex items-center gap-2">
+            <Phone className="size-4 text-teal-600 dark:text-teal-400 shrink-0" />
+            <span>
+              <a
+                href="tel:7777099930"
+                className="font-semibold text-teal-600 dark:text-teal-400 hover:underline"
+              >
+                +91 77770 99930
+              </a>
+            </span>
+          </div>
         </div>
       </div>
 
