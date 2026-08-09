@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QuotationItem from '../models/QuotationItem';
+import SavedQuotation from '../models/SavedQuotation';
 import NotificationService from '../services/notification.service';
 
 const COMPANY = {
@@ -303,3 +304,174 @@ export const sendQuotationEmail = async (req: Request, res: Response) => {
         res.status(500).json({ msg: err.message || 'Server error sending quotation email' });
     }
 };
+
+// @route   POST api/quotation/save
+// @desc    Save a quotation (create new or update existing)
+export const saveQuotation = async (req: Request, res: Response) => {
+    try {
+        const { id, title, buyer, items, notes } = req.body;
+        const userId = (req as any).user?.id || (req as any).user?._id;
+
+        if (!buyer || !buyer.name || !buyer.name.trim()) {
+            return res.status(400).json({ msg: 'Buyer name is required' });
+        }
+
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ msg: 'At least one item is required to save quotation' });
+        }
+
+        const processedItems = items.map((i: any) => {
+            const qty = Number(i.quantity) || 1;
+            const price = Number(i.price) || 0;
+            const cgst = Number(i.cgst) || 0;
+            const sgst = Number(i.sgst) || 0;
+            return {
+                itemId: i.itemId || i._id,
+                name: i.name || 'Unnamed Item',
+                price,
+                unit: i.unit || 'Nos',
+                quantity: qty,
+                cgst,
+                sgst,
+                hsnCode: i.hsnCode || ''
+            };
+        });
+
+        const subtotal = processedItems.reduce((sum: number, i: any) => sum + i.price * i.quantity, 0);
+        const cgstAmount = processedItems.reduce((sum: number, i: any) => sum + (i.price * i.quantity * i.cgst) / 100, 0);
+        const sgstAmount = processedItems.reduce((sum: number, i: any) => sum + (i.price * i.quantity * i.sgst) / 100, 0);
+        const grandTotal = subtotal + cgstAmount + sgstAmount;
+
+        const defaultTitle = title?.trim() || `Quotation for ${buyer.name.trim()}`;
+
+        if (id) {
+            const existing = await SavedQuotation.findById(id);
+            if (existing) {
+                existing.title = defaultTitle;
+                existing.buyer = {
+                    name: buyer.name.trim(),
+                    address: buyer.address || '',
+                    gstin: buyer.gstin || '',
+                    stateName: buyer.stateName || ''
+                };
+                existing.items = processedItems;
+                existing.subtotal = subtotal;
+                existing.cgstAmount = cgstAmount;
+                existing.sgstAmount = sgstAmount;
+                existing.grandTotal = grandTotal;
+                existing.notes = notes || '';
+                if (userId) existing.user = userId;
+
+                await existing.save();
+                return res.status(200).json({ success: true, quotation: existing, msg: 'Quotation updated successfully!' });
+            }
+        }
+
+        const quotationNumber = `QT-${Date.now()}`;
+        const newQuotation = new SavedQuotation({
+            title: defaultTitle,
+            user: userId || undefined,
+            quotationNumber,
+            buyer: {
+                name: buyer.name.trim(),
+                address: buyer.address || '',
+                gstin: buyer.gstin || '',
+                stateName: buyer.stateName || ''
+            },
+            items: processedItems,
+            subtotal,
+            cgstAmount,
+            sgstAmount,
+            grandTotal,
+            notes: notes || ''
+        });
+
+        await newQuotation.save();
+        return res.status(201).json({ success: true, quotation: newQuotation, msg: 'Quotation saved successfully!' });
+    } catch (err: any) {
+        console.error('Error saving quotation:', err);
+        return res.status(500).json({ msg: err.message || 'Server error saving quotation' });
+    }
+};
+
+// @route   GET api/quotation/saved
+// @desc    Get all saved quotations
+export const getAllSavedQuotations = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user?.id || (req as any).user?._id;
+        let query = {};
+        if (userId) {
+            query = { $or: [{ user: userId }, { user: null }] };
+        }
+        const quotations = await SavedQuotation.find(query).sort({ createdAt: -1 });
+        return res.status(200).json(quotations);
+    } catch (err: any) {
+        console.error('Error fetching saved quotations:', err);
+        return res.status(500).json({ msg: err.message || 'Server error fetching saved quotations' });
+    }
+};
+
+// @route   GET api/quotation/saved/:id
+// @desc    Get a single saved quotation by ID
+export const getSavedQuotationById = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const quotation = await SavedQuotation.findById(id);
+        if (!quotation) {
+            return res.status(404).json({ msg: 'Saved quotation not found' });
+        }
+        return res.status(200).json(quotation);
+    } catch (err: any) {
+        console.error('Error fetching saved quotation by ID:', err);
+        return res.status(500).json({ msg: err.message || 'Server error fetching quotation' });
+    }
+};
+
+// @route   DELETE api/quotation/saved/:id
+// @desc    Delete a saved quotation
+export const deleteSavedQuotation = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const deleted = await SavedQuotation.findByIdAndDelete(id);
+        if (!deleted) {
+            return res.status(404).json({ msg: 'Saved quotation not found' });
+        }
+        return res.status(200).json({ success: true, msg: 'Saved quotation deleted successfully' });
+    } catch (err: any) {
+        console.error('Error deleting saved quotation:', err);
+        return res.status(500).json({ msg: err.message || 'Server error deleting quotation' });
+    }
+};
+
+// @route   POST api/quotation/saved/:id/duplicate
+// @desc    Duplicate a saved quotation to create a new copy
+export const duplicateSavedQuotation = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const source = await SavedQuotation.findById(id);
+        if (!source) {
+            return res.status(404).json({ msg: 'Saved quotation not found' });
+        }
+
+        const userId = (req as any).user?.id || (req as any).user?._id;
+        const newQuotation = new SavedQuotation({
+            title: `${source.title} (Copy)`,
+            user: userId || source.user,
+            quotationNumber: `QT-${Date.now()}`,
+            buyer: source.buyer,
+            items: source.items,
+            subtotal: source.subtotal,
+            cgstAmount: source.cgstAmount,
+            sgstAmount: source.sgstAmount,
+            grandTotal: source.grandTotal,
+            notes: source.notes
+        });
+
+        await newQuotation.save();
+        return res.status(201).json({ success: true, quotation: newQuotation, msg: 'Quotation duplicated successfully!' });
+    } catch (err: any) {
+        console.error('Error duplicating saved quotation:', err);
+        return res.status(500).json({ msg: err.message || 'Server error duplicating quotation' });
+    }
+};
+

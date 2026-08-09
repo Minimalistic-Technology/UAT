@@ -2,15 +2,17 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../_context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator, CheckCircle2 } from "lucide-react";
+import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator, CheckCircle2, BookmarkCheck } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "./components/ToggleSwitch";
 import CategoriesView from "./components/CategoriesView";
 import QuotationProductsView from "./components/QuotationProductsView";
 import CreateQuotationView from "./components/CreateQuotationView";
+import SavedQuotationsView from "@/app/quotation/saved/page";
 import ScheduleMailView from "./components/ScheduleMailView";
+
 import DeliveredOrdersGraph from "./components/DeliveredOrdersGraph";
 import PurchasesGraph from "./components/PurchasesGraph";
 import { useDynamicRoutes, RouteConfig } from "@/app/_context/RouteContext";
@@ -109,7 +111,7 @@ const AdminDashboard = () => {
     const { showToast } = useToast();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
-    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'schedule_mail'>('dashboard');
+    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail'>('dashboard');
 
     // Data for Manage Views
     const [usersList, setUsersList] = useState<User[]>([]);
@@ -208,6 +210,17 @@ const AdminDashboard = () => {
     const [isEditRouteModalOpen, setIsEditRouteModalOpen] = useState(false);
     const [editingRoute, setEditingRoute] = useState<RouteConfig | null>(null);
     const [newRoute, setNewRoute] = useState({ path: "", name: "", description: "", isActive: true });
+
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const viewParam = searchParams?.get("view");
+        if (viewParam === "create_quotation") {
+            setActiveView("create_quotation");
+        } else if (viewParam === "saved_quotations") {
+            setActiveView("saved_quotations");
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (!authLoading) {
@@ -500,7 +513,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'schedule_mail') => {
+    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail') => {
         setActiveView(view);
         if (view === 'users') fetchUsers();
         if (view === 'products' || view === 'inventory' || view === 'dashboard') fetchProducts();
@@ -866,6 +879,13 @@ const AdminDashboard = () => {
                                 {!isSidebarCollapsed && <span className="ms-3 font-bold text-teal-600 dark:text-teal-400">Create Quotation</span>}
                             </button>
                         </li>
+                        <li>
+                            <button onClick={() => handleViewChange('saved_quotations')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'saved_quotations' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+                                <BookmarkCheck className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
+                                {!isSidebarCollapsed && <span className="ms-3 font-semibold">Saved Quotations</span>}
+                            </button>
+                        </li>
+
                         <li>
                             <button onClick={() => handleViewChange('orders')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'orders' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                                 <ShoppingBag className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
@@ -1564,6 +1584,8 @@ const AdminDashboard = () => {
                     {activeView === 'quotation_products' && <QuotationProductsView />}
 
                     {activeView === 'create_quotation' && <CreateQuotationView />}
+
+                    {activeView === 'saved_quotations' && <SavedQuotationsView />}
 
                     {activeView === 'schedule_mail' && <ScheduleMailView />}
 

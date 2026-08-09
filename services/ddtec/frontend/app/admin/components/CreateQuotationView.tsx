@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
 import {
     FileText,
     Plus,
@@ -125,9 +127,54 @@ export default function CreateQuotationView() {
         }
     ]);
 
+    const searchParams = useSearchParams();
+
     useEffect(() => {
         fetchCatalogItems();
     }, []);
+
+    useEffect(() => {
+        const loadId = searchParams?.get("load");
+        if (loadId) {
+            loadSavedQuotation(loadId);
+        }
+    }, [searchParams]);
+
+    const loadSavedQuotation = async (id: string) => {
+        try {
+            const { data } = await api.get(`/quotation/saved/${id}`);
+            if (data) {
+                if (data.buyer) {
+                    setBuyer({
+                        name: data.buyer.name || "",
+                        address: data.buyer.address || "",
+                        gstin: data.buyer.gstin || "",
+                        stateName: data.buyer.stateName || ""
+                    });
+                }
+                if (Array.isArray(data.items) && data.items.length > 0) {
+                    setItems(
+                        data.items.map((i: any, index: number) => ({
+                            id: `loaded-${index}-${Date.now()}`,
+                            itemId: i.itemId || i._id,
+                            name: i.name,
+                            price: i.price,
+                            unit: i.unit || "Nos",
+                            quantity: i.quantity || 1,
+                            hsnCode: i.hsnCode || "",
+                            cgst: i.cgst || 0,
+                            sgst: i.sgst || 0
+                        }))
+                    );
+                }
+                setSavedQuotationId(data._id);
+                showToast(`Loaded quotation template for "${data.buyer?.name || data.title}" into Admin Workspace!`, "success");
+            }
+        } catch (error) {
+            console.error("Failed to load saved quotation into admin view", error);
+        }
+    };
+
 
     const fetchCatalogItems = async () => {
         setLoadingCatalog(true);
@@ -255,7 +302,51 @@ export default function CreateQuotationView() {
     }, 0);
     const grandTotal = taxableTotal + cgstTotal + sgstTotal;
 
+    const [isSaving, setIsSaving] = useState(false);
+    const [savedQuotationId, setSavedQuotationId] = useState<string | null>(null);
+
+    const handleSaveQuotation = async () => {
+        if (items.length === 0) {
+            showToast("Please add at least one line item to save quotation.", "warning");
+            return;
+        }
+        if (!buyer.name.trim()) {
+            showToast("Please specify Buyer Name / Organization to save.", "warning");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const { data } = await api.post("/quotation/save", {
+                id: savedQuotationId,
+                title: `Quotation for ${buyer.name.trim()}`,
+                buyer,
+                items: items.map(i => ({
+                    itemId: i.itemId || i.id,
+                    name: i.name,
+                    price: i.price,
+                    unit: i.unit,
+                    quantity: i.quantity,
+                    cgst: i.cgst,
+                    sgst: i.sgst,
+                    hsnCode: i.hsnCode
+                }))
+            });
+
+            if (data.quotation) {
+                setSavedQuotationId(data.quotation._id);
+            }
+            showToast(data.msg || "Quotation saved successfully!", "success");
+        } catch (error: any) {
+            console.error("Save quotation error:", error);
+            showToast(error.response?.data?.msg || "Failed to save quotation.", "error");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     const handleGeneratePdf = async () => {
+
         if (items.length === 0) {
             showToast("Please add at least one line item to generate a quotation.", "warning");
             return;
@@ -852,8 +943,27 @@ export default function CreateQuotationView() {
                         </span>
                     </div>
 
-                    {/* Action Buttons: Download PDF & Send Email */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                    {/* Action Buttons: Save Quotation, Download PDF & Send Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                        <button
+                            type="button"
+                            onClick={handleSaveQuotation}
+                            disabled={isSaving || items.length === 0}
+                            className="w-full py-3.5 px-4 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm"
+                        >
+                            {isSaving ? (
+                                <>
+                                    <Loader2 className="size-4 animate-spin" />
+                                    <span>Saving...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="size-4" />
+                                    <span>Save Quotation</span>
+                                </>
+                            )}
+                        </button>
+
                         <button
                             type="button"
                             onClick={handleGeneratePdf}
@@ -877,7 +987,7 @@ export default function CreateQuotationView() {
                             type="button"
                             onClick={handleSendEmail}
                             disabled={isSendingEmail || items.length === 0}
-                            className="w-full py-3.5 px-4 bg-teal-500 hover:bg-teal-400 disabled:opacity-50 text-slate-950 font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm"
+                            className="w-full py-3.5 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm"
                         >
                             {isSendingEmail ? (
                                 <>
@@ -887,11 +997,12 @@ export default function CreateQuotationView() {
                             ) : (
                                 <>
                                     <Send className="size-4" />
-                                    <span>Send Email to (TO)</span>
+                                    <span>Send Email</span>
                                 </>
                             )}
                         </button>
                     </div>
+
                 </div>
 
             </div>

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sun, Moon, ShoppingBag, ChevronRight, User, LogOut, ChevronDown, Package, Settings } from "lucide-react";
+import { Menu, X, Sun, Moon, ShoppingBag, ChevronRight, User, LogOut, ChevronDown, Package, Settings, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LoadingBar from "./LoadingBar";
 import api from "@/lib/api";
@@ -374,12 +374,21 @@ export default function Navbar() {
                         </Link>
 
                         <Link
+                          href="/quotation/saved"
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          <FileText className="size-4" />
+                          Saved Quotations
+                        </Link>
+
+                        <Link
                           href="/profile"
                           className="flex items-center gap-3 px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                         >
                           <Settings className="size-4" />
                           Account Details
                         </Link>
+
 
                         <div className="mt-1 pt-1 border-t border-slate-50 dark:border-slate-800">
                           <button
