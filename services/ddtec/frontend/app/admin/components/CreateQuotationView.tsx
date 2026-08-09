@@ -149,7 +149,8 @@ export default function CreateQuotationView() {
                         name: data.buyer.name || "",
                         address: data.buyer.address || "",
                         gstin: data.buyer.gstin || "",
-                        stateName: data.buyer.stateName || ""
+                        stateName: data.buyer.stateName || "",
+                        toEmail: data.buyer.toEmail || ""
                     });
                 }
                 if (Array.isArray(data.items) && data.items.length > 0) {
