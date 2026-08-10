@@ -12,6 +12,7 @@ import api from "@/lib/api";
 import { useAuth } from "../_context/AuthContext";
 import { useCart } from "../_context/CartContext";
 import { useDynamicRoutes } from "../_context/RouteContext";
+import { useSettings } from "../_context/SettingsContext";
 
 // Helper component for recursive category rendering
 const CategoryItem = ({ category, allCategories, depth = 0 }: { category: any, allCategories: any[], depth?: number }) => {
@@ -68,6 +69,7 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const { cartCount } = useCart(); // Cart Context Hook
   const { isRouteActive } = useDynamicRoutes();
+  const { isComponentEnabled } = useSettings();
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -134,6 +136,11 @@ export default function Navbar() {
 
   // Filter out any links that have been explicitly disabled by the Admin!
   let activeNavLinks = navLinks.filter(link => {
+    if (link.href === '/shop' && !isComponentEnabled('ShopSection')) return false;
+    if (link.href === '/who' && !isComponentEnabled('WhoWeAre')) return false;
+    if (link.href === '/what' && !isComponentEnabled('WhatWeOffer')) return false;
+    if (link.href === '/contact' && !isComponentEnabled('Contact')) return false;
+    
     // Treat anchor links as belonging to "/"
     const checkHref = (link.href === '/who' || link.href === '/what' || link.href === '/') ? '/' : link.href;
     return isRouteActive(checkHref);
@@ -405,7 +412,7 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div className="hidden md:flex items-center gap-3">
-                  {isRouteActive('/login') && (
+                  {isRouteActive('/login') && isComponentEnabled('Login') && (
                     <Link
                       href="/login"
                       className="flex px-5 py-2 rounded-full text-sm font-bold transition-all items-center gap-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
@@ -413,7 +420,7 @@ export default function Navbar() {
                       <User className="size-4" /> Login
                     </Link>
                   )}
-                  {isRouteActive('/signup') && (
+                  {isRouteActive('/signup') && isComponentEnabled('Signup') && (
                     <Link
                       href="/signup"
                       className="flex px-5 py-2 rounded-full text-sm font-bold transition-all items-center gap-2 bg-teal-600 text-white hover:bg-teal-700"
@@ -488,7 +495,7 @@ export default function Navbar() {
                   </button>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {isRouteActive('/login') && (
+                    {isRouteActive('/login') && isComponentEnabled('Login') && (
                       <Link
                         href="/login"
                         onClick={() => setMenuOpen(false)}
@@ -497,7 +504,7 @@ export default function Navbar() {
                         <User className="size-5" /> Login
                       </Link>
                     )}
-                    {isRouteActive('/signup') && (
+                    {isRouteActive('/signup') && isComponentEnabled('Signup') && (
                       <Link
                         href="/signup"
                         onClick={() => setMenuOpen(false)}

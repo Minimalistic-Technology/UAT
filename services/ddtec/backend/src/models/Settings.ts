@@ -11,8 +11,9 @@ export interface ISettings extends Document {
         Contact: boolean;
         Login: boolean;
         Signup: boolean;
+        [key: string]: boolean;
     };
-    onboarding: {
+    onboarding?: {
         mode: 'open' | 'closed' | 'invite_only' | 'admin_approval';
         inviteCode: string;
         closedMessage: string;

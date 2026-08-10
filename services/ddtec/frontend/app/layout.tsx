@@ -7,6 +7,7 @@ import { AuthProvider } from "./_context/AuthContext";
 import { CartProvider } from "./_context/CartContext";
 import { ToastProvider } from "./_context/ToastContext";
 import { RouteProvider } from "./_context/RouteContext";
+import { SettingsProvider } from "./_context/SettingsContext";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 const poppins = Poppins({
@@ -28,18 +29,20 @@ export default function RootLayout({
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>
-              <RouteProvider>
-                <CartProvider>
-                  <Navbar />
+              <SettingsProvider>
+                <RouteProvider>
+                  <CartProvider>
+                    <Navbar />
 
-                  {/* Main content grows to push footer down */}
-                  <main className="min-h-screen flex-1">
-                    {children}
-                  </main>
+                    {/* Main content grows to push footer down */}
+                    <main className="min-h-screen flex-1">
+                      {children}
+                    </main>
 
-                  <Footer />
-                </CartProvider>
-              </RouteProvider>
+                    <Footer />
+                  </CartProvider>
+                </RouteProvider>
+              </SettingsProvider>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
@@ -48,4 +51,3 @@ export default function RootLayout({
     </html>
   );
 }
-

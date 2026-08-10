@@ -11,6 +11,12 @@ export interface ISettings extends Document {
         Contact: boolean;
         Login: boolean;
         Signup: boolean;
+        [key: string]: boolean;
+    };
+    onboarding?: {
+        mode: 'open' | 'closed' | 'invite_only' | 'admin_approval';
+        inviteCode: string;
+        closedMessage: string;
     };
     updatedAt: Date;
 }
@@ -26,6 +32,11 @@ const SettingsSchema: Schema = new Schema({
         Contact: { type: Boolean, default: true },
         Login: { type: Boolean, default: true },
         Signup: { type: Boolean, default: true },
+    },
+    onboarding: {
+        mode: { type: String, enum: ['open', 'closed', 'invite_only', 'admin_approval'], default: 'open' },
+        inviteCode: { type: String, default: 'DDTEC-INVITE-2026' },
+        closedMessage: { type: String, default: 'New user onboarding is currently restricted by administrator.' }
     }
 }, { timestamps: true });
 

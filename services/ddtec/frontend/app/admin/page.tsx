@@ -17,6 +17,7 @@ import DeliveredOrdersGraph from "./components/DeliveredOrdersGraph";
 import PurchasesGraph from "./components/PurchasesGraph";
 import { useDynamicRoutes, RouteConfig } from "@/app/_context/RouteContext";
 import { useToast } from "../_context/ToastContext";
+import { useSettings } from "../_context/SettingsContext";
 
 interface DashboardStats {
     users: number;
@@ -109,6 +110,7 @@ const AdminDashboard = () => {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
+    const { refreshSettings } = useSettings();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
     const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail'>('dashboard');
@@ -319,6 +321,7 @@ const AdminDashboard = () => {
             };
             const res = await api.put('/settings', { components: updatedComponents });
             setSiteSettings(res.data);
+            refreshSettings();
         } catch (error: any) {
             alert(error.response?.data?.msg || "Failed to update settings");
         }
@@ -341,6 +344,7 @@ const AdminDashboard = () => {
             const payload = onboardingPayload || siteSettings?.onboarding;
             const res = await api.put('/settings', { onboarding: payload });
             setSiteSettings(res.data);
+            refreshSettings();
             showToast?.("User onboarding restriction settings updated!", "success");
         } catch (error: any) {
             showToast?.("Failed to update onboarding settings", "error");

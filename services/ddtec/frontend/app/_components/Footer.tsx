@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Facebook, Twitter, Instagram, Linkedin, Hammer } from "lucide-react";
 
+import { useSettings } from "../_context/SettingsContext";
+
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const router = useRouter();
   const pathname = usePathname();
+  const { isComponentEnabled } = useSettings();
 
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     const sectionPaths = ["/shop", "/who", "/what", "/contact"];
@@ -26,7 +29,7 @@ export default function Footer() {
     }
   };
 
-  if (pathname?.startsWith('/warehouse') || pathname?.startsWith('/admin') || pathname === '/login' || pathname === '/signup') {
+  if (pathname?.startsWith('/warehouse') || pathname?.startsWith('/admin') || pathname === '/login' || pathname === '/signup' || !isComponentEnabled("Footer")) {
     return null;
   }
 
