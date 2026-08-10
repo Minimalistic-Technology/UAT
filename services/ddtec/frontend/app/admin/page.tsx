@@ -515,6 +515,7 @@ const AdminDashboard = () => {
 
     const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail') => {
         setActiveView(view);
+        router.push(`/admin?view=${view}`, { scroll: false });
         if (view === 'users') fetchUsers();
         if (view === 'products' || view === 'inventory' || view === 'dashboard') fetchProducts();
         if (view === 'orders' || view === 'dashboard') fetchOrders();
@@ -868,21 +869,9 @@ const AdminDashboard = () => {
                             </button>
                         </li>
                         <li>
-                            <button onClick={() => handleViewChange('quotation_products')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'quotation_products' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+                            <button onClick={() => handleViewChange('saved_quotations')} className={`w-full flex items-center p-2 rounded-lg group ${['saved_quotations', 'create_quotation', 'quotation_products'].includes(activeView) ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                                 <FileText className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Quotation Catalog</span>}
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={() => handleViewChange('create_quotation')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'create_quotation' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Calculator className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3 font-bold text-teal-600 dark:text-teal-400">Create Quotation</span>}
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={() => handleViewChange('saved_quotations')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'saved_quotations' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <BookmarkCheck className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3 font-semibold">Saved Quotations</span>}
+                                {!isSidebarCollapsed && <span className="ms-3 font-semibold">Quotation</span>}
                             </button>
                         </li>
 
@@ -1580,6 +1569,44 @@ const AdminDashboard = () => {
                     )}
 
                     {activeView === 'categories' && <CategoriesView />}
+
+                    {['saved_quotations', 'create_quotation', 'quotation_products'].includes(activeView) && (
+                        <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-3">
+                            <button
+                                onClick={() => handleViewChange('saved_quotations')}
+                                className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all ${
+                                    activeView === 'saved_quotations'
+                                        ? 'bg-teal-600 text-white shadow-md'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                                }`}
+                            >
+                                <BookmarkCheck className="size-4" />
+                                Saved Quotations
+                            </button>
+                            <button
+                                onClick={() => handleViewChange('create_quotation')}
+                                className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all ${
+                                    activeView === 'create_quotation'
+                                        ? 'bg-teal-600 text-white shadow-md'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                                }`}
+                            >
+                                <Calculator className="size-4" />
+                                Create Quotation
+                            </button>
+                            <button
+                                onClick={() => handleViewChange('quotation_products')}
+                                className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all ${
+                                    activeView === 'quotation_products'
+                                        ? 'bg-teal-600 text-white shadow-md'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                                }`}
+                            >
+                                <FileText className="size-4" />
+                                Quotation Catalog
+                            </button>
+                        </div>
+                    )}
 
                     {activeView === 'quotation_products' && <QuotationProductsView />}
 

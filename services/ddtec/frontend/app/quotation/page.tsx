@@ -175,7 +175,7 @@ function QuotationContent() {
             return;
         }
         if (!buyer.name.trim()) {
-            showToast("Please enter buyer name to save quotation.", "warning");
+            showToast("Please enter company name to save quotation.", "warning");
             return;
         }
 
@@ -206,7 +206,7 @@ function QuotationContent() {
             return;
         }
         if (!buyer.name.trim()) {
-            showToast("Please enter buyer name.", "warning");
+            showToast("Please enter company name.", "warning");
             return;
         }
 
@@ -426,7 +426,7 @@ function QuotationContent() {
                                 required
                                 value={buyer.name}
                                 onChange={(e) => setBuyer({ ...buyer, name: e.target.value })}
-                                placeholder="Buyer / Company Name *"
+                                placeholder="Company Name *"
                                 className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2 border text-sm"
                             />
 

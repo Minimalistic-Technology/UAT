@@ -13,6 +13,7 @@ import {
     Loader2,
     Calendar,
     User,
+    Building,
     ChevronDown,
     ChevronUp,
     ExternalLink,
@@ -61,6 +62,7 @@ export default function SavedQuotationsPage() {
     const [quotations, setQuotations] = useState<SavedQuotation[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [sortBy, setSortBy] = useState<"date_desc" | "date_asc" | "amount_desc" | "amount_asc">("date_desc");
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
     const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -153,14 +155,32 @@ export default function SavedQuotationsPage() {
         }
     };
 
-    const filteredQuotations = quotations.filter(q => {
-        const query = search.toLowerCase();
-        return (
-            (q.title && q.title.toLowerCase().includes(query)) ||
-            (q.quotationNumber && q.quotationNumber.toLowerCase().includes(query)) ||
-            (q.buyer?.name && q.buyer.name.toLowerCase().includes(query))
-        );
-    });
+    const filteredQuotations = quotations
+        .filter(q => {
+            const query = search.toLowerCase();
+            return (
+                (q.title && q.title.toLowerCase().includes(query)) ||
+                (q.quotationNumber && q.quotationNumber.toLowerCase().includes(query)) ||
+                (q.buyer?.name && q.buyer.name.toLowerCase().includes(query))
+            );
+        })
+        .sort((a, b) => {
+            if (sortBy === "date_desc") {
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            } else if (sortBy === "date_asc") {
+                return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            } else if (sortBy === "amount_desc") {
+                return (b.grandTotal || 0) - (a.grandTotal || 0);
+            } else if (sortBy === "amount_asc") {
+                return (a.grandTotal || 0) - (b.grandTotal || 0);
+            }
+            return 0;
+        });
+
+    const handleCreateNewClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        router.push("/admin?view=create_quotation");
+    };
 
     return (
         <div className={isAdminView ? "w-full py-2" : "min-h-screen bg-slate-50 dark:bg-slate-900 pt-24 pb-16 px-4"}>
@@ -179,28 +199,41 @@ export default function SavedQuotationsPage() {
 
                     {/* Primary Action Button to Create New Quotation */}
                     <div className="shrink-0">
-                        <Link
-                            href="/admin?view=create_quotation"
-                            className="inline-flex items-center gap-2 px-5 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 text-sm"
+                        <button
+                            onClick={handleCreateNewClick}
+                            className="inline-flex items-center gap-2 px-5 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 text-sm cursor-pointer"
                         >
                             <Plus className="size-5" />
                             Create New Quotation
-                        </Link>
+                        </button>
                     </div>
                 </div>
 
 
-                {/* Search & Filter Bar */}
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <div className="relative">
+                {/* Search & Sort Bar */}
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <div className="relative flex-1 w-full">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by title, quotation #, or buyer name..."
-                            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-teal-500 text-sm"
+                            placeholder="Search by title, quotation #, or company name..."
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none shadow-xs"
                         />
+                    </div>
+
+                    <div className="relative shrink-0 w-full sm:w-auto">
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value as any)}
+                            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none shadow-xs font-medium cursor-pointer"
+                        >
+                            <option value="date_desc">Sort by Date: Newest First</option>
+                            <option value="date_asc">Sort by Date: Oldest First</option>
+                            <option value="amount_desc">Sort by Amount: High to Low</option>
+                            <option value="amount_asc">Sort by Amount: Low to High</option>
+                        </select>
                     </div>
                 </div>
 
@@ -222,13 +255,13 @@ export default function SavedQuotationsPage() {
                                 : "Create your first quotation and save it so you can easily reuse it whenever similar requirements arise."}
                         </p>
                         {!search && (
-                            <Link
-                                href="/admin?view=create_quotation"
-                                className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-all shadow-md text-sm"
+                            <button
+                                onClick={handleCreateNewClick}
+                                className="inline-flex items-center gap-2 mt-6 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-all shadow-md text-sm cursor-pointer"
                             >
                                 <Plus className="size-5" />
                                 Create New Quotation
-                            </Link>
+                            </button>
                         )}
                     </div>
                 ) : (
@@ -272,12 +305,12 @@ export default function SavedQuotationsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Buyer Details & Summary */}
+                                    {/* Company Details & Summary */}
                                     <div className="p-5 space-y-4 flex-1">
                                         <div className="bg-slate-50 dark:bg-slate-700/40 p-3 rounded-xl space-y-1 text-xs">
                                             <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200">
-                                                <User className="size-3.5 text-teal-600" />
-                                                <span>Buyer: {quotation.buyer?.name}</span>
+                                                <Building className="size-3.5 text-teal-600" />
+                                                <span>Company: {quotation.buyer?.name}</span>
                                             </div>
                                             {quotation.buyer?.address && (
                                                 <p className="text-slate-500 dark:text-slate-400 line-clamp-1 pl-5">

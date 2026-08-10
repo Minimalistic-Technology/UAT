@@ -312,7 +312,7 @@ export default function CreateQuotationView() {
             return;
         }
         if (!buyer.name.trim()) {
-            showToast("Please specify Buyer Name / Organization to save.", "warning");
+            showToast("Please specify Company Name to save.", "warning");
             return;
         }
 
@@ -353,7 +353,7 @@ export default function CreateQuotationView() {
             return;
         }
         if (!buyer.name.trim()) {
-            showToast("Please specify Buyer Name / Organization.", "warning");
+            showToast("Please specify Company Name.", "warning");
             return;
         }
 
@@ -420,7 +420,7 @@ export default function CreateQuotationView() {
             return;
         }
         if (!buyer.name.trim()) {
-            showToast("Please specify Buyer Name / Organization.", "warning");
+            showToast("Please specify Company Name.", "warning");
             return;
         }
 
@@ -487,21 +487,21 @@ export default function CreateQuotationView() {
                 </div>
             </div>
 
-            {/* Buyer / Customer Info Form */}
+            {/* Company Info Form */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-200 dark:border-slate-700 space-y-4">
                 <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-700">
                     <Building className="size-4.5 text-teal-600 dark:text-teal-400" />
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Customer / Buyer Details</h3>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Company Details</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    {/* Buyer Name / Organization */}
+                    {/* Company Name */}
                     <div className="col-span-1">
                         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                            Buyer Name / Organization <span className="text-rose-500">*</span>
+                            Company Name <span className="text-rose-500">*</span>
                         </label>
                         <div className="relative">
-                            <User className="absolute left-3.5 top-2.5 size-4 text-slate-400" />
+                            <Building className="absolute left-3.5 top-2.5 size-4 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="e.g. Acme Infra Ltd."
