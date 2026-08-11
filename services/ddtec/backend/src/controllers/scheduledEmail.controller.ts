@@ -81,6 +81,38 @@ export const createScheduledEmail = async (req: any, res: Response): Promise<voi
             }
         }
 
+        let targetRecipients: string[] = [];
+        if (recipientType === 'all_users') {
+            const users = await User.find({ isActive: true }, 'email');
+            targetRecipients = users.map(u => u.email).filter(Boolean);
+        } else {
+            targetRecipients = recipientsList;
+        }
+
+        if (targetRecipients.length === 0) {
+            res.status(400).json({ success: false, msg: 'No active recipient email addresses found for this email task.' });
+            return;
+        }
+
+        const isImmediate = targetDate.getTime() <= Date.now() + 10000;
+        const scheduledAtISO = isImmediate ? undefined : targetDate.toISOString();
+
+        // Register schedule natively with Brevo transactional email endpoint
+        const dispatchResult = await NotificationService.sendCustomEmail(
+            targetRecipients,
+            subject,
+            htmlContent,
+            scheduledAtISO
+        );
+
+        if (!dispatchResult.success) {
+            res.status(400).json({
+                success: false,
+                msg: `Brevo dispatch failed: ${dispatchResult.msg || 'Unknown error'}`
+            });
+            return;
+        }
+
         const newEmail = new ScheduledEmail({
             title,
             subject,
@@ -89,20 +121,22 @@ export const createScheduledEmail = async (req: any, res: Response): Promise<voi
             templateId: templateId || 'custom',
             htmlContent,
             scheduledAt: targetDate,
-            status: 'pending',
+            status: isImmediate ? 'sent' : 'pending',
+            sentCount: targetRecipients.length,
+            failedCount: 0,
+            errorMessage: undefined,
+            brevoMessageId: dispatchResult.messageId,
+            sentAt: isImmediate ? new Date() : undefined,
             createdBy: req.user?._id
         });
 
         await newEmail.save();
 
-        // Check if the scheduled time is now/past or within 10 seconds -> process immediately
-        if (targetDate.getTime() <= Date.now() + 10000) {
-            SchedulerService.sendScheduledEmail(newEmail);
-        }
-
         res.status(201).json({
             success: true,
-            msg: 'Email schedule created successfully.',
+            msg: isImmediate
+                ? 'Email dispatched immediately via Brevo.'
+                : 'Email registered & scheduled natively on Brevo servers.',
             scheduledEmail: newEmail
         });
     } catch (error: any) {
@@ -179,11 +213,15 @@ export const deleteScheduledEmail = async (req: Request, res: Response): Promise
             return;
         }
 
+        if (emailDoc.brevoMessageId && emailDoc.status === 'pending') {
+            await NotificationService.cancelScheduledBrevoEmail(emailDoc.brevoMessageId);
+        }
+
         await ScheduledEmail.findByIdAndDelete(id);
 
         res.status(200).json({
             success: true,
-            msg: 'Scheduled email record deleted successfully.'
+            msg: 'Scheduled email cancelled on Brevo and record deleted successfully.'
         });
     } catch (error: any) {
         console.error('[CONTROLLER-ERROR] deleteScheduledEmail:', error);

@@ -62,7 +62,7 @@ class NotificationService {
     /**
      * Helper to send email via Brevo transactional pipeline with Nodemailer fallback
      */
-    private static async sendBrevoEmail(mailOptions: any): Promise<{ success: boolean, method: string }> {
+    private static async sendBrevoEmail(mailOptions: any): Promise<{ success: boolean, method: string, messageId?: string }> {
         // 1. Try Brevo if valid API Key is provided
         if (process.env.BREVO_API_KEY && process.env.BREVO_API_KEY !== 'YOUR_BREVO_API_KEY_HERE') {
             try {
@@ -73,11 +73,13 @@ class NotificationService {
                     email: process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_USER || 'parthdoshi480@gmail.com'
                 };
 
-                let toList = [];
+                let toList: { email: string }[] = [];
                 if (typeof mailOptions.to === 'string') {
-                    toList.push({ email: mailOptions.to });
+                    toList = mailOptions.to.split(/[,;\s]+/).map((e: string) => e.trim()).filter((e: string) => e.includes('@')).map((e: string) => ({ email: e }));
                 } else if (Array.isArray(mailOptions.to)) {
-                    toList = mailOptions.to.map((t: string) => ({ email: t }));
+                    toList = mailOptions.to.flatMap((t: string) => 
+                        t.split(/[,;\s]+/).map((e: string) => e.trim()).filter((e: string) => e.includes('@'))
+                    ).map((e: string) => ({ email: e }));
                 }
 
                 let bccList = undefined;
@@ -93,17 +95,23 @@ class NotificationService {
                     }));
                 }
 
-                const result = await brevo.transactionalEmails.sendTransacEmail({
+                const brevoPayload: any = {
                     subject: mailOptions.subject,
                     htmlContent: mailOptions.html,
                     sender: sender,
                     to: toList,
                     bcc: bccList,
                     attachment: brevoAttachments
-                });
+                };
 
-                console.log(`[NOTIFICATION] Email sent via Brevo to ${mailOptions.to}. Message ID:`, result.messageId);
-                return { success: true, method: 'brevo' };
+                if (mailOptions.scheduledAt) {
+                    brevoPayload.scheduledAt = mailOptions.scheduledAt;
+                }
+
+                const result = await brevo.transactionalEmails.sendTransacEmail(brevoPayload);
+
+                console.log(`[NOTIFICATION] Email ${mailOptions.scheduledAt ? 'scheduled natively via Brevo for ' + mailOptions.scheduledAt : 'sent via Brevo'} to ${mailOptions.to}. Message ID:`, result.messageId);
+                return { success: true, method: 'brevo', messageId: result.messageId };
             } catch (error: any) {
                 console.error('[NOTIFICATION] Brevo failed, falling back to Nodemailer:', error.message || error);
             }
@@ -616,7 +624,7 @@ class NotificationService {
     /**
      * Sends custom or scheduled email with predefined HTML
      */
-    static async sendCustomEmail(to: string | string[], subject: string, html: string): Promise<{ success: boolean; msg?: string }> {
+    static async sendCustomEmail(to: string | string[], subject: string, html: string, scheduledAt?: string): Promise<{ success: boolean; msg?: string; messageId?: string }> {
         try {
             const recipients = Array.isArray(to) ? to.join(',') : to;
             if (!recipients) {
@@ -625,26 +633,48 @@ class NotificationService {
 
             const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'noreply@ddtec.com'}>`);
 
-            const mailOptions = {
+            const mailOptions: any = {
                 from,
                 to: recipients,
                 subject,
                 html
             };
 
-            console.log(`[NOTIFICATION] Sending custom email to: ${recipients} | Subject: "${subject}"`);
+            if (scheduledAt) {
+                mailOptions.scheduledAt = scheduledAt;
+            }
+
+            console.log(`[NOTIFICATION] ${scheduledAt ? 'Scheduling' : 'Sending'} custom email to: ${recipients} | Subject: "${subject}"${scheduledAt ? ' | ScheduledAt: ' + scheduledAt : ''}`);
             const result = await this.sendBrevoEmail(mailOptions);
 
             if (!result.success) {
                 return { success: false, msg: 'Failed to send email via Brevo.' };
             }
 
-            return { success: true, msg: 'Email dispatched successfully.' };
+            return { success: true, msg: 'Email dispatched successfully.', messageId: result.messageId };
         } catch (error: any) {
             console.error('[NOTIFICATION-ERROR] Failed to send custom email:', error);
             const errorMsg = error.response?.body?.errors?.[0]?.message || error.message || 'Unknown error';
             return { success: false, msg: errorMsg };
         }
+    }
+
+    /**
+     * Cancels a scheduled email on Brevo servers using its message/batch identifier
+     */
+    static async cancelScheduledBrevoEmail(identifier: string): Promise<boolean> {
+        if (process.env.BREVO_API_KEY && process.env.BREVO_API_KEY !== 'YOUR_BREVO_API_KEY_HERE') {
+            try {
+                const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
+                await brevo.transactionalEmails.deleteScheduledEmailById({ identifier });
+                console.log(`[NOTIFICATION] Brevo scheduled email cancelled on Brevo servers (ID: ${identifier})`);
+                return true;
+            } catch (error: any) {
+                console.error('[NOTIFICATION] Failed to cancel Brevo scheduled email:', error.message || error);
+                return false;
+            }
+        }
+        return false;
     }
 
     /**

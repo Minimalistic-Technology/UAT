@@ -13,6 +13,7 @@ export interface IScheduledEmail extends Document {
     sentCount: number;
     failedCount: number;
     errorMessage?: string;
+    brevoMessageId?: string;
     createdBy?: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
@@ -71,6 +72,9 @@ const ScheduledEmailSchema: Schema = new Schema({
         default: 0
     },
     errorMessage: {
+        type: String
+    },
+    brevoMessageId: {
         type: String
     },
     createdBy: {
