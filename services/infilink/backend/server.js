@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const session = require('express-session');
+const passport = require('./config/passport');
 const connectDB = require('./config/db');
 
 // Connect to database
@@ -10,7 +12,29 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors({ origin: process.env.FRONTEND_URL || true, credentials: true })); // In production, provide FRONTEND_URL in .env
+app.use(cors({ 
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000', 
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+})); // In production, provide FRONTEND_URL in .env
+
+// Session middleware for Passport
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set to true in production with HTTPS
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    sameSite: 'lax'
+  }
+}));
+
+// Passport initialization
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));

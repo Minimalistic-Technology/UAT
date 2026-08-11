@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const passport = require('../config/passport');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 const sendEmail = require('../utils/sendEmail');
@@ -272,5 +273,33 @@ router.get('/me', protect, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// @desc    Google OAuth login
+// @route   GET /api/auth/google
+// @access  Public
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+// @desc    Google OAuth callback
+// @route   GET /api/auth/google/callback
+// @access  Public
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { 
+    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=google_auth_failed`, 
+    session: false 
+  }),
+  async (req, res) => {
+    try {
+      const token = signToken(req.user._id);
+      
+      // Redirect to frontend with token
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      res.redirect(`${frontendUrl}/callback?token=${token}`);
+    } catch (error) {
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      res.redirect(`${frontendUrl}/login?error=auth_failed`);
+    }
+  }
+);
 
 module.exports = router;
