@@ -114,18 +114,7 @@ export default function CreateQuotationView() {
     };
 
     // Quotation Line Items State
-    const [items, setItems] = useState<QuotationLineItem[]>([
-        {
-            id: Math.random().toString(36).substr(2, 9),
-            name: "Industrial Safety Gloves (Heavy Duty)",
-            price: 450,
-            unit: "Pair",
-            quantity: 10,
-            hsnCode: "392690",
-            cgst: 9,
-            sgst: 9
-        }
-    ]);
+    const [items, setItems] = useState<QuotationLineItem[]>([]);
 
     const searchParams = useSearchParams();
 
