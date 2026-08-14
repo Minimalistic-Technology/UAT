@@ -16,6 +16,7 @@ import ScheduleMailView from "./components/ScheduleMailView";
 import DeliveredOrdersGraph from "./components/DeliveredOrdersGraph";
 import PurchasesGraph from "./components/PurchasesGraph";
 import PurchaseRecordsView from "./components/PurchaseRecordsView";
+import ContactsView from "./components/ContactsView";
 import { useDynamicRoutes, RouteConfig } from "@/app/_context/RouteContext";
 import { useToast } from "../_context/ToastContext";
 import { useSettings } from "../_context/SettingsContext";
@@ -114,7 +115,7 @@ const AdminDashboard = () => {
     const { refreshSettings } = useSettings();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
-    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail'>('dashboard');
+    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail' | 'contacts'>('dashboard');
 
     // Data for Manage Views
     const [usersList, setUsersList] = useState<User[]>([]);
@@ -518,7 +519,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail') => {
+    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail' | 'contacts') => {
         setActiveView(view);
         router.push(`/admin?view=${view}`, { scroll: false });
         if (view === 'users') fetchUsers();
@@ -911,6 +912,13 @@ const AdminDashboard = () => {
                             <button onClick={() => handleViewChange('schedule_mail')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'schedule_mail' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                                 <Calendar className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
                                 {!isSidebarCollapsed && <span className="ms-3">Schedule Mail</span>}
+                            </button>
+                        </li>
+
+                        <li>
+                            <button onClick={() => handleViewChange('contacts')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'contacts' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+                                <Users className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
+                                {!isSidebarCollapsed && <span className="ms-3">Contacts</span>}
                             </button>
                         </li>
 
@@ -1541,6 +1549,8 @@ const AdminDashboard = () => {
                     {activeView === 'saved_quotations' && <SavedQuotationsView />}
 
                     {activeView === 'schedule_mail' && <ScheduleMailView />}
+
+                    {activeView === 'contacts' && <ContactsView />}
 
                     {/* Add Product Modal */}
                     <AnimatePresence>

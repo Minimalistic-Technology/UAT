@@ -62,8 +62,16 @@ export default function ScheduleMailView() {
     // Form state
     const [title, setTitle] = useState<string>("");
     const [subject, setSubject] = useState<string>("");
-    const [recipientType, setRecipientType] = useState<"all_users" | "custom">("all_users");
+    const [recipientType, setRecipientType] = useState<"all_users" | "custom" | "contacts">("all_users");
     const [customRecipientsInput, setCustomRecipientsInput] = useState<string>("");
+
+    // "From Contacts" recipient picker state
+    const [contactCompanies, setContactCompanies] = useState<string[]>([]);
+    const [contactProductInterests, setContactProductInterests] = useState<string[]>([]);
+    const [contactCompanyFilter, setContactCompanyFilter] = useState<string>("");
+    const [contactProductInterestFilter, setContactProductInterestFilter] = useState<string>("");
+    const [isLoadingContactMatches, setIsLoadingContactMatches] = useState<boolean>(false);
+    const [matchedContactsCount, setMatchedContactsCount] = useState<number | null>(null);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>("custom");
     const [htmlContent, setHtmlContent] = useState<string>("");
     const [scheduledDateTime, setScheduledDateTime] = useState<string>("");
@@ -102,6 +110,44 @@ export default function ScheduleMailView() {
     useEffect(() => {
         fetchData();
     }, []);
+
+    useEffect(() => {
+        if (recipientType === "contacts" && contactCompanies.length === 0 && contactProductInterests.length === 0) {
+            api.get("/contacts/meta")
+                .then(({ data }) => {
+                    setContactCompanies(data.companies || []);
+                    setContactProductInterests(data.productInterests || []);
+                })
+                .catch((error) => {
+                    console.error("Failed to load contact filters", error);
+                    showToast("Failed to load contact filters", "error");
+                });
+        }
+    }, [recipientType]);
+
+    const handleLoadMatchingContacts = async () => {
+        setIsLoadingContactMatches(true);
+        try {
+            const { data } = await api.get("/contacts/emails", {
+                params: {
+                    company: contactCompanyFilter || undefined,
+                    productInterest: contactProductInterestFilter || undefined
+                }
+            });
+            setCustomRecipientsInput((data.emails || []).join(", "));
+            setMatchedContactsCount(data.matchedContacts ?? data.emails?.length ?? 0);
+            if (!data.emails || data.emails.length === 0) {
+                showToast("No contacts matched these filters", "info");
+            } else {
+                showToast(`Loaded ${data.emails.length} recipient email(s) from ${data.matchedContacts} matching contact(s)`, "success");
+            }
+        } catch (error: any) {
+            console.error("Failed to resolve contact emails", error);
+            showToast(error.response?.data?.msg || "Failed to load matching contacts", "error");
+        } finally {
+            setIsLoadingContactMatches(false);
+        }
+    };
 
     const resetForm = () => {
         setTitle("");
@@ -149,18 +195,24 @@ export default function ScheduleMailView() {
             return;
         }
 
-        if (recipientType === "custom" && !customRecipientsInput.trim()) {
-            showToast("Please enter at least one recipient email address for custom targets", "error");
+        if ((recipientType === "custom" || recipientType === "contacts") && !customRecipientsInput.trim()) {
+            showToast(
+                recipientType === "contacts"
+                    ? "Please load matching contacts before scheduling"
+                    : "Please enter at least one recipient email address for custom targets",
+                "error"
+            );
             return;
         }
 
         try {
             setIsSubmitting(true);
+            const isCustomLike = recipientType === "custom" || recipientType === "contacts";
             const payload = {
                 title: title.trim(),
                 subject: subject.trim(),
-                recipientType,
-                customRecipients: recipientType === "custom" ? customRecipientsInput.split(",").map(e => e.trim()).filter(Boolean) : [],
+                recipientType: recipientType === "contacts" ? "custom" : recipientType,
+                customRecipients: isCustomLike ? customRecipientsInput.split(",").map(e => e.trim()).filter(Boolean) : [],
                 templateId: selectedTemplateId,
                 htmlContent,
                 scheduledAt: new Date(scheduledDateTime).toISOString()
@@ -703,7 +755,7 @@ export default function ScheduleMailView() {
                                             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                                                 Target Audience / Recipients *
                                             </label>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                                                 <label className={`p-3.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
                                                     recipientType === "all_users"
                                                         ? "border-teal-600 bg-teal-50/30 dark:bg-teal-900/20 text-slate-900 dark:text-white"
@@ -741,9 +793,65 @@ export default function ScheduleMailView() {
                                                         <div className="text-xs text-slate-400">Specify custom email addresses manually</div>
                                                     </div>
                                                 </label>
+
+                                                <label className={`p-3.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
+                                                    recipientType === "contacts"
+                                                        ? "border-teal-600 bg-teal-50/30 dark:bg-teal-900/20 text-slate-900 dark:text-white"
+                                                        : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                                                }`}>
+                                                    <input
+                                                        type="radio"
+                                                        name="recipientType"
+                                                        value="contacts"
+                                                        checked={recipientType === "contacts"}
+                                                        onChange={() => { setRecipientType("contacts"); setMatchedContactsCount(null); }}
+                                                        className="text-teal-600 focus:ring-teal-500"
+                                                    />
+                                                    <div>
+                                                        <div className="font-semibold text-sm">From Contacts</div>
+                                                        <div className="text-xs text-slate-400">Filter your Contacts by company / product interest</div>
+                                                    </div>
+                                                </label>
                                             </div>
 
-                                            {recipientType === "custom" && (
+                                            {recipientType === "contacts" && (
+                                                <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3 mb-3">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                        <select
+                                                            value={contactCompanyFilter}
+                                                            onChange={(e) => setContactCompanyFilter(e.target.value)}
+                                                            className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white"
+                                                        >
+                                                            <option value="">Any Company</option>
+                                                            {contactCompanies.map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+                                                        <select
+                                                            value={contactProductInterestFilter}
+                                                            onChange={(e) => setContactProductInterestFilter(e.target.value)}
+                                                            className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white"
+                                                        >
+                                                            <option value="">Any Product Interest</option>
+                                                            {contactProductInterests.map(p => <option key={p} value={p}>{p}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleLoadMatchingContacts}
+                                                        disabled={isLoadingContactMatches}
+                                                        className="px-3.5 py-2 rounded-lg text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-60 flex items-center gap-2"
+                                                    >
+                                                        {isLoadingContactMatches ? <RefreshCw className="size-3.5 animate-spin" /> : <Search className="size-3.5" />}
+                                                        Load Matching Contacts
+                                                    </button>
+                                                    {matchedContactsCount !== null && (
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {matchedContactsCount} contact(s) matched — emails populated below, still editable.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {(recipientType === "custom" || recipientType === "contacts") && (
                                                 <input
                                                     type="text"
                                                     placeholder="Enter comma-separated emails e.g. john@example.com, sara@example.com"
