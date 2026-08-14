@@ -17,6 +17,10 @@ interface Product {
     _id: string;
     name: string;
     price: number;
+    costPrice?: number;
+    seller?: string;
+    lastInventoryUpdate?: string;
+    billScreenshot?: string;
     image: string;
     stock: number;
     category?: { name: string } | string;
@@ -158,6 +162,16 @@ export default function InventoryView({
                                             {item.name}
                                             <span className="text-[10px] text-slate-450 dark:text-slate-550 block font-normal mt-0.5 font-mono">
                                                 SKU-{item._id.substring(item._id.length - 8).toUpperCase()}
+                                                {item.seller && (
+                                                    <span className="ml-2 font-semibold text-teal-600 dark:text-teal-400">
+                                                        • Seller: {item.seller}
+                                                    </span>
+                                                )}
+                                                {item.lastInventoryUpdate && (
+                                                    <span className="ml-2 font-normal text-slate-400">
+                                                        • Updated: {new Date(item.lastInventoryUpdate).toLocaleDateString()}
+                                                    </span>
+                                                )}
                                             </span>
                                         </td>
                                         <td className="py-4 text-xs font-bold text-slate-550 dark:text-slate-450 font-sans">

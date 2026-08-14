@@ -11,6 +11,7 @@ import blogRoutes from './blog.routes';
 import categoryRoutes from './category.routes';
 import billRoutes from './bill.routes';
 import settingsRoutes from './settings';
+import purchaseRecordRoutes from './purchaseRecord.routes';
 
 const router = Router();
 
@@ -27,5 +28,7 @@ router.use('/blogs', blogRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/bills', billRoutes);
 router.use('/settings', settingsRoutes);
+router.use('/purchases', purchaseRecordRoutes);
+router.use('/inventory-records', purchaseRecordRoutes);
 
 export default router;

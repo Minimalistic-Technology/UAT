@@ -34,7 +34,7 @@ export const getProductById = async (req: Request, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, seller, costPrice, lastInventoryUpdate, billScreenshot } = req.body;
 
         const newProduct = new Product({
             name,
@@ -52,7 +52,11 @@ export const createProduct = async (req: Request, res: Response) => {
             discountPercentage: discountPercentage || 0,
             discountType: discountType || 'percentage',
             discountValue: discountValue || 0,
-            showOnHome: showOnHome || false
+            showOnHome: showOnHome || false,
+            seller: seller || '',
+            costPrice: costPrice !== undefined ? Number(costPrice) : 0,
+            lastInventoryUpdate: lastInventoryUpdate ? new Date(lastInventoryUpdate) : new Date(),
+            billScreenshot: billScreenshot || undefined
         });
 
         const product = await newProduct.save();
@@ -66,7 +70,7 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, seller, costPrice, lastInventoryUpdate, billScreenshot } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -87,6 +91,10 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.discountType = discountType || product.discountType;
         product.discountValue = discountValue !== undefined ? discountValue : product.discountValue;
         product.showOnHome = showOnHome !== undefined ? showOnHome : product.showOnHome;
+        if (seller !== undefined) product.seller = seller;
+        if (costPrice !== undefined) product.costPrice = Number(costPrice);
+        if (lastInventoryUpdate) product.lastInventoryUpdate = new Date(lastInventoryUpdate);
+        if (billScreenshot !== undefined) product.billScreenshot = billScreenshot;
 
         await product.save();
 

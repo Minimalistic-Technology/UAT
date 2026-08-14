@@ -18,6 +18,7 @@ import hubRoutes from './hub.route';
 import quotationItemRoutes from './quotationItem.routes';
 import quotationRoutes from './quotation.routes';
 import scheduledEmailRoutes from './scheduledEmail.routes';
+import purchaseRecordRoutes from './purchaseRecord.routes';
 
 const router = Router();
 
@@ -42,5 +43,7 @@ router.use('/inventory', inventoryRoutes);
 router.use('/hubs', hubRoutes);
 router.use('/quotation-items', quotationItemRoutes);
 router.use('/quotation', quotationRoutes);
+router.use('/purchases', purchaseRecordRoutes);
+router.use('/inventory-records', purchaseRecordRoutes);
 
 export default router;
