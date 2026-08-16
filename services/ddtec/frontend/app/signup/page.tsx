@@ -9,10 +9,11 @@ import { useToast } from "../_context/ToastContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Turnstile from "../_components/Turnstile";
+import GoogleSignIn from "../_components/GoogleSignIn";
 import api from "@/lib/api";
 
 const SignupForm = () => {
-    const { checkUser } = useAuth();
+    const { checkUser, loginWithGoogle } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
 
@@ -134,6 +135,15 @@ const SignupForm = () => {
             showToast(err.response?.data?.msg || "Failed to process request.", "error");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleGoogleCredential = async (credential: string) => {
+        try {
+            await loginWithGoogle(credential);
+            showToast("Account created successfully!", "success");
+        } catch (err: any) {
+            showToast(err.message || "Google sign-up failed", "error");
         }
     };
 
@@ -393,6 +403,22 @@ const SignupForm = () => {
                                 >
                                     {isLoading ? <Loader2 className="animate-spin size-5" /> : <>Continue to Verification <ArrowRight className="size-4" /></>}
                                 </button>
+
+                                {isSignupAllowed && onboardingMode !== 'closed' && (
+                                    <>
+                                        <div className="flex items-center gap-3 my-6">
+                                            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                                            <span className="text-xs font-medium text-slate-400 uppercase">Or</span>
+                                            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                                        </div>
+
+                                        <GoogleSignIn
+                                            text="signup_with"
+                                            onCredential={handleGoogleCredential}
+                                            onError={() => showToast("Google sign-up failed", "error")}
+                                        />
+                                    </>
+                                )}
 
                                 <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-6">
                                     Already have an account?{' '}

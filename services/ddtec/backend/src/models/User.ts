@@ -10,6 +10,9 @@ export interface IUser extends Document {
     phone?: string;
     isPhoneVerified: boolean;
     password?: string;
+    googleId?: string;
+    authProvider: 'local' | 'google';
+    avatar?: string;
     role: 'user' | 'super_admin' | 'product_manager' | 'order_manager' | 'customer_support' | 'finance' | 'marketing' | 'admin' | 'warehouse' | 'accountant' | 'inventory_manager';
     hubId?: mongoose.Types.ObjectId; // Bound location for warehouse staff
     customPages?: string[];
@@ -64,7 +67,22 @@ const UserSchema: Schema = new Schema({
     },
     password: {
         type: String,
-        required: true,
+        required: function (this: IUser) {
+            return this.authProvider !== 'google';
+        },
+    },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true,
+    },
+    authProvider: {
+        type: String,
+        enum: ['local', 'google'],
+        default: 'local',
+    },
+    avatar: {
+        type: String,
     },
     role: {
         type: String,
