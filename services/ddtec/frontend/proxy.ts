@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const COMING_SOON_PATH = "/coming-soon";
 
 export function proxy(request: NextRequest) {
-  const isComingSoon = false;
+  const isComingSoon = true;
   if (!isComingSoon) {
     return NextResponse.next();
   }
