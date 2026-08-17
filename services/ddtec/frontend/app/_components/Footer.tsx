@@ -29,7 +29,7 @@ export default function Footer() {
     }
   };
 
-  if (pathname?.startsWith('/warehouse') || pathname?.startsWith('/admin') || pathname === '/login' || pathname === '/signup' || !isComponentEnabled("Footer")) {
+  if (pathname?.startsWith('/warehouse') || pathname?.startsWith('/admin') || pathname === '/login' || pathname === '/signup' || pathname === '/coming-soon') {
     return null;
   }
 
