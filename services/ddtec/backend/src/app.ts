@@ -50,7 +50,13 @@ app.use(cors({
     exposedHeaders: ['Content-Disposition']
 }));
 app.use(cookieParser());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+    limit: '10mb',
+    // Preserve raw body for Cashfree webhook signature verification
+    verify: (req: any, _res, buf) => {
+        req.rawBody = buf.toString('utf8');
+    }
+}));
 app.use(morgan('dev'));
 
 // Database Connection

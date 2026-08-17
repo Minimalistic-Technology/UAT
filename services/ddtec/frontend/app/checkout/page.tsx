@@ -49,7 +49,7 @@ export default function CheckoutPage() {
     const [canResend, setCanResend] = useState(false);
     const [resendCount, setResendCount] = useState(0);
 
-    const [paymentMethod, setPaymentMethod] = useState("card");
+    const [paymentMethod, setPaymentMethod] = useState("cashfree");
     const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
     const [couponInput, setCouponInput] = useState("");
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
@@ -308,6 +308,21 @@ export default function CheckoutPage() {
             const res = await api.post('/orders', orderData);
 
             if (res.status === 200 || res.status === 201) {
+                if (paymentMethod === 'cashfree' && res.data.paymentSessionId) {
+                    clearCart();
+                    const { load } = await import('@cashfreepayments/cashfree-js');
+                    const cashfree = await load({
+                        mode: process.env.NEXT_PUBLIC_CASHFREE_ENV === 'production' ? 'production' : 'sandbox'
+                    });
+                    // Redirects the browser to Cashfree's hosted checkout; on completion the
+                    // customer lands back on /checkout/payment-status via the return_url.
+                    await cashfree.checkout({
+                        paymentSessionId: res.data.paymentSessionId,
+                        redirectTarget: '_self'
+                    });
+                    return;
+                }
+
                 setIsSuccess(true);
                 clearCart();
                 showToast("Order Placed Successfully!", "success");
@@ -666,11 +681,14 @@ export default function CheckoutPage() {
                             <h3 className="text-lg font-semibold text-slate-900 dark:text-white border-b dark:border-slate-800 pb-2 mb-4">Payment Method</h3>
 
                             <div className="space-y-3">
-                                <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'card' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-teal-200'}`}>
-                                    <input type="radio" name="payment" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="w-5 h-5 text-teal-600 focus:ring-teal-500" />
+                                <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'cashfree' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-teal-200'}`}>
+                                    <input type="radio" name="payment" value="cashfree" checked={paymentMethod === 'cashfree'} onChange={() => setPaymentMethod('cashfree')} className="w-5 h-5 text-teal-600 focus:ring-teal-500" />
                                     <div className="ml-4 flex items-center gap-2">
                                         <CreditCard className="size-5 text-slate-700 dark:text-slate-300" />
-                                        <span className="font-medium text-slate-900 dark:text-white">Credit / Debit Card</span>
+                                        <div>
+                                            <span className="font-medium text-slate-900 dark:text-white block">Pay Online</span>
+                                            <span className="text-xs text-slate-500">Card, UPI, Netbanking &amp; Wallets via Cashfree</span>
+                                        </div>
                                     </div>
                                 </label>
 
@@ -683,22 +701,10 @@ export default function CheckoutPage() {
                                 </label>
                             </div>
 
-                            {paymentMethod === 'card' && (
-                                <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 space-y-3">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold uppercase text-slate-500">Card Number</label>
-                                        <input type="text" placeholder="0000 0000 0000 0000" className="w-full px-3 py-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 outline-none" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase text-slate-500">Expiry</label>
-                                            <input type="text" placeholder="MM/YY" className="w-full px-3 py-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 outline-none" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold uppercase text-slate-500">CVC</label>
-                                            <input type="text" placeholder="123" className="w-full px-3 py-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 outline-none" />
-                                        </div>
-                                    </div>
+                            {paymentMethod === 'cashfree' && (
+                                <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs text-slate-500">
+                                    <Lock className="size-4 flex-shrink-0" />
+                                    You&apos;ll be redirected to Cashfree&apos;s secure checkout to complete your payment.
                                 </div>
                             )}
                         </div>

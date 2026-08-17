@@ -45,6 +45,7 @@ interface Order {
         zip: string;
     };
     paymentMethod?: string;
+    paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded';
     coupon?: string;
     discountAmount?: number;
     createdAt: string;
@@ -446,9 +447,22 @@ export default function OrdersPage() {
                                             <CreditCard className="size-4 text-teal-650" />
                                             <span className="text-[10px] font-black uppercase text-slate-505 tracking-wider">Financial Manifest</span>
                                         </div>
-                                        <span className="text-[9px] font-black py-0.5 px-2 bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-450 rounded-md font-mono uppercase">
-                                            Payment: {viewingOrder.paymentMethod || "card"}
-                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[9px] font-black py-0.5 px-2 bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-450 rounded-md font-mono uppercase">
+                                                Payment: {viewingOrder.paymentMethod === 'cashfree' ? 'Online' : (viewingOrder.paymentMethod || "cod")}
+                                            </span>
+                                            {viewingOrder.paymentStatus && (
+                                                <span className={cn(
+                                                    "text-[9px] font-black py-0.5 px-2 rounded-md font-mono uppercase",
+                                                    viewingOrder.paymentStatus === 'paid' && "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-450",
+                                                    viewingOrder.paymentStatus === 'pending' && "bg-amber-100 dark:bg-amber-950/30 text-amber-800 dark:text-amber-450",
+                                                    viewingOrder.paymentStatus === 'failed' && "bg-red-100 dark:bg-red-950/30 text-red-800 dark:text-red-450",
+                                                    viewingOrder.paymentStatus === 'refunded' && "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                                                )}>
+                                                    {viewingOrder.paymentStatus}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="space-y-2 text-xs font-semibold text-slate-650 dark:text-slate-400 font-mono">

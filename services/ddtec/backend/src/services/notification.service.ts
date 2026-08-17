@@ -409,6 +409,55 @@ class NotificationService {
         }
     }
 
+    /**
+     * Sends a Payment Failed email when an online (Cashfree) payment does not complete successfully
+     */
+    static async sendPaymentFailedEmail(order: any, reason?: string): Promise<boolean> {
+        try {
+            const to = order.shippingInfo?.email;
+            if (!to) {
+                console.error('[STRICT-ERROR] Cannot send payment failed email: Recipient email is missing from order.');
+                return false;
+            }
+
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+            const adminEmail = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
+
+            const mailOptions: any = {
+                from,
+                to,
+                bcc: adminEmail || undefined,
+                subject: `Payment Failed - Order #${order._id.toString().slice(-6).toUpperCase()}`,
+                html: `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h2 style="color: #dc2626;">Payment Failed</h2>
+                            <p style="color: #6b7280;">We couldn't process your payment for the order below.</p>
+                        </div>
+
+                        <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fecaca;">
+                            <p style="margin: 0; font-size: 12px; color: #7f1d1d;">Order ID: #${order._id}</p>
+                            <p style="margin: 5px 0 0; font-size: 14px; font-weight: bold; color: #991b1b;">Amount: ₹${order.totalAmount.toFixed(2)}</p>
+                            ${reason ? `<p style="margin: 5px 0 0; font-size: 12px; color: #991b1b;">Reason: ${reason}</p>` : ''}
+                        </div>
+
+                        <p style="font-size: 14px; color: #64748b;">No amount has been deducted for this failed attempt. You can try placing the order again, or choose Cash on Delivery instead.</p>
+
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                        <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 DDTEC. All rights reserved.</p>
+                    </div>
+                `
+            };
+
+            console.log(`[NOTIFICATION] Attempting to send Payment Failed email to ${to}...`);
+            const result = await this.sendBrevoEmail(mailOptions);
+            return result.success;
+        } catch (error: any) {
+            console.error('[STRICT-ERROR] Payment failed email failed to send:', error);
+            return false;
+        }
+    }
+
     private static async generateBillPDF(bill: any): Promise<Buffer> {
         const doc = new jsPDF();
 
@@ -590,6 +639,10 @@ class NotificationService {
                 case 'delivered':
                     statusDisplay = 'Delivered';
                     message = 'Your order has been successfully delivered. Thank you for shopping with DDTEC!';
+                    break;
+                case 'cancelled':
+                    statusDisplay = 'Rejected / Cancelled';
+                    message = 'Unfortunately your order has been rejected/cancelled. If you were charged online, the amount will be refunded to your original payment method within 5-7 business days. Please contact support if you have any questions.';
                     break;
                 default:
                     return false; // Don't send emails for other statuses unless needed
