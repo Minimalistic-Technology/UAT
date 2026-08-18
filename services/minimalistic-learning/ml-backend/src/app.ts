@@ -12,6 +12,7 @@ import commentRoutes from './routes/commentRoutes';
 import adminRoutes from './routes/adminRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import publicRoutes from './routes/publicRoutes';
+import healthRoutes from './routes/healthRoutes';
 
 const app = express();
 
@@ -67,9 +68,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
 // 7. Routes
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', environment: env.NODE_ENV });
-});
+app.use('/health', healthRoutes);
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/posts', postRoutes);

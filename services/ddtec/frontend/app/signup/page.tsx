@@ -1,18 +1,19 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { User, Mail, Lock, Loader2, ArrowRight, Phone, MessageSquare } from "lucide-react";
+import { User, Mail, Lock, Loader2, ArrowRight, Phone, MessageSquare, Key, ShieldAlert, Clock, Sparkles } from "lucide-react";
 import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Turnstile from "../_components/Turnstile";
+import GoogleSignIn from "../_components/GoogleSignIn";
 import api from "@/lib/api";
 
 const SignupForm = () => {
-    const { checkUser } = useAuth();
+    const { checkUser, loginWithGoogle } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
 
@@ -25,11 +26,38 @@ const SignupForm = () => {
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [inviteCode, setInviteCode] = useState("");
+
+    // Onboarding Mode Settings State
+    const [onboardingMode, setOnboardingMode] = useState<"open" | "closed" | "invite_only" | "admin_approval">("open");
+    const [closedMessage, setClosedMessage] = useState("");
+    const [isSignupAllowed, setIsSignupAllowed] = useState(true);
+    const [checkingSettings, setCheckingSettings] = useState(true);
 
     // OTP State
     const [otp, setOtp] = useState("");
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchOnboardingConfig = async () => {
+            try {
+                const { data } = await api.get("/settings");
+                if (data?.onboarding) {
+                    setOnboardingMode(data.onboarding.mode || "open");
+                    setClosedMessage(data.onboarding.closedMessage || "New user onboarding is currently restricted by administrator.");
+                    if (data.onboarding.mode === "closed") {
+                        setIsSignupAllowed(false);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load onboarding config", err);
+            } finally {
+                setCheckingSettings(false);
+            }
+        };
+        fetchOnboardingConfig();
+    }, []);
 
     const handleTurnstileVerify = React.useCallback((token: string) => {
         setTurnstileToken(token);
@@ -45,6 +73,16 @@ const SignupForm = () => {
 
     const handleSendOtp = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (onboardingMode === "closed" || !isSignupAllowed) {
+            showToast(closedMessage || "Public registration is currently disabled.", "error");
+            return;
+        }
+
+        if (onboardingMode === "invite_only" && !inviteCode.trim()) {
+            showToast("Invitation Code is required to register.", "error");
+            return;
+        }
 
         if (password.length < 6) {
             showToast("Password must be at least 6 characters", "error");
@@ -79,7 +117,8 @@ const SignupForm = () => {
             }
 
             if (!resCheck.data.signupAllowed) {
-                showToast("Public registration is currently disabled by administrator.", "error");
+                showToast(resCheck.data.closedMessage || "Public registration is currently disabled by administrator.", "error");
+                setIsSignupAllowed(false);
                 return;
             }
 
@@ -99,6 +138,15 @@ const SignupForm = () => {
         }
     };
 
+    const handleGoogleCredential = async (credential: string) => {
+        try {
+            await loginWithGoogle(credential);
+            showToast("Account created successfully!", "success");
+        } catch (err: any) {
+            showToast(err.message || "Google sign-up failed", "error");
+        }
+    };
+
     const handleCompleteSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -110,12 +158,19 @@ const SignupForm = () => {
                 email,
                 phone,
                 password,
+                inviteCode,
                 otp,
                 role: 'user',
                 accountType: 'individual'
             };
 
-            await api.post('/auth/register', payload);
+            const resReg = await api.post('/auth/register', payload);
+
+            if (resReg.data?.pendingApproval) {
+                showToast(resReg.data.msg || "Account registration submitted! Waiting for Admin Approval.", "info");
+                router.push('/login');
+                return;
+            }
 
             // Auto Login directly after registration
             await api.post('/auth/login', {
@@ -200,6 +255,49 @@ const SignupForm = () => {
                                 onSubmit={handleSendOtp}
                                 className="space-y-4"
                             >
+                                {onboardingMode === 'closed' || !isSignupAllowed ? (
+                                    <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 space-y-2">
+                                        <div className="flex items-center gap-2 font-bold text-sm">
+                                            <ShieldAlert className="size-5 text-rose-600" />
+                                            <span>Registration Paused</span>
+                                        </div>
+                                        <p className="text-xs text-rose-600 dark:text-rose-400">
+                                            {closedMessage || "New user registrations are currently restricted by administrator."}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {onboardingMode === 'invite_only' && (
+                                            <div className="p-4 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 space-y-2">
+                                                <div className="flex items-center gap-2 font-bold text-xs text-teal-800 dark:text-teal-300">
+                                                    <Key className="size-4 text-teal-600" />
+                                                    <span>Invite-Only Registration Enabled</span>
+                                                </div>
+                                                <p className="text-xs text-teal-700 dark:text-teal-400">
+                                                    An Invitation Code provided by administrator is required to create an account.
+                                                </p>
+                                                <div className="relative pt-1">
+                                                    <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 text-teal-600 size-4" />
+                                                    <input
+                                                        required
+                                                        type="text"
+                                                        value={inviteCode}
+                                                        onChange={(e) => setInviteCode(e.target.value)}
+                                                        className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-teal-300 dark:border-teal-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-teal-500 outline-none"
+                                                        placeholder="Enter Secret Invitation Code"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {onboardingMode === 'admin_approval' && (
+                                            <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300 font-semibold">
+                                                <Clock className="size-4 text-amber-600 shrink-0" />
+                                                <span>Note: New accounts require manual Admin Approval before logging in.</span>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-xs font-medium text-slate-700 dark:text-slate-300">First Name</label>
@@ -305,6 +403,22 @@ const SignupForm = () => {
                                 >
                                     {isLoading ? <Loader2 className="animate-spin size-5" /> : <>Continue to Verification <ArrowRight className="size-4" /></>}
                                 </button>
+
+                                {isSignupAllowed && onboardingMode !== 'closed' && (
+                                    <>
+                                        <div className="flex items-center gap-3 my-6">
+                                            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                                            <span className="text-xs font-medium text-slate-400 uppercase">Or</span>
+                                            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                                        </div>
+
+                                        <GoogleSignIn
+                                            text="signup_with"
+                                            onCredential={handleGoogleCredential}
+                                            onError={() => showToast("Google sign-up failed", "error")}
+                                        />
+                                    </>
+                                )}
 
                                 <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-6">
                                     Already have an account?{' '}

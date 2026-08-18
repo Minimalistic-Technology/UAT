@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@cashfreepayments/cashfree-js": "^1.0.7",
+    "@next/third-parties": "^16.3.0",
     "@types/react-google-recaptcha": "^2.1.9",
     "axios": "^1.13.4",
     "clsx": "^2.1.1",

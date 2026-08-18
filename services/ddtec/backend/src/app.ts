@@ -14,6 +14,7 @@ console.log(' - MONGO_URI:', process.env.MONGO_URI ? 'FOUND' : 'CONNECTED (HIDDE
 
 // Trigger Email Verification on start
 import NotificationService from './services/notification.service';
+import SchedulerService from './services/scheduler.service';
 NotificationService.checkStatus().then(status => {
     if (status.success) {
         console.log('[NOTIFICATION] ✅ Email Service Status:', status.message);
@@ -21,6 +22,9 @@ NotificationService.checkStatus().then(status => {
         console.error('[NOTIFICATION] ❌ Email Service Status:', status.message);
     }
 });
+
+// Start Email Scheduler Background Task
+SchedulerService.startEmailScheduler();
 
 import express from 'express';
 import cors from 'cors';
@@ -42,10 +46,17 @@ app.use(cors({
         callback(null, true);
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    exposedHeaders: ['Content-Disposition']
 }));
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({
+    limit: '10mb',
+    // Preserve raw body for Cashfree webhook signature verification
+    verify: (req: any, _res, buf) => {
+        req.rawBody = buf.toString('utf8');
+    }
+}));
 app.use(morgan('dev'));
 
 // Database Connection

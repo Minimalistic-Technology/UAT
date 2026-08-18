@@ -3,11 +3,15 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import axios from 'axios';
+import { OAuth2Client } from 'google-auth-library';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 import OTP from '../models/OTP';
 import RouteConfig from '../models/RouteConfig';
+import Settings from '../models/Settings';
 import NotificationService from '../services/notification.service';
 import ValidationService from '../services/validation.service';
 import redisClient from '../config/redis';
@@ -191,11 +195,25 @@ export const register = async (req: Request, res: Response) => {
             }
         }
 
-        // Block new user registrations if public signup is disabled
+        // Block/restrict new user registrations based on Onboarding settings & route status
+        const settings = await Settings.findOne();
+        const onboarding = settings?.onboarding || { mode: 'open', inviteCode: 'DDTEC-INVITE-2026', closedMessage: 'New user onboarding is currently restricted by administrator.' };
+
         if (!role || role === 'user') {
+            if (onboarding.mode === 'closed') {
+                return res.status(403).json({ msg: onboarding.closedMessage || 'New user onboarding is currently restricted by administrator.' });
+            }
+
+            if (onboarding.mode === 'invite_only') {
+                const reqInvite = (req.body.inviteCode || '').trim();
+                if (!reqInvite || reqInvite !== onboarding.inviteCode) {
+                    return res.status(400).json({ msg: 'Invalid or missing invitation code. Registration requires a valid invitation code.' });
+                }
+            }
+
             const signupRoute = await RouteConfig.findOne({ path: '/signup' });
             if (signupRoute && !signupRoute.isActive) {
-                return res.status(403).json({ msg: 'Public registration is currently disabled by administrator.' });
+                return res.status(403).json({ msg: onboarding.closedMessage || 'Public registration is currently disabled by administrator.' });
             }
         }
 
@@ -219,6 +237,8 @@ export const register = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'User already exists' });
         }
 
+        const isPendingApproval = (!role || role === 'user') && onboarding.mode === 'admin_approval';
+
         user = new User({
             firstName,
             lastName,
@@ -229,9 +249,17 @@ export const register = async (req: Request, res: Response) => {
             role: role || 'user',
             isEmailVerified: !!email,
             isPhoneVerified: !!phone,
+            isActive: !isPendingApproval
         });
 
         await user.save();
+
+        if (isPendingApproval) {
+            return res.json({
+                pendingApproval: true,
+                msg: 'Account registration submitted successfully! Your account requires administrator approval before you can log in.'
+            });
+        }
 
         if (user.email) {
             NotificationService.sendWelcomeEmail(user.email, user.firstName || user.name || 'User');
@@ -414,6 +442,127 @@ export const login = async (req: Request, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
     res.clearCookie('token');
     res.status(200).json({ msg: 'Logged out successfully' });
+};
+
+// Sign in / sign up with a Google ID token issued by Google Identity Services
+export const googleAuth = async (req: Request, res: Response) => {
+    try {
+        const { credential } = req.body;
+        if (!credential) {
+            return res.status(400).json({ msg: 'Google credential is required' });
+        }
+        if (!GOOGLE_CLIENT_ID) {
+            return res.status(500).json({ msg: 'Google Sign-In is not configured on the server' });
+        }
+
+        // Check if Login is globally disabled (Google sign-in respects the same maintenance switch)
+        const loginRoute = await RouteConfig.findOne({ path: '/login' });
+        if (loginRoute && !loginRoute.isActive) {
+            return res.status(403).json({ msg: 'Login is temporarily disabled by administrator for maintenance.' });
+        }
+
+        const ticket = await googleClient.verifyIdToken({
+            idToken: credential,
+            audience: GOOGLE_CLIENT_ID,
+        });
+        const payloadData = ticket.getPayload();
+        if (!payloadData || !payloadData.email) {
+            return res.status(400).json({ msg: 'Invalid Google credential' });
+        }
+
+        const email = payloadData.email.toLowerCase();
+        let user = await User.findOne({ $or: [{ googleId: payloadData.sub }, { email }] });
+
+        if (!user) {
+            // Block new signups if public registration is disabled, same as OTP signup
+            const settings = await Settings.findOne();
+            const onboarding = settings?.onboarding || { mode: 'open', inviteCode: 'DDTEC-INVITE-2026', closedMessage: 'New user onboarding is currently restricted by administrator.' };
+            if (onboarding.mode === 'closed') {
+                return res.status(403).json({ msg: onboarding.closedMessage || 'New user onboarding is currently restricted by administrator.' });
+            }
+            const signupRoute = await RouteConfig.findOne({ path: '/signup' });
+            if (signupRoute && !signupRoute.isActive) {
+                return res.status(403).json({ msg: onboarding.closedMessage || 'Public registration is currently disabled by administrator.' });
+            }
+
+            user = new User({
+                email,
+                firstName: payloadData.given_name,
+                lastName: payloadData.family_name,
+                name: payloadData.name,
+                avatar: payloadData.picture,
+                googleId: payloadData.sub,
+                authProvider: 'google',
+                isEmailVerified: true,
+                isActive: onboarding.mode !== 'admin_approval',
+            });
+            await user.save();
+
+            if (onboarding.mode === 'admin_approval') {
+                return res.json({
+                    pendingApproval: true,
+                    msg: 'Account registration submitted successfully! Your account requires administrator approval before you can log in.'
+                });
+            }
+
+            if (user.email) {
+                NotificationService.sendWelcomeEmail(user.email, user.firstName || user.name || 'User');
+            }
+        } else {
+            // Link Google identity to an existing local account on first Google sign-in
+            if (!user.googleId) {
+                user.googleId = payloadData.sub;
+                user.isEmailVerified = true;
+                if (!user.avatar) user.avatar = payloadData.picture;
+                await user.save();
+            }
+            if (user.role === 'user' && !user.isActive) {
+                return res.status(403).json({ msg: 'Account is deactivated. Please contact admin.' });
+            }
+            if (user.lockUntil && user.lockUntil > Date.now()) {
+                const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
+                return res.status(403).json({ msg: `Account is temporarily locked due to multiple failed attempts. Please try again after ${minutesLeft} minute(s).` });
+            }
+        }
+
+        const payload = {
+            id: user.id,
+            name: user.name,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            role: user.role,
+            customPages: user.customPages,
+            editPages: user.editPages,
+            addPages: user.addPages,
+            deletePages: user.deletePages
+        };
+
+        jwt.sign(
+            payload,
+            JWT_SECRET,
+            { expiresIn: '1h' },
+            (err, token) => {
+                if (err) throw err;
+                console.log(`[AUTH] Google session created for user ${payload.email}`);
+                res.cookie('token', token, {
+                    httpOnly: true,
+                    secure: true,
+                    maxAge: 3600000,
+                    path: '/',
+                    sameSite: 'none'
+                });
+                res.json({ user: payload, token });
+            }
+        );
+    } catch (err) {
+        if (err instanceof Error) {
+            console.error('[GOOGLE-AUTH-ERROR]', err.message);
+        } else {
+            console.error(err);
+        }
+        res.status(401).json({ msg: 'Google authentication failed' });
+    }
 };
 
 export const getMe = async (req: Request, res: Response) => {
@@ -622,13 +771,19 @@ export const checkUser = async (req: Request, res: Response) => {
             $or: [{ email: identifier }, { phone: identifier }]
         });
 
-        // Get dynamic route config to see if public signup is active
+        // Fetch Settings & Route Config to evaluate onboarding status
+        const settings = await Settings.findOne();
+        const onboarding = settings?.onboarding || { mode: 'open', inviteCode: 'DDTEC-INVITE-2026', closedMessage: 'New user onboarding is currently restricted by administrator.' };
         const signupRoute = await RouteConfig.findOne({ path: '/signup' });
-        const signupAllowed = signupRoute ? signupRoute.isActive : true;
+        const isRouteActive = signupRoute ? signupRoute.isActive : true;
+
+        const signupAllowed = onboarding.mode !== 'closed' && isRouteActive;
 
         res.json({
             exists: !!user,
             signupAllowed,
+            onboardingMode: onboarding.mode,
+            closedMessage: onboarding.closedMessage,
             otpRequired: process.env.DISABLE_OTP !== 'true'
         });
     } catch (err) {

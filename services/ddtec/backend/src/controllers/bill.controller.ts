@@ -27,6 +27,9 @@ export const createBill = async (req: Request, res: Response) => {
             if (item.fromInventory && item.productId) {
                 const product = await Product.findById(item.productId);
                 if (product) {
+                    if (product.stock < item.quantity) {
+                        return res.status(400).json({ msg: `Insufficient stock for ${product.name}` });
+                    }
                     product.stock -= item.quantity;
                     await product.save();
                 }
@@ -106,6 +109,9 @@ export const updateBill = async (req: Request, res: Response) => {
             if (item.fromInventory && item.productId) {
                 const product = await Product.findById(item.productId);
                 if (product) {
+                    if (product.stock < item.quantity) {
+                        return res.status(400).json({ msg: `Insufficient stock for ${product.name}` });
+                    }
                     product.stock -= item.quantity;
                     await product.save();
                 }

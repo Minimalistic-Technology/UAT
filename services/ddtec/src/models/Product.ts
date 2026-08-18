@@ -20,6 +20,10 @@ export interface IProduct extends Document {
     isActive: boolean;
     showOnHome: boolean;
     taxes: Array<{ name: string; rate: number }>;
+    seller?: string;
+    costPrice?: number;
+    lastInventoryUpdate?: Date;
+    billScreenshot?: string;
 }
 
 const ProductSchema: Schema = new Schema({
@@ -41,6 +45,10 @@ const ProductSchema: Schema = new Schema({
     discountValue: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
     showOnHome: { type: Boolean, default: false },
+    seller: { type: String },
+    costPrice: { type: Number, default: 0 },
+    lastInventoryUpdate: { type: Date, default: Date.now },
+    billScreenshot: { type: String },
     taxes: [
         {
             name: { type: String },

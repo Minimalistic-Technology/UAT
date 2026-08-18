@@ -9,9 +9,10 @@ import { useToast } from "../_context/ToastContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useDynamicRoutes } from "../_context/RouteContext";
+import GoogleSignIn from "../_components/GoogleSignIn";
 
 const LoginForm = () => {
-    const { login } = useAuth();
+    const { login, loginWithGoogle } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
     const { isRouteActive } = useDynamicRoutes();
@@ -61,6 +62,15 @@ const LoginForm = () => {
             showToast(errorMsg, "error");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleGoogleCredential = async (credential: string) => {
+        try {
+            await loginWithGoogle(credential);
+            showToast("Logged in successfully", "success");
+        } catch (err: any) {
+            showToast(err.message || "Google sign-in failed", "error");
         }
     };
 
@@ -148,6 +158,18 @@ const LoginForm = () => {
                                     (lockCountdown !== null && lockCountdown > 0) ? "Wait for timeout..." : "Sign In"
                                 )}
                             </button>
+
+                            <div className="flex items-center gap-3 my-6">
+                                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                                <span className="text-xs font-medium text-slate-400 uppercase">Or</span>
+                                <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                            </div>
+
+                            <GoogleSignIn
+                                text="signin_with"
+                                onCredential={handleGoogleCredential}
+                                onError={() => showToast("Google sign-in failed", "error")}
+                            />
 
                             {isRouteActive('/signup') && (
                                 <p className="text-center text-sm text-slate-500 mt-6 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700">

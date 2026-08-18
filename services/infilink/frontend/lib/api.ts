@@ -1,4 +1,5 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api'
+const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+const BASE = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl.replace(/\/$/, '')}/api`
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null

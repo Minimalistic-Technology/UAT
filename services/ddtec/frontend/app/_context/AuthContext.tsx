@@ -19,6 +19,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     login: (email: string, password: string) => Promise<void>;
+    loginWithGoogle: (credential: string) => Promise<void>;
     logout: () => void;
     loading: boolean;
     checkUser: () => Promise<void>;
@@ -74,6 +75,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
+    const loginWithGoogle = async (credential: string) => {
+        try {
+            const res = await api.post('/auth/google', { credential });
+
+            setUser(res.data.user);
+
+            if (res.data.user.role === 'admin') {
+                router.push("/admin");
+            } else if (res.data.user.role === 'warehouse') {
+                router.push("/warehouse");
+            } else {
+                router.push("/");
+            }
+        } catch (error: any) {
+            const msg = error.response?.data?.msg || 'Google sign-in failed';
+            console.warn("Google sign-in failed:", msg);
+            throw new Error(msg);
+        }
+    };
+
     const logout = async () => {
         try {
             await api.post('/auth/logout');
@@ -89,7 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // We keep interface clean.
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading, checkUser }}>
+        <AuthContext.Provider value={{ user, login, loginWithGoogle, logout, loading, checkUser }}>
             {children}
         </AuthContext.Provider>
     );

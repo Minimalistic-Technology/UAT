@@ -2,21 +2,42 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../_context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText } from "lucide-react";
+import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator, CheckCircle2, BookmarkCheck } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "./components/ToggleSwitch";
 import CategoriesView from "./components/CategoriesView";
 import QuotationProductsView from "./components/QuotationProductsView";
+import CreateQuotationView from "./components/CreateQuotationView";
+import SavedQuotationsView from "@/app/quotation/saved/page";
+import ScheduleMailView from "./components/ScheduleMailView";
+
+import DeliveredOrdersGraph from "./components/DeliveredOrdersGraph";
+import PurchasesGraph from "./components/PurchasesGraph";
+import PurchaseRecordsView from "./components/PurchaseRecordsView";
+import ContactsView from "./components/ContactsView";
 import { useDynamicRoutes, RouteConfig } from "@/app/_context/RouteContext";
 import { useToast } from "../_context/ToastContext";
+import { useSettings } from "../_context/SettingsContext";
 
 interface DashboardStats {
     users: number;
     products: number;
     revenue: number;
     orders: number;
+    deliveredStats?: {
+        totalDeliveredCount: number;
+        totalDeliveredRevenue: number;
+        trends: Array<{
+            date: string;
+            label: string;
+            day: string;
+            count: number;
+            revenue: number;
+        }>;
+        statusBreakdown: Record<string, { count: number; revenue: number }>;
+    };
     recentActivity: Array<{
         _id: string;
         totalAmount: number;
@@ -43,14 +64,27 @@ interface User {
 interface Product {
     _id: string;
     name: string;
+    description?: string;
     price: number;
+    costPrice?: number;
+    image?: string;
+    images?: string[];
     category: string | { _id: string; name: string };
     stock: number;
+    rating?: number;
+    numReviews?: number;
+    lastMonthSales?: number;
+    brand?: string;
+    modelName?: string;
     couponCode?: string;
     discountPercentage?: number;
     discountType?: 'percentage' | 'fixed';
     discountValue?: number;
+    cgst?: number;
+    sgst?: number;
     isActive: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 interface Blog {
@@ -78,9 +112,10 @@ const AdminDashboard = () => {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
+    const { refreshSettings } = useSettings();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
-    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products'>('dashboard');
+    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail' | 'contacts'>('dashboard');
 
     // Data for Manage Views
     const [usersList, setUsersList] = useState<User[]>([]);
@@ -93,6 +128,7 @@ const AdminDashboard = () => {
     const [blogsList, setBlogsList] = useState<Blog[]>([]);
 
     const [productsList, setProductsList] = useState<Product[]>([]);
+    const [viewingProductDetails, setViewingProductDetails] = useState<Product | null>(null);
     const [loadingData, setLoadingData] = useState(false);
     const [categoriesList, setCategoriesList] = useState<any[]>([]);
 
@@ -120,7 +156,9 @@ const AdminDashboard = () => {
         rating: "",
         lastMonthSales: "",
         couponCode: "",
-        discountPercentage: ""
+        discountPercentage: "",
+        cgst: "",
+        sgst: ""
     });
 
     const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -176,6 +214,17 @@ const AdminDashboard = () => {
     const [isEditRouteModalOpen, setIsEditRouteModalOpen] = useState(false);
     const [editingRoute, setEditingRoute] = useState<RouteConfig | null>(null);
     const [newRoute, setNewRoute] = useState({ path: "", name: "", description: "", isActive: true });
+
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const viewParam = searchParams?.get("view");
+        if (viewParam === "create_quotation") {
+            setActiveView("create_quotation");
+        } else if (viewParam === "saved_quotations") {
+            setActiveView("saved_quotations");
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         if (!authLoading) {
@@ -244,9 +293,9 @@ const AdminDashboard = () => {
     };
 
     useEffect(() => {
-        if (activeView === 'products' || activeView === 'inventory') fetchProducts();
+        if (activeView === 'products' || activeView === 'inventory' || activeView === 'dashboard') fetchProducts();
         if (activeView === 'users') fetchUsers();
-        if (activeView === 'orders') fetchOrders();
+        if (activeView === 'orders' || activeView === 'dashboard') fetchOrders();
         if (activeView === 'messages') fetchMessages();
         if (activeView === 'coupons') fetchCoupons();
         if (activeView === 'blogs') fetchBlogs();
@@ -274,8 +323,33 @@ const AdminDashboard = () => {
             };
             const res = await api.put('/settings', { components: updatedComponents });
             setSiteSettings(res.data);
+            refreshSettings();
         } catch (error: any) {
             alert(error.response?.data?.msg || "Failed to update settings");
+        }
+    };
+
+    const updateOnboardingSetting = (key: string, value: any) => {
+        const updatedOnboarding = {
+            ...(siteSettings?.onboarding || { mode: 'open', inviteCode: 'DDTEC-INVITE-2026', closedMessage: 'New user onboarding is currently restricted by administrator.' }),
+            [key]: value
+        };
+        setSiteSettings((prev: any) => ({
+            ...prev,
+            onboarding: updatedOnboarding
+        }));
+        saveOnboardingConfig(updatedOnboarding);
+    };
+
+    const saveOnboardingConfig = async (onboardingPayload?: any) => {
+        try {
+            const payload = onboardingPayload || siteSettings?.onboarding;
+            const res = await api.put('/settings', { onboarding: payload });
+            setSiteSettings(res.data);
+            refreshSettings();
+            showToast?.("User onboarding restriction settings updated!", "success");
+        } catch (error: any) {
+            showToast?.("Failed to update onboarding settings", "error");
         }
     };
 
@@ -335,6 +409,13 @@ const AdminDashboard = () => {
 
     const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if ([newProduct.price, newProduct.stock, newProduct.discountPercentage, newProduct.cgst, newProduct.sgst]
+            .some(v => v !== "" && Number(v) < 0)) {
+            showToast("Price, stock, discount, CGST and SGST cannot be negative", "error");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const imageList = newProduct.imagesInput.split(',').map(url => url.trim()).filter(url => url.length > 0);
@@ -350,7 +431,9 @@ const AdminDashboard = () => {
                 brand: newProduct.brand,
                 modelName: newProduct.modelName,
                 couponCode: newProduct.couponCode || undefined,
-                discountPercentage: Number(newProduct.discountPercentage) || 0
+                discountPercentage: Number(newProduct.discountPercentage) || 0,
+                cgst: Number(newProduct.cgst) || 0,
+                sgst: Number(newProduct.sgst) || 0
             });
 
             if (res.status === 200 || res.status === 201) {
@@ -358,13 +441,13 @@ const AdminDashboard = () => {
                 setIsAddModalOpen(false);
                 setNewProduct({
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", brand: "",
-                    modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: ""
+                    modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: ""
                 });
-                alert("Product Added Successfully");
+                showToast("Product Added Successfully", "success");
             }
         } catch (error: any) {
             console.error(error);
-            alert(`Error: ${error.response?.data?.msg || 'Failed to add product'}`);
+            showToast(error.response?.data?.msg || 'Failed to add product', "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -388,13 +471,22 @@ const AdminDashboard = () => {
             rating: String((product as any).rating || 0),
             lastMonthSales: String((product as any).lastMonthSales || 0),
             couponCode: (product as any).couponCode || "",
-            discountPercentage: String((product as any).discountPercentage || 0)
+            discountPercentage: String((product as any).discountPercentage || 0),
+            cgst: String((product as any).cgst || 0),
+            sgst: String((product as any).sgst || 0)
         });
         setIsEditModalOpen(true);
     };
 
     const handleUpdateProduct = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if ([editingProduct.price, editingProduct.stock, editingProduct.discountPercentage, editingProduct.cgst, editingProduct.sgst]
+            .some((v: string) => v !== "" && Number(v) < 0)) {
+            showToast("Price, stock, discount, CGST and SGST cannot be negative", "error");
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const imageList = editingProduct.imagesInput.split(',').map((url: string) => url.trim()).filter((url: string) => url.length > 0);
@@ -408,32 +500,35 @@ const AdminDashboard = () => {
                 rating: Number(editingProduct.rating),
                 lastMonthSales: Number(editingProduct.lastMonthSales),
                 couponCode: editingProduct.couponCode || undefined,
-                discountPercentage: Number(editingProduct.discountPercentage) || 0
+                discountPercentage: Number(editingProduct.discountPercentage) || 0,
+                cgst: Number(editingProduct.cgst) || 0,
+                sgst: Number(editingProduct.sgst) || 0
             });
 
             if (res.status === 200) {
                 fetchProducts();
                 setIsEditModalOpen(false);
                 setEditingProduct(null);
-                alert("Product Updated Successfully");
+                showToast("Product Updated Successfully", "success");
             }
         } catch (error: any) {
             console.error(error);
-            alert(`Error: ${error.response?.data?.msg || 'Failed to update product'}`);
+            showToast(error.response?.data?.msg || 'Failed to update product', "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products') => {
+    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail' | 'contacts') => {
         setActiveView(view);
+        router.push(`/admin?view=${view}`, { scroll: false });
         if (view === 'users') fetchUsers();
-        if (view === 'products' || view === 'inventory') fetchProducts();
-        if (view === 'orders') fetchOrders();
+        if (view === 'products' || view === 'inventory' || view === 'dashboard') fetchProducts();
+        if (view === 'orders' || view === 'dashboard') fetchOrders();
         if (view === 'messages') fetchMessages();
         if (view === 'coupons') fetchCoupons();
         if (view === 'blogs') fetchBlogs();
-        if (view === 'categories' || view === 'products') fetchCategories();
+        if (view === 'categories' || view === 'products' || view === 'inventory') fetchCategories();
         if (view === 'settings') fetchSettings();
     };
 
@@ -780,11 +875,12 @@ const AdminDashboard = () => {
                             </button>
                         </li>
                         <li>
-                            <button onClick={() => handleViewChange('quotation_products')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'quotation_products' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+                            <button onClick={() => handleViewChange('saved_quotations')} className={`w-full flex items-center p-2 rounded-lg group ${['saved_quotations', 'create_quotation', 'quotation_products'].includes(activeView) ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                                 <FileText className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Quotation Products</span>}
+                                {!isSidebarCollapsed && <span className="ms-3 font-semibold">Quotation</span>}
                             </button>
                         </li>
+
                         <li>
                             <button onClick={() => handleViewChange('orders')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'orders' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                                 <ShoppingBag className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
@@ -809,6 +905,20 @@ const AdminDashboard = () => {
                             <button onClick={() => handleViewChange('coupons')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'coupons' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                                 <Ticket className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
                                 {!isSidebarCollapsed && <span className="ms-3">Coupons</span>}
+                            </button>
+                        </li>
+
+                        <li>
+                            <button onClick={() => handleViewChange('schedule_mail')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'schedule_mail' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+                                <Calendar className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
+                                {!isSidebarCollapsed && <span className="ms-3">Schedule Mail</span>}
+                            </button>
+                        </li>
+
+                        <li>
+                            <button onClick={() => handleViewChange('contacts')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'contacts' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+                                <Users className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
+                                {!isSidebarCollapsed && <span className="ms-3">Contacts</span>}
                             </button>
                         </li>
 
@@ -900,14 +1010,6 @@ const AdminDashboard = () => {
                 </AnimatePresence>
 
                 <div className="max-w-7xl mx-auto">
-                    <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
-                            <p className="text-slate-600 dark:text-slate-400 mt-1">
-                                Welcome back, {user.firstName || user.name?.split(' ')[0] || user.email?.split('@')[0] || user.phone || 'Admin'}.
-                            </p>
-                        </div>
-                    </div>
 
                     {activeView === 'dashboard' && (
                         <>
@@ -937,6 +1039,12 @@ const AdminDashboard = () => {
                                     icon={<DollarSign className="size-6 text-green-600" />}
                                     bg="bg-green-50 dark:bg-green-900/20"
                                 />
+                            </div>
+
+                            {/* Orders & Purchases Analytics Graphs */}
+                            <div className="space-y-8 mb-8">
+                                <DeliveredOrdersGraph deliveredStats={stats?.deliveredStats} allOrders={ordersList} />
+                                <PurchasesGraph products={productsList} />
                             </div>
 
                             {/* Recent Activity */}
@@ -1052,11 +1160,20 @@ const AdminDashboard = () => {
                                                         </td>
                                                     )}
                                                     <td className="p-4 text-right flex justify-end items-center gap-2">
+                                                        {!u.isActive && (
+                                                            <button
+                                                                onClick={() => toggleUserStatus(u._id, u.isActive)}
+                                                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                                                                title="Approve User Account"
+                                                            >
+                                                                <CheckCircle2 className="size-3.5" /> Approve Account
+                                                            </button>
+                                                        )}
                                                         <ToggleSwitch isOn={u.isActive} onToggle={() => toggleUserStatus(u._id, u.isActive)} />
-                                                        <button onClick={() => handleEditUserClick(u)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors">
+                                                        <button onClick={() => handleEditUserClick(u)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors" title="Edit User">
                                                             <Edit className="size-4" />
                                                         </button>
-                                                        <button onClick={() => handleDeleteUser(u._id)} className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors">
+                                                        <button onClick={() => handleDeleteUser(u._id)} className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Delete User">
                                                             <Trash2 className="size-4" />
                                                         </button>
                                                     </td>
@@ -1085,6 +1202,7 @@ const AdminDashboard = () => {
                                             <th className="p-4">Price</th>
                                             <th className="p-4">Coupons</th>
                                             <th className="p-4">Stock</th>
+                                            <th className="p-4">Last Updated</th>
                                             <th className="p-4">Status</th>
                                             <th className="p-4 text-right">Actions</th>
                                         </tr>
@@ -1123,12 +1241,28 @@ const AdminDashboard = () => {
                                                         {p.stock}
                                                     </span>
                                                 </td>
+                                                <td className="p-4 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                                    <div className="flex flex-col">
+                                                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                                            {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : 'N/A'}
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-400">
+                                                            {p.updatedAt ? new Date(p.updatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : ''}
+                                                        </span>
+                                                    </div>
+                                                </td>
                                                 <td className="p-4">
                                                     <span className={`text-xs font-bold px-2 py-1 rounded-full ${p.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                         {p.isActive ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </td>
-                                                <td className="p-4 text-right flex justify-end items-center gap-2">
+                                                <td className="p-4 text-right flex justify-end items-center gap-1">
+                                                    <button onClick={() => setViewingProductDetails(p)} className="text-teal-600 hover:text-teal-800 p-2 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-full transition-colors" title="View Full Product Details & Timestamps">
+                                                        <Eye className="size-4" />
+                                                    </button>
+                                                    <a href={`/product/${p._id}`} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-teal-600 p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-full transition-colors" title="Preview Public Storefront">
+                                                        <ExternalLink className="size-4" />
+                                                    </a>
                                                     <ToggleSwitch isOn={p.isActive} onToggle={() => toggleProductStatus(p._id, p.isActive)} />
                                                     <button onClick={() => handleEditClick(p)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors" title="Edit Product">
                                                         <Edit className="size-4" />
@@ -1146,101 +1280,24 @@ const AdminDashboard = () => {
                     )}
 
                     {activeView === 'inventory' && (
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Inventory Management</h2>
-                                <div className="flex gap-2">
-                                    <span className="flex items-center gap-1 text-xs text-slate-500">
-                                        <div className="size-2 rounded-full bg-red-500"></div> Low Stock (&lt; 10)
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-sm uppercase">
-                                        <tr>
-                                            <th className="p-4">SKU/Product</th>
-                                            <th className="p-4">Category</th>
-                                            <th className="p-4 text-center">Current Stock</th>
-                                            <th className="p-4 text-center">Status</th>
-                                            <th className="p-4 text-right">Quick Restock</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                        {productsList.map(p => (
-                                            <tr key={p._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                                                <td className="p-4">
-                                                    <div className="font-medium text-slate-900 dark:text-white">{p.name}</div>
-                                                    <div className="text-xs text-slate-400 font-mono uppercase">{p._id.slice(-8)}</div>
-                                                </td>
-                                                <td className="p-4 text-slate-600 dark:text-slate-400">
-                                                    {(typeof p.category === 'object' && p.category !== null) ? (p.category as any).name : p.category}
-                                                </td>
-                                                <td className="p-4 text-center">
-                                                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${p.stock < 10 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
-                                                        {p.stock}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 text-center">
-                                                    {p.stock === 0 ? (
-                                                        <span className="text-xs font-bold text-red-500 flex items-center justify-center gap-1"><X className="size-3" /> Out of Stock</span>
-                                                    ) : p.stock < 10 ? (
-                                                        <span className="text-xs font-bold text-orange-500 flex items-center justify-center gap-1"><Shield className="size-3" /> Reorder Soon</span>
-                                                    ) : (
-                                                        <span className="text-xs font-bold text-teal-500 flex items-center justify-center gap-1"><Shield className="size-3" /> Healthy</span>
-                                                    )}
-                                                </td>
-                                                <td className="p-4 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <button
-                                                            onClick={async () => {
-                                                                const amount = prompt("How many units to add?");
-                                                                if (amount && !isNaN(Number(amount)) && Number(amount) > 0) {
-                                                                    try {
-                                                                        await api.put(`/products/${p._id}`, { stock: p.stock + Number(amount) });
-                                                                        fetchProducts();
-                                                                    } catch (e: any) { alert(e.response?.data?.msg || "Failed to restock"); }
-                                                                }
-                                                            }}
-                                                            className="px-3 py-1 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 rounded-lg text-xs font-bold hover:bg-teal-100 transition-colors"
-                                                        >
-                                                            <Plus className="size-3 inline mr-1" /> Add
-                                                        </button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                const amount = prompt("How many units to remove?");
-                                                                if (amount && !isNaN(Number(amount)) && Number(amount) > 0) {
-                                                                    if (Number(amount) > p.stock) {
-                                                                        alert("Cannot remove more than current stock");
-                                                                        return;
-                                                                    }
-                                                                    try {
-                                                                        await api.put(`/products/${p._id}`, { stock: Math.max(0, p.stock - Number(amount)) });
-                                                                        fetchProducts();
-                                                                    } catch (e: any) { alert(e.response?.data?.msg || "Failed to remove stock"); }
-                                                                }
-                                                            }}
-                                                            className="px-3 py-1 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
-                                                        >
-                                                            <Trash2 className="size-3 inline mr-1" /> Remove
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div className="space-y-8">
+                            <PurchaseRecordsView
+                                productsList={productsList}
+                                categoriesList={categoriesList}
+                                onRefreshProducts={fetchProducts}
+                            />
                         </div>
                     )}
 
 
                     {activeView === 'orders' && (
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Order Management</h2>
-                                <span className="text-sm text-slate-500">{ordersList.length} Total Orders</span>
-                            </div>
+                        <div className="space-y-8">
+                            <DeliveredOrdersGraph deliveredStats={stats?.deliveredStats} allOrders={ordersList} />
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+                                <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Order Management</h2>
+                                    <span className="text-sm text-slate-500">{ordersList.length} Total Orders</span>
+                                </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-sm uppercase">
@@ -1308,6 +1365,7 @@ const AdminDashboard = () => {
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
                         </div>
                     )}
 
@@ -1446,7 +1504,53 @@ const AdminDashboard = () => {
 
                     {activeView === 'categories' && <CategoriesView />}
 
+                    {['saved_quotations', 'create_quotation', 'quotation_products'].includes(activeView) && (
+                        <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-3">
+                            <button
+                                onClick={() => handleViewChange('saved_quotations')}
+                                className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all ${
+                                    activeView === 'saved_quotations'
+                                        ? 'bg-teal-600 text-white shadow-md'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                                }`}
+                            >
+                                <BookmarkCheck className="size-4" />
+                                Saved Quotations
+                            </button>
+                            <button
+                                onClick={() => handleViewChange('create_quotation')}
+                                className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all ${
+                                    activeView === 'create_quotation'
+                                        ? 'bg-teal-600 text-white shadow-md'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                                }`}
+                            >
+                                <Calculator className="size-4" />
+                                Create Quotation
+                            </button>
+                            <button
+                                onClick={() => handleViewChange('quotation_products')}
+                                className={`flex items-center gap-2 px-4 py-2 text-sm font-bold rounded-xl transition-all ${
+                                    activeView === 'quotation_products'
+                                        ? 'bg-teal-600 text-white shadow-md'
+                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                                }`}
+                            >
+                                <FileText className="size-4" />
+                                Quotation Catalog
+                            </button>
+                        </div>
+                    )}
+
                     {activeView === 'quotation_products' && <QuotationProductsView />}
+
+                    {activeView === 'create_quotation' && <CreateQuotationView />}
+
+                    {activeView === 'saved_quotations' && <SavedQuotationsView />}
+
+                    {activeView === 'schedule_mail' && <ScheduleMailView />}
+
+                    {activeView === 'contacts' && <ContactsView />}
 
                     {/* Add Product Modal */}
                     <AnimatePresence>
@@ -1489,6 +1593,7 @@ const AdminDashboard = () => {
                                                             <input
                                                                 required
                                                                 type="number"
+                                                                min="0"
                                                                 value={newProduct.price}
                                                                 onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
                                                                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
@@ -1501,10 +1606,37 @@ const AdminDashboard = () => {
                                                         <input
                                                             required
                                                             type="number"
+                                                            min="0"
                                                             value={newProduct.stock}
                                                             onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
                                                             className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
                                                             placeholder="100"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={newProduct.cgst}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, cgst: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="9"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={newProduct.sgst}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, sgst: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="9"
                                                         />
                                                     </div>
                                                 </div>
@@ -1570,6 +1702,7 @@ const AdminDashboard = () => {
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Discount (%)</label>
                                                         <input
                                                             type="number"
+                                                            min="0"
                                                             value={newProduct.discountPercentage}
                                                             onChange={(e) => setNewProduct({ ...newProduct, discountPercentage: e.target.value })}
                                                             className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
@@ -1681,6 +1814,7 @@ const AdminDashboard = () => {
                                                             <input
                                                                 required
                                                                 type="number"
+                                                                min="0"
                                                                 value={editingProduct.price}
                                                                 onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
                                                                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
@@ -1693,10 +1827,37 @@ const AdminDashboard = () => {
                                                         <input
                                                             required
                                                             type="number"
+                                                            min="0"
                                                             value={editingProduct.stock}
                                                             onChange={(e) => setEditingProduct({ ...editingProduct, stock: e.target.value })}
                                                             className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
                                                             placeholder="100"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={editingProduct.cgst}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, cgst: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="9"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={editingProduct.sgst}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, sgst: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="9"
                                                         />
                                                     </div>
                                                 </div>
@@ -2808,6 +2969,132 @@ const AdminDashboard = () => {
                                             </div>
                                         </div>
 
+                                        {/* User Onboarding Restrictions Control Card */}
+                                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-6 col-span-1 md:col-span-2">
+                                            <div className="border-b border-slate-100 dark:border-slate-700 pb-4 flex flex-wrap items-center justify-between gap-2">
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                        <Shield className="size-5 text-teal-600" /> Restrict New User Onboarding
+                                                    </h3>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                        Select how new users can register on your platform. Restrict, require invitation code, or demand manual admin approval.
+                                                    </p>
+                                                </div>
+                                                <span className="px-3 py-1 bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-xs font-bold rounded-lg uppercase">
+                                                    Mode: {siteSettings.onboarding?.mode || 'open'}
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                {/* Mode 1: Open */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateOnboardingSetting('mode', 'open')}
+                                                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${siteSettings.onboarding?.mode === 'open' ? 'border-teal-600 bg-teal-50/50 dark:bg-teal-950/30 ring-2 ring-teal-600/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-bold text-sm text-slate-900 dark:text-white">🟢 Open Registration</span>
+                                                        {siteSettings.onboarding?.mode === 'open' && <CheckCircle2 className="size-4 text-teal-600" />}
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                        Anyone can sign up freely without restriction.
+                                                    </p>
+                                                </button>
+
+                                                {/* Mode 2: Closed */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateOnboardingSetting('mode', 'closed')}
+                                                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${siteSettings.onboarding?.mode === 'closed' ? 'border-rose-600 bg-rose-50/50 dark:bg-rose-950/30 ring-2 ring-rose-600/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-bold text-sm text-slate-900 dark:text-white">🔴 Closed / Paused</span>
+                                                        {siteSettings.onboarding?.mode === 'closed' && <CheckCircle2 className="size-4 text-rose-600" />}
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                        Completely block all new user signups.
+                                                    </p>
+                                                </button>
+
+                                                {/* Mode 3: Invite Only */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateOnboardingSetting('mode', 'invite_only')}
+                                                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${siteSettings.onboarding?.mode === 'invite_only' ? 'border-cyan-600 bg-cyan-50/50 dark:bg-cyan-950/30 ring-2 ring-cyan-600/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-bold text-sm text-slate-900 dark:text-white">🔑 Invite-Only Code</span>
+                                                        {siteSettings.onboarding?.mode === 'invite_only' && <CheckCircle2 className="size-4 text-cyan-600" />}
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                        Requires entering secret invitation code.
+                                                    </p>
+                                                </button>
+
+                                                {/* Mode 4: Admin Approval */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateOnboardingSetting('mode', 'admin_approval')}
+                                                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${siteSettings.onboarding?.mode === 'admin_approval' ? 'border-amber-600 bg-amber-50/50 dark:bg-amber-950/30 ring-2 ring-amber-600/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'}`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-bold text-sm text-slate-900 dark:text-white">🛡️ Admin Approval</span>
+                                                        {siteSettings.onboarding?.mode === 'admin_approval' && <CheckCircle2 className="size-4 text-amber-600" />}
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                        New accounts stay inactive until Admin approves.
+                                                    </p>
+                                                </button>
+                                            </div>
+
+                                            {/* Config Inputs */}
+                                            {siteSettings.onboarding?.mode === 'invite_only' && (
+                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 space-y-2">
+                                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                                        Secret Invitation Code (Users must provide this code during registration)
+                                                    </label>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={siteSettings.onboarding?.inviteCode || 'DDTEC-INVITE-2026'}
+                                                            onChange={(e) => updateOnboardingSetting('inviteCode', e.target.value.toUpperCase())}
+                                                            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-teal-500 outline-none"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => saveOnboardingConfig()}
+                                                            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition"
+                                                        >
+                                                            Save Code
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {siteSettings.onboarding?.mode === 'closed' && (
+                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 space-y-2">
+                                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                                        Custom Registration Closed Message
+                                                    </label>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={siteSettings.onboarding?.closedMessage || 'New user onboarding is currently restricted by administrator.'}
+                                                            onChange={(e) => updateOnboardingSetting('closedMessage', e.target.value)}
+                                                            className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-teal-500 outline-none"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => saveOnboardingConfig()}
+                                                            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition"
+                                                        >
+                                                            Save Message
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
                                         {/* Home Page Sections Control */}
                                         <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-6">
                                             <div className="border-b border-slate-100 dark:border-slate-700 pb-4">
@@ -3020,6 +3307,119 @@ const AdminDashboard = () => {
                             </div>
                         </motion.div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* View Product Details Modal for Admin */}
+            <AnimatePresence>
+                {viewingProductDetails && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 dark:border-slate-700"
+                        >
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-teal-600 text-white rounded-xl">
+                                        <Eye className="size-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{viewingProductDetails.name}</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">SKU: {viewingProductDetails._id}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <a
+                                        href={`/product/${viewingProductDetails._id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-3 py-1.5 bg-teal-50 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300 rounded-xl text-xs font-bold hover:bg-teal-100 transition-colors flex items-center gap-1"
+                                    >
+                                        <ExternalLink className="size-3.5" /> View Live Page
+                                    </a>
+                                    <button onClick={() => setViewingProductDetails(null)} className="text-slate-400 hover:text-rose-500 transition-colors p-1">
+                                        <X className="size-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="p-6 max-h-[75vh] overflow-y-auto space-y-6">
+                                {/* Timestamp Banner */}
+                                <div className="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-4 text-xs">
+                                    <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-medium">
+                                        <Clock className="size-4 text-teal-600 dark:text-teal-400" />
+                                        <span><strong>Last Updated:</strong> {viewingProductDetails.updatedAt ? new Date(viewingProductDetails.updatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : 'N/A'} at {viewingProductDetails.updatedAt ? new Date(viewingProductDetails.updatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : 'N/A'}</span>
+                                    </div>
+                                    {viewingProductDetails.createdAt && (
+                                        <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                                            <Calendar className="size-3.5 text-teal-600" />
+                                            <span>Created: {new Date(viewingProductDetails.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Specifications Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Pricing & Financials</span>
+                                        <div className="space-y-1.5 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Selling Price:</span>
+                                                <span className="font-bold text-teal-600 dark:text-teal-400">₹{viewingProductDetails.price}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Cost Price (COGS):</span>
+                                                <span className="font-semibold text-slate-700 dark:text-slate-300">₹{viewingProductDetails.costPrice || 0}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">CGST / SGST Rate:</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300">{viewingProductDetails.cgst || 0}% / {viewingProductDetails.sgst || 0}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Inventory & Brand</span>
+                                        <div className="space-y-1.5 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Stock Quantity:</span>
+                                                <span className={`font-bold ${viewingProductDetails.stock > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{viewingProductDetails.stock} units</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Brand / Model:</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300">{viewingProductDetails.brand || 'N/A'} / {viewingProductDetails.modelName || 'N/A'}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Category:</span>
+                                                <span className="font-medium text-slate-700 dark:text-slate-300">{typeof viewingProductDetails.category === 'object' ? (viewingProductDetails.category as any).name : viewingProductDetails.category}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+                                {viewingProductDetails.description && (
+                                    <div>
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Description</h4>
+                                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            {viewingProductDetails.description}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end">
+                                <button
+                                    onClick={() => setViewingProductDetails(null)}
+                                    className="px-6 py-2.5 rounded-xl font-bold bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-sm"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
         </div>

@@ -6,13 +6,11 @@ import helmet from "helmet";
 import cluster from "node:cluster";
 import os from "node:os";
 import { connectDB } from "./config/database.js";
-import { prisma } from "./lib/prisma.js";
 // Trigger nodemon restart to clear rate limiter RAM
 import { config } from "./config/env.js";
 import { generalLimiter } from "./middleware/rateLimiter.js";
 import { sanitizeInput } from "./middleware/sanitize.middleware.js";
 import { errorHandler } from "./middleware/error.middleware.js";
-import { ApiResponse } from "./utils/apiResponse.js";
 import { handleRazorpayWebhook } from "./controllers/payment.controller.js";
 
 // Import routes
@@ -37,6 +35,7 @@ import testimonialRoutes from "./routes/testimonial.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import draftRoutes from "./routes/draft.routes.js";
 import settingsRoutes from "./routes/settings.route.js";
+import healthRoutes from "./routes/health.routes.js";
 
 // Graphql imports
 import { ApolloServer } from "@apollo/server";
@@ -121,31 +120,7 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/settings", settingsRoutes);
-
-// Health check
-app.get('/api/health', async (req: Request, res: Response) => {
-  let isDbConnected = false;
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    isDbConnected = true;
-  } catch (error) {
-    isDbConnected = false;
-  }
-  const status = isDbConnected ? "operational" : "degraded";
-
-  res.status(isDbConnected ? 200 : 503).json(
-    new ApiResponse(
-      isDbConnected ? 200 : 503,
-      {
-        server: "operational",
-        database: isDbConnected ? "operational" : "disconnected",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-      },
-      `System is ${status}`,
-    ),
-  );
-});
+app.use("/api/health", healthRoutes);
 
 // Error handler
 app.use(errorHandler);

@@ -20,6 +20,14 @@ export interface IOrder extends Document {
     status: string;
     coupon?: string;
     discountAmount?: number;
+    paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+    cashfree?: {
+        orderId?: string;
+        paymentSessionId?: string;
+        cfOrderId?: string;
+        cfPaymentId?: string;
+        lastEvent?: string;
+    };
     createdAt: Date;
 }
 
@@ -43,7 +51,15 @@ const OrderSchema: Schema = new Schema({
     paymentMethod: { type: String, required: true },
     status: { type: String, enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], default: 'pending' },
     coupon: { type: String },
-    discountAmount: { type: Number, default: 0 }
+    discountAmount: { type: Number, default: 0 },
+    paymentStatus: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
+    cashfree: {
+        orderId: { type: String },
+        paymentSessionId: { type: String },
+        cfOrderId: { type: String },
+        cfPaymentId: { type: String },
+        lastEvent: { type: String }
+    }
 }, { timestamps: true });
 
 export default mongoose.model<IOrder>('Order', OrderSchema);

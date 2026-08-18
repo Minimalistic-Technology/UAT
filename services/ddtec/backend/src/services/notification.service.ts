@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 // @ts-ignore
 import { BrevoClient } from '@getbrevo/brevo';
 import { jsPDF } from 'jspdf';
@@ -9,61 +10,214 @@ class NotificationService {
     private static _isTestAccount: boolean = false;
 
     private static async getEmailTransporter() {
-        console.log('[NOTIFICATION] Transporter logic superseded by BrevoClient integration.');
-        return null;
+        if (!this._emailTransporter) {
+            if (process.env.EMAIL_SANDBOX === 'true' || (!process.env.EMAIL_USER && !process.env.EMAIL_PASS)) {
+                try {
+                    const testAccount = await nodemailer.createTestAccount();
+                    this._isTestAccount = true;
+                    this._emailTransporter = nodemailer.createTransport({
+                        host: testAccount.smtp.host,
+                        port: testAccount.smtp.port,
+                        secure: testAccount.smtp.secure,
+                        auth: {
+                            user: testAccount.user,
+                            pass: testAccount.pass,
+                        },
+                    });
+                    console.log(`[NOTIFICATION] Initialized Nodemailer Ethereal Sandbox Mode (Account: ${testAccount.user})`);
+                } catch (err: any) {
+                    console.error('[NOTIFICATION] Failed to create Ethereal test account:', err.message || err);
+                }
+            } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+                const transportOptions: any = {
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS
+                    }
+                };
+
+                if (process.env.EMAIL_HOST) {
+                    transportOptions.host = process.env.EMAIL_HOST;
+                    const port = process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : 587;
+                    transportOptions.port = port;
+                    // Port 587 uses STARTTLS (secure: false), while 465 uses SSL/TLS (secure: true)
+                    transportOptions.secure = process.env.EMAIL_SECURE !== undefined ? (process.env.EMAIL_SECURE === 'true' && port === 465) : port === 465;
+
+                    // SendGrid SMTP authentication requires user to be 'apikey' when using SG API Key
+                    if (process.env.EMAIL_HOST.includes('sendgrid') && process.env.EMAIL_PASS.startsWith('SG.')) {
+                        transportOptions.auth.user = 'apikey';
+                    }
+                } else if (process.env.EMAIL_SERVICE) {
+                    transportOptions.service = process.env.EMAIL_SERVICE;
+                } else {
+                    transportOptions.service = 'gmail';
+                }
+
+                this._emailTransporter = nodemailer.createTransport(transportOptions);
+            }
+        }
+        return this._emailTransporter;
     }
 
     /**
-     * Helper to send email via Brevo transactional pipeline
+     * Helper to send email via Brevo transactional pipeline with Nodemailer fallback
      */
-    private static async sendBrevoEmail(mailOptions: any): Promise<{ success: boolean, method: string }> {
+    private static async sendBrevoEmail(mailOptions: any): Promise<{ success: boolean, method: string, messageId?: string }> {
+        // 1. Try Brevo if valid API Key is provided
+        if (process.env.BREVO_API_KEY && process.env.BREVO_API_KEY !== 'YOUR_BREVO_API_KEY_HERE') {
+            try {
+                const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
+
+                const sender = {
+                    name: process.env.BREVO_SENDER_NAME || 'DDTECH',
+                    email: process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_USER || 'parthdoshi480@gmail.com'
+                };
+
+                let toList: { email: string }[] = [];
+                if (typeof mailOptions.to === 'string') {
+                    toList = mailOptions.to.split(/[,;\s]+/).map((e: string) => e.trim()).filter((e: string) => e.includes('@')).map((e: string) => ({ email: e }));
+                } else if (Array.isArray(mailOptions.to)) {
+                    toList = mailOptions.to.flatMap((t: string) => 
+                        t.split(/[,;\s]+/).map((e: string) => e.trim()).filter((e: string) => e.includes('@'))
+                    ).map((e: string) => ({ email: e }));
+                }
+
+                let bccList = undefined;
+                if (mailOptions.bcc) {
+                    bccList = [{ email: mailOptions.bcc }];
+                }
+
+                let brevoAttachments = undefined;
+                if (mailOptions.attachments && mailOptions.attachments.length > 0) {
+                    brevoAttachments = mailOptions.attachments.map((att: any) => ({
+                        name: att.filename,
+                        content: att.content
+                    }));
+                }
+
+                const brevoPayload: any = {
+                    subject: mailOptions.subject,
+                    htmlContent: mailOptions.html,
+                    sender: sender,
+                    to: toList,
+                    bcc: bccList,
+                    attachment: brevoAttachments
+                };
+
+                if (mailOptions.scheduledAt) {
+                    brevoPayload.scheduledAt = mailOptions.scheduledAt;
+                }
+
+                const result = await brevo.transactionalEmails.sendTransacEmail(brevoPayload);
+
+                console.log(`[NOTIFICATION] Email ${mailOptions.scheduledAt ? 'scheduled natively via Brevo for ' + mailOptions.scheduledAt : 'sent via Brevo'} to ${mailOptions.to}. Message ID:`, result.messageId);
+                return { success: true, method: 'brevo', messageId: result.messageId };
+            } catch (error: any) {
+                console.error('[NOTIFICATION] Brevo failed, falling back to Nodemailer:', error.message || error);
+            }
+        }
+
+        // 2. Fallback to Nodemailer (Gmail / SMTP / Ethereal Sandbox)
         try {
-            const apiKey = process.env.BREVO_API_KEY || 'YOUR_BREVO_API_KEY_HERE';
-            const brevo = new BrevoClient({ apiKey });
-
-            const sender = {
-                name: process.env.BREVO_SENDER_NAME || 'DDTECH',
-                email: process.env.BREVO_SENDER_EMAIL || 'parthdoshi480@gmail.com'
-            };
-
-            let toList = [];
-            if (typeof mailOptions.to === 'string') {
-                toList.push({ email: mailOptions.to });
-            } else if (Array.isArray(mailOptions.to)) {
-                toList = mailOptions.to.map((t: string) => ({ email: t }));
+            const transporter = await this.getEmailTransporter();
+            if (!transporter) {
+                console.error('[NOTIFICATION] Neither valid BREVO_API_KEY nor Nodemailer (EMAIL_USER/EMAIL_PASS) are available.');
+                return { success: false, method: 'nodemailer' };
             }
 
-            let bccList = undefined;
-            if (mailOptions.bcc) {
-                bccList = [{ email: mailOptions.bcc }];
-            }
+            const defaultSender = this._isTestAccount ? '"DDTEC Test Sandbox" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'noreply@ddtec.com'}>`;
+            const from = mailOptions.from || process.env.EMAIL_FROM || defaultSender;
 
-            let brevoAttachments = undefined;
+            let nodemailerAttachments = undefined;
             if (mailOptions.attachments && mailOptions.attachments.length > 0) {
-                brevoAttachments = mailOptions.attachments.map((att: any) => ({
-                    name: att.filename,
-                    content: att.content
-                }));
+                nodemailerAttachments = mailOptions.attachments.map((att: any) => {
+                    if (typeof att.content === 'string') {
+                        return {
+                            filename: att.filename,
+                            content: Buffer.from(att.content, 'base64'),
+                            contentType: att.type || 'application/pdf'
+                        };
+                    }
+                    return att;
+                });
             }
 
-            const result = await brevo.transactionalEmails.sendTransacEmail({
+            const info = await transporter.sendMail({
+                from,
+                to: mailOptions.to,
                 subject: mailOptions.subject,
-                htmlContent: mailOptions.html,
-                sender: sender,
-                to: toList,
-                bcc: bccList,
-                attachment: brevoAttachments
+                html: mailOptions.html,
+                bcc: mailOptions.bcc,
+                attachments: nodemailerAttachments
             });
 
-            console.log(`[NOTIFICATION] Email sent via Brevo to ${mailOptions.to}. Message ID:`, result.messageId);
-            return { success: true, method: 'brevo' };
-        } catch (error: any) {
-            console.error('[NOTIFICATION] Brevo failed:', error);
-            if (error.response) {
-                console.error('[NOTIFICATION] Brevo Error Body:', error.response.body);
+            console.log(`[NOTIFICATION] Email sent via Nodemailer to ${mailOptions.to}. MessageId:`, info.messageId);
+
+            const previewUrl = nodemailer.getTestMessageUrl(info);
+            if (previewUrl) {
+                console.log('\n==================================================');
+                console.log(`✉️  [ETHEREAL EMAIL PREVIEW URL] View email online:`);
+                console.log(`👉 ${previewUrl} 👈`);
+                console.log('==================================================\n');
             }
-            return { success: false, method: 'brevo' };
+
+            return { success: true, method: this._isTestAccount ? 'ethereal-sandbox' : 'nodemailer' };
+        } catch (error: any) {
+            console.error('[NOTIFICATION] Nodemailer fallback also failed:', error.message || error);
+            return { success: false, method: 'nodemailer' };
         }
+    }
+
+    /**
+     * Sends official quotation email with PDF attachment to a recipient email (TO field)
+     */
+    static async sendQuotationEmail(
+        toEmail: string | string[],
+        buyerName: string,
+        pdfBuffer: Buffer,
+        filename: string,
+        customSubject?: string,
+        notes?: string
+    ): Promise<{ success: boolean; msg?: string }> {
+        const rawEmailString = typeof toEmail === 'string' ? toEmail : (Array.isArray(toEmail) ? toEmail.join(',') : '');
+        const recipientList = rawEmailString.split(/[,;\s]+/).map((e: string) => e.trim()).filter((e: string) => e.length > 0 && e.includes('@'));
+
+        if (recipientList.length === 0) {
+            return { success: false, msg: 'Valid recipient email address (TO) is required.' };
+        }
+
+        const subject = customSubject || `Official Price Quotation from DDTEC - ${buyerName || 'Valued Client'}`;
+        const html = `
+            <div style="font-family: Arial, sans-serif; color: #1e293b; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+                <div style="background-color: #0d9488; color: #ffffff; padding: 24px; text-align: center;">
+                    <h1 style="margin: 0; font-size: 22px; font-weight: bold;">DDTEC Official Quotation</h1>
+                    <p style="margin: 6px 0 0 0; font-size: 13px; color: #ccfbf1;">Industrial Products & Tech Solutions</p>
+                </div>
+                <div style="padding: 24px;">
+                    <p style="font-size: 15px;">Hello <strong>${buyerName || 'Valued Client'}</strong>,</p>
+                    <p style="font-size: 14px; color: #334155;">Please find attached the official price quotation requested from <strong>DDTEC</strong>.</p>
+                    ${notes ? `<div style="background-color: #f0fdf4; padding: 14px; border-left: 4px solid #0d9488; border-radius: 6px; margin: 16px 0; font-size: 13px; color: #115e59;"><strong>Note from Admin:</strong><br/>${notes}</div>` : ''}
+                    <p style="font-size: 13px; color: #64748b;">The attached PDF contains itemized specifications, tax calculations, and official commercial terms.</p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+                    <p style="font-size: 12px; color: #94a3b8; text-align: center;">Sent via DDTEC Official Admin System</p>
+                </div>
+            </div>
+        `;
+
+        const attachments = [{
+            filename: filename || `Quotation-${Date.now()}.pdf`,
+            content: pdfBuffer.toString('base64')
+        }];
+
+        const result = await this.sendBrevoEmail({
+            to: recipientList,
+            subject,
+            html,
+            attachments
+        });
+
+        const recipientsDisplay = recipientList.join(', ');
+        return { success: result.success, msg: result.success ? `Quotation emailed successfully to ${recipientsDisplay}` : `Failed to send quotation email to ${recipientsDisplay}` };
     }
 
     /**
@@ -255,6 +409,55 @@ class NotificationService {
         }
     }
 
+    /**
+     * Sends a Payment Failed email when an online (Cashfree) payment does not complete successfully
+     */
+    static async sendPaymentFailedEmail(order: any, reason?: string): Promise<boolean> {
+        try {
+            const to = order.shippingInfo?.email;
+            if (!to) {
+                console.error('[STRICT-ERROR] Cannot send payment failed email: Recipient email is missing from order.');
+                return false;
+            }
+
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+            const adminEmail = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
+
+            const mailOptions: any = {
+                from,
+                to,
+                bcc: adminEmail || undefined,
+                subject: `Payment Failed - Order #${order._id.toString().slice(-6).toUpperCase()}`,
+                html: `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h2 style="color: #dc2626;">Payment Failed</h2>
+                            <p style="color: #6b7280;">We couldn't process your payment for the order below.</p>
+                        </div>
+
+                        <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fecaca;">
+                            <p style="margin: 0; font-size: 12px; color: #7f1d1d;">Order ID: #${order._id}</p>
+                            <p style="margin: 5px 0 0; font-size: 14px; font-weight: bold; color: #991b1b;">Amount: ₹${order.totalAmount.toFixed(2)}</p>
+                            ${reason ? `<p style="margin: 5px 0 0; font-size: 12px; color: #991b1b;">Reason: ${reason}</p>` : ''}
+                        </div>
+
+                        <p style="font-size: 14px; color: #64748b;">No amount has been deducted for this failed attempt. You can try placing the order again, or choose Cash on Delivery instead.</p>
+
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                        <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 DDTEC. All rights reserved.</p>
+                    </div>
+                `
+            };
+
+            console.log(`[NOTIFICATION] Attempting to send Payment Failed email to ${to}...`);
+            const result = await this.sendBrevoEmail(mailOptions);
+            return result.success;
+        } catch (error: any) {
+            console.error('[STRICT-ERROR] Payment failed email failed to send:', error);
+            return false;
+        }
+    }
+
     private static async generateBillPDF(bill: any): Promise<Buffer> {
         const doc = new jsPDF();
 
@@ -437,6 +640,10 @@ class NotificationService {
                     statusDisplay = 'Delivered';
                     message = 'Your order has been successfully delivered. Thank you for shopping with DDTEC!';
                     break;
+                case 'cancelled':
+                    statusDisplay = 'Rejected / Cancelled';
+                    message = 'Unfortunately your order has been rejected/cancelled. If you were charged online, the amount will be refunded to your original payment method within 5-7 business days. Please contact support if you have any questions.';
+                    break;
                 default:
                     return false; // Don't send emails for other statuses unless needed
             }
@@ -465,6 +672,62 @@ class NotificationService {
             console.error('[STRICT-ERROR] Order status update email failed:', error);
             return false;
         }
+    }
+
+    /**
+     * Sends custom or scheduled email with predefined HTML
+     */
+    static async sendCustomEmail(to: string | string[], subject: string, html: string, scheduledAt?: string): Promise<{ success: boolean; msg?: string; messageId?: string }> {
+        try {
+            const recipients = Array.isArray(to) ? to.join(',') : to;
+            if (!recipients) {
+                return { success: false, msg: 'No recipient email addresses provided.' };
+            }
+
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'noreply@ddtec.com'}>`);
+
+            const mailOptions: any = {
+                from,
+                to: recipients,
+                subject,
+                html
+            };
+
+            if (scheduledAt) {
+                mailOptions.scheduledAt = scheduledAt;
+            }
+
+            console.log(`[NOTIFICATION] ${scheduledAt ? 'Scheduling' : 'Sending'} custom email to: ${recipients} | Subject: "${subject}"${scheduledAt ? ' | ScheduledAt: ' + scheduledAt : ''}`);
+            const result = await this.sendBrevoEmail(mailOptions);
+
+            if (!result.success) {
+                return { success: false, msg: 'Failed to send email via Brevo.' };
+            }
+
+            return { success: true, msg: 'Email dispatched successfully.', messageId: result.messageId };
+        } catch (error: any) {
+            console.error('[NOTIFICATION-ERROR] Failed to send custom email:', error);
+            const errorMsg = error.response?.body?.errors?.[0]?.message || error.message || 'Unknown error';
+            return { success: false, msg: errorMsg };
+        }
+    }
+
+    /**
+     * Cancels a scheduled email on Brevo servers using its message/batch identifier
+     */
+    static async cancelScheduledBrevoEmail(identifier: string): Promise<boolean> {
+        if (process.env.BREVO_API_KEY && process.env.BREVO_API_KEY !== 'YOUR_BREVO_API_KEY_HERE') {
+            try {
+                const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
+                await brevo.transactionalEmails.deleteScheduledEmailById({ identifier });
+                console.log(`[NOTIFICATION] Brevo scheduled email cancelled on Brevo servers (ID: ${identifier})`);
+                return true;
+            } catch (error: any) {
+                console.error('[NOTIFICATION] Failed to cancel Brevo scheduled email:', error.message || error);
+                return false;
+            }
+        }
+        return false;
     }
 
     /**
