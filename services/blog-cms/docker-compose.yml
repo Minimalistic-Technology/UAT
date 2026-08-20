@@ -1,0 +1,28 @@
+services:
+  blog-cms:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blog-cms
+    ports:
+      # Host port is only exposed for the host-level nginx reverse proxy to reach.
+      # Change the host side (left of the colon) if 1337 is already taken by another service.
+      - "1337:1337"
+    env_file:
+      - ./.env
+    environment:
+      - NODE_ENV=production
+    restart: always
+    volumes:
+      - blog_cms_uploads:/opt/app/public/uploads
+      - blog_cms_data:/opt/app/.tmp
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:1337/_health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  blog_cms_uploads:
+  blog_cms_data:

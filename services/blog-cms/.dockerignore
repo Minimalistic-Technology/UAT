@@ -1,0 +1,16 @@
+node_modules
+.cache
+.tmp
+.strapi
+build
+dist
+exports
+.env
+.env.local
+.env.*.local
+.git
+.gitignore
+*.md
+database/*.db
+database/*.sqlite
+database/*.sqlite3
