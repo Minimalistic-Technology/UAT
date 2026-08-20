@@ -11,6 +11,7 @@ console.log('[DEBUG] Environment Variables Check:');
 console.log(' - EMAIL_USER:', process.env.EMAIL_USER ? 'FOUND (Real Mode)' : 'MISSING (Sandbox Mode)');
 console.log(' - SMS_SERVICE: DISABLED (Use Email)');
 console.log(' - MONGO_URI:', process.env.MONGO_URI ? 'FOUND' : 'CONNECTED (HIDDEN)');
+console.log(' - CORS_ORIGIN:', process.env.CORS_ORIGIN || process.env.cors_origin || process.env.ALLOWED_ORIGINS || '(Default used)');
 
 // Trigger Email Verification on start
 import NotificationService from './services/notification.service';
@@ -32,31 +33,25 @@ import connectDB from './config/database';
 const app = express();
 
 // Middleware
-// Middleware
-// Middleware
-const allowedOrigins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    "https://ddtec.onrender.com"
-];
+const corsOriginEnv = process.env.CORS_ORIGIN || process.env.cors_origin || process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL;
 
-// Add origins from ALLOWED_ORIGINS env var if present
-if (process.env.ALLOWED_ORIGINS) {
-    const extraOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-    allowedOrigins.push(...extraOrigins);
-}
+const allowedOrigins: string[] = corsOriginEnv
+    ? corsOriginEnv.split(',').map(origin => origin.trim()).filter(Boolean)
+    : [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'https://ddtec.onrender.com'
+    ];
 
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             console.warn(`Blocked by CORS: ${origin}`);
-            // In dev, we might still want to allow but log
-            callback(null, true);
+            callback(new Error(`Origin ${origin} not allowed by CORS`));
         }
     },
     credentials: true,
