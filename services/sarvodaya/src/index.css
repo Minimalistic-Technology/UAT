@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-white text-ink-900 font-sans antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04';
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(16, 18, 27, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(16, 18, 27, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  .mask-fade-r {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  }
+}
+
+::selection {
+  @apply bg-forest-200 text-ink-900;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-ink-200 rounded-full border-4 border-solid border-white;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-ink-300;
+}
