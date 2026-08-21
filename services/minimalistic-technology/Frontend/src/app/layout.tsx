@@ -2,6 +2,7 @@ import React from 'react';
 import type { Metadata } from "next";
 import Layout from "@/components/Layout";
 import "./globals.css";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 export const metadata: Metadata = {
     title: "Minimalistic Technology | Engineering the Future",
@@ -13,6 +14,8 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const gaId = process.env.NEXT_PUBLIC_GA_ID || process.env.GA_ID;
+
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
@@ -22,6 +25,7 @@ export default function RootLayout({
             </head>
             <body>
                 <Layout>{children}</Layout>
+                {gaId && <GoogleAnalytics gaId={gaId} />}
             </body>
         </html>
     );
