@@ -49,10 +49,16 @@ const finalizeOrder = async (orderId: string) => {
         console.error('Error auto-creating bill:', billError);
     }
 
-    const populatedOrder = await Order.findById(orderId).populate('items.product');
+    const populatedOrder = await Order.findById(orderId).populate('items.product').populate('user', 'name email');
     if (populatedOrder) {
+        // 1. Send Order Confirmation + Bill invoice PDF to User
         NotificationService.sendOrderConfirmation(populatedOrder).catch(err => {
-            console.error('[ORDER-EMAIL-ERROR] Failed to send confirmation:', err);
+            console.error('[ORDER-USER-EMAIL-ERROR] Failed to send user confirmation:', err);
+        });
+
+        // 2. Send Payment / New Order notification alert to Admin
+        NotificationService.sendAdminPaymentNotification(populatedOrder).catch(err => {
+            console.error('[ORDER-ADMIN-EMAIL-ERROR] Failed to send admin payment notification:', err);
         });
     }
 };
@@ -370,11 +376,20 @@ export const getAllOrders = async (req: Request, res: Response) => {
     }
 };
 
-// Get current user's orders
+// Get current user's orders (User History)
 export const getMyOrders = async (req: Request | any, res: Response) => {
     try {
-        const userId = req.user.id;
-        const orders = await Order.find({ user: userId })
+        const userId = req.user?.id;
+        const userEmail = req.user?.email;
+
+        const query: any = {
+            $or: [
+                { user: userId },
+                ...(userEmail ? [{ 'shippingInfo.email': new RegExp(`^${userEmail.trim()}$`, 'i') }] : [])
+            ]
+        };
+
+        const orders = await Order.find(query)
             .populate('items.product')
             .sort({ createdAt: -1 });
         res.json(orders);
@@ -384,7 +399,7 @@ export const getMyOrders = async (req: Request | any, res: Response) => {
     }
 };
 
-// Update Order Status (Admin only)
+// Update Order Status (Admin / Warehouse Only)
 export const updateOrderStatus = async (req: Request, res: Response) => {
     try {
         const { status } = req.body;
@@ -394,41 +409,70 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Invalid status' });
         }
 
-        const order = await Order.findByIdAndUpdate(
-            req.params.id,
-            { $set: { status } },
-            { new: true }
-        ).populate('user', 'name email');
-
-        if (!order) {
+        const existingOrder = await Order.findById(req.params.id);
+        if (!existingOrder) {
             return res.status(404).json({ msg: 'Order not found' });
         }
 
-        // Send Email Alert for order status update (Only for users)
-        NotificationService.sendOrderStatusUpdate(order, status).catch(err => {
-            console.error('[EMAIL-ERROR] Failed to send order status update:', err);
-        });
+        const prevStatus = existingOrder.status;
 
-        res.json(order);
+        // If status becomes cancelled and wasn't cancelled before, restock inventory items
+        if (status === 'cancelled' && prevStatus !== 'cancelled') {
+            await restockOrderItems(existingOrder);
+        }
+
+        existingOrder.status = status;
+        const updatedOrder = await existingOrder.save();
+
+        const populatedOrder = await Order.findById(updatedOrder._id)
+            .populate('user', 'name email')
+            .populate('items.product');
+
+        // Send Email Alert for order status update to User
+        if (populatedOrder) {
+            NotificationService.sendOrderStatusUpdate(populatedOrder, status).catch(err => {
+                console.error('[EMAIL-ERROR] Failed to send order status update:', err);
+            });
+        }
+
+        res.json(populatedOrder || updatedOrder);
     } catch (error) {
         console.error('Error updating order status:', error);
         res.status(500).json({ msg: 'Server error' });
     }
 };
+
 // Update Order (Admin only)
 export const updateOrder = async (req: Request, res: Response) => {
     try {
-        const order = await Order.findByIdAndUpdate(
-            req.params.id,
-            { $set: req.body },
-            { new: true }
-        ).populate('user', 'name email');
-
-        if (!order) {
+        const existingOrder = await Order.findById(req.params.id);
+        if (!existingOrder) {
             return res.status(404).json({ msg: 'Order not found' });
         }
 
-        res.json(order);
+        const prevStatus = existingOrder.status;
+        const newStatus = req.body.status;
+
+        // If status changed to cancelled and wasn't cancelled before, restock items
+        if (newStatus && newStatus === 'cancelled' && prevStatus !== 'cancelled') {
+            await restockOrderItems(existingOrder);
+        }
+
+        Object.assign(existingOrder, req.body);
+        const savedOrder = await existingOrder.save();
+
+        const populatedOrder = await Order.findById(savedOrder._id)
+            .populate('user', 'name email')
+            .populate('items.product');
+
+        // Send notification to user if order status changed
+        if (populatedOrder && newStatus && newStatus !== prevStatus) {
+            NotificationService.sendOrderStatusUpdate(populatedOrder, newStatus).catch(err => {
+                console.error('[EMAIL-ERROR] Failed to send order update notification:', err);
+            });
+        }
+
+        res.json(populatedOrder || savedOrder);
     } catch (error) {
         console.error('Error updating order:', error);
         res.status(500).json({ msg: 'Server error' });
