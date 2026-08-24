@@ -13,6 +13,7 @@ import billRoutes from './bill.routes';
 import settingsRoutes from './settings';
 import purchaseRecordRoutes from './purchaseRecord.routes';
 import crmContactRoutes from './crmContact.routes';
+import deliveryRoutes from './delivery.routes';
 
 const router = Router();
 
@@ -32,5 +33,7 @@ router.use('/settings', settingsRoutes);
 router.use('/purchases', purchaseRecordRoutes);
 router.use('/inventory-records', purchaseRecordRoutes);
 router.use('/contacts', crmContactRoutes);
+router.use('/delivery', deliveryRoutes);
+router.use('/pincode', deliveryRoutes);
 
 export default router;

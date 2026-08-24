@@ -5,7 +5,7 @@ import { useCart } from "../_context/CartContext";
 import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
 import { useRouter } from "next/navigation";
-import { CreditCard, Banknote, CheckCircle, Loader2, Tag, Trash2, Smartphone, Lock, Mail } from "lucide-react";
+import { CreditCard, Banknote, CheckCircle, Loader2, Tag, Trash2, Smartphone, Lock, Mail, Truck, MapPin, AlertCircle, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
@@ -53,6 +53,11 @@ export default function CheckoutPage() {
     const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
     const [couponInput, setCouponInput] = useState("");
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+    // Delivery Partner State (Blue Dart & DTDC)
+    const [deliveryInfo, setDeliveryInfo] = useState<any>(null);
+    const [checkingDelivery, setCheckingDelivery] = useState(false);
+    const [deliveryError, setDeliveryError] = useState<string | null>(null);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -125,6 +130,56 @@ export default function CheckoutPage() {
             router.push('/cart');
         }
     }, [cartItems, loading, cartLoading, router, isSuccess]);
+
+    // Initialize ZIP from localStorage if user had checked it earlier
+    useEffect(() => {
+        const savedPin = localStorage.getItem("ddtec_user_pincode");
+        const savedCity = localStorage.getItem("ddtec_user_city");
+        if (savedPin && /^[1-9][0-9]{5}$/.test(savedPin)) {
+            setFormData(prev => ({
+                ...prev,
+                zip: prev.zip || savedPin,
+                city: prev.city || savedCity || ""
+            }));
+        }
+    }, []);
+
+    // Live verify serviceability when 6-digit ZIP is entered
+    useEffect(() => {
+        const checkZipServiceability = async () => {
+            const cleanZip = (formData.zip || "").trim();
+            if (/^[1-9][0-9]{5}$/.test(cleanZip)) {
+                setCheckingDelivery(true);
+                setDeliveryError(null);
+                try {
+                    const res = await api.get(`/delivery/check-pincode?pincode=${cleanZip}`);
+                    setDeliveryInfo(res.data);
+                    if (res.data.serviceable) {
+                        if (res.data.location?.city && !formData.city) {
+                            setFormData(prev => ({ ...prev, city: res.data.location.city }));
+                        }
+                    } else {
+                        setDeliveryError(`Delivery is not available to pincode ${cleanZip} via Blue Dart or DTDC.`);
+                    }
+                } catch (err: any) {
+                    console.warn("Delivery check error:", err);
+                    setDeliveryError("Could not verify courier serviceability for this PIN code.");
+                    setDeliveryInfo(null);
+                } finally {
+                    setCheckingDelivery(false);
+                }
+            } else {
+                setDeliveryInfo(null);
+                setDeliveryError(null);
+            }
+        };
+
+        const timer = setTimeout(() => {
+            checkZipServiceability();
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [formData.zip]);
 
     const freeDeliveryThreshold = 500;
     const isFreeDelivery = subtotal >= freeDeliveryThreshold;
@@ -340,6 +395,12 @@ export default function CheckoutPage() {
 
     const handlePlaceOrder = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Check if delivery serviceability is verified
+        if (deliveryError || (deliveryInfo && !deliveryInfo.serviceable)) {
+            showToast("Delivery is not available to this PIN code. Please provide a serviceable delivery address.", "error");
+            return;
+        }
 
         // Enforce Signup for Guests
         if (!user) {
@@ -660,20 +721,57 @@ export default function CheckoutPage() {
                                         type="text"
                                         value={formData.city}
                                         onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                        placeholder="City / District"
                                         className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-teal-500 outline-none"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">ZIP Code</label>
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">PIN / ZIP Code</label>
+                                        {checkingDelivery && (
+                                            <span className="text-[11px] text-teal-600 dark:text-teal-400 flex items-center gap-1">
+                                                <Loader2 className="size-3 animate-spin" /> Verifying...
+                                            </span>
+                                        )}
+                                    </div>
                                     <input
                                         required
                                         type="text"
+                                        inputMode="numeric"
+                                        maxLength={6}
                                         value={formData.zip}
-                                        onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => setFormData({ ...formData, zip: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                                        placeholder="6-digit PIN code"
+                                        className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-950 focus:ring-2 outline-none font-medium ${deliveryError ? 'border-red-500 focus:ring-red-500' : (deliveryInfo?.serviceable ? 'border-emerald-500 focus:ring-emerald-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500')}`}
                                     />
                                 </div>
                             </div>
+
+                            {/* Courier Partner Serviceability Feedback */}
+                            {deliveryInfo && deliveryInfo.serviceable && (
+                                <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/25 border border-emerald-200 dark:border-emerald-900/40 rounded-xl space-y-1.5 animate-in fade-in">
+                                    <div className="flex items-center justify-between text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                                        <span className="flex items-center gap-1.5">
+                                            <CheckCircle2 className="size-3.5 text-emerald-600" />
+                                            Serviceable via {deliveryInfo.primaryPartner?.name || 'Blue Dart Express'}
+                                        </span>
+                                        <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
+                                            {deliveryInfo.primaryPartner?.serviceType || 'Apex Air & Surface'}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                                        <Truck className="size-3" />
+                                        Est. Delivery by <strong>{deliveryInfo.primaryPartner?.formattedDeliveryDate}</strong> ({deliveryInfo.primaryPartner?.estimatedDays})
+                                    </p>
+                                </div>
+                            )}
+
+                            {deliveryError && (
+                                <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 rounded-xl flex items-start gap-2 text-xs text-rose-700 dark:text-rose-400 animate-in fade-in">
+                                    <AlertCircle className="size-4 shrink-0 mt-0.5 text-rose-600" />
+                                    <span>{deliveryError}</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Payment Method */}

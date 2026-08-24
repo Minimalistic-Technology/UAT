@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import DeliveryPincodeChecker from "../_components/DeliveryPincodeChecker";
 
 export default function CartPage() {
     const { cartItems, removeFromCart, updateQuantity, loading, subtotal, totalPrice, applyCoupon, removeCoupon, appliedCoupon } = useCart();
@@ -208,6 +209,11 @@ export default function CartPage() {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Delivery Pincode & Courier Partner Checker */}
+                            <div className="mb-6 pb-6 border-b border-slate-100 dark:border-slate-800">
+                                <DeliveryPincodeChecker compact />
                             </div>
 
                             <div className="space-y-4 mb-6">
