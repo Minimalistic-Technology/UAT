@@ -18,6 +18,11 @@ export interface ISettings extends Document {
         inviteCode: string;
         closedMessage: string;
     };
+    delivery?: {
+        freeDeliveryThreshold: number;
+        flatDeliveryFee: number;
+        isFreeDeliveryEnabled: boolean;
+    };
     updatedAt: Date;
 }
 
@@ -37,6 +42,11 @@ const SettingsSchema: Schema = new Schema({
         mode: { type: String, enum: ['open', 'closed', 'invite_only', 'admin_approval'], default: 'open' },
         inviteCode: { type: String, default: 'DDTEC-INVITE-2026' },
         closedMessage: { type: String, default: 'New user onboarding is currently restricted by administrator.' }
+    },
+    delivery: {
+        freeDeliveryThreshold: { type: Number, default: 500 },
+        flatDeliveryFee: { type: Number, default: 50 },
+        isFreeDeliveryEnabled: { type: Boolean, default: false }
     }
 }, { timestamps: true });
 

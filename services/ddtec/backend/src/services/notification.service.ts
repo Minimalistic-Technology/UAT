@@ -9,6 +9,16 @@ class NotificationService {
     private static _emailTransporter: any = null;
     private static _isTestAccount: boolean = false;
 
+    private static getFromAddress(serviceName: string = 'DDTEC Official'): string {
+        if (process.env.EMAIL_FROM) return process.env.EMAIL_FROM;
+        if (process.env.EMAIL_USER) return `"${serviceName}" <${process.env.EMAIL_USER}>`;
+        return `"${serviceName} Sandbox" <test@ddtec.com>`;
+    }
+
+    private static getAdminRecipient(): string {
+        return process.env.ADMIN_EMAIL || process.env.EMAIL_TO || process.env.EMAIL_USER || 'admin-orders@ddtec.test';
+    }
+
     private static async getEmailTransporter() {
         if (!this._emailTransporter) {
             if (process.env.EMAIL_SANDBOX === 'true' || (!process.env.EMAIL_USER && !process.env.EMAIL_PASS)) {
@@ -348,8 +358,8 @@ class NotificationService {
                 });
             }
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
-            const adminEmail = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
+            const from = this.getFromAddress('DDTEC Official');
+            const adminEmail = this.getAdminRecipient();
 
             const itemsHtml = order.items.map((item: any) => `
                 <tr style="border-bottom: 1px solid #eee;">
@@ -420,8 +430,8 @@ class NotificationService {
                 return false;
             }
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
-            const adminEmail = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
+            const from = this.getFromAddress('DDTEC Official');
+            const adminEmail = this.getAdminRecipient();
 
             const mailOptions: any = {
                 from,
@@ -619,13 +629,13 @@ class NotificationService {
      */
     static async sendAdminPaymentNotification(order: any): Promise<boolean> {
         try {
-            const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_TO || process.env.EMAIL_USER;
+            const adminEmail = this.getAdminRecipient();
             if (!adminEmail) {
                 console.warn('[NOTIFICATION-WARN] No admin email defined for payment notification.');
                 return false;
             }
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC System" <system@ddtec.com>' : `"DDTEC Orders" <${process.env.EMAIL_USER || 'orders@ddtec.com'}>`);
+            const from = this.getFromAddress('DDTEC Orders');
 
             const itemsHtml = (order.items || []).map((item: any) => `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
@@ -718,7 +728,7 @@ class NotificationService {
             const to = order.shippingInfo?.email;
             if (!to) return false;
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+            const from = this.getFromAddress('DDTEC Official');
 
             // Format status for display
             let statusDisplay = '';

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "../_context/CartContext";
 import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
+import { useSettings } from "../_context/SettingsContext";
 import { useRouter } from "next/navigation";
 import { CreditCard, Banknote, CheckCircle, Loader2, Tag, Trash2, Smartphone, Lock, Mail, Truck, MapPin, AlertCircle, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +14,7 @@ import api from "@/lib/api";
 export default function CheckoutPage() {
     const { cartItems, totalPrice, clearCart, appliedCoupon, subtotal, applyCoupon, removeCoupon, loading: cartLoading } = useCart();
     const { user, loading, checkUser } = useAuth();
+    const { siteSettings } = useSettings();
     const { showToast } = useToast();
     const router = useRouter();
     const [isProcessing, setIsProcessing] = useState(false);
@@ -181,9 +183,17 @@ export default function CheckoutPage() {
         return () => clearTimeout(timer);
     }, [formData.zip]);
 
-    const freeDeliveryThreshold = 500;
-    const isFreeDelivery = subtotal >= freeDeliveryThreshold;
-    const shippingCost = isFreeDelivery ? 0 : 50;
+    const deliveryConfig = siteSettings?.delivery || {
+        freeDeliveryThreshold: 500,
+        flatDeliveryFee: 50,
+        isFreeDeliveryEnabled: true
+    };
+    const freeDeliveryThreshold = deliveryConfig.freeDeliveryThreshold ?? 500;
+    const flatDeliveryFee = deliveryConfig.flatDeliveryFee ?? 50;
+    const isFreeDeliveryEnabled = deliveryConfig.isFreeDeliveryEnabled !== false;
+
+    const isFreeDelivery = isFreeDeliveryEnabled && subtotal >= freeDeliveryThreshold;
+    const shippingCost = isFreeDelivery ? 0 : flatDeliveryFee;
     const tax = totalPrice * 0.1;
     const finalTotal = totalPrice + tax + shippingCost;
 

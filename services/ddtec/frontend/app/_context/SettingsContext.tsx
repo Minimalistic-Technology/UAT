@@ -22,9 +22,16 @@ export interface OnboardingSettings {
     closedMessage: string;
 }
 
+export interface DeliverySettings {
+    freeDeliveryThreshold: number;
+    flatDeliveryFee: number;
+    isFreeDeliveryEnabled: boolean;
+}
+
 export interface SiteSettings {
     components: ComponentSettings;
     onboarding?: OnboardingSettings;
+    delivery?: DeliverySettings;
 }
 
 interface SettingsContextType {
@@ -47,8 +54,14 @@ const defaultComponents: ComponentSettings = {
     Signup: true,
 };
 
+const defaultDelivery: DeliverySettings = {
+    freeDeliveryThreshold: 500,
+    flatDeliveryFee: 50,
+    isFreeDeliveryEnabled: false,
+};
+
 const SettingsContext = createContext<SettingsContextType>({
-    siteSettings: { components: defaultComponents },
+    siteSettings: { components: defaultComponents, delivery: defaultDelivery },
     loading: true,
     refreshSettings: async () => { },
     isComponentEnabled: () => true,

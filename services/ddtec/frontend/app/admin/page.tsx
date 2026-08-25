@@ -353,6 +353,29 @@ const AdminDashboard = () => {
         }
     };
 
+    const updateDeliverySetting = (key: string, value: any) => {
+        const updatedDelivery = {
+            ...(siteSettings?.delivery || { freeDeliveryThreshold: 500, flatDeliveryFee: 50, isFreeDeliveryEnabled: true }),
+            [key]: value
+        };
+        setSiteSettings((prev: any) => ({
+            ...prev,
+            delivery: updatedDelivery
+        }));
+    };
+
+    const saveDeliveryConfig = async (deliveryPayload?: any) => {
+        try {
+            const payload = deliveryPayload || siteSettings?.delivery || { freeDeliveryThreshold: 500, flatDeliveryFee: 50, isFreeDeliveryEnabled: true };
+            const res = await api.put('/settings', { delivery: payload });
+            setSiteSettings(res.data);
+            refreshSettings();
+            showToast?.("Delivery & shipping settings updated successfully!", "success");
+        } catch (error: any) {
+            showToast?.("Failed to update delivery settings", "error");
+        }
+    };
+
     const fetchUsers = async () => {
         setLoadingData(true);
         try {
@@ -2966,6 +2989,77 @@ const AdminDashboard = () => {
                                                         description="When disabled, public login is blocked (admins and staff bypass this restriction to avoid lockout)."
                                                     />
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Delivery & Shipping Rates Controls */}
+                                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-6">
+                                            <div className="border-b border-slate-100 dark:border-slate-700 pb-4">
+                                                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                    <Truck className="size-5 text-teal-600" /> Delivery & Shipping Rates
+                                                </h3>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Configure free delivery threshold and standard shipping fees.</p>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                    <ToggleSwitch
+                                                        isOn={siteSettings.delivery?.isFreeDeliveryEnabled !== false}
+                                                        onToggle={() => {
+                                                            const currentVal = siteSettings.delivery?.isFreeDeliveryEnabled !== false;
+                                                            updateDeliverySetting('isFreeDeliveryEnabled', !currentVal);
+                                                            saveDeliveryConfig({ ...(siteSettings.delivery || {}), isFreeDeliveryEnabled: !currentVal });
+                                                        }}
+                                                        label="Enable Free Delivery Tier"
+                                                        description="Automatically waive delivery fee when cart total exceeds threshold."
+                                                    />
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1.5">
+                                                            Free Delivery Threshold (₹)
+                                                        </label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                step="10"
+                                                                value={siteSettings.delivery?.freeDeliveryThreshold ?? 500}
+                                                                onChange={(e) => updateDeliverySetting('freeDeliveryThreshold', Number(e.target.value))}
+                                                                className="w-full pl-8 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500"
+                                                            />
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-400 mt-1">Orders at or above this amount get free delivery</p>
+                                                    </div>
+
+                                                    <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1.5">
+                                                            Standard Shipping Fee (₹)
+                                                        </label>
+                                                        <div className="relative">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                step="5"
+                                                                value={siteSettings.delivery?.flatDeliveryFee ?? 50}
+                                                                onChange={(e) => updateDeliverySetting('flatDeliveryFee', Number(e.target.value))}
+                                                                className="w-full pl-8 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500"
+                                                            />
+                                                        </div>
+                                                        <p className="text-[11px] text-slate-400 mt-1">Applied on orders below free delivery threshold</p>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => saveDeliveryConfig()}
+                                                    className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                                                >
+                                                    Save Delivery Settings
+                                                </button>
                                             </div>
                                         </div>
 

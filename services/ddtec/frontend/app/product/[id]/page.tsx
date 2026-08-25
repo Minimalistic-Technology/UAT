@@ -66,7 +66,7 @@ interface Product {
 export default function ProductDetailsPage() {
     const { id } = useParams();
     const router = useRouter();
-    const { addToCart } = useCart();
+    const { addToCart, cartItems } = useCart();
     const { showToast } = useToast();
     const { isRouteActive } = useDynamicRoutes();
 
@@ -175,12 +175,11 @@ export default function ProductDetailsPage() {
     };
 
     const handleAddToCart = async () => {
-        if (!product) return;
+        if (!product || quantity <= 0) return;
         try {
-            for (let i = 0; i < quantity; i++) {
-                await addToCart(product._id);
-            }
+            await addToCart(product._id, quantity);
             showToast?.(`Added ${quantity} ${product.name} to cart!`, "success");
+            setQuantity(1); // Reset quantity selector back to default
         } catch {
             showToast?.("Failed to add product to cart", "error");
         }
@@ -189,9 +188,15 @@ export default function ProductDetailsPage() {
     const handleBuyNow = async () => {
         if (!product) return;
         try {
-            for (let i = 0; i < quantity; i++) {
-                await addToCart(product._id);
+            const isAlreadyInCart = cartItems.some(
+                item => item.product?._id === product._id || (typeof item.product === 'string' && item.product === product._id)
+            );
+
+            // If product is not yet in cart, add it before redirecting
+            if (!isAlreadyInCart && quantity > 0) {
+                await addToCart(product._id, quantity);
             }
+
             router.push('/cart');
         } catch {
             showToast?.("Failed to process Buy Now request", "error");
