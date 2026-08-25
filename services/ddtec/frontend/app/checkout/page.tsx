@@ -6,7 +6,7 @@ import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
 import { useSettings } from "../_context/SettingsContext";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CreditCard, Banknote, CheckCircle, Loader2, Tag, Trash2, Smartphone, Lock, Mail, Truck, MapPin, AlertCircle, CheckCircle2, Weight, Zap, Check } from "lucide-react";
+import { CreditCard, Banknote, CheckCircle, Loader2, Tag, Trash2, Smartphone, Lock, Mail, Truck, MapPin, AlertCircle, CheckCircle2, Weight, Zap, Check, User, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
@@ -689,6 +689,38 @@ export default function CheckoutPage() {
                         Checkout Details
                     </h2>
 
+                    {!user && (
+                        <div className="p-4 bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="size-10 rounded-xl bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 flex items-center justify-center flex-shrink-0">
+                                    <User className="size-5" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                        Have a DDTEC Account?
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Log in or sign up to auto-fill saved commercial addresses & GST invoices.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <Link
+                                    href="/login?redirect=/checkout"
+                                    className="px-3.5 py-1.5 rounded-xl border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 font-bold text-xs hover:bg-teal-100 dark:hover:bg-teal-900 transition-colors"
+                                >
+                                    Log In
+                                </Link>
+                                <Link
+                                    href="/signup?redirect=/checkout"
+                                    className="px-3.5 py-1.5 rounded-xl bg-teal-600 text-white font-bold text-xs hover:bg-teal-700 shadow-sm transition-colors"
+                                >
+                                    Sign Up
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
                     <form onSubmit={handlePlaceOrder} className="space-y-8">
                         {/* Shipping Info */}
                         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
@@ -893,13 +925,35 @@ export default function CheckoutPage() {
                             )}
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={isProcessing}
-                            className="w-full py-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all shadow-lg hover:shadow-teal-500/25 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                        >
-                            {isProcessing ? <Loader2 className="animate-spin size-5" /> : (user ? `Pay ₹${finalTotal.toFixed(2)}` : "Sign Up & Pay")}
-                        </button>
+                        {!user ? (
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={() => router.push('/signup?redirect=/checkout')}
+                                    className="w-full py-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 active:scale-[0.99] transition-all shadow-lg hover:shadow-teal-500/25 flex items-center justify-center gap-2"
+                                >
+                                    <User className="size-5" /> Sign Up to Complete Order <ArrowRight className="size-4" />
+                                </button>
+                                <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                                    Already have an account?{" "}
+                                    <Link href="/login?redirect=/checkout" className="text-teal-600 dark:text-teal-400 font-bold hover:underline">
+                                        Log In here
+                                    </Link>
+                                </p>
+                            </div>
+                        ) : (
+                            <button
+                                type="submit"
+                                disabled={isProcessing}
+                                className="w-full py-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all shadow-lg hover:shadow-teal-500/25 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                                {isProcessing ? (
+                                    <Loader2 className="animate-spin size-5" />
+                                ) : (
+                                    paymentMethod === 'cod' ? `Place COD Order (₹${finalTotal.toFixed(2)})` : `Pay ₹${finalTotal.toFixed(2)}`
+                                )}
+                            </button>
+                        )}
                     </form>
                 </div>
 

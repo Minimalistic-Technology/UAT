@@ -18,8 +18,8 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
-    login: (email: string, password: string) => Promise<void>;
-    loginWithGoogle: (credential: string) => Promise<void>;
+    login: (email: string, password: string, redirectUrl?: string) => Promise<void>;
+    loginWithGoogle: (credential: string, redirectUrl?: string) => Promise<void>;
     logout: () => void;
     loading: boolean;
     checkUser: () => Promise<void>;
@@ -45,19 +45,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     useEffect(() => {
-        // Explicitly clear legacy localstorage items to satisfy user request
-        localStorage.removeItem("ddtec_user");
+        // Clear any old JWT tokens from localStorage since we are now using pure httpOnly cookies
+        localStorage.removeItem("token");
         localStorage.removeItem("ddtec_token");
+        localStorage.removeItem("ddtec_user");
 
         // Check session cookie on mount via /me
         checkUser();
     }, []);
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string, redirectUrl?: string) => {
         try {
             const res = await api.post('/auth/login', { email, password });
 
             setUser(res.data.user);
+
+            if (redirectUrl) {
+                router.push(redirectUrl);
+                return;
+            }
 
             if (res.data.user.role === 'admin') {
                 router.push("/admin");
@@ -75,11 +81,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
 
-    const loginWithGoogle = async (credential: string) => {
+    const loginWithGoogle = async (credential: string, redirectUrl?: string) => {
         try {
             const res = await api.post('/auth/google', { credential });
 
             setUser(res.data.user);
+
+            if (redirectUrl) {
+                router.push(redirectUrl);
+                return;
+            }
 
             if (res.data.user.role === 'admin') {
                 router.push("/admin");
