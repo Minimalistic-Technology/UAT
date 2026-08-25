@@ -16,19 +16,21 @@ import {
     Tag,
     Check,
     Sparkles,
-    Percent,
-    RotateCcw,
     Lock,
     PackageCheck,
     ChevronRight,
-    AlertCircle
+    Weight,
+    Zap,
+    MapPin,
+    RotateCcw,
+    CheckCircle2,
+    Layers
 } from "lucide-react";
 import { useCart } from "../_context/CartContext";
 import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
 import { useSettings } from "../_context/SettingsContext";
 import api from "@/lib/api";
-import DeliveryPincodeChecker from "../_components/DeliveryPincodeChecker";
 
 interface ActiveCoupon {
     _id: string;
@@ -38,6 +40,27 @@ interface ActiveCoupon {
     discountValue: number;
     minOrderValue?: number;
     type?: 'cart' | 'product';
+}
+
+export interface CarrierQuote {
+    id: string;
+    carrierName: string;
+    serviceName: string;
+    code: 'BLUEDART' | 'DTDC' | 'LOCAL_HUB';
+    mode: 'surface' | 'air' | 'local';
+    ratePerKg: number;
+    baseRate: number;
+    fuelSurcharge: number;
+    subtotalFreight: number;
+    totalFreight: number;
+    estimatedDays: string;
+    estimatedDeliveryDate: string;
+    formattedDeliveryDate: string;
+    isRecommended?: boolean;
+    isBestValue?: boolean;
+    isFastest?: boolean;
+    description: string;
+    trackingCarrierUrl: string;
 }
 
 export default function CartPage() {
@@ -64,8 +87,14 @@ export default function CartPage() {
     const [couponMessage, setCouponMessage] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' });
     const [availableCoupons, setAvailableCoupons] = useState<ActiveCoupon[]>([]);
     const [showCouponsDrawer, setShowCouponsDrawer] = useState(false);
-    const [showPincodeChecker, setShowPincodeChecker] = useState(false);
     const [isClearing, setIsClearing] = useState(false);
+
+    // B2B Real-Time Carrier Freight States
+    const [pincode, setPincode] = useState("400001");
+    const [carrierQuotes, setCarrierQuotes] = useState<CarrierQuote[]>([]);
+    const [selectedQuoteId, setSelectedQuoteId] = useState<string>("BLUEDART_SURFACE");
+    const [calculatingRates, setCalculatingRates] = useState(false);
+    const [destinationLocation, setDestinationLocation] = useState<{ city: string; state: string; zone: string } | null>(null);
 
     useEffect(() => {
         const fetchActiveCoupons = async () => {
@@ -80,6 +109,51 @@ export default function CartPage() {
         };
         fetchActiveCoupons();
     }, []);
+
+    const validCartItems = cartItems.filter(item => item && item.product);
+
+    // Total Consignment Weight in KG for B2B Bulk Calculation
+    const totalWeightKg = validCartItems.reduce((acc, item) => {
+        const singleWeight = (item.product as any)?.weightKg || 0.5;
+        return acc + (singleWeight * item.quantity);
+    }, 0);
+    const roundedWeightKg = Math.max(0.5, Math.round(totalWeightKg * 10) / 10);
+
+    // Fetch Live Carrier Freight Rates
+    const fetchCarrierRates = async (targetPin: string, weight: number) => {
+        if (!targetPin || targetPin.length !== 6 || isNaN(Number(targetPin))) return;
+        setCalculatingRates(true);
+        try {
+            const res = await api.post('/delivery/calculate-rates', {
+                pincode: targetPin,
+                weightKg: weight
+            });
+            if (res.data && res.data.quotes && res.data.quotes.length > 0) {
+                setCarrierQuotes(res.data.quotes);
+                setDestinationLocation({
+                    city: res.data.location.city,
+                    state: res.data.location.state,
+                    zone: res.data.location.zone
+                });
+                // If current selected quote not in new quotes list, pick recommended
+                const currentStillValid = res.data.quotes.find((q: CarrierQuote) => q.id === selectedQuoteId);
+                if (!currentStillValid) {
+                    const rec = res.data.quotes.find((q: CarrierQuote) => q.isRecommended) || res.data.quotes[0];
+                    setSelectedQuoteId(rec.id);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to calculate live carrier rates", err);
+        } finally {
+            setCalculatingRates(false);
+        }
+    };
+
+    useEffect(() => {
+        if (validCartItems.length > 0) {
+            fetchCarrierRates(pincode, roundedWeightKg);
+        }
+    }, [pincode, roundedWeightKg, validCartItems.length]);
 
     const handleApplyCoupon = async (codeToApply?: string) => {
         const targetCode = (codeToApply || couponCode).trim().toUpperCase();
@@ -108,24 +182,21 @@ export default function CartPage() {
         }
     };
 
-    const validCartItems = cartItems.filter(item => item && item.product);
-
     // Dynamic Delivery Settings from Admin Config
     const deliveryConfig = siteSettings?.delivery || {
         freeDeliveryThreshold: 500,
         flatDeliveryFee: 50,
-        isFreeDeliveryEnabled: true
+        isFreeDeliveryEnabled: false
     };
 
+    const isFreeDeliveryEnabled = deliveryConfig.isFreeDeliveryEnabled === true;
     const freeDeliveryThreshold = deliveryConfig.freeDeliveryThreshold ?? 500;
-    const flatDeliveryFee = deliveryConfig.flatDeliveryFee ?? 50;
-    const isFreeDeliveryEnabled = deliveryConfig.isFreeDeliveryEnabled !== false;
-
     const isFreeDelivery = isFreeDeliveryEnabled && subtotal >= freeDeliveryThreshold;
-    const remainingForFreeDelivery = Math.max(0, freeDeliveryThreshold - subtotal);
-    const progressToFreeDelivery = isFreeDeliveryEnabled ? Math.min(100, (subtotal / freeDeliveryThreshold) * 100) : 0;
-    const currentDeliveryFee = isFreeDelivery ? 0 : flatDeliveryFee;
-    const grandTotal = totalPrice + currentDeliveryFee;
+
+    // Selected Real-Time Carrier Freight Quote
+    const activeCarrierQuote = carrierQuotes.find(q => q.id === selectedQuoteId) || carrierQuotes[0];
+    const liveCarrierFreight = isFreeDelivery ? 0 : (activeCarrierQuote ? activeCarrierQuote.totalFreight : (deliveryConfig.flatDeliveryFee || 50));
+    const grandTotal = totalPrice + liveCarrierFreight;
 
     // Total units count
     const totalItemsCount = validCartItems.reduce((acc, item) => acc + item.quantity, 0);
@@ -158,7 +229,7 @@ export default function CartPage() {
                         Your Cart is Empty
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
-                        Looks like you haven't added any products to your cart yet. Explore our professional catalog to find what you need.
+                        Looks like you haven't added any products to your cart yet. Explore our commercial catalog for high-volume tool supplies.
                     </p>
                     <div className="space-y-3">
                         <Link
@@ -183,7 +254,7 @@ export default function CartPage() {
     return (
         <div className="min-h-screen pt-24 sm:pt-28 pb-16 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
             <div className="max-w-7xl mx-auto">
-                {/* Header with Navigation & Clear Action */}
+                {/* Header with Navigation, Items count & Consignment Weight */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div>
                         <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
@@ -193,12 +264,15 @@ export default function CartPage() {
                             <span>/</span>
                             <span className="text-slate-900 dark:text-white">Cart</span>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
                                 Shopping Cart
                             </h1>
                             <span className="px-3 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 text-xs font-bold border border-teal-200 dark:border-teal-800">
                                 {totalItemsCount} {totalItemsCount === 1 ? 'item' : 'items'}
+                            </span>
+                            <span className="px-3 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 font-mono">
+                                <Weight className="size-3.5 text-teal-600" /> {roundedWeightKg} KG Consignment
                             </span>
                         </div>
                     </div>
@@ -239,177 +313,237 @@ export default function CartPage() {
                     </div>
                 </div>
 
-                {/* Free Delivery Banner (Only shown when Free Delivery tier is enabled) */}
-                {isFreeDeliveryEnabled && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-xs overflow-hidden relative"
-                    >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2.5">
-                            <div className="flex items-center gap-2.5">
-                                <div className={`p-2 rounded-xl ${isFreeDelivery ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' : 'bg-teal-100 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400'}`}>
-                                    <Truck className="size-5" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
-                                        {isFreeDelivery ? (
-                                            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                                                🎉 You've unlocked FREE Express Delivery!
-                                            </span>
-                                        ) : (
-                                            <span>
-                                                Add <strong className="text-teal-600 dark:text-teal-400">₹{remainingForFreeDelivery.toFixed(2)}</strong> more to get <strong className="text-emerald-600 dark:text-emerald-400">Free Delivery</strong>
-                                            </span>
-                                        )}
-                                    </p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                                        Orders above ₹{freeDeliveryThreshold} ship completely free across India
-                                    </p>
-                                </div>
-                            </div>
-                            <span className="text-xs font-extrabold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950 px-2.5 py-1 rounded-full border border-teal-100 dark:border-teal-900 self-start sm:self-auto">
-                                {Math.round(progressToFreeDelivery)}% unlocked
-                            </span>
-                        </div>
-
-                        <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${progressToFreeDelivery}%` }}
-                                transition={{ duration: 0.6, ease: "easeOut" }}
-                                className={`h-full rounded-full ${isFreeDelivery ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-teal-400 to-teal-600'}`}
-                            />
-                        </div>
-                    </motion.div>
-                )}
-
                 {/* Main 2-Column Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Left Column: Cart Items List */}
-                    <div className="lg:col-span-8 space-y-4">
-                        <AnimatePresence mode="popLayout">
-                            {validCartItems.map((item) => {
-                                const productPrice = item.product.price || 0;
-                                const originalPrice = (item.product.discountPercentage && item.product.discountPercentage > 0)
-                                    ? Math.round(productPrice / (1 - item.product.discountPercentage / 100))
-                                    : null;
-                                const lineTotal = productPrice * item.quantity;
+                    {/* Left Column: Cart Items List & Carrier Freight Options */}
+                    <div className="lg:col-span-8 space-y-6">
+                        {/* Cart Items */}
+                        <div className="space-y-4">
+                            <AnimatePresence mode="popLayout">
+                                {validCartItems.map((item) => {
+                                    const productPrice = item.product.price || 0;
+                                    const itemWeight = (item.product as any)?.weightKg || 0.5;
+                                    const totalItemWeight = (itemWeight * item.quantity).toFixed(1);
+                                    const originalPrice = (item.product.discountPercentage && item.product.discountPercentage > 0)
+                                        ? Math.round(productPrice / (1 - item.product.discountPercentage / 100))
+                                        : null;
+                                    const lineTotal = productPrice * item.quantity;
 
-                                return (
-                                    <motion.div
-                                        key={item._id || item.product._id}
-                                        layout
-                                        initial={{ opacity: 0, y: 15 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                                        className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col sm:flex-row gap-4 sm:gap-5 relative group"
-                                    >
-                                        {/* Product Thumbnail */}
-                                        <Link
-                                            href={`/product/${item.product._id}`}
-                                            className="w-full sm:w-28 h-28 bg-slate-100 dark:bg-slate-800/80 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center relative border border-slate-200/60 dark:border-slate-700/60 group-hover:border-teal-500/50 transition-colors"
+                                    return (
+                                        <motion.div
+                                            key={item._id || item.product._id}
+                                            layout
+                                            initial={{ opacity: 0, y: 15 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                                            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col sm:flex-row gap-4 sm:gap-5 relative group"
                                         >
-                                            {item.product.image ? (
-                                                <img
-                                                    src={item.product.image}
-                                                    alt={item.product.name}
-                                                    className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
-                                                />
-                                            ) : (
-                                                <ShoppingBag className="size-8 text-slate-300 dark:text-slate-600" />
-                                            )}
-
-                                            {item.product.discountPercentage && item.product.discountPercentage > 0 && (
-                                                <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-rose-500 text-white font-extrabold text-[10px] rounded-md shadow-xs">
-                                                    -{item.product.discountPercentage}%
-                                                </span>
-                                            )}
-                                        </Link>
-
-                                        {/* Product Details & Actions */}
-                                        <div className="flex-1 flex flex-col justify-between gap-3">
-                                            <div>
-                                                <div className="flex justify-between items-start gap-2">
-                                                    <Link
-                                                        href={`/product/${item.product._id}`}
-                                                        className="font-bold text-slate-900 dark:text-white text-base hover:text-teal-600 dark:hover:text-teal-400 transition-colors line-clamp-2"
-                                                    >
-                                                        {item.product.name}
-                                                    </Link>
-
-                                                    <button
-                                                        onClick={() => {
-                                                            removeFromCart(item.product._id);
-                                                            showToast?.(`Removed ${item.product.name} from cart`, "info");
-                                                        }}
-                                                        className="size-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all flex-shrink-0"
-                                                        title="Remove product"
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                    </button>
-                                                </div>
-
-                                                {/* Unit Pricing */}
-                                                <div className="flex items-baseline gap-2 mt-1.5">
-                                                    <span className="text-lg font-black text-slate-900 dark:text-white font-mono">
-                                                        ₹{productPrice.toLocaleString("en-IN")}
-                                                    </span>
-                                                    {originalPrice && (
-                                                        <span className="text-xs text-slate-400 line-through font-mono">
-                                                            ₹{originalPrice.toLocaleString("en-IN")}
-                                                        </span>
-                                                    )}
-                                                    <span className="text-[11px] text-slate-500 dark:text-slate-400">/ unit</span>
-                                                </div>
-
-                                                {/* Coupon badge if available */}
-                                                {item.product.couponCode && (
-                                                    <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-[11px] font-bold border border-purple-200 dark:border-purple-800">
-                                                        <Tag className="size-3" /> Eligible for {item.product.couponCode}
-                                                    </div>
+                                            {/* Product Thumbnail */}
+                                            <Link
+                                                href={`/product/${item.product._id}`}
+                                                className="w-full sm:w-28 h-28 bg-slate-100 dark:bg-slate-800/80 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center relative border border-slate-200/60 dark:border-slate-700/60 group-hover:border-teal-500/50 transition-colors"
+                                            >
+                                                {item.product.image ? (
+                                                    <img
+                                                        src={item.product.image}
+                                                        alt={item.product.name}
+                                                        className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                                                    />
+                                                ) : (
+                                                    <ShoppingBag className="size-8 text-slate-300 dark:text-slate-600" />
                                                 )}
-                                            </div>
 
-                                            {/* Quantity Stepper & Line Total */}
-                                            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80">
-                                                {/* Quantity Pill */}
-                                                <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-0.5">
-                                                    <button
-                                                        onClick={() => updateQuantity(item.product._id, Math.max(1, item.quantity - 1))}
-                                                        disabled={item.quantity <= 1}
-                                                        className="size-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                                                        aria-label="Decrease quantity"
-                                                    >
-                                                        <Minus className="size-3.5" />
-                                                    </button>
-
-                                                    <span className="w-9 text-center font-bold text-sm text-slate-900 dark:text-white font-mono">
-                                                        {item.quantity}
+                                                {item.product.discountPercentage && item.product.discountPercentage > 0 && (
+                                                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-rose-500 text-white font-extrabold text-[10px] rounded-md shadow-xs">
+                                                        -{item.product.discountPercentage}%
                                                     </span>
+                                                )}
+                                            </Link>
 
-                                                    <button
-                                                        onClick={() => updateQuantity(item.product._id, item.quantity + 1)}
-                                                        className="size-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors"
-                                                        aria-label="Increase quantity"
-                                                    >
-                                                        <Plus className="size-3.5" />
-                                                    </button>
+                                            {/* Product Details & Actions */}
+                                            <div className="flex-1 flex flex-col justify-between gap-3">
+                                                <div>
+                                                    <div className="flex justify-between items-start gap-2">
+                                                        <Link
+                                                            href={`/product/${item.product._id}`}
+                                                            className="font-bold text-slate-900 dark:text-white text-base hover:text-teal-600 dark:hover:text-teal-400 transition-colors line-clamp-2"
+                                                        >
+                                                            {item.product.name}
+                                                        </Link>
+
+                                                        <button
+                                                            onClick={() => {
+                                                                removeFromCart(item.product._id);
+                                                                showToast?.(`Removed ${item.product.name} from cart`, "info");
+                                                            }}
+                                                            className="size-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all flex-shrink-0"
+                                                            title="Remove product"
+                                                        >
+                                                            <Trash2 className="size-4" />
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Unit Pricing & Single Weight */}
+                                                    <div className="flex flex-wrap items-baseline gap-2 mt-1.5">
+                                                        <span className="text-lg font-black text-slate-900 dark:text-white font-mono">
+                                                            ₹{productPrice.toLocaleString("en-IN")}
+                                                        </span>
+                                                        {originalPrice && (
+                                                            <span className="text-xs text-slate-400 line-through font-mono">
+                                                                ₹{originalPrice.toLocaleString("en-IN")}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[11px] text-slate-500 dark:text-slate-400">/ unit</span>
+                                                        <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
+                                                            • ({itemWeight} kg/unit = {totalItemWeight} kg)
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Coupon badge if available */}
+                                                    {item.product.couponCode && (
+                                                        <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-[11px] font-bold border border-purple-200 dark:border-purple-800">
+                                                            <Tag className="size-3" /> Eligible for {item.product.couponCode}
+                                                        </div>
+                                                    )}
                                                 </div>
 
-                                                {/* Item Subtotal */}
-                                                <div className="text-right">
-                                                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">Total</span>
-                                                    <span className="text-base font-bold text-teal-600 dark:text-teal-400 font-mono">
-                                                        ₹{lineTotal.toLocaleString("en-IN")}
+                                                {/* Quantity Stepper & Line Total */}
+                                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                                                    {/* Quantity Pill */}
+                                                    <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-0.5">
+                                                        <button
+                                                            onClick={() => updateQuantity(item.product._id, Math.max(1, item.quantity - 1))}
+                                                            disabled={item.quantity <= 1}
+                                                            className="size-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                                                            aria-label="Decrease quantity"
+                                                        >
+                                                            <Minus className="size-3.5" />
+                                                        </button>
+
+                                                        <span className="w-9 text-center font-bold text-sm text-slate-900 dark:text-white font-mono">
+                                                            {item.quantity}
+                                                        </span>
+
+                                                        <button
+                                                            onClick={() => updateQuantity(item.product._id, item.quantity + 1)}
+                                                            className="size-7 rounded-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                                                            aria-label="Increase quantity"
+                                                        >
+                                                            <Plus className="size-3.5" />
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Item Subtotal */}
+                                                    <div className="text-right">
+                                                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">Total</span>
+                                                        <span className="text-base font-bold text-teal-600 dark:text-teal-400 font-mono">
+                                                            ₹{lineTotal.toLocaleString("en-IN")}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Real-time B2B Carrier Freight Selector Card */}
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-xs space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                                <div>
+                                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <Truck className="size-5 text-teal-600" /> B2B Commercial Freight & Carrier Quotes
+                                    </h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Calculated for <strong>{roundedWeightKg} kg</strong> commercial shipment from Mumbai Central Hub
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <div className="relative">
+                                        <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 size-3.5" />
+                                        <input
+                                            type="text"
+                                            maxLength={6}
+                                            value={pincode}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '');
+                                                setPincode(val);
+                                            }}
+                                            placeholder="PIN Code"
+                                            className="w-28 pl-8 pr-2 py-1.5 text-xs font-mono font-bold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-teal-500"
+                                        />
+                                    </div>
+                                    {destinationLocation && (
+                                        <span className="text-xs font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 px-2.5 py-1 rounded-lg border border-teal-200 dark:border-teal-800">
+                                            {destinationLocation.city}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {calculatingRates ? (
+                                <div className="p-8 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                                    <div className="size-4 rounded-full border-2 border-teal-600 border-t-transparent animate-spin" />
+                                    <span>Calculating live carrier freight rates for {roundedWeightKg} kg...</span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    {carrierQuotes.map((quote) => {
+                                        const isSelected = quote.id === selectedQuoteId;
+                                        return (
+                                            <div
+                                                key={quote.id}
+                                                onClick={() => setSelectedQuoteId(quote.id)}
+                                                className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${isSelected
+                                                    ? 'border-teal-600 bg-teal-50/40 dark:bg-teal-950/30 ring-2 ring-teal-600/30 shadow-sm'
+                                                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
+                                                    }`}
+                                            >
+                                                {quote.isRecommended && (
+                                                    <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-teal-600 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs">
+                                                        Recommended
+                                                    </span>
+                                                )}
+                                                {quote.isFastest && !quote.isRecommended && (
+                                                    <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-amber-500 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs">
+                                                        ⚡ Fastest
+                                                    </span>
+                                                )}
+
+                                                <div>
+                                                    <div className="flex items-center justify-between gap-1 mb-1">
+                                                        <span className="font-extrabold text-xs text-slate-900 dark:text-white line-clamp-1">
+                                                            {quote.carrierName}
+                                                        </span>
+                                                        <div className={`size-4 rounded-full border flex items-center justify-center ${isSelected ? 'border-teal-600 bg-teal-600 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
+                                                            {isSelected && <Check className="size-2.5 stroke-[3]" />}
+                                                        </div>
+                                                    </div>
+
+                                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-1">
+                                                        {quote.serviceName}
+                                                    </p>
+
+                                                    <div className="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                                        <Zap className="size-3 text-amber-500" />
+                                                        <span>ETA: {quote.estimatedDays}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/80 flex items-baseline justify-between">
+                                                    <span className="text-[10px] text-slate-400">Freight Fee</span>
+                                                    <span className="font-mono font-black text-base text-teal-600 dark:text-teal-400">
+                                                        ₹{quote.totalFreight.toLocaleString("en-IN")}
                                                     </span>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
-                        </AnimatePresence>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Right Column: Order Summary & Checkout */}
@@ -419,8 +553,8 @@ export default function CartPage() {
                                 <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
                                     Order Summary
                                 </h2>
-                                <span className="text-xs font-semibold text-slate-400">
-                                    {totalItemsCount} {totalItemsCount === 1 ? 'Item' : 'Items'}
+                                <span className="text-xs font-semibold text-slate-400 font-mono">
+                                    {totalItemsCount} {totalItemsCount === 1 ? 'Unit' : 'Units'} ({roundedWeightKg} KG)
                                 </span>
                             </div>
 
@@ -541,32 +675,6 @@ export default function CartPage() {
                                 )}
                             </div>
 
-                            {/* Pincode Checker Toggle */}
-                            <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
-                                <button
-                                    onClick={() => setShowPincodeChecker(!showPincodeChecker)}
-                                    className="w-full flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-                                >
-                                    <span className="flex items-center gap-1.5">
-                                        <Truck className="size-3.5 text-teal-600" /> Check Delivery Speed & Availability
-                                    </span>
-                                    <span className="text-[11px] text-teal-600">{showPincodeChecker ? 'Hide' : 'Check'}</span>
-                                </button>
-
-                                <AnimatePresence>
-                                    {showPincodeChecker && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            className="overflow-hidden pt-3"
-                                        >
-                                            <DeliveryPincodeChecker compact />
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
                             {/* Calculation Rows */}
                             <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-sm">
                                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
@@ -587,19 +695,18 @@ export default function CartPage() {
                                     </div>
                                 )}
 
-                                <div className="flex justify-between text-slate-600 dark:text-slate-400 items-center">
-                                    <span className="flex items-center gap-1">
-                                        Delivery Charges
+                                <div className="flex justify-between text-slate-600 dark:text-slate-400 items-start">
+                                    <div>
+                                        <span className="block font-medium text-slate-800 dark:text-slate-200">
+                                            {activeCarrierQuote?.carrierName || 'Carrier Freight'}
+                                        </span>
+                                        <span className="text-[11px] text-slate-400 block">
+                                            {roundedWeightKg} KG • {activeCarrierQuote?.serviceName || 'Standard Freight'}
+                                        </span>
+                                    </div>
+                                    <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                                        ₹{liveCarrierFreight.toFixed(2)}
                                     </span>
-                                    {isFreeDelivery ? (
-                                        <span className="font-bold text-xs uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-                                            FREE
-                                        </span>
-                                    ) : (
-                                        <span className="font-mono font-medium text-slate-900 dark:text-slate-100">
-                                            ₹{flatDeliveryFee.toFixed(2)}
-                                        </span>
-                                    )}
                                 </div>
 
                                 <div className="pt-3 border-t border-slate-200 dark:border-slate-700/80 flex justify-between items-baseline">
@@ -608,7 +715,7 @@ export default function CartPage() {
                                             Total Amount
                                         </span>
                                         <span className="text-[11px] text-slate-400 block mt-0.5">
-                                            Inclusive of all applicable GST & taxes
+                                            Inclusive of all taxes & carrier freight
                                         </span>
                                     </div>
                                     <span className="text-2xl font-black text-teal-600 dark:text-teal-400 font-mono tracking-tight">
@@ -619,7 +726,7 @@ export default function CartPage() {
 
                             {/* Checkout Call To Action */}
                             <Link
-                                href="/checkout"
+                                href={`/checkout?carrier=${encodeURIComponent(selectedQuoteId)}&pincode=${encodeURIComponent(pincode)}`}
                                 className="w-full py-4 px-6 bg-teal-600 hover:bg-teal-700 active:scale-[0.99] text-white rounded-2xl font-black text-base transition-all shadow-xl shadow-teal-600/30 flex items-center justify-center gap-2 group"
                             >
                                 <Lock className="size-4" /> Proceed to Checkout
@@ -634,7 +741,7 @@ export default function CartPage() {
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <PackageCheck className="size-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
-                                    <span>Genuine Products</span>
+                                    <span>Commercial Invoices</span>
                                 </div>
                             </div>
                         </div>

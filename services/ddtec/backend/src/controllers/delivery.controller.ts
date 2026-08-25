@@ -81,6 +81,57 @@ export const getDeliveryPartners = async (req: Request, res: Response): Promise<
 };
 
 /**
+ * Calculate real-time carrier freight rates based on destination pincode and total consignment weight
+ * POST /api/delivery/calculate-rates
+ * GET /api/delivery/calculate-rates?pincode=400001&weight=25
+ */
+export const calculateCarrierRatesHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const pincode = req.body?.pincode || req.query?.pincode;
+        let weightKg = Number(req.body?.weightKg || req.query?.weightKg || req.query?.weight);
+        const items = req.body?.items;
+
+        if (!pincode) {
+            res.status(400).json({
+                success: false,
+                message: 'Pincode is required to calculate carrier freight rates.'
+            });
+            return;
+        }
+
+        // If items list is passed without explicit weight, compute from DB products
+        if ((!weightKg || isNaN(weightKg) || weightKg <= 0) && Array.isArray(items) && items.length > 0) {
+            const Product = (await import('../models/Product')).default;
+            let computedWeight = 0;
+            for (const item of items) {
+                const pId = item.product?._id || item.product || item._id;
+                const qty = Number(item.quantity) || 1;
+                if (pId) {
+                    const prod = await Product.findById(pId).select('weightKg');
+                    const singleWeight = prod?.weightKg || 0.5;
+                    computedWeight += singleWeight * qty;
+                }
+            }
+            weightKg = Math.max(0.5, computedWeight);
+        }
+
+        if (!weightKg || isNaN(weightKg) || weightKg <= 0) {
+            weightKg = 1.0;
+        }
+
+        const ratesResponse = await DeliveryService.calculateCarrierRates(pincode.toString(), weightKg);
+        res.status(200).json(ratesResponse);
+    } catch (error: any) {
+        console.error('[DELIVERY-CONTROLLER-ERROR] Error calculating carrier rates:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error calculating carrier rates.',
+            error: error?.message
+        });
+    }
+};
+
+/**
  * Get curated popular Indian pincodes for quick selection
  * GET /api/delivery/pincodes/popular
  */

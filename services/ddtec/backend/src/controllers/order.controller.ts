@@ -143,6 +143,11 @@ export const createOrder = async (req: Request | any, res: Response) => {
             status: isOnlinePayment ? 'pending' : 'processing', // Online stays pending until payment confirmed; COD/Credit start processing
             coupon: req.body.coupon,
             discountAmount: req.body.discountAmount || 0,
+            shippingFee: req.body.shippingFee || 0,
+            shippingCarrier: req.body.shippingCarrier || 'Blue Dart Express',
+            shippingServiceName: req.body.shippingServiceName || 'Blue Dart Surfaceline (Bulk B2B Surface Cargo)',
+            shippingCarrierId: req.body.shippingCarrierId || 'BLUEDART_SURFACE',
+            totalWeightKg: req.body.totalWeightKg || 1.0,
             // COD is settled on delivery; credit is deducted instantly below; Cashfree starts pending until gateway confirms
             paymentStatus: paymentMethod === 'credit' ? 'paid' : 'pending'
         };

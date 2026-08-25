@@ -5,8 +5,8 @@ import { useCart } from "../_context/CartContext";
 import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
 import { useSettings } from "../_context/SettingsContext";
-import { useRouter } from "next/navigation";
-import { CreditCard, Banknote, CheckCircle, Loader2, Tag, Trash2, Smartphone, Lock, Mail, Truck, MapPin, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CreditCard, Banknote, CheckCircle, Loader2, Tag, Trash2, Smartphone, Lock, Mail, Truck, MapPin, AlertCircle, CheckCircle2, Weight, Zap, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
@@ -17,6 +17,11 @@ export default function CheckoutPage() {
     const { siteSettings } = useSettings();
     const { showToast } = useToast();
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const initialCarrier = searchParams.get('carrier') || 'BLUEDART_SURFACE';
+    const initialPincode = searchParams.get('pincode') || '';
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [isAccountCreated, setIsAccountCreated] = useState(false);
@@ -29,7 +34,7 @@ export default function CheckoutPage() {
         phone: "",
         address: "",
         city: "",
-        zip: "",
+        zip: initialPincode || "",
     });
 
     // OTP & Password State
@@ -44,7 +49,7 @@ export default function CheckoutPage() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [passwordError, setPasswordError] = useState("");
-    const [generatedPassword, setGeneratedPassword] = useState(""); // Kept as fallback or if we want to pre-fill? No, user creates it.
+    const [generatedPassword, setGeneratedPassword] = useState("");
 
     // Timer State
     const [timer, setTimer] = useState(60);
@@ -56,8 +61,9 @@ export default function CheckoutPage() {
     const [couponInput, setCouponInput] = useState("");
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
-    // Delivery Partner State (Blue Dart & DTDC)
-    const [deliveryInfo, setDeliveryInfo] = useState<any>(null);
+    // Real-Time Carrier Freight States (Blue Dart, DTDC, Local Hub)
+    const [carrierQuotes, setCarrierQuotes] = useState<any[]>([]);
+    const [selectedQuoteId, setSelectedQuoteId] = useState<string>(initialCarrier);
     const [checkingDelivery, setCheckingDelivery] = useState(false);
     const [deliveryError, setDeliveryError] = useState<string | null>(null);
 
@@ -146,7 +152,15 @@ export default function CheckoutPage() {
         }
     }, []);
 
-    // Live verify serviceability when 6-digit ZIP is entered
+    // Total Consignment Weight for B2B Bulk Calculation
+    const validCartItems = cartItems.filter(item => item && item.product);
+    const totalWeightKg = validCartItems.reduce((acc, item) => {
+        const singleWeight = (item.product as any)?.weightKg || 0.5;
+        return acc + (singleWeight * item.quantity);
+    }, 0);
+    const roundedWeightKg = Math.max(0.5, Math.round(totalWeightKg * 10) / 10);
+
+    // Live calculate carrier freight rates when 6-digit ZIP is entered
     useEffect(() => {
         const checkZipServiceability = async () => {
             const cleanZip = (formData.zip || "").trim();
@@ -154,24 +168,33 @@ export default function CheckoutPage() {
                 setCheckingDelivery(true);
                 setDeliveryError(null);
                 try {
-                    const res = await api.get(`/delivery/check-pincode?pincode=${cleanZip}`);
-                    setDeliveryInfo(res.data);
-                    if (res.data.serviceable) {
+                    const res = await api.post('/delivery/calculate-rates', {
+                        pincode: cleanZip,
+                        weightKg: roundedWeightKg
+                    });
+                    if (res.data.success && res.data.quotes && res.data.quotes.length > 0) {
+                        setCarrierQuotes(res.data.quotes);
                         if (res.data.location?.city && !formData.city) {
                             setFormData(prev => ({ ...prev, city: res.data.location.city }));
                         }
+                        const stillValid = res.data.quotes.find((q: any) => q.id === selectedQuoteId);
+                        if (!stillValid) {
+                            const rec = res.data.quotes.find((q: any) => q.isRecommended) || res.data.quotes[0];
+                            setSelectedQuoteId(rec.id);
+                        }
                     } else {
-                        setDeliveryError(`Delivery is not available to pincode ${cleanZip} via Blue Dart or DTDC.`);
+                        setDeliveryError(`Delivery is not available to pincode ${cleanZip}.`);
+                        setCarrierQuotes([]);
                     }
                 } catch (err: any) {
                     console.warn("Delivery check error:", err);
-                    setDeliveryError("Could not verify courier serviceability for this PIN code.");
-                    setDeliveryInfo(null);
+                    setDeliveryError("Could not calculate carrier freight rates for this PIN code.");
+                    setCarrierQuotes([]);
                 } finally {
                     setCheckingDelivery(false);
                 }
             } else {
-                setDeliveryInfo(null);
+                setCarrierQuotes([]);
                 setDeliveryError(null);
             }
         };
@@ -181,21 +204,20 @@ export default function CheckoutPage() {
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [formData.zip]);
+    }, [formData.zip, roundedWeightKg]);
 
     const deliveryConfig = siteSettings?.delivery || {
         freeDeliveryThreshold: 500,
         flatDeliveryFee: 50,
-        isFreeDeliveryEnabled: true
+        isFreeDeliveryEnabled: false
     };
+    const isFreeDeliveryEnabled = deliveryConfig.isFreeDeliveryEnabled === true;
     const freeDeliveryThreshold = deliveryConfig.freeDeliveryThreshold ?? 500;
-    const flatDeliveryFee = deliveryConfig.flatDeliveryFee ?? 50;
-    const isFreeDeliveryEnabled = deliveryConfig.isFreeDeliveryEnabled !== false;
-
     const isFreeDelivery = isFreeDeliveryEnabled && subtotal >= freeDeliveryThreshold;
-    const shippingCost = isFreeDelivery ? 0 : flatDeliveryFee;
-    const tax = totalPrice * 0.1;
-    const finalTotal = totalPrice + tax + shippingCost;
+
+    const activeCarrierQuote = carrierQuotes.find(q => q.id === selectedQuoteId) || carrierQuotes[0];
+    const shippingCost = isFreeDelivery ? 0 : (activeCarrierQuote ? activeCarrierQuote.totalFreight : (deliveryConfig.flatDeliveryFee || 50));
+    const finalTotal = totalPrice + shippingCost;
 
     const initiateOtpFlow = async () => {
         setIsProcessing(true);
@@ -367,7 +389,12 @@ export default function CheckoutPage() {
                 },
                 paymentMethod,
                 coupon: appliedCoupon ? appliedCoupon.code : undefined,
-                discountAmount: appliedCoupon ? appliedCoupon.discountAmount : 0
+                discountAmount: appliedCoupon ? appliedCoupon.discountAmount : 0,
+                shippingFee: shippingCost,
+                shippingCarrier: activeCarrierQuote?.carrierName || 'Blue Dart Express',
+                shippingServiceName: activeCarrierQuote?.serviceName || 'Blue Dart Surfaceline',
+                shippingCarrierId: activeCarrierQuote?.id || 'BLUEDART_SURFACE',
+                totalWeightKg: roundedWeightKg
             };
 
             const res = await api.post('/orders', orderData);
@@ -407,7 +434,7 @@ export default function CheckoutPage() {
         e.preventDefault();
 
         // Check if delivery serviceability is verified
-        if (deliveryError || (deliveryInfo && !deliveryInfo.serviceable)) {
+        if (deliveryError || (formData.zip && carrierQuotes.length === 0 && !checkingDelivery)) {
             showToast("Delivery is not available to this PIN code. Please provide a serviceable delivery address.", "error");
             return;
         }
@@ -752,27 +779,76 @@ export default function CheckoutPage() {
                                         value={formData.zip}
                                         onChange={(e) => setFormData({ ...formData, zip: e.target.value.replace(/\D/g, '').slice(0, 6) })}
                                         placeholder="6-digit PIN code"
-                                        className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-950 focus:ring-2 outline-none font-medium ${deliveryError ? 'border-red-500 focus:ring-red-500' : (deliveryInfo?.serviceable ? 'border-emerald-500 focus:ring-emerald-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500')}`}
+                                        className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-950 focus:ring-2 outline-none font-medium ${deliveryError ? 'border-red-500 focus:ring-red-500' : (carrierQuotes.length > 0 ? 'border-emerald-500 focus:ring-emerald-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500')}`}
                                     />
                                 </div>
                             </div>
 
-                            {/* Courier Partner Serviceability Feedback */}
-                            {deliveryInfo && deliveryInfo.serviceable && (
-                                <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/25 border border-emerald-200 dark:border-emerald-900/40 rounded-xl space-y-1.5 animate-in fade-in">
-                                    <div className="flex items-center justify-between text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                                        <span className="flex items-center gap-1.5">
-                                            <CheckCircle2 className="size-3.5 text-emerald-600" />
-                                            Serviceable via {deliveryInfo.primaryPartner?.name || 'Blue Dart Express'}
-                                        </span>
-                                        <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200">
-                                            {deliveryInfo.primaryPartner?.serviceType || 'Apex Air & Surface'}
+                            {/* Real-time B2B Carrier Freight Selector */}
+                            {carrierQuotes.length > 0 && (
+                                <div className="p-4 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                            <Truck className="size-4 text-teal-600" /> Commercial Logistics Partner
+                                        </label>
+                                        <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center gap-1">
+                                            <Weight className="size-3" /> {roundedWeightKg} KG Consignment
                                         </span>
                                     </div>
-                                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                                        <Truck className="size-3" />
-                                        Est. Delivery by <strong>{deliveryInfo.primaryPartner?.formattedDeliveryDate}</strong> ({deliveryInfo.primaryPartner?.estimatedDays})
-                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                        {carrierQuotes.map((quote) => {
+                                            const isSelected = quote.id === selectedQuoteId;
+                                            return (
+                                                <div
+                                                    key={quote.id}
+                                                    onClick={() => setSelectedQuoteId(quote.id)}
+                                                    className={`p-3 rounded-xl border transition-all cursor-pointer relative flex flex-col justify-between ${isSelected
+                                                        ? 'border-teal-600 bg-teal-50/60 dark:bg-teal-950/40 ring-2 ring-teal-600/30'
+                                                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                                                        }`}
+                                                >
+                                                    {quote.isRecommended && (
+                                                        <span className="absolute -top-2 right-2 px-1.5 py-0.2 bg-teal-600 text-white font-extrabold text-[8px] rounded uppercase shadow-xs">
+                                                            Recommended
+                                                        </span>
+                                                    )}
+                                                    {quote.isFastest && !quote.isRecommended && (
+                                                        <span className="absolute -top-2 right-2 px-1.5 py-0.2 bg-amber-500 text-white font-extrabold text-[8px] rounded uppercase shadow-xs">
+                                                            ⚡ Fastest
+                                                        </span>
+                                                    )}
+
+                                                    <div>
+                                                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                                                            <span className="font-extrabold text-xs text-slate-900 dark:text-white line-clamp-1">
+                                                                {quote.carrierName}
+                                                            </span>
+                                                            <div className={`size-3.5 rounded-full border flex items-center justify-center ${isSelected ? 'border-teal-600 bg-teal-600 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
+                                                                {isSelected && <Check className="size-2.5 stroke-[3]" />}
+                                                            </div>
+                                                        </div>
+
+                                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                                                            {quote.serviceName}
+                                                        </p>
+
+                                                        <div className="mt-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                                            <Zap className="size-3 text-amber-500" />
+                                                            <span>ETA: {quote.estimatedDays}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-800/80 flex items-baseline justify-between">
+                                                        <span className="text-[9px] text-slate-400">Freight</span>
+                                                        <span className="font-mono font-bold text-xs text-teal-600 dark:text-teal-400">
+                                                            {isFreeDelivery ? 'FREE' : `₹${quote.totalFreight}`}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
 
@@ -942,32 +1018,48 @@ export default function CheckoutPage() {
                             </div>
                         )}
 
-                        <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800 text-sm">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                                <span>Subtotal</span>
-                                <span>₹{subtotal.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                                <span>Tax (10%)</span>
-                                <span>₹{tax.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                                <span>Shipping</span>
-                                {isFreeDelivery ? (
-                                    <span className="text-green-600 font-medium">Free</span>
-                                ) : (
-                                    <span>₹50.00</span>
-                                )}
+                                <span>Items Subtotal</span>
+                                <span className="font-mono font-medium text-slate-900 dark:text-slate-100">
+                                    ₹{subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                </span>
                             </div>
                             {appliedCoupon && (
-                                <div className="flex justify-between text-teal-600 font-medium">
-                                    <span>Discount</span>
-                                    <span>-₹{appliedCoupon?.discountAmount.toFixed(2)}</span>
+                                <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                                    <span className="flex items-center gap-1">
+                                        <Tag className="size-3.5" /> Discount ({appliedCoupon.code})
+                                    </span>
+                                    <span className="font-mono font-bold">
+                                        -₹{appliedCoupon.discountAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                    </span>
                                 </div>
                             )}
-                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-end">
-                                <span className="font-bold text-lg text-slate-900 dark:text-white">Total</span>
-                                <span className="font-bold text-2xl text-teal-600">₹{finalTotal.toFixed(2)}</span>
+                            <div className="flex justify-between text-slate-600 dark:text-slate-400 items-start">
+                                <div>
+                                    <span className="block font-medium text-slate-800 dark:text-slate-200">
+                                        {activeCarrierQuote?.carrierName || 'Carrier Freight'}
+                                    </span>
+                                    <span className="text-[11px] text-slate-400 block">
+                                        {roundedWeightKg} KG • {activeCarrierQuote?.serviceName || 'Standard Freight'}
+                                    </span>
+                                </div>
+                                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                                    {isFreeDelivery ? 'FREE' : `₹${shippingCost.toFixed(2)}`}
+                                </span>
+                            </div>
+                            <div className="pt-3 border-t border-slate-200 dark:border-slate-700/80 flex justify-between items-baseline">
+                                <div>
+                                    <span className="font-extrabold text-base text-slate-900 dark:text-white block">
+                                        Total Amount
+                                    </span>
+                                    <span className="text-[11px] text-slate-400 block">
+                                        Inclusive of GST &amp; carrier freight
+                                    </span>
+                                </div>
+                                <span className="font-bold text-2xl text-teal-600 dark:text-teal-400 font-mono">
+                                    ₹{finalTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                </span>
                             </div>
                         </div>
                     </div>

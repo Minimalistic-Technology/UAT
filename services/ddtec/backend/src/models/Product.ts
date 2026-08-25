@@ -23,6 +23,7 @@ export interface IProduct extends Document {
     taxes: Array<{ name: string; rate: number }>;
     cgst: number;
     sgst: number;
+    weightKg?: number; // Weight in KG for B2B carrier freight calculation
     seller?: string;
     lastInventoryUpdate?: Date;
     billScreenshot?: string;
@@ -50,6 +51,7 @@ const ProductSchema: Schema = new Schema({
     showOnHome: { type: Boolean, default: false },
     cgst: { type: Number, default: 0, min: 0 },
     sgst: { type: Number, default: 0, min: 0 },
+    weightKg: { type: Number, default: 0.5, min: 0.05 },
     seller: { type: String },
     lastInventoryUpdate: { type: Date, default: Date.now },
     billScreenshot: { type: String },
