@@ -1,0 +1,28 @@
+name: Deploy DDTec CMS
+
+on:
+  push:
+    branches:
+      - main-ddtec-cms
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd UAT/services/blog-cms
+            git fetch origin
+            git clean -fd
+            git reset --hard HEAD
+            git checkout -B main-ddtec-cms origin/main-ddtec-cms
+            git reset --hard origin/main-ddtec-cms
+            docker-compose up -d --build --remove-orphans
+            docker image prune -f
