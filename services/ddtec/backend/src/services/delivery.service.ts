@@ -17,6 +17,7 @@ export interface CourierPartnerResult {
     name: string;
     code: 'BLUEDART' | 'DTDC';
     serviceable: boolean;
+    unserviceableReason?: string;
     serviceType: string;
     estimatedDays: string;
     minDays: number;
@@ -27,6 +28,9 @@ export interface CourierPartnerResult {
     prepaidAvailable: boolean;
     expressAvailable: boolean;
     isPreferred: boolean;
+    isCheapest?: boolean;
+    isFastest?: boolean;
+    estimatedCost?: number;
     hubCode?: string;
     message?: string;
 }
@@ -45,8 +49,11 @@ export interface CarrierFreightQuote {
     estimatedDays: string;
     estimatedDeliveryDate: string;
     formattedDeliveryDate: string;
+    serviceable: boolean;
+    unserviceableReason?: string;
     isRecommended?: boolean;
     isBestValue?: boolean;
+    isCheapest?: boolean;
     isFastest?: boolean;
     description: string;
     trackingCarrierUrl: string;
@@ -55,11 +62,13 @@ export interface CarrierFreightQuote {
 export interface BulkRateCalculationResponse {
     success: boolean;
     pincode: string;
+    serviceable: boolean;
     location: PincodeLocationInfo;
     totalWeightKg: number;
     billableWeightKg: number;
     quotes: CarrierFreightQuote[];
     defaultQuote: CarrierFreightQuote | null;
+    cheaperCarrier?: string | null;
     message: string;
 }
 
@@ -409,6 +418,24 @@ export class DeliveryService {
                         hubCode: `BD-${location.city.substring(0, 3).toUpperCase()}`,
                         message: `Serviceable via Blue Dart Express. Expected delivery by ${dateInfo.estimatedDeliveryDate}.`
                     };
+                } else if (response.data && (response.data.GetPincodeDetailResult?.IsServiceable === 'N' || response.data.serviceable === false)) {
+                    return {
+                        name: 'Blue Dart Express',
+                        code: 'BLUEDART',
+                        serviceable: false,
+                        unserviceableReason: 'Blue Dart live network indicates this PIN is currently unserviceable.',
+                        serviceType: 'N/A',
+                        estimatedDays: 'N/A',
+                        minDays: 0,
+                        maxDays: 0,
+                        estimatedDeliveryDate: 'N/A',
+                        formattedDeliveryDate: 'N/A',
+                        codAvailable: false,
+                        prepaidAvailable: false,
+                        expressAvailable: false,
+                        isPreferred: false,
+                        message: `Blue Dart delivery not available for pincode ${cleanPin}.`
+                    };
                 }
             } catch (err: any) {
                 console.warn('[DELIVERY-SERVICE] Blue Dart live API unreachable, using built-in high-fidelity matrix:', err?.message);
@@ -416,9 +443,15 @@ export class DeliveryService {
         }
 
         // Built-in Blue Dart Serviceability & SLA Matrix
-        // Blue Dart covers 98%+ of Indian postal PIN codes across India
-        const isRemoteUnserviceable = cleanPin.startsWith('194') && cleanPin !== '194101'; // Very remote Ladakh hamlets
-        const serviceable = !isRemoteUnserviceable;
+        // Non-serviceable PIN check for Blue Dart:
+        // Remote Leh hamlets (194xxx except 194101 Leh & 194103 Kargil), remote Nicobar islands (744301-744304), remote Lakshadweep (682555), test PINs (999xxx)
+        const isRemoteLehNonHub = cleanPin.startsWith('194') && cleanPin !== '194101' && cleanPin !== '194103';
+        const isRemoteNicobar = ['744301', '744302', '744303', '744304'].includes(cleanPin);
+        const isRemoteLakshadweep = cleanPin === '682555';
+        const isTestUnserviceable = cleanPin.startsWith('999') || cleanPin.startsWith('000');
+
+        const serviceable = !(isRemoteLehNonHub || isRemoteNicobar || isRemoteLakshadweep || isTestUnserviceable);
+        const unserviceableReason = !serviceable ? 'Blue Dart Express does not service this remote area. Please choose DTDC or an alternative courier.' : undefined;
 
         const transit = this.getTransitDaysForLocation('BLUEDART', location);
         const dateInfo = this.calculateDeliveryDates(transit.min, transit.max);
@@ -427,17 +460,18 @@ export class DeliveryService {
             name: 'Blue Dart Express',
             code: 'BLUEDART',
             serviceable,
+            unserviceableReason,
             serviceType: location.tier === 'Metro' ? 'Blue Dart Apex (Air Priority Express)' : 'Blue Dart Surfaceline (Door-to-Door)',
-            estimatedDays: dateInfo.estimatedDays,
-            minDays: transit.min,
-            maxDays: transit.max,
-            estimatedDeliveryDate: dateInfo.estimatedDeliveryDate,
-            formattedDeliveryDate: dateInfo.formattedDeliveryDate,
-            codAvailable: location.tier !== 'Remote',
-            prepaidAvailable: true,
-            expressAvailable: location.tier === 'Metro' || location.tier === 'Tier 1',
-            isPreferred: true,
-            hubCode: `BD-${(location.city.replace(/[^a-zA-Z]/g, '').substring(0, 3) || 'HUB').toUpperCase()}`,
+            estimatedDays: serviceable ? dateInfo.estimatedDays : 'N/A',
+            minDays: serviceable ? transit.min : 0,
+            maxDays: serviceable ? transit.max : 0,
+            estimatedDeliveryDate: serviceable ? dateInfo.estimatedDeliveryDate : 'N/A',
+            formattedDeliveryDate: serviceable ? dateInfo.formattedDeliveryDate : 'N/A',
+            codAvailable: serviceable && location.tier !== 'Remote',
+            prepaidAvailable: serviceable,
+            expressAvailable: serviceable && (location.tier === 'Metro' || location.tier === 'Tier 1'),
+            isPreferred: serviceable,
+            hubCode: serviceable ? `BD-${(location.city.replace(/[^a-zA-Z]/g, '').substring(0, 3) || 'HUB').toUpperCase()}` : undefined,
             message: serviceable
                 ? `Delivery available via Blue Dart Express. Estimated arrival: ${dateInfo.formattedDeliveryDate}.`
                 : `Blue Dart delivery not available for pincode ${cleanPin}.`
@@ -479,32 +513,62 @@ export class DeliveryService {
                         hubCode: `DTDC-${location.city.substring(0, 3).toUpperCase()}`,
                         message: `Serviceable via DTDC Courier.`
                     };
+                } else if (response.data && response.data.status === 'FAILED') {
+                    return {
+                        name: 'DTDC Courier',
+                        code: 'DTDC',
+                        serviceable: false,
+                        unserviceableReason: 'DTDC network indicates this PIN code is unserviceable.',
+                        serviceType: 'N/A',
+                        estimatedDays: 'N/A',
+                        minDays: 0,
+                        maxDays: 0,
+                        estimatedDeliveryDate: 'N/A',
+                        formattedDeliveryDate: 'N/A',
+                        codAvailable: false,
+                        prepaidAvailable: false,
+                        expressAvailable: false,
+                        isPreferred: false,
+                        message: `DTDC Courier delivery not available for pincode ${cleanPin}.`
+                    };
                 }
             } catch (err: any) {
                 console.warn('[DELIVERY-SERVICE] DTDC API check skipped:', err?.message);
             }
         }
 
+        // Built-in DTDC Serviceability & SLA Matrix
+        // Non-serviceable PIN check for DTDC:
+        // Border outposts / remote mountain defense sectors (193225, 192121, 799290, 792055), remote Nicobar (744301-744304), test PINs (999xxx)
+        const isBorderOutpost = ['193225', '192121', '799290', '792055'].includes(cleanPin);
+        const isRemoteNicobar = ['744301', '744302', '744303', '744304'].includes(cleanPin);
+        const isTestUnserviceable = cleanPin.startsWith('999') || cleanPin.startsWith('000');
+
+        const serviceable = !(isBorderOutpost || isRemoteNicobar || isTestUnserviceable);
+        const unserviceableReason = !serviceable ? 'DTDC Courier network is currently not available for this PIN code. Please choose Blue Dart Express.' : undefined;
+
         const transit = this.getTransitDaysForLocation('DTDC', location);
         const dateInfo = this.calculateDeliveryDates(transit.min, transit.max);
-        const serviceable = true;
 
         return {
             name: 'DTDC Courier',
             code: 'DTDC',
             serviceable,
+            unserviceableReason,
             serviceType: location.tier === 'Metro' ? 'DTDC Prime (Priority Air)' : 'DTDC Lite (Ground Express)',
-            estimatedDays: dateInfo.estimatedDays,
-            minDays: transit.min,
-            maxDays: transit.max,
-            estimatedDeliveryDate: dateInfo.estimatedDeliveryDate,
-            formattedDeliveryDate: dateInfo.formattedDeliveryDate,
-            codAvailable: location.tier !== 'Remote',
-            prepaidAvailable: true,
-            expressAvailable: location.tier === 'Metro' || location.tier === 'Tier 1',
+            estimatedDays: serviceable ? dateInfo.estimatedDays : 'N/A',
+            minDays: serviceable ? transit.min : 0,
+            maxDays: serviceable ? transit.max : 0,
+            estimatedDeliveryDate: serviceable ? dateInfo.estimatedDeliveryDate : 'N/A',
+            formattedDeliveryDate: serviceable ? dateInfo.formattedDeliveryDate : 'N/A',
+            codAvailable: serviceable && location.tier !== 'Remote',
+            prepaidAvailable: serviceable,
+            expressAvailable: serviceable && (location.tier === 'Metro' || location.tier === 'Tier 1'),
             isPreferred: false,
-            hubCode: `DTDC-${(location.city.replace(/[^a-zA-Z]/g, '').substring(0, 3) || 'BRN').toUpperCase()}`,
-            message: `Delivery available via DTDC Courier. Estimated arrival: ${dateInfo.formattedDeliveryDate}.`
+            hubCode: serviceable ? `DTDC-${(location.city.replace(/[^a-zA-Z]/g, '').substring(0, 3) || 'BRN').toUpperCase()}` : undefined,
+            message: serviceable
+                ? `Delivery available via DTDC Courier. Estimated arrival: ${dateInfo.formattedDeliveryDate}.`
+                : `DTDC Courier delivery not available for pincode ${cleanPin}.`
         };
     }
 
@@ -561,6 +625,7 @@ export class DeliveryService {
                     name: 'Blue Dart Express',
                     code: 'BLUEDART',
                     serviceable: false,
+                    unserviceableReason: 'Please enter a valid 6-digit Indian postal PIN code.',
                     serviceType: 'N/A',
                     estimatedDays: 'N/A',
                     minDays: 0,
@@ -570,7 +635,7 @@ export class DeliveryService {
                     codAvailable: false,
                     prepaidAvailable: false,
                     expressAvailable: false,
-                    isPreferred: true,
+                    isPreferred: false,
                     message: 'Please enter a valid 6-digit Indian postal PIN code.'
                 },
                 partners: [],
@@ -600,7 +665,45 @@ export class DeliveryService {
             this.checkDTDCServiceability(cleanPin, location)
         ]);
 
-        // 3. Check for Local DDTEC Dark Store / Store Hub serving this pincode
+        // 3. Estimate standard 1kg rate for cost comparison
+        const isLocal = location.city === 'Mumbai' || location.city === 'Thane / Palghar' || location.city === 'Pune';
+        const isRegional = !isLocal && (location.region === 'West' || location.region === 'Central');
+        const isMetro = !isLocal && location.tier === 'Metro';
+        const isRemote = location.region === 'NorthEast' || location.tier === 'Remote';
+
+        const bdBase = isLocal ? 60 : isRegional ? 90 : isMetro ? 120 : isRemote ? 220 : 150;
+        const bdSub = bdBase;
+        const bdCost = Math.round(bdSub + (bdSub * 0.10));
+
+        const dtdcBase = isLocal ? 50 : isRegional ? 80 : isMetro ? 110 : isRemote ? 195 : 135;
+        const dtdcSub = dtdcBase;
+        const dtdcCost = Math.round(dtdcSub + (dtdcSub * 0.08));
+
+        if (blueDartResult.serviceable) {
+            blueDartResult.estimatedCost = bdCost;
+        }
+        if (dtdcResult.serviceable) {
+            dtdcResult.estimatedCost = dtdcCost;
+        }
+
+        // 4. Determine cheaper option when both serviceable
+        if (blueDartResult.serviceable && dtdcResult.serviceable) {
+            if (dtdcCost < bdCost) {
+                dtdcResult.isCheapest = true;
+                dtdcResult.isPreferred = true;
+                blueDartResult.isFastest = true;
+                blueDartResult.isPreferred = false;
+            } else if (bdCost < dtdcCost) {
+                blueDartResult.isCheapest = true;
+                blueDartResult.isPreferred = true;
+                dtdcResult.isPreferred = false;
+            } else {
+                blueDartResult.isPreferred = true;
+                dtdcResult.isPreferred = false;
+            }
+        }
+
+        // 5. Check for Local DDTEC Dark Store / Store Hub serving this pincode
         let localHubInfo: ServiceabilityResponse['localHub'] = null;
         if (mongoose.connection && mongoose.connection.readyState === 1) {
             try {
@@ -622,16 +725,31 @@ export class DeliveryService {
         const partners = [blueDartResult, dtdcResult];
         const isOverallServiceable = blueDartResult.serviceable || dtdcResult.serviceable || Boolean(localHubInfo?.available);
 
-        // Blue Dart is our primary partner ("use dart service")
-        const primaryPartner = blueDartResult.serviceable ? blueDartResult : (dtdcResult.serviceable ? dtdcResult : blueDartResult);
+        // Select the primary partner: Cheaper serviceable partner, or whichever is deliverable
+        let primaryPartner: CourierPartnerResult;
+        if (blueDartResult.serviceable && dtdcResult.serviceable) {
+            primaryPartner = dtdcCost <= bdCost ? dtdcResult : blueDartResult;
+        } else if (blueDartResult.serviceable) {
+            primaryPartner = blueDartResult;
+        } else if (dtdcResult.serviceable) {
+            primaryPartner = dtdcResult;
+        } else {
+            primaryPartner = blueDartResult;
+        }
 
         let overallMessage = '';
         if (localHubInfo?.available) {
             overallMessage = `⚡ Express Same-Day delivery available from ${localHubInfo.hubName} (${localHubInfo.city}) & standard courier via ${primaryPartner.name}!`;
-        } else if (isOverallServiceable) {
-            overallMessage = `Delivery available to ${location.city}, ${location.state} via ${primaryPartner.name} (Estimated ${primaryPartner.formattedDeliveryDate}).`;
+        } else if (blueDartResult.serviceable && dtdcResult.serviceable) {
+            const cheaperName = dtdcCost < bdCost ? `DTDC Courier (₹${dtdcCost} - Cheaper)` : `Blue Dart Express (₹${bdCost} - Cheaper)`;
+            const altName = dtdcCost < bdCost ? `Blue Dart Express (₹${bdCost})` : `DTDC Courier (₹${dtdcCost})`;
+            overallMessage = `Delivery available to ${location.city}, ${location.state} via ${cheaperName} and ${altName}.`;
+        } else if (blueDartResult.serviceable && !dtdcResult.serviceable) {
+            overallMessage = `Delivery available to ${location.city}, ${location.state} via Blue Dart Express (Estimated ${blueDartResult.formattedDeliveryDate}). DTDC Courier is NOT deliverable to PIN ${cleanPin}.`;
+        } else if (!blueDartResult.serviceable && dtdcResult.serviceable) {
+            overallMessage = `Delivery available to ${location.city}, ${location.state} via DTDC Courier (Estimated ${dtdcResult.formattedDeliveryDate}). Blue Dart Express is NOT deliverable to PIN ${cleanPin}.`;
         } else {
-            overallMessage = `Delivery currently not available to pincode ${cleanPin}.`;
+            overallMessage = `Delivery is currently not available to pincode ${cleanPin} via Blue Dart Express or DTDC Courier.`;
         }
 
         const result: ServiceabilityResponse = {
@@ -660,6 +778,7 @@ export class DeliveryService {
     /**
      * Real-time Carrier Freight Rate Calculator for B2B Bulk Commercial Shipments
      * Computes live freight quotes across Blue Dart, DTDC, and Local Fleet based on weight and zone.
+     * Accurately flags the cheaper option and handles unserviceable couriers per PIN code.
      */
     public static async calculateCarrierRates(
         pincode: string,
@@ -671,6 +790,12 @@ export class DeliveryService {
         // Normalize weight (minimum 0.5 kg, round up to 0.5kg increments as standard courier billing)
         const safeWeight = Math.max(0.5, Number(weightKg) || 1.0);
         const billableWeight = Math.ceil(safeWeight * 2) / 2; // e.g. 1.2kg -> 1.5kg
+
+        // Check serviceability for Blue Dart and DTDC in parallel
+        const [blueDartPartner, dtdcPartner] = await Promise.all([
+            this.checkBlueDartServiceability(cleanPin, location),
+            this.checkDTDCServiceability(cleanPin, location)
+        ]);
 
         // Zone detection relative to Central Origin (Mumbai Hub)
         const isLocal = location.city === 'Mumbai' || location.city === 'Thane / Palghar' || location.city === 'Pune';
@@ -689,18 +814,7 @@ export class DeliveryService {
         const bdSurfaceTransit = isLocal ? { min: 1, max: 2 } : isRegional ? { min: 2, max: 3 } : isMetro ? { min: 3, max: 4 } : isRemote ? { min: 5, max: 7 } : { min: 3, max: 5 };
         const bdSurfaceDate = this.calculateDeliveryDates(bdSurfaceTransit.min, bdSurfaceTransit.max);
 
-        // 2. Blue Dart Apex (Air Priority Express Cargo)
-        const bdAirBase = isLocal ? 120 : isRegional ? 160 : isMetro ? 200 : isRemote ? 320 : 240;
-        const bdAirPerKg = isLocal ? 35 : isRegional ? 55 : isMetro ? 75 : isRemote ? 135 : 95;
-        const bdAirExtraKg = Math.max(0, billableWeight - 1.0);
-        const bdAirSubtotal = Math.round(bdAirBase + (bdAirExtraKg * bdAirPerKg));
-        const bdAirFsc = Math.round(bdAirSubtotal * 0.12);
-        const bdAirTotal = bdAirSubtotal + bdAirFsc;
-
-        const bdAirTransit = isLocal ? { min: 1, max: 1 } : isMetro ? { min: 1, max: 2 } : isRegional ? { min: 2, max: 3 } : isRemote ? { min: 3, max: 5 } : { min: 2, max: 3 };
-        const bdAirDate = this.calculateDeliveryDates(bdAirTransit.min, bdAirTransit.max);
-
-        // 3. DTDC Heavy Cargo (Standard Surface Freight)
+        // 2. DTDC Heavy Cargo (Standard Surface Freight - Economical)
         const dtdcBase = isLocal ? 50 : isRegional ? 80 : isMetro ? 110 : isRemote ? 195 : 135;
         const dtdcPerKg = isLocal ? 10 : isRegional ? 14 : isMetro ? 18 : isRemote ? 32 : 22;
         const dtdcExtraKg = Math.max(0, billableWeight - 2.0);
@@ -710,6 +824,17 @@ export class DeliveryService {
 
         const dtdcTransit = isLocal ? { min: 1, max: 2 } : isRegional ? { min: 2, max: 4 } : isMetro ? { min: 3, max: 5 } : isRemote ? { min: 6, max: 8 } : { min: 4, max: 6 };
         const dtdcDate = this.calculateDeliveryDates(dtdcTransit.min, dtdcTransit.max);
+
+        // 3. Blue Dart Apex (Air Priority Express Cargo)
+        const bdAirBase = isLocal ? 120 : isRegional ? 160 : isMetro ? 200 : isRemote ? 320 : 240;
+        const bdAirPerKg = isLocal ? 35 : isRegional ? 55 : isMetro ? 75 : isRemote ? 135 : 95;
+        const bdAirExtraKg = Math.max(0, billableWeight - 1.0);
+        const bdAirSubtotal = Math.round(bdAirBase + (bdAirExtraKg * bdAirPerKg));
+        const bdAirFsc = Math.round(bdAirSubtotal * 0.12);
+        const bdAirTotal = bdAirSubtotal + bdAirFsc;
+
+        const bdAirTransit = isLocal ? { min: 1, max: 1 } : isMetro ? { min: 1, max: 2 } : isRegional ? { min: 2, max: 3 } : isRemote ? { min: 3, max: 5 } : { min: 2, max: 3 };
+        const bdAirDate = this.calculateDeliveryDates(bdAirTransit.min, bdAirTransit.max);
 
         const quotes: CarrierFreightQuote[] = [
             {
@@ -726,27 +851,9 @@ export class DeliveryService {
                 estimatedDays: bdSurfaceDate.estimatedDays,
                 estimatedDeliveryDate: bdSurfaceDate.estimatedDeliveryDate,
                 formattedDeliveryDate: bdSurfaceDate.formattedDeliveryDate,
-                isRecommended: true,
-                isBestValue: true,
+                serviceable: blueDartPartner.serviceable,
+                unserviceableReason: blueDartPartner.unserviceableReason,
                 description: `High-capacity surface freight for commercial orders. Rate: ₹${bdSurfacePerKg}/kg beyond base slab.`,
-                trackingCarrierUrl: 'https://www.bluedart.com/tracking'
-            },
-            {
-                id: 'BLUEDART_AIR',
-                carrierName: 'Blue Dart Express',
-                serviceName: 'Blue Dart Apex (Air Priority Express)',
-                code: 'BLUEDART',
-                mode: 'air',
-                ratePerKg: bdAirPerKg,
-                baseRate: bdAirBase,
-                fuelSurcharge: bdAirFsc,
-                subtotalFreight: bdAirSubtotal,
-                totalFreight: bdAirTotal,
-                estimatedDays: bdAirDate.estimatedDays,
-                estimatedDeliveryDate: bdAirDate.estimatedDeliveryDate,
-                formattedDeliveryDate: bdAirDate.formattedDeliveryDate,
-                isFastest: true,
-                description: `Fastest air transit across major commercial hubs. Rate: ₹${bdAirPerKg}/kg.`,
                 trackingCarrierUrl: 'https://www.bluedart.com/tracking'
             },
             {
@@ -763,8 +870,30 @@ export class DeliveryService {
                 estimatedDays: dtdcDate.estimatedDays,
                 estimatedDeliveryDate: dtdcDate.estimatedDeliveryDate,
                 formattedDeliveryDate: dtdcDate.formattedDeliveryDate,
+                serviceable: dtdcPartner.serviceable,
+                unserviceableReason: dtdcPartner.unserviceableReason,
                 description: `Economical ground cargo for heavy tool crates & pallets. Rate: ₹${dtdcPerKg}/kg.`,
                 trackingCarrierUrl: 'https://www.dtdc.in'
+            },
+            {
+                id: 'BLUEDART_AIR',
+                carrierName: 'Blue Dart Express',
+                serviceName: 'Blue Dart Apex (Air Priority Express)',
+                code: 'BLUEDART',
+                mode: 'air',
+                ratePerKg: bdAirPerKg,
+                baseRate: bdAirBase,
+                fuelSurcharge: bdAirFsc,
+                subtotalFreight: bdAirSubtotal,
+                totalFreight: bdAirTotal,
+                estimatedDays: bdAirDate.estimatedDays,
+                estimatedDeliveryDate: bdAirDate.estimatedDeliveryDate,
+                formattedDeliveryDate: bdAirDate.formattedDeliveryDate,
+                serviceable: blueDartPartner.serviceable && !isRemote,
+                unserviceableReason: !blueDartPartner.serviceable ? blueDartPartner.unserviceableReason : (isRemote ? 'Air Priority Express is unavailable for remote regions.' : undefined),
+                isFastest: true,
+                description: `Fastest air transit across major commercial hubs. Rate: ₹${bdAirPerKg}/kg.`,
+                trackingCarrierUrl: 'https://www.bluedart.com/tracking'
             }
         ];
 
@@ -789,6 +918,7 @@ export class DeliveryService {
                         estimatedDays: 'Same-Day / Next-Day',
                         estimatedDeliveryDate: 'Tomorrow Morning',
                         formattedDeliveryDate: 'Within 24 Hours',
+                        serviceable: true,
                         isRecommended: true,
                         isFastest: true,
                         description: `Direct dark store dispatch from ${matchedHub.name} (${matchedHub.city}).`,
@@ -800,17 +930,62 @@ export class DeliveryService {
             }
         }
 
-        const defaultQuote = quotes.find(q => q.isRecommended) || quotes[0];
+        // 5. Evaluate price comparison among serviceable quotes
+        const serviceableQuotes = quotes.filter(q => q.serviceable);
+        let defaultQuote: CarrierFreightQuote | null = null;
+        let cheaperCarrier: string | null = null;
+
+        if (serviceableQuotes.length > 0) {
+            // Find the minimum totalFreight among all serviceable surface/ground/local quotes
+            const minFreight = Math.min(...serviceableQuotes.map(q => q.totalFreight));
+            const cheapestQuote = serviceableQuotes.find(q => q.totalFreight === minFreight);
+
+            if (cheapestQuote) {
+                cheapestQuote.isCheapest = true;
+                cheapestQuote.isBestValue = true;
+                cheapestQuote.isRecommended = true;
+                cheaperCarrier = cheapestQuote.carrierName;
+                defaultQuote = cheapestQuote;
+            } else {
+                defaultQuote = serviceableQuotes[0];
+            }
+        }
+
+        // 6. User summary message
+        let summaryMessage = '';
+        if (blueDartPartner.serviceable && dtdcPartner.serviceable) {
+            const bdSurface = quotes.find(q => q.id === 'BLUEDART_SURFACE');
+            const dtdcQuote = quotes.find(q => q.id === 'DTDC_CARGO');
+            if (bdSurface && dtdcQuote) {
+                if (dtdcQuote.totalFreight < bdSurface.totalFreight) {
+                    const savings = bdSurface.totalFreight - dtdcQuote.totalFreight;
+                    summaryMessage = `DTDC Courier (₹${dtdcQuote.totalFreight}) is cheaper by ₹${savings} than Blue Dart (₹${bdSurface.totalFreight}). Pre-selected for best savings.`;
+                } else if (bdSurface.totalFreight < dtdcQuote.totalFreight) {
+                    const savings = dtdcQuote.totalFreight - bdSurface.totalFreight;
+                    summaryMessage = `Blue Dart Express (₹${bdSurface.totalFreight}) is cheaper by ₹${savings} than DTDC (₹${dtdcQuote.totalFreight}). Pre-selected for best savings.`;
+                } else {
+                    summaryMessage = `Both Blue Dart Express and DTDC Courier are deliverable at ₹${bdSurface.totalFreight}.`;
+                }
+            }
+        } else if (blueDartPartner.serviceable && !dtdcPartner.serviceable) {
+            summaryMessage = `Delivery available via Blue Dart Express. DTDC Courier is NOT deliverable to PIN ${cleanPin}.`;
+        } else if (!blueDartPartner.serviceable && dtdcPartner.serviceable) {
+            summaryMessage = `Delivery available via DTDC Courier. Blue Dart Express is NOT deliverable to PIN ${cleanPin}.`;
+        } else {
+            summaryMessage = `Delivery is currently unavailable to PIN ${cleanPin} via Blue Dart Express or DTDC Courier.`;
+        }
 
         return {
             success: true,
             pincode: cleanPin,
+            serviceable: serviceableQuotes.length > 0,
             location,
             totalWeightKg: safeWeight,
             billableWeightKg: billableWeight,
             quotes,
             defaultQuote,
-            message: `Real-time carrier freight quotes calculated for ${billableWeight} kg to ${location.city}, ${location.state}.`
+            cheaperCarrier,
+            message: summaryMessage
         };
     }
 

@@ -56,8 +56,11 @@ export interface CarrierQuote {
     estimatedDays: string;
     estimatedDeliveryDate: string;
     formattedDeliveryDate: string;
+    serviceable?: boolean;
+    unserviceableReason?: string;
     isRecommended?: boolean;
     isBestValue?: boolean;
+    isCheapest?: boolean;
     isFastest?: boolean;
     description: string;
     trackingCarrierUrl: string;
@@ -120,6 +123,8 @@ export default function CartPage() {
     const roundedWeightKg = Math.max(0.5, Math.round(totalWeightKg * 10) / 10);
 
     // Fetch Live Carrier Freight Rates
+    const [carrierMessage, setCarrierMessage] = useState<string>("");
+
     const fetchCarrierRates = async (targetPin: string, weight: number) => {
         if (!targetPin || targetPin.length !== 6 || isNaN(Number(targetPin))) return;
         setCalculatingRates(true);
@@ -130,16 +135,22 @@ export default function CartPage() {
             });
             if (res.data && res.data.quotes && res.data.quotes.length > 0) {
                 setCarrierQuotes(res.data.quotes);
+                setCarrierMessage(res.data.message || "");
                 setDestinationLocation({
-                    city: res.data.location.city,
-                    state: res.data.location.state,
-                    zone: res.data.location.zone
+                    city: res.data.location?.city || "",
+                    state: res.data.location?.state || "",
+                    zone: res.data.location?.zone || ""
                 });
-                // If current selected quote not in new quotes list, pick recommended
-                const currentStillValid = res.data.quotes.find((q: CarrierQuote) => q.id === selectedQuoteId);
+                
+                // Pre-select cheapest serviceable quote or defaultQuote
+                const currentStillValid = res.data.quotes.find((q: CarrierQuote) => q.id === selectedQuoteId && q.serviceable !== false);
                 if (!currentStillValid) {
-                    const rec = res.data.quotes.find((q: CarrierQuote) => q.isRecommended) || res.data.quotes[0];
-                    setSelectedQuoteId(rec.id);
+                    const defaultQ = res.data.defaultQuote || 
+                                     res.data.quotes.find((q: CarrierQuote) => q.isRecommended && q.serviceable !== false) || 
+                                     res.data.quotes.find((q: CarrierQuote) => q.serviceable !== false);
+                    if (defaultQ) {
+                        setSelectedQuoteId(defaultQ.id);
+                    }
                 }
             }
         } catch (err) {
@@ -489,58 +500,106 @@ export default function CartPage() {
                                     <span>Calculating live carrier freight rates for {roundedWeightKg} kg...</span>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    {carrierQuotes.map((quote) => {
-                                        const isSelected = quote.id === selectedQuoteId;
-                                        return (
-                                            <div
-                                                key={quote.id}
-                                                onClick={() => setSelectedQuoteId(quote.id)}
-                                                className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${isSelected
-                                                    ? 'border-teal-600 bg-teal-50/40 dark:bg-teal-950/30 ring-2 ring-teal-600/30 shadow-sm'
-                                                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
+                                <div className="space-y-3">
+                                    {/* Carrier Rate / Deliverability Notice */}
+                                    {carrierMessage && (
+                                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                            <Sparkles className="size-4 text-teal-600 shrink-0" />
+                                            <span>{carrierMessage}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        {carrierQuotes.map((quote) => {
+                                            const isSelected = quote.id === selectedQuoteId;
+                                            const isDeliverable = quote.serviceable !== false;
+                                            const isCheapest = quote.isCheapest;
+
+                                            return (
+                                                <div
+                                                    key={quote.id}
+                                                    onClick={() => {
+                                                        if (isDeliverable) {
+                                                            setSelectedQuoteId(quote.id);
+                                                        }
+                                                    }}
+                                                    className={`p-4 rounded-2xl border transition-all relative flex flex-col justify-between ${
+                                                        !isDeliverable
+                                                            ? 'border-slate-200 dark:border-slate-800 bg-slate-100/60 dark:bg-slate-900/40 opacity-60 cursor-not-allowed'
+                                                            : isSelected
+                                                            ? isCheapest
+                                                                ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/40 ring-2 ring-emerald-600/30 shadow-sm cursor-pointer'
+                                                                : 'border-teal-600 bg-teal-50/40 dark:bg-teal-950/30 ring-2 ring-teal-600/30 shadow-sm cursor-pointer'
+                                                            : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 cursor-pointer'
                                                     }`}
-                                            >
-                                                {quote.isRecommended && (
-                                                    <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-teal-600 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs">
-                                                        Recommended
-                                                    </span>
-                                                )}
-                                                {quote.isFastest && !quote.isRecommended && (
-                                                    <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-amber-500 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs">
-                                                        ⚡ Fastest
-                                                    </span>
-                                                )}
-
-                                                <div>
-                                                    <div className="flex items-center justify-between gap-1 mb-1">
-                                                        <span className="font-extrabold text-xs text-slate-900 dark:text-white line-clamp-1">
-                                                            {quote.carrierName}
+                                                >
+                                                    {/* Deliverability & Comparison Badges */}
+                                                    {!isDeliverable ? (
+                                                        <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-rose-600 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs">
+                                                            ❌ Not Deliverable
                                                         </span>
-                                                        <div className={`size-4 rounded-full border flex items-center justify-center ${isSelected ? 'border-teal-600 bg-teal-600 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
-                                                            {isSelected && <Check className="size-2.5 stroke-[3]" />}
+                                                    ) : isCheapest ? (
+                                                        <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-emerald-600 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs flex items-center gap-1">
+                                                            💰 Cheaper Option
+                                                        </span>
+                                                    ) : quote.isFastest ? (
+                                                        <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-amber-500 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs">
+                                                            ⚡ Fastest
+                                                        </span>
+                                                    ) : quote.isRecommended ? (
+                                                        <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-teal-600 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs">
+                                                            Recommended
+                                                        </span>
+                                                    ) : null}
+
+                                                    <div>
+                                                        <div className="flex items-center justify-between gap-1 mb-1">
+                                                            <span className="font-extrabold text-xs text-slate-900 dark:text-white line-clamp-1">
+                                                                {quote.carrierName}
+                                                            </span>
+                                                            <div className={`size-4 rounded-full border flex items-center justify-center ${
+                                                                !isDeliverable
+                                                                    ? 'border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800'
+                                                                    : isSelected
+                                                                    ? isCheapest
+                                                                        ? 'border-emerald-600 bg-emerald-600 text-white'
+                                                                        : 'border-teal-600 bg-teal-600 text-white'
+                                                                    : 'border-slate-300 dark:border-slate-600'
+                                                            }`}>
+                                                                {isSelected && isDeliverable && <Check className="size-2.5 stroke-[3]" />}
+                                                            </div>
                                                         </div>
+
+                                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-1">
+                                                            {quote.serviceName}
+                                                        </p>
+
+                                                        {isDeliverable ? (
+                                                            <div className="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                                                <Zap className="size-3 text-amber-500" />
+                                                                <span>ETA: {quote.estimatedDays}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="mt-2 text-[11px] text-rose-600 dark:text-rose-400 font-medium leading-tight">
+                                                                {quote.unserviceableReason || 'Not deliverable for this PIN code.'}
+                                                            </p>
+                                                        )}
                                                     </div>
 
-                                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-1">
-                                                        {quote.serviceName}
-                                                    </p>
-
-                                                    <div className="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                                        <Zap className="size-3 text-amber-500" />
-                                                        <span>ETA: {quote.estimatedDays}</span>
+                                                    <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/80 flex items-baseline justify-between">
+                                                        <span className="text-[10px] text-slate-400">
+                                                            {isDeliverable ? 'Freight Fee' : 'Status'}
+                                                        </span>
+                                                        <span className={`font-mono font-black text-base ${
+                                                            isDeliverable ? (isCheapest ? 'text-emerald-600 dark:text-emerald-400' : 'text-teal-600 dark:text-teal-400') : 'text-slate-400 text-xs'
+                                                        }`}>
+                                                            {isDeliverable ? `₹${quote.totalFreight.toLocaleString("en-IN")}` : 'Unavailable'}
+                                                        </span>
                                                     </div>
                                                 </div>
-
-                                                <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/80 flex items-baseline justify-between">
-                                                    <span className="text-[10px] text-slate-400">Freight Fee</span>
-                                                    <span className="font-mono font-black text-base text-teal-600 dark:text-teal-400">
-                                                        ₹{quote.totalFreight.toLocaleString("en-IN")}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
                         </div>

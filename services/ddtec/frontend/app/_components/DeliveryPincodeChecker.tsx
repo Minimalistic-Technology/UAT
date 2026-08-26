@@ -33,6 +33,7 @@ export interface DeliveryPartner {
     name: string;
     code: 'BLUEDART' | 'DTDC';
     serviceable: boolean;
+    unserviceableReason?: string;
     serviceType: string;
     estimatedDays: string;
     minDays: number;
@@ -43,6 +44,9 @@ export interface DeliveryPartner {
     prepaidAvailable: boolean;
     expressAvailable: boolean;
     isPreferred: boolean;
+    isCheapest?: boolean;
+    isFastest?: boolean;
+    estimatedCost?: number;
     message?: string;
 }
 
@@ -326,48 +330,109 @@ export default function DeliveryPincodeChecker({
                                 </div>
                             </div>
 
-                            {/* Partner & Logistics Badges */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                {/* Primary Delivery Partner (Blue Dart) */}
-                                <div className="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 flex items-center justify-between">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="size-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
-                                            BD
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-1.5">
-                                                <h5 className="text-xs font-bold text-slate-900 dark:text-white">
-                                                    {result.primaryPartner.name}
-                                                </h5>
-                                                <span className="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase bg-blue-600 text-white">
-                                                    Primary
-                                                </span>
-                                            </div>
-                                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                                {result.primaryPartner.serviceType}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="text-xs font-bold text-blue-700 dark:text-blue-300 block">
-                                            {result.primaryPartner.estimatedDays}
-                                        </span>
-                                    </div>
-                                </div>
+                            {/* Courier Partners Comparison Cards (Blue Dart vs DTDC) */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {result.partners.map((partner) => {
+                                    const isDeliverable = partner.serviceable;
+                                    const isCheapest = partner.isCheapest;
+                                    const isBlueDart = partner.code === 'BLUEDART';
 
-                                {/* Features / Capabilities */}
-                                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-around text-xs font-medium">
-                                    <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-                                        <Banknote className="size-3.5 text-emerald-600" />
-                                        <span>COD: {result.primaryPartner.codAvailable ? "Available" : "Prepaid only"}</span>
-                                    </div>
-                                    <span className="text-slate-300 dark:text-slate-700">|</span>
-                                    <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-                                        <ShieldCheck className="size-3.5 text-teal-600" />
-                                        <span>100% Insured</span>
-                                    </div>
-                                </div>
+                                    return (
+                                        <div
+                                            key={partner.code}
+                                            className={`p-3.5 rounded-2xl border transition-all relative flex flex-col justify-between ${
+                                                isDeliverable
+                                                    ? isCheapest
+                                                        ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800/80 shadow-xs'
+                                                        : 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/70 shadow-xs'
+                                                    : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 opacity-60'
+                                            }`}
+                                        >
+                                            {/* Badge for Cheaper / Fastest / Not Deliverable */}
+                                            {isDeliverable && isCheapest && (
+                                                <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-emerald-600 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs flex items-center gap-1">
+                                                    💰 Cheaper Option
+                                                </span>
+                                            )}
+                                            {isDeliverable && partner.isFastest && !isCheapest && (
+                                                <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-blue-600 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs flex items-center gap-1">
+                                                    ⚡ Express Priority
+                                                </span>
+                                            )}
+                                            {!isDeliverable && (
+                                                <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-rose-600 text-white font-extrabold text-[9px] rounded-full uppercase shadow-xs">
+                                                    ❌ Not Deliverable
+                                                </span>
+                                            )}
+
+                                            <div>
+                                                <div className="flex items-center gap-2.5 mb-1.5">
+                                                    <div
+                                                        className={`size-8 rounded-xl flex items-center justify-center font-bold text-xs ${
+                                                            isDeliverable
+                                                                ? isBlueDart
+                                                                    ? 'bg-blue-600 text-white'
+                                                                    : 'bg-emerald-600 text-white'
+                                                                : 'bg-slate-300 dark:bg-slate-700 text-slate-500'
+                                                        }`}
+                                                    >
+                                                        {isBlueDart ? 'BD' : 'DTDC'}
+                                                    </div>
+                                                    <div>
+                                                        <h5 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                                            {partner.name}
+                                                            {isDeliverable && (
+                                                                <span className="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                                                    {isDeliverable ? 'Active' : 'Offline'}
+                                                                </span>
+                                                            )}
+                                                        </h5>
+                                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                            {partner.serviceType}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {isDeliverable ? (
+                                                    <div className="space-y-1 mt-2">
+                                                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                                            <Clock className="size-3.5 text-teal-600" />
+                                                            <span>ETA: {partner.estimatedDays} ({partner.formattedDeliveryDate})</span>
+                                                        </div>
+                                                        {partner.estimatedCost && (
+                                                            <div className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
+                                                                Est. Base Freight: <span className="text-teal-600 dark:text-teal-400">₹{partner.estimatedCost}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="mt-2 text-xs text-rose-600 dark:text-rose-400 flex items-start gap-1">
+                                                        <XCircle className="size-3.5 shrink-0 mt-0.5" />
+                                                        <span>{partner.unserviceableReason || 'Service not available for this PIN code.'}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {isDeliverable && (
+                                                <div className="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+                                                    <span>COD: {partner.codAvailable ? '✓ Yes' : '✗ Prepaid only'}</span>
+                                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">Doorstep Delivery</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
+
+                            {/* Informative message if only one partner is deliverable */}
+                            {result.partners.filter(p => p.serviceable).length === 1 && (
+                                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
+                                    <Sparkles className="size-4 shrink-0 text-amber-600 mt-0.5" />
+                                    <span>
+                                        <strong>Courier Notice:</strong> Only {result.primaryPartner.name} provides active courier service to PIN {result.pincode}. It has been automatically designated for your delivery.
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Local Store Hub Tag if serviceable from dark store */}
                             {result.localHub && (
@@ -376,46 +441,6 @@ export default function DeliveryPincodeChecker({
                                     <span>
                                         <strong>DDTEC Express Dark Store:</strong> Instant dispatch from {result.localHub.hubName} ({result.localHub.city})
                                     </span>
-                                </div>
-                            )}
-
-                            {/* Secondary Partner Accordion (DTDC Courier) */}
-                            {!compact && result.partners.length > 1 && (
-                                <div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowAllPartners(!showAllPartners)}
-                                        className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1 transition-colors"
-                                    >
-                                        {showAllPartners ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-                                        {showAllPartners ? "Hide courier network breakdown" : "View other supported delivery partners (DTDC)"}
-                                    </button>
-
-                                    {showAllPartners && (
-                                        <div className="mt-2.5 space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                            {result.partners.map((partner) => (
-                                                <div
-                                                    key={partner.code}
-                                                    className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 text-xs"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <Building2 className="size-4 text-slate-400" />
-                                                        <div>
-                                                            <span className="font-bold text-slate-800 dark:text-slate-200">
-                                                                {partner.name}
-                                                            </span>
-                                                            <span className="text-slate-400 text-[11px] block">
-                                                                {partner.serviceType}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right font-medium text-slate-600 dark:text-slate-300">
-                                                        <span>{partner.formattedDeliveryDate}</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </>
