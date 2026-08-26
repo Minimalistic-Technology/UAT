@@ -18,11 +18,13 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             set -e
-            cd UAT/services/blog-cms
+            cd UAT
             git fetch origin
             git clean -fd
             git reset --hard HEAD
             git checkout -B main-ddtec-cms origin/main-ddtec-cms
             git reset --hard origin/main-ddtec-cms
+            cd services/blog-cms
             docker-compose up -d --build --remove-orphans
             docker image prune -f
+
