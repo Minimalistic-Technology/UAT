@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /opt/app
 
@@ -7,13 +7,19 @@ WORKDIR /opt/app
 RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips-dev git python3
 
 COPY package*.json ./
-RUN npm ci
+
+RUN npm config set registry https://registry.npmjs.org/ \
+    && npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm config set fetch-timeout 300000 \
+    && npm ci
 
 COPY . .
 RUN npm run build
 
 # Stage 2: Production
-FROM node:20-alpine
+FROM node:22-alpine
 
 RUN apk add --no-cache vips-dev
 
@@ -21,7 +27,13 @@ WORKDIR /opt/app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+
+RUN npm config set registry https://registry.npmjs.org/ \
+    && npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm config set fetch-timeout 300000 \
+    && npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /opt/app/dist ./dist
 COPY --from=builder /opt/app/public ./public
