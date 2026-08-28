@@ -1,4 +1,23 @@
 services:
+  blog-cms-db:
+    image: postgres:16-alpine
+    container_name: blog-cms-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:-strapi}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-strapi}
+      POSTGRES_DB: ${DATABASE_NAME:-strapi}
+    ports:
+      - "5432:5432"
+    volumes:
+      - blog_cms_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-strapi} -d ${DATABASE_NAME:-strapi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   blog-cms:
     build:
       context: .
@@ -12,10 +31,19 @@ services:
       - ./.env
     environment:
       - NODE_ENV=production
+      - DATABASE_CLIENT=postgres
+      - DATABASE_HOST=blog-cms-db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DATABASE_NAME:-strapi}
+      - DATABASE_USERNAME=${DATABASE_USERNAME:-strapi}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-strapi}
+      - DATABASE_SSL=false
     restart: always
     volumes:
       - blog_cms_uploads:/opt/app/public/uploads
-      - blog_cms_data:/opt/app/.tmp
+    depends_on:
+      blog-cms-db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:1337/_health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))\""]
       interval: 30s
@@ -38,6 +66,7 @@ services:
       - ../blog-frontend/.env
     environment:
       - NODE_ENV=production
+      - INTERNAL_CMS_URL=http://blog-cms:1337
     restart: always
     depends_on:
       blog-cms:
@@ -45,5 +74,6 @@ services:
 
 volumes:
   blog_cms_uploads:
-  blog_cms_data:
+  blog_cms_db_data:
+
 

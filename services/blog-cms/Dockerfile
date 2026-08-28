@@ -1,50 +1,16 @@
-# Stage 1: Build
-FROM node:22-alpine AS builder
-
-WORKDIR /opt/app
-
-# better-sqlite3 and the admin panel's image processing need these to build on alpine
-RUN apk add --no-cache build-base gcc autoconf automake zlib-dev libpng-dev vips-dev git python3
-
-COPY package*.json ./
-
-RUN npm config set registry https://registry.npmjs.org/ \
-    && npm config set fetch-retries 5 \
-    && npm config set fetch-retry-mintimeout 20000 \
-    && npm config set fetch-retry-maxtimeout 120000 \
-    && npm config set fetch-timeout 300000 \
-    && npm ci
-
-COPY . .
-RUN npm run build
-
-# Stage 2: Production
 FROM node:22-alpine
 
-RUN apk add --no-cache vips-dev
-
 WORKDIR /opt/app
-ENV NODE_ENV=production
 
 COPY package*.json ./
 
-RUN npm config set registry https://registry.npmjs.org/ \
-    && npm config set fetch-retries 5 \
-    && npm config set fetch-retry-mintimeout 20000 \
-    && npm config set fetch-retry-maxtimeout 120000 \
-    && npm config set fetch-timeout 300000 \
-    && npm ci --omit=dev && npm cache clean --force
+RUN npm install
 
-COPY --from=builder /opt/app/dist ./dist
-COPY --from=builder /opt/app/public ./public
-COPY --from=builder /opt/app/src ./src
-COPY --from=builder /opt/app/config ./config
-COPY --from=builder /opt/app/database ./database
-COPY --from=builder /opt/app/favicon.png ./favicon.png
-COPY --from=builder /opt/app/tsconfig.json ./tsconfig.json
+COPY . .
 
-# Persist uploaded media / the sqlite file outside the container.
-VOLUME ["/opt/app/.tmp", "/opt/app/public/uploads"]
+ENV NODE_ENV=production
+
+RUN npm run build
 
 EXPOSE 1337
 
