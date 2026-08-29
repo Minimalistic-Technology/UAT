@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useGetInternshipDetailsById } from "@/features/user/hooks/use-internship";
 import { useApplyJob } from "@/features/user/hooks/use-job-application";
@@ -74,10 +75,15 @@ const Page = () => {
                   <CardTitle className="text-primary text-3xl font-bold">
                     {internship.title}
                   </CardTitle>
-                  <p className="text-muted-foreground mt-1 flex items-center text-lg">
-                    <Building2Icon className="mr-2 h-4 w-4" />
-                    {internship.company.name}
-                  </p>
+                  <Link
+                    href={`/companies/${internship.company?.id || internship.company?._id}`}
+                    className="hover:underline"
+                  >
+                    <p className="text-muted-foreground mt-1 flex items-center text-lg">
+                      <Building2Icon className="mr-2 h-4 w-4" />
+                      {internship.company?.name}
+                    </p>
+                  </Link>
                 </div>
               </div>
             </CardHeader>
@@ -308,8 +314,12 @@ const Page = () => {
           <CompanyCard
             company={{
               ...internship.company,
-              _id: internship.company.id,
-              locations: [],
+              id: internship.company?.id || internship.companyId,
+              location:
+                internship.company?.location ||
+                (internship.company?.locations?.[0]
+                  ? `${internship.company.locations[0].city}, ${internship.company.locations[0].country}`
+                  : undefined),
             } as any}
           />
           <div className="mt-6">

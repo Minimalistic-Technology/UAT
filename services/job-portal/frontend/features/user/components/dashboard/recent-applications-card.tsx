@@ -84,7 +84,9 @@ export function RecentApplicationsCard({
                     className="rounded-full"
                     asChild
                   >
-                    <Link href={`/user-dashboard/applications/${app._id}`}>
+                    <Link
+                      href={`/user-dashboard/applications/${app.id || app._id}`}
+                    >
                       <Eye className="h-4 w-4 text-slate-500" />
                     </Link>
                   </Button>

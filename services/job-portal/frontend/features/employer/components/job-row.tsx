@@ -55,14 +55,18 @@ export function JobRow({ job }: { job: any }) {
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => router.push(`/employer-dashboard/jobs/${job._id}`)}
+              onClick={() =>
+                router.push(`/employer-dashboard/jobs/${job.id || job._id}`)
+              }
               className="cursor-pointer"
             >
               <Eye className="mr-2 size-4" /> View Details
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
-                router.push(`/employer-dashboard/jobs/${job._id}/applications`)
+                router.push(
+                  `/employer-dashboard/jobs/${job.id || job._id}/applications`,
+                )
               }
             >
               <FileUser className="mr-2 size-4" />
@@ -79,7 +83,9 @@ export function JobRow({ job }: { job: any }) {
             <DropdownMenuItem
               disabled={job.status === "closed"}
               onClick={() =>
-                router.push(`/employer-dashboard/jobs/${job._id}/edit`)
+                router.push(
+                  `/employer-dashboard/jobs/${job.id || job._id}/edit`,
+                )
               }
             >
               <Edit className="mr-2 size-4" /> Edit Job
@@ -88,7 +94,7 @@ export function JobRow({ job }: { job: any }) {
             <DropdownMenuItem
               className="text-red-600 focus:text-red-600"
               disabled={isDeleting}
-              onClick={() => deleteJob(job._id)}
+              onClick={() => deleteJob(job.id || job._id)}
             >
               <Trash2 className="mr-2 size-4 hover:stroke-red-200" />{" "}
               {isDeleting ? "Deleting..." : "Delete"}

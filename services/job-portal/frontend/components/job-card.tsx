@@ -30,6 +30,56 @@ export default function JobCard({ job }: JobCardProps) {
     job.listingType === "internship" || job.opportunityType === "INTERNSHIP";
   const id = job.id || job._id;
 
+  const salary =
+    job.salary ||
+    (job.jobDetails
+      ? {
+          min: job.jobDetails.salaryMin,
+          max: job.jobDetails.salaryMax,
+          currency: job.jobDetails.salaryCurrency || "INR",
+          period: job.jobDetails.salaryPeriod || "YEARLY",
+        }
+      : null);
+
+  const stipend =
+    job.stipend ||
+    (job.internshipDetails
+      ? {
+          amount: job.internshipDetails.stipendAmount,
+          currency: "INR",
+          period: job.internshipDetails.durationUnit
+            ? job.internshipDetails.durationUnit.toLowerCase()
+            : "month",
+          type: job.internshipDetails.stipendType
+            ? job.internshipDetails.stipendType.toLowerCase()
+            : "fixed",
+        }
+      : null);
+
+  const locationText =
+    job.workMode?.toLowerCase() === "remote" ||
+    job.workMode === "REMOTE" ||
+    job.location?.remote
+      ? "Remote"
+      : job.city
+        ? [job.city, job.state, job.country || "India"]
+            .filter(Boolean)
+            .join(", ")
+        : job.location
+          ? typeof job.location === "string"
+            ? job.location
+            : [job.location.city, job.location.country]
+                .filter(Boolean)
+                .join(", ")
+          : job.company?.locations?.[0]
+            ? [
+                job.company.locations[0].city,
+                job.company.locations[0].country,
+              ]
+                .filter(Boolean)
+                .join(", ")
+            : "Location not specified";
+
   return (
     <Link
       href={`/${isInternship ? "internship" : "job"}/${id}`}
@@ -64,7 +114,7 @@ export default function JobCard({ job }: JobCardProps) {
                       <Zap className="h-3 w-3 fill-current" /> Featured
                     </Badge>
                   )}
-                  {job.listingType === "internship" && (
+                  {isInternship && (
                     <Badge
                       variant="secondary"
                       className="bg-primary/10 text-primary hover:bg-primary/20 px-2 py-0 text-[10px] font-bold uppercase"
@@ -88,56 +138,56 @@ export default function JobCard({ job }: JobCardProps) {
             </div>
 
             {/* Right side: Salary Info (Desktop) */}
-            {job.listingType === "internship" ? (
-              job.stipend?.amount ? (
+            {isInternship ? (
+              stipend?.amount ? (
                 <div className="hidden flex-col items-end md:flex">
                   <div className="text-foreground flex items-center text-base font-bold">
-                    {getCurrencyIcon(job.stipend.currency, "mr-0.5 h-4 w-4")}
-                    <span>{job.stipend.amount.toLocaleString()}</span>
+                    {getCurrencyIcon(stipend.currency, "mr-0.5 h-4 w-4")}
+                    <span>{stipend.amount.toLocaleString()}</span>
                   </div>
                   <p className="text-muted-foreground text-[11px] font-bold tracking-wider uppercase">
-                    Per {job.stipend.period}
+                    Per {stipend.period}
                   </p>
                 </div>
               ) : (
                 <div className="hidden flex-col items-end md:flex">
                   <span className="text-muted-foreground text-sm font-medium capitalize">
-                    {job.stipend?.type === "unpaid"
+                    {stipend?.type === "unpaid"
                       ? "Unpaid"
-                      : `${job.stipend?.type || ""} Stipend`}
+                      : `${stipend?.type || ""} Stipend`}
                   </span>
                 </div>
               )
-            ) : job.salary?.min || job.salary?.max ? (
+            ) : salary?.min || salary?.max ? (
               <div className="hidden flex-col items-end md:flex">
                 <div className="text-foreground flex items-center text-base font-bold">
-                  {getCurrencyIcon(job.salary.currency, "mr-0.5 h-4 w-4")}
-                  {job.salary?.min && job.salary?.max ? (
+                  {getCurrencyIcon(salary.currency, "mr-0.5 h-4 w-4")}
+                  {salary?.min && salary?.max ? (
                     <>
-                      <span>{job.salary.min.toLocaleString()}</span>
+                      <span>{salary.min.toLocaleString()}</span>
                       <span className="text-muted-foreground mx-1 font-normal">
                         -
                       </span>
-                      <span>{job.salary.max.toLocaleString()}</span>
+                      <span>{salary.max.toLocaleString()}</span>
                     </>
-                  ) : job.salary?.min ? (
+                  ) : salary?.min ? (
                     <>
                       <span className="text-muted-foreground mr-1 text-sm font-normal">
                         From
                       </span>
-                      <span>{job.salary.min.toLocaleString()}</span>
+                      <span>{salary.min.toLocaleString()}</span>
                     </>
                   ) : (
                     <>
                       <span className="text-muted-foreground mr-1 text-sm font-normal">
                         Up to
                       </span>
-                      <span>{job.salary.max!.toLocaleString()}</span>
+                      <span>{salary.max!.toLocaleString()}</span>
                     </>
                   )}
                 </div>
                 <p className="text-muted-foreground text-[11px] font-bold tracking-wider uppercase">
-                  Per {job.salary.period}
+                  Per {salary.period}
                 </p>
               </div>
             ) : (
@@ -153,11 +203,7 @@ export default function JobCard({ job }: JobCardProps) {
           <div className="text-muted-foreground mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             <div className="flex items-center gap-1.5">
               <MapPin className="h-4 w-4" />
-              {job.workMode?.toLowerCase() === "remote" || job.location?.remote
-                ? "Remote"
-                : [job.location?.city, job.location?.country]
-                    .filter(Boolean)
-                    .join(", ") || "Location not specified"}
+              {locationText}
             </div>
             <div className="flex items-center gap-1.5">
               <Briefcase className="h-4 w-4" />
@@ -172,27 +218,27 @@ export default function JobCard({ job }: JobCardProps) {
               })}
             </div>
             {/* Mobile Salary View */}
-            {job.listingType === "internship" ? (
-              job.stipend?.amount ? (
+            {isInternship ? (
+              stipend?.amount ? (
                 <div className="text-foreground flex items-center gap-1.5 font-semibold md:hidden">
-                  {getCurrencyIcon(job.stipend.currency, "h-4 w-4")}
-                  {job.stipend.amount.toLocaleString()}
+                  {getCurrencyIcon(stipend.currency, "h-4 w-4")}
+                  {stipend.amount.toLocaleString()}
                 </div>
               ) : (
                 <div className="text-muted-foreground flex items-center text-sm font-medium capitalize md:hidden">
-                  {job.stipend?.type === "unpaid"
+                  {stipend?.type === "unpaid"
                     ? "Unpaid"
-                    : `${job.stipend?.type || ""} Stipend`}
+                    : `${stipend?.type || ""} Stipend`}
                 </div>
               )
-            ) : job.salary?.min || job.salary?.max ? (
+            ) : salary?.min || salary?.max ? (
               <div className="text-foreground flex items-center gap-1.5 font-semibold md:hidden">
-                {getCurrencyIcon(job.salary.currency, "h-4 w-4")}
-                {job.salary?.min && job.salary?.max
-                  ? `${job.salary.min.toLocaleString()} - ${job.salary.max.toLocaleString()}`
-                  : job.salary?.min
-                    ? `From ${job.salary.min.toLocaleString()}`
-                    : `Up to ${job.salary.max!.toLocaleString()}`}
+                {getCurrencyIcon(salary.currency, "h-4 w-4")}
+                {salary?.min && salary?.max
+                  ? `${salary.min.toLocaleString()} - ${salary.max.toLocaleString()}`
+                  : salary?.min
+                    ? `From ${salary.min.toLocaleString()}`
+                    : `Up to ${salary.max!.toLocaleString()}`}
               </div>
             ) : (
               <div className="text-muted-foreground flex items-center text-sm font-medium md:hidden">

@@ -10,7 +10,8 @@ import { formatCompanySize } from "@/utils";
 
 interface CompanyCardProps {
   company: {
-    _id: string;
+    _id?: string;
+    id?: string;
     name: string;
     description?: string;
     industry?: string;
@@ -26,6 +27,7 @@ interface CompanyCardProps {
 }
 
 export const CompanyCard = ({ company }: CompanyCardProps) => {
+  const companyId = company.id || company._id;
   const initials = company.name
     .split(" ")
     .map((w) => w[0])
@@ -61,7 +63,7 @@ export const CompanyCard = ({ company }: CompanyCardProps) => {
 
   return (
     <Link
-      href={`/companies/${company._id}`}
+      href={`/companies/${companyId}`}
       className="group border-border/40 bg-card hover:border-border block rounded-xl border p-5 transition-colors"
     >
       <div className="mb-3 flex items-center gap-3">

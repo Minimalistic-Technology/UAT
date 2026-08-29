@@ -28,6 +28,8 @@ export const CompanyInformation = ({ company }: { company: any }) => {
   const user = userDetailsResponse?.data;
   const isOwner = user && company?.owner?.id === user.id;
   const isKycCompleted = company?.isVerified;
+  const primaryLoc = company?.locations?.[0] || company?.location;
+
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
     defaultValues: {
@@ -37,11 +39,11 @@ export const CompanyInformation = ({ company }: { company: any }) => {
       industry: company?.industry || "",
       companySize: company?.companySize || "",
       location: {
-        address: company?.location?.address || "",
-        city: company?.location?.city || "",
-        state: company?.location?.state || "",
-        country: company?.location?.country || "",
-        zipCode: company?.location?.zipCode || "",
+        address: primaryLoc?.address || "",
+        city: primaryLoc?.city || "",
+        state: primaryLoc?.state || "",
+        country: primaryLoc?.country || "",
+        zipCode: primaryLoc?.zipCode || "",
       },
       socialLinks: {
         linkedin: company?.socialLinks?.linkedin || "",
@@ -53,6 +55,7 @@ export const CompanyInformation = ({ company }: { company: any }) => {
 
   useEffect(() => {
     if (company) {
+      const loc = company.locations?.[0] || company.location;
       form.reset({
         name: company.name || "",
         description: company.description || "",
@@ -60,11 +63,11 @@ export const CompanyInformation = ({ company }: { company: any }) => {
         industry: company.industry || "",
         companySize: company.companySize || "",
         location: {
-          address: company.location?.address || "",
-          city: company.location?.city || "",
-          state: company.location?.state || "",
-          country: company.location?.country || "",
-          zipCode: company.location?.zipCode || "",
+          address: loc?.address || "",
+          city: loc?.city || "",
+          state: loc?.state || "",
+          country: loc?.country || "",
+          zipCode: loc?.zipCode || "",
         },
         socialLinks: {
           linkedin: company.socialLinks?.linkedin || "",

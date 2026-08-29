@@ -51,7 +51,7 @@ export function DraftRow({ draft }: { draft: any }) {
             <DropdownMenuItem
               onClick={() => {
                 router.push(
-                  `/employer-dashboard/listings/create?draftId=${draft._id}&type=${draft.type}`,
+                  `/employer-dashboard/listings/create?draftId=${draft.id || draft._id}&type=${draft.type}`,
                 );
               }}
               className="cursor-pointer"
@@ -62,7 +62,7 @@ export function DraftRow({ draft }: { draft: any }) {
             <DropdownMenuItem
               className="cursor-pointer text-red-600 focus:text-red-600"
               disabled={isDeleting}
-              onClick={() => deleteDraft(draft._id)}
+              onClick={() => deleteDraft(draft.id || draft._id)}
             >
               <Trash2 className="mr-2 size-4" />{" "}
               {isDeleting ? "Deleting..." : "Delete"}

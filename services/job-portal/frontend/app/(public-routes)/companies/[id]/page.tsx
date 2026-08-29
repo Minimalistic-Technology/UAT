@@ -29,7 +29,7 @@ export default function CompanyDetailsPage() {
     error: companyError,
   } = useGetCompanyById(companyId);
   const { data: jobsRes, isLoading: isLoadingJobs } =
-    useGetCompanyJobs(companyId);
+    useGetCompanyJobs(companyId, 1, 50);
 
   const company = companyRes?.data;
   const jobs = jobsRes?.data?.jobs || [];
@@ -77,8 +77,8 @@ export default function CompanyDetailsPage() {
                   alt={company.name}
                   className="object-cover"
                 />
-                <AvatarFallback className="rounded-xl text-4xl">
-                  <Building2 className="h-12 w-12 opacity-50" />
+                <AvatarFallback className="rounded-xl text-4xl font-bold">
+                  {company.name?.slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
@@ -89,13 +89,15 @@ export default function CompanyDetailsPage() {
                   {company.industry && (
                     <div className="flex items-center gap-1.5">
                       <Building2 className="h-4 w-4" />
-                      {company.industry}
+                      {company.industry.replace(/_/g, " ")}
                     </div>
                   )}
                   {company.locations && company.locations.length > 0 && (
                     <div className="flex items-center gap-1.5">
                       <MapPin className="h-4 w-4" />
-                      {company.locations[0].city}, {company.locations[0].country}
+                      {company.locations
+                        .map((l: any) => `${l.city}, ${l.country}`)
+                        .join(" • ")}
                     </div>
                   )}
                   {company.companySize && (
@@ -150,14 +152,14 @@ export default function CompanyDetailsPage() {
                       Open Positions
                     </span>
                     <span className="text-foreground font-semibold">
-                      {company.activeJobs || 0}
+                      {company.activeListings || company.activeJobs || jobs.length || 0}
                     </span>
                   </div>
                   {company.industry && (
                     <div className="border-border/50 flex justify-between border-b pb-3">
                       <span className="text-muted-foreground">Industry</span>
-                      <span className="text-right font-medium">
-                        {company.industry}
+                      <span className="text-right font-medium capitalize">
+                        {company.industry.replace(/_/g, " ")}
                       </span>
                     </div>
                   )}
@@ -168,6 +170,26 @@ export default function CompanyDetailsPage() {
                       </span>
                       <span className="text-right font-medium">
                         {formatCompanySize(company.companySize)} employees
+                      </span>
+                    </div>
+                  )}
+                  {company.totalMembers > 0 && (
+                    <div className="border-border/50 flex justify-between border-b pb-3">
+                      <span className="text-muted-foreground">
+                        Team Members
+                      </span>
+                      <span className="text-right font-medium">
+                        {company.totalMembers} Member{company.totalMembers === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                  )}
+                  {company.owner && (
+                    <div className="border-border/50 flex justify-between border-b pb-3">
+                      <span className="text-muted-foreground">
+                        Founder / Head
+                      </span>
+                      <span className="text-right font-medium">
+                        {company.owner.firstName} {company.owner.lastName}
                       </span>
                     </div>
                   )}
@@ -199,7 +221,7 @@ export default function CompanyDetailsPage() {
         ) : jobs.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
             {jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
+              <JobCard key={job.id || job._id} job={job} />
             ))}
           </div>
         ) : (

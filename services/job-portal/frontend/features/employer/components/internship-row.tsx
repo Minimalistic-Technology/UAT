@@ -59,7 +59,9 @@ export function InternshipRow({ internship }: { internship: any }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() =>
-                router.push(`/employer-dashboard/internships/${internship._id}`)
+                router.push(
+                  `/employer-dashboard/internships/${internship.id || internship._id}`,
+                )
               }
               className="cursor-pointer"
             >
@@ -68,7 +70,7 @@ export function InternshipRow({ internship }: { internship: any }) {
             <DropdownMenuItem
               onClick={() =>
                 router.push(
-                  `/employer-dashboard/internships/${internship._id}/applications`,
+                  `/employer-dashboard/internships/${internship.id || internship._id}/applications`,
                 )
               }
             >
@@ -87,7 +89,7 @@ export function InternshipRow({ internship }: { internship: any }) {
               disabled={internship.status === "closed"}
               onClick={() => {
                 router.push(
-                  `/employer-dashboard/internships/${internship._id}/edit`,
+                  `/employer-dashboard/internships/${internship.id || internship._id}/edit`,
                 );
               }}
             >
@@ -97,7 +99,7 @@ export function InternshipRow({ internship }: { internship: any }) {
             <DropdownMenuItem
               className="text-red-600 focus:text-red-600"
               disabled={isDeleting}
-              onClick={() => deleteInternship(internship._id)}
+              onClick={() => deleteInternship(internship.id || internship._id)}
             >
               <Trash2 className="mr-2 size-4 hover:stroke-red-200" />{" "}
               {isDeleting ? "Deleting..." : "Delete"}

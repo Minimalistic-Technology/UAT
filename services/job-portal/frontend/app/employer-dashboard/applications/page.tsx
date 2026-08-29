@@ -241,8 +241,10 @@ const EmployerApplicationsPage = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    applications.map((app: any) => (
-                      <TableRow key={app._id}>
+                    applications.map((app: any) => {
+                      const appId = app.id || app._id;
+                      return (
+                      <TableRow key={appId}>
                         <TableCell>
                           <div className="font-medium">
                             {app.jobSeeker?.firstName} {app.jobSeeker?.lastName}
@@ -300,7 +302,7 @@ const EmployerApplicationsPage = () => {
                                 <DropdownMenuItem
                                   className="cursor-pointer text-blue-600"
                                   onClick={() => {
-                                    setSelectedAppId(app._id);
+                                    setSelectedAppId(appId);
                                     setInterviewModalOpen(true);
                                   }}
                                 >
@@ -310,7 +312,7 @@ const EmployerApplicationsPage = () => {
                                 <DropdownMenuItem
                                   className="cursor-pointer text-green-600"
                                   onClick={() =>
-                                    handleUpdateStatus(app._id, "accepted")
+                                    handleUpdateStatus(appId, "accepted")
                                   }
                                 >
                                   <CheckCircle2 className="mr-2 h-4 w-4" />{" "}
@@ -319,7 +321,7 @@ const EmployerApplicationsPage = () => {
                                 <DropdownMenuItem
                                   className="cursor-pointer text-red-600"
                                   onClick={() =>
-                                    handleUpdateStatus(app._id, "rejected")
+                                    handleUpdateStatus(appId, "rejected")
                                   }
                                 >
                                   <XCircle className="mr-2 h-4 w-4" /> Reject
@@ -330,7 +332,7 @@ const EmployerApplicationsPage = () => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
+                    );})
                   )}
                 </TableBody>
               </Table>

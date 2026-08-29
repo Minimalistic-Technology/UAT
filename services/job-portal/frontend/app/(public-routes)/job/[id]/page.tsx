@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useGetJobDetailsById } from "@/features/user/hooks/use-job";
 import { useApplyJob } from "@/features/user/hooks/use-job-application";
@@ -77,10 +78,15 @@ const Page = () => {
                   <CardTitle className="text-primary text-3xl font-bold">
                     {job.title}
                   </CardTitle>
-                  <p className="text-muted-foreground mt-1 flex items-center text-lg">
-                    <Building2Icon className="mr-2 h-4 w-4" />
-                    {job.company.name}
-                  </p>
+                  <Link
+                    href={`/companies/${job.company?.id || job.company?._id}`}
+                    className="hover:underline"
+                  >
+                    <p className="text-muted-foreground mt-1 flex items-center text-lg">
+                      <Building2Icon className="mr-2 h-4 w-4" />
+                      {job.company.name}
+                    </p>
+                  </Link>
                 </div>
                 {job.isFeatured && (
                   <Badge
@@ -338,7 +344,12 @@ const Page = () => {
             <CompanyCard
               company={{
                 ...job.company,
-                location: job.company.location,
+                id: job.company?.id || job.companyId,
+                location:
+                  job.company?.location ||
+                  (job.company?.locations?.[0]
+                    ? `${job.company.locations[0].city}, ${job.company.locations[0].country}`
+                    : undefined),
               }}
             />
             <div className="mt-6">
