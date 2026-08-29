@@ -495,7 +495,13 @@ export const getRelatedJobs = async (
       take: 5
     });
 
-    return res.status(200).json(new ApiResponse(200, candidateJobs, "Related jobs fetched successfully"));
+    const formattedJobs = candidateJobs.map((job) => ({
+      _id: job.id,
+      ...job,
+      listingType: "job",
+    }));
+
+    return res.status(200).json(new ApiResponse(200, formattedJobs, "Related jobs fetched successfully"));
   } catch (error: any) {
     next(error);
   }

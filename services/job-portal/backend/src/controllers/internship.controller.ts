@@ -506,7 +506,13 @@ export const getRelatedInternships = async (
       take: 5
     });
 
-    return res.status(200).json(new ApiResponse(200, candidateInternships, "Related internships fetched successfully"));
+    const formattedInternships = candidateInternships.map((internship) => ({
+      _id: internship.id,
+      ...internship,
+      listingType: "internship",
+    }));
+
+    return res.status(200).json(new ApiResponse(200, formattedInternships, "Related internships fetched successfully"));
   } catch (error: any) {
     next(error);
   }

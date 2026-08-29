@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import { formatCompanySize } from "@/utils";
 
 export default function CompanyDetailsPage() {
   const params = useParams();
@@ -100,7 +101,7 @@ export default function CompanyDetailsPage() {
                   {company.companySize && (
                     <div className="flex items-center gap-1.5">
                       <Users className="h-4 w-4" />
-                      {company.companySize}
+                      {formatCompanySize(company.companySize)} employees
                     </div>
                   )}
                 </div>
@@ -166,7 +167,7 @@ export default function CompanyDetailsPage() {
                         Company Size
                       </span>
                       <span className="text-right font-medium">
-                        {company.companySize}
+                        {formatCompanySize(company.companySize)} employees
                       </span>
                     </div>
                   )}

@@ -26,9 +26,13 @@ interface JobCardProps {
 }
 
 export default function JobCard({ job }: JobCardProps) {
+  const isInternship =
+    job.listingType === "internship" || job.opportunityType === "INTERNSHIP";
+  const id = job.id || job._id;
+
   return (
     <Link
-      href={`/${job.listingType === "internship" ? "internship" : "job"}/${job._id}`}
+      href={`/${isInternship ? "internship" : "job"}/${id}`}
       className="group block"
     >
       <Card className="hover:border-primary/20 overflow-hidden border shadow-sm transition-all duration-200 hover:shadow-md">
@@ -200,11 +204,24 @@ export default function JobCard({ job }: JobCardProps) {
           {/* Description Snippet */}
           <p
             className="text-muted-foreground mt-3 line-clamp-2 text-sm leading-relaxed"
-            title={job.description?.replace(/<[^>]*>?/gm, " ")}
+            title={
+              job.description
+                ? job.description
+                    .replace(/<[^>]*>?/gm, " ")
+                    .replace(/#{1,6}\s*/g, "")
+                    .replace(/\*\*/g, "")
+                    .replace(/\*/g, "")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                : ""
+            }
           >
             {job.description
               ? job.description
                   .replace(/<[^>]*>?/gm, " ")
+                  .replace(/#{1,6}\s*/g, "")
+                  .replace(/\*\*/g, "")
+                  .replace(/\*/g, "")
                   .replace(/\s+/g, " ")
                   .trim()
               : ""}

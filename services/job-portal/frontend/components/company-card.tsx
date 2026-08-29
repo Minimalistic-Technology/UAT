@@ -6,6 +6,7 @@ import {
   Building2Icon,
   GlobeIcon,
 } from "lucide-react";
+import { formatCompanySize } from "@/utils";
 
 interface CompanyCardProps {
   company: {
@@ -112,7 +113,7 @@ export const CompanyCard = ({ company }: CompanyCardProps) => {
         {company.companySize && (
           <span className="text-muted-foreground bg-muted inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs">
             <UsersIcon className="h-3 w-3" />
-            {company.companySize} employees
+            {formatCompanySize(company.companySize)} employees
           </span>
         )}
       </div>
