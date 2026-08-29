@@ -1,22 +1,21 @@
-FROM node:22-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+RUN npm install -g pnpm@10.33.4
 
-RUN npm install
+# Install app dependencies
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install
 
+# Copy application source and build
 COPY . .
 
 ARG NEXT_PUBLIC_CMS_URL
 ENV NEXT_PUBLIC_CMS_URL=$NEXT_PUBLIC_CMS_URL
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV HOSTNAME="0.0.0.0"
-ENV PORT=3000
 
-RUN npm run build
+RUN pnpm run build
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["pnpm", "run", "start"]

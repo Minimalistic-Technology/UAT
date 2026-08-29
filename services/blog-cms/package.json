@@ -11,15 +11,23 @@
     "develop": "strapi develop",
     "start": "strapi start",
     "strapi": "strapi",
-    "upgrade": "npx @strapi/upgrade latest",
-    "upgrade:dry": "npx @strapi/upgrade latest --dry"
+    "upgrade": "pnpm dlx @strapi/upgrade latest",
+    "upgrade:dry": "pnpm dlx @strapi/upgrade latest --dry"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "better-sqlite3",
+      "esbuild"
+    ]
   },
   "dependencies": {
     "@strapi/database": "5.52.1",
     "@strapi/plugin-cloud": "5.52.1",
     "@strapi/plugin-users-permissions": "5.52.1",
     "@strapi/strapi": "5.52.1",
-    "pg": "^8.13.1",
+    "better-sqlite3": "12.8.0",
+    "pg": "^8.13.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.30.3",
@@ -34,7 +42,7 @@
   },
   "engines": {
     "node": ">=20.0.0 <=26.x.x",
-    "npm": ">=6.0.0"
+    "pnpm": ">=9.0.0"
   },
   "strapi": {
     "uuid": "706d4542-4a26-4ea5-9ff4-e735994fc222",
