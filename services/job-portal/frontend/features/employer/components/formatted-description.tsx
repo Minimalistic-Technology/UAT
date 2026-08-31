@@ -13,6 +13,55 @@ export function FormattedDescription({ text }: { text: string }) {
     );
   }
 
+  // Check if text contains markdown headers (###), bold (**), or list items (- )
+  const isMarkdown = /^(?:#{1,6}\s|\s*[-*]\s|\s*\*\*)/m.test(text);
+
+  if (isMarkdown) {
+    let parsedHtml = text
+      .replace(/^### (.*$)/gim, '<h3 class="text-base font-semibold text-slate-900 dark:text-white mt-4 mb-2">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-lg font-bold text-slate-900 dark:text-white mt-5 mb-2">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-xl font-bold text-slate-900 dark:text-white mt-6 mb-3">$1</h1>')
+      .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold text-slate-900 dark:text-white">$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em>$1</em>');
+
+    const lines = parsedHtml.split('\n');
+    const output: string[] = [];
+    let inList = false;
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line.startsWith('- ') || line.startsWith('* ')) {
+        if (!inList) {
+          output.push('<ul class="list-disc pl-5 my-2 space-y-1">');
+          inList = true;
+        }
+        output.push(`<li>${line.slice(2)}</li>`);
+      } else {
+        if (inList) {
+          output.push('</ul>');
+          inList = false;
+        }
+        if (line.length > 0) {
+          if (!line.startsWith('<h1') && !line.startsWith('<h2') && !line.startsWith('<h3') && !line.startsWith('<ul')) {
+            output.push(`<p class="mb-3 leading-relaxed">${line}</p>`);
+          } else {
+            output.push(line);
+          }
+        }
+      }
+    }
+    if (inList) {
+      output.push('</ul>');
+    }
+
+    return (
+      <div
+        className="text-muted-foreground space-y-2 text-[15px] leading-relaxed [&_a]:break-words [&_a]:text-blue-600 [&_a]:underline dark:[&_a]:text-blue-400 [&_a:hover]:text-blue-800 dark:[&_a:hover]:text-blue-300 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:text-slate-900 dark:[&>h1]:text-white [&>h2]:text-xl [&>h2]:font-bold [&>h2]:text-slate-800 dark:[&>h2]:text-slate-100 [&>h3]:text-lg [&>h3]:font-bold [&>ol]:list-decimal [&>ol]:pl-5 [&>ol>li]:mb-1 [&>p]:mb-3 [&>p:last-child]:mb-0 [&>ul]:list-disc [&>ul]:pl-5 [&>ul>li]:mb-1"
+        dangerouslySetInnerHTML={{ __html: output.join('\n') }}
+      />
+    );
+  }
+
   // Split on numbered points like "1. ", "2. ", etc. (fallback for legacy plaintext)
   const numberedPattern = /(?=\d+\.\s)/;
   const parts = text.split(numberedPattern).filter(Boolean);

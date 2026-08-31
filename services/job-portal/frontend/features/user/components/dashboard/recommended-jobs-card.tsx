@@ -24,11 +24,12 @@ export function RecommendedJobsCard({ jobs }: RecommendedJobsCardProps) {
             ) : (
               jobs.map((listing: any) => (
                 <Link
-                  key={listing._id || listing.id}
+                  key={listing.id || listing._id}
                   href={
-                    listing.listingType === "internship"
-                      ? `/internship/${listing._id}`
-                      : `/job/${listing._id}`
+                    listing.listingType === "internship" ||
+                    listing.opportunityType === "INTERNSHIP"
+                      ? `/internship/${listing.id || listing._id}`
+                      : `/job/${listing.id || listing._id}`
                   }
                   className="group block"
                 >

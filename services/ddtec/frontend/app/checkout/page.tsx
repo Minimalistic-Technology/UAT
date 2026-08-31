@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useCart } from "../_context/CartContext";
 import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
-import { useRouter } from "next/navigation";
-import { CreditCard, Banknote, CheckCircle, Loader2, Tag, Trash2, Smartphone, Lock, Mail } from "lucide-react";
+import { useSettings } from "../_context/SettingsContext";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CreditCard, Banknote, CheckCircle, Loader2, Tag, Trash2, Smartphone, Lock, Mail, Truck, MapPin, AlertCircle, CheckCircle2, Weight, Zap, Check, User, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
@@ -13,8 +14,14 @@ import api from "@/lib/api";
 export default function CheckoutPage() {
     const { cartItems, totalPrice, clearCart, appliedCoupon, subtotal, applyCoupon, removeCoupon, loading: cartLoading } = useCart();
     const { user, loading, checkUser } = useAuth();
+    const { siteSettings } = useSettings();
     const { showToast } = useToast();
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const initialCarrier = searchParams.get('carrier') || 'BLUEDART_SURFACE';
+    const initialPincode = searchParams.get('pincode') || '';
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [isAccountCreated, setIsAccountCreated] = useState(false);
@@ -27,7 +34,7 @@ export default function CheckoutPage() {
         phone: "",
         address: "",
         city: "",
-        zip: "",
+        zip: initialPincode || "",
     });
 
     // OTP & Password State
@@ -42,7 +49,7 @@ export default function CheckoutPage() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [passwordError, setPasswordError] = useState("");
-    const [generatedPassword, setGeneratedPassword] = useState(""); // Kept as fallback or if we want to pre-fill? No, user creates it.
+    const [generatedPassword, setGeneratedPassword] = useState("");
 
     // Timer State
     const [timer, setTimer] = useState(60);
@@ -53,6 +60,12 @@ export default function CheckoutPage() {
     const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
     const [couponInput, setCouponInput] = useState("");
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+    // Real-Time Carrier Freight States (Blue Dart, DTDC, Local Hub)
+    const [carrierQuotes, setCarrierQuotes] = useState<any[]>([]);
+    const [selectedQuoteId, setSelectedQuoteId] = useState<string>(initialCarrier);
+    const [checkingDelivery, setCheckingDelivery] = useState(false);
+    const [deliveryError, setDeliveryError] = useState<string | null>(null);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -126,11 +139,92 @@ export default function CheckoutPage() {
         }
     }, [cartItems, loading, cartLoading, router, isSuccess]);
 
-    const freeDeliveryThreshold = 500;
-    const isFreeDelivery = subtotal >= freeDeliveryThreshold;
-    const shippingCost = isFreeDelivery ? 0 : 50;
-    const tax = totalPrice * 0.1;
-    const finalTotal = totalPrice + tax + shippingCost;
+    // Initialize ZIP from localStorage if user had checked it earlier
+    useEffect(() => {
+        const savedPin = localStorage.getItem("ddtec_user_pincode");
+        const savedCity = localStorage.getItem("ddtec_user_city");
+        if (savedPin && /^[1-9][0-9]{5}$/.test(savedPin)) {
+            setFormData(prev => ({
+                ...prev,
+                zip: prev.zip || savedPin,
+                city: prev.city || savedCity || ""
+            }));
+        }
+    }, []);
+
+    // Total Consignment Weight for B2B Bulk Calculation
+    const validCartItems = cartItems.filter(item => item && item.product);
+    const totalWeightKg = validCartItems.reduce((acc, item) => {
+        const singleWeight = (item.product as any)?.weightKg || 0.5;
+        return acc + (singleWeight * item.quantity);
+    }, 0);
+    const roundedWeightKg = Math.max(0.5, Math.round(totalWeightKg * 10) / 10);
+
+    // Live calculate carrier freight rates when 6-digit ZIP is entered
+    useEffect(() => {
+        const checkZipServiceability = async () => {
+            const cleanZip = (formData.zip || "").trim();
+            if (/^[1-9][0-9]{5}$/.test(cleanZip)) {
+                setCheckingDelivery(true);
+                setDeliveryError(null);
+                try {
+                    const res = await api.post('/delivery/calculate-rates', {
+                        pincode: cleanZip,
+                        weightKg: roundedWeightKg
+                    });
+                    if (res.data.success && res.data.quotes && res.data.quotes.length > 0) {
+                        setCarrierQuotes(res.data.quotes);
+                        if (res.data.location?.city && !formData.city) {
+                            setFormData(prev => ({ ...prev, city: res.data.location.city }));
+                        }
+                        const stillValid = res.data.quotes.find((q: any) => q.id === selectedQuoteId && q.serviceable !== false);
+                        if (!stillValid) {
+                            const rec = res.data.defaultQuote || 
+                                        res.data.quotes.find((q: any) => q.isRecommended && q.serviceable !== false) || 
+                                        res.data.quotes.find((q: any) => q.serviceable !== false);
+                            if (rec) {
+                                setSelectedQuoteId(rec.id);
+                            }
+                        }
+                        if (!res.data.serviceable) {
+                            setDeliveryError(res.data.message || `Delivery is not available to pincode ${cleanZip}.`);
+                        }
+                    } else {
+                        setDeliveryError(`Delivery is not available to pincode ${cleanZip}.`);
+                        setCarrierQuotes([]);
+                    }
+                } catch (err: any) {
+                    console.warn("Delivery check error:", err);
+                    setDeliveryError("Could not calculate carrier freight rates for this PIN code.");
+                    setCarrierQuotes([]);
+                } finally {
+                    setCheckingDelivery(false);
+                }
+            } else {
+                setCarrierQuotes([]);
+                setDeliveryError(null);
+            }
+        };
+
+        const timer = setTimeout(() => {
+            checkZipServiceability();
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [formData.zip, roundedWeightKg]);
+
+    const deliveryConfig = siteSettings?.delivery || {
+        freeDeliveryThreshold: 500,
+        flatDeliveryFee: 50,
+        isFreeDeliveryEnabled: false
+    };
+    const isFreeDeliveryEnabled = deliveryConfig.isFreeDeliveryEnabled === true;
+    const freeDeliveryThreshold = deliveryConfig.freeDeliveryThreshold ?? 500;
+    const isFreeDelivery = isFreeDeliveryEnabled && subtotal >= freeDeliveryThreshold;
+
+    const activeCarrierQuote = carrierQuotes.find(q => q.id === selectedQuoteId) || carrierQuotes[0];
+    const shippingCost = isFreeDelivery ? 0 : (activeCarrierQuote ? activeCarrierQuote.totalFreight : (deliveryConfig.flatDeliveryFee || 50));
+    const finalTotal = totalPrice + shippingCost;
 
     const initiateOtpFlow = async () => {
         setIsProcessing(true);
@@ -302,7 +396,12 @@ export default function CheckoutPage() {
                 },
                 paymentMethod,
                 coupon: appliedCoupon ? appliedCoupon.code : undefined,
-                discountAmount: appliedCoupon ? appliedCoupon.discountAmount : 0
+                discountAmount: appliedCoupon ? appliedCoupon.discountAmount : 0,
+                shippingFee: shippingCost,
+                shippingCarrier: activeCarrierQuote?.carrierName || 'Blue Dart Express',
+                shippingServiceName: activeCarrierQuote?.serviceName || 'Blue Dart Surfaceline',
+                shippingCarrierId: activeCarrierQuote?.id || 'BLUEDART_SURFACE',
+                totalWeightKg: roundedWeightKg
             };
 
             const res = await api.post('/orders', orderData);
@@ -340,6 +439,17 @@ export default function CheckoutPage() {
 
     const handlePlaceOrder = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Check if delivery serviceability is verified
+        if (deliveryError || (formData.zip && carrierQuotes.length === 0 && !checkingDelivery)) {
+            showToast("Delivery is not available to this PIN code. Please provide a serviceable delivery address.", "error");
+            return;
+        }
+
+        if (activeCarrierQuote && activeCarrierQuote.serviceable === false) {
+            showToast("The selected courier is not deliverable to this PIN code. Please select an active delivery option.", "error");
+            return;
+        }
 
         // Enforce Signup for Guests
         if (!user) {
@@ -591,6 +701,38 @@ export default function CheckoutPage() {
                         Checkout Details
                     </h2>
 
+                    {!user && (
+                        <div className="p-4 bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="size-10 rounded-xl bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 flex items-center justify-center flex-shrink-0">
+                                    <User className="size-5" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-slate-900 dark:text-white">
+                                        Have a DDTEC Account?
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Log in or sign up to auto-fill saved commercial addresses & GST invoices.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                                <Link
+                                    href="/login?redirect=/checkout"
+                                    className="px-3.5 py-1.5 rounded-xl border border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 font-bold text-xs hover:bg-teal-100 dark:hover:bg-teal-900 transition-colors"
+                                >
+                                    Log In
+                                </Link>
+                                <Link
+                                    href="/signup?redirect=/checkout"
+                                    className="px-3.5 py-1.5 rounded-xl bg-teal-600 text-white font-bold text-xs hover:bg-teal-700 shadow-sm transition-colors"
+                                >
+                                    Sign Up
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
                     <form onSubmit={handlePlaceOrder} className="space-y-8">
                         {/* Shipping Info */}
                         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
@@ -660,20 +802,144 @@ export default function CheckoutPage() {
                                         type="text"
                                         value={formData.city}
                                         onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                        placeholder="City / District"
                                         className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-teal-500 outline-none"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">ZIP Code</label>
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">PIN / ZIP Code</label>
+                                        {checkingDelivery && (
+                                            <span className="text-[11px] text-teal-600 dark:text-teal-400 flex items-center gap-1">
+                                                <Loader2 className="size-3 animate-spin" /> Verifying...
+                                            </span>
+                                        )}
+                                    </div>
                                     <input
                                         required
                                         type="text"
+                                        inputMode="numeric"
+                                        maxLength={6}
                                         value={formData.zip}
-                                        onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => setFormData({ ...formData, zip: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                                        placeholder="6-digit PIN code"
+                                        className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-950 focus:ring-2 outline-none font-medium ${deliveryError ? 'border-red-500 focus:ring-red-500' : (carrierQuotes.length > 0 ? 'border-emerald-500 focus:ring-emerald-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500')}`}
                                     />
                                 </div>
                             </div>
+
+                            {/* Real-time B2B Carrier Freight Selector */}
+                            {carrierQuotes.length > 0 && (
+                                <div className="p-4 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                            <Truck className="size-4 text-teal-600" /> Commercial Logistics Partner
+                                        </label>
+                                        <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center gap-1">
+                                            <Weight className="size-3" /> {roundedWeightKg} KG Consignment
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                        {carrierQuotes.map((quote) => {
+                                            const isSelected = quote.id === selectedQuoteId;
+                                            const isDeliverable = quote.serviceable !== false;
+                                            const isCheapest = quote.isCheapest;
+
+                                            return (
+                                                <div
+                                                    key={quote.id}
+                                                    onClick={() => {
+                                                        if (isDeliverable) {
+                                                            setSelectedQuoteId(quote.id);
+                                                        }
+                                                    }}
+                                                    className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between ${
+                                                        !isDeliverable
+                                                            ? 'border-slate-200 dark:border-slate-800 bg-slate-100/60 dark:bg-slate-950/40 opacity-60 cursor-not-allowed'
+                                                            : isSelected
+                                                            ? isCheapest
+                                                                ? 'border-emerald-600 bg-emerald-50/60 dark:bg-emerald-950/40 ring-2 ring-emerald-600/30 cursor-pointer shadow-xs'
+                                                                : 'border-teal-600 bg-teal-50/60 dark:bg-teal-950/40 ring-2 ring-teal-600/30 cursor-pointer shadow-xs'
+                                                            : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900 cursor-pointer'
+                                                    }`}
+                                                >
+                                                    {/* Badges */}
+                                                    {!isDeliverable ? (
+                                                        <span className="absolute -top-2 right-2 px-1.5 py-0.2 bg-rose-600 text-white font-extrabold text-[8px] rounded uppercase shadow-xs">
+                                                            ❌ Not Deliverable
+                                                        </span>
+                                                    ) : isCheapest ? (
+                                                        <span className="absolute -top-2 right-2 px-1.5 py-0.2 bg-emerald-600 text-white font-extrabold text-[8px] rounded uppercase shadow-xs flex items-center gap-0.5">
+                                                            💰 Cheaper
+                                                        </span>
+                                                    ) : quote.isFastest ? (
+                                                        <span className="absolute -top-2 right-2 px-1.5 py-0.2 bg-amber-500 text-white font-extrabold text-[8px] rounded uppercase shadow-xs">
+                                                            ⚡ Fastest
+                                                        </span>
+                                                    ) : quote.isRecommended ? (
+                                                        <span className="absolute -top-2 right-2 px-1.5 py-0.2 bg-teal-600 text-white font-extrabold text-[8px] rounded uppercase shadow-xs">
+                                                            Recommended
+                                                        </span>
+                                                    ) : null}
+
+                                                    <div>
+                                                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                                                            <span className="font-extrabold text-xs text-slate-900 dark:text-white line-clamp-1">
+                                                                {quote.carrierName}
+                                                            </span>
+                                                            <div className={`size-3.5 rounded-full border flex items-center justify-center ${
+                                                                !isDeliverable
+                                                                    ? 'border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800'
+                                                                    : isSelected
+                                                                    ? isCheapest
+                                                                        ? 'border-emerald-600 bg-emerald-600 text-white'
+                                                                        : 'border-teal-600 bg-teal-600 text-white'
+                                                                    : 'border-slate-300 dark:border-slate-600'
+                                                            }`}>
+                                                                {isSelected && isDeliverable && <Check className="size-2.5 stroke-[3]" />}
+                                                            </div>
+                                                        </div>
+
+                                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                                                            {quote.serviceName}
+                                                        </p>
+
+                                                        {isDeliverable ? (
+                                                            <div className="mt-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                                                <Zap className="size-3 text-amber-500" />
+                                                                <span>ETA: {quote.estimatedDays}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="mt-1 text-[10px] text-rose-600 dark:text-rose-400 font-medium line-clamp-2">
+                                                                {quote.unserviceableReason || 'Unavailable for this PIN.'}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="mt-2 pt-1.5 border-t border-slate-200/60 dark:border-slate-800/80 flex items-baseline justify-between">
+                                                        <span className="text-[9px] text-slate-400">
+                                                            {isDeliverable ? 'Freight' : 'Status'}
+                                                        </span>
+                                                        <span className={`font-mono font-bold text-xs ${
+                                                            isDeliverable ? (isCheapest ? 'text-emerald-600 dark:text-emerald-400' : 'text-teal-600 dark:text-teal-400') : 'text-slate-400 text-[10px]'
+                                                        }`}>
+                                                            {isDeliverable ? (isFreeDelivery ? 'FREE' : `₹${quote.totalFreight}`) : 'Unavailable'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {deliveryError && (
+                                <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 rounded-xl flex items-start gap-2 text-xs text-rose-700 dark:text-rose-400 animate-in fade-in">
+                                    <AlertCircle className="size-4 shrink-0 mt-0.5 text-rose-600" />
+                                    <span>{deliveryError}</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Payment Method */}
@@ -709,13 +975,35 @@ export default function CheckoutPage() {
                             )}
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={isProcessing}
-                            className="w-full py-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all shadow-lg hover:shadow-teal-500/25 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                        >
-                            {isProcessing ? <Loader2 className="animate-spin size-5" /> : (user ? `Pay ₹${finalTotal.toFixed(2)}` : "Sign Up & Pay")}
-                        </button>
+                        {!user ? (
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={() => router.push('/signup?redirect=/checkout')}
+                                    className="w-full py-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 active:scale-[0.99] transition-all shadow-lg hover:shadow-teal-500/25 flex items-center justify-center gap-2"
+                                >
+                                    <User className="size-5" /> Sign Up to Complete Order <ArrowRight className="size-4" />
+                                </button>
+                                <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                                    Already have an account?{" "}
+                                    <Link href="/login?redirect=/checkout" className="text-teal-600 dark:text-teal-400 font-bold hover:underline">
+                                        Log In here
+                                    </Link>
+                                </p>
+                            </div>
+                        ) : (
+                            <button
+                                type="submit"
+                                disabled={isProcessing}
+                                className="w-full py-4 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all shadow-lg hover:shadow-teal-500/25 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                                {isProcessing ? (
+                                    <Loader2 className="animate-spin size-5" />
+                                ) : (
+                                    paymentMethod === 'cod' ? `Place COD Order (₹${finalTotal.toFixed(2)})` : `Pay ₹${finalTotal.toFixed(2)}`
+                                )}
+                            </button>
+                        )}
                     </form>
                 </div>
 
@@ -834,32 +1122,48 @@ export default function CheckoutPage() {
                             </div>
                         )}
 
-                        <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800 text-sm">
                             <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                                <span>Subtotal</span>
-                                <span>₹{subtotal.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                                <span>Tax (10%)</span>
-                                <span>₹{tax.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                                <span>Shipping</span>
-                                {isFreeDelivery ? (
-                                    <span className="text-green-600 font-medium">Free</span>
-                                ) : (
-                                    <span>₹50.00</span>
-                                )}
+                                <span>Items Subtotal</span>
+                                <span className="font-mono font-medium text-slate-900 dark:text-slate-100">
+                                    ₹{subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                </span>
                             </div>
                             {appliedCoupon && (
-                                <div className="flex justify-between text-teal-600 font-medium">
-                                    <span>Discount</span>
-                                    <span>-₹{appliedCoupon?.discountAmount.toFixed(2)}</span>
+                                <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                                    <span className="flex items-center gap-1">
+                                        <Tag className="size-3.5" /> Discount ({appliedCoupon.code})
+                                    </span>
+                                    <span className="font-mono font-bold">
+                                        -₹{appliedCoupon.discountAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                    </span>
                                 </div>
                             )}
-                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-end">
-                                <span className="font-bold text-lg text-slate-900 dark:text-white">Total</span>
-                                <span className="font-bold text-2xl text-teal-600">₹{finalTotal.toFixed(2)}</span>
+                            <div className="flex justify-between text-slate-600 dark:text-slate-400 items-start">
+                                <div>
+                                    <span className="block font-medium text-slate-800 dark:text-slate-200">
+                                        {activeCarrierQuote?.carrierName || 'Carrier Freight'}
+                                    </span>
+                                    <span className="text-[11px] text-slate-400 block">
+                                        {roundedWeightKg} KG • {activeCarrierQuote?.serviceName || 'Standard Freight'}
+                                    </span>
+                                </div>
+                                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                                    {isFreeDelivery ? 'FREE' : `₹${shippingCost.toFixed(2)}`}
+                                </span>
+                            </div>
+                            <div className="pt-3 border-t border-slate-200 dark:border-slate-700/80 flex justify-between items-baseline">
+                                <div>
+                                    <span className="font-extrabold text-base text-slate-900 dark:text-white block">
+                                        Total Amount
+                                    </span>
+                                    <span className="text-[11px] text-slate-400 block">
+                                        Inclusive of GST &amp; carrier freight
+                                    </span>
+                                </div>
+                                <span className="font-bold text-2xl text-teal-600 dark:text-teal-400 font-mono">
+                                    ₹{finalTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                </span>
                             </div>
                         </div>
                     </div>

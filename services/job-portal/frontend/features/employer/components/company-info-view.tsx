@@ -1,3 +1,5 @@
+import { formatCompanySize } from "@/utils";
+
 interface CompanyInfoViewProps {
   company: any;
 }
@@ -18,7 +20,9 @@ export function CompanyInfoView({ company }: CompanyInfoViewProps) {
             Company Size
           </h4>
           <p className="text-sm font-medium text-slate-900">
-            {company.companySize || "Not specified"}
+            {company.companySize
+              ? `${formatCompanySize(company.companySize)} employees`
+              : "Not specified"}
           </p>
         </div>
         <div>
@@ -30,7 +34,10 @@ export function CompanyInfoView({ company }: CompanyInfoViewProps) {
         <div>
           <h4 className="mb-1 text-sm font-medium text-slate-500">Location</h4>
           <p className="text-sm font-medium text-slate-900">
-            {[company.location?.city, company.location?.country]
+            {[
+              company.locations?.[0]?.city || company.location?.city,
+              company.locations?.[0]?.country || company.location?.country,
+            ]
               .filter(Boolean)
               .join(", ") || "Not specified"}
           </p>

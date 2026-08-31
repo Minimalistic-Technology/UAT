@@ -43,8 +43,8 @@ export const getAllInternships = async (
         where: query,
         orderBy: { createdAt: "desc" },
         include: {
-          postedBy: { select: { firstName: true, lastName: true } },
-          company: { select: { name: true, logo: true, locations: { select: { city: true, state: true, country: true } }, industry: true } },
+          postedBy: { select: { id: true, firstName: true, lastName: true } },
+          company: { select: { id: true, name: true, logo: true, locations: { select: { city: true, state: true, country: true } }, industry: true } },
           internshipDetails: true,
         },
         skip,
@@ -119,8 +119,8 @@ export const getMyInternships = async (
           opportunityType: "INTERNSHIP" 
         },
         include: {
-          company: { select: { name: true, logo: true } },
-          postedBy: { select: { firstName: true, lastName: true } },
+          company: { select: { id: true, name: true, logo: true } },
+          postedBy: { select: { id: true, firstName: true, lastName: true } },
           internshipDetails: true
         }
       });
@@ -154,8 +154,8 @@ export const getInternshipById = async (
     const internship = await prisma.baseListing.findUnique({
       where: { id },
       include: {
-        postedBy: { select: { firstName: true, lastName: true, email: true } },
-        company: { select: { name: true, logo: true, description: true, website: true, locations: true, industry: true, companySize: true } },
+        postedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+        company: { select: { id: true, name: true, logo: true, description: true, website: true, locations: true, industry: true, companySize: true } },
         internshipDetails: true,
       }
     });
@@ -499,14 +499,20 @@ export const getRelatedInternships = async (
     const candidateInternships = await prisma.baseListing.findMany({
       where: baseQuery,
       include: {
-         company: { select: { name: true, logo: true, locations: { select: { city: true } } } },
+         company: { select: { id: true, name: true, logo: true, locations: { select: { city: true } } } },
          internshipDetails: true
       },
       orderBy: { createdAt: "desc" },
       take: 5
     });
 
-    return res.status(200).json(new ApiResponse(200, candidateInternships, "Related internships fetched successfully"));
+    const formattedInternships = candidateInternships.map((internship) => ({
+      _id: internship.id,
+      ...internship,
+      listingType: "internship",
+    }));
+
+    return res.status(200).json(new ApiResponse(200, formattedInternships, "Related internships fetched successfully"));
   } catch (error: any) {
     next(error);
   }

@@ -9,6 +9,16 @@ class NotificationService {
     private static _emailTransporter: any = null;
     private static _isTestAccount: boolean = false;
 
+    private static getFromAddress(serviceName: string = 'DDTEC Official'): string {
+        if (process.env.EMAIL_FROM) return process.env.EMAIL_FROM;
+        if (process.env.EMAIL_USER) return `"${serviceName}" <${process.env.EMAIL_USER}>`;
+        return `"${serviceName} Sandbox" <test@ddtec.com>`;
+    }
+
+    private static getAdminRecipient(): string {
+        return process.env.ADMIN_EMAIL || process.env.EMAIL_TO || process.env.EMAIL_USER || 'admin-orders@ddtec.test';
+    }
+
     private static async getEmailTransporter() {
         if (!this._emailTransporter) {
             if (process.env.EMAIL_SANDBOX === 'true' || (!process.env.EMAIL_USER && !process.env.EMAIL_PASS)) {
@@ -348,8 +358,8 @@ class NotificationService {
                 });
             }
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
-            const adminEmail = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
+            const from = this.getFromAddress('DDTEC Official');
+            const adminEmail = this.getAdminRecipient();
 
             const itemsHtml = order.items.map((item: any) => `
                 <tr style="border-bottom: 1px solid #eee;">
@@ -420,8 +430,8 @@ class NotificationService {
                 return false;
             }
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
-            const adminEmail = this._isTestAccount ? 'admin-test@ddtec.com' : process.env.EMAIL_TO;
+            const from = this.getFromAddress('DDTEC Official');
+            const adminEmail = this.getAdminRecipient();
 
             const mailOptions: any = {
                 from,
@@ -615,6 +625,102 @@ class NotificationService {
     }
 
     /**
+     * Sends a dedicated Payment & New Order notification email to the Admin
+     */
+    static async sendAdminPaymentNotification(order: any): Promise<boolean> {
+        try {
+            const adminEmail = this.getAdminRecipient();
+            if (!adminEmail) {
+                console.warn('[NOTIFICATION-WARN] No admin email defined for payment notification.');
+                return false;
+            }
+
+            const from = this.getFromAddress('DDTEC Orders');
+
+            const itemsHtml = (order.items || []).map((item: any) => `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px; font-size: 13px; color: #1e293b;">${item.product?.name || item.name || 'Product'}</td>
+                    <td style="padding: 10px; font-size: 13px; text-align: center; color: #475569;">${item.quantity}</td>
+                    <td style="padding: 10px; font-size: 13px; text-align: right; font-weight: bold; color: #0d9488;">₹${((item.price || 0) * item.quantity).toFixed(2)}</td>
+                </tr>
+            `).join('');
+
+            const paymentMethodDisplay = order.paymentMethod === 'cashfree' ? 'Online Payment (Cashfree)' : (order.paymentMethod === 'credit' ? 'Wallet / Credit Points' : (order.paymentMethod || 'COD').toUpperCase());
+            const paymentStatusBadgeColor = order.paymentStatus === 'paid' ? '#059669' : (order.paymentStatus === 'pending' ? '#d97706' : '#dc2626');
+
+            const mailOptions: any = {
+                from,
+                to: adminEmail,
+                subject: `💰 Payment / New Order Received: #${order._id.toString().slice(-6).toUpperCase()} (₹${order.totalAmount.toFixed(2)})`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 620px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #1e293b;">
+                        <div style="background: linear-gradient(135deg, #0d9488, #0f766e); padding: 20px; border-radius: 12px; text-align: center; color: #ffffff; margin-bottom: 20px;">
+                            <h2 style="margin: 0; font-size: 22px;">💳 New Order Payment Notification</h2>
+                            <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">A customer has placed an order transaction.</p>
+                        </div>
+
+                        <div style="background: #f8fafc; padding: 16px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <p style="margin: 0; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold;">Order ID</p>
+                                    <p style="margin: 2px 0 0 0; font-size: 14px; font-weight: bold; font-family: monospace;">#${order._id}</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <p style="margin: 0; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold;">Total Amount</p>
+                                    <p style="margin: 2px 0 0 0; font-size: 18px; font-weight: 900; color: #0d9488;">₹${order.totalAmount.toFixed(2)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-bottom: 10px;">Payment & Customer Details</h3>
+                            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; font-size: 13px; line-height: 1.6;">
+                                <p style="margin: 3px 0;"><strong>Customer Name:</strong> ${order.shippingInfo?.fullName || 'N/A'}</p>
+                                <p style="margin: 3px 0;"><strong>Email:</strong> ${order.shippingInfo?.email || 'N/A'}</p>
+                                <p style="margin: 3px 0;"><strong>Phone:</strong> ${order.shippingInfo?.phone || 'N/A'}</p>
+                                <p style="margin: 3px 0;"><strong>Shipping Address:</strong> ${order.shippingInfo?.address || ''}, ${order.shippingInfo?.city || ''} ${order.shippingInfo?.zip ? '- ' + order.shippingInfo.zip : ''}</p>
+                                <p style="margin: 3px 0;"><strong>Payment Method:</strong> ${paymentMethodDisplay}</p>
+                                <p style="margin: 3px 0;"><strong>Payment Status:</strong> <span style="color: ${paymentStatusBadgeColor}; font-weight: bold; text-transform: uppercase;">${order.paymentStatus || 'pending'}</span></p>
+                                ${order.cashfree?.cfPaymentId ? `<p style="margin: 3px 0;"><strong>Cashfree Payment ID:</strong> ${order.cashfree.cfPaymentId}</p>` : ''}
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-bottom: 10px;">Ordered Items</h3>
+                            <table style="width: 100%; border-collapse: collapse; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+                                <thead>
+                                    <tr style="background: #f1f5f9;">
+                                        <th style="padding: 10px; font-size: 12px; text-align: left; color: #475569;">Item</th>
+                                        <th style="padding: 10px; font-size: 12px; text-align: center; color: #475569;">Qty</th>
+                                        <th style="padding: 10px; font-size: 12px; text-align: right; color: #475569;">Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="text-align: center; margin: 24px 0 10px;">
+                            <a href="${(process.env.FRONTEND_URL || 'http://localhost:3000')}/admin" style="background-color: #0d9488; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; font-size: 14px; border-radius: 8px; display: inline-block;">Open Admin Orders Dashboard</a>
+                        </div>
+
+                        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+                        <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">DDTEC Automated Admin Notification System</p>
+                    </div>
+                `
+            };
+
+            console.log(`[NOTIFICATION] Attempting to send Admin Payment Notification to ${adminEmail}...`);
+            const result = await this.sendBrevoEmail(mailOptions);
+            return result.success;
+        } catch (error: any) {
+            console.error('[STRICT-ERROR] Admin payment notification failed:', error);
+            return false;
+        }
+    }
+
+    /**
      * Sends an Order Status Update email
      */
     static async sendOrderStatusUpdate(order: any, status: string): Promise<boolean> {
@@ -622,15 +728,19 @@ class NotificationService {
             const to = order.shippingInfo?.email;
             if (!to) return false;
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+            const from = this.getFromAddress('DDTEC Official');
 
             // Format status for display
             let statusDisplay = '';
             let message = '';
             switch (status) {
+                case 'pending':
+                    statusDisplay = 'Order Placed & Confirmed';
+                    message = 'Your order has been received and verified. Our warehouse team has queued it for packing.';
+                    break;
                 case 'processing':
                     statusDisplay = 'In Packing Queue';
-                    message = 'Your order is currently being packed in our warehouse. We will notify you once it is dispatched/shipped.';
+                    message = 'Your order is currently being packed in our warehouse fulfillment deck. We will notify you once it is dispatched/shipped.';
                     break;
                 case 'shipped':
                     statusDisplay = 'Dispatched / Shipped';
@@ -645,27 +755,58 @@ class NotificationService {
                     message = 'Unfortunately your order has been rejected/cancelled. If you were charged online, the amount will be refunded to your original payment method within 5-7 business days. Please contact support if you have any questions.';
                     break;
                 default:
-                    return false; // Don't send emails for other statuses unless needed
+                    statusDisplay = status.charAt(0).toUpperCase() + status.slice(1);
+                    message = `Your order status has been updated to ${statusDisplay}.`;
+                    break;
             }
+
+            const itemsHtml = (order.items || []).map((item: any) => `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 8px 0; font-size: 13px;">${item.product?.name || item.name || 'Product'} x ${item.quantity}</td>
+                    <td style="padding: 8px 0; text-align: right; font-size: 13px; font-weight: bold; color: #0d9488;">₹${((item.price || 0) * item.quantity).toFixed(2)}</td>
+                </tr>
+            `).join('');
 
             const mailOptions: any = {
                 from,
                 to,
                 subject: `Order Update: ${statusDisplay} - #${order._id.toString().slice(-6).toUpperCase()}`,
                 html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                        <h2 style="color: #0d9488; text-align: center;">Order Update: ${statusDisplay}</h2>
-                        <p>Hello ${order.shippingInfo?.fullName || 'Customer'},</p>
-                        <p>${message}</p>
-                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-                            <p style="margin: 0; font-size: 16px;"><strong>Order ID:</strong> #${order._id}</p>
+                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h2 style="color: #0d9488; margin-bottom: 6px;">Order Update: ${statusDisplay}</h2>
+                            <p style="color: #64748b; font-size: 14px; margin: 0;">Order #${order._id.toString().slice(-8).toUpperCase()}</p>
                         </div>
-                        <p>You can track the live status from your <strong>My Orders</strong> section in the dashboard.</p>
+                        
+                        <p style="font-size: 14px; color: #334155;">Hello <strong>${order.shippingInfo?.fullName || 'Customer'}</strong>,</p>
+                        <p style="font-size: 14px; color: #475569; line-height: 1.6;">${message}</p>
+
+                        <div style="background: #f8fafc; padding: 16px; border-radius: 10px; margin: 20px 0; border: 1px solid #e2e8f0;">
+                            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 10px;">
+                                <span style="font-size: 12px; color: #64748b; font-weight: bold; text-transform: uppercase;">Current Status:</span>
+                                <span style="font-size: 12px; color: #0d9488; font-weight: bold; text-transform: uppercase;">${statusDisplay}</span>
+                            </div>
+                            ${itemsHtml ? `
+                                <table style="width: 100%; border-collapse: collapse; margin-top: 5px;">
+                                    ${itemsHtml}
+                                    <tr>
+                                        <td style="padding: 10px 0 0; font-weight: bold; font-size: 14px;">Total Amount</td>
+                                        <td style="padding: 10px 0 0; text-align: right; font-weight: bold; color: #0d9488; font-size: 14px;">₹${(order.totalAmount || 0).toFixed(2)}</td>
+                                    </tr>
+                                </table>
+                            ` : ''}
+                        </div>
+
+                        <div style="text-align: center; margin: 24px 0 10px;">
+                            <a href="${(process.env.FRONTEND_URL || 'http://localhost:3000')}/orders" style="background-color: #0d9488; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; font-size: 14px; border-radius: 8px; display: inline-block;">Track Order in Dashboard</a>
+                        </div>
+
                         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
                         <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 DDTEC. All rights reserved.</p>
                     </div>
                 `
             };
+            console.log(`[NOTIFICATION] Attempting to send Order Status Update email to ${to}...`);
             const result = await this.sendBrevoEmail(mailOptions);
             return result.success;
         } catch (error) {

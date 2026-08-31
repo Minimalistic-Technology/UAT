@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Mail, Lock, Loader2, ArrowRight, AlertTriangle } from "lucide-react";
 import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useDynamicRoutes } from "../_context/RouteContext";
 import GoogleSignIn from "../_components/GoogleSignIn";
@@ -14,6 +14,8 @@ import GoogleSignIn from "../_components/GoogleSignIn";
 const LoginForm = () => {
     const { login, loginWithGoogle } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirectUrl = searchParams.get('redirect') || '';
     const { showToast } = useToast();
     const { isRouteActive } = useDynamicRoutes();
 
@@ -44,9 +46,9 @@ const LoginForm = () => {
 
         setIsLoading(true);
         try {
-            await login(identifier, password);
+            await login(identifier, password, redirectUrl || undefined);
             showToast("Logged in successfully", "success");
-            // AuthContext automatically redirects to dashboard/home based on role
+            // AuthContext automatically redirects to redirectUrl or dashboard/home based on role
         } catch (err: any) {
             const errorMsg = err.message || err.response?.data?.msg || "Invalid credentials";
 
@@ -67,7 +69,7 @@ const LoginForm = () => {
 
     const handleGoogleCredential = async (credential: string) => {
         try {
-            await loginWithGoogle(credential);
+            await loginWithGoogle(credential, redirectUrl || undefined);
             showToast("Logged in successfully", "success");
         } catch (err: any) {
             showToast(err.message || "Google sign-in failed", "error");
@@ -174,7 +176,7 @@ const LoginForm = () => {
                             {isRouteActive('/signup') && (
                                 <p className="text-center text-sm text-slate-500 mt-6 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
                                     Don't have an account?{' '}
-                                    <Link href="/signup" className="text-teal-600 font-bold hover:underline">
+                                    <Link href={redirectUrl ? `/signup?redirect=${encodeURIComponent(redirectUrl)}` : '/signup'} className="text-teal-600 font-bold hover:underline">
                                         Sign up freely
                                     </Link>
                                 </p>

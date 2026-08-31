@@ -5,9 +5,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sun, Moon, ShoppingBag, ChevronRight, User, LogOut, ChevronDown, Package, Settings, FileText } from "lucide-react";
+import { Menu, X, Sun, Moon, ShoppingBag, ChevronRight, User, LogOut, ChevronDown, Package, Settings, FileText, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LoadingBar from "./LoadingBar";
+import DeliveryPincodeChecker from "./DeliveryPincodeChecker";
 import api from "@/lib/api";
 import { useAuth } from "../_context/AuthContext";
 import { useCart } from "../_context/CartContext";
@@ -73,11 +74,26 @@ export default function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [currentPincode, setCurrentPincode] = useState<string | null>(null);
+  const [currentCity, setCurrentCity] = useState<string | null>(null);
   const [currentHash, setCurrentHash] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    const syncLocation = () => {
+      const pin = localStorage.getItem("ddtec_user_pincode");
+      const city = localStorage.getItem("ddtec_user_city");
+      setCurrentPincode(pin);
+      setCurrentCity(city);
+    };
+    syncLocation();
+    window.addEventListener("storage", syncLocation);
+    return () => window.removeEventListener("storage", syncLocation);
+  }, []);
 
 
 
@@ -312,6 +328,19 @@ export default function Navbar() {
 
 
           <div className="flex items-center gap-2 sm:gap-4">
+            {mounted && !pathname?.startsWith('/admin') && !pathname?.startsWith('/warehouse') && (
+              <button
+                onClick={() => setShowLocationModal(true)}
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 hover:border-teal-500/50 hover:bg-teal-50/50 dark:hover:bg-teal-950/30 transition-all cursor-pointer"
+                title="Check delivery location & pincode"
+              >
+                <MapPin className="size-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+                <span className="truncate max-w-[130px]">
+                  {currentPincode ? `Deliver to: ${currentCity || currentPincode}` : "Deliver to: Location"}
+                </span>
+              </button>
+            )}
+
             {(!user || (user.role !== 'admin' && user.role !== 'warehouse')) && isRouteActive('/cart') && (
               <Link
                 href="/cart"
@@ -522,6 +551,57 @@ export default function Navbar() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Global Delivery Location & Pincode Modal */}
+      <AnimatePresence>
+        {showLocationModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 dark:border-slate-800 p-6 relative"
+            >
+              <button
+                onClick={() => setShowLocationModal(false)}
+                className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="size-5" />
+              </button>
+
+              <div className="mb-4 text-left">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <MapPin className="size-5 text-teal-600" /> Choose Delivery Location
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Check serviceability for your postal PIN code via Blue Dart &amp; DTDC delivery partners
+                </p>
+              </div>
+
+              <DeliveryPincodeChecker
+                onServiceabilityChange={(res) => {
+                  if (res && res.serviceable) {
+                    setCurrentPincode(res.pincode);
+                    setCurrentCity(res.location.city);
+                  } else if (!res) {
+                    setCurrentPincode(null);
+                    setCurrentCity(null);
+                  }
+                }}
+              />
+
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <button
+                  onClick={() => setShowLocationModal(false)}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-bold rounded-xl transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </>

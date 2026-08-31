@@ -24,5 +24,5 @@ export const createCompanySchema = [
 ];
 
 export const deleteCompanySchema = [
-  param("id").isMongoId().withMessage("Invalid company ID"),
-]
+  param("id").isUUID().withMessage("Invalid company ID"),
+];

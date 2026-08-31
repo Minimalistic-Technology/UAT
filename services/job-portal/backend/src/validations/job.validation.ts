@@ -121,6 +121,6 @@ export const getJobByIdSchema = [
   param("id")
     .notEmpty()
     .withMessage("Job ID is required")
-    .isMongoId()
+    .isUUID()
     .withMessage("Invalid Job ID"),
 ];

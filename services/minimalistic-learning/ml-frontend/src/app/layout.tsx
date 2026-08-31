@@ -19,12 +19,15 @@ export const metadata: Metadata = {
 
 import Providers from "./providers";
 import { Toaster } from "sonner";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_ID || process.env.GA_ID;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -37,6 +40,7 @@ export default function RootLayout({
           </div>
           <Toaster position="top-right" richColors />
         </Providers>
+        {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
   );

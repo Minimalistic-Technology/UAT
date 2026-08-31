@@ -5,7 +5,7 @@ export const applyForJobSchema = [
   body("listingId")
     .notEmpty()
     .withMessage("Listing ID is required")
-    .isMongoId()
+    .isUUID()
     .withMessage("Invalid Listing ID"),
   body("listingType")
     .notEmpty()
@@ -29,7 +29,7 @@ export const getJobApplicantsSchema = [
   body("listingId")
     .notEmpty()
     .withMessage("Listing ID is required")
-    .isMongoId()
+    .isUUID()
     .withMessage("Invalid Listing ID"),
   body("listingType")
     .notEmpty()
@@ -39,14 +39,14 @@ export const getJobApplicantsSchema = [
 ];
 
 export const getJobApplicationByIdSchema = [
-  param("id").isMongoId().withMessage("Invalid Application ID"),
+  param("id").isUUID().withMessage("Invalid Application ID"),
 ];
 
 export const updateApplicationStatusSchema = [
   param("id")
     .notEmpty()
     .withMessage("Job ID is required")
-    .isMongoId()
+    .isUUID()
     .withMessage("Invalid Job ID"),
   body("status")
     .exists()

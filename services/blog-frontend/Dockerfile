@@ -1,0 +1,33 @@
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# Baked in at build time since Next.js inlines NEXT_PUBLIC_* vars into the client bundle.
+# Change this single build-arg when the CMS domain changes.
+ARG NEXT_PUBLIC_CMS_URL
+ENV NEXT_PUBLIC_CMS_URL=$NEXT_PUBLIC_CMS_URL
+
+RUN npm run build
+
+# Stage 2: Production
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME="0.0.0.0"
+
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

@@ -54,3 +54,24 @@ export const getRelatedJobsById = async (jobId: string) => {
   );
   return response.data;
 };
+
+export const getRecommendedJobs = async (
+  filters: { limit?: number; type?: "job" | "internship" } = {},
+) => {
+  const queryString = new URLSearchParams(
+    Object.entries(filters).reduce(
+      (acc, [key, value]) => {
+        if (value !== undefined && value !== null) {
+          acc[key] = String(value);
+        }
+        return acc;
+      },
+      {} as Record<string, string>,
+    ),
+  ).toString();
+
+  const response = await apiClient.get<ApiSuccessResponse<GetJobsResponse>>(
+    `/recommendations?${queryString}`,
+  );
+  return response.data;
+};

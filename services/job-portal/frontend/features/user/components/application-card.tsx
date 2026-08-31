@@ -110,7 +110,9 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
             className="hover:bg-primary/10 hover:text-primary border-secondary/20 h-9 w-9 cursor-pointer rounded-full bg-slate-50 transition-colors"
             asChild
           >
-            <Link href={`/user-dashboard/applications/${application._id}`}>
+            <Link
+              href={`/user-dashboard/applications/${application.id || application._id}`}
+            >
               <Eye className="h-4 w-4 text-slate-600" />
             </Link>
           </Button>

@@ -20,6 +20,11 @@ export interface IOrder extends Document {
     status: string;
     coupon?: string;
     discountAmount?: number;
+    shippingFee?: number;
+    shippingCarrier?: string;
+    shippingServiceName?: string;
+    shippingCarrierId?: string;
+    totalWeightKg?: number;
     paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
     cashfree?: {
         orderId?: string;
@@ -52,6 +57,11 @@ const OrderSchema: Schema = new Schema({
     status: { type: String, enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], default: 'pending' },
     coupon: { type: String },
     discountAmount: { type: Number, default: 0 },
+    shippingFee: { type: Number, default: 0 },
+    shippingCarrier: { type: String, default: 'Blue Dart Express' },
+    shippingServiceName: { type: String },
+    shippingCarrierId: { type: String },
+    totalWeightKg: { type: Number, default: 1.0 },
     paymentStatus: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
     cashfree: {
         orderId: { type: String },

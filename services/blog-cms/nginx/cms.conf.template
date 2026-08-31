@@ -1,0 +1,25 @@
+# Reference nginx server block for the blog CMS admin/API subdomain.
+#
+# The host's nginx isn't tracked in this repo, so this file is not applied
+# automatically - copy it onto the VPS (e.g. /etc/nginx/sites-available/)
+# and symlink it into sites-enabled, then reload nginx.
+#
+# To point this at a different domain, change BASE_DOMAIN below (or run
+# `envsubst < cms.conf.template > cms.conf` with BASE_DOMAIN exported) -
+# nothing else in this file needs to change.
+
+server {
+    listen 80;
+    server_name cms.${BASE_DOMAIN};
+
+    location / {
+        proxy_pass http://127.0.0.1:1337;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}

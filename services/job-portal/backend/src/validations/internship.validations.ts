@@ -92,6 +92,6 @@ export const getInternshipByIdSchema = [
   param("id")
     .notEmpty()
     .withMessage("Internship ID is required")
-    .isMongoId()
+    .isUUID()
     .withMessage("Invalid Internship ID"),
 ];

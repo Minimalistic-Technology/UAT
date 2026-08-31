@@ -6,7 +6,7 @@ import Link from "next/link";
 import { User, Mail, Lock, Loader2, ArrowRight, Phone, MessageSquare, Key, ShieldAlert, Clock, Sparkles } from "lucide-react";
 import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Turnstile from "../_components/Turnstile";
 import GoogleSignIn from "../_components/GoogleSignIn";
@@ -15,6 +15,8 @@ import api from "@/lib/api";
 const SignupForm = () => {
     const { checkUser, loginWithGoogle } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirectUrl = searchParams.get('redirect') || '/';
     const { showToast } = useToast();
 
     const [step, setStep] = useState<"details" | "otp">("details");
@@ -140,7 +142,7 @@ const SignupForm = () => {
 
     const handleGoogleCredential = async (credential: string) => {
         try {
-            await loginWithGoogle(credential);
+            await loginWithGoogle(credential, redirectUrl);
             showToast("Account created successfully!", "success");
         } catch (err: any) {
             showToast(err.message || "Google sign-up failed", "error");
@@ -168,7 +170,7 @@ const SignupForm = () => {
 
             if (resReg.data?.pendingApproval) {
                 showToast(resReg.data.msg || "Account registration submitted! Waiting for Admin Approval.", "info");
-                router.push('/login');
+                router.push(redirectUrl !== '/' ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : '/login');
                 return;
             }
 
@@ -184,7 +186,7 @@ const SignupForm = () => {
             showToast("Account Created Successfully!", "success");
 
             // Redirect
-            router.push('/');
+            router.push(redirectUrl);
         } catch (err: any) {
             showToast(err.response?.data?.msg || "Registration failed.", "error");
         } finally {
@@ -422,7 +424,7 @@ const SignupForm = () => {
 
                                 <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-6">
                                     Already have an account?{' '}
-                                    <Link href="/login" className="text-teal-600 font-bold hover:underline">
+                                    <Link href={redirectUrl !== '/' ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : '/login'} className="text-teal-600 font-bold hover:underline">
                                         Sign In
                                     </Link>
                                 </p>

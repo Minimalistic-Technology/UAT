@@ -6,10 +6,12 @@ import {
   Building2Icon,
   GlobeIcon,
 } from "lucide-react";
+import { formatCompanySize } from "@/utils";
 
 interface CompanyCardProps {
   company: {
-    _id: string;
+    _id?: string;
+    id?: string;
     name: string;
     description?: string;
     industry?: string;
@@ -25,6 +27,7 @@ interface CompanyCardProps {
 }
 
 export const CompanyCard = ({ company }: CompanyCardProps) => {
+  const companyId = company.id || company._id;
   const initials = company.name
     .split(" ")
     .map((w) => w[0])
@@ -60,7 +63,7 @@ export const CompanyCard = ({ company }: CompanyCardProps) => {
 
   return (
     <Link
-      href={`/companies/${company._id}`}
+      href={`/companies/${companyId}`}
       className="group border-border/40 bg-card hover:border-border block rounded-xl border p-5 transition-colors"
     >
       <div className="mb-3 flex items-center gap-3">
@@ -112,7 +115,7 @@ export const CompanyCard = ({ company }: CompanyCardProps) => {
         {company.companySize && (
           <span className="text-muted-foreground bg-muted inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs">
             <UsersIcon className="h-3 w-3" />
-            {company.companySize} employees
+            {formatCompanySize(company.companySize)} employees
           </span>
         )}
       </div>

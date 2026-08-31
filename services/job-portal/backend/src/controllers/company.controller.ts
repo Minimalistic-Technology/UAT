@@ -135,6 +135,11 @@ export const getCompanies = async (
 
     const companies = await prisma.company.findMany({
       where: query,
+      include: {
+        locations: true,
+        logo: true,
+        owner: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
       orderBy: { [sortField as string]: sortOrder },
       skip,
       take: limitNum,
@@ -142,10 +147,15 @@ export const getCompanies = async (
 
     const total = await prisma.company.count({ where: query });
 
+    const formattedCompanies = companies.map((c) => ({
+      _id: c.id,
+      ...c,
+    }));
+
     res.status(200).json({
       success: true,
       data: {
-        companies,
+        companies: formattedCompanies,
         pagination: {
           count: companies.length,
           total,
@@ -172,7 +182,24 @@ export const getCompany = async (
     const company = await prisma.company.findUnique({
       where: { id: String(req.params.id) },
       include: {
-        owner: { select: { firstName: true, lastName: true, email: true } },
+        owner: { select: { id: true, firstName: true, lastName: true, email: true } },
+        locations: true,
+        logo: true,
+        members: {
+          where: { isActive: true },
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -180,24 +207,44 @@ export const getCompany = async (
       throw new ApiError(404, "Company not found");
     }
 
-    const totalJobs = await prisma.baseListing.count({
-      where: { companyId: company.id, opportunityType: "JOB", isDeleted: false },
-    });
-    const activeJobs = await prisma.baseListing.count({
-      where: { companyId: company.id, opportunityType: "JOB", status: "ACTIVE", isDeleted: false },
-    });
-    const totalMembers = await prisma.companyMember.count({
-      where: { companyId: company.id, isActive: true },
-    });
-    const currentSubscription = await prisma.subscription.findFirst({
-      where: { companyId: company.id, status: "ACTIVE" },
-      include: { plan: true },
-    });
+    const [
+      totalJobs,
+      activeJobs,
+      totalInternships,
+      activeInternships,
+      totalMembers,
+      currentSubscription,
+    ] = await Promise.all([
+      prisma.baseListing.count({
+        where: { companyId: company.id, opportunityType: "JOB", isDeleted: false },
+      }),
+      prisma.baseListing.count({
+        where: { companyId: company.id, opportunityType: "JOB", status: "ACTIVE", isDeleted: false },
+      }),
+      prisma.baseListing.count({
+        where: { companyId: company.id, opportunityType: "INTERNSHIP", isDeleted: false },
+      }),
+      prisma.baseListing.count({
+        where: { companyId: company.id, opportunityType: "INTERNSHIP", status: "ACTIVE", isDeleted: false },
+      }),
+      prisma.companyMember.count({
+        where: { companyId: company.id, isActive: true },
+      }),
+      prisma.subscription.findFirst({
+        where: { companyId: company.id, status: "ACTIVE" },
+        include: { plan: true },
+      }),
+    ]);
 
     const companyData = {
+      _id: company.id,
       ...company,
       totalJobs,
       activeJobs,
+      totalInternships,
+      activeInternships,
+      totalListings: totalJobs + totalInternships,
+      activeListings: activeJobs + activeInternships,
       totalMembers,
       currentPlan: currentSubscription ? currentSubscription.plan : null,
       subscription: currentSubscription,
@@ -231,8 +278,24 @@ export const getMyCompany = async (
     const company = await prisma.company.findUnique({
       where: { id: companyMember.companyId },
       include: {
-        owner: { select: { firstName: true, lastName: true, email: true } },
+        owner: { select: { id: true, firstName: true, lastName: true, email: true } },
         logo: true,
+        locations: true,
+        members: {
+          where: { isActive: true },
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -264,6 +327,7 @@ export const getMyCompany = async (
     ]);
 
     const companyData = {
+      _id: company.id,
       ...company,
       totalJobs,
       activeJobs,

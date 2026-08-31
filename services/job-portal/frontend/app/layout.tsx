@@ -7,6 +7,7 @@ import Navbar from "@/components/navbar";
 import { APP_NAME } from "@/constants";
 import { AiChatbot } from "@/features/admin/components/ai-chatbot";
 import MainWrapper from "@/components/main-wrapper";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -59,6 +60,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_ID || process.env.GA_ID;
+
   return (
     <html
       lang="en"
@@ -72,6 +75,7 @@ export default function RootLayout({
           <Toaster position="top-right" />
           <AiChatbot />
         </Providers>
+        {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
   );

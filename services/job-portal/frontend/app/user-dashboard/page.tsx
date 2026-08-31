@@ -5,7 +5,7 @@ import { Briefcase, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // hooks
-import { useGetJobs } from "@/features/user/hooks/use-job";
+import { useGetRecommendedJobs } from "@/features/user/hooks/use-job";
 import {
   useGetMyApplications,
   useGetMyApplicationStats,
@@ -29,7 +29,7 @@ export default function JobSeekerDashboard() {
     useGetMyApplications();
   const { data: responseData, isLoading: statsLoading } =
     useGetMyApplicationStats();
-  const { data: recommendedJobs, isLoading: jobsLoading } = useGetJobs({
+  const { data: recommendedJobs, isLoading: jobsLoading } = useGetRecommendedJobs({
     limit: 5,
   });
   const { data: userData } = useGetUserDetails(userId);

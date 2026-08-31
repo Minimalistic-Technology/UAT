@@ -17,11 +17,11 @@ export const getSettings = async (req: Request, res: Response): Promise<void> =>
 
 export const updateSettings = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { components, onboarding } = req.body;
+        const { components, onboarding, delivery } = req.body;
         let settings = await Settings.findOne();
 
         if (!settings) {
-            settings = await Settings.create({ components, onboarding });
+            settings = await Settings.create({ components, onboarding, delivery });
         } else {
             if (components) {
                 const currentComponents = (settings.components as any)?.toObject ? (settings.components as any).toObject() : (settings.components || {});
@@ -32,6 +32,11 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
                 const currentOnboarding = (settings.onboarding as any)?.toObject ? (settings.onboarding as any).toObject() : (settings.onboarding || {});
                 settings.onboarding = { ...currentOnboarding, ...onboarding };
                 settings.markModified('onboarding');
+            }
+            if (delivery) {
+                const currentDelivery = (settings.delivery as any)?.toObject ? (settings.delivery as any).toObject() : (settings.delivery || {});
+                settings.delivery = { ...currentDelivery, ...delivery };
+                settings.markModified('delivery');
             }
             await settings.save();
         }

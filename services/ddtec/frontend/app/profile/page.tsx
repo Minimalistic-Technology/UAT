@@ -3,7 +3,7 @@
 import { useAuth } from "../_context/AuthContext";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Mail, Smartphone, Shield, Calendar, Edit2, Loader2, MapPin, Key, CheckCircle2, AlertCircle } from "lucide-react";
+import { User, Mail, Smartphone, Shield, Calendar, Edit2, Loader2, MapPin, Key, CheckCircle2, AlertCircle, Package, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
@@ -244,6 +244,33 @@ export default function ProfilePage() {
                         )}
                     </motion.div>
                 </div>
+
+                {/* Orders & Purchase History Shortcut Card */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mt-8 bg-gradient-to-r from-teal-900/10 via-slate-900/5 to-emerald-900/10 dark:from-teal-950/40 dark:via-slate-900/40 dark:to-emerald-950/40 rounded-[2rem] p-6 sm:p-8 border border-teal-500/20 shadow-lg flex flex-col md:flex-row items-center justify-between gap-6"
+                >
+                    <div className="flex items-center gap-4 text-center md:text-left">
+                        <div className="size-14 bg-teal-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/30 flex-shrink-0">
+                            <Package className="size-7" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Orders &amp; Purchase History</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                                View past purchases, download GST invoices, and track live warehouse shipment progress.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => router.push('/orders')}
+                        className="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-lg hover:shadow-teal-500/25 transition-all flex items-center gap-2 flex-shrink-0"
+                    >
+                        <span>View My Orders</span>
+                        <ChevronRight className="size-4" />
+                    </button>
+                </motion.div>
 
                 {/* Footer Actions */}
                 <motion.div

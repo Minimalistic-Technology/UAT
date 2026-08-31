@@ -101,3 +101,35 @@ export const getCurrencySymbol = (currency?: string) => {
       return "";
   }
 };
+
+export const formatCompanySize = (size?: string): string => {
+  if (!size) return "";
+
+  switch (size.toUpperCase()) {
+    case "SIZE_1_10":
+    case "1-10":
+      return "1-10";
+    case "SIZE_11_50":
+    case "11-50":
+      return "11-50";
+    case "SIZE_51_200":
+    case "51-200":
+      return "51-200";
+    case "SIZE_201_500":
+    case "201-500":
+      return "201-500";
+    case "SIZE_501_1000":
+    case "501-1000":
+      return "501-1000";
+    case "SIZE_1000_PLUS":
+    case "1000+":
+    case "1000_PLUS":
+      return "1000+";
+    default:
+      return size
+        .replace(/^SIZE_/i, "")
+        .replace(/_PLUS$/i, "+")
+        .replace(/_/g, "-");
+  }
+};
+

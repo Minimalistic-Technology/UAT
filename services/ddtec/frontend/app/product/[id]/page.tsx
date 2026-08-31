@@ -35,6 +35,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useDynamicRoutes } from "../../_context/RouteContext";
+import DeliveryPincodeChecker from "../../_components/DeliveryPincodeChecker";
 
 interface Product {
     _id: string;
@@ -65,7 +66,7 @@ interface Product {
 export default function ProductDetailsPage() {
     const { id } = useParams();
     const router = useRouter();
-    const { addToCart } = useCart();
+    const { addToCart, cartItems } = useCart();
     const { showToast } = useToast();
     const { isRouteActive } = useDynamicRoutes();
 
@@ -174,12 +175,11 @@ export default function ProductDetailsPage() {
     };
 
     const handleAddToCart = async () => {
-        if (!product) return;
+        if (!product || quantity <= 0) return;
         try {
-            for (let i = 0; i < quantity; i++) {
-                await addToCart(product._id);
-            }
+            await addToCart(product._id, quantity);
             showToast?.(`Added ${quantity} ${product.name} to cart!`, "success");
+            setQuantity(1); // Reset quantity selector back to default
         } catch {
             showToast?.("Failed to add product to cart", "error");
         }
@@ -188,9 +188,15 @@ export default function ProductDetailsPage() {
     const handleBuyNow = async () => {
         if (!product) return;
         try {
-            for (let i = 0; i < quantity; i++) {
-                await addToCart(product._id);
+            const isAlreadyInCart = cartItems.some(
+                item => item.product?._id === product._id || (typeof item.product === 'string' && item.product === product._id)
+            );
+
+            // If product is not yet in cart, add it before redirecting
+            if (!isAlreadyInCart && quantity > 0) {
+                await addToCart(product._id, quantity);
             }
+
             router.push('/cart');
         } catch {
             showToast?.("Failed to process Buy Now request", "error");
@@ -469,6 +475,10 @@ export default function ProductDetailsPage() {
                                     </p>
                                 </div>
 
+                                {/* Delivery & Pincode Checker */}
+                                <div className="mb-6">
+                                    <DeliveryPincodeChecker />
+                                </div>
 
                             </div>
 
@@ -674,13 +684,16 @@ export default function ProductDetailsPage() {
                         {/* Tab 3: Shipping & Returns */}
                         {activeTab === 'shipping' && (
                             <div className="space-y-6">
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Shipping & Guarantee Policy</h3>
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Shipping & Courier Logistics</h3>
+                                
+                                <DeliveryPincodeChecker />
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
                                         <Truck className="size-8 text-teal-600 mb-3" />
-                                        <h4 className="font-bold text-slate-900 dark:text-white mb-1">Standard Delivery</h4>
+                                        <h4 className="font-bold text-slate-900 dark:text-white mb-1">Blue Dart &amp; DTDC Express Network</h4>
                                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                                            Orders are dispatched within 24 hours. Delivery usually arrives within 3-5 business days across India.
+                                            Orders dispatched daily via Blue Dart Apex air priority and DTDC Express. Doorstep transit tracked in real-time across 55,000+ PIN codes.
                                         </p>
                                     </div>
 

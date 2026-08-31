@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getJobDetailsById,
   getJobs,
+  getRecommendedJobs,
   getRelatedJobsById,
 } from "../services/job.service";
 
@@ -23,5 +24,14 @@ export const useGetRelatedJobsById = (jobId: string) => {
   return useQuery({
     queryKey: ["related-jobs", jobId],
     queryFn: () => getRelatedJobsById(jobId),
+  });
+};
+
+export const useGetRecommendedJobs = (
+  filters: { limit?: number; type?: "job" | "internship" } = {},
+) => {
+  return useQuery({
+    queryKey: ["recommended-jobs", filters],
+    queryFn: () => getRecommendedJobs(filters),
   });
 };
