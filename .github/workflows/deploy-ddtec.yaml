@@ -1,9 +1,9 @@
-name: Deploy DDTec Backend
+name: Deploy DDTec
 
 on:
   push:
     branches:
-      - main-ddtec-backend
+      - main-ddtec
 
 jobs:
   deploy:
@@ -24,7 +24,6 @@ jobs:
             git reset --hard HEAD
             git checkout -B main-ddtec-backend origin/main-ddtec-backend
             git reset --hard origin/main-ddtec-backend
-            cd services/ddtec/backend
-            docker build -t ddtec-backend .
-            docker run --name ddtec_backend_container --env-file .env -p 5003:5000 ddtec-backend 
+            cd services/ddtec
+            docker compose up -d --build
             docker image prune -f
