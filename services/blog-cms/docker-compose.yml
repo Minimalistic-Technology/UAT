@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${DATABASE_USERNAME:-strapi}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-strapi}
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - blog_cms_postgres_data:/var/lib/postgresql/data
     healthcheck:
