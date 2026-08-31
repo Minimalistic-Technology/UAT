@@ -1,0 +1,30 @@
+name: Deploy DDTec Backend
+
+on:
+  push:
+    branches:
+      - main-ddtec-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd UAT
+            git fetch origin
+            git clean -fd
+            git reset --hard HEAD
+            git checkout -B main-ddtec-backend origin/main-ddtec-backend
+            git reset --hard origin/main-ddtec-backend
+            cd services/ddtec/backend
+            docker build -t ddtec-backend .
+            docker run --name ddtec_backend_container --env-file .env -p 5003:5000 ddtec-backend 
+            docker image prune -f
