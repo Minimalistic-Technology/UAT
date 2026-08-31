@@ -17,7 +17,6 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "@swc/core",
-      "better-sqlite3",
       "esbuild"
     ]
   },
@@ -26,7 +25,6 @@
     "@strapi/plugin-cloud": "5.52.1",
     "@strapi/plugin-users-permissions": "5.52.1",
     "@strapi/strapi": "5.52.1",
-    "better-sqlite3": "12.8.0",
     "pg": "^8.13.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
