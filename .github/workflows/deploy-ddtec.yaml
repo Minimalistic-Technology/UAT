@@ -25,5 +25,5 @@ jobs:
             git checkout -B main-ddtec origin/main-ddtec
             git reset --hard origin/main-ddtec
             cd services/ddtec
-            docker compose up -d --build
+            docker-compose up -d --build --remove-orphans
             docker image prune -f
