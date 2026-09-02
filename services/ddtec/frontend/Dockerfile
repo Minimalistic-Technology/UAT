@@ -10,8 +10,23 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+# Build Arguments for Next.js static bundle inlining
 ARG NEXT_PUBLIC_BACKEND_URL
+ARG NEXT_PUBLIC_CASHFREE_ENV
+ARG NEXT_PUBLIC_COMING_SOON
+ARG NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+ARG NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ARG NEXT_PUBLIC_GA_ID
+
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_CASHFREE_ENV=$NEXT_PUBLIC_CASHFREE_ENV
+ENV NEXT_PUBLIC_COMING_SOON=$NEXT_PUBLIC_COMING_SOON
+ENV NEXT_PUBLIC_RECAPTCHA_SITE_KEY=$NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+ENV NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_GA_ID=$NEXT_PUBLIC_GA_ID
 
 # Build the Next.js app
 RUN npm run build
@@ -26,12 +41,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 COPY --from=builder /usr/src/app/.next ./.next
 COPY --from=builder /usr/src/app/public ./public
-# If you have next.config.js/ts, you might need to copy it here
-# COPY --from=builder /usr/src/app/next.config.* ./ 
+COPY --from=builder /usr/src/app/next.config.* ./
 
 EXPOSE 3000
 

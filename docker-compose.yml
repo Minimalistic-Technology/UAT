@@ -37,7 +37,7 @@ services:
           memory: 512M
 
   ddtec:
-    build: ./services/ddtec
+    build: ./services/ddtec/backend
     container_name: ddtec
     expose:
       - "5004"
