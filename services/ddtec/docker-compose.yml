@@ -1,6 +1,4 @@
 services:
-  # We removed mongodb service so backend will fallback to using the Atlas MONGO_URI in backend/.env
-
   backend:
     build:
       context: ./backend
@@ -15,35 +13,3 @@ services:
       # - JWT_SECRET=your_jwt_secret
     env_file:
       - ./backend/.env
-    # depends_on:
-    #  - mongodb
-    networks:
-      - ddtec-network
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_BACKEND_URL=http://localhost:5007
-    container_name: ddtec-frontend
-    restart: always
-    ports:
-      - "3000:3000"
-    environment:
-      - PORT=3000
-      - NEXT_PUBLIC_BACKEND_URL=http://localhost:5007
-    env_file:
-      - ./frontend/.env
-    depends_on:
-      - backend
-    networks:
-      - ddtec-network
-
-# volumes:
-#   mongo_data:
-#     driver: local
-
-networks:
-  ddtec-network:
-    driver: bridge
