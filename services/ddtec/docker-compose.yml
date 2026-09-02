@@ -8,9 +8,9 @@ services:
     container_name: ddtec-backend
     restart: always
     ports:
-      - "5000:5000"
+      - "5007:5007"
     environment:
-      - PORT=5000
+      - PORT=5007
       # Add other crucial environment variables below or use env_file:
       # - JWT_SECRET=your_jwt_secret
     env_file:
@@ -25,16 +25,16 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
+        - NEXT_PUBLIC_BACKEND_URL=http://localhost:5007
     container_name: ddtec-frontend
     restart: always
     ports:
       - "3000:3000"
     environment:
       - PORT=3000
-      - NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:5007
     env_file:
-      - ./frontend/.env.local
+      - ./frontend/.env
     depends_on:
       - backend
     networks:

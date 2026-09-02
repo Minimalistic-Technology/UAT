@@ -14,13 +14,16 @@ FROM node:22-alpine
 
 WORKDIR /usr/src/app
 
+ENV NODE_ENV=production
+ENV PORT=5007
+
 # Only copy over the production dependencies and dist folder for a lean image
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 COPY --from=builder /usr/src/app/dist ./dist
 
-# We map port 5000 inside the container
-EXPOSE 5000
+# Internal container port
+EXPOSE 5007
 
 CMD ["npm", "start"]
