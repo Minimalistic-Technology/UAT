@@ -54,7 +54,7 @@ services:
 
 volumes:
   blog_cms_uploads:
-  blog_cms_data:
+  blog_cms_postgres_data:
 
 networks:
   web:
