@@ -49,13 +49,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
-    networks:
-      - web
-
 volumes:
   blog_cms_uploads:
   blog_cms_postgres_data:
-
-networks:
-  web:
-    external: true
