@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import ScheduledEmail from '../models/ScheduledEmail';
+import EmailTemplate from '../models/EmailTemplate';
 import User from '../models/User';
 import { PREDEFINED_EMAIL_TEMPLATES } from '../utils/emailTemplates';
 import SchedulerService from '../services/scheduler.service';
@@ -35,17 +36,97 @@ export const getScheduledEmails = async (req: Request, res: Response): Promise<v
 };
 
 /**
- * Get predefined HTML templates list
+ * Get predefined HTML templates plus any custom templates added by admins
  */
 export const getPredefinedTemplates = async (_req: Request, res: Response): Promise<void> => {
     try {
+        const customTemplates = await EmailTemplate.find().sort({ createdAt: -1 });
+
+        const formattedCustomTemplates = customTemplates.map((tpl: any) => ({
+            id: tpl._id.toString(),
+            name: tpl.name,
+            category: tpl.category,
+            description: tpl.description,
+            subject: tpl.subject,
+            previewText: tpl.previewText,
+            badge: tpl.badge,
+            html: tpl.html,
+            isCustom: true
+        }));
+
         res.status(200).json({
             success: true,
-            templates: PREDEFINED_EMAIL_TEMPLATES
+            templates: [...PREDEFINED_EMAIL_TEMPLATES, ...formattedCustomTemplates]
         });
     } catch (error: any) {
         console.error('[CONTROLLER-ERROR] getPredefinedTemplates:', error);
         res.status(500).json({ success: false, msg: 'Failed to fetch email templates' });
+    }
+};
+
+/**
+ * Create a new custom, reusable email template (unlimited)
+ */
+export const createCustomTemplate = async (req: any, res: Response): Promise<void> => {
+    try {
+        const { name, category, description, subject, previewText, badge, html } = req.body;
+
+        if (!name || !subject || !html) {
+            res.status(400).json({ success: false, msg: 'Please provide a template Name, Subject, and HTML content.' });
+            return;
+        }
+
+        const newTemplate = new EmailTemplate({
+            name,
+            category: category || 'Custom',
+            description: description || '',
+            subject,
+            previewText: previewText || '',
+            badge: badge || 'CUSTOM',
+            html,
+            createdBy: req.user?._id
+        });
+
+        await newTemplate.save();
+
+        res.status(201).json({
+            success: true,
+            msg: 'Custom template saved successfully.',
+            template: {
+                id: newTemplate._id.toString(),
+                name: newTemplate.name,
+                category: newTemplate.category,
+                description: newTemplate.description,
+                subject: newTemplate.subject,
+                previewText: newTemplate.previewText,
+                badge: newTemplate.badge,
+                html: newTemplate.html,
+                isCustom: true
+            }
+        });
+    } catch (error: any) {
+        console.error('[CONTROLLER-ERROR] createCustomTemplate:', error);
+        res.status(500).json({ success: false, msg: 'Failed to save custom template', error: error.message });
+    }
+};
+
+/**
+ * Delete a custom email template
+ */
+export const deleteCustomTemplate = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const deleted = await EmailTemplate.findByIdAndDelete(id);
+
+        if (!deleted) {
+            res.status(404).json({ success: false, msg: 'Custom template not found.' });
+            return;
+        }
+
+        res.status(200).json({ success: true, msg: 'Custom template deleted successfully.' });
+    } catch (error: any) {
+        console.error('[CONTROLLER-ERROR] deleteCustomTemplate:', error);
+        res.status(500).json({ success: false, msg: 'Failed to delete custom template' });
     }
 };
 

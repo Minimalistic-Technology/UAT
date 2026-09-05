@@ -19,6 +19,7 @@ interface EmailTemplate {
     previewText: string;
     badge: string;
     html: string;
+    isCustom?: boolean;
 }
 
 interface ScheduledEmailItem {
@@ -82,6 +83,17 @@ export default function ScheduleMailView() {
 
     // Preview Modal state
     const [previewItem, setPreviewItem] = useState<ScheduledEmailItem | null>(null);
+
+    // Add Custom Template modal state
+    const [isAddTemplateModalOpen, setIsAddTemplateModalOpen] = useState<boolean>(false);
+    const [newTemplateName, setNewTemplateName] = useState<string>("");
+    const [newTemplateCategory, setNewTemplateCategory] = useState<string>("Custom");
+    const [newTemplateDescription, setNewTemplateDescription] = useState<string>("");
+    const [newTemplateSubject, setNewTemplateSubject] = useState<string>("");
+    const [newTemplatePreviewText, setNewTemplatePreviewText] = useState<string>("");
+    const [newTemplateBadge, setNewTemplateBadge] = useState<string>("CUSTOM");
+    const [newTemplateHtml, setNewTemplateHtml] = useState<string>("");
+    const [isSavingTemplate, setIsSavingTemplate] = useState<boolean>(false);
 
     const fetchData = async () => {
         try {
@@ -181,6 +193,69 @@ export default function ScheduleMailView() {
         setHtmlContent(template.html);
         setEditorTab("editor");
         showToast(`Loaded "${template.name}" template`, "info");
+    };
+
+    const resetNewTemplateForm = () => {
+        setNewTemplateName("");
+        setNewTemplateCategory("Custom");
+        setNewTemplateDescription("");
+        setNewTemplateSubject("");
+        setNewTemplatePreviewText("");
+        setNewTemplateBadge("CUSTOM");
+        setNewTemplateHtml("");
+    };
+
+    const handleOpenAddTemplateModal = () => {
+        resetNewTemplateForm();
+        setIsAddTemplateModalOpen(true);
+    };
+
+    const handleSaveNewTemplate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newTemplateName.trim() || !newTemplateSubject.trim() || !newTemplateHtml.trim()) {
+            showToast("Please provide a template Name, Subject, and HTML content", "error");
+            return;
+        }
+
+        try {
+            setIsSavingTemplate(true);
+            const res = await api.post("/admin/scheduled-emails/templates", {
+                name: newTemplateName.trim(),
+                category: newTemplateCategory.trim() || "Custom",
+                description: newTemplateDescription.trim(),
+                subject: newTemplateSubject.trim(),
+                previewText: newTemplatePreviewText.trim(),
+                badge: newTemplateBadge.trim() || "CUSTOM",
+                html: newTemplateHtml
+            });
+
+            if (res.data?.success) {
+                showToast("Custom template saved successfully!", "success");
+                setIsAddTemplateModalOpen(false);
+                await fetchData();
+            }
+        } catch (error: any) {
+            console.error("Save template error:", error);
+            showToast(error.response?.data?.msg || "Failed to save custom template", "error");
+        } finally {
+            setIsSavingTemplate(false);
+        }
+    };
+
+    const handleDeleteTemplate = async (e: React.MouseEvent, template: EmailTemplate) => {
+        e.stopPropagation();
+        if (!confirm(`Delete custom template "${template.name}"? This cannot be undone.`)) return;
+
+        try {
+            const res = await api.delete(`/admin/scheduled-emails/templates/${template.id}`);
+            if (res.data?.success) {
+                showToast("Custom template deleted", "success");
+                setTemplates(prev => prev.filter(t => t.id !== template.id));
+            }
+        } catch (error: any) {
+            console.error("Delete template error:", error);
+            showToast(error.response?.data?.msg || "Failed to delete template", "error");
+        }
     };
 
     const handleQuickPresetTime = (minutesFromNow: number) => {
@@ -676,8 +751,19 @@ export default function ScheduleMailView() {
                                         <div className="p-4 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-xl flex items-start gap-3">
                                             <Info className="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
                                             <p className="text-xs text-teal-800 dark:text-teal-200 leading-relaxed">
-                                                Select one of our professionally crafted, mobile-responsive HTML email templates below to jumpstart your campaign, or select "Custom HTML" to write your own code.
+                                                Select one of our professionally crafted, mobile-responsive HTML email templates below to jumpstart your campaign, or select "Custom HTML" to write your own code. You can also save your own templates for reuse — there's no limit on how many you can add.
                                             </p>
+                                        </div>
+
+                                        <div className="flex justify-end pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleOpenAddTemplateModal}
+                                                className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-teal-600 hover:bg-slate-800 dark:hover:bg-teal-700 text-white text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                                Add Custom Template
+                                            </button>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -685,14 +771,24 @@ export default function ScheduleMailView() {
                                                 <div
                                                     key={tpl.id}
                                                     onClick={() => handleSelectTemplate(tpl)}
-                                                    className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group hover:shadow-md ${
+                                                    className={`relative p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between group hover:shadow-md ${
                                                         selectedTemplateId === tpl.id
                                                             ? "border-teal-600 bg-teal-50/20 dark:bg-teal-900/10"
                                                             : "border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-600"
                                                     }`}
                                                 >
+                                                    {tpl.isCustom && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => handleDeleteTemplate(e, tpl)}
+                                                            className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
+                                                            title="Delete custom template"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
                                                     <div>
-                                                        <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center justify-between mb-2 pr-6">
                                                             <span className="px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
                                                                 {tpl.badge}
                                                             </span>
@@ -909,14 +1005,31 @@ export default function ScheduleMailView() {
                                                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                                     Predefined HTML Source Code *
                                                 </label>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setEditorTab("preview")}
-                                                    className="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
-                                                >
-                                                    <Eye className="w-3.5 h-3.5" />
-                                                    Preview Rendered Layout
-                                                </button>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            resetNewTemplateForm();
+                                                            setNewTemplateName(title || "");
+                                                            setNewTemplateSubject(subject || "");
+                                                            setNewTemplateHtml(htmlContent || "");
+                                                            setIsAddTemplateModalOpen(true);
+                                                        }}
+                                                        disabled={!htmlContent.trim()}
+                                                        className="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    >
+                                                        <FileText className="w-3.5 h-3.5" />
+                                                        Save as Template
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditorTab("preview")}
+                                                        className="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
+                                                    >
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                        Preview Rendered Layout
+                                                    </button>
+                                                </div>
                                             </div>
                                             <textarea
                                                 required
@@ -1017,6 +1130,153 @@ export default function ScheduleMailView() {
                                     </div>
                                 )}
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* ADD CUSTOM TEMPLATE MODAL */}
+            <AnimatePresence>
+                {isAddTemplateModalOpen && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="bg-white dark:bg-slate-800 rounded-3xl max-w-2xl w-full border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden my-8"
+                        >
+                            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
+                                        <FileText className="w-5 h-5" />
+                                    </div>
+                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                                        Add Custom Email Template
+                                    </h2>
+                                </div>
+                                <button
+                                    onClick={() => setIsAddTemplateModalOpen(false)}
+                                    className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <XCircle className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSaveNewTemplate} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                            Template Name *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="e.g. Black Friday Promo"
+                                            value={newTemplateName}
+                                            onChange={(e) => setNewTemplateName(e.target.value)}
+                                            className="w-full px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                            Category
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Marketing"
+                                            value={newTemplateCategory}
+                                            onChange={(e) => setNewTemplateCategory(e.target.value)}
+                                            className="w-full px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                            Default Subject Line *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="e.g. Big Savings Await You!"
+                                            value={newTemplateSubject}
+                                            onChange={(e) => setNewTemplateSubject(e.target.value)}
+                                            className="w-full px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                            Badge Label
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. PROMO"
+                                            value={newTemplateBadge}
+                                            onChange={(e) => setNewTemplateBadge(e.target.value.toUpperCase())}
+                                            className="w-full px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                        Description
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Short description shown on the template card"
+                                        value={newTemplateDescription}
+                                        onChange={(e) => setNewTemplateDescription(e.target.value)}
+                                        className="w-full px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                        Preview Text
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Short preview snippet shown in inbox"
+                                        value={newTemplatePreviewText}
+                                        onChange={(e) => setNewTemplatePreviewText(e.target.value)}
+                                        className="w-full px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-900 dark:text-white"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                        HTML Content *
+                                    </label>
+                                    <textarea
+                                        required
+                                        rows={10}
+                                        placeholder="<html><body><h1>Your HTML Code...</h1></body></html>"
+                                        value={newTemplateHtml}
+                                        onChange={(e) => setNewTemplateHtml(e.target.value)}
+                                        className="w-full p-4 text-xs font-mono bg-slate-900 text-teal-400 border border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-500 leading-relaxed"
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddTemplateModalOpen(false)}
+                                        className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSavingTemplate}
+                                        className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        <span>{isSavingTemplate ? "Saving..." : "Save Template"}</span>
+                                    </button>
+                                </div>
+                            </form>
                         </motion.div>
                     </div>
                 )}
