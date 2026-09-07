@@ -2,6 +2,8 @@ import { Router } from 'express';
 import {
     getScheduledEmails,
     getPredefinedTemplates,
+    createCustomTemplate,
+    deleteCustomTemplate,
     createScheduledEmail,
     updateScheduledEmail,
     deleteScheduledEmail,
@@ -18,6 +20,8 @@ router.use(adminMiddleware as any);
 
 // Routes
 router.get('/templates', getPredefinedTemplates);
+router.post('/templates', createCustomTemplate);
+router.delete('/templates/:id', deleteCustomTemplate);
 router.get('/', getScheduledEmails);
 router.post('/', createScheduledEmail);
 router.post('/test-send', sendTestEmail);
