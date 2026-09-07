@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Mail, Lock, Loader2, ArrowRight, AlertTriangle } from "lucide-react";
+import { Mail, Lock, Loader2, ArrowRight, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,6 +22,7 @@ const LoginForm = () => {
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Lockout State
     const [lockCountdown, setLockCountdown] = useState<number | null>(null);
@@ -128,12 +129,20 @@ const LoginForm = () => {
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-5" />
                                 <input
                                     required
-                                    type="password"
+                                    type={showPassword ? "text" : "password"}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium text-slate-900 dark:text-white"
+                                    className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium text-slate-900 dark:text-white"
                                     placeholder="••••••••"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((v) => !v)}
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                                >
+                                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                                </button>
                             </div>
 
                             {/* Lockout Warning UI */}
