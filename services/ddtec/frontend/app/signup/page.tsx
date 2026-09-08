@@ -40,6 +40,8 @@ const SignupForm = () => {
     const [otp, setOtp] = useState("");
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isResending, setIsResending] = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(0);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -62,6 +64,39 @@ const SignupForm = () => {
         };
         fetchOnboardingConfig();
     }, []);
+
+    // Resend OTP cooldown timer
+    useEffect(() => {
+        if (resendCooldown <= 0) return;
+        const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [resendCooldown]);
+
+    // Start cooldown whenever we enter the OTP step
+    useEffect(() => {
+        if (step === 'otp') setResendCooldown(30);
+    }, [step]);
+
+    const handleResendOtp = async () => {
+        if (resendCooldown > 0 || isResending) return;
+
+        const identifier = email.trim() || phone.trim();
+        if (!identifier) {
+            showToast("Missing email or phone to resend the code.", "error");
+            return;
+        }
+
+        setIsResending(true);
+        try {
+            await api.post('/auth/send-otp', { identifier, recaptchaToken: turnstileToken, turnstileToken });
+            showToast(`Verification code re-sent to ${identifier}`, "success");
+            setResendCooldown(30);
+        } catch (err: any) {
+            showToast(err.response?.data?.msg || "Failed to resend verification code.", "error");
+        } finally {
+            setIsResending(false);
+        }
+    };
 
     const handleTurnstileVerify = React.useCallback((token: string) => {
         setTurnstileToken(token);
@@ -104,7 +139,7 @@ const SignupForm = () => {
 
         setIsLoading(true);
 
-        const identifier = email || phone;
+        const identifier = email.trim() || phone.trim();
         if (!identifier) {
             showToast("Please provide an email address", "error");
             setIsLoading(false);
@@ -157,13 +192,13 @@ const SignupForm = () => {
 
         try {
             const payload = {
-                firstName,
-                lastName,
-                email,
-                phone,
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                email: email.trim(),
+                phone: phone.trim(),
                 password,
-                inviteCode,
-                otp,
+                inviteCode: inviteCode.trim(),
+                otp: otp.trim(),
                 role: 'user',
                 accountType: 'individual'
             };
@@ -178,7 +213,7 @@ const SignupForm = () => {
 
             // Auto Login directly after registration
             await api.post('/auth/login', {
-                email: email || phone,
+                email: email.trim() || phone.trim(),
                 password: password
             });
 
@@ -476,6 +511,23 @@ const SignupForm = () => {
                                     <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-2">
                                         Code sent to {email || phone}
                                     </p>
+                                    <div className="text-xs text-center mt-3">
+                                        {resendCooldown > 0 ? (
+                                            <span className="text-slate-400 dark:text-slate-500">
+                                                Resend code in {resendCooldown}s
+                                            </span>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={handleResendOtp}
+                                                disabled={isResending}
+                                                className="inline-flex items-center gap-1.5 font-semibold text-teal-600 hover:text-teal-700 hover:underline transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                            >
+                                                {isResending ? <Loader2 className="animate-spin size-3.5" /> : null}
+                                                {isResending ? "Sending..." : "Didn't get the code? Resend OTP"}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-3 pt-4">

@@ -47,7 +47,7 @@ const LoginForm = () => {
 
         setIsLoading(true);
         try {
-            await login(identifier, password, redirectUrl || undefined);
+            await login(identifier.trim(), password, redirectUrl || undefined);
             showToast("Logged in successfully", "success");
             // AuthContext automatically redirects to redirectUrl or dashboard/home based on role
         } catch (err: any) {

@@ -33,13 +33,27 @@ export const sendOtp = async (req: Request, res: Response) => {
         }
         identifier = identifier.trim();
 
-        if (!token) {
+        // A resend is allowed when a valid OTP was already issued for this identifier
+        // (that record only exists because Turnstile was passed within the last 5 minutes).
+        const existingOtpRecord = await redisClient.get(`otp:${identifier}`);
+        const isResend = !!existingOtpRecord;
+
+        // Throttle resends server-side (frontend timer is UX only).
+        if (isResend) {
+            const cooldownKey = `otp:cooldown:${identifier}`;
+            const cooldownTtl = await redisClient.ttl(cooldownKey);
+            if (cooldownTtl > 0) {
+                return res.status(429).json({ msg: `Please wait ${cooldownTtl}s before requesting another code.` });
+            }
+        }
+
+        if (!isResend && !token) {
             return res.status(400).json({ msg: 'Cloudflare Turnstile token is required' });
         }
 
-        // Verify Cloudflare Turnstile
+        // Verify Cloudflare Turnstile (skipped for resends of an already-verified request)
         const secretKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
-        if (secretKey && token) {
+        if (!isResend && secretKey && token) {
             const verifyUrl = `https://challenges.cloudflare.com/turnstile/v0/siteverify`;
             const turnstileRes = await axios.post(verifyUrl, {
                 secret: secretKey,
@@ -89,6 +103,8 @@ export const sendOtp = async (req: Request, res: Response) => {
         const result = await NotificationService.sendOTP(identifier, otp);
 
         if (result.success) {
+            // Start resend cooldown window
+            await redisClient.set(`otp:cooldown:${identifier}`, '1', 'EX', 30);
             res.json({ msg: 'OTP sent successfully', success: true });
         } else {
             res.status(500).json({ msg: result.msg || 'Failed to send OTP. Please try again.', success: false });
