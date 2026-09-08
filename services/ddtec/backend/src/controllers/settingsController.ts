@@ -1,13 +1,21 @@
 import { Request, Response } from 'express';
 import Settings from '../models/Settings';
 import RouteConfig from '../models/RouteConfig';
+import { getCache, setCache, delCache, CACHE_KEYS, CACHE_TTL } from '../utils/cache';
 
 export const getSettings = async (req: Request, res: Response): Promise<void> => {
     try {
+        const cached = await getCache(CACHE_KEYS.SETTINGS);
+        if (cached) {
+            res.status(200).json(cached);
+            return;
+        }
+
         let settings = await Settings.findOne();
         if (!settings) {
             settings = await Settings.create({});
         }
+        await setCache(CACHE_KEYS.SETTINGS, settings, CACHE_TTL.SETTINGS);
         res.status(200).json(settings);
     } catch (error) {
         console.error("Error fetching settings:", error);
@@ -47,6 +55,9 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
         } else {
             await RouteConfig.updateOne({ path: '/signup' }, { isActive: true });
         }
+
+        // Invalidate caches touched by this update
+        await delCache(CACHE_KEYS.SETTINGS, CACHE_KEYS.ROUTES);
 
         res.status(200).json(settings);
     } catch (error) {

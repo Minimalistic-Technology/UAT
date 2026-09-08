@@ -6,7 +6,12 @@ import redisClient from '../config/redis';
 // Keep in sync with products.controller.ts's cache invalidation
 const clearProductCache = async () => {
     try {
-        await redisClient.del('products:all', 'products:home');
+        const keys = ['products:all', 'products:home'];
+        try {
+            const pinKeys = await redisClient.keys('products:pin:*');
+            if (Array.isArray(pinKeys) && pinKeys.length) keys.push(...pinKeys);
+        } catch { /* keys() unsupported / unavailable – base keys are enough */ }
+        await redisClient.del(...keys);
     } catch (err) {
         console.error('Failed to clear product cache:', err);
     }
