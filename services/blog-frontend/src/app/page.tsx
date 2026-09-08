@@ -10,30 +10,41 @@ export default async function BlogIndexPage() {
   const articles = await getArticles();
 
   return (
-    <main>
-      <h1>Blog</h1>
-      {articles.length === 0 && <p>No articles published yet.</p>}
-      <ul>
+    <>
+      <h1 className="page-title">Blog</h1>
+      <p className="page-lead">Insights, updates, and stories from the DDTEC team.</p>
+
+      {articles.length === 0 && (
+        <p className="empty-state">No articles published yet.</p>
+      )}
+
+      <ul className="article-list">
         {articles.map((article) => {
           const cover = mediaUrl(article.cover);
           return (
-            <li key={article.id}>
+            <li key={article.id} className="article-card">
               <Link href={`/${article.slug}`}>
                 {cover && (
-                  <Image
-                    src={cover}
-                    alt={article.cover?.alternativeText || article.title}
-                    width={480}
-                    height={270}
-                  />
+                  <div className="article-card__media">
+                    <Image
+                      src={cover}
+                      alt={article.cover?.alternativeText || article.title}
+                      width={480}
+                      height={270}
+                    />
+                  </div>
                 )}
-                <h2>{article.title}</h2>
-                {article.excerpt && <p>{article.excerpt}</p>}
+                <div className="article-card__body">
+                  <h2 className="article-card__title">{article.title}</h2>
+                  {article.excerpt && (
+                    <p className="article-card__excerpt">{article.excerpt}</p>
+                  )}
+                </div>
               </Link>
             </li>
           );
         })}
       </ul>
-    </main>
+    </>
   );
 }
