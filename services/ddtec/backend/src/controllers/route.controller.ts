@@ -1,11 +1,19 @@
 import { Request, Response } from 'express';
 import RouteConfig from '../models/RouteConfig';
+import { getCache, setCache, delCache, CACHE_KEYS, CACHE_TTL } from '../utils/cache';
+
+// Invalidate the dynamic-routes cache after any mutation
+export const clearRoutesCache = () => delCache(CACHE_KEYS.ROUTES);
 
 // @route   GET /api/routes
 // @desc    Get all routes (Public/All users to verify access)
 export const getRoutes = async (req: Request, res: Response) => {
     try {
+        const cached = await getCache(CACHE_KEYS.ROUTES);
+        if (cached) return res.json(cached);
+
         const routes = await RouteConfig.find().sort({ name: 1 });
+        await setCache(CACHE_KEYS.ROUTES, routes, CACHE_TTL.ROUTES);
         res.json(routes);
     } catch (err) {
         console.error('Error fetching routes:', err);
@@ -36,6 +44,7 @@ export const createRoute = async (req: Request, res: Response) => {
         });
 
         await route.save();
+        await clearRoutesCache();
         res.status(201).json(route);
     } catch (err) {
         console.error('Error creating route:', err);
@@ -61,6 +70,7 @@ export const updateRoute = async (req: Request, res: Response) => {
         if (isActive !== undefined) route.isActive = isActive;
 
         await route.save();
+        await clearRoutesCache();
         res.json(route);
     } catch (err) {
         console.error('Error updating route:', err);
@@ -79,6 +89,7 @@ export const deleteRoute = async (req: Request, res: Response) => {
             return res.status(404).json({ msg: 'Route not found' });
         }
 
+        await clearRoutesCache();
         res.json({ msg: 'Route deleted successfully' });
     } catch (err) {
         console.error('Error deleting route:', err);

@@ -9,12 +9,35 @@ services:
       - "5007:5007"
     environment:
       - PORT=5007
+      - REDIS_URL=redis://ddtec-redis:6379
       # Add other crucial environment variables below or use env_file:
       # - JWT_SECRET=your_jwt_secret
     env_file:
       - ./backend/.env
+    depends_on:
+      ddtec-redis:
+        condition: service_healthy
     networks:
       - web
+
+  ddtec-redis:
+    image: redis:7-alpine
+    container_name: ddtec-redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ddtec_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - web
+
+volumes:
+  ddtec_redis_data:
 
 networks:
   web:

@@ -70,6 +70,8 @@ if (process.env.MONGO_URI) {
                 { $set: { path: '/warehouse', name: 'Inventory & Warehouse', description: 'Blinkit-style Rack & Aisle Stock Management', isActive: true } },
                 { upsert: true }
             );
+            const { clearRoutesCache } = require('./controllers/route.controller');
+            await clearRoutesCache();
             console.log('[SYSTEM] Warehouse/Inventory Route strictly dynamically seeded!');
         } catch (e) { console.error('Warehouse route seed error', e); }
     });

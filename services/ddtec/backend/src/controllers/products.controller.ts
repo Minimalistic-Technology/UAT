@@ -4,10 +4,15 @@ import Hub from '../models/Hub';
 import WarehouseStock from '../models/WarehouseStock';
 import redisClient from '../config/redis';
 
-// Helper to invalidate all product caches instantly
+// Helper to invalidate all product caches instantly (base + hyper-local pincode keys)
 const clearProductCache = async () => {
     try {
-        await redisClient.del('products:all', 'products:home');
+        const keys = ['products:all', 'products:home'];
+        try {
+            const pinKeys = await redisClient.keys('products:pin:*');
+            if (Array.isArray(pinKeys) && pinKeys.length) keys.push(...pinKeys);
+        } catch { /* keys() unsupported / unavailable – base keys are enough */ }
+        await redisClient.del(...keys);
     } catch (err) {
         console.error('Failed to clear product cache:', err);
     }
