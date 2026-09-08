@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getArticleBySlug, mediaUrl } from '@/lib/cms';
@@ -27,12 +28,17 @@ export default async function ArticlePage({ params }: Props) {
   const cover = mediaUrl(article.cover);
 
   return (
-    <main>
-      <article>
-        <h1>{article.title}</h1>
-        {article.author && <p>By {article.author.name}</p>}
-        {article.category && <p>{article.category.name}</p>}
-        {cover && (
+    <article className="article">
+      <Link href="/" className="article__back">
+        &larr; Back to articles
+      </Link>
+      <h1 className="article__title">{article.title}</h1>
+      <div className="article__meta">
+        {article.author && <span>By {article.author.name}</span>}
+        {article.category && <span className="badge">{article.category.name}</span>}
+      </div>
+      {cover && (
+        <div className="article__cover">
           <Image
             src={cover}
             alt={article.cover?.alternativeText || article.title}
@@ -40,16 +46,16 @@ export default async function ArticlePage({ params }: Props) {
             height={540}
             priority
           />
-        )}
-        <BlocksRenderer content={article.content} />
-        {!!article.tags?.length && (
-          <ul>
-            {article.tags.map((tag) => (
-              <li key={tag.slug}>{tag.name}</li>
-            ))}
-          </ul>
-        )}
-      </article>
-    </main>
+        </div>
+      )}
+      <BlocksRenderer content={article.content} />
+      {!!article.tags?.length && (
+        <ul className="tag-list">
+          {article.tags.map((tag) => (
+            <li key={tag.slug}>{tag.name}</li>
+          ))}
+        </ul>
+      )}
+    </article>
   );
 }
