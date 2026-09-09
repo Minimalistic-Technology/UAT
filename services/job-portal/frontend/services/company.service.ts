@@ -1,5 +1,5 @@
 import apiClient, { ApiSuccessResponse } from "@/lib/api-client";
-import { Company, Job } from "@/types";
+import { Company, Job, User } from "@/types";
 
 // ----------------------- Interfaces ---------------------------
 
@@ -7,6 +7,7 @@ export interface PublicCompanyDetails extends Company {
   totalJobs: number;
   activeJobs: number;
   totalMembers: number;
+  owner?: Pick<User, "firstName" | "lastName">;
 }
 
 export interface CompanyJobsResponse {

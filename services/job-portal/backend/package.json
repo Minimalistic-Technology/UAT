@@ -6,7 +6,8 @@
   "main": "build/src/index.js",
   "scripts": {
     "dev": "tsx watch src/index.js",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
+    "postinstall": "prisma generate",
     "start": "node build/src/index.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles",
     "format:check": "npx prettier . --check",

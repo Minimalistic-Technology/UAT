@@ -79,7 +79,7 @@ const Page = () => {
                     {job.title}
                   </CardTitle>
                   <Link
-                    href={`/companies/${job.company?.id || job.company?._id}`}
+                    href={`/companies/${job.company?.id}`}
                     className="hover:underline"
                   >
                     <p className="text-muted-foreground mt-1 flex items-center text-lg">
