@@ -5,6 +5,7 @@ import {prisma} from "../lib/prisma.js"
 import { config } from "../config/env.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { sendEmail } from "../utils/email.js";
+import { sendWelcomeEmail } from "../utils/welcomeEmail.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { generateToken } from "../utils/jwt.js";
@@ -370,6 +371,18 @@ export const confirmRegistrationOTP = async (
 
     await prisma.tempUser.delete({ where: { id: tempUser.id } });
 
+    // Send a welcome email only for genuinely new signups. Existing users who
+    // verified an OTP to add a new company should not be re-welcomed.
+    // Fire-and-forget: never block or fail the signup on email delivery.
+    if (isNewUser) {
+      void sendWelcomeEmail({
+        email: tempUser.email,
+        firstName: tempUser.firstName,
+        audience: tempUser.isEmployer ? "employer" : "jobseeker",
+        companyName: tempUser.companyName,
+      });
+    }
+
     return sendTokenResponse(userToReturn, isNewUser ? 201 : 200, res);
   } catch (error: any) {
     next(error);
@@ -621,6 +634,8 @@ export const googleAuth = async (
       include: { avatar: true }
     });
 
+    const isNewUser = !user;
+
     if (!user) {
       user = await prisma.user.create({
         data: {
@@ -651,6 +666,14 @@ export const googleAuth = async (
         companyId = company.id;
         companyRole = "OWNER";
       }
+    }
+
+    if (isNewUser) {
+      void sendWelcomeEmail({
+        email: user.email,
+        firstName: user.firstName,
+        audience: "jobseeker",
+      });
     }
 
     sendTokenResponse(
