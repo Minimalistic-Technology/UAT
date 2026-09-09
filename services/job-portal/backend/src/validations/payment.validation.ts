@@ -17,9 +17,3 @@ export const createOrderSchema = [
   body("couponCode").optional().isString(),
   body("billingCycle").optional().isString().isIn(["monthly", "yearly"]),
 ];
-
-export const verifyPaymentSchema = [
-  body("razorpay_order_id").notEmpty().withMessage("Order ID is required"),
-  body("razorpay_payment_id").notEmpty().withMessage("Payment ID is required"),
-  body("razorpay_signature").notEmpty().withMessage("Signature is required"),
-];

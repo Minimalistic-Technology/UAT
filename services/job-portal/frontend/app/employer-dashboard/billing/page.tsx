@@ -26,7 +26,8 @@ export default function BillingPage() {
     
     // Invoice details
     doc.setTextColor(0);
-    doc.text(`Invoice ID: ${payment.razorpayOrderId}`, 14, 45);
+    const invoiceId = payment.cashfreeOrderId ?? payment.razorpayOrderId ?? payment.id;
+    doc.text(`Invoice ID: ${invoiceId}`, 14, 45);
     doc.text(`Date: ${date}`, 14, 52);
     doc.text(`Status: ${payment.status}`, 14, 59);
 
@@ -46,7 +47,7 @@ export default function BillingPage() {
     const finalY = (doc as any).lastAutoTable.finalY || 90;
     doc.text(`Total: ${payment.currency} ${amount.toFixed(2)}`, 14, finalY + 10);
     
-    doc.save(`invoice_${payment.razorpayOrderId}.pdf`);
+    doc.save(`invoice_${invoiceId}.pdf`);
   };
 
   return (
@@ -83,7 +84,7 @@ export default function BillingPage() {
                   <TableCell>
                     {format(new Date(payment.createdAt), "dd MMM, yyyy")}
                   </TableCell>
-                  <TableCell className="font-mono text-sm">{payment.razorpayOrderId}</TableCell>
+                  <TableCell className="font-mono text-sm">{payment.cashfreeOrderId ?? payment.razorpayOrderId ?? payment.id}</TableCell>
                   <TableCell>
                     {payment.currency} {(payment.amount / 100).toFixed(2)}
                   </TableCell>

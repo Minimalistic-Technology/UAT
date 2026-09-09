@@ -17,19 +17,10 @@ export interface Plan {
   updatedAt: string;
 }
 
-export interface RazorpayOrder {
+export interface CashfreeOrder {
   id: string;
-  entity: "order";
   amount: number;
-  amount_paid: number;
-  amount_due: number;
   currency: string;
-  receipt: string;
-  status: "created" | "attempted" | "paid";
-  attempts: number;
-  notes: Record<string, any> | any[];
-  created_at: number;
-  offer_id: string | null;
 }
 
 export interface Coupon {

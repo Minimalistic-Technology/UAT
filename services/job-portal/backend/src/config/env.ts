@@ -38,10 +38,11 @@ const config = {
   // Environment
   nodeEnv: process.env.NODE_ENV || 'development',
 
-  // Razorpay
-  razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
-  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
-  razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
+  // Cashfree
+  cashfreeAppId: process.env.CASHFREE_APP_ID || '',
+  cashfreeSecretKey: process.env.CASHFREE_SECRET_KEY || '',
+  cashfreeApiVersion: process.env.CASHFREE_API_VERSION || '2023-08-01',
+  cashfreeEnvironment: process.env.CASHFREE_ENVIRONMENT || 'SANDBOX', // 'SANDBOX' | 'PRODUCTION'
 };
 
 export { config };

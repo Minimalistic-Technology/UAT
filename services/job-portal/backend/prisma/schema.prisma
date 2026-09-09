@@ -70,6 +70,11 @@ enum RefundStatus {
   FAILED
 }
 
+enum PaymentGateway {
+  RAZORPAY
+  CASHFREE
+}
+
 enum CouponType {
   PERCENTAGE
   AMOUNT
@@ -409,7 +414,7 @@ model User {
   // Company
   company Company?
 
-  kycSubmissions  KYC[] @relation("KycSubmitter")
+  kycSubmissions KYC[] @relation("KycSubmitter")
 
   companyMembers CompanyMember[]
 
@@ -653,7 +658,8 @@ model Refund {
   paymentId String
   payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
-  razorpayRefundId String       @unique
+  razorpayRefundId String?      @unique
+  cashfreeRefundId String?      @unique
   amount           Int
   reason           String?
   status           RefundStatus @default(PENDING)
@@ -677,9 +683,17 @@ model Payment {
   amount   Int
   currency Currency @default(INR)
 
-  razorpayOrderId   String  @unique
+  gateway PaymentGateway @default(CASHFREE)
+
+  razorpayOrderId   String? @unique
   razorpayPaymentId String? @unique
   razorpaySignature String?
+
+  // Cashfree
+  cashfreeOrderId  String? @unique
+  paymentSessionId String?
+  cfPaymentId      String? @unique
+  cfOrderStatus    String?
 
   webhookEvents PaymentWebhookEvent[]
 
@@ -770,7 +784,7 @@ model KYC {
   status KycStatus @default(PENDING)
 
   rejectionReason String?
-  reviewedAt   DateTime?
+  reviewedAt      DateTime?
 
   isLatest Boolean @default(true)
 
