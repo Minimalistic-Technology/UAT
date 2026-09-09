@@ -16,8 +16,8 @@ const config: Core.Config.Middlewares = [
       contentSecurityPolicy: {
         directives: {
           'connect-src': ["'self'", 'https:'],
-          'img-src': ["'self'", 'data:', 'blob:', ...frontendOrigins],
-          'media-src': ["'self'", 'data:', 'blob:', ...frontendOrigins],
+          'img-src': ["'self'", 'data:', 'blob:', 'res.cloudinary.com', ...frontendOrigins],
+          'media-src': ["'self'", 'data:', 'blob:', 'res.cloudinary.com', ...frontendOrigins],
           upgradeInsecureRequests: null,
         },
       },
