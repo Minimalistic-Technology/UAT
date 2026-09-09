@@ -28,17 +28,13 @@ import {
   formatJobLimit,
   formatDuration,
 } from "@/features/employer/helper/plan.helper";
-import { loadRazorpayScript } from "@/lib/razorpay-script";
-import {
-  createOrder,
-  verifyPayment,
-} from "@/features/employer/services/payment.service";
+import { getCashfree } from "@/lib/cashfree";
+import { createOrder } from "@/features/employer/services/payment.service";
 import type { Plan } from "../types";
 import { useState } from "react";
 import { useValidateCoupon } from "../hooks/use-coupons";
 import { useGetMyCompanyDetails } from "../hooks/use-company";
 import { useRouter } from "next/navigation";
-import { APP_NAME } from "@/constants";
 
 export function PlanCard({
   plan,
@@ -120,15 +116,6 @@ export function PlanCard({
       return;
     }
 
-    const isLoaded = await loadRazorpayScript();
-
-    if (!isLoaded) {
-      toast.error("Razorpay SDK failed to load.");
-      return;
-    }
-
-    console.log("Crossed isLoaded")
-
     try {
       const payload = {
         planId: plan.id,
@@ -138,10 +125,7 @@ export function PlanCard({
         internalOrderId: `ORD_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       };
 
-      console.log("Payload created")
-
       const orderData = await createOrder(payload);
-      console.log("orderData", orderData)
 
       if (orderData.data.isFree) {
         toast.success("Plan activated successfully!");
@@ -149,38 +133,19 @@ export function PlanCard({
         return;
       }
 
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.data.order.amount,
-        currency: orderData.data.order.currency,
-        name: APP_NAME,
-        description: `Upgrade to ${plan.name} Plan (${isYearly ? "Yearly" : "Monthly"})`,
-        order_id: orderData.data.order.id,
-        handler: async function (response: any) {
-          try {
-            await verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
-            toast.success("Payment successful! You can view and download your invoice in the Billing section.");
-            router.push("/employer-dashboard/billing");
-          } catch (error) {
-            console.error("Payment verification failed", error);
-            toast.error("Payment verification failed. Please contact support.");
-          }
-        },
-        prefill: {
-          name: session?.user?.name || "Employer",
-          email: session?.user?.email || "",
-        },
-        theme: {
-          color: "#2563eb",
-        },
-      };
+      const paymentSessionId = orderData.data.paymentSessionId;
+      if (!paymentSessionId) {
+        toast.error("Could not start checkout. Please try again.");
+        return;
+      }
 
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
+      const cashfree = await getCashfree();
+      // Redirects the browser to Cashfree hosted checkout. On completion the
+      // customer lands back on the billing payment-status page via the return_url.
+      await cashfree.checkout({
+        paymentSessionId,
+        redirectTarget: "_self",
+      });
     } catch (error: any) {
       console.error("Payment error:", error);
       toast.error(

@@ -11,7 +11,7 @@ import { config } from "./config/env.js";
 import { generalLimiter } from "./middleware/rateLimiter.js";
 import { sanitizeInput } from "./middleware/sanitize.middleware.js";
 import { errorHandler } from "./middleware/error.middleware.js";
-import { handleRazorpayWebhook } from "./controllers/payment.controller.js";
+import { handleCashfreeWebhook } from "./controllers/payment.controller.js";
 
 // Import routes
 import authRoutes from "./routes/auth.routes.js";
@@ -69,7 +69,7 @@ app.use(
 );
 const jsonParser = express.json({ limit: "10mb" });
 app.use((req, res, next) => {
-  if (req.originalUrl === "/api/webhook/razorpay") {
+  if (req.originalUrl === "/api/webhook/cashfree") {
     next(); // Skip JSON parsing for the webhook route
   } else {
     jsonParser(req, res, next);
@@ -85,9 +85,9 @@ app.use(cookieParser());
 app.use("/api", generalLimiter);
 
 app.post(
-  "/api/webhook/razorpay",
+  "/api/webhook/cashfree",
   express.raw({ type: "application/json" }),
-  handleRazorpayWebhook,
+  handleCashfreeWebhook,
 );
 
 // NOTE: Add a general rate-limter for graphql routes too

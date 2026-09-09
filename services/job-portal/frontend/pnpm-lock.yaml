@@ -11,6 +11,9 @@ importers:
       '@base-ui/react':
         specifier: ^1.3.0
         version: 1.6.0(@date-fns/tz@1.5.0)(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@cashfreepayments/cashfree-js':
+        specifier: ^1.0.7
+        version: 1.0.7
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.4.0(react-hook-form@7.80.0(react@19.2.4))
@@ -437,6 +440,9 @@ packages:
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
+
+  '@cashfreepayments/cashfree-js@1.0.7':
+    resolution: {integrity: sha512-WRhjGdUgkPdWbq0YoMsi6hRqyT4XTIGUMNnATQsfz0GIDFP2sjtVon/kcihDVtO6pzEZrjded62Do9xK2VkjPQ==}
 
   '@csstools/color-helpers@5.1.0':
     resolution: {integrity: sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA==}
@@ -5847,6 +5853,8 @@ snapshots:
       '@types/react': 19.2.17
 
   '@bcoe/v8-coverage@0.2.3': {}
+
+  '@cashfreepayments/cashfree-js@1.0.7': {}
 
   '@csstools/color-helpers@5.1.0': {}
 

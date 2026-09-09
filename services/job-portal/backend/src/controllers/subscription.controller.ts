@@ -3,7 +3,7 @@ import { AuthRequest } from "../middleware/auth.middleware.js";
 import { prisma } from "../lib/prisma.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
-import razorpay from "../config/razorpay.js";
+import CashfreeService from "../services/cashfree.service.js";
 
 export const getMyActiveSubscription = async (
   req: AuthRequest,
@@ -143,42 +143,54 @@ export const cancelMySubscription = async (
 
     let refundProcessed = false;
     if (postsUsed === 0 && subscription.orderId) {
-      const payment = await prisma.payment.findUnique({
-        where: { razorpayOrderId: subscription.orderId }
+      const payment = await prisma.payment.findFirst({
+        where: {
+          OR: [
+            { cashfreeOrderId: subscription.orderId },
+            { razorpayOrderId: subscription.orderId },
+          ],
+        },
       });
 
       if (!payment) {
         throw new ApiError(404, "Payment record not found, please contact support");
       }
 
-      if (!payment.razorpayPaymentId) {
-        throw new ApiError(400, "Payment ID missing, please contact support");
+      if (payment.gateway !== "CASHFREE" || !payment.cashfreeOrderId) {
+        throw new ApiError(
+          400,
+          "This subscription was paid via a legacy gateway. Please contact support for a refund.",
+        );
       }
 
-      const refundAmount = Math.round(payment.amount * 0.5);
+      // payment.amount is stored in paise; Cashfree refunds are in rupees
+      const refundAmountPaise = Math.round(payment.amount * 0.5);
+      const refundAmountRupees = Number((refundAmountPaise / 100).toFixed(2));
+
       try {
-        const refundObj = await razorpay.payments.refund(payment.razorpayPaymentId, {
-          amount: refundAmount,
-          speed: "optimum",
+        const refund = await CashfreeService.createRefund(payment.cashfreeOrderId, {
+          refundAmount: refundAmountRupees,
+          refundId: `ref_${payment.id}`,
+          note: "Subscription cancellation 50% refund",
         });
 
         await prisma.payment.update({
           where: { id: payment.id },
-          data: { status: "REFUNDED" }
+          data: { status: "REFUNDED" },
         });
-        
+
         await prisma.refund.create({
           data: {
-             paymentId: payment.id,
-             razorpayRefundId: refundObj.id,
-             amount: refundAmount,
-             status: "PROCESSED"
-          }
+            paymentId: payment.id,
+            cashfreeRefundId: refund.cfRefundId,
+            amount: refundAmountPaise,
+            status: refund.refundStatus === "SUCCESS" ? "PROCESSED" : "PENDING",
+          },
         });
 
         refundProcessed = true;
-      } catch (razorpayError) {
-        console.error("Razorpay Refund Error:", razorpayError);
+      } catch (refundError) {
+        console.error("Cashfree Refund Error:", refundError);
         throw new ApiError(500, "Failed to process refund from payment gateway");
       }
     }

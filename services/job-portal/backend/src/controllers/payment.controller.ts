@@ -1,14 +1,18 @@
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
-import razorpay from "../config/razorpay.js";
+import CashfreeService from "../services/cashfree.service.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
-import crypto from "crypto";
 import { config } from "../config/env.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
 
 // Helper to provision subscription
-const provisionSubscription = async (userId: string, planId: string, razorpayOrderId: string, billingCycle: string = "monthly") => {
+const provisionSubscription = async (
+  userId: string,
+  planId: string,
+  orderId: string,
+  billingCycle: string = "monthly",
+) => {
   const plan = await prisma.plan.findUnique({ where: { id: planId } });
   if (!plan) {
     return;
@@ -18,7 +22,7 @@ const provisionSubscription = async (userId: string, planId: string, razorpayOrd
     where: {
       userId,
       role: { in: ["OWNER", "HR"] },
-    }
+    },
   });
 
   if (!companyMember) {
@@ -30,11 +34,12 @@ const provisionSubscription = async (userId: string, planId: string, razorpayOrd
   // Cancel existing active subscriptions for this user's company
   await prisma.subscription.updateMany({
     where: { companyId, status: "ACTIVE" },
-    data: { status: "CANCELLED" }
+    data: { status: "CANCELLED" },
   });
 
   const durationMultiplier = billingCycle === "yearly" ? 12 : 1;
-  const durationMilliseconds = (plan.subscriptionDurationDays * durationMultiplier) * 24 * 60 * 60 * 1000;
+  const durationMilliseconds =
+    plan.subscriptionDurationDays * durationMultiplier * 24 * 60 * 60 * 1000;
   const expiryDate = new Date(Date.now() + durationMilliseconds);
 
   await prisma.subscription.create({
@@ -46,8 +51,75 @@ const provisionSubscription = async (userId: string, planId: string, razorpayOrd
       startDate: new Date(),
       expiryDate,
       status: "ACTIVE",
-      orderId: razorpayOrderId,
+      orderId,
+    },
+  });
+};
+
+/**
+ * Applies a terminal Cashfree payment outcome to our Payment record.
+ *
+ * Idempotent: repeated calls (webhook retries racing the return-url verification)
+ * are safe — the finalize / provision steps only run on the first transition into
+ * a terminal state.
+ */
+const applyCashfreePaymentStatus = async (
+  cashfreeOrderId: string,
+  outcome: "PAID" | "FAILED",
+  cfPaymentId?: string,
+  failureReason?: string,
+) => {
+  const payment = await prisma.payment.findUnique({
+    where: { cashfreeOrderId },
+  });
+  if (!payment) return null;
+
+  // Already settled — nothing to do
+  if (
+    payment.status === "CAPTURED" ||
+    payment.status === "FAILED" ||
+    payment.status === "REFUNDED"
+  ) {
+    return payment;
+  }
+
+  const metadata = (payment.metadata as any) || {};
+
+  if (outcome === "PAID") {
+    const updated = await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: "CAPTURED",
+        capturedAt: new Date(),
+        cfPaymentId: cfPaymentId || payment.cfPaymentId,
+        cfOrderStatus: "PAID",
+      },
+    });
+
+    const existingSub = await prisma.subscription.findFirst({
+      where: { orderId: cashfreeOrderId },
+    });
+
+    if (!existingSub && metadata.planId) {
+      await provisionSubscription(
+        payment.userId,
+        metadata.planId,
+        cashfreeOrderId,
+        metadata.billingCycle,
+      );
     }
+
+    return updated;
+  }
+
+  return prisma.payment.update({
+    where: { id: payment.id },
+    data: {
+      status: "FAILED",
+      failureReason: failureReason || "Payment was not completed",
+      cfOrderStatus: "FAILED",
+      cfPaymentId: cfPaymentId || payment.cfPaymentId,
+    },
   });
 };
 
@@ -57,7 +129,8 @@ export const createOrder = async (
   next: NextFunction,
 ) => {
   try {
-    const { planId, userId, couponCode, internalOrderId, billingCycle } = req.body;
+    const { planId, userId, couponCode, internalOrderId, billingCycle } =
+      req.body;
 
     const plan = await prisma.plan.findUnique({ where: { id: planId } });
     if (!plan) throw new ApiError(404, "Plan not found");
@@ -66,11 +139,14 @@ export const createOrder = async (
       where: {
         userId,
         role: { in: ["OWNER", "HR"] },
-      }
+      },
     });
 
     if (!companyMember) {
-      throw new ApiError(400, "You must be part of a company to purchase a plan.");
+      throw new ApiError(
+        400,
+        "You must be part of a company to purchase a plan.",
+      );
     }
 
     const activeSubscription = await prisma.subscription.findFirst({
@@ -79,11 +155,14 @@ export const createOrder = async (
         status: "ACTIVE",
         expiryDate: { gt: new Date() },
         OR: [{ postsRemaining: { gt: 0 } }, { postsRemaining: -1 }],
-      }
+      },
     });
 
     if (activeSubscription) {
-      throw new ApiError(400, "You already have an active plan with remaining job posts. Please use them before purchasing a new plan.");
+      throw new ApiError(
+        400,
+        "You already have an active plan with remaining job posts. Please use them before purchasing a new plan.",
+      );
     }
 
     if (plan.price === 0) {
@@ -91,7 +170,7 @@ export const createOrder = async (
         where: {
           companyId: companyMember.companyId,
           planId: plan.id,
-        }
+        },
       });
 
       if (existingFreeSub) {
@@ -115,18 +194,22 @@ export const createOrder = async (
           code: couponCode.toUpperCase(),
           isActive: true,
           usages: { none: { userId } },
-          OR: [
-            { expiryDate: { gt: new Date() } },
-            { expiryDate: null },
-          ],
+          OR: [{ expiryDate: { gt: new Date() } }, { expiryDate: null }],
         },
       });
 
       if (!coupon) {
-        throw new ApiError(400, "Coupon is invalid, expired, or has already been used by you");
+        throw new ApiError(
+          400,
+          "Coupon is invalid, expired, or has already been used by you",
+        );
       }
-      
-      if (coupon.maxUses && coupon.maxUses !== -1 && coupon.usageCount >= coupon.maxUses) {
+
+      if (
+        coupon.maxUses &&
+        coupon.maxUses !== -1 &&
+        coupon.usageCount >= coupon.maxUses
+      ) {
         throw new ApiError(400, "Coupon has reached its maximum usage limit");
       }
 
@@ -144,27 +227,30 @@ export const createOrder = async (
 
       try {
         appliedCoupon = await prisma.coupon.update({
-          where: { 
+          where: {
             id: coupon.id,
-            ...(coupon.maxUses && coupon.maxUses !== -1 
-              ? { usageCount: { lt: coupon.maxUses } } 
-              : {})
+            ...(coupon.maxUses && coupon.maxUses !== -1
+              ? { usageCount: { lt: coupon.maxUses } }
+              : {}),
           },
           data: {
             usageCount: { increment: 1 },
             usages: {
               create: {
                 userId,
-                discountApplied: discountValue
-              }
-            }
-          }
+                discountApplied: discountValue,
+              },
+            },
+          },
         });
       } catch (error: any) {
-        if (error.code === 'P2025') {
-          throw new ApiError(400, "Coupon has reached its maximum usage limit or is no longer available");
+        if (error.code === "P2025") {
+          throw new ApiError(
+            400,
+            "Coupon has reached its maximum usage limit or is no longer available",
+          );
         }
-        if (error.code === 'P2002') {
+        if (error.code === "P2002") {
           throw new ApiError(400, "Coupon has already been used by you");
         }
         throw new ApiError(400, "Failed to apply coupon. Please try again.");
@@ -173,7 +259,9 @@ export const createOrder = async (
       finalAmount = Number((basePlanPrice - discountValue).toFixed(2));
     }
 
-    // Handle free plan or 100% discount
+    const currency = plan.currency || "INR";
+
+    // Handle free plan or 100% discount — no gateway involved
     if (finalAmount === 0) {
       const internalOrderIdString = internalOrderId || `FREE_${Date.now()}`;
 
@@ -181,277 +269,272 @@ export const createOrder = async (
         data: {
           userId,
           amount: 0,
-          currency: plan.currency || "INR",
-          razorpayOrderId: internalOrderIdString,
-          metadata: { planId, couponCode: appliedCoupon?.code, internalOrderId, billingCycle: billingCycle || "monthly" },
+          currency,
+          gateway: "CASHFREE",
+          cashfreeOrderId: internalOrderIdString,
+          metadata: {
+            planId,
+            couponCode: appliedCoupon?.code,
+            internalOrderId,
+            billingCycle: billingCycle || "monthly",
+          },
           status: "CAPTURED",
           capturedAt: new Date(),
-        }
+        },
       });
 
-      await provisionSubscription(userId, planId, internalOrderIdString, billingCycle);
+      await provisionSubscription(
+        userId,
+        planId,
+        internalOrderIdString,
+        billingCycle,
+      );
 
       return res.status(201).json(
         new ApiResponse(
           201,
           {
-            order: { id: internalOrderIdString, amount: 0, currency: plan.currency || "INR" },
+            order: { id: internalOrderIdString, amount: 0, currency },
             finalAmount,
             discountValue,
             couponApplied: !!appliedCoupon,
-            isFree: true
+            isFree: true,
           },
           "Free order processed successfully",
         ),
       );
     }
 
-    // 4. Create Razorpay Order
-    const options = {
-      amount: Math.round(finalAmount * 100),
-      currency: plan.currency || "INR",
-      receipt: internalOrderId,
-      notes: {
-        userId,
-        planId,
-        couponCode: couponCode || "NONE",
-        billingCycle: billingCycle || "monthly"
-      },
-    };
+    // Paid path — create our Payment row first, then the Cashfree order
+    const amountInPaise = Math.round(finalAmount * 100);
 
-    const order = await razorpay.orders.create(options);
-
-    // 5. Create Payment Document
-    await prisma.payment.create({
+    const payment = await prisma.payment.create({
       data: {
         userId,
-        amount: Math.round(finalAmount * 100),
-        currency: plan.currency || "INR",
-        razorpayOrderId: order.id,
-        metadata: { planId, couponCode: appliedCoupon?.code, internalOrderId, billingCycle: billingCycle || "monthly" },
+        amount: amountInPaise,
+        currency,
+        gateway: "CASHFREE",
+        metadata: {
+          planId,
+          couponCode: appliedCoupon?.code,
+          internalOrderId,
+          billingCycle: billingCycle || "monthly",
+        },
         status: "CREATED",
-      }
+      },
     });
 
-    res.status(201).json(
-      new ApiResponse(
-        201,
-        {
-          order,
-          finalAmount,
-          discountValue,
-          couponApplied: !!appliedCoupon,
+    const cashfreeOrderId = `jp_${payment.id}`;
+
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+
+      const returnUrl = `${config.clientUrl.replace(/\/$/, "")}/employer-dashboard/billing/payment-status?order_id=${cashfreeOrderId}`;
+
+      const cfResult = await CashfreeService.createOrder({
+        orderId: cashfreeOrderId,
+        amount: finalAmount, // rupees
+        customerId: userId,
+        customerName:
+          `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "Employer",
+        customerEmail: user?.email || "",
+        customerPhone: user?.phone || "9999999999",
+        returnUrl,
+      });
+
+      const updatedPayment = await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          cashfreeOrderId,
+          paymentSessionId: cfResult.paymentSessionId,
+          cfOrderStatus: cfResult.orderStatus,
         },
-        "Order created successfully",
-      ),
-    );
+      });
+
+      return res.status(201).json(
+        new ApiResponse(
+          201,
+          {
+            order: { id: cashfreeOrderId, amount: amountInPaise, currency },
+            paymentSessionId: updatedPayment.paymentSessionId,
+            finalAmount,
+            discountValue,
+            couponApplied: !!appliedCoupon,
+          },
+          "Order created successfully",
+        ),
+      );
+    } catch (cfError: any) {
+      // Roll back so the user can retry cleanly
+      await prisma.payment.delete({ where: { id: payment.id } }).catch(() => {});
+
+      if (appliedCoupon) {
+        await prisma.coupon
+          .update({
+            where: { id: appliedCoupon.id },
+            data: { usageCount: { decrement: 1 } },
+          })
+          .catch(() => {});
+        await prisma.couponUsage
+          .delete({
+            where: { couponId_userId: { couponId: appliedCoupon.id, userId } },
+          })
+          .catch(() => {});
+      }
+
+      console.error(
+        "[CASHFREE-ERROR] Failed to create Cashfree order:",
+        cfError?.data || cfError?.message || cfError,
+      );
+      throw new ApiError(
+        502,
+        "Failed to initiate payment. Please try again in a moment.",
+      );
+    }
   } catch (error: any) {
     next(error);
   }
 };
 
-export const handleRazorpayWebhook = async (
+/**
+ * Cashfree server-to-server webhook. No auth — verified via HMAC signature.
+ * Mounted with `express.raw({ type: "application/json" })`, so `req.body` is a Buffer.
+ */
+export const handleCashfreeWebhook = async (
   req: Request,
   res: Response,
-  next: NextFunction,
 ) => {
-  const secret = config.razorpayWebhookSecret;
-  const signature = req.headers["x-razorpay-signature"] as string;
-  const eventId = req.headers["x-razorpay-event-id"] as string;
-
   try {
-    /**
-     * 1. Verify Signature (SECURE WAY)
-     */
-    const hmac = crypto.createHmac("sha256", secret);
-    hmac.update(req.body); // Buffer
-    const generatedSignature = hmac.digest("hex");
+    const signature = (req.headers["x-webhook-signature"] as string) || "";
+    const timestamp = (req.headers["x-webhook-timestamp"] as string) || "";
+    const rawBody = Buffer.isBuffer(req.body)
+      ? req.body.toString("utf8")
+      : typeof req.body === "string"
+        ? req.body
+        : JSON.stringify(req.body);
 
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(generatedSignature),
-      Buffer.from(signature),
-    );
-
-    if (!isValid) {
-      return next(new ApiError(400, "Invalid webhook signature"));
+    if (!CashfreeService.verifyWebhookSignature(signature, rawBody, timestamp)) {
+      console.warn("[CASHFREE-WEBHOOK] Invalid signature");
+      return res.status(401).json(new ApiResponse(401, null, "Invalid signature"));
     }
 
-    /**
-     * 2. Parse Payload
-     */
-    const payload = JSON.parse(req.body.toString());
-    const { event, payload: data } = payload;
+    const payload = JSON.parse(rawBody);
+    const { type, data } = payload;
+    const orderId: string | undefined = data?.order?.order_id;
+    const cfPaymentId: string | undefined =
+      data?.payment?.cf_payment_id != null
+        ? String(data.payment.cf_payment_id)
+        : undefined;
 
-    const paymentEntity = data?.payment?.entity;
+    if (!orderId) {
+      return res.status(200).json(new ApiResponse(200, null, "Ignored"));
+    }
 
-    if (!paymentEntity) {
+    // Idempotency — one synthetic event id per (order, event type)
+    const eventId = `cf_${orderId}_${type}`;
+    const existingEvent = await prisma.paymentWebhookEvent.findUnique({
+      where: { eventId },
+    });
+    if (existingEvent) {
       return res
         .status(200)
-        .json(new ApiResponse(200, null, "Webhook ignored"));
+        .json(new ApiResponse(200, null, "Already processed"));
     }
 
-    const razorpayOrderId = paymentEntity.order_id;
-    const razorpayPaymentId = paymentEntity.id;
-
-    /**
-     * 3. Idempotency Check (IMPORTANT)
-     */
-    const existingEvent = await prisma.paymentWebhookEvent.findUnique({
-      where: { eventId }
+    const payment = await prisma.payment.findUnique({
+      where: { cashfreeOrderId: orderId },
     });
 
-    if (existingEvent) {
-      return res.status(200).json(new ApiResponse(200, null, "Webhook already processed"));
+    if (type === "PAYMENT_SUCCESS_WEBHOOK") {
+      await applyCashfreePaymentStatus(orderId, "PAID", cfPaymentId);
+    } else if (
+      type === "PAYMENT_FAILED_WEBHOOK" ||
+      type === "PAYMENT_USER_DROPPED_WEBHOOK"
+    ) {
+      await applyCashfreePaymentStatus(
+        orderId,
+        "FAILED",
+        cfPaymentId,
+        data?.payment?.payment_message ||
+          data?.error_details?.error_description,
+      );
     }
 
-    const existingPayment = await prisma.payment.findUnique({
-      where: { razorpayOrderId }
-    });
+    await prisma.paymentWebhookEvent
+      .create({
+        data: {
+          eventId,
+          type: type || "UNKNOWN",
+          payload,
+          paymentId: payment?.id,
+          processedAt: new Date(),
+        },
+      })
+      .catch((err: any) => {
+        if (err?.code !== "P2002") throw err; // ignore idempotent race
+      });
 
-    /**
-     * 5. Handle Events
-     */
-    switch (event) {
-      case "payment.captured":
-        await prisma.payment.update({
-          where: { razorpayOrderId },
-          data: {
-            razorpayPaymentId,
-            webhookEvents: {
-              create: {
-                eventId,
-                type: event,
-                payload: payload || {}
-              }
-            },
-            status: "CAPTURED",
-            capturedAt: new Date(),
-            method: paymentEntity.method,
-          }
-        });
-
-        // Provision subscription upon successful payment
-        try {
-          const { userId, planId, billingCycle } = paymentEntity.notes || {};
-
-          // Check if subscription already exists for this order to prevent duplicate provisioning
-          const existingSub = await prisma.subscription.findFirst({
-            where: { orderId: razorpayOrderId }
-          });
-          if (!existingSub && userId && planId) {
-            await provisionSubscription(userId, planId, razorpayOrderId, billingCycle);
-          }
-        } catch (subErr) {
-          // Catch the error so we still return 200 to Razorpay
-        }
-        break;
-
-      case "payment.failed":
-        await prisma.payment.update({
-          where: { razorpayOrderId },
-          data: {
-            razorpayPaymentId,
-            webhookEvents: {
-              create: {
-                eventId,
-                type: event,
-                payload: payload || {}
-              }
-            },
-            status: "FAILED",
-            failureReason: paymentEntity.error_description,
-          }
-        });
-        break;
-
-      case "payment.authorized":
-        await prisma.payment.update({
-          where: { razorpayOrderId },
-          data: {
-            razorpayPaymentId,
-            webhookEvents: {
-              create: {
-                eventId,
-                type: event,
-                payload: payload || {}
-              }
-            },
-            status: "AUTHORIZED",
-          }
-        });
-        break;
-
-      default:
-    }
-
-    /**
-     * 6. Always respond 200
-     */
-    return res
-      .status(200)
-      .json(new ApiResponse(200, null, "Webhook processed successfully"));
+    return res.status(200).json(new ApiResponse(200, null, "Processed"));
   } catch (error) {
-    /**
-     * Important:
-     * Return 500 → Razorpay retries
-     */
+    console.error("[CASHFREE-WEBHOOK-ERROR]", error);
+    // 500 → Cashfree retries
     return res
       .status(500)
       .json(new ApiResponse(500, null, "Webhook processing failed"));
   }
 };
 
-export const verifyPayment = async (
-  req: Request,
+/**
+ * Called by the frontend payment-status page after the browser returns from
+ * Cashfree hosted checkout. Fetches authoritative status directly from Cashfree.
+ */
+export const verifyCashfreePayment = async (
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-
-    const secret = config.razorpayKeySecret;
-    const hmac = crypto.createHmac("sha256", secret);
-    hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
-    const generatedSignature = hmac.digest("hex");
-
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(generatedSignature),
-      Buffer.from(razorpay_signature),
-    );
-
-    if (!isValid) {
-      return next(new ApiError(400, "Invalid payment signature"));
-    }
+    const orderId = String(req.params.orderId);
 
     const payment = await prisma.payment.findUnique({
-      where: { razorpayOrderId: razorpay_order_id }
+      where: { cashfreeOrderId: orderId },
     });
 
     if (!payment) {
-      return next(new ApiError(404, "Payment record not found"));
+      throw new ApiError(404, "Payment record not found");
     }
 
-    if (payment.status !== "CAPTURED") {
-      await prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: "CAPTURED",
-          razorpayPaymentId: razorpay_payment_id,
-          razorpaySignature: razorpay_signature,
-          capturedAt: new Date(),
-        }
-      });
-
-      // Provision subscription
-      if (payment.metadata && (payment.metadata as any).planId) {
-        const metadata = payment.metadata as any;
-        const planId = metadata.planId;
-        const billingCycle = metadata.billingCycle || "monthly";
-        await provisionSubscription(payment.userId, planId, razorpay_order_id, billingCycle);
-      }
+    if (payment.userId !== req.user?.id) {
+      throw new ApiError(403, "You are not authorized to view this payment");
     }
 
-    res.status(200).json(new ApiResponse(200, { success: true }, "Payment verified successfully"));
+    const cfOrder = await CashfreeService.fetchOrder(orderId as string);
+    const orderStatus: string = cfOrder.order_status;
+
+    let updated = payment;
+    if (orderStatus === "PAID") {
+      updated = (await applyCashfreePaymentStatus(orderId as string, "PAID")) || payment;
+    } else if (orderStatus === "EXPIRED" || orderStatus === "TERMINATED") {
+      updated =
+        (await applyCashfreePaymentStatus(
+          orderId as string,
+          "FAILED",
+          undefined,
+          "Payment was not completed",
+        )) || payment;
+    }
+
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          orderId,
+          orderStatus,
+          paymentStatus: updated.status,
+        },
+        "Payment status fetched",
+      ),
+    );
   } catch (error) {
     next(error);
   }
@@ -473,7 +556,9 @@ export const getMyPayments = async (
       orderBy: { createdAt: "desc" },
     });
 
-    res.status(200).json(new ApiResponse(200, payments, "Payments retrieved successfully"));
+    res
+      .status(200)
+      .json(new ApiResponse(200, payments, "Payments retrieved successfully"));
   } catch (error) {
     next(error);
   }
