@@ -5,6 +5,9 @@ interface EmailOptions {
   email: string;
   subject: string;
   message: string;
+  /** Optional pre-rendered HTML body. When provided it is used verbatim instead of
+   * wrapping `message` in a default template. */
+  html?: string;
 }
 
 const isDev = config.nodeEnv === "development";
@@ -61,7 +64,7 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
             sender: { email: config.brevoFromEmail, name: "Job Portal" },
             to: [{ email: options.email }],
             subject: options.subject,
-            htmlContent: `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`
+            htmlContent: options.html || `<div style="padding: 20px; border: 1px solid #eee;"><h2>${options.subject}</h2><p>${options.message}</p></div>`
           })
         });
 
@@ -83,7 +86,7 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
       to: options.email,
       subject: options.subject,
       text: options.message,
-      html: `<h3>${options.subject}</h3><p>${options.message}</p>`,
+      html: options.html || `<h3>${options.subject}</h3><p>${options.message}</p>`,
     };
 
     const info = await emailTransporter.sendMail(mailOptions);
