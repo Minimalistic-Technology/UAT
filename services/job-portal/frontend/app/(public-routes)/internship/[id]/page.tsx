@@ -76,7 +76,7 @@ const Page = () => {
                     {internship.title}
                   </CardTitle>
                   <Link
-                    href={`/companies/${internship.company?.id || internship.company?._id}`}
+                    href={`/companies/${internship.company?.id}`}
                     className="hover:underline"
                   >
                     <p className="text-muted-foreground mt-1 flex items-center text-lg">
@@ -314,12 +314,8 @@ const Page = () => {
           <CompanyCard
             company={{
               ...internship.company,
-              id: internship.company?.id || internship.companyId,
-              location:
-                internship.company?.location ||
-                (internship.company?.locations?.[0]
-                  ? `${internship.company.locations[0].city}, ${internship.company.locations[0].country}`
-                  : undefined),
+              id: internship.company?.id,
+              location: internship.company?.location,
             } as any}
           />
           <div className="mt-6">

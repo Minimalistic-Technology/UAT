@@ -152,7 +152,7 @@ export default function CompanyDetailsPage() {
                       Open Positions
                     </span>
                     <span className="text-foreground font-semibold">
-                      {company.activeListings || company.activeJobs || jobs.length || 0}
+                      {company.activeJobs || jobs.length || 0}
                     </span>
                   </div>
                   {company.industry && (
@@ -221,7 +221,7 @@ export default function CompanyDetailsPage() {
         ) : jobs.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
             {jobs.map((job) => (
-              <JobCard key={job.id || job._id} job={job} />
+              <JobCard key={job.id} job={job} />
             ))}
           </div>
         ) : (
