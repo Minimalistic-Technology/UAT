@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { deleteFromCloudinary } from "../utils/cloudinary.js";
 import { getPagination } from "../utils/parse-pagination.js";
+import { emailKycReviewed } from "../utils/transactionalEmails.js";
 
 export const getAllUsers = async (
   req: Request,
@@ -297,6 +298,21 @@ export const updateKycStatus = async (
           data: { isVerified: true }
         });
       }
+    }
+
+    if (kycStatus === "APPROVED" || kycStatus === "REJECTED") {
+      const submitter = await prisma.user.findUnique({
+        where: { id: kycApplication.userId },
+        select: { email: true, firstName: true },
+      });
+
+      emailKycReviewed({
+        ownerEmail: submitter?.email,
+        ownerFirstName: submitter?.firstName,
+        kycId: kycApplication.id,
+        approved: kycStatus === "APPROVED",
+        rejectionReason: kycStatus === "REJECTED" ? note : null,
+      });
     }
 
     return res

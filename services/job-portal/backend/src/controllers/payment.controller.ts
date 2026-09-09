@@ -5,6 +5,10 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { config } from "../config/env.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
+import {
+  emailPaymentFailed,
+  emailSubscriptionActivated,
+} from "../utils/transactionalEmails.js";
 
 // Helper to provision subscription
 const provisionSubscription = async (
@@ -42,7 +46,7 @@ const provisionSubscription = async (
     plan.subscriptionDurationDays * durationMultiplier * 24 * 60 * 60 * 1000;
   const expiryDate = new Date(Date.now() + durationMilliseconds);
 
-  await prisma.subscription.create({
+  const subscription = await prisma.subscription.create({
     data: {
       companyId,
       planId,
@@ -53,6 +57,23 @@ const provisionSubscription = async (
       status: "ACTIVE",
       orderId,
     },
+  });
+
+  // Notify the purchaser that their plan is live — fire-and-forget.
+  const [buyer, payment] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId } }),
+    prisma.payment.findFirst({ where: { cashfreeOrderId: orderId } }),
+  ]);
+
+  emailSubscriptionActivated({
+    ownerEmail: buyer?.email,
+    ownerFirstName: buyer?.firstName,
+    planName: plan.name,
+    subscriptionId: subscription.id,
+    postsGranted: plan.maxActiveJobPosts,
+    expiryDate,
+    amountMinor: payment?.amount ?? null,
+    currency: payment?.currency ?? plan.currency ?? "INR",
   });
 };
 
@@ -112,7 +133,7 @@ const applyCashfreePaymentStatus = async (
     return updated;
   }
 
-  return prisma.payment.update({
+  const failed = await prisma.payment.update({
     where: { id: payment.id },
     data: {
       status: "FAILED",
@@ -121,6 +142,21 @@ const applyCashfreePaymentStatus = async (
       cfPaymentId: cfPaymentId || payment.cfPaymentId,
     },
   });
+
+  const buyer = await prisma.user.findUnique({ where: { id: failed.userId } });
+  const plan = metadata.planId
+    ? await prisma.plan.findUnique({ where: { id: metadata.planId } })
+    : null;
+
+  emailPaymentFailed({
+    userEmail: buyer?.email,
+    userFirstName: buyer?.firstName,
+    planName: plan?.name,
+    orderId: cashfreeOrderId,
+    reason: failureReason,
+  });
+
+  return failed;
 };
 
 export const createOrder = async (

@@ -4,6 +4,7 @@ import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
+import { notifyIfPostCreditsExhausted } from "../utils/postCreditsNotifier.js";
 
 export const getJobs = async (
   req: AuthRequest,
@@ -241,6 +242,8 @@ const job = await prisma.$transaction(async (tx) => {
         include: { jobDetails: true }
       });
 });
+
+    notifyIfPostCreditsExhausted(company.id);
 
     res.status(201).json(new ApiResponse(201, job, "Job created successfully"));
   } catch (error: any) {

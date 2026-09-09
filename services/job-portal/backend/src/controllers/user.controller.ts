@@ -13,6 +13,7 @@ import {
 } from "../constants/index.js";
 import { extractText } from "../lib/ats/extract-text.js";
 import { scoreResume } from "../lib/ats/scrorer.js";
+import { emailKycSubmitted } from "../utils/transactionalEmails.js";
 
 export const updateProfile = async (
   req: AuthRequest,
@@ -364,6 +365,12 @@ export const submitKyc = async (
         companyDocumentId: companyDoc.id,
         personalDocumentId: personalDoc.id,
       },
+    });
+
+    emailKycSubmitted({
+      ownerEmail: req.user.email,
+      ownerFirstName: req.user.firstName,
+      kycId: kyc.id,
     });
 
     const responseToSend = {
