@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import { buildBaseJobQuery } from "../utils/buildBaseJobQuery.js";
+import { notifyIfPostCreditsExhausted } from "../utils/postCreditsNotifier.js";
 
 export const getAllInternships = async (
   req: AuthRequest,
@@ -293,6 +294,8 @@ const internship = await prisma.$transaction(async (tx) => {
 
   return newListing;
 });
+
+    notifyIfPostCreditsExhausted(company.id);
 
     res.status(201).json(new ApiResponse(201, internship, "Internship created successfully"));
   } catch (error: any) {

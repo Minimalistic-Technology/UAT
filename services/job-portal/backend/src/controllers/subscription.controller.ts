@@ -4,6 +4,12 @@ import { prisma } from "../lib/prisma.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import CashfreeService from "../services/cashfree.service.js";
+import {
+  emailRefundProcessed,
+  emailSubscriptionActivated,
+  emailSubscriptionCancelled,
+  emailSubscriptionExpired,
+} from "../utils/transactionalEmails.js";
 
 export const getMyActiveSubscription = async (
   req: AuthRequest,
@@ -179,13 +185,25 @@ export const cancelMySubscription = async (
           data: { status: "REFUNDED" },
         });
 
+        const refundStatus =
+          refund.refundStatus === "SUCCESS" ? "PROCESSED" : "PENDING";
+
         await prisma.refund.create({
           data: {
             paymentId: payment.id,
             cashfreeRefundId: refund.cfRefundId,
             amount: refundAmountPaise,
-            status: refund.refundStatus === "SUCCESS" ? "PROCESSED" : "PENDING",
+            status: refundStatus,
           },
+        });
+
+        emailRefundProcessed({
+          ownerEmail: req.user?.email,
+          ownerFirstName: req.user?.firstName,
+          amountMinor: refundAmountPaise,
+          currency: payment.currency,
+          paymentId: payment.id,
+          status: refundStatus,
         });
 
         refundProcessed = true;
@@ -198,6 +216,19 @@ export const cancelMySubscription = async (
     const updatedSub = await prisma.subscription.update({
       where: { id: subscription.id },
       data: { status: "CANCELLED" }
+    });
+
+    const cancelledPlan = await prisma.plan.findUnique({
+      where: { id: subscription.planId },
+      select: { name: true },
+    });
+
+    emailSubscriptionCancelled({
+      ownerEmail: req.user?.email,
+      ownerFirstName: req.user?.firstName,
+      planName: cancelledPlan?.name || "your",
+      subscriptionId: subscription.id,
+      refundInitiated: refundProcessed,
     });
 
     res.status(200).json(
@@ -311,6 +342,21 @@ export const adminAssignSubscription = async (
       }
     });
 
+    const owner = await prisma.user.findUnique({
+      where: { id: company.ownerId },
+      select: { email: true, firstName: true },
+    });
+
+    emailSubscriptionActivated({
+      ownerEmail: owner?.email,
+      ownerFirstName: owner?.firstName,
+      planName: plan.name,
+      subscriptionId: subscription.id,
+      postsGranted: plan.maxActiveJobPosts,
+      expiryDate,
+      currency: plan.currency ?? "INR",
+    });
+
     res.status(201).json(
       new ApiResponse(
         201,
@@ -342,10 +388,40 @@ export const updateSubscriptionStatus = async (
       throw new ApiError(404, "Subscription not found");
     }
 
+    const newStatus = status.toUpperCase();
     const updatedSub = await prisma.subscription.update({
       where: { id: id as string },
-      data: { status: status.toUpperCase() as any }
+      data: { status: newStatus as any }
     });
+
+    if (
+      subscription.status !== newStatus &&
+      (newStatus === "CANCELLED" || newStatus === "EXPIRED")
+    ) {
+      const [company, plan] = await Promise.all([
+        prisma.company.findUnique({
+          where: { id: subscription.companyId },
+          select: { owner: { select: { email: true, firstName: true } } },
+        }),
+        prisma.plan.findUnique({
+          where: { id: subscription.planId },
+          select: { name: true },
+        }),
+      ]);
+
+      const emailArgs = {
+        ownerEmail: company?.owner?.email,
+        ownerFirstName: company?.owner?.firstName,
+        planName: plan?.name || "your",
+        subscriptionId: subscription.id,
+      };
+
+      if (newStatus === "EXPIRED") {
+        emailSubscriptionExpired(emailArgs);
+      } else {
+        emailSubscriptionCancelled(emailArgs);
+      }
+    }
 
     res.status(200).json(
       new ApiResponse(

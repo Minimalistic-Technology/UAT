@@ -4,6 +4,11 @@ import { AuthRequest } from "../middleware/auth.middleware.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import bcrypt from "bcryptjs";
+import {
+  emailCompanyMemberAdded,
+  emailCompanyMemberRemoved,
+  emailCompanyMemberStatusChanged,
+} from "../utils/transactionalEmails.js";
 
 export const getAllCompanyMembers = async (
   req: AuthRequest,
@@ -140,6 +145,18 @@ export const addMember = async (req: AuthRequest, res: Response) => {
       });
     });
 
+    const company = await prisma.company.findUnique({
+      where: { id: ownerMember.companyId },
+      select: { name: true },
+    });
+
+    emailCompanyMemberAdded({
+      memberEmail: email,
+      memberFirstName: firstName,
+      companyName: company?.name || "your company",
+      role: "HR",
+    });
+
     return res.status(201).json({
       success: true,
       message: "Employee added successfully",
@@ -215,6 +232,26 @@ export const updateMember = async (
         });
       }
     });
+
+    if (isActive !== undefined) {
+      const [memberUser, company] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: memberToUpdate.userId },
+          select: { email: true, firstName: true },
+        }),
+        prisma.company.findUnique({
+          where: { id: ownerMember.companyId },
+          select: { name: true },
+        }),
+      ]);
+
+      emailCompanyMemberStatusChanged({
+        memberEmail: memberUser?.email,
+        memberFirstName: memberUser?.firstName,
+        companyName: company?.name || "your company",
+        isActive: Boolean(isActive),
+      });
+    }
 
     return res
       .status(200)
@@ -318,9 +355,27 @@ export const removeMember = async (
       throw new ApiError(403, "Cannot delete members from other companies.");
     }
 
+    // Capture contact details before the account is deleted.
+    const [removedUser, company] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: memberToRemove.userId },
+        select: { email: true, firstName: true },
+      }),
+      prisma.company.findUnique({
+        where: { id: ownerMember.companyId },
+        select: { name: true },
+      }),
+    ]);
+
     await prisma.$transaction(async (tx) => {
       await tx.companyMember.delete({ where: { id: memberId } });
       await tx.user.delete({ where: { id: memberToRemove.userId } });
+    });
+
+    emailCompanyMemberRemoved({
+      memberEmail: removedUser?.email,
+      memberFirstName: removedUser?.firstName,
+      companyName: company?.name || "your company",
     });
 
     return res

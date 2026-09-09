@@ -4,6 +4,10 @@ import { ApplicationStatus, DraftType, JobStatus, CompanyRole } from "../../gene
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
+import {
+  emailApplicationStatusChanged,
+  emailInterviewScheduled,
+} from "../utils/transactionalEmails.js";
 
 export const createApplication = async (
   req: AuthRequest,
@@ -466,6 +470,29 @@ export const updateApplicationStatus = async (
       where: { id: id as string },
       data: updateData
     });
+
+    // Notify the job seeker — fire-and-forget, never blocks the response.
+    const seekerEmail = application.jobSeeker?.email;
+    const seekerFirstName = application.jobSeeker?.firstName;
+    const listingTitle = application.listing?.title || "your applied role";
+
+    if (interviewDate) {
+      emailInterviewScheduled({
+        seekerEmail,
+        seekerFirstName,
+        listingTitle,
+        interviewDate,
+        note,
+      });
+    } else {
+      emailApplicationStatusChanged({
+        seekerEmail,
+        seekerFirstName,
+        listingTitle,
+        status: status as string,
+        note,
+      });
+    }
 
     res
       .status(200)
