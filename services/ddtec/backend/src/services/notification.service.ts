@@ -553,7 +553,7 @@ class NotificationService {
                 from,
                 to,
                 replyTo: contactData.email,
-                subject: `New Contact Form Submission: ${contactData.firstName} ${contactData.lastName}`,
+                subject: `New Contact Form Submission: ${contactData.firstName} ${contactData.lastName} (${contactData.email})`,
                 html: `
                     <div style="font-family: sans-serif;">
                         <h3>New Contact Message</h3>
