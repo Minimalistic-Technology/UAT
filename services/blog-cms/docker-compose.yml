@@ -23,7 +23,6 @@ services:
       dockerfile: Dockerfile
     container_name: blog-cms
     ports:
-      # Host port is only exposed for the host-level nginx reverse proxy to reach.
       # Change the host side (left of the colon) if 1337 is already taken by another service.
       - "1337:1337"
     env_file:
