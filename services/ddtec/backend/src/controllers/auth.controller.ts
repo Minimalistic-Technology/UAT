@@ -179,14 +179,22 @@ export const register = async (req: Request, res: Response) => {
         const { firstName, lastName, email, phone, password, role, otp, accountType, employmentType, companyDetails, designation } = req.body;
 
         const disableOtp = process.env.DISABLE_OTP === 'true';
-        let otpRecord = null;
+        // Redis key of the OTP record that was matched, so we can clear it on success
+        let otpRedisKey: string | null = null;
 
         if (!disableOtp) {
-            // Verify OTP (Check both email and phone as potential identifiers)
+            // Verify OTP against Redis (sendOtp stores it there, keyed by the identifier used to request it)
             const identifiers = [email, phone].filter(Boolean);
-            otpRecord = await OTP.findOne({
-                identifier: { $in: identifiers }
-            }).sort({ createdAt: -1 });
+
+            let otpRecord: any = null;
+            for (const id of identifiers) {
+                const recordStr = await redisClient.get(`otp:${id}`);
+                if (recordStr) {
+                    otpRecord = JSON.parse(recordStr);
+                    otpRedisKey = `otp:${id}`;
+                    break;
+                }
+            }
 
             if (!otpRecord) {
                 return res.status(400).json({ msg: 'No OTP generated for this contact.' });
@@ -203,10 +211,10 @@ export const register = async (req: Request, res: Response) => {
                 if (otpRecord.attempts >= 3) {
                     const blockMinutes = Math.pow(2, otpRecord.attempts - 3) * 2; // 2, 4, 8...
                     otpRecord.lockUntil = Date.now() + blockMinutes * 60 * 1000;
-                    await otpRecord.save();
+                    await redisClient.set(otpRedisKey!, JSON.stringify(otpRecord), 'KEEPTTL', undefined);
                     return res.status(403).json({ msg: `Signup is temporarily locked due to multiple failed attempts. Please try again after ${blockMinutes} minute(s).` });
                 }
-                await otpRecord.save();
+                await redisClient.set(otpRedisKey!, JSON.stringify(otpRecord), 'KEEPTTL', undefined);
                 return res.status(400).json({ msg: 'Invalid OTP' });
             }
         }
@@ -282,8 +290,8 @@ export const register = async (req: Request, res: Response) => {
         }
 
         // Delete used OTP if we verified it
-        if (otpRecord) {
-            await OTP.deleteOne({ _id: otpRecord._id });
+        if (otpRedisKey) {
+            await redisClient.del(otpRedisKey);
         }
 
         const payload = {
@@ -652,29 +660,22 @@ export const createUser = async (req: Request, res: Response) => {
 
 // Admin: Toggle User Status
 export const toggleUserStatus = async (req: Request, res: Response) => {
-    console.log(`[DEBUG] toggleUserStatus called for ID: ${req.params.id}`);
     try {
         const user = await User.findById(req.params.id);
         if (!user) {
-            console.log(`[DEBUG] User not found for ID: ${req.params.id}`);
             return res.status(404).json({ msg: 'User not found' });
         }
 
         let newStatus: boolean;
         let updateQuery: any;
 
-        console.log('[DEBUG] Toggling User Status');
         // Ensure we have a boolean even if undefined
         newStatus = !user.isActive;
         updateQuery = { $set: { isActive: newStatus } };
 
-        console.log('[DEBUG] Updating user with query:', JSON.stringify(updateQuery));
-
         // Use findByIdAndUpdate to bypass strict schema validation for other fields (like firstName required)
         // that might be missing in legacy data.
         await User.findByIdAndUpdate(req.params.id, updateQuery, { new: true, runValidators: false });
-
-        console.log('[DEBUG] User updated successfully.');
 
         res.json({ msg: `User ${newStatus ? 'activated' : 'deactivated'}`, isActive: newStatus });
     } catch (err: any) {

@@ -7,11 +7,6 @@ dotenv.config(); // Load .env from current service directory
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
-console.log('[DEBUG] Environment Variables Check:');
-console.log(' - EMAIL_USER:', process.env.EMAIL_USER ? 'FOUND (Real Mode)' : 'MISSING (Sandbox Mode)');
-console.log(' - SMS_SERVICE: DISABLED (Use Email)');
-console.log(' - MONGO_URI:', process.env.MONGO_URI ? 'FOUND' : 'CONNECTED (HIDDEN)');
-
 // Trigger Email Verification on start
 import NotificationService from './services/notification.service';
 import SchedulerService from './services/scheduler.service';
