@@ -17,8 +17,6 @@ services:
     depends_on:
       ddtec-redis:
         condition: service_healthy
-    networks:
-      - web
 
   ddtec-redis:
     image: redis:7-alpine
@@ -33,12 +31,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
-    networks:
-      - web
 
 volumes:
   ddtec_redis_data:
-
-networks:
-  web:
-    external: true
