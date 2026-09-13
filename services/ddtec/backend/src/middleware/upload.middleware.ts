@@ -34,3 +34,27 @@ export const uploadQuotationItemImageMiddleware = (req: any, res: any, next: any
     });
 };
 
+const productImageStorage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'products',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+    } as any
+});
+
+export const uploadProductImages = multer({
+    storage: productImageStorage,
+    fileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+export const uploadProductImagesMiddleware = (req: any, res: any, next: any) => {
+    uploadProductImages.array('images', 6)(req, res, (err: any) => {
+        if (err) {
+            console.error('[UPLOAD ERROR] Product image upload error:', err);
+            return res.status(400).json({ msg: err.message || 'Failed to upload product image(s)' });
+        }
+        next();
+    });
+};
+

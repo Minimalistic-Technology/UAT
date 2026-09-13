@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../_context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator, CheckCircle2, BookmarkCheck } from "lucide-react";
+import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator, CheckCircle2, BookmarkCheck, Upload } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "./components/ToggleSwitch";
 import CategoriesView from "./components/CategoriesView";
@@ -161,8 +161,26 @@ const AdminDashboard = () => {
         sgst: ""
     });
 
+    interface NewProductFormErrors {
+        name?: string;
+        price?: string;
+        stock?: string;
+        category?: string;
+        cgst?: string;
+        sgst?: string;
+        discountPercentage?: string;
+        rating?: string;
+        lastMonthSales?: string;
+        couponCode?: string;
+    }
+    const [newProductErrors, setNewProductErrors] = useState<NewProductFormErrors>({});
+
     const [editingProduct, setEditingProduct] = useState<any>(null);
     const [viewingCoupons, setViewingCoupons] = useState<{ productName: string, coupons: any[] } | null>(null);
+    const [newProductImageDraft, setNewProductImageDraft] = useState("");
+    const [editProductImageDraft, setEditProductImageDraft] = useState("");
+    const [newProductImageFiles, setNewProductImageFiles] = useState<File[]>([]);
+    const [editProductImageFiles, setEditProductImageFiles] = useState<File[]>([]);
 
     // Create User State
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
@@ -430,34 +448,219 @@ const AdminDashboard = () => {
         fetchProducts();
     };
 
+    // Parses the comma-separated `imagesInput` string into a clean list of URLs
+    const parseImageUrlList = (imagesInput: string): string[] =>
+        imagesInput.split(',').map(u => u.trim()).filter(Boolean);
+
+    // Validates that a string is a well-formed, absolute http(s) image URL
+    const validateImageUrl = (rawUrl: string): string | null => {
+        const url = rawUrl.trim();
+        if (!url) return null;
+
+        let parsed: URL;
+        try {
+            parsed = new URL(url);
+        } catch {
+            return 'Enter a valid URL (must start with http:// or https://)';
+        }
+
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return 'Only http:// or https:// URLs are allowed';
+        }
+
+        return null;
+    };
+
+    // Adds one or more URLs as tags to the given form's image list in a single state update,
+    // running validation + dedup checks against both existing tags and each other.
+    const addImageUrlTags = (rawUrls: string[], target: 'new' | 'edit') => {
+        const currentInput = target === 'new' ? newProduct.imagesInput : editingProduct.imagesInput;
+        const existing = parseImageUrlList(currentInput);
+        const combined = [...existing];
+        let addedCount = 0;
+
+        for (const rawUrl of rawUrls) {
+            const url = rawUrl.trim().replace(/,$/, '').trim();
+            if (!url) continue;
+
+            const error = validateImageUrl(url);
+            if (error) {
+                showToast(error, 'error');
+                continue;
+            }
+
+            if (combined.some(u => u.toLowerCase() === url.toLowerCase())) {
+                showToast('This image URL has already been added', 'error');
+                continue;
+            }
+
+            combined.push(url);
+            addedCount++;
+        }
+
+        if (addedCount === 0) return;
+
+        const updated = combined.join(', ');
+        if (target === 'new') {
+            setNewProduct(prev => ({ ...prev, imagesInput: updated }));
+        } else {
+            setEditingProduct((prev: any) => ({ ...prev, imagesInput: updated }));
+        }
+    };
+
+    // Adds a single URL as a tag and clears the draft input (used for Enter key / blur)
+    const addImageUrlTag = (rawUrl: string, target: 'new' | 'edit') => {
+        if (!rawUrl.trim()) return;
+        addImageUrlTags([rawUrl], target);
+        if (target === 'new') setNewProductImageDraft("");
+        else setEditProductImageDraft("");
+    };
+
+    // Removes a single URL tag from the given form's image list
+    const removeImageUrlTag = (urlToRemove: string, target: 'new' | 'edit') => {
+        const currentInput = target === 'new' ? newProduct.imagesInput : editingProduct.imagesInput;
+        const updated = parseImageUrlList(currentInput).filter(u => u !== urlToRemove).join(', ');
+        if (target === 'new') {
+            setNewProduct(prev => ({ ...prev, imagesInput: updated }));
+        } else {
+            setEditingProduct((prev: any) => ({ ...prev, imagesInput: updated }));
+        }
+    };
+
+    // Handles typing in the image URL input: adds a tag on Enter, ignores stray commas here
+    // (commas are handled in the onChange handler so pasted lists split correctly)
+    const handleImageUrlInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, target: 'new' | 'edit') => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addImageUrlTag(target === 'new' ? newProductImageDraft : editProductImageDraft, target);
+        }
+    };
+
+    // Handles changes to the image URL draft input: splits on comma so both typing "url,"
+    // and pasting "url1, url2, url3" add tags immediately, keeping only the trailing
+    // (possibly incomplete) segment in the input.
+    const handleImageUrlInputChange = (value: string, target: 'new' | 'edit') => {
+        if (value.includes(',')) {
+            const parts = value.split(',');
+            const toAdd = parts.slice(0, -1);
+            addImageUrlTags(toAdd, target);
+            const remainder = parts[parts.length - 1];
+            if (target === 'new') setNewProductImageDraft(remainder);
+            else setEditProductImageDraft(remainder);
+        } else {
+            if (target === 'new') setNewProductImageDraft(value);
+            else setEditProductImageDraft(value);
+        }
+    };
+
+    // Queues selected image files locally — they are only uploaded to Cloudinary
+    // when the product form is actually submitted (create/update), not on selection.
+    const queueProductImageFiles = (files: FileList | null, target: 'new' | 'edit') => {
+        if (!files || files.length === 0) return;
+        const filesArray = Array.from(files);
+        if (target === 'new') {
+            setNewProductImageFiles(prev => [...prev, ...filesArray]);
+        } else {
+            setEditProductImageFiles(prev => [...prev, ...filesArray]);
+        }
+    };
+
+    const removeQueuedProductImageFile = (index: number, target: 'new' | 'edit') => {
+        if (target === 'new') {
+            setNewProductImageFiles(prev => prev.filter((_, i) => i !== index));
+        } else {
+            setEditProductImageFiles(prev => prev.filter((_, i) => i !== index));
+        }
+    };
+
+    const COUPON_CODE_REGEX = /^[A-Za-z0-9_-]{3,20}$/;
+
+    const validateNewProduct = (data: typeof newProduct): NewProductFormErrors => {
+        const errors: NewProductFormErrors = {};
+
+        if (!data.name.trim()) {
+            errors.name = 'Product name is required';
+        } else if (data.name.trim().length > 150) {
+            errors.name = 'Product name must be 150 characters or fewer';
+        }
+
+        if (data.price === "" || data.price === null) {
+            errors.price = 'Price is required';
+        } else if (isNaN(Number(data.price)) || Number(data.price) <= 0) {
+            errors.price = 'Price must be a number greater than 0';
+        }
+
+        if (data.stock === "" || data.stock === null) {
+            errors.stock = 'Stock is required';
+        } else if (isNaN(Number(data.stock)) || Number(data.stock) < 0 || !Number.isInteger(Number(data.stock))) {
+            errors.stock = 'Stock must be a whole number of 0 or more';
+        }
+
+        if (!data.category) {
+            errors.category = 'Category is required';
+        }
+
+        if (data.cgst !== "" && (isNaN(Number(data.cgst)) || Number(data.cgst) < 0 || Number(data.cgst) > 100)) {
+            errors.cgst = 'CGST must be between 0 and 100';
+        }
+
+        if (data.sgst !== "" && (isNaN(Number(data.sgst)) || Number(data.sgst) < 0 || Number(data.sgst) > 100)) {
+            errors.sgst = 'SGST must be between 0 and 100';
+        }
+
+        if (data.discountPercentage !== "" && (isNaN(Number(data.discountPercentage)) || Number(data.discountPercentage) < 0 || Number(data.discountPercentage) > 100)) {
+            errors.discountPercentage = 'Discount must be between 0 and 100';
+        }
+
+        if (data.rating !== "" && (isNaN(Number(data.rating)) || Number(data.rating) < 0 || Number(data.rating) > 5)) {
+            errors.rating = 'Rating must be between 0 and 5';
+        }
+
+        if (data.lastMonthSales !== "" && (isNaN(Number(data.lastMonthSales)) || Number(data.lastMonthSales) < 0 || !Number.isInteger(Number(data.lastMonthSales)))) {
+            errors.lastMonthSales = 'Last month sales must be a whole number of 0 or more';
+        }
+
+        if (data.couponCode.trim() && !COUPON_CODE_REGEX.test(data.couponCode.trim())) {
+            errors.couponCode = 'Coupon code must be 3-20 letters, numbers, hyphens or underscores';
+        }
+
+        return errors;
+    };
+
+    const hasNewProductErrors = (errors: NewProductFormErrors): boolean => Object.values(errors).some(Boolean);
+
     const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if ([newProduct.price, newProduct.stock, newProduct.discountPercentage, newProduct.cgst, newProduct.sgst]
-            .some(v => v !== "" && Number(v) < 0)) {
-            showToast("Price, stock, discount, CGST and SGST cannot be negative", "error");
+        const errors = validateNewProduct(newProduct);
+        setNewProductErrors(errors);
+        if (hasNewProductErrors(errors)) {
+            showToast("Please fix the highlighted fields", "error");
             return;
         }
 
         setIsSubmitting(true);
         try {
-            const imageList = newProduct.imagesInput.split(',').map(url => url.trim()).filter(url => url.length > 0);
+            const imageUrls = parseImageUrlList(newProduct.imagesInput);
 
-            const res = await api.post('/products', {
-                ...newProduct,
-                image: imageList[0] || "",
-                images: imageList,
-                price: Number(newProduct.price),
-                stock: Number(newProduct.stock),
-                rating: Number(newProduct.rating) || 0,
-                lastMonthSales: Number(newProduct.lastMonthSales) || 0,
-                brand: newProduct.brand,
-                modelName: newProduct.modelName,
-                couponCode: newProduct.couponCode || undefined,
-                discountPercentage: Number(newProduct.discountPercentage) || 0,
-                cgst: Number(newProduct.cgst) || 0,
-                sgst: Number(newProduct.sgst) || 0
-            });
+            const formData = new FormData();
+            formData.append('name', newProduct.name);
+            formData.append('price', String(Number(newProduct.price)));
+            formData.append('stock', String(Number(newProduct.stock)));
+            formData.append('description', newProduct.description);
+            formData.append('category', newProduct.category);
+            formData.append('brand', newProduct.brand);
+            formData.append('modelName', newProduct.modelName);
+            formData.append('rating', String(Number(newProduct.rating) || 0));
+            formData.append('lastMonthSales', String(Number(newProduct.lastMonthSales) || 0));
+            if (newProduct.couponCode) formData.append('couponCode', newProduct.couponCode);
+            formData.append('discountPercentage', String(Number(newProduct.discountPercentage) || 0));
+            formData.append('cgst', String(Number(newProduct.cgst) || 0));
+            formData.append('sgst', String(Number(newProduct.sgst) || 0));
+            imageUrls.forEach(url => formData.append('imageUrls', url));
+            newProductImageFiles.forEach(file => formData.append('images', file));
+
+            const res = await api.post('/products', formData);
 
             if (res.status === 200 || res.status === 201) {
                 fetchProducts();
@@ -466,6 +669,9 @@ const AdminDashboard = () => {
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", brand: "",
                     modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: ""
                 });
+                setNewProductImageDraft("");
+                setNewProductImageFiles([]);
+                setNewProductErrors({});
                 showToast("Product Added Successfully", "success");
             }
         } catch (error: any) {
@@ -498,6 +704,8 @@ const AdminDashboard = () => {
             cgst: String((product as any).cgst || 0),
             sgst: String((product as any).sgst || 0)
         });
+        setEditProductImageDraft("");
+        setEditProductImageFiles([]);
         setIsEditModalOpen(true);
     };
 
@@ -512,26 +720,33 @@ const AdminDashboard = () => {
 
         setIsSubmitting(true);
         try {
-            const imageList = editingProduct.imagesInput.split(',').map((url: string) => url.trim()).filter((url: string) => url.length > 0);
+            const imageUrls = parseImageUrlList(editingProduct.imagesInput);
 
-            const res = await api.put(`/products/${editingProduct._id}`, {
-                ...editingProduct,
-                image: imageList[0] || editingProduct.image,
-                images: imageList,
-                price: Number(editingProduct.price),
-                stock: Number(editingProduct.stock),
-                rating: Number(editingProduct.rating),
-                lastMonthSales: Number(editingProduct.lastMonthSales),
-                couponCode: editingProduct.couponCode || undefined,
-                discountPercentage: Number(editingProduct.discountPercentage) || 0,
-                cgst: Number(editingProduct.cgst) || 0,
-                sgst: Number(editingProduct.sgst) || 0
-            });
+            const formData = new FormData();
+            formData.append('name', editingProduct.name);
+            formData.append('price', String(Number(editingProduct.price)));
+            formData.append('stock', String(Number(editingProduct.stock)));
+            formData.append('description', editingProduct.description || '');
+            formData.append('category', editingProduct.category || '');
+            formData.append('brand', editingProduct.brand || '');
+            formData.append('modelName', editingProduct.modelName || '');
+            formData.append('rating', String(Number(editingProduct.rating) || 0));
+            formData.append('lastMonthSales', String(Number(editingProduct.lastMonthSales) || 0));
+            if (editingProduct.couponCode) formData.append('couponCode', editingProduct.couponCode);
+            formData.append('discountPercentage', String(Number(editingProduct.discountPercentage) || 0));
+            formData.append('cgst', String(Number(editingProduct.cgst) || 0));
+            formData.append('sgst', String(Number(editingProduct.sgst) || 0));
+            formData.append('imagesFieldPresent', 'true');
+            imageUrls.forEach((url: string) => formData.append('imageUrls', url));
+            editProductImageFiles.forEach(file => formData.append('images', file));
+
+            const res = await api.put(`/products/${editingProduct._id}`, formData);
 
             if (res.status === 200) {
                 fetchProducts();
                 setIsEditModalOpen(false);
                 setEditingProduct(null);
+                setEditProductImageFiles([]);
                 showToast("Product Updated Successfully", "success");
             }
         } catch (error: any) {
@@ -1212,7 +1427,7 @@ const AdminDashboard = () => {
                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">Manage Products</h2>
-                                <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors">
+                                <button onClick={() => { setNewProductErrors({}); setNewProductImageFiles([]); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors">
                                     <Plus className="size-4" /> Add Product
                                 </button>
                             </div>
@@ -1595,22 +1810,28 @@ const AdminDashboard = () => {
                                         <form onSubmit={handleAddProduct} className="flex flex-col max-h-[90vh]">
                                             <div className="p-6 space-y-4 overflow-y-auto">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Name</label>
+                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Name <span className="text-red-500">*</span></label>
                                                     <div className="relative">
                                                         <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
                                                         <input
                                                             required
                                                             type="text"
                                                             value={newProduct.name}
-                                                            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                                                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            onChange={(e) => {
+                                                                setNewProduct({ ...newProduct, name: e.target.value });
+                                                                if (newProductErrors.name) setNewProductErrors(prev => ({ ...prev, name: undefined }));
+                                                            }}
+                                                            className={`w-full pl-10 pr-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.name ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                             placeholder="e.g. Cordless Drill"
                                                         />
                                                     </div>
+                                                    {newProductErrors.name && (
+                                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.name}</p>
+                                                    )}
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Price (₹)</label>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Price (₹) <span className="text-red-500">*</span></label>
                                                         <div className="relative">
                                                             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
                                                             <input
@@ -1618,23 +1839,35 @@ const AdminDashboard = () => {
                                                                 type="number"
                                                                 min="0"
                                                                 value={newProduct.price}
-                                                                onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                                                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                                onChange={(e) => {
+                                                                    setNewProduct({ ...newProduct, price: e.target.value });
+                                                                    if (newProductErrors.price) setNewProductErrors(prev => ({ ...prev, price: undefined }));
+                                                                }}
+                                                                className={`w-full pl-10 pr-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.price ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                                 placeholder="0.00"
                                                             />
                                                         </div>
+                                                        {newProductErrors.price && (
+                                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.price}</p>
+                                                        )}
                                                     </div>
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stock</label>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stock <span className="text-red-500">*</span></label>
                                                         <input
                                                             required
                                                             type="number"
                                                             min="0"
                                                             value={newProduct.stock}
-                                                            onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            onChange={(e) => {
+                                                                setNewProduct({ ...newProduct, stock: e.target.value });
+                                                                if (newProductErrors.stock) setNewProductErrors(prev => ({ ...prev, stock: undefined }));
+                                                            }}
+                                                            className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.stock ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                             placeholder="100"
                                                         />
+                                                        {newProductErrors.stock && (
+                                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.stock}</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
@@ -1643,24 +1876,38 @@ const AdminDashboard = () => {
                                                         <input
                                                             type="number"
                                                             min="0"
+                                                            max="100"
                                                             step="0.01"
                                                             value={newProduct.cgst}
-                                                            onChange={(e) => setNewProduct({ ...newProduct, cgst: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            onChange={(e) => {
+                                                                setNewProduct({ ...newProduct, cgst: e.target.value });
+                                                                if (newProductErrors.cgst) setNewProductErrors(prev => ({ ...prev, cgst: undefined }));
+                                                            }}
+                                                            className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.cgst ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                             placeholder="9"
                                                         />
+                                                        {newProductErrors.cgst && (
+                                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.cgst}</p>
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
                                                         <input
                                                             type="number"
                                                             min="0"
+                                                            max="100"
                                                             step="0.01"
                                                             value={newProduct.sgst}
-                                                            onChange={(e) => setNewProduct({ ...newProduct, sgst: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            onChange={(e) => {
+                                                                setNewProduct({ ...newProduct, sgst: e.target.value });
+                                                                if (newProductErrors.sgst) setNewProductErrors(prev => ({ ...prev, sgst: undefined }));
+                                                            }}
+                                                            className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.sgst ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                             placeholder="9"
                                                         />
+                                                        {newProductErrors.sgst && (
+                                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.sgst}</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
@@ -1694,20 +1941,33 @@ const AdminDashboard = () => {
                                                             min="0"
                                                             max="5"
                                                             value={newProduct.rating}
-                                                            onChange={(e) => setNewProduct({ ...newProduct, rating: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            onChange={(e) => {
+                                                                setNewProduct({ ...newProduct, rating: e.target.value });
+                                                                if (newProductErrors.rating) setNewProductErrors(prev => ({ ...prev, rating: undefined }));
+                                                            }}
+                                                            className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.rating ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                             placeholder="4.5"
                                                         />
+                                                        {newProductErrors.rating && (
+                                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.rating}</p>
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Last Month Sales</label>
                                                         <input
                                                             type="number"
+                                                            min="0"
                                                             value={newProduct.lastMonthSales}
-                                                            onChange={(e) => setNewProduct({ ...newProduct, lastMonthSales: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            onChange={(e) => {
+                                                                setNewProduct({ ...newProduct, lastMonthSales: e.target.value });
+                                                                if (newProductErrors.lastMonthSales) setNewProductErrors(prev => ({ ...prev, lastMonthSales: undefined }));
+                                                            }}
+                                                            className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.lastMonthSales ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                             placeholder="50"
                                                         />
+                                                        {newProductErrors.lastMonthSales && (
+                                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.lastMonthSales}</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
@@ -1716,52 +1976,132 @@ const AdminDashboard = () => {
                                                         <input
                                                             type="text"
                                                             value={newProduct.couponCode}
-                                                            onChange={(e) => setNewProduct({ ...newProduct, couponCode: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            onChange={(e) => {
+                                                                setNewProduct({ ...newProduct, couponCode: e.target.value });
+                                                                if (newProductErrors.couponCode) setNewProductErrors(prev => ({ ...prev, couponCode: undefined }));
+                                                            }}
+                                                            className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.couponCode ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                             placeholder="e.g. SAVE10"
                                                         />
+                                                        {newProductErrors.couponCode && (
+                                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.couponCode}</p>
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Discount (%)</label>
                                                         <input
                                                             type="number"
                                                             min="0"
+                                                            max="100"
                                                             value={newProduct.discountPercentage}
-                                                            onChange={(e) => setNewProduct({ ...newProduct, discountPercentage: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            onChange={(e) => {
+                                                                setNewProduct({ ...newProduct, discountPercentage: e.target.value });
+                                                                if (newProductErrors.discountPercentage) setNewProductErrors(prev => ({ ...prev, discountPercentage: undefined }));
+                                                            }}
+                                                            className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.discountPercentage ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                             placeholder="10"
                                                         />
+                                                        {newProductErrors.discountPercentage && (
+                                                            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.discountPercentage}</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
+                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category <span className="text-red-500">*</span></label>
                                                     <select
                                                         required
                                                         value={newProduct.category}
-                                                        onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-                                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                        onChange={(e) => {
+                                                            setNewProduct({ ...newProduct, category: e.target.value });
+                                                            if (newProductErrors.category) setNewProductErrors(prev => ({ ...prev, category: undefined }));
+                                                        }}
+                                                        className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.category ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                     >
                                                         <option value="">Select Category</option>
                                                         {categoriesList.map(cat => (
                                                             <option key={cat._id} value={cat._id}>{cat.name}</option>
                                                         ))}
                                                     </select>
+                                                    {newProductErrors.category && (
+                                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.category}</p>
+                                                    )}
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image URL</label>
+                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image URLs</label>
                                                     <div className="relative">
                                                         <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image URLs (comma separated)</label>
-                                                        <div className="relative">
-                                                            <ImageIcon className="absolute left-3 top-3 text-slate-400 size-4" />
-                                                            <textarea
-                                                                value={newProduct.imagesInput}
-                                                                onChange={(e) => setNewProduct({ ...newProduct, imagesInput: e.target.value })}
-                                                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none h-24 resize-none"
-                                                                placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                                                            />
-                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={newProductImageDraft}
+                                                            onChange={(e) => handleImageUrlInputChange(e.target.value, 'new')}
+                                                            onKeyDown={(e) => handleImageUrlInputKeyDown(e, 'new')}
+                                                            onBlur={() => addImageUrlTag(newProductImageDraft, 'new')}
+                                                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="Paste a URL and press Enter or comma to add"
+                                                        />
                                                     </div>
+                                                    {parseImageUrlList(newProduct.imagesInput).length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                                            {parseImageUrlList(newProduct.imagesInput).map((url, idx) => (
+                                                                <span
+                                                                    key={`${url}-${idx}`}
+                                                                    className="inline-flex items-center gap-1.5 max-w-full px-2.5 py-1 rounded-full bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 text-xs font-medium text-teal-700 dark:text-teal-300"
+                                                                >
+                                                                    <span className="truncate max-w-[220px]" title={url}>{url}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeImageUrlTag(url, 'new')}
+                                                                        className="text-teal-500 hover:text-red-500 shrink-0"
+                                                                        title="Remove"
+                                                                    >
+                                                                        <X className="size-3" />
+                                                                    </button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex items-center gap-3 my-3">
+                                                        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                                                        <span className="text-[11px] font-bold text-slate-400 uppercase">Or</span>
+                                                        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                                                    </div>
+
+                                                    <label className="flex flex-col items-center justify-center gap-1.5 w-full py-6 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer transition-all">
+                                                        <Upload className="size-5" />
+                                                        Upload Image(s)
+                                                        <span className="text-[11px] font-normal text-slate-400">You can select multiple image files at once. They&apos;ll be uploaded when you save.</span>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            multiple
+                                                            onChange={(e) => {
+                                                                queueProductImageFiles(e.target.files, 'new');
+                                                                e.target.value = '';
+                                                            }}
+                                                            className="hidden"
+                                                        />
+                                                    </label>
+                                                    {newProductImageFiles.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                                            {newProductImageFiles.map((file, idx) => (
+                                                                <span
+                                                                    key={`${file.name}-${idx}`}
+                                                                    className="inline-flex items-center gap-1.5 max-w-full px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-xs font-medium text-indigo-700 dark:text-indigo-300"
+                                                                >
+                                                                    <span className="truncate max-w-[220px]" title={file.name}>{file.name}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeQueuedProductImageFile(idx, 'new')}
+                                                                        className="text-indigo-500 hover:text-red-500 shrink-0"
+                                                                        title="Remove"
+                                                                    >
+                                                                        <X className="size-3" />
+                                                                    </button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
@@ -1816,7 +2156,7 @@ const AdminDashboard = () => {
                                         <form onSubmit={handleUpdateProduct} className="flex flex-col max-h-[90vh]">
                                             <div className="p-6 space-y-4 overflow-y-auto">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Name</label>
+                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Name <span className="text-red-500">*</span></label>
                                                     <div className="relative">
                                                         <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
                                                         <input
@@ -1831,7 +2171,7 @@ const AdminDashboard = () => {
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Price (₹)</label>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Price (₹) <span className="text-red-500">*</span></label>
                                                         <div className="relative">
                                                             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
                                                             <input
@@ -1846,7 +2186,7 @@ const AdminDashboard = () => {
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stock</label>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stock <span className="text-red-500">*</span></label>
                                                         <input
                                                             required
                                                             type="number"
@@ -1932,7 +2272,7 @@ const AdminDashboard = () => {
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category</label>
+                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Category <span className="text-red-500">*</span></label>
                                                     <select
                                                         required
                                                         value={editingProduct.category}
@@ -1946,20 +2286,81 @@ const AdminDashboard = () => {
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image URL</label>
+                                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image URLs</label>
                                                     <div className="relative">
                                                         <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 size-4" />
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image URLs (comma separated)</label>
-                                                        <div className="relative">
-                                                            <ImageIcon className="absolute left-3 top-3 text-slate-400 size-4" />
-                                                            <textarea
-                                                                value={editingProduct.imagesInput}
-                                                                onChange={(e) => setEditingProduct({ ...editingProduct, imagesInput: e.target.value })}
-                                                                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none h-24 resize-none"
-                                                                placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                                                            />
-                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={editProductImageDraft}
+                                                            onChange={(e) => handleImageUrlInputChange(e.target.value, 'edit')}
+                                                            onKeyDown={(e) => handleImageUrlInputKeyDown(e, 'edit')}
+                                                            onBlur={() => addImageUrlTag(editProductImageDraft, 'edit')}
+                                                            className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="Paste a URL and press Enter or comma to add"
+                                                        />
                                                     </div>
+                                                    {parseImageUrlList(editingProduct.imagesInput).length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                                            {parseImageUrlList(editingProduct.imagesInput).map((url, idx) => (
+                                                                <span
+                                                                    key={`${url}-${idx}`}
+                                                                    className="inline-flex items-center gap-1.5 max-w-full px-2.5 py-1 rounded-full bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 text-xs font-medium text-teal-700 dark:text-teal-300"
+                                                                >
+                                                                    <span className="truncate max-w-[220px]" title={url}>{url}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeImageUrlTag(url, 'edit')}
+                                                                        className="text-teal-500 hover:text-red-500 shrink-0"
+                                                                        title="Remove"
+                                                                    >
+                                                                        <X className="size-3" />
+                                                                    </button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex items-center gap-3 my-3">
+                                                        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                                                        <span className="text-[11px] font-bold text-slate-400 uppercase">Or</span>
+                                                        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                                                    </div>
+
+                                                    <label className="flex flex-col items-center justify-center gap-1.5 w-full py-6 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer transition-all">
+                                                        <Upload className="size-5" />
+                                                        Upload Image(s)
+                                                        <span className="text-[11px] font-normal text-slate-400">You can select multiple image files at once. They&apos;ll be uploaded when you save.</span>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            multiple
+                                                            onChange={(e) => {
+                                                                queueProductImageFiles(e.target.files, 'edit');
+                                                                e.target.value = '';
+                                                            }}
+                                                            className="hidden"
+                                                        />
+                                                    </label>
+                                                    {editProductImageFiles.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                                            {editProductImageFiles.map((file, idx) => (
+                                                                <span
+                                                                    key={`${file.name}-${idx}`}
+                                                                    className="inline-flex items-center gap-1.5 max-w-full px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 text-xs font-medium text-indigo-700 dark:text-indigo-300"
+                                                                >
+                                                                    <span className="truncate max-w-[220px]" title={file.name}>{file.name}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => removeQueuedProductImageFile(idx, 'edit')}
+                                                                        className="text-indigo-500 hover:text-red-500 shrink-0"
+                                                                        title="Remove"
+                                                                    >
+                                                                        <X className="size-3" />
+                                                                    </button>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>

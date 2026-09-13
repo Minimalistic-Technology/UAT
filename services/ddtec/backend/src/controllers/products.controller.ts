@@ -17,6 +17,19 @@ const clearProductCache = async () => {
         console.error('Failed to clear product cache:', err);
     }
 };
+// Normalizes a form field that may arrive as undefined, a single string, or an array of
+// strings (multipart forms collapse a single repeated field to a plain string).
+const normalizeToStringArray = (value: unknown): string[] => {
+    if (value === undefined || value === null) return [];
+    const arr = Array.isArray(value) ? value : [value];
+    return arr.map(v => String(v).trim()).filter(Boolean);
+};
+
+const extractUploadedImageUrls = (req: Request): string[] => {
+    const files = (req.files as Express.Multer.File[]) || [];
+    return files.map(f => (f as any).path || (f as any).secure_url).filter(Boolean);
+};
+
 export const getProducts = async (req: Request, res: Response) => {
     try {
         const { showOnHome, pincode } = req.query;
@@ -117,13 +130,21 @@ export const createProduct = async (req: Request, res: Response) => {
 
         const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, cgst, sgst, costPrice } = req.body;
 
+        // Combine manually entered image URLs (`imageUrls`) with newly uploaded files,
+        // uploaded to Cloudinary by `uploadProductImagesMiddleware` above this handler.
+        const manualImageUrls = normalizeToStringArray(req.body.imageUrls);
+        const uploadedImageUrls = extractUploadedImageUrls(req);
+        const allImages = manualImageUrls.length || uploadedImageUrls.length
+            ? [...manualImageUrls, ...uploadedImageUrls]
+            : (images || []);
+
         const newProduct = new Product({
             name,
             price,
             costPrice: costPrice || 0,
             description,
-            image,
-            images: images || [],
+            image: allImages[0] || image || '',
+            images: allImages,
             category,
             stock: stock || 0,
             rating: req.body.rating || 0,
@@ -163,12 +184,27 @@ export const updateProduct = async (req: Request, res: Response) => {
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
 
+        // Only touch images when the request actually carries image data — the edit form
+        // marks this explicitly with `imagesFieldPresent` since it always resubmits the
+        // full desired image list (so removing every tag intentionally clears images too).
+        // Other callers (e.g. a stock-only PATCH from the warehouse view) never set this
+        // and must leave existing images untouched.
+        const manualImageUrls = normalizeToStringArray(req.body.imageUrls);
+        const uploadedImageUrls = extractUploadedImageUrls(req);
+        const imagesSubmitted = req.body.imagesFieldPresent === 'true' || uploadedImageUrls.length > 0;
+        if (imagesSubmitted) {
+            const allImages = [...manualImageUrls, ...uploadedImageUrls];
+            product.images = allImages;
+            product.image = allImages[0] || '';
+        } else if (images !== undefined) {
+            product.images = images;
+            product.image = image || product.image;
+        }
+
         product.name = name || product.name;
         product.price = price || product.price;
         product.costPrice = costPrice !== undefined ? costPrice : product.costPrice;
         product.description = description || product.description;
-        product.image = image || product.image;
-        product.images = images || product.images;
         product.category = category || product.category;
         product.stock = stock !== undefined ? stock : product.stock;
         product.rating = req.body.rating !== undefined ? req.body.rating : product.rating;
