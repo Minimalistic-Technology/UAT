@@ -50,6 +50,47 @@ interface QuotationLineItem {
     sgst: number;
 }
 
+// Indian states / union territories with their GST state codes
+const INDIAN_STATES: { name: string; code: string }[] = [
+    { name: "Jammu and Kashmir", code: "01" },
+    { name: "Himachal Pradesh", code: "02" },
+    { name: "Punjab", code: "03" },
+    { name: "Chandigarh", code: "04" },
+    { name: "Uttarakhand", code: "05" },
+    { name: "Haryana", code: "06" },
+    { name: "Delhi", code: "07" },
+    { name: "Rajasthan", code: "08" },
+    { name: "Uttar Pradesh", code: "09" },
+    { name: "Bihar", code: "10" },
+    { name: "Sikkim", code: "11" },
+    { name: "Arunachal Pradesh", code: "12" },
+    { name: "Nagaland", code: "13" },
+    { name: "Manipur", code: "14" },
+    { name: "Mizoram", code: "15" },
+    { name: "Tripura", code: "16" },
+    { name: "Meghalaya", code: "17" },
+    { name: "Assam", code: "18" },
+    { name: "West Bengal", code: "19" },
+    { name: "Jharkhand", code: "20" },
+    { name: "Odisha", code: "21" },
+    { name: "Chhattisgarh", code: "22" },
+    { name: "Madhya Pradesh", code: "23" },
+    { name: "Gujarat", code: "24" },
+    { name: "Dadra and Nagar Haveli and Daman and Diu", code: "26" },
+    { name: "Maharashtra", code: "27" },
+    { name: "Karnataka", code: "29" },
+    { name: "Goa", code: "30" },
+    { name: "Lakshadweep", code: "31" },
+    { name: "Kerala", code: "32" },
+    { name: "Tamil Nadu", code: "33" },
+    { name: "Puducherry", code: "34" },
+    { name: "Andaman and Nicobar Islands", code: "35" },
+    { name: "Telangana", code: "36" },
+    { name: "Andhra Pradesh", code: "37" },
+    { name: "Ladakh", code: "38" },
+    { name: "Other Territory", code: "97" }
+];
+
 export default function CreateQuotationView() {
     const { showToast } = useToast();
     const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
@@ -62,11 +103,18 @@ export default function CreateQuotationView() {
     const [isCatalogOpen, setIsCatalogOpen] = useState(false);
     const catalogDropdownRef = React.useRef<HTMLDivElement>(null);
 
-    // Close catalog dropdown on click outside
+    // Searchable state combobox state (Local search, zero network calls)
+    const [isStateOpen, setIsStateOpen] = useState(false);
+    const stateDropdownRef = React.useRef<HTMLDivElement>(null);
+
+    // Close catalog / state dropdowns on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (catalogDropdownRef.current && !catalogDropdownRef.current.contains(event.target as Node)) {
                 setIsCatalogOpen(false);
+            }
+            if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
+                setIsStateOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -278,6 +326,12 @@ export default function CreateQuotationView() {
     const filteredCatalogItems = availableCatalogItems.filter(c =>
         c.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
         (c.hsnCode && c.hsnCode.toLowerCase().includes(catalogSearch.toLowerCase()))
+    );
+
+    // Filter predefined Indian states locally in-memory by search query
+    const filteredStates = INDIAN_STATES.filter(s =>
+        s.name.toLowerCase().includes(buyer.stateName.toLowerCase()) ||
+        s.code.includes(buyer.stateName.trim())
     );
 
     // Financial Calculations
@@ -523,13 +577,60 @@ export default function CreateQuotationView() {
                         <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
                             State Name
                         </label>
-                        <input
-                            type="text"
-                            placeholder="Maharashtra (27)"
-                            value={buyer.stateName}
-                            onChange={(e) => setBuyer({ ...buyer, stateName: e.target.value })}
-                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
-                        />
+                        <div className="relative" ref={stateDropdownRef}>
+                            <input
+                                type="text"
+                                placeholder="Search state... e.g. Maharashtra (27)"
+                                value={buyer.stateName}
+                                onChange={(e) => {
+                                    setBuyer({ ...buyer, stateName: e.target.value });
+                                    setIsStateOpen(true);
+                                }}
+                                onFocus={() => setIsStateOpen(true)}
+                                className="w-full pl-3.5 pr-8 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
+                            />
+                            {buyer.stateName ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setBuyer({ ...buyer, stateName: "" })}
+                                    className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+                                    title="Clear"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            ) : (
+                                <ChevronDown className="absolute right-2.5 top-2.5 size-3.5 text-slate-400 pointer-events-none" />
+                            )}
+
+                            {isStateOpen && (
+                                <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                                    {filteredStates.length === 0 ? (
+                                        <div className="px-4 py-4 text-xs text-slate-400 text-center">
+                                            No matching state found
+                                        </div>
+                                    ) : (
+                                        filteredStates.map(s => (
+                                            <button
+                                                key={s.code}
+                                                type="button"
+                                                onClick={() => {
+                                                    setBuyer({ ...buyer, stateName: `${s.name} (${s.code})` });
+                                                    setIsStateOpen(false);
+                                                }}
+                                                className="w-full text-left px-3.5 py-2 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-2 group cursor-pointer"
+                                            >
+                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
+                                                    {s.name}
+                                                </span>
+                                                <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                                                    {s.code}
+                                                </span>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Recipient Email(s) (TO) */}
