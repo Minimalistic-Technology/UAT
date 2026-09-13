@@ -108,8 +108,9 @@ export default function ScheduleMailView() {
     // Preview Modal state
     const [previewItem, setPreviewItem] = useState<ScheduledEmailItem | null>(null);
 
-    // Add Custom Template modal state
+    // Add/Edit Custom Template modal state
     const [isAddTemplateModalOpen, setIsAddTemplateModalOpen] = useState<boolean>(false);
+    const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
     const [newTemplateName, setNewTemplateName] = useState<string>("");
     const [newTemplateCategory, setNewTemplateCategory] = useState<string>("Custom");
     const [newTemplateDescription, setNewTemplateDescription] = useState<string>("");
@@ -231,6 +232,20 @@ export default function ScheduleMailView() {
 
     const handleOpenAddTemplateModal = () => {
         resetNewTemplateForm();
+        setEditingTemplateId(null);
+        setIsAddTemplateModalOpen(true);
+    };
+
+    const handleOpenEditTemplateModal = (e: React.MouseEvent, template: EmailTemplate) => {
+        e.stopPropagation();
+        setEditingTemplateId(template.id);
+        setNewTemplateName(template.name);
+        setNewTemplateCategory(template.category);
+        setNewTemplateDescription(template.description);
+        setNewTemplateSubject(template.subject);
+        setNewTemplatePreviewText(template.previewText);
+        setNewTemplateBadge(template.badge);
+        setNewTemplateHtml(template.html);
         setIsAddTemplateModalOpen(true);
     };
 
@@ -241,21 +256,26 @@ export default function ScheduleMailView() {
             return;
         }
 
+        const payload = {
+            name: newTemplateName.trim(),
+            category: newTemplateCategory.trim() || "Custom",
+            description: newTemplateDescription.trim(),
+            subject: newTemplateSubject.trim(),
+            previewText: newTemplatePreviewText.trim(),
+            badge: newTemplateBadge.trim() || "CUSTOM",
+            html: newTemplateHtml
+        };
+
         try {
             setIsSavingTemplate(true);
-            const res = await api.post("/admin/scheduled-emails/templates", {
-                name: newTemplateName.trim(),
-                category: newTemplateCategory.trim() || "Custom",
-                description: newTemplateDescription.trim(),
-                subject: newTemplateSubject.trim(),
-                previewText: newTemplatePreviewText.trim(),
-                badge: newTemplateBadge.trim() || "CUSTOM",
-                html: newTemplateHtml
-            });
+            const res = editingTemplateId
+                ? await api.put(`/admin/scheduled-emails/templates/${editingTemplateId}`, payload)
+                : await api.post("/admin/scheduled-emails/templates", payload);
 
             if (res.data?.success) {
-                showToast("Custom template saved successfully!", "success");
+                showToast(editingTemplateId ? "Custom template updated successfully!" : "Custom template saved successfully!", "success");
                 setIsAddTemplateModalOpen(false);
+                setEditingTemplateId(null);
                 await fetchData();
             }
         } catch (error: any) {
@@ -802,17 +822,27 @@ export default function ScheduleMailView() {
                                                     }`}
                                                 >
                                                     {tpl.isCustom && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => handleDeleteTemplate(e, tpl)}
-                                                            className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
-                                                            title="Delete custom template"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </button>
+                                                        <div className="absolute top-3 right-3 flex items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => handleOpenEditTemplateModal(e, tpl)}
+                                                                className="p-1.5 rounded-lg text-slate-400 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-colors cursor-pointer"
+                                                                title="Edit custom template"
+                                                            >
+                                                                <Edit3 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => handleDeleteTemplate(e, tpl)}
+                                                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
+                                                                title="Delete custom template"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
                                                     )}
                                                     <div>
-                                                        <div className="flex items-center justify-between mb-2 pr-6">
+                                                        <div className={`flex items-center justify-between mb-2 ${tpl.isCustom ? "pr-14" : "pr-6"}`}>
                                                             <span className="px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
                                                                 {tpl.badge}
                                                             </span>
@@ -1175,11 +1205,11 @@ export default function ScheduleMailView() {
                                         <FileText className="w-5 h-5" />
                                     </div>
                                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                                        Add Custom Email Template
+                                        {editingTemplateId ? "Edit Custom Email Template" : "Add Custom Email Template"}
                                     </h2>
                                 </div>
                                 <button
-                                    onClick={() => setIsAddTemplateModalOpen(false)}
+                                    onClick={() => { setIsAddTemplateModalOpen(false); setEditingTemplateId(null); }}
                                     className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700 transition-colors"
                                 >
                                     <XCircle className="w-5 h-5" />
@@ -1286,7 +1316,7 @@ export default function ScheduleMailView() {
                                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                                     <button
                                         type="button"
-                                        onClick={() => setIsAddTemplateModalOpen(false)}
+                                        onClick={() => { setIsAddTemplateModalOpen(false); setEditingTemplateId(null); }}
                                         className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
                                     >
                                         Cancel
@@ -1297,7 +1327,7 @@ export default function ScheduleMailView() {
                                         className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm transition-all shadow-md flex items-center gap-2 cursor-pointer"
                                     >
                                         <FileText className="w-4 h-4" />
-                                        <span>{isSavingTemplate ? "Saving..." : "Save Template"}</span>
+                                        <span>{isSavingTemplate ? "Saving..." : (editingTemplateId ? "Update Template" : "Save Template")}</span>
                                     </button>
                                 </div>
                             </form>

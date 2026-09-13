@@ -111,6 +111,51 @@ export const createCustomTemplate = async (req: any, res: Response): Promise<voi
 };
 
 /**
+ * Update an existing custom email template
+ */
+export const updateCustomTemplate = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { name, category, description, subject, previewText, badge, html } = req.body;
+
+        if (!name || !subject || !html) {
+            res.status(400).json({ success: false, msg: 'Please provide a template Name, Subject, and HTML content.' });
+            return;
+        }
+
+        const updated = await EmailTemplate.findByIdAndUpdate(
+            id,
+            { name, category: category || 'Custom', description: description || '', subject, previewText: previewText || '', badge: badge || 'CUSTOM', html },
+            { new: true, runValidators: true }
+        );
+
+        if (!updated) {
+            res.status(404).json({ success: false, msg: 'Custom template not found.' });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            msg: 'Custom template updated successfully.',
+            template: {
+                id: updated._id.toString(),
+                name: updated.name,
+                category: updated.category,
+                description: updated.description,
+                subject: updated.subject,
+                previewText: updated.previewText,
+                badge: updated.badge,
+                html: updated.html,
+                isCustom: true
+            }
+        });
+    } catch (error: any) {
+        console.error('[CONTROLLER-ERROR] updateCustomTemplate:', error);
+        res.status(500).json({ success: false, msg: 'Failed to update custom template', error: error.message });
+    }
+};
+
+/**
  * Delete a custom email template
  */
 export const deleteCustomTemplate = async (req: Request, res: Response): Promise<void> => {

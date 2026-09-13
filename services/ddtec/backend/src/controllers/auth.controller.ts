@@ -67,6 +67,12 @@ export const sendOtp = async (req: Request, res: Response) => {
             }
         }
 
+        // Check if public signup is disabled by administrator
+        const otpSettings = await Settings.findOne();
+        if (otpSettings?.components?.Signup === false) {
+            return res.status(403).json({ msg: 'Public registration is currently disabled by administrator.' });
+        }
+
         // Check if global Signup is disabled for regular users via RouteConfig
         const signupRoute = await RouteConfig.findOne({ path: '/signup' });
         if (signupRoute && !signupRoute.isActive) {
@@ -224,6 +230,10 @@ export const register = async (req: Request, res: Response) => {
         const onboarding = settings?.onboarding || { mode: 'open', inviteCode: 'DDTEC-INVITE-2026', closedMessage: 'New user onboarding is currently restricted by administrator.' };
 
         if (!role || role === 'user') {
+            if (settings?.components?.Signup === false) {
+                return res.status(403).json({ msg: 'Public registration is currently disabled by administrator.' });
+            }
+
             if (onboarding.mode === 'closed') {
                 return res.status(403).json({ msg: onboarding.closedMessage || 'New user onboarding is currently restricted by administrator.' });
             }
@@ -794,7 +804,7 @@ export const checkUser = async (req: Request, res: Response) => {
         const signupRoute = await RouteConfig.findOne({ path: '/signup' });
         const isRouteActive = signupRoute ? signupRoute.isActive : true;
 
-        const signupAllowed = onboarding.mode !== 'closed' && isRouteActive;
+        const signupAllowed = settings?.components?.Signup !== false && onboarding.mode !== 'closed' && isRouteActive;
 
         res.json({
             exists: !!user,
