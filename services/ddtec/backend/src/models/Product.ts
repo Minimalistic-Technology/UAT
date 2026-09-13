@@ -24,6 +24,9 @@ export interface IProduct extends Document {
     cgst: number;
     sgst: number;
     weightKg?: number; // Weight in KG for B2B carrier freight calculation
+    lengthCm?: number; // Packed dimensions in CM, used for volumetric weight freight calculation
+    widthCm?: number;
+    heightCm?: number;
     seller?: string;
     lastInventoryUpdate?: Date;
     billScreenshot?: string;
@@ -52,6 +55,9 @@ const ProductSchema: Schema = new Schema({
     cgst: { type: Number, default: 0, min: 0 },
     sgst: { type: Number, default: 0, min: 0 },
     weightKg: { type: Number, default: 0.5, min: 0.05 },
+    lengthCm: { type: Number, default: 10, min: 1 },
+    widthCm: { type: Number, default: 10, min: 1 },
+    heightCm: { type: Number, default: 10, min: 1 },
     seller: { type: String },
     lastInventoryUpdate: { type: Date, default: Date.now },
     billScreenshot: { type: String },

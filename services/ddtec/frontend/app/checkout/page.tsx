@@ -168,9 +168,17 @@ export default function CheckoutPage() {
                 setCheckingDelivery(true);
                 setDeliveryError(null);
                 try {
+                    // Send the cart's product IDs/quantities so the backend can look up each
+                    // product's weight AND packed dimensions (length/width/height) from the DB
+                    // and bill on carrier-standard chargeable weight (actual vs. volumetric,
+                    // whichever is greater) instead of just a flat per-item weight guess.
                     const res = await api.post('/delivery/calculate-rates', {
                         pincode: cleanZip,
-                        weightKg: roundedWeightKg
+                        weightKg: roundedWeightKg,
+                        items: validCartItems.map(item => ({
+                            product: item.product._id,
+                            quantity: item.quantity
+                        }))
                     });
                     if (res.data.success && res.data.quotes && res.data.quotes.length > 0) {
                         setCarrierQuotes(res.data.quotes);

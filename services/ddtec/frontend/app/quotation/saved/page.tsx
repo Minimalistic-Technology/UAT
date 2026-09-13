@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "../../_context/ToastContext";
+import { useAuth } from "../../_context/AuthContext";
 
 interface SavedQuotationItem {
     itemId?: string;
@@ -58,6 +59,7 @@ export default function SavedQuotationsPage() {
     const pathname = usePathname();
     const isAdminView = pathname?.startsWith('/admin');
     const { showToast } = useToast();
+    const { user, loading: authLoading } = useAuth();
 
     const [quotations, setQuotations] = useState<SavedQuotation[]>([]);
     const [loading, setLoading] = useState(true);
@@ -70,8 +72,19 @@ export default function SavedQuotationsPage() {
     const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
+        // Admin view guards itself at the /admin route level; here we only need
+        // to gate the standalone customer-facing /quotation/saved page.
+        if (isAdminView) {
+            fetchSavedQuotations();
+            return;
+        }
+        if (authLoading) return;
+        if (!user) {
+            router.push(`/login?redirect=${encodeURIComponent(pathname || "/quotation/saved")}`);
+            return;
+        }
         fetchSavedQuotations();
-    }, []);
+    }, [isAdminView, user, authLoading]);
 
     const fetchSavedQuotations = async () => {
         setLoading(true);

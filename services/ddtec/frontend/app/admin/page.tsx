@@ -83,6 +83,10 @@ interface Product {
     discountValue?: number;
     cgst?: number;
     sgst?: number;
+    weightKg?: number;
+    lengthCm?: number;
+    widthCm?: number;
+    heightCm?: number;
     isActive: boolean;
     createdAt?: string;
     updatedAt?: string;
@@ -160,7 +164,11 @@ const AdminDashboard = () => {
         couponCode: "",
         discountPercentage: "",
         cgst: "",
-        sgst: ""
+        sgst: "",
+        weightKg: "",
+        lengthCm: "",
+        widthCm: "",
+        heightCm: ""
     });
 
     interface NewProductFormErrors {
@@ -663,6 +671,10 @@ const AdminDashboard = () => {
             formData.append('discountPercentage', String(Number(newProduct.discountPercentage) || 0));
             formData.append('cgst', String(Number(newProduct.cgst) || 0));
             formData.append('sgst', String(Number(newProduct.sgst) || 0));
+            formData.append('weightKg', String(Number(newProduct.weightKg) || 0.5));
+            formData.append('lengthCm', String(Number(newProduct.lengthCm) || 10));
+            formData.append('widthCm', String(Number(newProduct.widthCm) || 10));
+            formData.append('heightCm', String(Number(newProduct.heightCm) || 10));
             imageUrls.forEach(url => formData.append('imageUrls', url));
             newProductImageFiles.forEach(file => formData.append('images', file));
 
@@ -673,7 +685,8 @@ const AdminDashboard = () => {
                 setIsAddModalOpen(false);
                 setNewProduct({
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", brand: "",
-                    modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: ""
+                    modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: "",
+                    weightKg: "", lengthCm: "", widthCm: "", heightCm: ""
                 });
                 setNewProductImageDraft("");
                 setNewProductImageFiles([]);
@@ -708,7 +721,11 @@ const AdminDashboard = () => {
             couponCode: (product as any).couponCode || "",
             discountPercentage: String((product as any).discountPercentage || 0),
             cgst: String((product as any).cgst || 0),
-            sgst: String((product as any).sgst || 0)
+            sgst: String((product as any).sgst || 0),
+            weightKg: String((product as any).weightKg ?? 0.5),
+            lengthCm: String((product as any).lengthCm ?? 10),
+            widthCm: String((product as any).widthCm ?? 10),
+            heightCm: String((product as any).heightCm ?? 10)
         });
         setEditProductImageDraft("");
         setEditProductImageFiles([]);
@@ -718,9 +735,9 @@ const AdminDashboard = () => {
     const handleUpdateProduct = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if ([editingProduct.price, editingProduct.stock, editingProduct.discountPercentage, editingProduct.cgst, editingProduct.sgst]
+        if ([editingProduct.price, editingProduct.stock, editingProduct.discountPercentage, editingProduct.cgst, editingProduct.sgst, editingProduct.weightKg, editingProduct.lengthCm, editingProduct.widthCm, editingProduct.heightCm]
             .some((v: string) => v !== "" && Number(v) < 0)) {
-            showToast("Price, stock, discount, CGST and SGST cannot be negative", "error");
+            showToast("Price, stock, discount, CGST, SGST, weight and dimensions cannot be negative", "error");
             return;
         }
 
@@ -742,6 +759,10 @@ const AdminDashboard = () => {
             formData.append('discountPercentage', String(Number(editingProduct.discountPercentage) || 0));
             formData.append('cgst', String(Number(editingProduct.cgst) || 0));
             formData.append('sgst', String(Number(editingProduct.sgst) || 0));
+            formData.append('weightKg', String(Number(editingProduct.weightKg) || 0.5));
+            formData.append('lengthCm', String(Number(editingProduct.lengthCm) || 10));
+            formData.append('widthCm', String(Number(editingProduct.widthCm) || 10));
+            formData.append('heightCm', String(Number(editingProduct.heightCm) || 10));
             formData.append('imagesFieldPresent', 'true');
             imageUrls.forEach((url: string) => formData.append('imageUrls', url));
             editProductImageFiles.forEach(file => formData.append('images', file));
@@ -1923,6 +1944,57 @@ const AdminDashboard = () => {
                                                         )}
                                                     </div>
                                                 </div>
+                                                <div className="grid grid-cols-4 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Weight (kg)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0.05"
+                                                            step="0.01"
+                                                            value={newProduct.weightKg}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, weightKg: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="0.5"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Length (cm)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            step="0.1"
+                                                            value={newProduct.lengthCm}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, lengthCm: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Width (cm)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            step="0.1"
+                                                            value={newProduct.widthCm}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, widthCm: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Height (cm)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            step="0.1"
+                                                            value={newProduct.heightCm}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, heightCm: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="10"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-slate-400 -mt-2">Packed weight and dimensions are used to calculate Blue Dart / DTDC freight rates at checkout.</p>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand</label>
@@ -2237,6 +2309,57 @@ const AdminDashboard = () => {
                                                         />
                                                     </div>
                                                 </div>
+                                                <div className="grid grid-cols-4 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Weight (kg)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0.05"
+                                                            step="0.01"
+                                                            value={editingProduct.weightKg}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, weightKg: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="0.5"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Length (cm)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            step="0.1"
+                                                            value={editingProduct.lengthCm}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, lengthCm: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Width (cm)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            step="0.1"
+                                                            value={editingProduct.widthCm}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, widthCm: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Height (cm)</label>
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            step="0.1"
+                                                            value={editingProduct.heightCm}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, heightCm: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="10"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-slate-400 -mt-2">Packed weight and dimensions are used to calculate Blue Dart / DTDC freight rates at checkout.</p>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand</label>

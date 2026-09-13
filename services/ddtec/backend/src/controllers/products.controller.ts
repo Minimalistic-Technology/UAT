@@ -116,7 +116,7 @@ export const getProductById = async (req: Request, res: Response) => {
 };
 
 // Fields that must never be negative
-const NON_NEGATIVE_FIELDS = ['price', 'costPrice', 'stock', 'discountPercentage', 'discountValue', 'cgst', 'sgst'] as const;
+const NON_NEGATIVE_FIELDS = ['price', 'costPrice', 'stock', 'discountPercentage', 'discountValue', 'cgst', 'sgst', 'weightKg', 'lengthCm', 'widthCm', 'heightCm'] as const;
 
 const findNegativeField = (body: Record<string, any>) =>
     NON_NEGATIVE_FIELDS.find((field) => body[field] !== undefined && Number(body[field]) < 0);
@@ -128,7 +128,7 @@ export const createProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, cgst, sgst, costPrice } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm } = req.body;
 
         // Combine manually entered image URLs (`imageUrls`) with newly uploaded files,
         // uploaded to Cloudinary by `uploadProductImagesMiddleware` above this handler.
@@ -157,7 +157,11 @@ export const createProduct = async (req: Request, res: Response) => {
             discountValue: discountValue || 0,
             showOnHome: showOnHome || false,
             cgst: cgst || 0,
-            sgst: sgst || 0
+            sgst: sgst || 0,
+            weightKg: weightKg || 0.5,
+            lengthCm: lengthCm || 10,
+            widthCm: widthCm || 10,
+            heightCm: heightCm || 10
         });
 
         const product = await newProduct.save();
@@ -179,7 +183,7 @@ export const updateProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, cgst, sgst, costPrice } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -218,6 +222,10 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.showOnHome = showOnHome !== undefined ? showOnHome : product.showOnHome;
         product.cgst = cgst !== undefined ? cgst : product.cgst;
         product.sgst = sgst !== undefined ? sgst : product.sgst;
+        product.weightKg = weightKg !== undefined ? weightKg : product.weightKg;
+        product.lengthCm = lengthCm !== undefined ? lengthCm : product.lengthCm;
+        product.widthCm = widthCm !== undefined ? widthCm : product.widthCm;
+        product.heightCm = heightCm !== undefined ? heightCm : product.heightCm;
 
         await product.save();
 
