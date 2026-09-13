@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
 
 export interface ProductItem {
     _id: string;
@@ -66,6 +67,7 @@ export default function PurchaseRecordsView({
     onRefreshProducts
 }: PurchaseRecordsViewProps) {
     const { showToast } = useToast();
+    const confirm = useConfirm();
     const [records, setRecords] = useState<PurchaseRecord[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -288,9 +290,11 @@ export default function PurchaseRecordsView({
 
     // Delete Record
     const handleDeleteRecord = async (id: string, productName: string) => {
-        if (!confirm(`Are you sure you want to delete the purchase record for "${productName}"? This will adjust product inventory accordingly.`)) {
-            return;
-        }
+        const ok = await confirm({
+            message: `Are you sure you want to delete the purchase record for "${productName}"? This will adjust product inventory accordingly.`,
+            variant: 'danger'
+        });
+        if (!ok) return;
 
         try {
             await api.delete(`/purchases/${id}`);

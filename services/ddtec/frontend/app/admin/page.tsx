@@ -19,6 +19,7 @@ import PurchaseRecordsView from "./components/PurchaseRecordsView";
 import ContactsView from "./components/ContactsView";
 import { useDynamicRoutes, RouteConfig } from "@/app/_context/RouteContext";
 import { useToast } from "../_context/ToastContext";
+import { useConfirm } from "../_context/ConfirmContext";
 import { useSettings } from "../_context/SettingsContext";
 
 interface DashboardStats {
@@ -112,6 +113,7 @@ const AdminDashboard = () => {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
+    const confirm = useConfirm();
     const { refreshSettings } = useSettings();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
@@ -343,7 +345,7 @@ const AdminDashboard = () => {
             setSiteSettings(res.data);
             refreshSettings();
         } catch (error: any) {
-            alert(error.response?.data?.msg || "Failed to update settings");
+            showToast(error.response?.data?.msg || "Failed to update settings", "error");
         }
     };
 
@@ -437,14 +439,18 @@ const AdminDashboard = () => {
 
 
     const handleDeleteUser = async (id: string) => {
-        if (!confirm("Are you sure?")) return;
+        const ok = await confirm({ message: "Are you sure you want to delete this user?", variant: "danger" });
+        if (!ok) return;
         await api.delete(`/admin/users/${id}`);
+        showToast("User deleted successfully", "success");
         fetchUsers();
     };
 
     const handleDeleteProduct = async (id: string) => {
-        if (!confirm("Are you sure?")) return;
+        const ok = await confirm({ message: "Are you sure you want to delete this product?", variant: "danger" });
+        if (!ok) return;
         await api.delete(`/products/${id}`);
+        showToast("Product deleted successfully", "success");
         fetchProducts();
     };
 
@@ -779,7 +785,7 @@ const AdminDashboard = () => {
             setUsersList(prev => prev.map(u => u._id === id ? { ...u, isActive: !currentStatus } : u));
         } catch (error) {
             console.error(error);
-            alert("Failed to update user status");
+            showToast("Failed to update user status", "error");
         }
     };
 
@@ -789,7 +795,7 @@ const AdminDashboard = () => {
             setProductsList(prev => prev.map(p => p._id === id ? { ...p, isActive: !currentStatus } : p));
         } catch (error) {
             console.error(error);
-            alert("Failed to update product status");
+            showToast("Failed to update product status", "error");
         }
     };
 
@@ -799,18 +805,20 @@ const AdminDashboard = () => {
             setCouponsList(prev => prev.map(c => c._id === id ? { ...c, isActive: !currentStatus } : c));
         } catch (error) {
             console.error(error);
-            alert("Failed to update coupon status");
+            showToast("Failed to update coupon status", "error");
         }
     };
 
     const handleDeleteCoupon = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this coupon?")) return;
+        const ok = await confirm({ message: "Are you sure you want to delete this coupon?", variant: "danger" });
+        if (!ok) return;
         try {
             await api.delete(`/coupons/${id}`);
             setCouponsList(prev => prev.filter(c => c._id !== id));
+            showToast("Coupon deleted successfully", "success");
         } catch (error) {
             console.error(error);
-            alert("Failed to delete coupon");
+            showToast("Failed to delete coupon", "error");
         }
     };
 
@@ -829,10 +837,10 @@ const AdminDashboard = () => {
                 applicableProducts: [],
                 isActive: true
             });
-            alert("Coupon created successfully");
+            showToast("Coupon created successfully", "success");
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to create coupon");
+            showToast(error.response?.data?.msg || "Failed to create coupon", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -847,10 +855,10 @@ const AdminDashboard = () => {
             setCouponsList(prev => prev.map(c => c._id === editingCoupon._id ? data : c));
             setIsEditCouponModalOpen(false);
             setEditingCoupon(null);
-            alert("Coupon updated successfully");
+            showToast("Coupon updated successfully", "success");
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to update coupon");
+            showToast(error.response?.data?.msg || "Failed to update coupon", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -865,10 +873,10 @@ const AdminDashboard = () => {
             setBlogsList(prev => [data, ...prev]);
             setIsAddBlogModalOpen(false);
             setNewBlog({ title: '', content: '', author: '', image: '', slug: '', tags: [] });
-            alert("Blog created successfully");
+            showToast("Blog created successfully", "success");
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to create blog");
+            showToast(error.response?.data?.msg || "Failed to create blog", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -883,24 +891,25 @@ const AdminDashboard = () => {
             setBlogsList(prev => prev.map(b => b._id === editingBlog._id ? data : b));
             setIsEditBlogModalOpen(false);
             setEditingBlog(null);
-            alert("Blog updated successfully");
+            showToast("Blog updated successfully", "success");
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to update blog");
+            showToast(error.response?.data?.msg || "Failed to update blog", "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleDeleteBlog = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this blog?")) return;
+        const ok = await confirm({ message: "Are you sure you want to delete this blog?", variant: "danger" });
+        if (!ok) return;
         try {
             await api.delete(`/blogs/${id}`);
             setBlogsList(prev => prev.filter(b => b._id !== id));
-            alert("Blog deleted successfully");
+            showToast("Blog deleted successfully", "success");
         } catch (error) {
             console.error(error);
-            alert("Failed to delete blog");
+            showToast("Failed to delete blog", "error");
         }
     };
 
@@ -912,10 +921,10 @@ const AdminDashboard = () => {
             fetchUsers();
             setIsAddUserModalOpen(false);
             setNewUser({ firstName: "", lastName: "", email: "", phone: "", password: "", role: "user" });
-            alert("User created successfully");
+            showToast("User created successfully", "success");
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to create user");
+            showToast(error.response?.data?.msg || "Failed to create user", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -942,10 +951,10 @@ const AdminDashboard = () => {
             fetchUsers();
             setIsEditUserModalOpen(false);
             setEditingUser(null);
-            alert("User updated successfully");
+            showToast("User updated successfully", "success");
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to update user");
+            showToast(error.response?.data?.msg || "Failed to update user", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -957,7 +966,7 @@ const AdminDashboard = () => {
             setOrdersList(prev => prev.map(order => order._id === orderId ? { ...order, status: newStatus } : order));
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to update order status");
+            showToast(error.response?.data?.msg || "Failed to update order status", "error");
         }
     };
 
@@ -990,22 +999,25 @@ const AdminDashboard = () => {
             const res = await api.put(`/orders/${editingOrder._id}`, updateData);
             setOrdersList(prev => prev.map(o => o._id === editingOrder._id ? res.data : o));
             setIsEditOrderModalOpen(false);
+            showToast("Order updated successfully", "success");
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to update order");
+            showToast(error.response?.data?.msg || "Failed to update order", "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleDeleteOrder = async (orderId: string) => {
-        if (!window.confirm("Are you sure you want to delete this order?")) return;
+        const ok = await confirm({ message: "Are you sure you want to delete this order?", variant: "danger" });
+        if (!ok) return;
         try {
             await api.delete(`/orders/${orderId}`);
             setOrdersList(prev => prev.filter(o => o._id !== orderId));
+            showToast("Order deleted successfully", "success");
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to delete order");
+            showToast(error.response?.data?.msg || "Failed to delete order", "error");
         }
     };
 
@@ -1055,7 +1067,8 @@ const AdminDashboard = () => {
     };
 
     const handleDeleteRoute = async (id: string) => {
-        if (!window.confirm("Delete this dynamic route?")) return;
+        const ok = await confirm({ message: "Delete this dynamic route?", variant: "danger" });
+        if (!ok) return;
         try {
             await api.delete(`/dynamic-routes/${id}`);
             showToast("Route deleted", "success");

@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, FileText, X, Loader2, ImagePlus, ImageOff } from 'l
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
 
 interface QuotationItem {
     _id: string;
@@ -66,6 +67,7 @@ function fileToCompressedFile(file: File): Promise<File> {
 
 const QuotationProductsView = () => {
     const { showToast } = useToast();
+    const confirm = useConfirm();
     const [items, setItems] = useState<QuotationItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -182,7 +184,8 @@ const QuotationProductsView = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this product?')) return;
+        const ok = await confirm({ message: 'Are you sure you want to delete this product?', variant: 'danger' });
+        if (!ok) return;
         try {
             await api.delete(`/quotation-items/${id}`);
             setItems(prev => prev.filter(i => i._id !== id));

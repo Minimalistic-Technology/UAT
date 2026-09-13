@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Loader2, Trash2, Plus, Tag, ArrowLeft, Edit } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "../components/ToggleSwitch";
+import { useToast } from "../../_context/ToastContext";
+import { useConfirm } from "../../_context/ConfirmContext";
 
 interface Coupon {
     _id: string;
@@ -24,6 +26,8 @@ interface Coupon {
 const CouponsPage = () => {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const { showToast } = useToast();
+    const confirm = useConfirm();
     const [coupons, setCoupons] = useState<Coupon[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -49,13 +53,15 @@ const CouponsPage = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this coupon?")) return;
+        const ok = await confirm({ message: "Are you sure you want to delete this coupon?", variant: "danger" });
+        if (!ok) return;
         try {
             await api.delete(`/coupons/${id}`);
             setCoupons(coupons.filter(c => c._id !== id));
+            showToast("Coupon deleted successfully", "success");
         } catch (error) {
             console.error("Failed to delete coupon", error);
-            alert("Failed to delete coupon");
+            showToast("Failed to delete coupon", "error");
         }
     };
 
@@ -68,7 +74,7 @@ const CouponsPage = () => {
             setCoupons(coupons.map(c => c._id === id ? { ...c, isActive: !currentStatus } : c));
         } catch (error: any) {
             console.error("Failed to update coupon status", error);
-            alert(error.response?.data?.msg || "Failed to update status");
+            showToast(error.response?.data?.msg || "Failed to update status", "error");
         }
     };
 

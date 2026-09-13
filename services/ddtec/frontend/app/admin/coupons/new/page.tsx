@@ -5,6 +5,7 @@ import { useAuth } from "../../../_context/AuthContext";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, Save, RefreshCw } from "lucide-react";
 import api from "@/lib/api";
+import { useToast } from "../../../_context/ToastContext";
 
 interface Product {
     _id: string;
@@ -14,6 +15,7 @@ interface Product {
 const NewCouponPage = () => {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [products, setProducts] = useState<Product[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
@@ -74,11 +76,11 @@ const NewCouponPage = () => {
             };
 
             await api.post('/coupons', payload);
-            alert("Coupon created successfully!");
+            showToast("Coupon created successfully!", "success");
             router.push('/admin/coupons');
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.message || "Failed to create coupon");
+            showToast(error.response?.data?.message || "Failed to create coupon", "error");
         } finally {
             setIsSubmitting(false);
         }

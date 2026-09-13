@@ -6,6 +6,7 @@ import Footer from "./_components/Footer";
 import { AuthProvider } from "./_context/AuthContext";
 import { CartProvider } from "./_context/CartContext";
 import { ToastProvider } from "./_context/ToastContext";
+import { ConfirmProvider } from "./_context/ConfirmContext";
 import { RouteProvider } from "./_context/RouteContext";
 import { SettingsProvider } from "./_context/SettingsContext";
 import { GoogleAnalytics } from "@next/third-parties/google";
@@ -28,6 +29,7 @@ export default function RootLayout({
       <body className={`${poppins.variable} min-h-screen flex flex-col font-poppins`} suppressHydrationWarning>
         <ThemeProvider>
           <ToastProvider>
+          <ConfirmProvider>
             <AuthProvider>
               <SettingsProvider>
                 <RouteProvider>
@@ -44,6 +46,7 @@ export default function RootLayout({
                 </RouteProvider>
               </SettingsProvider>
             </AuthProvider>
+          </ConfirmProvider>
           </ToastProvider>
         </ThemeProvider>
         {gaId && <GoogleAnalytics gaId={gaId} />}

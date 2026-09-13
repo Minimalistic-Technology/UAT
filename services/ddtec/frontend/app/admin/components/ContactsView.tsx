@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
 
 interface ContactEmail {
     label: 'work' | 'personal' | 'other';
@@ -118,6 +119,7 @@ const initials = (c: Contact) =>
 
 export default function ContactsView() {
     const { showToast } = useToast();
+    const confirm = useConfirm();
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -338,7 +340,8 @@ export default function ContactsView() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Delete contact "${name}"? This cannot be undone.`)) return;
+        const ok = await confirm({ message: `Delete contact "${name}"? This cannot be undone.`, variant: "danger" });
+        if (!ok) return;
         try {
             await api.delete(`/contacts/${id}`);
             showToast('Contact deleted', 'success');
@@ -407,7 +410,8 @@ export default function ContactsView() {
     const handleBulkDelete = async () => {
         const ids = Array.from(selectedIds);
         if (ids.length === 0) return;
-        if (!confirm(`Delete ${ids.length} selected contact(s)? This cannot be undone.`)) return;
+        const ok = await confirm({ message: `Delete ${ids.length} selected contact(s)? This cannot be undone.`, variant: "danger" });
+        if (!ok) return;
 
         setIsBulkDeleting(true);
         try {

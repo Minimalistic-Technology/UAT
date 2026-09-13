@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "../../_context/ToastContext";
+import { useConfirm } from "../../_context/ConfirmContext";
 
 interface EmailTemplate {
     id: string;
@@ -69,6 +70,7 @@ interface ScheduledEmailItem {
 
 export default function ScheduleMailView() {
     const { showToast } = useToast();
+    const confirm = useConfirm();
     const [emails, setEmails] = useState<ScheduledEmailItem[]>([]);
     const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [activeUsersCount, setActiveUsersCount] = useState<number>(0);
@@ -288,7 +290,8 @@ export default function ScheduleMailView() {
 
     const handleDeleteTemplate = async (e: React.MouseEvent, template: EmailTemplate) => {
         e.stopPropagation();
-        if (!confirm(`Delete custom template "${template.name}"? This cannot be undone.`)) return;
+        const ok = await confirm({ message: `Delete custom template "${template.name}"? This cannot be undone.`, variant: "danger" });
+        if (!ok) return;
 
         try {
             const res = await api.delete(`/admin/scheduled-emails/templates/${template.id}`);
@@ -374,7 +377,8 @@ export default function ScheduleMailView() {
     };
 
     const handleDeleteItem = async (id: string) => {
-        if (!confirm("Are you sure you want to cancel and delete this scheduled email task?")) return;
+        const ok = await confirm({ message: "Are you sure you want to cancel and delete this scheduled email task?", variant: "danger" });
+        if (!ok) return;
 
         try {
             const res = await api.delete(`/admin/scheduled-emails/${id}`);
@@ -389,7 +393,8 @@ export default function ScheduleMailView() {
     };
 
     const handleSendNow = async (id: string) => {
-        if (!confirm("Are you sure you want to dispatch this email immediately to all target recipients?")) return;
+        const ok = await confirm({ message: "Are you sure you want to dispatch this email immediately to all target recipients?" });
+        if (!ok) return;
 
         try {
             showToast("Dispatching email now...", "info");
