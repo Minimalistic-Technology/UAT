@@ -11,7 +11,4 @@ export default {
   afterUpdateMany: invalidate,
   afterDelete: invalidate,
   afterDeleteMany: invalidate,
-  afterPublish: invalidate,
-  afterUnpublish: invalidate,
-  afterDiscardDraft: invalidate,
 };

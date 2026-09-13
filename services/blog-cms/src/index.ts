@@ -1,8 +1,23 @@
 import type { Core } from '@strapi/strapi';
+import { invalidateNamespace } from './utils/cache';
 
 // Content types + actions the public blog frontend is allowed to read without auth.
 // Only "find" and "findOne" are opened up - writes always require an authenticated token.
 const PUBLIC_READ_APIS = ['article', 'category', 'author', 'tag'];
+
+const PUBLISH_LIFECYCLE_ACTIONS = ['publish', 'unpublish', 'discardDraft'];
+
+function registerArticlePublishInvalidation(strapi: Core.Strapi) {
+  strapi.documents.use(async (context, next) => {
+    const result = await next();
+
+    if (context.uid === 'api::article.article' && PUBLISH_LIFECYCLE_ACTIONS.includes(context.action)) {
+      await invalidateNamespace('article');
+    }
+
+    return result;
+  });
+}
 
 async function grantPublicReadAccess(strapi: Core.Strapi) {
   const publicRole = await strapi.db
@@ -33,7 +48,9 @@ async function grantPublicReadAccess(strapi: Core.Strapi) {
 }
 
 export default {
-  register(/* { strapi }: { strapi: Core.Strapi } */) {},
+  register({ strapi }: { strapi: Core.Strapi }) {
+    registerArticlePublishInvalidation(strapi);
+  },
 
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
     await grantPublicReadAccess(strapi);
