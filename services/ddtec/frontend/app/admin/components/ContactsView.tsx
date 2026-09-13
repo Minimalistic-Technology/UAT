@@ -17,7 +17,9 @@ import {
     Loader2,
     AlertCircle,
     UserPlus,
-    Sparkles
+    Sparkles,
+    Download,
+    Trash
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
@@ -136,6 +138,9 @@ export default function ContactsView() {
 
     const [formData, setFormData] = useState(emptyFormData());
     const [formErrors, setFormErrors] = useState<FormErrors>(emptyErrors());
+
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
     const fetchContacts = async () => {
         setLoading(true);
@@ -327,6 +332,75 @@ export default function ContactsView() {
         }
     };
 
+    const toggleSelectOne = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        setSelectedIds(prev => {
+            const allSelected = filteredContacts.length > 0 && filteredContacts.every(c => prev.has(c._id));
+            if (allSelected) return new Set();
+            return new Set(filteredContacts.map(c => c._id));
+        });
+    };
+
+    const csvField = (value: string): string => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+    const handleExportSelected = () => {
+        const selected = contacts.filter(c => selectedIds.has(c._id));
+        if (selected.length === 0) return;
+
+        const headers = ['First Name', 'Last Name', 'Emails', 'Phones', 'Company', 'Job Title', 'Product Interest', 'Tags', 'Birthday', 'Note'];
+        const rows = selected.map(c => [
+            c.firstName,
+            c.lastName || '',
+            c.emails.map(e => e.value).join('; '),
+            c.phones.map(p => p.value).join('; '),
+            c.company || '',
+            c.jobTitle || '',
+            c.productInterest.join('; '),
+            c.tags.join('; '),
+            c.birthday ? c.birthday.slice(0, 10) : '',
+            c.note || ''
+        ]);
+
+        const csv = [headers, ...rows].map(row => row.map(csvField).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `contacts-export-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast(`Exported ${selected.length} contact(s)`, 'success');
+    };
+
+    const handleBulkDelete = async () => {
+        const ids = Array.from(selectedIds);
+        if (ids.length === 0) return;
+        if (!confirm(`Delete ${ids.length} selected contact(s)? This cannot be undone.`)) return;
+
+        setIsBulkDeleting(true);
+        try {
+            await api.post('/contacts/bulk-delete', { ids });
+            showToast(`Deleted ${ids.length} contact(s)`, 'success');
+            setSelectedIds(new Set());
+            fetchContacts();
+        } catch (error: any) {
+            console.error('Failed to bulk delete contacts', error);
+            showToast(error.response?.data?.msg || 'Failed to delete contacts', 'error');
+        } finally {
+            setIsBulkDeleting(false);
+        }
+    };
+
     const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -473,6 +547,37 @@ export default function ContactsView() {
                 </button>
             </div>
 
+            {/* Bulk Actions Bar */}
+            {selectedIds.size > 0 && (
+                <div className="flex items-center gap-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl px-4 py-2.5">
+                    <span className="text-xs font-bold text-teal-800 dark:text-teal-300">
+                        {selectedIds.size} selected
+                    </span>
+                    <button
+                        onClick={() => setSelectedIds(new Set())}
+                        className="text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    >
+                        Clear
+                    </button>
+                    <div className="ml-auto flex items-center gap-2">
+                        <button
+                            onClick={handleExportSelected}
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-all flex items-center gap-2"
+                        >
+                            <Download className="size-3.5" /> Export
+                        </button>
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={isBulkDeleting}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-md disabled:opacity-60 transition-all flex items-center gap-2"
+                        >
+                            {isBulkDeleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash className="size-3.5" />}
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Contacts List */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xs overflow-hidden">
                 {loading ? (
@@ -488,12 +593,27 @@ export default function ContactsView() {
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                        <div className="px-4 py-2.5 flex items-center gap-3 bg-slate-50/60 dark:bg-slate-900/30 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                            <input
+                                type="checkbox"
+                                checked={filteredContacts.length > 0 && filteredContacts.every(c => selectedIds.has(c._id))}
+                                onChange={toggleSelectAll}
+                                className="size-3.5 rounded accent-teal-600"
+                            />
+                            Select All
+                        </div>
                         {filteredContacts.map((c) => {
                             const primaryEmail = c.emails[0]?.value;
                             const primaryPhone = c.phones[0]?.value;
                             return (
                                 <div key={c._id} className="p-4 hover:bg-slate-50/60 dark:hover:bg-slate-700/20 transition-all">
                                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-medium">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(c._id)}
+                                            onChange={() => toggleSelectOne(c._id)}
+                                            className="size-3.5 rounded accent-teal-600 shrink-0"
+                                        />
                                         <div className="flex items-center gap-2.5 min-w-[170px]">
                                             {c.photo ? (
                                                 <img src={c.photo} alt={c.firstName} className="size-9 rounded-full object-cover border border-slate-200 dark:border-slate-700" />

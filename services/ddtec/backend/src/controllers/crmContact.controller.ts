@@ -212,6 +212,24 @@ export const updateContact = async (req: any, res: Response): Promise<void> => {
     }
 };
 
+// @desc    Bulk delete contacts
+// @route   POST /api/contacts/bulk-delete
+export const bulkDeleteContacts = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            res.status(400).json({ msg: 'No contact ids provided' });
+            return;
+        }
+
+        const result = await CrmContact.deleteMany({ _id: { $in: ids } });
+        res.json({ deleted: result.deletedCount || 0 });
+    } catch (err: any) {
+        console.error('Error bulk deleting contacts:', err);
+        res.status(500).json({ msg: 'Server error deleting contacts' });
+    }
+};
+
 // @desc    Delete a contact
 // @route   DELETE /api/contacts/:id
 export const deleteContact = async (req: Request, res: Response): Promise<void> => {
