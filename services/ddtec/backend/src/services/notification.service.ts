@@ -198,7 +198,7 @@ class NotificationService {
 
         const subject = customSubject || `Official Price Quotation from DDTEC - ${buyerName || 'Valued Client'}`;
         const html = `
-            <div style="font-family: Arial, sans-serif; color: #1e293b; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+            <div style="font-family: 'Poppins', Arial, sans-serif; color: #1e293b; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
                 <div style="background-color: #0d9488; color: #ffffff; padding: 24px; text-align: center;">
                     <h1 style="margin: 0; font-size: 22px; font-weight: bold;">DDTEC Official Quotation</h1>
                     <p style="margin: 6px 0 0 0; font-size: 13px; color: #ccfbf1;">Industrial Products & Tech Solutions</p>
@@ -260,7 +260,7 @@ class NotificationService {
                 to: email,
                 subject: 'Your DDTEC Verification Code',
                 html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                         <h2 style="color: #0d9488; text-align: center;">DDTEC Verification</h2>
                         <p>Hello,</p>
                         <p>Your verification code for DDTEC is:</p>
@@ -314,7 +314,7 @@ class NotificationService {
                 to: email,
                 subject: 'Welcome to DDTEC Platform!',
                 html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                         <div style="text-align: center; margin-bottom: 20px;">
                             <h1 style="color: #0d9488;">Welcome to DDTEC!</h1>
                         </div>
@@ -374,7 +374,7 @@ class NotificationService {
                 bcc: adminEmail || undefined,
                 subject: `Order Confirmed - #${order._id.toString().slice(-6).toUpperCase()}`,
                 html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                         <div style="text-align: center; margin-bottom: 20px;">
                             <h2 style="color: #0d9488;">Order Confirmed!</h2>
                             <p style="color: #6b7280;">Thank you for your purchase at DDTEC. Your invoice is attached.</p>
@@ -439,7 +439,7 @@ class NotificationService {
                 bcc: adminEmail || undefined,
                 subject: `Payment Failed - Order #${order._id.toString().slice(-6).toUpperCase()}`,
                 html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                         <div style="text-align: center; margin-bottom: 20px;">
                             <h2 style="color: #dc2626;">Payment Failed</h2>
                             <p style="color: #6b7280;">We couldn't process your payment for the order below.</p>
@@ -555,7 +555,7 @@ class NotificationService {
                 replyTo: contactData.email,
                 subject: `New Contact Form Submission: ${contactData.firstName} ${contactData.lastName} (${contactData.email})`,
                 html: `
-                    <div style="font-family: sans-serif;">
+                    <div style="font-family: 'Poppins', sans-serif;">
                         <h3>New Contact Message</h3>
                         <p><strong>Name:</strong> ${contactData.firstName} ${contactData.lastName}</p>
                         <p><strong>Email:</strong> ${contactData.email}</p>
@@ -601,7 +601,7 @@ class NotificationService {
                 to: user.email,
                 subject: `New Login to your DDTEC Account`,
                 html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                         <h2 style="color: #0d9488; text-align: center;">Security Alert</h2>
                         <p>Hello ${user.name || user.firstName || 'Customer'},</p>
                         <p>We noticed a successful login to your DDTEC account.</p>
@@ -653,7 +653,7 @@ class NotificationService {
                 to: adminEmail,
                 subject: `💰 Payment / New Order Received: #${order._id.toString().slice(-6).toUpperCase()} (₹${order.totalAmount.toFixed(2)})`,
                 html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 620px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #1e293b;">
+                    <div style="font-family: 'Poppins', Arial, sans-serif; max-width: 620px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #1e293b;">
                         <div style="background: linear-gradient(135deg, #0d9488, #0f766e); padding: 20px; border-radius: 12px; text-align: center; color: #ffffff; margin-bottom: 20px;">
                             <h2 style="margin: 0; font-size: 22px;">💳 New Order Payment Notification</h2>
                             <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">A customer has placed an order transaction.</p>
@@ -772,7 +772,7 @@ class NotificationService {
                 to,
                 subject: `Order Update: ${statusDisplay} - #${order._id.toString().slice(-6).toUpperCase()}`,
                 html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff;">
+                    <div style="font-family: 'Poppins', sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #ffffff;">
                         <div style="text-align: center; margin-bottom: 20px;">
                             <h2 style="color: #0d9488; margin-bottom: 6px;">Order Update: ${statusDisplay}</h2>
                             <p style="color: #64748b; font-size: 14px; margin: 0;">Order #${order._id.toString().slice(-8).toUpperCase()}</p>

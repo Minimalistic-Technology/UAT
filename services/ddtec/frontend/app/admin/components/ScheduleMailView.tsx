@@ -22,6 +22,30 @@ interface EmailTemplate {
     isCustom?: boolean;
 }
 
+const DEFAULT_EMAIL_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!--[if mso]>
+    <style>body, table, td, h1, h2, h3, p, span { font-family: Arial, sans-serif !important; }</style>
+    <![endif]-->
+</head>
+<body style="margin: 0; padding: 20px; background-color: #f8fafc; font-family: 'Poppins', sans-serif; color: #1e293b;">
+    <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h2 style="color: #0d9488; margin-top: 0;">DDTEC</h2>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p style="font-size: 15px; line-height: 1.6;">
+            Write your message here...
+        </p>
+    </div>
+</body>
+</html>`;
+
 interface ScheduledEmailItem {
     _id: string;
     title: string;
@@ -167,7 +191,7 @@ export default function ScheduleMailView() {
         setRecipientType("all_users");
         setCustomRecipientsInput("");
         setSelectedTemplateId("custom");
-        setHtmlContent("");
+        setHtmlContent(DEFAULT_EMAIL_HTML);
         setEditingEmailId(null);
         
         // Default datetime to 1 hour from now formatted for datetime-local input
@@ -202,7 +226,7 @@ export default function ScheduleMailView() {
         setNewTemplateSubject("");
         setNewTemplatePreviewText("");
         setNewTemplateBadge("CUSTOM");
-        setNewTemplateHtml("");
+        setNewTemplateHtml(DEFAULT_EMAIL_HTML);
     };
 
     const handleOpenAddTemplateModal = () => {
