@@ -19,7 +19,9 @@ import {
     UserPlus,
     Sparkles,
     Download,
-    Trash
+    Trash,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
@@ -142,6 +144,9 @@ export default function ContactsView() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
     const fetchContacts = async () => {
         setLoading(true);
         try {
@@ -193,6 +198,18 @@ export default function ContactsView() {
             return matchesSearch && matchesCompany && matchesProduct && matchesWeek;
         });
     }, [contacts, searchQuery, companyFilter, productInterestFilter, newThisWeekOnly]);
+
+    // Reset to page 1 whenever the filtered result set changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, companyFilter, productInterestFilter, newThisWeekOnly, pageSize]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredContacts.length / pageSize));
+    const safeCurrentPage = Math.min(currentPage, totalPages);
+    const paginatedContacts = useMemo(() => {
+        const start = (safeCurrentPage - 1) * pageSize;
+        return filteredContacts.slice(start, start + pageSize);
+    }, [filteredContacts, safeCurrentPage, pageSize]);
 
     const validateForm = (data: typeof formData): FormErrors => {
         const errors: FormErrors = emptyErrors();
@@ -343,9 +360,14 @@ export default function ContactsView() {
 
     const toggleSelectAll = () => {
         setSelectedIds(prev => {
-            const allSelected = filteredContacts.length > 0 && filteredContacts.every(c => prev.has(c._id));
-            if (allSelected) return new Set();
-            return new Set(filteredContacts.map(c => c._id));
+            const allSelected = paginatedContacts.length > 0 && paginatedContacts.every(c => prev.has(c._id));
+            const next = new Set(prev);
+            if (allSelected) {
+                paginatedContacts.forEach(c => next.delete(c._id));
+            } else {
+                paginatedContacts.forEach(c => next.add(c._id));
+            }
+            return next;
         });
     };
 
@@ -596,13 +618,13 @@ export default function ContactsView() {
                         <div className="px-4 py-2.5 flex items-center gap-3 bg-slate-50/60 dark:bg-slate-900/30 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                             <input
                                 type="checkbox"
-                                checked={filteredContacts.length > 0 && filteredContacts.every(c => selectedIds.has(c._id))}
+                                checked={paginatedContacts.length > 0 && paginatedContacts.every(c => selectedIds.has(c._id))}
                                 onChange={toggleSelectAll}
                                 className="size-3.5 rounded accent-teal-600"
                             />
-                            Select All
+                            Select All On This Page
                         </div>
-                        {filteredContacts.map((c) => {
+                        {paginatedContacts.map((c) => {
                             const primaryEmail = c.emails[0]?.value;
                             const primaryPhone = c.phones[0]?.value;
                             return (
@@ -691,6 +713,50 @@ export default function ContactsView() {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* Pagination Footer */}
+                {!loading && filteredContacts.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                            <span>
+                                Showing {(safeCurrentPage - 1) * pageSize + 1}
+                                –{Math.min(safeCurrentPage * pageSize, filteredContacts.length)} of {filteredContacts.length}
+                            </span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => setPageSize(Number(e.target.value))}
+                                className="ml-2 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[11px] font-bold outline-none"
+                            >
+                                <option value={10}>10 / page</option>
+                                <option value={25}>25 / page</option>
+                                <option value={50}>50 / page</option>
+                                <option value={100}>100 / page</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={safeCurrentPage <= 1}
+                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Previous page"
+                            >
+                                <ChevronLeft className="size-4" />
+                            </button>
+                            <span className="px-3 text-xs font-bold text-slate-600 dark:text-slate-300">
+                                Page {safeCurrentPage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={safeCurrentPage >= totalPages}
+                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Next page"
+                            >
+                                <ChevronRight className="size-4" />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
