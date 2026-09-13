@@ -110,12 +110,26 @@ export const createContact = async (req: any, res: Response): Promise<void> => {
             res.status(400).json({ msg: 'First name is required' });
             return;
         }
+        if (!lastName || !String(lastName).trim()) {
+            res.status(400).json({ msg: 'Last name is required' });
+            return;
+        }
+        const emailList = Array.isArray(emails) ? emails.filter((e: any) => e?.value) : [];
+        if (emailList.length === 0) {
+            res.status(400).json({ msg: 'At least one email address is required' });
+            return;
+        }
+        const phoneList = Array.isArray(phones) ? phones.filter((p: any) => p?.value) : [];
+        if (phoneList.length === 0) {
+            res.status(400).json({ msg: 'At least one phone number is required' });
+            return;
+        }
 
         const contact = new CrmContact({
             firstName,
             lastName,
-            emails: Array.isArray(emails) ? emails.filter((e: any) => e?.value) : [],
-            phones: Array.isArray(phones) ? phones.filter((p: any) => p?.value) : [],
+            emails: emailList,
+            phones: phoneList,
             company,
             jobTitle,
             address,
@@ -151,10 +165,36 @@ export const updateContact = async (req: any, res: Response): Promise<void> => {
             address, productInterest, tags, birthday, photo, note
         } = req.body;
 
-        if (firstName !== undefined) contact.firstName = firstName;
-        if (lastName !== undefined) contact.lastName = lastName;
-        if (Array.isArray(emails)) contact.emails = emails.filter((e: any) => e?.value);
-        if (Array.isArray(phones)) contact.phones = phones.filter((p: any) => p?.value);
+        if (firstName !== undefined) {
+            if (!String(firstName).trim()) {
+                res.status(400).json({ msg: 'First name is required' });
+                return;
+            }
+            contact.firstName = firstName;
+        }
+        if (lastName !== undefined) {
+            if (!String(lastName).trim()) {
+                res.status(400).json({ msg: 'Last name is required' });
+                return;
+            }
+            contact.lastName = lastName;
+        }
+        if (Array.isArray(emails)) {
+            const emailList = emails.filter((e: any) => e?.value);
+            if (emailList.length === 0) {
+                res.status(400).json({ msg: 'At least one email address is required' });
+                return;
+            }
+            contact.emails = emailList;
+        }
+        if (Array.isArray(phones)) {
+            const phoneList = phones.filter((p: any) => p?.value);
+            if (phoneList.length === 0) {
+                res.status(400).json({ msg: 'At least one phone number is required' });
+                return;
+            }
+            contact.phones = phoneList;
+        }
         if (company !== undefined) contact.company = company;
         if (jobTitle !== undefined) contact.jobTitle = jobTitle;
         if (address !== undefined) contact.address = address;

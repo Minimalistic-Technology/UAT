@@ -62,6 +62,21 @@ interface Contact {
 const emptyEmail = (): ContactEmail => ({ label: 'work', value: '' });
 const emptyPhone = (): ContactPhone => ({ label: 'mobile', value: '' });
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[+]?[\d\s()-]{7,20}$/;
+
+interface FormErrors {
+    firstName?: string;
+    lastName?: string;
+    birthday?: string;
+    emails: (string | null)[];
+    phones: (string | null)[];
+    emailsGeneral?: string;
+    phonesGeneral?: string;
+}
+
+const emptyErrors = (): FormErrors => ({ emails: [], phones: [] });
+
 const emptyFormData = () => ({
     firstName: '',
     lastName: '',
@@ -120,6 +135,7 @@ export default function ContactsView() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState(emptyFormData());
+    const [formErrors, setFormErrors] = useState<FormErrors>(emptyErrors());
 
     const fetchContacts = async () => {
         setLoading(true);
@@ -173,9 +189,54 @@ export default function ContactsView() {
         });
     }, [contacts, searchQuery, companyFilter, productInterestFilter, newThisWeekOnly]);
 
+    const validateForm = (data: typeof formData): FormErrors => {
+        const errors: FormErrors = emptyErrors();
+
+        if (!data.firstName.trim()) {
+            errors.firstName = 'First name is required';
+        }
+
+        if (!data.lastName.trim()) {
+            errors.lastName = 'Last name is required';
+        }
+
+        const hasEmail = data.emails.some(e => e.value.trim());
+        errors.emails = data.emails.map(e => {
+            if (!e.value.trim()) return null;
+            return EMAIL_REGEX.test(e.value.trim()) ? null : 'Enter a valid email address';
+        });
+        if (!hasEmail) {
+            errors.emailsGeneral = 'At least one email address is required';
+        }
+
+        const hasPhone = data.phones.some(p => p.value.trim());
+        errors.phones = data.phones.map(p => {
+            if (!p.value.trim()) return null;
+            return PHONE_REGEX.test(p.value.trim()) ? null : 'Enter a valid phone number';
+        });
+        if (!hasPhone) {
+            errors.phonesGeneral = 'At least one phone number is required';
+        }
+
+        if (data.birthday) {
+            const bday = new Date(data.birthday);
+            if (bday.getTime() > Date.now()) {
+                errors.birthday = 'Birthday cannot be in the future';
+            }
+        }
+
+        return errors;
+    };
+
+    const hasErrors = (errors: FormErrors): boolean =>
+        Boolean(errors.firstName || errors.lastName || errors.birthday || errors.emailsGeneral || errors.phonesGeneral) ||
+        errors.emails.some(Boolean) ||
+        errors.phones.some(Boolean);
+
     const handleOpenCreateModal = () => {
         setEditingContact(null);
         setFormData(emptyFormData());
+        setFormErrors(emptyErrors());
         setIsFormModalOpen(true);
     };
 
@@ -199,13 +260,17 @@ export default function ContactsView() {
             photo: contact.photo || '',
             note: contact.note || ''
         });
+        setFormErrors(emptyErrors());
         setIsFormModalOpen(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.firstName.trim()) {
-            showToast('First name is required', 'error');
+
+        const errors = validateForm(formData);
+        setFormErrors(errors);
+        if (hasErrors(errors)) {
+            showToast('Please fix the highlighted fields', 'error');
             return;
         }
 
@@ -634,21 +699,40 @@ export default function ContactsView() {
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">First Name *</label>
                                     <input
-                                        required
                                         type="text"
                                         value={formData.firstName}
-                                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, firstName: e.target.value });
+                                            if (formErrors.firstName) setFormErrors(prev => ({ ...prev, firstName: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                            formErrors.firstName
+                                                ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                     />
+                                    {formErrors.firstName && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.firstName}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Last Name</label>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Last Name *</label>
                                     <input
                                         type="text"
                                         value={formData.lastName}
-                                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, lastName: e.target.value });
+                                            if (formErrors.lastName) setFormErrors(prev => ({ ...prev, lastName: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                            formErrors.lastName
+                                                ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                     />
+                                    {formErrors.lastName && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.lastName}</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -675,33 +759,57 @@ export default function ContactsView() {
 
                             {/* Emails */}
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Emails</label>
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Emails *</label>
+                                {formErrors.emailsGeneral && (
+                                    <p className="text-[11px] text-red-600 dark:text-red-400 mb-1">{formErrors.emailsGeneral}</p>
+                                )}
                                 <div className="space-y-2">
                                     {formData.emails.map((email, idx) => (
-                                        <div key={idx} className="flex gap-2">
-                                            <select
-                                                value={email.label}
-                                                onChange={(e) => updateEmailRow(idx, 'label', e.target.value)}
-                                                className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                            >
-                                                <option value="work">Work</option>
-                                                <option value="personal">Personal</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                            <input
-                                                type="email"
-                                                placeholder="name@example.com"
-                                                value={email.value}
-                                                onChange={(e) => updateEmailRow(idx, 'value', e.target.value)}
-                                                className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData(p => ({ ...p, emails: p.emails.filter((_, i) => i !== idx) }))}
-                                                className="p-2 text-slate-400 hover:text-red-500 rounded-lg"
-                                            >
-                                                <X className="size-4" />
-                                            </button>
+                                        <div key={idx}>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={email.label}
+                                                    onChange={(e) => updateEmailRow(idx, 'label', e.target.value)}
+                                                    className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
+                                                >
+                                                    <option value="work">Work</option>
+                                                    <option value="personal">Personal</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                                <input
+                                                    type="email"
+                                                    placeholder="name@example.com"
+                                                    value={email.value}
+                                                    onChange={(e) => {
+                                                        updateEmailRow(idx, 'value', e.target.value);
+                                                        if (formErrors.emails[idx] || formErrors.emailsGeneral) {
+                                                            setFormErrors(prev => ({
+                                                                ...prev,
+                                                                emails: prev.emails.map((err, i) => (i === idx ? null : err)),
+                                                                emailsGeneral: e.target.value.trim() ? undefined : prev.emailsGeneral
+                                                            }));
+                                                        }
+                                                    }}
+                                                    className={`flex-1 px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                                        formErrors.emails[idx]
+                                                            ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                            : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                                    }`}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData(p => ({ ...p, emails: p.emails.filter((_, i) => i !== idx) }));
+                                                        setFormErrors(prev => ({ ...prev, emails: prev.emails.filter((_, i) => i !== idx) }));
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-red-500 rounded-lg"
+                                                >
+                                                    <X className="size-4" />
+                                                </button>
+                                            </div>
+                                            {formErrors.emails[idx] && (
+                                                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.emails[idx]}</p>
+                                            )}
                                         </div>
                                     ))}
                                     <button
@@ -716,34 +824,58 @@ export default function ContactsView() {
 
                             {/* Phones */}
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Phones</label>
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Phones *</label>
+                                {formErrors.phonesGeneral && (
+                                    <p className="text-[11px] text-red-600 dark:text-red-400 mb-1">{formErrors.phonesGeneral}</p>
+                                )}
                                 <div className="space-y-2">
                                     {formData.phones.map((phone, idx) => (
-                                        <div key={idx} className="flex gap-2">
-                                            <select
-                                                value={phone.label}
-                                                onChange={(e) => updatePhoneRow(idx, 'label', e.target.value)}
-                                                className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                            >
-                                                <option value="mobile">Mobile</option>
-                                                <option value="work">Work</option>
-                                                <option value="home">Home</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                            <input
-                                                type="text"
-                                                placeholder="+91 9876543210"
-                                                value={phone.value}
-                                                onChange={(e) => updatePhoneRow(idx, 'value', e.target.value)}
-                                                className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData(p => ({ ...p, phones: p.phones.filter((_, i) => i !== idx) }))}
-                                                className="p-2 text-slate-400 hover:text-red-500 rounded-lg"
-                                            >
-                                                <X className="size-4" />
-                                            </button>
+                                        <div key={idx}>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={phone.label}
+                                                    onChange={(e) => updatePhoneRow(idx, 'label', e.target.value)}
+                                                    className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
+                                                >
+                                                    <option value="mobile">Mobile</option>
+                                                    <option value="work">Work</option>
+                                                    <option value="home">Home</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                                <input
+                                                    type="text"
+                                                    placeholder="+91 9876543210"
+                                                    value={phone.value}
+                                                    onChange={(e) => {
+                                                        updatePhoneRow(idx, 'value', e.target.value);
+                                                        if (formErrors.phones[idx] || formErrors.phonesGeneral) {
+                                                            setFormErrors(prev => ({
+                                                                ...prev,
+                                                                phones: prev.phones.map((err, i) => (i === idx ? null : err)),
+                                                                phonesGeneral: e.target.value.trim() ? undefined : prev.phonesGeneral
+                                                            }));
+                                                        }
+                                                    }}
+                                                    className={`flex-1 px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                                        formErrors.phones[idx]
+                                                            ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                            : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                                    }`}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData(p => ({ ...p, phones: p.phones.filter((_, i) => i !== idx) }));
+                                                        setFormErrors(prev => ({ ...prev, phones: prev.phones.filter((_, i) => i !== idx) }));
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-red-500 rounded-lg"
+                                                >
+                                                    <X className="size-4" />
+                                                </button>
+                                            </div>
+                                            {formErrors.phones[idx] && (
+                                                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.phones[idx]}</p>
+                                            )}
                                         </div>
                                     ))}
                                     <button
@@ -801,10 +933,21 @@ export default function ContactsView() {
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Birthday</label>
                                     <input
                                         type="date"
+                                        max={new Date().toISOString().slice(0, 10)}
                                         value={formData.birthday}
-                                        onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none font-mono"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, birthday: e.target.value });
+                                            if (formErrors.birthday) setFormErrors(prev => ({ ...prev, birthday: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none font-mono ${
+                                            formErrors.birthday
+                                                ? 'border-red-400 dark:border-red-600'
+                                                : 'border-slate-200 dark:border-slate-700'
+                                        }`}
                                     />
+                                    {formErrors.birthday && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.birthday}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Photo URL</label>
