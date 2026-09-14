@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../_context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Loader2, Trash2, Plus, Tag, ArrowLeft, Edit } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "../components/ToggleSwitch";
@@ -26,6 +26,7 @@ interface Coupon {
 const CouponsPage = () => {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const { showToast } = useToast();
     const confirm = useConfirm();
     const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -33,13 +34,18 @@ const CouponsPage = () => {
 
     useEffect(() => {
         if (!authLoading) {
-            if (!user || user.role !== "admin") {
+            if (!user) {
+                // No session: let the login page bounce us back here afterwards.
+                // (If this was a session expiry, AuthContext's global handler already
+                // redirects to /login with this same destination and shows a toast.)
+                router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+            } else if (user.role !== "admin") {
                 router.push("/");
             } else {
                 fetchCoupons();
             }
         }
-    }, [user, authLoading, router]);
+    }, [user, authLoading, router, pathname]);
 
     const fetchCoupons = async () => {
         try {

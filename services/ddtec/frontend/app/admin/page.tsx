@@ -245,12 +245,16 @@ const AdminDashboard = () => {
 
     const searchParams = useSearchParams();
 
+    const VALID_VIEWS = [
+        'dashboard', 'products', 'users', 'orders', 'inventory', 'messages', 'coupons',
+        'blogs', 'categories', 'settings', 'dynamic_routes', 'quotation_products',
+        'create_quotation', 'saved_quotations', 'schedule_mail', 'contacts'
+    ] as const;
+
     useEffect(() => {
         const viewParam = searchParams?.get("view");
-        if (viewParam === "create_quotation") {
-            setActiveView("create_quotation");
-        } else if (viewParam === "saved_quotations") {
-            setActiveView("saved_quotations");
+        if (viewParam && (VALID_VIEWS as readonly string[]).includes(viewParam)) {
+            setActiveView(viewParam as typeof VALID_VIEWS[number]);
         }
     }, [searchParams]);
 

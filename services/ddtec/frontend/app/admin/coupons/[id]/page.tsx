@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../../_context/AuthContext";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { Loader2, ArrowLeft, Save, RefreshCw } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "../../../_context/ToastContext";
@@ -15,6 +15,7 @@ interface Product {
 const EditCouponPage = () => {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const { id } = useParams();
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,14 +38,16 @@ const EditCouponPage = () => {
 
     useEffect(() => {
         if (!authLoading) {
-            if (!user || user.role !== "admin") {
+            if (!user) {
+                router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+            } else if (user.role !== "admin") {
                 router.push("/");
             } else {
                 fetchProducts();
                 fetchCoupon();
             }
         }
-    }, [user, authLoading, router, id]);
+    }, [user, authLoading, router, id, pathname]);
 
     const fetchProducts = async () => {
         setLoadingProducts(true);
