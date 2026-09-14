@@ -105,7 +105,7 @@ export function InternshipForm({
         : {
             title: "",
             description: "",
-            employmentType: "internship",
+            employmentType: "full_time",
             workMode: "remote",
             companyType: "startup",
             roleCategory: "software_development",
