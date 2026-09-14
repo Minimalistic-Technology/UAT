@@ -439,6 +439,13 @@ export default function ContactsView() {
         reader.readAsText(file);
     };
 
+    const handleCloseImportModal = () => {
+        setIsImportModalOpen(false);
+        setImportContent('');
+        setImportFileName('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
     const handleImportSubmit = async () => {
         if (!importContent.trim()) {
             showToast('Please choose a file to import', 'error');
@@ -1188,11 +1195,11 @@ export default function ContactsView() {
 
             {/* Import Modal */}
             {isImportModalOpen && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsImportModalOpen(false)}>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleCloseImportModal}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
                         <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                             <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Import Contacts</h3>
-                            <button onClick={() => setIsImportModalOpen(false)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                            <button onClick={handleCloseImportModal} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                                 <X className="size-4" />
                             </button>
                         </div>
@@ -1234,7 +1241,7 @@ export default function ContactsView() {
                         </div>
                         <div className="p-5 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-2">
                             <button
-                                onClick={() => setIsImportModalOpen(false)}
+                                onClick={handleCloseImportModal}
                                 className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                             >
                                 Cancel

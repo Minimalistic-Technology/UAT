@@ -10,7 +10,6 @@ export interface ISettings extends Document {
         FeaturedProducts: boolean;
         Contact: boolean;
         Login: boolean;
-        Signup: boolean;
         [key: string]: boolean;
     };
     onboarding?: {
@@ -36,7 +35,6 @@ const SettingsSchema: Schema = new Schema({
         FeaturedProducts: { type: Boolean, default: true },
         Contact: { type: Boolean, default: true },
         Login: { type: Boolean, default: true },
-        Signup: { type: Boolean, default: true },
     },
     onboarding: {
         mode: { type: String, enum: ['open', 'closed', 'invite_only', 'admin_approval'], default: 'open' },

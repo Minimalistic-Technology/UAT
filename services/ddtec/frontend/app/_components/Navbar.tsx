@@ -428,7 +428,7 @@ export default function Navbar() {
                       <User className="size-4" /> Login
                     </Link>
                   )}
-                  {isRouteActive('/signup') && isComponentEnabled('Signup') && (
+                  {isRouteActive('/signup') && (
                     <Link
                       href="/signup"
                       className="flex px-5 py-2 rounded-full text-sm font-bold transition-all items-center gap-2 bg-teal-600 text-white hover:bg-teal-700"
@@ -523,7 +523,7 @@ export default function Navbar() {
                         <User className="size-5" /> Login
                       </Link>
                     )}
-                    {isRouteActive('/signup') && isComponentEnabled('Signup') && (
+                    {isRouteActive('/signup') && (
                       <Link
                         href="/signup"
                         onClick={() => setMenuOpen(false)}

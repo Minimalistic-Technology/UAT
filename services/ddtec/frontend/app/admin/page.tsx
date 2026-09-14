@@ -3509,19 +3509,10 @@ const AdminDashboard = () => {
                                         <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-6">
                                             <div className="border-b border-slate-100 dark:border-slate-700 pb-4">
                                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Authentication & Access</h3>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Control registration and login options for the website.</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Control login options for the website. The Signup link is shown automatically whenever registration isn't restricted below.</p>
                                             </div>
 
                                             <div className="space-y-4">
-                                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                                                    <ToggleSwitch
-                                                        isOn={siteSettings.components.Signup !== false}
-                                                        onToggle={() => toggleSettingComponent('Signup', siteSettings.components.Signup !== false)}
-                                                        label="Allow Public Signups (Registration)"
-                                                        description="When disabled, new users cannot register an account. Existing accounts can still login."
-                                                    />
-                                                </div>
-
                                                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
                                                     <ToggleSwitch
                                                         isOn={siteSettings.components.Login !== false}

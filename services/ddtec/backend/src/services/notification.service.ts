@@ -12,11 +12,11 @@ class NotificationService {
     private static getFromAddress(serviceName: string = 'DDTEC Official'): string {
         if (process.env.EMAIL_FROM) return process.env.EMAIL_FROM;
         if (process.env.EMAIL_USER) return `"${serviceName}" <${process.env.EMAIL_USER}>`;
-        return `"${serviceName} Sandbox" <test@ddtec.com>`;
+        return `"${serviceName}" <info@ddtec.in>`;
     }
 
     private static getAdminRecipient(): string {
-        return process.env.ADMIN_EMAIL || process.env.EMAIL_TO || process.env.EMAIL_USER || 'admin-orders@ddtec.test';
+        return process.env.ADMIN_EMAIL || process.env.EMAIL_TO || process.env.EMAIL_USER || 'info@ddtec.in';
     }
 
     private static async getEmailTransporter() {
@@ -80,7 +80,7 @@ class NotificationService {
 
                 const sender = {
                     name: process.env.BREVO_SENDER_NAME || 'DDTECH',
-                    email: process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_USER || 'parthdoshi480@gmail.com'
+                    email: process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_FROM || process.env.EMAIL_USER || 'info@ddtec.in'
                 };
 
                 let toList: { email: string }[] = [];
@@ -135,7 +135,7 @@ class NotificationService {
                 return { success: false, method: 'nodemailer' };
             }
 
-            const defaultSender = this._isTestAccount ? '"DDTEC Test Sandbox" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'noreply@ddtec.com'}>`;
+            const defaultSender = this._isTestAccount ? '"DDTEC Test Sandbox" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'info@ddtec.in'}>`;
             const from = mailOptions.from || process.env.EMAIL_FROM || defaultSender;
 
             let nodemailerAttachments = undefined;
@@ -253,7 +253,7 @@ class NotificationService {
                 return { success: false, msg: 'Recipient email is missing.' };
             }
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'info@ddtec.in'}>`);
 
             const mailOptions = {
                 from,
@@ -307,7 +307,7 @@ class NotificationService {
     static async sendWelcomeEmail(email: string, name: string): Promise<boolean> {
         try {
             if (!email) return false;
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'info@ddtec.in'}>`);
 
             const mailOptions: any = {
                 from,
@@ -547,7 +547,7 @@ class NotificationService {
                 console.warn('[NOTIFICATION-WARN] EMAIL_TO not defined. Contact notification might not reach anyone.');
             }
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'info@ddtec.in'}>`);
             console.log(`[NOTIFICATION] Routing contact message: FROM=${contactData.email} TO=${to}`);
             const mailOptions = {
                 from,
@@ -594,7 +594,7 @@ class NotificationService {
         try {
             if (!user.email) return false;
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER}>`);
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'info@ddtec.in'}>`);
 
             const mailOptions: any = {
                 from,
@@ -825,7 +825,7 @@ class NotificationService {
                 return { success: false, msg: 'No recipient email addresses provided.' };
             }
 
-            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'noreply@ddtec.com'}>`);
+            const from = process.env.EMAIL_FROM || (this._isTestAccount ? '"DDTEC Test" <test@ddtec.com>' : `"DDTEC Official" <${process.env.EMAIL_USER || 'info@ddtec.in'}>`);
 
             const mailOptions: any = {
                 from,

@@ -74,9 +74,9 @@ const CategoriesView = () => {
             await api.delete(`/categories/${id}`);
             setCategories(prev => prev.filter(c => c._id !== id));
             showToast("Category deleted successfully", "success");
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            showToast("Failed to delete category", "error");
+            showToast(error.response?.data?.msg || "Failed to delete category", "error");
         }
     };
 
