@@ -349,6 +349,29 @@ export default function CreateQuotationView() {
     const [isSaving, setIsSaving] = useState(false);
     const [savedQuotationId, setSavedQuotationId] = useState<string | null>(null);
 
+    const persistQuotation = async () => {
+        const { data } = await api.post("/quotation/save", {
+            id: savedQuotationId,
+            title: `Quotation for ${buyer.name.trim()}`,
+            buyer,
+            items: items.map(i => ({
+                itemId: i.itemId || i.id,
+                name: i.name,
+                price: i.price,
+                unit: i.unit,
+                quantity: i.quantity,
+                cgst: i.cgst,
+                sgst: i.sgst,
+                hsnCode: i.hsnCode
+            }))
+        });
+
+        if (data.quotation) {
+            setSavedQuotationId(data.quotation._id);
+        }
+        return data;
+    };
+
     const handleSaveQuotation = async () => {
         if (items.length === 0) {
             showToast("Please add at least one line item to save quotation.", "warning");
@@ -361,25 +384,7 @@ export default function CreateQuotationView() {
 
         setIsSaving(true);
         try {
-            const { data } = await api.post("/quotation/save", {
-                id: savedQuotationId,
-                title: `Quotation for ${buyer.name.trim()}`,
-                buyer,
-                items: items.map(i => ({
-                    itemId: i.itemId || i.id,
-                    name: i.name,
-                    price: i.price,
-                    unit: i.unit,
-                    quantity: i.quantity,
-                    cgst: i.cgst,
-                    sgst: i.sgst,
-                    hsnCode: i.hsnCode
-                }))
-            });
-
-            if (data.quotation) {
-                setSavedQuotationId(data.quotation._id);
-            }
+            const data = await persistQuotation();
             showToast(data.msg || "Quotation saved successfully!", "success");
         } catch (error: any) {
             console.error("Save quotation error:", error);
@@ -500,7 +505,9 @@ export default function CreateQuotationView() {
                 toEmail: buyer.toEmail
             });
 
-            showToast(data.msg || `Quotation PDF successfully emailed to ${emailList.join(", ")}`, "success");
+            await persistQuotation();
+
+            showToast(data.msg || `Quotation PDF successfully emailed to ${emailList.join(", ")} and saved.`, "success");
         } catch (error: any) {
             console.error("Email sending error:", error);
             showToast(error.response?.data?.msg || "Failed to send quotation email.", "error");
@@ -1088,7 +1095,7 @@ export default function CreateQuotationView() {
                             ) : (
                                 <>
                                     <Send className="size-4" />
-                                    <span>Send Email</span>
+                                    <span>Send Email &amp; Save Quotation</span>
                                 </>
                             )}
                         </button>
