@@ -1,11 +1,12 @@
-const express = require('express');
-const crypto = require('crypto');
-const db = require('../db');
-const { dispatch } = require('../scheduler');
+import express, { Request, Response } from 'express';
+import crypto from 'crypto';
+import db from '../db';
+import { dispatch } from '../scheduler';
+import { ScheduledEmailRow } from '../types';
 
 const router = express.Router();
 
-function rowToJson(row) {
+function rowToJson(row: ScheduledEmailRow) {
   return {
     id: row.id,
     title: row.title,
@@ -26,7 +27,7 @@ function rowToJson(row) {
   };
 }
 
-function normalizeRecipients(recipientType, recipients) {
+function normalizeRecipients(recipientType: unknown, recipients: unknown): string[] {
   if (Array.isArray(recipients)) {
     return recipients.map((e) => String(e).trim().toLowerCase()).filter(Boolean);
   }
@@ -37,7 +38,7 @@ function normalizeRecipients(recipientType, recipients) {
 }
 
 // POST /emails — create (and optionally immediately dispatch) a scheduled email
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     const { title, subject, html, recipientType, recipients, scheduledAt, createdBy, templateId } = req.body;
 
@@ -62,42 +63,42 @@ router.post('/', async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
     ).run(id, title, subject, html, recipientType || 'custom', JSON.stringify(recipientList), templateId || 'custom', targetDate.toISOString(), createdBy || null);
 
-    let row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(id);
+    let row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(id) as ScheduledEmailRow;
 
     // If the requested time is now-or-past, dispatch immediately rather than waiting for the next cron tick.
     const isImmediate = targetDate.getTime() <= Date.now() + 1000;
     if (isImmediate) {
       await dispatch(row);
-      row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(id);
+      row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(id) as ScheduledEmailRow;
     }
 
     res.status(201).json({ success: true, scheduledEmail: rowToJson(row) });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[EMAILS] create failed:', err);
     res.status(500).json({ success: false, msg: 'Failed to create scheduled email.', error: err.message });
   }
 });
 
 // GET /emails — list, optional ?status=pending|sent|failed|cancelled
-router.get('/', (req, res) => {
+router.get('/', (req: Request, res: Response) => {
   const { status } = req.query;
-  const rows = status && status !== 'all'
+  const rows = (status && status !== 'all'
     ? db.prepare('SELECT * FROM scheduled_emails WHERE status = ? ORDER BY created_at DESC').all(status)
-    : db.prepare('SELECT * FROM scheduled_emails ORDER BY created_at DESC').all();
+    : db.prepare('SELECT * FROM scheduled_emails ORDER BY created_at DESC').all()) as ScheduledEmailRow[];
 
   res.json({ success: true, emails: rows.map(rowToJson) });
 });
 
 // GET /emails/:id
-router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(req.params.id);
+router.get('/:id', (req: Request, res: Response) => {
+  const row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(req.params.id) as ScheduledEmailRow | undefined;
   if (!row) return res.status(404).json({ success: false, msg: 'Scheduled email not found.' });
   res.json({ success: true, scheduledEmail: rowToJson(row) });
 });
 
 // PATCH /emails/:id — edit a still-pending job
-router.patch('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(req.params.id);
+router.patch('/:id', (req: Request, res: Response) => {
+  const row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(req.params.id) as ScheduledEmailRow | undefined;
   if (!row) return res.status(404).json({ success: false, msg: 'Scheduled email not found.' });
   if (row.status !== 'pending') {
     return res.status(400).json({ success: false, msg: `Cannot edit email with status '${row.status}'.` });
@@ -129,13 +130,13 @@ router.patch('/:id', (req, res) => {
      WHERE id = ?`
   ).run(next.title, next.subject, next.html, next.recipient_type, next.recipients, next.template_id, next.scheduled_at, row.id);
 
-  const updated = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(row.id);
+  const updated = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(row.id) as ScheduledEmailRow;
   res.json({ success: true, scheduledEmail: rowToJson(updated) });
 });
 
 // DELETE /emails/:id — cancel (only pending jobs)
-router.delete('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(req.params.id);
+router.delete('/:id', (req: Request, res: Response) => {
+  const row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(req.params.id) as ScheduledEmailRow | undefined;
   if (!row) return res.status(404).json({ success: false, msg: 'Scheduled email not found.' });
 
   if (row.status === 'pending') {
@@ -146,8 +147,8 @@ router.delete('/:id', (req, res) => {
 });
 
 // POST /emails/:id/send-now — the "submit for immediate send" action
-router.post('/:id/send-now', async (req, res) => {
-  const row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(req.params.id);
+router.post('/:id/send-now', async (req: Request, res: Response) => {
+  const row = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(req.params.id) as ScheduledEmailRow | undefined;
   if (!row) return res.status(404).json({ success: false, msg: 'Scheduled email not found.' });
 
   if (row.status === 'sent') {
@@ -155,7 +156,7 @@ router.post('/:id/send-now', async (req, res) => {
   }
 
   const result = await dispatch(row);
-  const updated = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(row.id);
+  const updated = db.prepare('SELECT * FROM scheduled_emails WHERE id = ?').get(row.id) as ScheduledEmailRow;
 
   if (result.success) {
     res.json({ success: true, msg: 'Email dispatched immediately.', scheduledEmail: rowToJson(updated) });
@@ -164,4 +165,4 @@ router.post('/:id/send-now', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

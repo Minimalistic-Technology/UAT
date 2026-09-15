@@ -1,9 +1,9 @@
-const nodemailer = require('nodemailer');
+import nodemailer, { Transporter } from 'nodemailer';
 
-let transporter = null;
+let transporter: Transporter | null = null;
 let isSandbox = false;
 
-async function getTransporter() {
+async function getTransporter(): Promise<Transporter> {
   if (transporter) return transporter;
 
   // Default: SendGrid SMTP relay, reusing the SENDGRID_API_KEY already
@@ -52,11 +52,17 @@ async function getTransporter() {
   return transporter;
 }
 
-function getFromAddress() {
+function getFromAddress(): string {
   return process.env.EMAIL_FROM || '"DDTEC Official" <info@ddtec.in>';
 }
 
-async function sendMail({ to, subject, html }) {
+interface SendMailOptions {
+  to: string | string[];
+  subject: string;
+  html: string;
+}
+
+async function sendMail({ to, subject, html }: SendMailOptions) {
   const transport = await getTransporter();
   const info = await transport.sendMail({
     from: getFromAddress(),
@@ -73,4 +79,4 @@ async function sendMail({ to, subject, html }) {
   return info;
 }
 
-module.exports = { sendMail, getFromAddress };
+export { sendMail, getFromAddress };

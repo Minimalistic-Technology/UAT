@@ -1,4 +1,6 @@
-function requireApiKey(req, res, next) {
+import { Request, Response, NextFunction } from 'express';
+
+export function requireApiKey(req: Request, res: Response, next: NextFunction) {
   const expected = process.env.INTERNAL_API_KEY;
   if (!expected) {
     console.error('[AUTH] INTERNAL_API_KEY is not set — refusing all requests.');
@@ -12,5 +14,3 @@ function requireApiKey(req, res, next) {
 
   next();
 }
-
-module.exports = { requireApiKey };

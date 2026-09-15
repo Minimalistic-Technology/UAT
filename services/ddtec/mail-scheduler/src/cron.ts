@@ -1,5 +1,5 @@
-const cron = require('node-cron');
-const { runDueJobs } = require('./scheduler');
+import cron from 'node-cron';
+import { runDueJobs } from './scheduler';
 
 let running = false;
 
@@ -22,4 +22,4 @@ function startCronLoop() {
   console.log('[CRON] Mail scheduler loop started (every 30s).');
 }
 
-module.exports = { startCronLoop };
+export { startCronLoop };

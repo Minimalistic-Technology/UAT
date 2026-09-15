@@ -1,11 +1,12 @@
-require('dotenv').config({ quiet: true });
+import dotenv from 'dotenv';
+dotenv.config({ quiet: true } as any);
 
-const express = require('express');
-const cors = require('cors');
+import express from 'express';
+import cors from 'cors';
 
-const { requireApiKey } = require('./auth');
-const emailsRouter = require('./routes/emails');
-const { startCronLoop } = require('./cron');
+import { requireApiKey } from './auth';
+import emailsRouter from './routes/emails';
+import { startCronLoop } from './cron';
 
 const app = express();
 app.use(cors());

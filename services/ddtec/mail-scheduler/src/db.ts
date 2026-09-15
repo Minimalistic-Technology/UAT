@@ -1,6 +1,6 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
+import Database from 'better-sqlite3';
+import path from 'path';
+import fs from 'fs';
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../data/mail-scheduler.db');
 
@@ -33,4 +33,4 @@ db.exec(`
     ON scheduled_emails (status, scheduled_at);
 `);
 
-module.exports = db;
+export default db;

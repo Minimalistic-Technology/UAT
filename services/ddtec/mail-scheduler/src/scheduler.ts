@@ -1,12 +1,13 @@
-const db = require('./db');
-const { sendMail } = require('./mailer');
+import db from './db';
+import { sendMail } from './mailer';
+import { ScheduledEmailRow, DispatchResult } from './types';
 
 /**
  * Dispatches a single scheduled_emails row right now, regardless of its
  * scheduled_at value, and persists the resulting status.
  */
-async function dispatch(row) {
-  let recipients = [];
+async function dispatch(row: ScheduledEmailRow): Promise<DispatchResult> {
+  let recipients: string[] = [];
   try {
     recipients = JSON.parse(row.recipients);
   } catch {
@@ -31,7 +32,7 @@ async function dispatch(row) {
        WHERE id = ?`
     ).run(recipients.length, row.id);
     return { success: true, id: row.id };
-  } catch (err) {
+  } catch (err: any) {
     db.prepare(
       `UPDATE scheduled_emails
        SET status = 'failed', failed_count = ?, error_message = ?, updated_at = datetime('now')
@@ -45,20 +46,20 @@ async function dispatch(row) {
  * Polls for due, pending jobs and dispatches each one. Called every 30s by
  * the cron loop, and can also be invoked manually (e.g. after startup).
  */
-async function runDueJobs() {
+async function runDueJobs(): Promise<DispatchResult[]> {
   const dueRows = db
     .prepare(
       `SELECT * FROM scheduled_emails
        WHERE status = 'pending' AND datetime(scheduled_at) <= datetime('now')
        ORDER BY scheduled_at ASC`
     )
-    .all();
+    .all() as ScheduledEmailRow[];
 
-  const results = [];
+  const results: DispatchResult[] = [];
   for (const row of dueRows) {
     results.push(await dispatch(row));
   }
   return results;
 }
 
-module.exports = { dispatch, runDueJobs };
+export { dispatch, runDueJobs };
