@@ -10,6 +10,7 @@ services:
     environment:
       - PORT=5007
       - REDIS_URL=redis://ddtec-redis:6379
+      - MAIL_SCHEDULER_URL=http://mail-scheduler:6100
       # Add other crucial environment variables below or use env_file:
       # - JWT_SECRET=your_jwt_secret
     env_file:
@@ -17,6 +18,31 @@ services:
     depends_on:
       ddtec-redis:
         condition: service_healthy
+      mail-scheduler:
+        condition: service_healthy
+
+  mail-scheduler:
+    build:
+      context: ./mail-scheduler
+      dockerfile: Dockerfile
+    container_name: ddtec-mail-scheduler
+    restart: always
+    env_file:
+      - ./mail-scheduler/.env
+    environment:
+      - PORT=6100
+      - DB_PATH=/usr/src/app/data/mail-scheduler.db
+    volumes:
+      - ddtec_mail_scheduler_data:/usr/src/app/data
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 1
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:6100/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   ddtec-redis:
     image: redis:7-alpine
@@ -34,3 +60,4 @@ services:
 
 volumes:
   ddtec_redis_data:
+  ddtec_mail_scheduler_data:

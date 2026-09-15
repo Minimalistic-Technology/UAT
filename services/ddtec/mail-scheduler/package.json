@@ -1,0 +1,22 @@
+{
+  "name": "ddtec-mail-scheduler",
+  "version": "1.0.0",
+  "description": "Standalone SQLite-backed email scheduler for DDTEC (Node.js + Nodemailer + node-cron)",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.5.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^4.19.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^7.0.13"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
