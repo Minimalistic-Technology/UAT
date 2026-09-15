@@ -10,6 +10,7 @@ import {
     Trophy,
     XCircle,
     Trash2,
+    Pencil,
     Building2,
     IndianRupee,
     X,
@@ -133,6 +134,7 @@ export default function LeadsView() {
     const [formData, setFormData] = useState(emptyFormData());
     const [formErrors, setFormErrors] = useState<LeadFormErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [editingLead, setEditingLead] = useState<Lead | null>(null);
 
     const [isStagesOpen, setIsStagesOpen] = useState(false);
     const [stageDrafts, setStageDrafts] = useState<LeadStage[]>([]);
@@ -156,9 +158,9 @@ export default function LeadsView() {
         }
     };
 
-    const fetchAll = async () => {
+    const fetchAll = async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const [leadsRes, stagesRes, statsRes] = await Promise.all([
                 api.get('leads', { params: searchQuery ? { search: searchQuery } : {} }),
                 api.get('lead-stages'),
@@ -171,7 +173,7 @@ export default function LeadsView() {
             console.error('Error fetching leads data:', err);
             showToast('Failed to load leads', 'error');
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
@@ -196,7 +198,31 @@ export default function LeadsView() {
     const leadsByStage = (stageId: string) => boardLeads.filter(l => l.stage === stageId);
 
     const openNewLeadForm = () => {
+        setEditingLead(null);
         setFormData({ ...emptyFormData(), stage: boardStages[0]?._id || '' });
+        setFormErrors({});
+        setIsFormOpen(true);
+    };
+
+    const openEditLeadForm = (lead: Lead) => {
+        setOpenMenuId(null);
+        setEditingLead(lead);
+        const followUp = lead.followUpDate ? new Date(lead.followUpDate) : null;
+        const pad = (n: number) => String(n).padStart(2, '0');
+        setFormData({
+            name: lead.name || '',
+            company: lead.company || '',
+            phone: lead.phone || '',
+            email: lead.email || '',
+            location: lead.location || '',
+            source: lead.source || 'Other',
+            value: lead.value ? String(lead.value) : '',
+            stage: lead.stage || '',
+            assignedTo: typeof lead.assignedTo === 'object' && lead.assignedTo ? lead.assignedTo._id : (lead.assignedTo || ''),
+            followUpDate: followUp ? `${followUp.getFullYear()}-${pad(followUp.getMonth() + 1)}-${pad(followUp.getDate())}` : '',
+            followUpTime: followUp ? `${pad(followUp.getHours())}:${pad(followUp.getMinutes())}` : '',
+            note: lead.note || '',
+        });
         setFormErrors({});
         setIsFormOpen(true);
     };
@@ -252,7 +278,7 @@ export default function LeadsView() {
         return Object.keys(errors).length === 0;
     };
 
-    const handleCreateLead = async (e: React.FormEvent) => {
+    const handleSubmitLead = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateLeadForm()) {
             showToast('Please fix the highlighted fields', 'error');
@@ -264,7 +290,7 @@ export default function LeadsView() {
                 ? new Date(`${formData.followUpDate}T${formData.followUpTime || '09:00'}`).toISOString()
                 : '';
             const { followUpTime, ...rest } = formData;
-            await api.post('leads', {
+            const payload = {
                 ...rest,
                 name: formData.name.trim(),
                 company: formData.company.trim(),
@@ -273,15 +299,22 @@ export default function LeadsView() {
                 location: formData.location.trim(),
                 value: Number(formData.value) || 0,
                 followUpDate,
-            });
-            showToast('Lead created', 'success');
+            };
+            if (editingLead) {
+                await api.put(`leads/${editingLead._id}`, payload);
+                showToast('Lead updated', 'success');
+            } else {
+                await api.post('leads', payload);
+                showToast('Lead created', 'success');
+            }
             setIsFormOpen(false);
+            setEditingLead(null);
             setFormData(emptyFormData());
             setFormErrors({});
             fetchAll();
         } catch (err: any) {
-            console.error('Error creating lead:', err);
-            showToast(err?.response?.data?.msg || 'Failed to create lead', 'error');
+            console.error('Error saving lead:', err);
+            showToast(err?.response?.data?.msg || 'Failed to save lead', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -324,11 +357,11 @@ export default function LeadsView() {
         setOpenMenuId(null);
         try {
             await api.put(`leads/${id}`, { stage });
-            fetchAll();
+            fetchAll(true);
         } catch (err) {
             console.error('Error updating lead:', err);
             showToast('Failed to update lead', 'error');
-            fetchAll();
+            fetchAll(true);
         }
     };
 
@@ -344,7 +377,7 @@ export default function LeadsView() {
         try {
             await api.delete(`leads/${id}`);
             showToast('Lead deleted', 'success');
-            fetchAll();
+            fetchAll(true);
         } catch (err) {
             console.error('Error deleting lead:', err);
             showToast('Failed to delete lead', 'error');
@@ -639,6 +672,12 @@ export default function LeadsView() {
                                                         ))}
                                                         <div className="my-1 border-t border-slate-100 dark:border-slate-600" />
                                                         <button
+                                                            onClick={() => openEditLeadForm(lead)}
+                                                            className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
+                                                        >
+                                                            <Pencil className="size-3.5" /> Edit
+                                                        </button>
+                                                        <button
                                                             onClick={() => handleDeleteLead(lead._id)}
                                                             className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-red-600"
                                                         >
@@ -662,14 +701,16 @@ export default function LeadsView() {
                     <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[90vh] flex flex-col">
                         <div className="flex items-start justify-between p-4 border-b border-slate-100 dark:border-slate-700">
                             <div>
-                                <h3 className="font-bold text-slate-900 dark:text-white">New Lead</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Add a prospect to your pipeline</p>
+                                <h3 className="font-bold text-slate-900 dark:text-white">{editingLead ? 'Edit Lead' : 'New Lead'}</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    {editingLead ? 'Update this prospect\'s details' : 'Add a prospect to your pipeline'}
+                                </p>
                             </div>
-                            <button onClick={() => { setIsFormOpen(false); setFormErrors({}); }} className="text-slate-400 hover:text-red-500">
+                            <button onClick={() => { setIsFormOpen(false); setEditingLead(null); setFormErrors({}); }} className="text-slate-400 hover:text-red-500">
                                 <X className="size-5" />
                             </button>
                         </div>
-                        <form onSubmit={handleCreateLead} className="p-4 space-y-3 overflow-y-auto">
+                        <form onSubmit={handleSubmitLead} className="p-4 space-y-3 overflow-y-auto">
                             <div>
                                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Contact Name *</label>
                                 <input
@@ -840,7 +881,7 @@ export default function LeadsView() {
                             <div className="flex justify-end gap-2 pt-2">
                                 <button
                                     type="button"
-                                    onClick={() => { setIsFormOpen(false); setFormErrors({}); }}
+                                    onClick={() => { setIsFormOpen(false); setEditingLead(null); setFormErrors({}); }}
                                     className="px-4 py-2 text-sm font-semibold rounded-lg text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
                                 >
                                     Cancel
@@ -851,7 +892,7 @@ export default function LeadsView() {
                                     className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg disabled:opacity-60"
                                 >
                                     {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-                                    Add Lead
+                                    {editingLead ? 'Save Changes' : 'Add Lead'}
                                 </button>
                             </div>
                         </form>

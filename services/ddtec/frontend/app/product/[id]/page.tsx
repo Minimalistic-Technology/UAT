@@ -540,16 +540,28 @@ export default function ProductDetailsPage() {
                                     )}
                                 </div>
 
-                                {/* WhatsApp Share Button */}
-                                <button
-                                    onClick={() => {
-                                        const shareMsg = `Hi! Check out this product on DDTEC:\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')}\n\nView here: ${window.location.href}`;
-                                        window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, '_blank');
-                                    }}
-                                    className="w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2"
-                                >
-                                    <MessageCircle className="size-5" /> Share on WhatsApp
-                                </button>
+                                {/* WhatsApp Buttons */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            const chatMsg = `Hi! I'm interested in this product:\n*${product.name}*\n\nCould you share more details?`;
+                                            window.open(`https://wa.me/917777099930?text=${encodeURIComponent(chatMsg)}`, '_blank');
+                                        }}
+                                        className="w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <MessageCircle className="size-5" /> Chat on WhatsApp
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            const shareMsg = `Hi! Check out this product on DDTEC:\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')}\n\nView here: ${window.location.href}`;
+                                            window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, '_blank');
+                                        }}
+                                        className="w-full py-3 border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <MessageCircle className="size-5" /> Share on WhatsApp
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
