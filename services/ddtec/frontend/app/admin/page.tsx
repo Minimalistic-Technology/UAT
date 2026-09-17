@@ -18,6 +18,7 @@ import PurchasesGraph from "./components/PurchasesGraph";
 import PurchaseRecordsView from "./components/PurchaseRecordsView";
 import ContactsView from "./components/ContactsView";
 import LeadsView from "./components/LeadsView";
+import ClientsView from "./components/ClientsView";
 import { useDynamicRoutes, RouteConfig } from "@/app/_context/RouteContext";
 import { useToast } from "../_context/ToastContext";
 import { useConfirm } from "../_context/ConfirmContext";
@@ -1845,11 +1846,7 @@ const AdminDashboard = () => {
 
                     {activeView === 'leads' && <LeadsView />}
 
-                    {activeView === 'clients' && (
-                        <div className="p-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Client</h2>
-                        </div>
-                    )}
+                    {activeView === 'clients' && <ClientsView />}
 
                     {/* Add Product Modal */}
                     <AnimatePresence>
