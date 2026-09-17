@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import Blog from '../models/Blog';
+import StrapiService from '../services/strapi.service';
 
 // Get all blogs
 export const getBlogs = async (req: Request, res: Response) => {
     try {
-        const blogs = await Blog.find().sort({ createdAt: -1 });
-        res.json(blogs);
+        const articles = await StrapiService.listArticles();
+        res.json(articles.map(StrapiService.toBlogDTO));
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -15,26 +15,23 @@ export const getBlogs = async (req: Request, res: Response) => {
 // Get blog by slug
 export const getBlogBySlug = async (req: Request, res: Response) => {
     try {
-        const blog = await Blog.findOne({ slug: req.params.slug });
-        if (!blog) return res.status(404).json({ msg: 'Blog not found' });
-        res.json(blog);
+        const article = await StrapiService.getArticleBySlug(req.params.slug);
+        if (!article) return res.status(404).json({ msg: 'Blog not found' });
+        res.json(StrapiService.toBlogDTO(article));
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
     }
 };
 
-// Get blog by ID
+// Get blog by ID (Strapi documentId)
 export const getBlogById = async (req: Request, res: Response) => {
     try {
-        const blog = await Blog.findById(req.params.id);
-        if (!blog) return res.status(404).json({ msg: 'Blog not found' });
-        res.json(blog);
-    } catch (err: any) {
+        const article = await StrapiService.getArticleByDocumentId(req.params.id);
+        if (!article) return res.status(404).json({ msg: 'Blog not found' });
+        res.json(StrapiService.toBlogDTO(article));
+    } catch (err) {
         console.error(err);
-        if (err.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Blog not found' });
-        }
         res.status(500).send('Server Error');
     }
 };
@@ -44,26 +41,16 @@ export const createBlog = async (req: Request, res: Response) => {
     try {
         const { title, content, author, image, slug, tags } = req.body;
 
-        // Check if slug already exists
-        const existingBlog = await Blog.findOne({ slug });
-        if (existingBlog) {
+        const existing = await StrapiService.getArticleBySlug(slug);
+        if (existing) {
             return res.status(400).json({ msg: 'Blog with this slug already exists' });
         }
 
-        const newBlog = new Blog({
-            title,
-            content,
-            author,
-            image,
-            slug,
-            tags: tags || []
-        });
-
-        const blog = await newBlog.save();
-        res.json(blog);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
+        const article = await StrapiService.createArticle({ title, content, author, image, slug, tags });
+        res.json(StrapiService.toBlogDTO(article));
+    } catch (err: any) {
+        console.error(err.response?.data || err);
+        res.status(500).json({ msg: err.response?.data?.error?.message || 'Server Error' });
     }
 };
 
@@ -72,46 +59,34 @@ export const updateBlog = async (req: Request, res: Response) => {
     try {
         const { title, content, author, image, slug, tags } = req.body;
 
-        let blog = await Blog.findById(req.params.id);
+        const blog = await StrapiService.getArticleByDocumentId(req.params.id);
         if (!blog) return res.status(404).json({ msg: 'Blog not found' });
 
-        // If slug is being changed, check if new slug already exists
         if (slug && slug !== blog.slug) {
-            const existingBlog = await Blog.findOne({ slug });
-            if (existingBlog) {
+            const existing = await StrapiService.getArticleBySlug(slug);
+            if (existing) {
                 return res.status(400).json({ msg: 'Blog with this slug already exists' });
             }
         }
 
-        blog = await Blog.findByIdAndUpdate(
-            req.params.id,
-            { title, content, author, image, slug, tags },
-            { new: true }
-        );
-
-        res.json(blog);
+        const updated = await StrapiService.updateArticle(req.params.id, { title, content, author, image, slug, tags });
+        res.json(StrapiService.toBlogDTO(updated));
     } catch (err: any) {
-        console.error(err);
-        if (err.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Blog not found' });
-        }
-        res.status(500).send('Server Error');
+        console.error(err.response?.data || err);
+        res.status(500).json({ msg: err.response?.data?.error?.message || 'Server Error' });
     }
 };
 
 // Delete blog
 export const deleteBlog = async (req: Request, res: Response) => {
     try {
-        const blog = await Blog.findById(req.params.id);
+        const blog = await StrapiService.getArticleByDocumentId(req.params.id);
         if (!blog) return res.status(404).json({ msg: 'Blog not found' });
 
-        await Blog.findByIdAndDelete(req.params.id);
+        await StrapiService.deleteArticle(req.params.id);
         res.json({ msg: 'Blog deleted' });
-    } catch (err: any) {
+    } catch (err) {
         console.error(err);
-        if (err.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Blog not found' });
-        }
         res.status(500).send('Server Error');
     }
 };
