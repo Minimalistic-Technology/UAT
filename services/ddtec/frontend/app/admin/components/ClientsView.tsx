@@ -16,7 +16,11 @@ import {
     Mail,
     Building2,
     FolderKanban,
-    Receipt
+    Receipt,
+    ArrowLeft,
+    CheckCircle2,
+    Circle,
+    CalendarClock,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
@@ -132,6 +136,9 @@ export default function ClientsView() {
     const [projectTitle, setProjectTitle] = useState('');
     const [isSubmittingProject, setIsSubmittingProject] = useState(false);
 
+    const [viewingClientId, setViewingClientId] = useState<string | null>(null);
+    const [updatingProjectId, setUpdatingProjectId] = useState<string | null>(null);
+
     const fetchAll = async (silent = false) => {
         try {
             if (!silent) setLoading(true);
@@ -163,6 +170,10 @@ export default function ClientsView() {
     const pagedClients = useMemo(
         () => clients.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
         [clients, page]
+    );
+    const viewingClient = useMemo(
+        () => clients.find(c => c._id === viewingClientId) || null,
+        [clients, viewingClientId]
     );
 
     const openNewClientForm = () => {
@@ -294,6 +305,38 @@ export default function ClientsView() {
         }
     };
 
+    const handleToggleProjectStatus = async (clientId: string, project: ClientProject) => {
+        const nextStatus = project.status === 'ongoing' ? 'completed' : 'ongoing';
+        setUpdatingProjectId(project._id);
+        try {
+            await api.put(`clients/${clientId}/projects/${project._id}`, { status: nextStatus });
+            fetchAll(true);
+        } catch (err) {
+            console.error('Error updating project:', err);
+            showToast('Failed to update project', 'error');
+        } finally {
+            setUpdatingProjectId(null);
+        }
+    };
+
+    const handleDeleteProject = async (clientId: string, project: ClientProject) => {
+        const ok = await confirm({
+            title: 'Delete Project',
+            message: `Delete "${project.title}"? This cannot be undone.`,
+            confirmLabel: 'Delete',
+            variant: 'danger',
+        });
+        if (!ok) return;
+        try {
+            await api.delete(`clients/${clientId}/projects/${project._id}`);
+            showToast('Project deleted', 'success');
+            fetchAll(true);
+        } catch (err) {
+            console.error('Error deleting project:', err);
+            showToast('Failed to delete project', 'error');
+        }
+    };
+
     const handleExportCsv = () => {
         const header = ['Name', 'Phone', 'Email', 'Company', 'GSTIN', 'Currency', 'Projects', 'Ongoing', 'Completed', 'Added'];
         const rows = clients.map(c => [
@@ -308,8 +351,175 @@ export default function ClientsView() {
         downloadFile(JSON.stringify(clients, null, 2), 'clients.json', 'application/json');
     };
 
+    const clientDetailView = viewingClient && (
+        <>
+            <button
+                onClick={() => setViewingClientId(null)}
+                className="flex items-center gap-1.5 text-sm font-semibold text-teal-600 hover:text-teal-700"
+            >
+                <ArrowLeft className="size-4" /> Back to Clients
+            </button>
+
+                <div className="p-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="flex items-start gap-3 min-w-0">
+                            <div className="flex items-center justify-center size-12 rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-600 font-semibold text-lg shrink-0">
+                                {initials(viewingClient.name)}
+                            </div>
+                            <div className="min-w-0">
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white truncate">{viewingClient.name}</h2>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                                    {viewingClient.phone && (
+                                        <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                            <Phone className="size-3" /> {viewingClient.phone}
+                                        </span>
+                                    )}
+                                    {viewingClient.email && (
+                                        <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                            <Mail className="size-3" /> {viewingClient.email}
+                                        </span>
+                                    )}
+                                    {viewingClient.company && (
+                                        <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                            <Building2 className="size-3" /> {viewingClient.company}
+                                        </span>
+                                    )}
+                                    {viewingClient.gstin && (
+                                        <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                                            <Receipt className="size-3" /> {viewingClient.gstin}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+                                    Billed in {viewingClient.currency || 'INR'} &middot; Added {timeAgo(viewingClient.createdAt)}
+                                </p>
+                                {viewingClient.note && (
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 max-w-md">{viewingClient.note}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button
+                                onClick={() => openNewProjectForm(viewingClient)}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                            >
+                                <Plus className="size-4" /> New Project
+                            </button>
+                            <button
+                                onClick={() => openEditClientForm(viewingClient)}
+                                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg"
+                                title="Edit client"
+                            >
+                                <Pencil className="size-4" />
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    await handleDeleteClient(viewingClient);
+                                    setViewingClientId(null);
+                                }}
+                                className="text-slate-400 hover:text-red-600 p-2 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
+                                title="Delete client"
+                            >
+                                <Trash2 className="size-4" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-slate-100 dark:border-slate-700">
+                        <div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Total projects</div>
+                            <div className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{viewingClient.projectCount}</div>
+                        </div>
+                        <div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Ongoing</div>
+                            <div className="text-xl font-bold text-teal-600 mt-0.5">{viewingClient.ongoingCount}</div>
+                        </div>
+                        <div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">Completed</div>
+                            <div className="text-xl font-bold text-blue-600 mt-0.5">{viewingClient.completedCount}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between gap-3 p-4 border-b border-slate-100 dark:border-slate-700">
+                        <h3 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <FolderKanban className="size-4" /> Projects
+                        </h3>
+                        <button
+                            onClick={() => openNewProjectForm(viewingClient)}
+                            className="flex items-center gap-1 text-xs font-semibold text-teal-600 hover:text-teal-700"
+                        >
+                            <Plus className="size-3.5" /> New Project
+                        </button>
+                    </div>
+
+                    {viewingClient.projects.length === 0 ? (
+                        <div className="text-center text-sm text-slate-400 dark:text-slate-500 py-12">
+                            No projects yet for this client.
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                            {[...viewingClient.projects]
+                                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                                .map(project => (
+                                    <div key={project._id} className="flex items-center justify-between gap-3 p-4">
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-sm text-slate-900 dark:text-white truncate">{project.title}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span
+                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${project.status === 'completed'
+                                                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30'
+                                                        : 'bg-teal-50 text-teal-600 dark:bg-teal-900/30'
+                                                        }`}
+                                                >
+                                                    {project.status === 'completed' ? 'Completed' : 'Ongoing'}
+                                                </span>
+                                                <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+                                                    <CalendarClock className="size-3" /> {timeAgo(project.createdAt)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <button
+                                                onClick={() => handleToggleProjectStatus(viewingClient._id, project)}
+                                                disabled={updatingProjectId === project._id}
+                                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+                                                title={project.status === 'ongoing' ? 'Mark as completed' : 'Mark as ongoing'}
+                                            >
+                                                {updatingProjectId === project._id ? (
+                                                    <Loader2 className="size-3.5 animate-spin" />
+                                                ) : project.status === 'completed' ? (
+                                                    <CheckCircle2 className="size-3.5" />
+                                                ) : (
+                                                    <Circle className="size-3.5" />
+                                                )}
+                                                {project.status === 'ongoing' ? 'Mark done' : 'Reopen'}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteProject(viewingClient._id, project)}
+                                                className="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
+                                                title="Delete project"
+                                            >
+                                                <Trash2 className="size-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                        </div>
+                    )}
+                </div>
+
+        </>
+    );
+
     return (
         <div className="space-y-5">
+            {viewingClient && clientDetailView}
+
+            {!viewingClient && (
+            <>
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-3">
@@ -392,7 +602,11 @@ export default function ClientsView() {
                     {pagedClients.map(client => (
                         <div
                             key={client._id}
-                            className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setViewingClientId(client._id)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewingClientId(client._id); } }}
+                            className="cursor-pointer p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-600 transition-colors"
                         >
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-start gap-3 min-w-0">
@@ -428,14 +642,16 @@ export default function ClientsView() {
 
                                 <div className="flex items-center gap-1 shrink-0">
                                     <button
-                                        onClick={() => openEditClientForm(client)}
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); openEditClientForm(client); }}
                                         className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg"
                                         title="Edit client"
                                     >
                                         <Pencil className="size-4" />
                                     </button>
                                     <button
-                                        onClick={() => handleDeleteClient(client)}
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteClient(client); }}
                                         className="text-slate-400 hover:text-red-600 p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
                                         title="Delete client"
                                     >
@@ -453,7 +669,8 @@ export default function ClientsView() {
                                 <div className="flex items-center gap-3">
                                     <span className="text-xs text-slate-400 dark:text-slate-500">Added {timeAgo(client.createdAt)}</span>
                                     <button
-                                        onClick={() => openNewProjectForm(client)}
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); openNewProjectForm(client); }}
                                         className="flex items-center gap-1 text-xs font-semibold text-teal-600 hover:text-teal-700"
                                     >
                                         <Plus className="size-3.5" /> New Project
@@ -488,6 +705,8 @@ export default function ClientsView() {
                         </button>
                     </div>
                 </div>
+            )}
+            </>
             )}
 
             {/* Add / Edit Client Modal */}
