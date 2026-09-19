@@ -20,6 +20,10 @@ import {
     MapPin,
     Calendar,
     User as UserIcon,
+    Phone,
+    LayoutGrid,
+    Users,
+    ChevronRight,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
@@ -120,6 +124,14 @@ const formatCurrency = (n: number) => `₹${(n || 0).toLocaleString('en-IN')}`;
 const staffLabel = (u: AssignedUser) =>
     u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Unknown';
 
+const initialsFor = (label: string) =>
+    label
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(w => w[0]?.toUpperCase())
+        .join('') || '?';
+
 export default function LeadsView() {
     const { showToast } = useToast();
     const confirm = useConfirm();
@@ -148,6 +160,19 @@ export default function LeadsView() {
 
     const [staffList, setStaffList] = useState<StaffUser[]>([]);
     const [locatingCurrent, setLocatingCurrent] = useState(false);
+
+    const [viewMode, setViewMode] = useState<'board' | 'person'>('board');
+    const [personFilter, setPersonFilter] = useState<string>('everyone');
+    const [collapsedPersons, setCollapsedPersons] = useState<Set<string>>(new Set());
+
+    const togglePersonCollapsed = (id: string) => {
+        setCollapsedPersons(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
 
     const fetchStaff = async () => {
         try {
@@ -196,6 +221,54 @@ export default function LeadsView() {
     );
 
     const leadsByStage = (stageId: string) => boardLeads.filter(l => l.stage === stageId);
+
+    const stageMap = useMemo(() => new Map(stages.map(s => [s._id, s])), [stages]);
+
+    const resolvePerson = (lead: Lead): { id: string; label: string } => {
+        if (lead.assignedTo && typeof lead.assignedTo === 'object') {
+            return { id: lead.assignedTo._id, label: staffLabel(lead.assignedTo) };
+        }
+        if (lead.assignedTo) {
+            const staff = staffList.find(s => s._id === lead.assignedTo);
+            return { id: lead.assignedTo as string, label: staff ? staffLabel(staff) : 'Unknown' };
+        }
+        return { id: 'unassigned', label: 'Unassigned' };
+    };
+
+    const personGroups = useMemo(() => {
+        const map = new Map<string, { id: string; label: string; leads: Lead[] }>();
+        leads.forEach(lead => {
+            const { id, label } = resolvePerson(lead);
+            if (!map.has(id)) map.set(id, { id, label, leads: [] });
+            map.get(id)!.leads.push(lead);
+        });
+        return Array.from(map.values()).sort((a, b) => {
+            if (a.id === 'unassigned') return 1;
+            if (b.id === 'unassigned') return -1;
+            return a.label.localeCompare(b.label);
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [leads, staffList]);
+
+    const personGroupStats = (groupLeads: Lead[]) => {
+        let open = 0;
+        let pipeline = 0;
+        let won = 0;
+        groupLeads.forEach(l => {
+            const stage = stageMap.get(l.stage);
+            if (stage?.isWon) won += 1;
+            else if (!stage?.isLost) {
+                open += 1;
+                pipeline += l.value || 0;
+            }
+        });
+        return { open, pipeline, won };
+    };
+
+    const visiblePersonGroups = useMemo(
+        () => (personFilter === 'everyone' ? personGroups : personGroups.filter(g => g.id === personFilter)),
+        [personGroups, personFilter]
+    );
 
     const openNewLeadForm = () => {
         setEditingLead(null);
@@ -563,28 +636,179 @@ export default function LeadsView() {
 
             {/* Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                <div className="relative flex-1 min-w-[220px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search leads..."
-                        className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-700/60 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('board')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'board'
+                                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                }`}
+                        >
+                            <LayoutGrid className="size-3.5" /> Board
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('person')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'person'
+                                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                }`}
+                        >
+                            <Users className="size-3.5" /> By person
+                        </button>
+                    </div>
+                    <div className="relative flex-1 min-w-[220px] max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search leads..."
+                            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        />
+                    </div>
                 </div>
                 <div className="text-sm text-slate-500 dark:text-slate-400">
                     Active leads {boardLeads.length}
                 </div>
             </div>
 
-            {/* Board */}
+            {/* Person filter chips */}
+            {!loading && viewMode === 'person' && (
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setPersonFilter('everyone')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${personFilter === 'everyone'
+                            ? 'border-teal-400 bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-600'
+                            : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                            }`}
+                    >
+                        Everyone
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-900/10 dark:bg-white/10">{leads.length}</span>
+                    </button>
+                    {personGroups.map(g => (
+                        <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => setPersonFilter(g.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${personFilter === g.id
+                                ? 'border-teal-400 bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-600'
+                                : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                }`}
+                        >
+                            {g.label}
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-900/10 dark:bg-white/10">{g.leads.length}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Board / By person */}
             {loading ? (
                 <div className="flex items-center justify-center py-20">
                     <Loader2 className="size-8 animate-spin text-teal-600" />
                 </div>
+            ) : viewMode === 'person' ? (
+                <div className="space-y-4">
+                    {visiblePersonGroups.length === 0 ? (
+                        <div className="text-center text-sm text-slate-400 dark:text-slate-500 py-16 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                            No leads found
+                        </div>
+                    ) : (
+                        visiblePersonGroups.map(group => {
+                            const { open, pipeline, won } = personGroupStats(group.leads);
+                            const collapsed = collapsedPersons.has(group.id);
+                            const stagesWithLeads = sortedStages
+                                .map(stage => ({ stage, leads: group.leads.filter(l => l.stage === stage._id) }))
+                                .filter(s => s.leads.length > 0);
+                            return (
+                                <div key={group.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => togglePersonCollapsed(group.id)}
+                                        className="w-full flex flex-wrap items-center justify-between gap-3 p-4 text-left"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {collapsed ? (
+                                                <ChevronRight className="size-4 text-slate-400 shrink-0" />
+                                            ) : (
+                                                <ChevronDown className="size-4 text-slate-400 shrink-0" />
+                                            )}
+                                            <div className="flex items-center justify-center size-9 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-xs font-bold shrink-0">
+                                                {initialsFor(group.label)}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-sm text-slate-900 dark:text-white">{group.label}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                    {group.leads.length} lead{group.leads.length === 1 ? '' : 's'} · {open} open · {won} won
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-center min-w-[64px]">
+                                                <div className="text-[10px] text-slate-500 dark:text-slate-400">Open</div>
+                                                <div className="font-bold text-sm text-slate-900 dark:text-white">{open}</div>
+                                            </div>
+                                            <div className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-center min-w-[80px]">
+                                                <div className="text-[10px] text-slate-500 dark:text-slate-400">Pipeline</div>
+                                                <div className="font-bold text-sm text-slate-900 dark:text-white">{formatCurrency(pipeline)}</div>
+                                            </div>
+                                            <div className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-center min-w-[64px]">
+                                                <div className="text-[10px] text-slate-500 dark:text-slate-400">Won</div>
+                                                <div className="font-bold text-sm text-slate-900 dark:text-white">{won}</div>
+                                            </div>
+                                        </div>
+                                    </button>
+
+                                    {!collapsed && (
+                                        <div className="border-t border-slate-100 dark:border-slate-700 p-4 space-y-4">
+                                            {stagesWithLeads.map(({ stage, leads: stageLeads }) => (
+                                                <div key={stage._id}>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="size-2 rounded-full" style={{ backgroundColor: stage.color }} />
+                                                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{stage.name}</span>
+                                                        <span className="text-xs text-slate-400">{stageLeads.length}</span>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {stageLeads.map(lead => (
+                                                            <div
+                                                                key={lead._id}
+                                                                className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-slate-50/60 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700"
+                                                            >
+                                                                <div>
+                                                                    <p className="font-medium text-sm text-slate-900 dark:text-white">{lead.name}</p>
+                                                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                                        {lead.company && (
+                                                                            <span className="flex items-center gap-1"><Building2 className="size-3" /> {lead.company}</span>
+                                                                        )}
+                                                                        {lead.phone && (
+                                                                            <span className="flex items-center gap-1"><Phone className="size-3" /> {lead.phone}</span>
+                                                                        )}
+                                                                        {lead.location && (
+                                                                            <span className="flex items-center gap-1"><MapPin className="size-3" /> {lead.location}</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                {lead.value > 0 && (
+                                                                    <p className="font-semibold text-sm text-teal-600 dark:text-teal-400">{formatCurrency(lead.value)}</p>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="flex flex-nowrap gap-4 overflow-x-auto pb-2">
                     {boardStages.map(col => {
                         const colLeads = leadsByStage(col._id);
                         return (
@@ -593,12 +817,12 @@ export default function LeadsView() {
                                 onDragOver={(e) => { e.preventDefault(); setDragOverStage(col._id); }}
                                 onDragLeave={() => setDragOverStage(prev => (prev === col._id ? null : prev))}
                                 onDrop={(e) => { e.preventDefault(); handleDrop(col._id); }}
-                                className={`rounded-xl border p-3 min-h-[220px] transition-colors ${dragOverStage === col._id
+                                className={`flex flex-col rounded-xl border p-3 min-h-[220px] max-h-[calc(100vh-260px)] w-72 shrink-0 transition-colors ${dragOverStage === col._id
                                     ? 'border-teal-400 bg-teal-50/50 dark:bg-teal-900/10'
                                     : 'border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/30'
                                     }`}
                             >
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center justify-between mb-3 shrink-0">
                                     <div className="flex items-center gap-2">
                                         <span className="size-2.5 rounded-full" style={{ backgroundColor: col.color }} />
                                         <span className="font-semibold text-sm text-slate-900 dark:text-white">{col.name}</span>
@@ -606,7 +830,7 @@ export default function LeadsView() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="space-y-2 overflow-y-auto pr-1 -mr-1">
                                     {colLeads.length === 0 ? (
                                         <div className="text-center text-xs text-slate-400 dark:text-slate-500 py-8">
                                             No leads
