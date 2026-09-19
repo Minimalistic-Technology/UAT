@@ -90,6 +90,7 @@ interface Product {
     widthCm?: number;
     heightCm?: number;
     isActive: boolean;
+    codAvailable?: boolean;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -170,7 +171,8 @@ const AdminDashboard = () => {
         weightKg: "",
         lengthCm: "",
         widthCm: "",
-        heightCm: ""
+        heightCm: "",
+        codAvailable: true
     });
 
     interface NewProductFormErrors {
@@ -681,6 +683,7 @@ const AdminDashboard = () => {
             formData.append('lengthCm', String(Number(newProduct.lengthCm) || 10));
             formData.append('widthCm', String(Number(newProduct.widthCm) || 10));
             formData.append('heightCm', String(Number(newProduct.heightCm) || 10));
+            formData.append('codAvailable', String(newProduct.codAvailable));
             imageUrls.forEach(url => formData.append('imageUrls', url));
             newProductImageFiles.forEach(file => formData.append('images', file));
 
@@ -692,7 +695,7 @@ const AdminDashboard = () => {
                 setNewProduct({
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", brand: "",
                     modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: "",
-                    weightKg: "", lengthCm: "", widthCm: "", heightCm: ""
+                    weightKg: "", lengthCm: "", widthCm: "", heightCm: "", codAvailable: true
                 });
                 setNewProductImageDraft("");
                 setNewProductImageFiles([]);
@@ -731,7 +734,8 @@ const AdminDashboard = () => {
             weightKg: String((product as any).weightKg ?? 0.5),
             lengthCm: String((product as any).lengthCm ?? 10),
             widthCm: String((product as any).widthCm ?? 10),
-            heightCm: String((product as any).heightCm ?? 10)
+            heightCm: String((product as any).heightCm ?? 10),
+            codAvailable: (product as any).codAvailable !== false
         });
         setEditProductImageDraft("");
         setEditProductImageFiles([]);
@@ -769,6 +773,7 @@ const AdminDashboard = () => {
             formData.append('lengthCm', String(Number(editingProduct.lengthCm) || 10));
             formData.append('widthCm', String(Number(editingProduct.widthCm) || 10));
             formData.append('heightCm', String(Number(editingProduct.heightCm) || 10));
+            formData.append('codAvailable', String(editingProduct.codAvailable !== false));
             formData.append('imagesFieldPresent', 'true');
             imageUrls.forEach((url: string) => formData.append('imageUrls', url));
             editProductImageFiles.forEach(file => formData.append('images', file));
@@ -2019,6 +2024,16 @@ const AdminDashboard = () => {
                                                     </div>
                                                 </div>
                                                 <p className="text-xs text-slate-400 -mt-2">Packed weight and dimensions are used to calculate Blue Dart / DTDC freight rates at checkout.</p>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="newProductCodAvailable"
+                                                        checked={newProduct.codAvailable}
+                                                        onChange={(e) => setNewProduct({ ...newProduct, codAvailable: e.target.checked })}
+                                                        className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                    />
+                                                    <label htmlFor="newProductCodAvailable" className="text-sm font-medium text-slate-700 dark:text-slate-300">Cash on Delivery (COD) available</label>
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand</label>
@@ -2384,6 +2399,16 @@ const AdminDashboard = () => {
                                                     </div>
                                                 </div>
                                                 <p className="text-xs text-slate-400 -mt-2">Packed weight and dimensions are used to calculate Blue Dart / DTDC freight rates at checkout.</p>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="editProductCodAvailable"
+                                                        checked={editingProduct.codAvailable !== false}
+                                                        onChange={(e) => setEditingProduct({ ...editingProduct, codAvailable: e.target.checked })}
+                                                        className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                    />
+                                                    <label htmlFor="editProductCodAvailable" className="text-sm font-medium text-slate-700 dark:text-slate-300">Cash on Delivery (COD) available</label>
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand</label>

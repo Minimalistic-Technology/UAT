@@ -128,7 +128,7 @@ export const createProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm } = req.body;
 
         // Combine manually entered image URLs (`imageUrls`) with newly uploaded files,
         // uploaded to Cloudinary by `uploadProductImagesMiddleware` above this handler.
@@ -156,6 +156,7 @@ export const createProduct = async (req: Request, res: Response) => {
             discountType: discountType || 'percentage',
             discountValue: discountValue || 0,
             showOnHome: showOnHome || false,
+            codAvailable: codAvailable !== undefined ? codAvailable !== 'false' && codAvailable !== false : true,
             cgst: cgst || 0,
             sgst: sgst || 0,
             weightKg: weightKg || 0.5,
@@ -183,7 +184,7 @@ export const updateProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -220,6 +221,7 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.discountType = discountType || product.discountType;
         product.discountValue = discountValue !== undefined ? discountValue : product.discountValue;
         product.showOnHome = showOnHome !== undefined ? showOnHome : product.showOnHome;
+        product.codAvailable = codAvailable !== undefined ? (codAvailable !== 'false' && codAvailable !== false) : product.codAvailable;
         product.cgst = cgst !== undefined ? cgst : product.cgst;
         product.sgst = sgst !== undefined ? sgst : product.sgst;
         product.weightKg = weightKg !== undefined ? weightKg : product.weightKg;

@@ -160,6 +160,15 @@ export default function CheckoutPage() {
     }, 0);
     const roundedWeightKg = Math.max(0.5, Math.round(totalWeightKg * 10) / 10);
 
+    // COD is only offered when every product in the cart supports it
+    const isCodAvailable = validCartItems.every(item => item.product.codAvailable !== false);
+
+    useEffect(() => {
+        if (!isCodAvailable && paymentMethod === 'cod') {
+            setPaymentMethod('cashfree');
+        }
+    }, [isCodAvailable, paymentMethod]);
+
     // Live calculate carrier freight rates when 6-digit ZIP is entered
     useEffect(() => {
         const checkZipServiceability = async () => {
@@ -966,11 +975,16 @@ export default function CheckoutPage() {
                                     </div>
                                 </label>
 
-                                <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-teal-200'}`}>
-                                    <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="w-5 h-5 text-teal-600 focus:ring-teal-500" />
+                                <label className={`flex items-center p-4 rounded-xl border-2 transition-all ${!isCodAvailable ? 'opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-700' : paymentMethod === 'cod' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 cursor-pointer' : 'border-slate-200 dark:border-slate-700 hover:border-teal-200 cursor-pointer'}`}>
+                                    <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} disabled={!isCodAvailable} onChange={() => setPaymentMethod('cod')} className="w-5 h-5 text-teal-600 focus:ring-teal-500 disabled:cursor-not-allowed" />
                                     <div className="ml-4 flex items-center gap-2">
                                         <Banknote className="size-5 text-slate-700 dark:text-slate-300" />
-                                        <span className="font-medium text-slate-900 dark:text-white">Cash on Delivery</span>
+                                        <div>
+                                            <span className="font-medium text-slate-900 dark:text-white block">Cash on Delivery</span>
+                                            {!isCodAvailable && (
+                                                <span className="text-xs text-slate-500">Not available for one or more items in your cart</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </label>
                             </div>

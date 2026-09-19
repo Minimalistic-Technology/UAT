@@ -129,6 +129,9 @@ export const createOrder = async (req: Request | any, res: Response) => {
             if (product.stock < item.quantity) {
                 return res.status(400).json({ msg: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` });
             }
+            if (paymentMethod === 'cod' && product.codAvailable === false) {
+                return res.status(400).json({ msg: `Cash on Delivery is not available for ${product.name}` });
+            }
         }
 
         const orderData: any = {

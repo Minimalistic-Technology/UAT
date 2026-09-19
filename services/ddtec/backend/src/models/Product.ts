@@ -20,6 +20,7 @@ export interface IProduct extends Document {
     discountValue: number;
     isActive: boolean;
     showOnHome: boolean;
+    codAvailable: boolean;
     taxes: Array<{ name: string; rate: number }>;
     cgst: number;
     sgst: number;
@@ -52,6 +53,7 @@ const ProductSchema: Schema = new Schema({
     discountValue: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true },
     showOnHome: { type: Boolean, default: false },
+    codAvailable: { type: Boolean, default: true },
     cgst: { type: Number, default: 0, min: 0 },
     sgst: { type: Number, default: 0, min: 0 },
     weightKg: { type: Number, default: 0.5, min: 0.05 },
