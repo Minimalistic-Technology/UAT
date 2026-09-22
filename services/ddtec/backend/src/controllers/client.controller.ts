@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Client from '../models/Client';
 import ClientProject from '../models/ClientProject';
+import Lead from '../models/Lead';
 
 const sendClientError = (res: Response, err: any, fallbackMsg: string) => {
     if (err?.name === 'ValidationError') {
@@ -108,6 +109,7 @@ export const deleteClient = async (req: Request, res: Response): Promise<void> =
             return;
         }
         await ClientProject.deleteMany({ client: client._id });
+        await Lead.updateMany({ convertedClient: client._id }, { $set: { convertedClient: null } });
         res.json({ msg: 'Client deleted' });
     } catch (err: any) {
         console.error('Error deleting client:', err);

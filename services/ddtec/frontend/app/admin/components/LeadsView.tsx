@@ -25,6 +25,7 @@ import {
     LayoutGrid,
     Users,
     ChevronRight,
+    UserCheck,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
@@ -60,6 +61,8 @@ interface Lead {
     assignedTo?: AssignedUser | string | null;
     followUpDate?: string;
     note?: string;
+    convertedClient?: string | null;
+    convertedContact?: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -166,10 +169,14 @@ export default function LeadsView() {
 
     useEffect(() => {
         if (!openMenuId) return;
-        window.addEventListener('scroll', closeLeadMenu, true);
+        const handleScroll = (e: Event) => {
+            if (menuRef.current && e.target instanceof Node && menuRef.current.contains(e.target)) return;
+            closeLeadMenu();
+        };
+        window.addEventListener('scroll', handleScroll, true);
         window.addEventListener('resize', closeLeadMenu);
         return () => {
-            window.removeEventListener('scroll', closeLeadMenu, true);
+            window.removeEventListener('scroll', handleScroll, true);
             window.removeEventListener('resize', closeLeadMenu);
         };
     }, [openMenuId]);
@@ -485,6 +492,28 @@ export default function LeadsView() {
         } catch (err) {
             console.error('Error deleting lead:', err);
             showToast('Failed to delete lead', 'error');
+        }
+    };
+
+    const [convertingId, setConvertingId] = useState<string | null>(null);
+
+    const handleConvertLead = async (lead: Lead) => {
+        const ok = await confirm({
+            title: 'Convert to Client',
+            message: `Convert "${lead.name}" into a Client and add them to Contacts?`,
+            confirmLabel: 'Convert',
+        });
+        if (!ok) return;
+        setConvertingId(lead._id);
+        try {
+            const { data } = await api.post(`leads/${lead._id}/convert`);
+            setLeads(prev => prev.map(l => (l._id === lead._id ? { ...l, convertedClient: data.client?._id, convertedContact: data.contact?._id } : l)));
+            showToast('Lead converted to Client & Contact', 'success');
+        } catch (err: any) {
+            console.error('Error converting lead:', err);
+            showToast(err?.response?.data?.msg || 'Failed to convert lead', 'error');
+        } finally {
+            setConvertingId(null);
         }
     };
 
@@ -916,6 +945,12 @@ export default function LeadsView() {
                                                         <UserIcon className="size-3" /> {staffLabel(lead.assignedTo)}
                                                     </p>
                                                 )}
+                                                {(lead.convertedClient || lead.convertedContact) && (
+                                                    <p className={`flex items-center gap-1 text-xs font-semibold mt-1 ${lead.convertedClient && lead.convertedContact ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                                        <UserCheck className="size-3" />
+                                                        {lead.convertedClient && lead.convertedContact ? 'Converted to Client' : 'Partially converted'}
+                                                    </p>
+                                                )}
 
                                             </div>
                                         ))
@@ -958,6 +993,16 @@ export default function LeadsView() {
                                     </button>
                                 ))}
                                 <div className="my-1 border-t border-slate-100 dark:border-slate-600" />
+                                {!(lead.convertedClient && lead.convertedContact) && (
+                                    <button
+                                        disabled={convertingId === lead._id}
+                                        onClick={() => { closeLeadMenu(); handleConvertLead(lead); }}
+                                        className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-teal-700 dark:text-teal-400 disabled:opacity-50"
+                                    >
+                                        <UserCheck className="size-3.5" />
+                                        {lead.convertedClient || lead.convertedContact ? 'Finish Conversion' : 'Convert to Client'}
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => { openEditLeadForm(lead); closeLeadMenu(); }}
                                     className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"

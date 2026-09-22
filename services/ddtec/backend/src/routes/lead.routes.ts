@@ -4,7 +4,8 @@ import {
     getLeadStats,
     createLead,
     updateLead,
-    deleteLead
+    deleteLead,
+    convertLeadToClient
 } from '../controllers/lead.controller';
 import { auth, checkPermission } from '../middleware/auth.middleware';
 
@@ -23,6 +24,9 @@ router.post('/', auth, adminOnly, createLead);
 
 // @route   PUT /api/leads/:id
 router.put('/:id', auth, adminOnly, updateLead);
+
+// @route   POST /api/leads/:id/convert
+router.post('/:id/convert', auth, adminOnly, convertLeadToClient);
 
 // @route   DELETE /api/leads/:id
 router.delete('/:id', auth, adminOnly, deleteLead);
