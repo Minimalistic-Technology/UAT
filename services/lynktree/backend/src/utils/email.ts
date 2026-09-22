@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
+import { ApiError } from './ApiError';
 import type { OtpPurpose } from '../models/Otp.model';
 
 interface SendEmailOptions {
@@ -49,12 +50,22 @@ async function sendViaBrevo({ to, subject, html }: SendEmailOptions) {
   client.authentications['api-key'].apiKey = env.BREVO_API_KEY;
   const api = new SibApiV3Sdk.TransactionalEmailsApi();
 
-  await api.sendTransacEmail({
-    sender: { email: env.BREVO_SENDER_EMAIL, name: env.BREVO_SENDER_NAME },
-    to: [{ email: to }],
-    subject,
-    htmlContent: html,
-  });
+  try {
+    await api.sendTransacEmail({
+      sender: { email: env.BREVO_SENDER_EMAIL, name: env.BREVO_SENDER_NAME },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    });
+  } catch (err) {
+    // The Brevo SDK (superagent) rejects 4xx/5xx responses with an Error whose
+    // `.message` is just the raw HTTP status text (e.g. "Unauthorized" for an
+    // invalid/expired BREVO_API_KEY). Left uncaught, that surfaces to the
+    // client as a misleading top-level "Unauthorized" auth error, so wrap it
+    // in a clear, correctly-scoped message instead.
+    console.error('[email:brevo] Failed to send email:', err);
+    throw new ApiError(502, 'Could not send verification email. Please try again in a moment.');
+  }
   return {};
 }
 

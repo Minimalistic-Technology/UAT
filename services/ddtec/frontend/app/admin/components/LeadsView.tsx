@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Target,
     Plus,
@@ -155,8 +156,38 @@ export default function LeadsView() {
     const [savingStages, setSavingStages] = useState(false);
 
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [menuAnchor, setMenuAnchor] = useState<{ top: number; bottom: number; right: number } | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+    const menuRef = useRef<HTMLDivElement | null>(null);
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+
+    const closeLeadMenu = () => { setOpenMenuId(null); setMenuAnchor(null); setMenuPosition(null); };
+
+    useEffect(() => {
+        if (!openMenuId) return;
+        window.addEventListener('scroll', closeLeadMenu, true);
+        window.addEventListener('resize', closeLeadMenu);
+        return () => {
+            window.removeEventListener('scroll', closeLeadMenu, true);
+            window.removeEventListener('resize', closeLeadMenu);
+        };
+    }, [openMenuId]);
+
+    useLayoutEffect(() => {
+        if (!openMenuId || !menuAnchor) return;
+        const margin = 8;
+        const width = menuRef.current?.offsetWidth ?? 176;
+        const height = menuRef.current?.offsetHeight ?? 0;
+        let left = menuAnchor.right - width;
+        left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
+        let top = menuAnchor.bottom + 4;
+        if (top + height > window.innerHeight - margin) {
+            top = menuAnchor.top - height - 4;
+        }
+        top = Math.max(margin, top);
+        setMenuPosition({ top, left });
+    }, [openMenuId, menuAnchor]);
 
     const [staffList, setStaffList] = useState<StaffUser[]>([]);
     const [locatingCurrent, setLocatingCurrent] = useState(false);
@@ -587,9 +618,9 @@ export default function LeadsView() {
     };
 
     return (
-        <div className="space-y-5">
+        <div className="flex flex-col gap-5 h-[calc(100vh-8rem)]">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="shrink-0 flex flex-wrap items-center justify-between gap-4 p-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center size-11 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600">
                         <Target className="size-5" />
@@ -635,7 +666,7 @@ export default function LeadsView() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-700/60 shrink-0">
                         <button
@@ -677,7 +708,7 @@ export default function LeadsView() {
 
             {/* Person filter chips */}
             {!loading && viewMode === 'person' && (
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="shrink-0 flex flex-wrap items-center gap-2">
                     <button
                         type="button"
                         onClick={() => setPersonFilter('everyone')}
@@ -707,12 +738,13 @@ export default function LeadsView() {
             )}
 
             {/* Board / By person */}
+            <div className="flex-1 min-h-0">
             {loading ? (
                 <div className="flex items-center justify-center py-20">
                     <Loader2 className="size-8 animate-spin text-teal-600" />
                 </div>
             ) : viewMode === 'person' ? (
-                <div className="space-y-4">
+                <div className="h-full space-y-4 overflow-y-auto pr-1 -mr-1">
                     {visiblePersonGroups.length === 0 ? (
                         <div className="text-center text-sm text-slate-400 dark:text-slate-500 py-16 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                             No leads found
@@ -808,7 +840,7 @@ export default function LeadsView() {
                     )}
                 </div>
             ) : (
-                <div className="flex flex-nowrap gap-4 overflow-x-auto pb-2">
+                <div className="flex h-full flex-nowrap items-stretch gap-4 overflow-x-auto pb-2">
                     {boardStages.map(col => {
                         const colLeads = leadsByStage(col._id);
                         return (
@@ -817,7 +849,7 @@ export default function LeadsView() {
                                 onDragOver={(e) => { e.preventDefault(); setDragOverStage(col._id); }}
                                 onDragLeave={() => setDragOverStage(prev => (prev === col._id ? null : prev))}
                                 onDrop={(e) => { e.preventDefault(); handleDrop(col._id); }}
-                                className={`flex flex-col rounded-xl border p-3 min-h-[220px] max-h-[calc(100vh-260px)] w-72 shrink-0 transition-colors ${dragOverStage === col._id
+                                className={`flex flex-col rounded-xl border p-3 h-full w-72 shrink-0 transition-colors ${dragOverStage === col._id
                                     ? 'border-teal-400 bg-teal-50/50 dark:bg-teal-900/10'
                                     : 'border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/30'
                                     }`}
@@ -830,7 +862,7 @@ export default function LeadsView() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2 overflow-y-auto pr-1 -mr-1">
+                                <div className="flex-1 space-y-2 overflow-y-auto pr-1 -mr-1">
                                     {colLeads.length === 0 ? (
                                         <div className="text-center text-xs text-slate-400 dark:text-slate-500 py-8">
                                             No leads
@@ -848,7 +880,16 @@ export default function LeadsView() {
                                                 <div className="flex items-start justify-between gap-2">
                                                     <p className="font-medium text-sm text-slate-900 dark:text-white break-words">{lead.name}</p>
                                                     <button
-                                                        onClick={() => setOpenMenuId(openMenuId === lead._id ? null : lead._id)}
+                                                        onClick={(e) => {
+                                                            if (openMenuId === lead._id) {
+                                                                closeLeadMenu();
+                                                            } else {
+                                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                                setMenuAnchor({ top: rect.top, bottom: rect.bottom, right: rect.right });
+                                                                setMenuPosition({ top: rect.bottom + 4, left: rect.right - 176 });
+                                                                setOpenMenuId(lead._id);
+                                                            }
+                                                        }}
                                                         className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
                                                     >
                                                         <MoreHorizontal className="size-4" />
@@ -876,39 +917,6 @@ export default function LeadsView() {
                                                     </p>
                                                 )}
 
-                                                {openMenuId === lead._id && (
-                                                    <div className="absolute right-2 top-9 z-10 w-44 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg py-1 text-sm max-h-72 overflow-y-auto">
-                                                        {sortedStages.filter(s => s._id !== lead.stage).map(s => (
-                                                            <button
-                                                                key={s._id}
-                                                                onClick={() => updateLeadStage(lead._id, s._id)}
-                                                                className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
-                                                            >
-                                                                {s.isWon ? (
-                                                                    <Trophy className="size-3.5 text-emerald-600" />
-                                                                ) : s.isLost ? (
-                                                                    <XCircle className="size-3.5 text-amber-600" />
-                                                                ) : (
-                                                                    <span className="size-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                                                                )}
-                                                                Move to {s.name}
-                                                            </button>
-                                                        ))}
-                                                        <div className="my-1 border-t border-slate-100 dark:border-slate-600" />
-                                                        <button
-                                                            onClick={() => openEditLeadForm(lead)}
-                                                            className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
-                                                        >
-                                                            <Pencil className="size-3.5" /> Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteLead(lead._id)}
-                                                            className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-red-600"
-                                                        >
-                                                            <Trash2 className="size-3.5" /> Delete
-                                                        </button>
-                                                    </div>
-                                                )}
                                             </div>
                                         ))
                                     )}
@@ -917,6 +925,56 @@ export default function LeadsView() {
                         );
                     })}
                 </div>
+            )}
+            </div>
+
+            {/* Lead card action menu (portal to escape column scroll clipping) */}
+            {openMenuId && menuPosition && typeof document !== 'undefined' && createPortal(
+                (() => {
+                    const lead = leads.find(l => l._id === openMenuId);
+                    if (!lead) return null;
+                    return (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={closeLeadMenu} />
+                            <div
+                                ref={menuRef}
+                                className="fixed z-50 w-44 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg py-1 text-sm max-h-72 overflow-y-auto"
+                                style={{ top: menuPosition.top, left: menuPosition.left }}
+                            >
+                                {sortedStages.filter(s => s._id !== lead.stage).map(s => (
+                                    <button
+                                        key={s._id}
+                                        onClick={() => { updateLeadStage(lead._id, s._id); closeLeadMenu(); }}
+                                        className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
+                                    >
+                                        {s.isWon ? (
+                                            <Trophy className="size-3.5 text-emerald-600" />
+                                        ) : s.isLost ? (
+                                            <XCircle className="size-3.5 text-amber-600" />
+                                        ) : (
+                                            <span className="size-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                                        )}
+                                        Move to {s.name}
+                                    </button>
+                                ))}
+                                <div className="my-1 border-t border-slate-100 dark:border-slate-600" />
+                                <button
+                                    onClick={() => { openEditLeadForm(lead); closeLeadMenu(); }}
+                                    className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
+                                >
+                                    <Pencil className="size-3.5" /> Edit
+                                </button>
+                                <button
+                                    onClick={() => { handleDeleteLead(lead._id); closeLeadMenu(); }}
+                                    className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-red-600"
+                                >
+                                    <Trash2 className="size-3.5" /> Delete
+                                </button>
+                            </div>
+                        </>
+                    );
+                })(),
+                document.body
             )}
 
             {/* New Lead Modal */}
