@@ -16,6 +16,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   session: { strategy: "jwt" },
+  trustHost: true,
   callbacks: {
     async jwt({ token, account, profile }) {
       // Runs on initial sign-in only (account is present then).
