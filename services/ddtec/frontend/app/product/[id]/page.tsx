@@ -63,6 +63,10 @@ interface Product {
     isActive?: boolean;
     productType?: 'physical' | 'digital';
     isReturnable?: boolean;
+    showDeliveryChecker?: boolean;
+    allowedCourierPartners?: string[];
+    customDeliveryEstimate?: string;
+    codAvailable?: boolean;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -248,6 +252,12 @@ export default function ProductDetailsPage() {
     const createdAtDate = product.createdAt ? formatDate(product.createdAt) : "N/A";
     const isDigital = product.productType === 'digital';
     const isReturnable = product.isReturnable !== false;
+    const showDeliveryChecker = !isDigital && product.showDeliveryChecker !== false;
+    const deliveryCheckerProps = {
+        codAvailable: product.codAvailable !== false,
+        allowedPartners: product.allowedCourierPartners,
+        customEstimateMessage: product.customDeliveryEstimate || undefined
+    };
 
     const hasDiscount = (product.discountPercentage && product.discountPercentage > 0) || (product.discountValue && product.discountValue > 0);
     const originalPrice = hasDiscount
@@ -481,9 +491,9 @@ export default function ProductDetailsPage() {
                                 </div>
 
                                 {/* Delivery & Pincode Checker */}
-                                {!isDigital && (
+                                {showDeliveryChecker && (
                                     <div className="mb-6">
-                                        <DeliveryPincodeChecker />
+                                        <DeliveryPincodeChecker {...deliveryCheckerProps} />
                                     </div>
                                 )}
 
@@ -730,8 +740,14 @@ export default function ProductDetailsPage() {
                         {activeTab === 'shipping' && !isDigital && (
                             <div className="space-y-6">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Shipping & Courier Logistics</h3>
-                                
-                                <DeliveryPincodeChecker />
+
+                                {showDeliveryChecker ? (
+                                    <DeliveryPincodeChecker {...deliveryCheckerProps} />
+                                ) : (
+                                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
+                                        PIN code delivery check is not applicable for this product.
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">

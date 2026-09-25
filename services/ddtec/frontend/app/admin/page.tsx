@@ -94,6 +94,9 @@ interface Product {
     codAvailable?: boolean;
     productType?: 'physical' | 'digital';
     isReturnable?: boolean;
+    showDeliveryChecker?: boolean;
+    allowedCourierPartners?: string[];
+    customDeliveryEstimate?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -177,7 +180,10 @@ const AdminDashboard = () => {
         heightCm: "",
         codAvailable: true,
         productType: "physical",
-        isReturnable: true
+        isReturnable: true,
+        showDeliveryChecker: true,
+        allowedCourierPartners: ["BLUEDART", "DTDC"] as string[],
+        customDeliveryEstimate: ""
     });
 
     interface NewProductFormErrors {
@@ -691,6 +697,9 @@ const AdminDashboard = () => {
             formData.append('codAvailable', String(newProduct.codAvailable));
             formData.append('productType', newProduct.productType);
             formData.append('isReturnable', String(newProduct.isReturnable));
+            formData.append('showDeliveryChecker', String(newProduct.showDeliveryChecker));
+            formData.append('customDeliveryEstimate', newProduct.customDeliveryEstimate);
+            newProduct.allowedCourierPartners.forEach(code => formData.append('allowedCourierPartners', code));
             imageUrls.forEach(url => formData.append('imageUrls', url));
             newProductImageFiles.forEach(file => formData.append('images', file));
 
@@ -703,7 +712,8 @@ const AdminDashboard = () => {
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", brand: "",
                     modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: "",
                     weightKg: "", lengthCm: "", widthCm: "", heightCm: "", codAvailable: true,
-                    productType: "physical", isReturnable: true
+                    productType: "physical", isReturnable: true, showDeliveryChecker: true,
+                    allowedCourierPartners: ["BLUEDART", "DTDC"], customDeliveryEstimate: ""
                 });
                 setNewProductImageDraft("");
                 setNewProductImageFiles([]);
@@ -745,7 +755,10 @@ const AdminDashboard = () => {
             heightCm: String((product as any).heightCm ?? 10),
             codAvailable: (product as any).codAvailable !== false,
             productType: (product as any).productType === 'digital' ? 'digital' : 'physical',
-            isReturnable: (product as any).isReturnable !== false
+            isReturnable: (product as any).isReturnable !== false,
+            showDeliveryChecker: (product as any).showDeliveryChecker !== false,
+            allowedCourierPartners: (product as any).allowedCourierPartners?.length ? (product as any).allowedCourierPartners : ["BLUEDART", "DTDC"],
+            customDeliveryEstimate: (product as any).customDeliveryEstimate || ""
         });
         setEditProductImageDraft("");
         setEditProductImageFiles([]);
@@ -786,6 +799,9 @@ const AdminDashboard = () => {
             formData.append('codAvailable', String(editingProduct.codAvailable !== false));
             formData.append('productType', editingProduct.productType === 'digital' ? 'digital' : 'physical');
             formData.append('isReturnable', String(editingProduct.isReturnable !== false));
+            formData.append('showDeliveryChecker', String(editingProduct.showDeliveryChecker !== false));
+            formData.append('customDeliveryEstimate', editingProduct.customDeliveryEstimate || '');
+            (editingProduct.allowedCourierPartners?.length ? editingProduct.allowedCourierPartners : ["BLUEDART", "DTDC"]).forEach((code: string) => formData.append('allowedCourierPartners', code));
             formData.append('imagesFieldPresent', 'true');
             imageUrls.forEach((url: string) => formData.append('imageUrls', url));
             editProductImageFiles.forEach(file => formData.append('images', file));
@@ -2079,6 +2095,58 @@ const AdminDashboard = () => {
                                                         <label htmlFor="newProductIsReturnable" className="text-sm font-medium text-slate-700 dark:text-slate-300">Returnable / refundable</label>
                                                     </div>
                                                 </div>
+                                                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 space-y-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="newProductShowDeliveryChecker"
+                                                            checked={newProduct.showDeliveryChecker}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, showDeliveryChecker: e.target.checked })}
+                                                            className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                        />
+                                                        <label htmlFor="newProductShowDeliveryChecker" className="text-sm font-medium text-slate-700 dark:text-slate-300">Show delivery / pincode checker on product page</label>
+                                                    </div>
+
+                                                    {newProduct.showDeliveryChecker && (
+                                                        <>
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Allowed courier partners</label>
+                                                                <div className="flex items-center gap-4">
+                                                                    {["BLUEDART", "DTDC"].map(code => (
+                                                                        <label key={code} className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={newProduct.allowedCourierPartners.includes(code)}
+                                                                                onChange={(e) => {
+                                                                                    const current = newProduct.allowedCourierPartners;
+                                                                                    if (!e.target.checked && current.length === 1) return; // keep at least one selected
+                                                                                    const next = e.target.checked
+                                                                                        ? [...current, code]
+                                                                                        : current.filter(c => c !== code);
+                                                                                    setNewProduct({ ...newProduct, allowedCourierPartners: next });
+                                                                                }}
+                                                                                className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                                            />
+                                                                            {code === "BLUEDART" ? "Blue Dart" : "DTDC"}
+                                                                        </label>
+                                                                    ))}
+                                                                </div>
+                                                                <p className="text-xs text-slate-400 mt-1">Restrict to one carrier for oversized, hazardous or high-value items only that carrier handles.</p>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Custom delivery estimate (optional)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={newProduct.customDeliveryEstimate}
+                                                                    onChange={(e) => setNewProduct({ ...newProduct, customDeliveryEstimate: e.target.value })}
+                                                                    className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                                    placeholder="e.g. Made to order — ships in 7-10 business days"
+                                                                />
+                                                                <p className="text-xs text-slate-400 mt-1">Overrides the live courier ETA shown to customers. Leave blank to use the real-time estimate.</p>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand</label>
@@ -2477,6 +2545,60 @@ const AdminDashboard = () => {
                                                         />
                                                         <label htmlFor="editProductIsReturnable" className="text-sm font-medium text-slate-700 dark:text-slate-300">Returnable / refundable</label>
                                                     </div>
+                                                </div>
+                                                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40 space-y-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="editProductShowDeliveryChecker"
+                                                            checked={editingProduct.showDeliveryChecker !== false}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, showDeliveryChecker: e.target.checked })}
+                                                            className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                        />
+                                                        <label htmlFor="editProductShowDeliveryChecker" className="text-sm font-medium text-slate-700 dark:text-slate-300">Show delivery / pincode checker on product page</label>
+                                                    </div>
+
+                                                    {editingProduct.showDeliveryChecker !== false && (
+                                                        <>
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Allowed courier partners</label>
+                                                                <div className="flex items-center gap-4">
+                                                                    {["BLUEDART", "DTDC"].map(code => {
+                                                                        const current: string[] = editingProduct.allowedCourierPartners?.length ? editingProduct.allowedCourierPartners : ["BLUEDART", "DTDC"];
+                                                                        return (
+                                                                            <label key={code} className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={current.includes(code)}
+                                                                                    onChange={(e) => {
+                                                                                        if (!e.target.checked && current.length === 1) return; // keep at least one selected
+                                                                                        const next = e.target.checked
+                                                                                            ? [...current, code]
+                                                                                            : current.filter(c => c !== code);
+                                                                                        setEditingProduct({ ...editingProduct, allowedCourierPartners: next });
+                                                                                    }}
+                                                                                    className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                                                />
+                                                                                {code === "BLUEDART" ? "Blue Dart" : "DTDC"}
+                                                                            </label>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                                <p className="text-xs text-slate-400 mt-1">Restrict to one carrier for oversized, hazardous or high-value items only that carrier handles.</p>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Custom delivery estimate (optional)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingProduct.customDeliveryEstimate || ""}
+                                                                    onChange={(e) => setEditingProduct({ ...editingProduct, customDeliveryEstimate: e.target.value })}
+                                                                    className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                                    placeholder="e.g. Made to order — ships in 7-10 business days"
+                                                                />
+                                                                <p className="text-xs text-slate-400 mt-1">Overrides the live courier ETA shown to customers. Leave blank to use the real-time estimate.</p>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>

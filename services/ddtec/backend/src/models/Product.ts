@@ -23,6 +23,9 @@ export interface IProduct extends Document {
     codAvailable: boolean;
     productType: 'physical' | 'digital';
     isReturnable: boolean;
+    showDeliveryChecker: boolean;
+    allowedCourierPartners: string[];
+    customDeliveryEstimate?: string;
     taxes: Array<{ name: string; rate: number }>;
     cgst: number;
     sgst: number;
@@ -58,6 +61,9 @@ const ProductSchema: Schema = new Schema({
     codAvailable: { type: Boolean, default: true },
     productType: { type: String, enum: ['physical', 'digital'], default: 'physical' },
     isReturnable: { type: Boolean, default: true },
+    showDeliveryChecker: { type: Boolean, default: true },
+    allowedCourierPartners: { type: [String], enum: ['BLUEDART', 'DTDC'], default: ['BLUEDART', 'DTDC'] },
+    customDeliveryEstimate: { type: String, default: '' },
     cgst: { type: Number, default: 0, min: 0 },
     sgst: { type: Number, default: 0, min: 0 },
     weightKg: { type: Number, default: 0.5, min: 0.05 },

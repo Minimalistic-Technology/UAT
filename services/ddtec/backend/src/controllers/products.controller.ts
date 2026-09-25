@@ -128,7 +128,8 @@ export const createProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate } = req.body;
+        const allowedCourierPartners = normalizeToStringArray(req.body.allowedCourierPartners);
 
         // Combine manually entered image URLs (`imageUrls`) with newly uploaded files,
         // uploaded to Cloudinary by `uploadProductImagesMiddleware` above this handler.
@@ -164,7 +165,10 @@ export const createProduct = async (req: Request, res: Response) => {
             widthCm: widthCm || 10,
             heightCm: heightCm || 10,
             productType: productType === 'digital' ? 'digital' : 'physical',
-            isReturnable: isReturnable !== undefined ? isReturnable !== 'false' && isReturnable !== false : true
+            isReturnable: isReturnable !== undefined ? isReturnable !== 'false' && isReturnable !== false : true,
+            showDeliveryChecker: showDeliveryChecker !== undefined ? showDeliveryChecker !== 'false' && showDeliveryChecker !== false : true,
+            allowedCourierPartners: allowedCourierPartners.length ? allowedCourierPartners : ['BLUEDART', 'DTDC'],
+            customDeliveryEstimate: customDeliveryEstimate || ''
         });
 
         const product = await newProduct.save();
@@ -186,7 +190,7 @@ export const updateProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -232,6 +236,12 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.heightCm = heightCm !== undefined ? heightCm : product.heightCm;
         product.productType = productType !== undefined ? (productType === 'digital' ? 'digital' : 'physical') : product.productType;
         product.isReturnable = isReturnable !== undefined ? (isReturnable !== 'false' && isReturnable !== false) : product.isReturnable;
+        product.showDeliveryChecker = showDeliveryChecker !== undefined ? (showDeliveryChecker !== 'false' && showDeliveryChecker !== false) : product.showDeliveryChecker;
+        product.customDeliveryEstimate = customDeliveryEstimate !== undefined ? customDeliveryEstimate : product.customDeliveryEstimate;
+        if (req.body.allowedCourierPartners !== undefined) {
+            const allowedCourierPartners = normalizeToStringArray(req.body.allowedCourierPartners);
+            product.allowedCourierPartners = allowedCourierPartners.length ? allowedCourierPartners : ['BLUEDART', 'DTDC'];
+        }
 
         await product.save();
 
