@@ -1278,7 +1278,7 @@ const AdminDashboard = () => {
                 </div>
             </aside>
 
-            <main className={`flex-1 p-8 pt-24 transition-all duration-300 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
+            <main className={`flex-1 min-w-0 p-8 pt-24 transition-all duration-300 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
                 {/* View Coupons Modal */}
                 <AnimatePresence>
                     {viewingCoupons && (

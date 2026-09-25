@@ -670,7 +670,7 @@ export default function LeadsView() {
     };
 
     return (
-        <div className="flex flex-col gap-5 h-[calc(100vh-8rem)]">
+        <div className="flex flex-col gap-5 h-[calc(100vh-8rem)] min-w-0">
             {/* Header */}
             <div className="shrink-0 flex flex-wrap items-center justify-between gap-4 p-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-3">
@@ -790,7 +790,7 @@ export default function LeadsView() {
             )}
 
             {/* Board / By person */}
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 min-w-0">
             {loading ? (
                 <div className="flex items-center justify-center py-20">
                     <Loader2 className="size-8 animate-spin text-teal-600" />
