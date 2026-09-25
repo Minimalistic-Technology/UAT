@@ -92,6 +92,8 @@ interface Product {
     heightCm?: number;
     isActive: boolean;
     codAvailable?: boolean;
+    productType?: 'physical' | 'digital';
+    isReturnable?: boolean;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -173,7 +175,9 @@ const AdminDashboard = () => {
         lengthCm: "",
         widthCm: "",
         heightCm: "",
-        codAvailable: true
+        codAvailable: true,
+        productType: "physical",
+        isReturnable: true
     });
 
     interface NewProductFormErrors {
@@ -685,6 +689,8 @@ const AdminDashboard = () => {
             formData.append('widthCm', String(Number(newProduct.widthCm) || 10));
             formData.append('heightCm', String(Number(newProduct.heightCm) || 10));
             formData.append('codAvailable', String(newProduct.codAvailable));
+            formData.append('productType', newProduct.productType);
+            formData.append('isReturnable', String(newProduct.isReturnable));
             imageUrls.forEach(url => formData.append('imageUrls', url));
             newProductImageFiles.forEach(file => formData.append('images', file));
 
@@ -696,7 +702,8 @@ const AdminDashboard = () => {
                 setNewProduct({
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", brand: "",
                     modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: "",
-                    weightKg: "", lengthCm: "", widthCm: "", heightCm: "", codAvailable: true
+                    weightKg: "", lengthCm: "", widthCm: "", heightCm: "", codAvailable: true,
+                    productType: "physical", isReturnable: true
                 });
                 setNewProductImageDraft("");
                 setNewProductImageFiles([]);
@@ -736,7 +743,9 @@ const AdminDashboard = () => {
             lengthCm: String((product as any).lengthCm ?? 10),
             widthCm: String((product as any).widthCm ?? 10),
             heightCm: String((product as any).heightCm ?? 10),
-            codAvailable: (product as any).codAvailable !== false
+            codAvailable: (product as any).codAvailable !== false,
+            productType: (product as any).productType === 'digital' ? 'digital' : 'physical',
+            isReturnable: (product as any).isReturnable !== false
         });
         setEditProductImageDraft("");
         setEditProductImageFiles([]);
@@ -775,6 +784,8 @@ const AdminDashboard = () => {
             formData.append('widthCm', String(Number(editingProduct.widthCm) || 10));
             formData.append('heightCm', String(Number(editingProduct.heightCm) || 10));
             formData.append('codAvailable', String(editingProduct.codAvailable !== false));
+            formData.append('productType', editingProduct.productType === 'digital' ? 'digital' : 'physical');
+            formData.append('isReturnable', String(editingProduct.isReturnable !== false));
             formData.append('imagesFieldPresent', 'true');
             imageUrls.forEach((url: string) => formData.append('imageUrls', url));
             editProductImageFiles.forEach(file => formData.append('images', file));
@@ -2046,6 +2057,30 @@ const AdminDashboard = () => {
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Type</label>
+                                                        <select
+                                                            value={newProduct.productType}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, productType: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                        >
+                                                            <option value="physical">Physical (shipped)</option>
+                                                            <option value="digital">Digital (no shipping/delivery)</option>
+                                                        </select>
+                                                        <p className="text-xs text-slate-400 mt-1">Digital products hide shipping, delivery &amp; courier info on the product page.</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-6">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="newProductIsReturnable"
+                                                            checked={newProduct.isReturnable}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, isReturnable: e.target.checked })}
+                                                            className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                        />
+                                                        <label htmlFor="newProductIsReturnable" className="text-sm font-medium text-slate-700 dark:text-slate-300">Returnable / refundable</label>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand</label>
                                                         <input
                                                             type="text"
@@ -2418,6 +2453,30 @@ const AdminDashboard = () => {
                                                         className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                                                     />
                                                     <label htmlFor="editProductCodAvailable" className="text-sm font-medium text-slate-700 dark:text-slate-300">Cash on Delivery (COD) available</label>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Type</label>
+                                                        <select
+                                                            value={editingProduct.productType === 'digital' ? 'digital' : 'physical'}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, productType: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                        >
+                                                            <option value="physical">Physical (shipped)</option>
+                                                            <option value="digital">Digital (no shipping/delivery)</option>
+                                                        </select>
+                                                        <p className="text-xs text-slate-400 mt-1">Digital products hide shipping, delivery &amp; courier info on the product page.</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-6">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="editProductIsReturnable"
+                                                            checked={editingProduct.isReturnable !== false}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, isReturnable: e.target.checked })}
+                                                            className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                        />
+                                                        <label htmlFor="editProductIsReturnable" className="text-sm font-medium text-slate-700 dark:text-slate-300">Returnable / refundable</label>
+                                                    </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>

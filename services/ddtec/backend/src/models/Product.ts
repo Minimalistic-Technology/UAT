@@ -21,6 +21,8 @@ export interface IProduct extends Document {
     isActive: boolean;
     showOnHome: boolean;
     codAvailable: boolean;
+    productType: 'physical' | 'digital';
+    isReturnable: boolean;
     taxes: Array<{ name: string; rate: number }>;
     cgst: number;
     sgst: number;
@@ -54,6 +56,8 @@ const ProductSchema: Schema = new Schema({
     isActive: { type: Boolean, default: true },
     showOnHome: { type: Boolean, default: false },
     codAvailable: { type: Boolean, default: true },
+    productType: { type: String, enum: ['physical', 'digital'], default: 'physical' },
+    isReturnable: { type: Boolean, default: true },
     cgst: { type: Number, default: 0, min: 0 },
     sgst: { type: Number, default: 0, min: 0 },
     weightKg: { type: Number, default: 0.5, min: 0.05 },

@@ -128,7 +128,7 @@ export const createProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable } = req.body;
 
         // Combine manually entered image URLs (`imageUrls`) with newly uploaded files,
         // uploaded to Cloudinary by `uploadProductImagesMiddleware` above this handler.
@@ -162,7 +162,9 @@ export const createProduct = async (req: Request, res: Response) => {
             weightKg: weightKg || 0.5,
             lengthCm: lengthCm || 10,
             widthCm: widthCm || 10,
-            heightCm: heightCm || 10
+            heightCm: heightCm || 10,
+            productType: productType === 'digital' ? 'digital' : 'physical',
+            isReturnable: isReturnable !== undefined ? isReturnable !== 'false' && isReturnable !== false : true
         });
 
         const product = await newProduct.save();
@@ -184,7 +186,7 @@ export const updateProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -228,6 +230,8 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.lengthCm = lengthCm !== undefined ? lengthCm : product.lengthCm;
         product.widthCm = widthCm !== undefined ? widthCm : product.widthCm;
         product.heightCm = heightCm !== undefined ? heightCm : product.heightCm;
+        product.productType = productType !== undefined ? (productType === 'digital' ? 'digital' : 'physical') : product.productType;
+        product.isReturnable = isReturnable !== undefined ? (isReturnable !== 'false' && isReturnable !== false) : product.isReturnable;
 
         await product.save();
 
