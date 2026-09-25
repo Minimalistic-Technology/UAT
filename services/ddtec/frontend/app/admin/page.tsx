@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../_context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator, CheckCircle2, BookmarkCheck, Upload } from "lucide-react";
+import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator, CheckCircle2, BookmarkCheck, Upload, Building2 } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "./components/ToggleSwitch";
 import CategoriesView from "./components/CategoriesView";
@@ -19,6 +19,7 @@ import PurchaseRecordsView from "./components/PurchaseRecordsView";
 import ContactsView from "./components/ContactsView";
 import LeadsView from "./components/LeadsView";
 import ClientsView from "./components/ClientsView";
+import CompanyView from "./components/CompanyView";
 import { useDynamicRoutes, RouteConfig } from "@/app/_context/RouteContext";
 import { useToast } from "../_context/ToastContext";
 import { useConfirm } from "../_context/ConfirmContext";
@@ -124,7 +125,7 @@ const AdminDashboard = () => {
     const { refreshSettings } = useSettings();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
-    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail' | 'contacts' | 'leads' | 'clients'>('dashboard');
+    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail' | 'contacts' | 'leads' | 'clients' | 'company'>('dashboard');
 
     // Data for Manage Views
     const [usersList, setUsersList] = useState<User[]>([]);
@@ -252,7 +253,7 @@ const AdminDashboard = () => {
     const VALID_VIEWS = [
         'dashboard', 'products', 'users', 'orders', 'inventory', 'messages', 'coupons',
         'blogs', 'categories', 'settings', 'dynamic_routes', 'quotation_products',
-        'create_quotation', 'saved_quotations', 'schedule_mail', 'contacts', 'leads', 'clients'
+        'create_quotation', 'saved_quotations', 'schedule_mail', 'contacts', 'leads', 'clients', 'company'
     ] as const;
 
     useEffect(() => {
@@ -795,7 +796,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail' | 'contacts' | 'leads' | 'clients') => {
+    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail' | 'contacts' | 'leads' | 'clients' | 'company') => {
         setActiveView(view);
         router.push(`/admin?view=${view}`, { scroll: false });
         if (view === 'users') fetchUsers();
@@ -1216,6 +1217,13 @@ const AdminDashboard = () => {
                             <button onClick={() => handleViewChange('clients')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'clients' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
                                 <Users className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
                                 {!isSidebarCollapsed && <span className="ms-3">Client</span>}
+                            </button>
+                        </li>
+
+                        <li>
+                            <button onClick={() => handleViewChange('company')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'company' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+                                <Building2 className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
+                                {!isSidebarCollapsed && <span className="ms-3">Company</span>}
                             </button>
                         </li>
 
@@ -1852,6 +1860,8 @@ const AdminDashboard = () => {
                     {activeView === 'leads' && <LeadsView />}
 
                     {activeView === 'clients' && <ClientsView />}
+
+                    {activeView === 'company' && <CompanyView />}
 
                     {/* Add Product Modal */}
                     <AnimatePresence>
