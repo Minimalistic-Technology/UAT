@@ -199,6 +199,21 @@ export default function LeadsView() {
     const [staffList, setStaffList] = useState<StaffUser[]>([]);
     const [locatingCurrent, setLocatingCurrent] = useState(false);
 
+    const [isAssignOpen, setIsAssignOpen] = useState(false);
+    const [assignSearch, setAssignSearch] = useState('');
+    const assignDropdownRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (!isAssignOpen) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (assignDropdownRef.current && !assignDropdownRef.current.contains(e.target as Node)) {
+                setIsAssignOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isAssignOpen]);
+
     const [viewMode, setViewMode] = useState<'board' | 'person'>('board');
     const [personFilter, setPersonFilter] = useState<string>('everyone');
     const [collapsedPersons, setCollapsedPersons] = useState<Set<string>>(new Set());
@@ -249,6 +264,12 @@ export default function LeadsView() {
     useEffect(() => {
         fetchStaff();
     }, []);
+
+    const filteredStaffList = useMemo(() => {
+        const q = assignSearch.trim().toLowerCase();
+        if (!q) return staffList;
+        return staffList.filter(u => staffLabel(u).toLowerCase().includes(q));
+    }, [staffList, assignSearch]);
 
     const sortedStages = useMemo(() => [...stages].sort((a, b) => a.order - b.order), [stages]);
     const boardStages = useMemo(() => sortedStages.filter(s => !s.isWon && !s.isLost), [sortedStages]);
@@ -312,12 +333,14 @@ export default function LeadsView() {
         setEditingLead(null);
         setFormData({ ...emptyFormData(), stage: boardStages[0]?._id || '' });
         setFormErrors({});
+        setAssignSearch('');
         setIsFormOpen(true);
     };
 
     const openEditLeadForm = (lead: Lead) => {
         setOpenMenuId(null);
         setEditingLead(lead);
+        setAssignSearch('');
         const followUp = lead.followUpDate ? new Date(lead.followUpDate) : null;
         const pad = (n: number) => String(n).padStart(2, '0');
         setFormData({
@@ -1158,18 +1181,49 @@ export default function LeadsView() {
                                     </select>
                                     {formErrors.stage && <p className="text-xs text-red-500 mt-1">{formErrors.stage}</p>}
                                 </div>
-                                <div>
+                                <div className="relative" ref={assignDropdownRef}>
                                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Assign To</label>
-                                    <select
-                                        value={formData.assignedTo}
-                                        onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-                                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                    >
-                                        <option value="">Unassigned</option>
-                                        {staffList.map(u => (
-                                            <option key={u._id} value={u._id}>{staffLabel(u)}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative flex items-center">
+                                        <Search className="absolute left-3 size-4 text-slate-400 pointer-events-none" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search staff..."
+                                            value={isAssignOpen ? assignSearch : (formData.assignedTo ? (staffList.find(u => u._id === formData.assignedTo) ? staffLabel(staffList.find(u => u._id === formData.assignedTo)!) : 'Unknown') : 'Unassigned')}
+                                            onChange={(e) => setAssignSearch(e.target.value)}
+                                            onFocus={() => { setIsAssignOpen(true); setAssignSearch(''); }}
+                                            readOnly={!isAssignOpen}
+                                            className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                                        />
+                                        <ChevronDown className="absolute right-2.5 size-3.5 text-slate-400 pointer-events-none" />
+                                    </div>
+
+                                    {isAssignOpen && (
+                                        <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-56 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setFormData({ ...formData, assignedTo: '' }); setIsAssignOpen(false); setAssignSearch(''); }}
+                                                className="w-full text-left px-3 py-2 text-sm hover:bg-teal-50 dark:hover:bg-teal-950/40 transition text-slate-600 dark:text-slate-300"
+                                            >
+                                                Unassigned
+                                            </button>
+                                            {filteredStaffList.length === 0 ? (
+                                                <div className="px-4 py-4 text-xs text-slate-400 text-center">
+                                                    No matching staff found
+                                                </div>
+                                            ) : (
+                                                filteredStaffList.map(u => (
+                                                    <button
+                                                        key={u._id}
+                                                        type="button"
+                                                        onClick={() => { setFormData({ ...formData, assignedTo: u._id }); setIsAssignOpen(false); setAssignSearch(''); }}
+                                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 dark:hover:bg-teal-950/40 transition ${formData.assignedTo === u._id ? 'text-teal-600 dark:text-teal-400 font-medium' : 'text-slate-800 dark:text-slate-200'}`}
+                                                    >
+                                                        {staffLabel(u)}
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

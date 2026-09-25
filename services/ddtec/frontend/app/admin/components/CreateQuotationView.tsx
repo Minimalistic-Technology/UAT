@@ -20,7 +20,8 @@ import {
     Mail,
     Send,
     ChevronDown,
-    X
+    X,
+    Users
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "@/app/_context/ToastContext";
@@ -33,6 +34,15 @@ interface CatalogItem {
     unit?: string;
     cgst?: number;
     sgst?: number;
+}
+
+interface ClientRecord {
+    _id: string;
+    name: string;
+    company?: string;
+    gstin?: string;
+    email?: string;
+    phone?: string;
 }
 
 interface QuotationLineItem {
@@ -104,7 +114,13 @@ export default function CreateQuotationView() {
     const [isStateOpen, setIsStateOpen] = useState(false);
     const stateDropdownRef = React.useRef<HTMLDivElement>(null);
 
-    // Close catalog / state dropdowns on click outside
+    // Existing clients (for prefilling company details) + searchable combobox state
+    const [clients, setClients] = useState<ClientRecord[]>([]);
+    const [clientSearch, setClientSearch] = useState("");
+    const [isClientOpen, setIsClientOpen] = useState(false);
+    const clientDropdownRef = React.useRef<HTMLDivElement>(null);
+
+    // Close catalog / state / client dropdowns on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (catalogDropdownRef.current && !catalogDropdownRef.current.contains(event.target as Node)) {
@@ -112,6 +128,9 @@ export default function CreateQuotationView() {
             }
             if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
                 setIsStateOpen(false);
+            }
+            if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target as Node)) {
+                setIsClientOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -165,6 +184,7 @@ export default function CreateQuotationView() {
 
     useEffect(() => {
         fetchCatalogItems();
+        fetchClients();
     }, []);
 
     useEffect(() => {
@@ -210,6 +230,26 @@ export default function CreateQuotationView() {
         }
     };
 
+
+    const fetchClients = async () => {
+        try {
+            const { data } = await api.get("/clients");
+            if (Array.isArray(data)) setClients(data);
+        } catch (error) {
+            console.error("Failed to load clients", error);
+        }
+    };
+
+    const handleSelectClient = (client: ClientRecord) => {
+        setBuyer(prev => ({
+            ...prev,
+            name: client.company?.trim() || client.name || prev.name,
+            gstin: client.gstin || prev.gstin,
+            toEmail: client.email || prev.toEmail
+        }));
+        setIsClientOpen(false);
+        setClientSearch("");
+    };
 
     const fetchCatalogItems = async () => {
         setLoadingCatalog(true);
@@ -324,6 +364,18 @@ export default function CreateQuotationView() {
         c.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
         (c.hsnCode && c.hsnCode.toLowerCase().includes(catalogSearch.toLowerCase()))
     );
+
+    // Filter existing clients locally in-memory by search query
+    const filteredClients = clients.filter(c => {
+        const q = clientSearch.toLowerCase();
+        if (!q) return true;
+        return (
+            c.name?.toLowerCase().includes(q) ||
+            c.company?.toLowerCase().includes(q) ||
+            c.email?.toLowerCase().includes(q) ||
+            c.gstin?.toLowerCase().includes(q)
+        );
+    });
 
     // Filter predefined Indian states locally in-memory by search query
     const filteredStates = INDIAN_STATES.filter(s =>
@@ -540,6 +592,73 @@ export default function CreateQuotationView() {
                 <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-700">
                     <Building className="size-4 text-teal-600 dark:text-teal-400" />
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Company Details</h3>
+                </div>
+
+                {/* Select Existing Client (prefills company details below) */}
+                <div className="relative" ref={clientDropdownRef}>
+                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
+                        Select Existing Client
+                    </label>
+                    <div className="relative flex items-center">
+                        <Users className="absolute left-3 size-4 text-slate-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder={clients.length === 0 ? "-- No saved clients --" : "Search clients by name, company, GSTIN, email..."}
+                            value={clientSearch}
+                            onChange={(e) => { setClientSearch(e.target.value); setIsClientOpen(true); }}
+                            onFocus={() => setIsClientOpen(true)}
+                            disabled={clients.length === 0}
+                            className="w-full pl-9 pr-8 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none disabled:opacity-50 transition"
+                        />
+                        {clientSearch ? (
+                            <button
+                                type="button"
+                                onClick={() => setClientSearch("")}
+                                className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                title="Clear search"
+                            >
+                                <X className="size-3.5" />
+                            </button>
+                        ) : (
+                            <ChevronDown className="absolute right-2.5 size-3.5 text-slate-400 pointer-events-none" />
+                        )}
+                    </div>
+
+                    {isClientOpen && clients.length > 0 && (
+                        <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                            {filteredClients.length === 0 ? (
+                                <div className="px-4 py-4 text-xs text-slate-400 text-center">
+                                    No matching clients found
+                                </div>
+                            ) : (
+                                filteredClients.map(c => (
+                                    <button
+                                        key={c._id}
+                                        type="button"
+                                        onClick={() => handleSelectClient(c)}
+                                        className="w-full text-left px-3 py-2.5 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-2 group cursor-pointer"
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
+                                                {c.company || c.name}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                {c.company && c.name && (
+                                                    <span className="text-xs text-slate-400 truncate">{c.name}</span>
+                                                )}
+                                                {c.gstin && (
+                                                    <span className="text-xs text-slate-400 font-mono">• {c.gstin}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {c.email && (
+                                            <span className="text-xs text-slate-400 shrink-0 truncate max-w-[10rem]">{c.email}</span>
+                                        )}
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
