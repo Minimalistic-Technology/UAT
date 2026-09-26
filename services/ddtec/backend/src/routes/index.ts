@@ -21,6 +21,10 @@ import scheduledEmailRoutes from './scheduledEmail.routes';
 import purchaseRecordRoutes from './purchaseRecord.routes';
 import crmContactRoutes from './crmContact.routes';
 import deliveryRoutes from './delivery.routes';
+import leadRoutes from './lead.routes';
+import leadStageRoutes from './leadStage.routes';
+import clientRoutes from './client.routes';
+import companyRoutes from './company.routes';
 
 const router = Router();
 
@@ -48,6 +52,10 @@ router.use('/quotation', quotationRoutes);
 router.use('/purchases', purchaseRecordRoutes);
 router.use('/inventory-records', purchaseRecordRoutes);
 router.use('/contacts', crmContactRoutes);
+router.use('/leads', leadRoutes);
+router.use('/lead-stages', leadStageRoutes);
+router.use('/clients', clientRoutes);
+router.use('/companies', companyRoutes);
 router.use('/delivery', deliveryRoutes);
 router.use('/pincode', deliveryRoutes);
 

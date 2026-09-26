@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "../_context/ToastContext";
+import { useAuth } from "../_context/AuthContext";
 
 interface QuotationProduct {
     _id: string;
@@ -46,6 +47,7 @@ function QuotationContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { showToast } = useToast();
+    const { user } = useAuth();
 
     const [products, setProducts] = useState<QuotationProduct[]>([]);
     const [loading, setLoading] = useState(true);
@@ -260,13 +262,15 @@ function QuotationContent() {
 
                     {/* View Saved Quotations Page Option */}
                     <div className="flex items-center gap-3 shrink-0">
-                        <Link
-                            href="/quotation/saved"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 font-bold rounded-xl border border-teal-200 dark:border-teal-800 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-all text-sm shadow-sm"
-                        >
-                            <BookmarkCheck className="size-4" />
-                            View Saved Quotations
-                        </Link>
+                        {user && (
+                            <Link
+                                href="/quotation/saved"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 font-bold rounded-xl border border-teal-200 dark:border-teal-800 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-all text-sm shadow-sm"
+                            >
+                                <BookmarkCheck className="size-4" />
+                                View Saved Quotations
+                            </Link>
+                        )}
 
                         {(selectedItems.length > 0 || buyer.name) && (
                             <button

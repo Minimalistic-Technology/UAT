@@ -394,15 +394,23 @@ export const saveQuotation = async (req: Request, res: Response) => {
     }
 };
 
+// An admin can see/manage every quotation (including guest ones); everyone
+// else may only see/manage quotations they own.
+function isAdminUser(req: Request): boolean {
+    return (req as any).user?.role === 'admin';
+}
+
+function ownsQuotation(req: Request, quotation: any): boolean {
+    const userId = (req as any).user?.id || (req as any).user?._id;
+    return !!quotation.user && String(quotation.user) === String(userId);
+}
+
 // @route   GET api/quotation/saved
-// @desc    Get all saved quotations
+// @desc    Get all saved quotations owned by the requesting user (or all, for admins)
 export const getAllSavedQuotations = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user?.id || (req as any).user?._id;
-        let query = {};
-        if (userId) {
-            query = { $or: [{ user: userId }, { user: null }] };
-        }
+        const query = isAdminUser(req) ? {} : { user: userId };
         const quotations = await SavedQuotation.find(query).sort({ createdAt: -1 });
         return res.status(200).json(quotations);
     } catch (err: any) {
@@ -412,13 +420,16 @@ export const getAllSavedQuotations = async (req: Request, res: Response) => {
 };
 
 // @route   GET api/quotation/saved/:id
-// @desc    Get a single saved quotation by ID
+// @desc    Get a single saved quotation by ID (owner or admin only)
 export const getSavedQuotationById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const quotation = await SavedQuotation.findById(id);
         if (!quotation) {
             return res.status(404).json({ msg: 'Saved quotation not found' });
+        }
+        if (!isAdminUser(req) && !ownsQuotation(req, quotation)) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to view this quotation.' });
         }
         return res.status(200).json(quotation);
     } catch (err: any) {
@@ -428,14 +439,18 @@ export const getSavedQuotationById = async (req: Request, res: Response) => {
 };
 
 // @route   DELETE api/quotation/saved/:id
-// @desc    Delete a saved quotation
+// @desc    Delete a saved quotation (owner or admin only)
 export const deleteSavedQuotation = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const deleted = await SavedQuotation.findByIdAndDelete(id);
-        if (!deleted) {
+        const quotation = await SavedQuotation.findById(id);
+        if (!quotation) {
             return res.status(404).json({ msg: 'Saved quotation not found' });
         }
+        if (!isAdminUser(req) && !ownsQuotation(req, quotation)) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to delete this quotation.' });
+        }
+        await quotation.deleteOne();
         return res.status(200).json({ success: true, msg: 'Saved quotation deleted successfully' });
     } catch (err: any) {
         console.error('Error deleting saved quotation:', err);
@@ -444,13 +459,16 @@ export const deleteSavedQuotation = async (req: Request, res: Response) => {
 };
 
 // @route   POST api/quotation/saved/:id/duplicate
-// @desc    Duplicate a saved quotation to create a new copy
+// @desc    Duplicate a saved quotation to create a new copy (owner or admin only)
 export const duplicateSavedQuotation = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const source = await SavedQuotation.findById(id);
         if (!source) {
             return res.status(404).json({ msg: 'Saved quotation not found' });
+        }
+        if (!isAdminUser(req) && !ownsQuotation(req, source)) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to duplicate this quotation.' });
         }
 
         const userId = (req as any).user?.id || (req as any).user?._id;

@@ -111,6 +111,51 @@ export const createCustomTemplate = async (req: any, res: Response): Promise<voi
 };
 
 /**
+ * Update an existing custom email template
+ */
+export const updateCustomTemplate = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { name, category, description, subject, previewText, badge, html } = req.body;
+
+        if (!name || !subject || !html) {
+            res.status(400).json({ success: false, msg: 'Please provide a template Name, Subject, and HTML content.' });
+            return;
+        }
+
+        const updated = await EmailTemplate.findByIdAndUpdate(
+            id,
+            { name, category: category || 'Custom', description: description || '', subject, previewText: previewText || '', badge: badge || 'CUSTOM', html },
+            { new: true, runValidators: true }
+        );
+
+        if (!updated) {
+            res.status(404).json({ success: false, msg: 'Custom template not found.' });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            msg: 'Custom template updated successfully.',
+            template: {
+                id: updated._id.toString(),
+                name: updated.name,
+                category: updated.category,
+                description: updated.description,
+                subject: updated.subject,
+                previewText: updated.previewText,
+                badge: updated.badge,
+                html: updated.html,
+                isCustom: true
+            }
+        });
+    } catch (error: any) {
+        console.error('[CONTROLLER-ERROR] updateCustomTemplate:', error);
+        res.status(500).json({ success: false, msg: 'Failed to update custom template', error: error.message });
+    }
+};
+
+/**
  * Delete a custom email template
  */
 export const deleteCustomTemplate = async (req: Request, res: Response): Promise<void> => {
@@ -268,11 +313,48 @@ export const updateScheduledEmail = async (req: Request, res: Response): Promise
             emailDoc.customRecipients = recipientsList;
         }
 
+        // Re-register the schedule on Brevo so the edited content/time/recipients take effect.
+        // Cancel the previously registered Brevo schedule first to avoid a duplicate send.
+        if (emailDoc.brevoMessageId) {
+            await NotificationService.cancelScheduledBrevoEmail(emailDoc.brevoMessageId);
+            emailDoc.brevoMessageId = undefined;
+        }
+
+        const targetRecipients = await SchedulerService.resolveRecipients(emailDoc);
+        if (targetRecipients.length === 0) {
+            res.status(400).json({ success: false, msg: 'No recipient email addresses found for this email task.' });
+            return;
+        }
+
+        const targetDate = emailDoc.scheduledAt as Date;
+        const isImmediate = targetDate.getTime() <= Date.now() + 10000;
+        const scheduledAtISO = isImmediate ? undefined : targetDate.toISOString();
+
+        const dispatchResult = await NotificationService.sendCustomEmail(
+            targetRecipients,
+            emailDoc.subject,
+            emailDoc.htmlContent,
+            scheduledAtISO
+        );
+
+        if (!dispatchResult.success) {
+            res.status(400).json({ success: false, msg: `Brevo dispatch failed: ${dispatchResult.msg || 'Unknown error'}` });
+            return;
+        }
+
+        emailDoc.brevoMessageId = dispatchResult.messageId;
+        emailDoc.status = isImmediate ? 'sent' : 'pending';
+        emailDoc.sentCount = targetRecipients.length;
+        emailDoc.sentAt = isImmediate ? new Date() : undefined;
+        emailDoc.errorMessage = undefined;
+
         await emailDoc.save();
 
         res.status(200).json({
             success: true,
-            msg: 'Scheduled email updated successfully.',
+            msg: isImmediate
+                ? 'Email updated and dispatched immediately via Brevo.'
+                : 'Email updated and re-scheduled natively on Brevo servers.',
             scheduledEmail: emailDoc
         });
     } catch (error: any) {

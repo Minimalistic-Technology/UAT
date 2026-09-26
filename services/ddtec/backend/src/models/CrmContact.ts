@@ -57,7 +57,7 @@ const CrmContactAddressSchema = new Schema<ICrmContactAddress>({
 
 const CrmContactSchema: Schema = new Schema({
     firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, trim: true },
+    lastName: { type: String, required: true, trim: true },
     emails: { type: [CrmContactEmailSchema], default: [] },
     phones: { type: [CrmContactPhoneSchema], default: [] },
     company: { type: String, trim: true, index: true },

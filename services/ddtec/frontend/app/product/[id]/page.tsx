@@ -29,7 +29,9 @@ import {
     Info,
     Sparkles,
     CheckCircle2,
-    PackageCheck
+    PackageCheck,
+    Download,
+    Ban
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
@@ -59,6 +61,12 @@ interface Product {
     cgst?: number;
     sgst?: number;
     isActive?: boolean;
+    productType?: 'physical' | 'digital';
+    isReturnable?: boolean;
+    showDeliveryChecker?: boolean;
+    allowedCourierPartners?: string[];
+    customDeliveryEstimate?: string;
+    codAvailable?: boolean;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -178,7 +186,6 @@ export default function ProductDetailsPage() {
         if (!product || quantity <= 0) return;
         try {
             await addToCart(product._id, quantity);
-            showToast?.(`Added ${quantity} ${product.name} to cart!`, "success");
             setQuantity(1); // Reset quantity selector back to default
         } catch {
             showToast?.("Failed to add product to cart", "error");
@@ -243,6 +250,14 @@ export default function ProductDetailsPage() {
 
     const categoryName = typeof product.category === 'object' ? product.category.name : product.category;
     const createdAtDate = product.createdAt ? formatDate(product.createdAt) : "N/A";
+    const isDigital = product.productType === 'digital';
+    const isReturnable = product.isReturnable !== false;
+    const showDeliveryChecker = !isDigital && product.showDeliveryChecker !== false;
+    const deliveryCheckerProps = {
+        codAvailable: product.codAvailable !== false,
+        allowedPartners: product.allowedCourierPartners,
+        customEstimateMessage: product.customDeliveryEstimate || undefined
+    };
 
     const hasDiscount = (product.discountPercentage && product.discountPercentage > 0) || (product.discountValue && product.discountValue > 0);
     const originalPrice = hasDiscount
@@ -476,9 +491,11 @@ export default function ProductDetailsPage() {
                                 </div>
 
                                 {/* Delivery & Pincode Checker */}
-                                <div className="mb-6">
-                                    <DeliveryPincodeChecker />
-                                </div>
+                                {showDeliveryChecker && (
+                                    <div className="mb-6">
+                                        <DeliveryPincodeChecker {...deliveryCheckerProps} />
+                                    </div>
+                                )}
 
                             </div>
 
@@ -540,16 +557,28 @@ export default function ProductDetailsPage() {
                                     )}
                                 </div>
 
-                                {/* WhatsApp Share Button */}
-                                <button
-                                    onClick={() => {
-                                        const shareMsg = `Hi! Check out this product on DDTEC:\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')}\n\nView here: ${window.location.href}`;
-                                        window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, '_blank');
-                                    }}
-                                    className="w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2"
-                                >
-                                    <MessageCircle className="size-5" /> Share on WhatsApp
-                                </button>
+                                {/* WhatsApp Buttons */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            const chatMsg = `Hi! I'm interested in this product:\n*${product.name}*\n\nCould you share more details?`;
+                                            window.open(`https://wa.me/917777099930?text=${encodeURIComponent(chatMsg)}`, '_blank');
+                                        }}
+                                        className="w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <MessageCircle className="size-5" /> Chat on WhatsApp
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            const shareMsg = `Hi! Check out this product on DDTEC:\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')}\n\nView here: ${window.location.href}`;
+                                            window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, '_blank');
+                                        }}
+                                        className="w-full py-3 border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <MessageCircle className="size-5" /> Share on WhatsApp
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -573,12 +602,14 @@ export default function ProductDetailsPage() {
                         >
                             <Layers className="size-4" /> Complete Specifications
                         </button>
-                        <button
-                            onClick={() => setActiveTab('shipping')}
-                            className={`px-6 py-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${activeTab === 'shipping' ? 'border-teal-600 text-teal-600 dark:text-teal-400 bg-white dark:bg-slate-800' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
-                        >
-                            <Truck className="size-4" /> Delivery & Warranty
-                        </button>
+                        {!isDigital && (
+                            <button
+                                onClick={() => setActiveTab('shipping')}
+                                className={`px-6 py-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${activeTab === 'shipping' ? 'border-teal-600 text-teal-600 dark:text-teal-400 bg-white dark:bg-slate-800' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                            >
+                                <Truck className="size-4" /> Delivery & Warranty
+                            </button>
+                        )}
                         <button
                             onClick={() => setActiveTab('reviews')}
                             className={`px-6 py-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${activeTab === 'reviews' ? 'border-teal-600 text-teal-600 dark:text-teal-400 bg-white dark:bg-slate-800' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
@@ -611,15 +642,27 @@ export default function ProductDetailsPage() {
                                         </div>
                                     </div>
 
-                                    <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 flex items-start gap-3">
-                                        <div className="p-2.5 bg-blue-600 text-white rounded-xl">
-                                            <Truck className="size-5" />
+                                    {isDigital ? (
+                                        <div className="p-4 rounded-2xl bg-violet-50/50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/50 flex items-start gap-3">
+                                            <div className="p-2.5 bg-violet-600 text-white rounded-xl">
+                                                <Download className="size-5" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Instant Digital Delivery</h4>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">No physical shipping — access is delivered instantly after purchase.</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="font-bold text-slate-900 dark:text-white text-sm">Express Shipping</h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Fast doorstep delivery within 3-5 business days.</p>
+                                    ) : (
+                                        <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 flex items-start gap-3">
+                                            <div className="p-2.5 bg-blue-600 text-white rounded-xl">
+                                                <Truck className="size-5" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Express Shipping</h4>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Fast doorstep delivery within 3-5 business days.</p>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
                                     <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 flex items-start gap-3">
                                         <div className="p-2.5 bg-amber-600 text-white rounded-xl">
@@ -630,6 +673,18 @@ export default function ProductDetailsPage() {
                                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Inventory and price updated live in real time.</p>
                                         </div>
                                     </div>
+
+                                    {!isReturnable && (
+                                        <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/50 flex items-start gap-3">
+                                            <div className="p-2.5 bg-rose-600 text-white rounded-xl">
+                                                <Ban className="size-5" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Non-Returnable</h4>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">This product is not eligible for return or refund once purchased.</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -682,11 +737,17 @@ export default function ProductDetailsPage() {
                         )}
 
                         {/* Tab 3: Shipping & Returns */}
-                        {activeTab === 'shipping' && (
+                        {activeTab === 'shipping' && !isDigital && (
                             <div className="space-y-6">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Shipping & Courier Logistics</h3>
-                                
-                                <DeliveryPincodeChecker />
+
+                                {showDeliveryChecker ? (
+                                    <DeliveryPincodeChecker {...deliveryCheckerProps} />
+                                ) : (
+                                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
+                                        PIN code delivery check is not applicable for this product.
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
@@ -697,13 +758,23 @@ export default function ProductDetailsPage() {
                                         </p>
                                     </div>
 
-                                    <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
-                                        <ShieldCheck className="size-8 text-emerald-600 mb-3" />
-                                        <h4 className="font-bold text-slate-900 dark:text-white mb-1">10-Day Replacement Guarantee</h4>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                                            If your product arrives damaged or defective, easily initiate a hassle-free replacement within 10 days.
-                                        </p>
-                                    </div>
+                                    {isReturnable ? (
+                                        <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                                            <ShieldCheck className="size-8 text-emerald-600 mb-3" />
+                                            <h4 className="font-bold text-slate-900 dark:text-white mb-1">10-Day Replacement Guarantee</h4>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                If your product arrives damaged or defective, easily initiate a hassle-free replacement within 10 days.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="p-5 rounded-2xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
+                                            <Ban className="size-8 text-rose-600 mb-3" />
+                                            <h4 className="font-bold text-slate-900 dark:text-white mb-1">Non-Returnable &amp; Non-Refundable</h4>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                This product cannot be returned, replaced, or refunded once delivered, except in case of a valid warranty claim.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

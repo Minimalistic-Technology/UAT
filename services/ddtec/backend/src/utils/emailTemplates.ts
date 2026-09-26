@@ -24,8 +24,14 @@ export const PREDEFINED_EMAIL_TEMPLATES: EmailTemplate[] = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Special Promotion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!--[if mso]>
+    <style>body, table, td, h1, h2, h3, p, span { font-family: Arial, sans-serif !important; }</style>
+    <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: 'Poppins', 'Helvetica Neue', Helvetica, Arial, sans-serif;">
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f1f5f9; padding: 30px 10px;">
         <tr>
             <td align="center">
@@ -90,8 +96,14 @@ export const PREDEFINED_EMAIL_TEMPLATES: EmailTemplate[] = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DDTEC Newsletter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!--[if mso]>
+    <style>body, table, td, h1, h2, h3, p, span { font-family: Arial, sans-serif !important; }</style>
+    <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; padding: 30px 10px;">
         <tr>
             <td align="center">
@@ -167,8 +179,14 @@ export const PREDEFINED_EMAIL_TEMPLATES: EmailTemplate[] = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Announcement</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!--[if mso]>
+    <style>body, table, td, h1, h2, h3, p, span { font-family: Arial, sans-serif !important; }</style>
+    <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Poppins', Arial, sans-serif;">
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f3f4f6; padding: 30px 10px;">
         <tr>
             <td align="center">
@@ -223,8 +241,14 @@ export const PREDEFINED_EMAIL_TEMPLATES: EmailTemplate[] = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to DDTEC</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!--[if mso]>
+    <style>body, table, td, h1, h2, h3, p, span { font-family: Arial, sans-serif !important; }</style>
+    <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Trebuchet MS', sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Poppins', 'Trebuchet MS', sans-serif;">
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; padding: 30px 10px;">
         <tr>
             <td align="center">
@@ -246,7 +270,7 @@ export const PREDEFINED_EMAIL_TEMPLATES: EmailTemplate[] = [
                                 <tr>
                                     <td width="40" valign="top">
                                         <div style="background-color: #ccfbf1; color: #0f766e; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: bold; font-size: 14px;">1</div>
-                                    </td>
+                                    </td>Button name is send email and save Quotation, also need to save this quotation after sending the email
                                     <td style="padding-left: 10px; padding-bottom: 15px;">
                                         <strong style="color: #0f172a; font-size: 15px;">Explore Products</strong>
                                         <p style="color: #64748b; font-size: 13px; margin: 3px 0 0 0;">Browse our full catalog of cutting-edge tools.</p>
@@ -296,8 +320,14 @@ export const PREDEFINED_EMAIL_TEMPLATES: EmailTemplate[] = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!--[if mso]>
+    <style>body, table, td, h1, h2, h3, p, span { font-family: Arial, sans-serif !important; }</style>
+    <![endif]-->
 </head>
-<body style="margin: 0; padding: 20px; background-color: #f8fafc; font-family: sans-serif; color: #1e293b;">
+<body style="margin: 0; padding: 20px; background-color: #f8fafc; font-family: 'Poppins', sans-serif; color: #1e293b;">
     <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0;">
         <h2 style="color: #0d9488; margin-top: 0;">DDTEC</h2>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />

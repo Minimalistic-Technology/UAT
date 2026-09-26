@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../../_context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Loader2, ArrowLeft, Save, RefreshCw } from "lucide-react";
 import api from "@/lib/api";
+import { useToast } from "../../../_context/ToastContext";
 
 interface Product {
     _id: string;
@@ -14,6 +15,8 @@ interface Product {
 const NewCouponPage = () => {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
+    const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [products, setProducts] = useState<Product[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
@@ -32,13 +35,15 @@ const NewCouponPage = () => {
 
     useEffect(() => {
         if (!authLoading) {
-            if (!user || user.role !== "admin") {
+            if (!user) {
+                router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+            } else if (user.role !== "admin") {
                 router.push("/");
             } else {
                 fetchProducts();
             }
         }
-    }, [user, authLoading, router]);
+    }, [user, authLoading, router, pathname]);
 
     const fetchProducts = async () => {
         setLoadingProducts(true);
@@ -74,11 +79,11 @@ const NewCouponPage = () => {
             };
 
             await api.post('/coupons', payload);
-            alert("Coupon created successfully!");
+            showToast("Coupon created successfully!", "success");
             router.push('/admin/coupons');
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.message || "Failed to create coupon");
+            showToast(error.response?.data?.message || "Failed to create coupon", "error");
         } finally {
             setIsSubmitting(false);
         }

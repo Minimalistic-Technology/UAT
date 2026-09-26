@@ -20,10 +20,19 @@ export interface IProduct extends Document {
     discountValue: number;
     isActive: boolean;
     showOnHome: boolean;
+    codAvailable: boolean;
+    productType: 'physical' | 'digital';
+    isReturnable: boolean;
+    showDeliveryChecker: boolean;
+    allowedCourierPartners: string[];
+    customDeliveryEstimate?: string;
     taxes: Array<{ name: string; rate: number }>;
     cgst: number;
     sgst: number;
     weightKg?: number; // Weight in KG for B2B carrier freight calculation
+    lengthCm?: number; // Packed dimensions in CM, used for volumetric weight freight calculation
+    widthCm?: number;
+    heightCm?: number;
     seller?: string;
     lastInventoryUpdate?: Date;
     billScreenshot?: string;
@@ -49,9 +58,18 @@ const ProductSchema: Schema = new Schema({
     discountValue: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true },
     showOnHome: { type: Boolean, default: false },
+    codAvailable: { type: Boolean, default: true },
+    productType: { type: String, enum: ['physical', 'digital'], default: 'physical' },
+    isReturnable: { type: Boolean, default: true },
+    showDeliveryChecker: { type: Boolean, default: true },
+    allowedCourierPartners: { type: [String], enum: ['BLUEDART', 'DTDC'], default: ['BLUEDART', 'DTDC'] },
+    customDeliveryEstimate: { type: String, default: '' },
     cgst: { type: Number, default: 0, min: 0 },
     sgst: { type: Number, default: 0, min: 0 },
     weightKg: { type: Number, default: 0.5, min: 0.05 },
+    lengthCm: { type: Number, default: 10, min: 1 },
+    widthCm: { type: Number, default: 10, min: 1 },
+    heightCm: { type: Number, default: 10, min: 1 },
     seller: { type: String },
     lastInventoryUpdate: { type: Date, default: Date.now },
     billScreenshot: { type: String },

@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../../_context/AuthContext";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { Loader2, ArrowLeft, Save, RefreshCw } from "lucide-react";
 import api from "@/lib/api";
+import { useToast } from "../../../_context/ToastContext";
 
 interface Product {
     _id: string;
@@ -14,7 +15,9 @@ interface Product {
 const EditCouponPage = () => {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
     const { id } = useParams();
+    const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [products, setProducts] = useState<Product[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
@@ -35,14 +38,16 @@ const EditCouponPage = () => {
 
     useEffect(() => {
         if (!authLoading) {
-            if (!user || user.role !== "admin") {
+            if (!user) {
+                router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+            } else if (user.role !== "admin") {
                 router.push("/");
             } else {
                 fetchProducts();
                 fetchCoupon();
             }
         }
-    }, [user, authLoading, router, id]);
+    }, [user, authLoading, router, id, pathname]);
 
     const fetchProducts = async () => {
         setLoadingProducts(true);
@@ -75,7 +80,7 @@ const EditCouponPage = () => {
             });
         } catch (error) {
             console.error("Failed to fetch coupon", error);
-            alert("Failed to details coupon details.");
+            showToast("Failed to fetch coupon details.", "error");
             router.push('/admin/coupons');
         } finally {
             setLoadingCoupon(false);
@@ -104,11 +109,11 @@ const EditCouponPage = () => {
             };
 
             await api.put(`/coupons/${id}`, payload);
-            alert("Coupon updated successfully!");
+            showToast("Coupon updated successfully!", "success");
             router.push('/admin/coupons');
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.message || "Failed to update coupon");
+            showToast(error.response?.data?.message || "Failed to update coupon", "error");
         } finally {
             setIsSubmitting(false);
         }

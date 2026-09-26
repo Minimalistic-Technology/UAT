@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Folder, ChevronRight, X, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronRight, X, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
 
 interface Category {
     _id: string;
@@ -13,6 +15,8 @@ interface Category {
 }
 
 const CategoriesView = () => {
+    const { showToast } = useToast();
+    const confirm = useConfirm();
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,29 +52,31 @@ const CategoriesView = () => {
         try {
             if (editingCategory) {
                 await api.put(`/categories/${editingCategory._id}`, formData);
-                alert("Category updated successfully");
+                showToast("Category updated successfully", "success");
             } else {
                 await api.post('/categories', formData);
-                alert("Category created successfully");
+                showToast("Category created successfully", "success");
             }
             fetchCategories();
             handleCloseModal();
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to save category");
+            showToast(error.response?.data?.msg || "Failed to save category", "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this category?")) return;
+        const ok = await confirm({ message: "Are you sure you want to delete this category?", variant: "danger" });
+        if (!ok) return;
         try {
             await api.delete(`/categories/${id}`);
             setCategories(prev => prev.filter(c => c._id !== id));
-        } catch (error) {
+            showToast("Category deleted successfully", "success");
+        } catch (error: any) {
             console.error(error);
-            alert("Failed to delete category");
+            showToast(error.response?.data?.msg || "Failed to delete category", "error");
         }
     };
 
@@ -93,11 +99,7 @@ const CategoriesView = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Folder className="size-6 text-teal-600" />
-                    Categories
-                </h2>
+            <div className="flex justify-end items-center mb-6">
                 <button
                     onClick={() => setIsModalOpen(true)}
                     className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg"

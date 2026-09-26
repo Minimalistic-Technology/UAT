@@ -11,7 +11,6 @@ export const Job_Type = [
   "full_time",
   "part_time",
   "contract",
-  "internship",
   "freelance",
 ] as const;
 

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
 
 export interface ProductItem {
     _id: string;
@@ -66,6 +67,7 @@ export default function PurchaseRecordsView({
     onRefreshProducts
 }: PurchaseRecordsViewProps) {
     const { showToast } = useToast();
+    const confirm = useConfirm();
     const [records, setRecords] = useState<PurchaseRecord[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -132,6 +134,13 @@ export default function PurchaseRecordsView({
     const totalUnitsRestocked = useMemo(() => {
         return records.reduce((sum, r) => sum + (r.quantityAdded || 0), 0);
     }, [records]);
+
+    // Live stock straight from the product catalog — a product can carry stock (e.g. set
+    // directly on the product form, or seeded) without ever having a logged purchase record,
+    // so this must NOT be derived from `records` or it misleadingly reads as 0.
+    const totalCurrentStock = useMemo(() => {
+        return productsList.reduce((sum, p) => sum + (p.stock || 0), 0);
+    }, [productsList]);
 
     // Filtered Records
     const filteredRecords = useMemo(() => {
@@ -288,9 +297,11 @@ export default function PurchaseRecordsView({
 
     // Delete Record
     const handleDeleteRecord = async (id: string, productName: string) => {
-        if (!confirm(`Are you sure you want to delete the purchase record for "${productName}"? This will adjust product inventory accordingly.`)) {
-            return;
-        }
+        const ok = await confirm({
+            message: `Are you sure you want to delete the purchase record for "${productName}"? This will adjust product inventory accordingly.`,
+            variant: 'danger'
+        });
+        if (!ok) return;
 
         try {
             await api.delete(`/purchases/${id}`);
@@ -306,7 +317,21 @@ export default function PurchaseRecordsView({
     return (
         <div className="space-y-6">
             {/* Top Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xs">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                            <PackageCheck className="size-6" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Current Stock (All Products)</p>
+                            <h4 className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
+                                {totalCurrentStock.toLocaleString()} units
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xs">
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-xl">
@@ -327,7 +352,7 @@ export default function PurchaseRecordsView({
                             <Boxes className="size-6" />
                         </div>
                         <div>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Units Restocked</p>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Units Restocked (Logged)</p>
                             <h4 className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
                                 {totalUnitsRestocked.toLocaleString()} units
                             </h4>
@@ -406,7 +431,7 @@ export default function PurchaseRecordsView({
                     <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
                         <FileText className="size-5 text-teal-600" /> Inventory Update & Purchase History Log
                     </h3>
-                    <span className="text-xs text-slate-500 font-medium">Synced with product inventory</span>
+                    <span className="text-xs text-slate-500 font-medium">New records here add to product stock automatically</span>
                 </div>
 
                 {loading ? (
@@ -418,7 +443,11 @@ export default function PurchaseRecordsView({
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                         <PackageCheck className="size-14 text-slate-300 dark:text-slate-700 mb-2" />
                         <p className="text-slate-700 dark:text-slate-300 font-bold text-sm">No Purchase Records Found</p>
-                        <p className="text-xs text-slate-500 mt-1">Click "+ Add Inventory Record / Purchase" to log new stock updates with seller info and bill screenshots.</p>
+                        <p className="text-xs text-slate-500 mt-1 max-w-md">
+                            This log only tracks restocking done through "+ Add Inventory Record / Purchase" — it doesn't affect
+                            or reflect stock set directly on a product. Current live stock across all products is{' '}
+                            <strong>{totalCurrentStock.toLocaleString()} units</strong> (see the Products tab for per-item stock).
+                        </p>
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100 dark:divide-slate-700/60">

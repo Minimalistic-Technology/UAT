@@ -3,6 +3,7 @@ import {
     getScheduledEmails,
     getPredefinedTemplates,
     createCustomTemplate,
+    updateCustomTemplate,
     deleteCustomTemplate,
     createScheduledEmail,
     updateScheduledEmail,
@@ -21,6 +22,7 @@ router.use(adminMiddleware as any);
 // Routes
 router.get('/templates', getPredefinedTemplates);
 router.post('/templates', createCustomTemplate);
+router.put('/templates/:id', updateCustomTemplate);
 router.delete('/templates/:id', deleteCustomTemplate);
 router.get('/', getScheduledEmails);
 router.post('/', createScheduledEmail);

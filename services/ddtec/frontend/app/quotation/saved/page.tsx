@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "../../_context/ToastContext";
+import { useAuth } from "../../_context/AuthContext";
 
 interface SavedQuotationItem {
     itemId?: string;
@@ -58,6 +59,7 @@ export default function SavedQuotationsPage() {
     const pathname = usePathname();
     const isAdminView = pathname?.startsWith('/admin');
     const { showToast } = useToast();
+    const { user, loading: authLoading } = useAuth();
 
     const [quotations, setQuotations] = useState<SavedQuotation[]>([]);
     const [loading, setLoading] = useState(true);
@@ -70,8 +72,19 @@ export default function SavedQuotationsPage() {
     const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
+        // Admin view guards itself at the /admin route level; here we only need
+        // to gate the standalone customer-facing /quotation/saved page.
+        if (isAdminView) {
+            fetchSavedQuotations();
+            return;
+        }
+        if (authLoading) return;
+        if (!user) {
+            router.push(`/login?redirect=${encodeURIComponent(pathname || "/quotation/saved")}`);
+            return;
+        }
         fetchSavedQuotations();
-    }, []);
+    }, [isAdminView, user, authLoading]);
 
     const fetchSavedQuotations = async () => {
         setLoading(true);
@@ -187,15 +200,21 @@ export default function SavedQuotationsPage() {
             <div className="max-w-6xl mx-auto space-y-6">
                 {/* Top Header & Action */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
-                    <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                            <FileText className="size-7 text-teal-600" />
-                            Saved Quotations
-                        </h1>
-                        <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+                    {isAdminView ? (
+                        <p className="text-slate-600 dark:text-slate-400 text-sm">
                             Access all your saved quotations, create similar ones for new clients, or download official PDF invoices.
                         </p>
-                    </div>
+                    ) : (
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                                <FileText className="size-7 text-teal-600" />
+                                Saved Quotations
+                            </h1>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+                                Access all your saved quotations, create similar ones for new clients, or download official PDF invoices.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Primary Action Button to Create New Quotation */}
                     <div className="shrink-0">
