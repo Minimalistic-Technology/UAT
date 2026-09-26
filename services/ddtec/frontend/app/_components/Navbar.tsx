@@ -3,7 +3,7 @@
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Sun, Moon, ShoppingBag, ChevronRight, User, LogOut, ChevronDown, Package, Settings, FileText, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -77,7 +77,33 @@ export default function Navbar() {
   const [categories, setCategories] = useState<any[]>([]);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
+
+  const ADMIN_VIEW_TITLES: Record<string, string> = {
+    dashboard: "Overview",
+    categories: "Categories",
+    products: "Products",
+    inventory: "Inventory",
+    saved_quotations: "Saved Quotations",
+    create_quotation: "Create Quotation",
+    quotation_products: "Quotation Catalog",
+    orders: "Orders",
+    users: "User & Staff",
+    messages: "Messages",
+    coupons: "Coupons",
+    schedule_mail: "Schedule Mail",
+    contacts: "Contacts",
+    leads: "Leads",
+    clients: "Clients",
+    company: "Company",
+    blogs: "Blogs",
+    settings: "Site Settings",
+    dynamic_routes: "Dynamic Routes",
+  };
+  const activeAdminTitle = pathname?.startsWith('/admin')
+    ? ADMIN_VIEW_TITLES[searchParams?.get('view') || 'dashboard']
+    : undefined;
 
 
   useEffect(() => {
@@ -251,6 +277,12 @@ export default function Navbar() {
               )}
             </div>
           </Link>
+
+          {activeAdminTitle && (
+            <span className="hidden sm:block absolute left-1/2 -translate-x-1/2 text-sm md:text-base font-bold text-slate-900 dark:text-white tracking-tight">
+              {activeAdminTitle}
+            </span>
+          )}
 
           <div className="hidden md:flex items-center gap-1">
             {activeNavLinks.map((link) => (

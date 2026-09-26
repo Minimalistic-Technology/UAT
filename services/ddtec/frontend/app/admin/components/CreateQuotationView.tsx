@@ -569,14 +569,9 @@ export default function CreateQuotationView() {
         <div className="space-y-5 text-sm">
             {/* Page Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
-                <div>
-                    <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
-                        Create Quotation
-                    </h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Build a GST quotation, save it, and share it with the buyer.
-                    </p>
-                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Build a GST quotation, save it, and share it with the buyer.
+                </p>
 
                 <button
                     onClick={fetchCatalogItems}

@@ -677,10 +677,7 @@ export default function LeadsView() {
                     <div className="flex items-center justify-center size-11 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600">
                         <Target className="size-5" />
                     </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Leads</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Your sales pipeline</p>
-                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Your sales pipeline</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">

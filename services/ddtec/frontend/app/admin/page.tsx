@@ -1428,7 +1428,6 @@ const AdminDashboard = () => {
                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white shrink-0">Account Management</h2>
                                     <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
                                         <button
                                             onClick={() => setUserTabMode('customers')}
@@ -1519,8 +1518,7 @@ const AdminDashboard = () => {
 
                     {activeView === 'products' && (
                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Manage Products</h2>
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-end items-center">
                                 <button onClick={() => { setNewProductErrors({}); setNewProductImageFiles([]); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors">
                                     <Plus className="size-4" /> Add Product
                                 </button>
@@ -1626,8 +1624,7 @@ const AdminDashboard = () => {
                         <div className="space-y-8">
                             <DeliveredOrdersGraph deliveredStats={stats?.deliveredStats} allOrders={ordersList} />
                             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-                                <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Order Management</h2>
+                                <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-end items-center">
                                     <span className="text-sm text-slate-500">{ordersList.length} Total Orders</span>
                                 </div>
                             <div className="overflow-x-auto">
@@ -1703,8 +1700,7 @@ const AdminDashboard = () => {
 
                     {activeView === 'messages' && (
                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Contact Messages</h2>
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-end items-center">
                                 <span className="text-sm text-slate-500">{messagesList.length} Total Messages</span>
                             </div>
                             <div className="overflow-x-auto">
@@ -1761,8 +1757,7 @@ const AdminDashboard = () => {
 
                     {activeView === 'blogs' && (
                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Manage Blogs</h2>
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-end items-center">
                                 <button onClick={() => setIsAddBlogModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors">
                                     <Plus className="size-4" /> Add Blog
                                 </button>
@@ -2776,10 +2771,7 @@ const AdminDashboard = () => {
                         <div className="space-y-8">
                             {/* Header & Create Button */}
                             <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Coupon Management</h2>
-                                    <p className="text-slate-500 dark:text-slate-400 text-sm">Create and manage discount codes</p>
-                                </div>
+                                <p className="text-slate-500 dark:text-slate-400 text-sm">Create and manage discount codes</p>
                                 <button
                                     onClick={() => setIsAddCouponModalOpen(true)}
                                     className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg flex items-center gap-2 transition-all shadow-lg shadow-teal-500/20"
@@ -3730,8 +3722,7 @@ const AdminDashboard = () => {
                     {activeView === 'settings' && (
                         <div className="space-y-6">
                             <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Site Settings & Controls</h2>
-                                <p className="text-slate-500 dark:text-slate-400 mt-1">Configure global application states, features, and visibility of homepage sections.</p>
+                                <p className="text-slate-500 dark:text-slate-400">Configure global application states, features, and visibility of homepage sections.</p>
                             </div>
 
                             {loadingSettings && !siteSettings ? (
@@ -3994,10 +3985,7 @@ const AdminDashboard = () => {
                     {activeView === 'dynamic_routes' && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                             <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                                <div>
-                                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><Activity className="size-6 text-teal-500" /> System Routing Engine</h1>
-                                    <p className="text-sm text-slate-500 mt-1">Manage global system endpoints and application features.</p>
-                                </div>
+                                <p className="text-sm text-slate-500">Manage global system endpoints and application features.</p>
                                 <button
                                     onClick={() => {
                                         setEditingRoute(null);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Folder, ChevronRight, X, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronRight, X, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/app/_context/ToastContext';
@@ -99,11 +99,7 @@ const CategoriesView = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Folder className="size-6 text-teal-600" />
-                    Categories
-                </h2>
+            <div className="flex justify-end items-center mb-6">
                 <button
                     onClick={() => setIsModalOpen(true)}
                     className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg"

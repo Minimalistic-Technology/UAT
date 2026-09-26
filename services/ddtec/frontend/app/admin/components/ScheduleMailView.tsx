@@ -459,14 +459,9 @@ export default function ScheduleMailView() {
                         <div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
                             <Mail className="w-6 h-6" />
                         </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                Email Scheduler
-                            </h1>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                                Schedule marketing dispatches, newsletters, and automated emails with pre-built HTML templates.
-                            </p>
-                        </div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Schedule marketing dispatches, newsletters, and automated emails with pre-built HTML templates.
+                        </p>
                     </div>
                 </div>
 

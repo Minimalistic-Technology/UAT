@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Poppins } from "next/font/google";
 import { ThemeProvider } from "./provider/theme-provider";
 import Navbar from "./_components/Navbar";
@@ -41,7 +42,9 @@ export default function RootLayout({
               <SettingsProvider>
                 <RouteProvider>
                   <CartProvider>
-                    <Navbar />
+                    <Suspense fallback={null}>
+                      <Navbar />
+                    </Suspense>
 
                     {/* Main content grows to push footer down */}
                     <main className="min-h-screen flex-1">
