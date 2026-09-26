@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../../_context/AuthContext";
 import { useCart } from "../../_context/CartContext";
 import { useToast } from "../../_context/ToastContext";
@@ -31,7 +31,9 @@ import {
     CheckCircle2,
     PackageCheck,
     Download,
-    Ban
+    Ban,
+    Trash2,
+    Edit3
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
@@ -71,12 +73,24 @@ interface Product {
     updatedAt?: string;
 }
 
+interface Review {
+    _id: string;
+    product: string;
+    user: string;
+    userName: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+}
+
 export default function ProductDetailsPage() {
     const { id } = useParams();
     const router = useRouter();
+    const pathname = usePathname();
     const { addToCart, cartItems } = useCart();
     const { showToast } = useToast();
     const { isRouteActive } = useDynamicRoutes();
+    const { user } = useAuth();
 
     const [product, setProduct] = useState<Product | null>(null);
     const [selectedImage, setSelectedImage] = useState<string>("");
@@ -88,6 +102,16 @@ export default function ProductDetailsPage() {
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'shipping' | 'reviews'>('overview');
+
+    // Reviews & Ratings
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [myReview, setMyReview] = useState<Review | null>(null);
+    const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
+    const [reviewRating, setReviewRating] = useState(0);
+    const [hoveredStar, setHoveredStar] = useState(0);
+    const [reviewComment, setReviewComment] = useState("");
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -128,6 +152,107 @@ export default function ProductDetailsPage() {
             fetchData();
         }
     }, [id]);
+
+    const fetchReviews = async () => {
+        try {
+            const { data } = await api.get(`/reviews/product/${id}`);
+            setReviews(data || []);
+        } catch (error) {
+            console.error("Failed to fetch reviews", error);
+        }
+    };
+
+    useEffect(() => {
+        if (id) {
+            fetchReviews();
+        }
+    }, [id]);
+
+    useEffect(() => {
+        const fetchMyReview = async () => {
+            if (!id || !user) {
+                setMyReview(null);
+                return;
+            }
+            try {
+                const { data } = await api.get(`/reviews/product/${id}/mine`);
+                setMyReview(data || null);
+            } catch (error) {
+                console.error("Failed to fetch your review", error);
+            }
+        };
+        fetchMyReview();
+    }, [id, user]);
+
+    const openReviewForm = () => {
+        if (!user) {
+            router.push(`/login?redirect=${encodeURIComponent(pathname || `/product/${id}`)}`);
+            return;
+        }
+        setReviewRating(myReview?.rating || 0);
+        setReviewComment(myReview?.comment || "");
+        setIsReviewFormOpen(true);
+    };
+
+    const handleSubmitReview = async () => {
+        if (reviewRating < 1 || reviewRating > 5) {
+            showToast?.("Please select a star rating", "error");
+            return;
+        }
+        setSubmittingReview(true);
+        try {
+            await api.post(`/reviews/product/${id}`, { rating: reviewRating, comment: reviewComment });
+            showToast?.(myReview ? "Review updated successfully!" : "Review submitted successfully!", "success");
+            setIsReviewFormOpen(false);
+            await Promise.all([
+                fetchReviews(),
+                api.get(`/products/${id}`).then(res => setProduct(res.data)),
+                api.get(`/reviews/product/${id}/mine`).then(res => setMyReview(res.data || null))
+            ]);
+        } catch (error: any) {
+            console.error("Failed to submit review", error);
+            showToast?.(error.response?.data?.msg || "Failed to submit review.", "error");
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
+
+    const handleDeleteReview = async (reviewId: string) => {
+        setDeletingReviewId(reviewId);
+        try {
+            await api.delete(`/reviews/${reviewId}`);
+            showToast?.("Review deleted", "success");
+            setMyReview(null);
+            await Promise.all([
+                fetchReviews(),
+                api.get(`/products/${id}`).then(res => setProduct(res.data))
+            ]);
+        } catch (error: any) {
+            console.error("Failed to delete review", error);
+            showToast?.(error.response?.data?.msg || "Failed to delete review.", "error");
+        } finally {
+            setDeletingReviewId(null);
+        }
+    };
+
+    const formatReviewAge = (dateString: string) => {
+        try {
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return "";
+            const diffMs = Date.now() - d.getTime();
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            if (diffMins < 1) return "Just now";
+            if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+            if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+            if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+        } catch {
+            return "";
+        }
+    };
 
     // Date & Time formatting helpers
     const formatDate = (dateString?: string) => {
@@ -416,11 +541,11 @@ export default function ProductDetailsPage() {
                                             ))}
                                         </div>
                                         <span className="text-amber-800 dark:text-amber-300 font-bold text-xs">
-                                            {product.rating || 4.5}
+                                            {(product.rating || 0).toFixed(1)}
                                         </span>
                                         <span className="text-slate-400 text-xs">•</span>
                                         <span className="text-slate-600 dark:text-slate-400 font-medium text-xs">
-                                            {product.numReviews || 12} reviews
+                                            {product.numReviews || 0} review{product.numReviews === 1 ? '' : 's'}
                                         </span>
                                     </div>
 
@@ -785,46 +910,121 @@ export default function ProductDetailsPage() {
                                 <div className="flex flex-wrap items-center justify-between gap-4 p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
                                     <div>
                                         <div className="text-4xl font-extrabold text-slate-900 dark:text-white">
-                                            {product.rating || 4.5} <span className="text-lg text-slate-400 font-normal">/ 5</span>
+                                            {(product.rating || 0).toFixed(1)} <span className="text-lg text-slate-400 font-normal">/ 5</span>
                                         </div>
                                         <div className="flex text-amber-400 my-1">
                                             {[...Array(5)].map((_, i) => (
-                                                <Star key={i} className={`size-4 ${i < Math.floor(product.rating || 4.5) ? 'fill-current' : 'text-slate-300 dark:text-slate-600'}`} />
+                                                <Star key={i} className={`size-4 ${i < Math.round(product.rating || 0) ? 'fill-current' : 'text-slate-300 dark:text-slate-600'}`} />
                                             ))}
                                         </div>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">Based on {product.numReviews || 12} customer ratings</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Based on {product.numReviews || 0} customer rating{product.numReviews === 1 ? '' : 's'}</p>
                                     </div>
 
                                     <button
-                                        onClick={() => showToast?.("Review submission opened!", "info")}
-                                        className="px-5 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold hover:bg-teal-700 transition-colors shadow-sm"
+                                        onClick={openReviewForm}
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold hover:bg-teal-700 transition-colors shadow-sm"
                                     >
-                                        Write a Review
+                                        {myReview ? <><Edit3 className="size-3.5" /> Edit Your Review</> : "Write a Review"}
                                     </button>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="font-bold text-sm text-slate-900 dark:text-white">Rahul Verma</span>
-                                            <div className="flex text-amber-400 size-3.5">
-                                                {[...Array(5)].map((_, i) => <Star key={i} className="fill-current" />)}
+                                {/* Review Form */}
+                                <AnimatePresence>
+                                    {isReviewFormOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: "auto" }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="p-5 rounded-2xl border border-teal-200 dark:border-teal-900 bg-teal-50/50 dark:bg-teal-950/20 space-y-4">
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Your Rating</p>
+                                                    <div className="flex gap-1">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <button
+                                                                key={star}
+                                                                type="button"
+                                                                onClick={() => setReviewRating(star)}
+                                                                onMouseEnter={() => setHoveredStar(star)}
+                                                                onMouseLeave={() => setHoveredStar(0)}
+                                                                className="p-0.5"
+                                                            >
+                                                                <Star
+                                                                    className={`size-7 transition-colors ${star <= (hoveredStar || reviewRating) ? 'fill-current text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}
+                                                                />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Your Review (optional)</p>
+                                                    <textarea
+                                                        value={reviewComment}
+                                                        onChange={(e) => setReviewComment(e.target.value)}
+                                                        maxLength={1000}
+                                                        rows={3}
+                                                        placeholder="Share your experience with this product..."
+                                                        className="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={handleSubmitReview}
+                                                        disabled={submittingReview || reviewRating < 1}
+                                                        className="px-5 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                    >
+                                                        {submittingReview && <Loader2 className="size-3.5 animate-spin" />}
+                                                        {myReview ? "Update Review" : "Submit Review"}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setIsReviewFormOpen(false)}
+                                                        className="px-5 py-2.5 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <p className="text-xs text-slate-600 dark:text-slate-300">Excellent build quality and fast delivery. Exactly as described!</p>
-                                        <span className="text-[10px] text-slate-400 block mt-2">Verified Purchase • 3 days ago</span>
-                                    </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
 
-                                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="font-bold text-sm text-slate-900 dark:text-white">Priya Sharma</span>
-                                            <div className="flex text-amber-400 size-3.5">
-                                                {[...Array(5)].map((_, i) => <Star key={i} className={`size-3.5 ${i < 4 ? 'fill-current' : 'text-slate-300'}`} />)}
-                                            </div>
+                                <div className="space-y-4">
+                                    {reviews.length === 0 ? (
+                                        <div className="text-center py-10">
+                                            <MessageCircle className="size-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">No reviews yet. Be the first to review this product!</p>
                                         </div>
-                                        <p className="text-xs text-slate-600 dark:text-slate-300">Great value for money. Very satisfied with the product performance.</p>
-                                        <span className="text-[10px] text-slate-400 block mt-2">Verified Purchase • 1 week ago</span>
-                                    </div>
+                                    ) : (
+                                        reviews.map((review) => (
+                                            <div key={review._id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="font-bold text-sm text-slate-900 dark:text-white">{review.userName}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex text-amber-400 size-3.5">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star key={i} className={`size-3.5 ${i < review.rating ? 'fill-current' : 'text-slate-300 dark:text-slate-600'}`} />
+                                                            ))}
+                                                        </div>
+                                                        {user?.id === review.user && (
+                                                            <button
+                                                                onClick={() => handleDeleteReview(review._id)}
+                                                                disabled={deletingReviewId === review._id}
+                                                                className="text-slate-400 hover:text-red-500 p-1 rounded-full transition-colors disabled:opacity-50"
+                                                                title="Delete your review"
+                                                            >
+                                                                {deletingReviewId === review._id ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {review.comment && (
+                                                    <p className="text-xs text-slate-600 dark:text-slate-300">{review.comment}</p>
+                                                )}
+                                                <span className="text-[10px] text-slate-400 block mt-2">{formatReviewAge(review.createdAt)}</span>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}
