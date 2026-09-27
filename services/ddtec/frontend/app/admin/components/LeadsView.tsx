@@ -618,6 +618,7 @@ export default function LeadsView() {
         try {
             const res = await api.post('lead-stages', { name: trimmedName, color: newStageColor });
             setStageDrafts(prev => [...prev, res.data]);
+            setStages(prev => [...prev, res.data]);
             setNewStageName('');
             setNewStageColor(STAGE_COLOR_PRESETS[0]);
         } catch (err) {

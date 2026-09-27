@@ -98,7 +98,11 @@ export const createPurchaseRecord = async (req: Request, res: Response) => {
             purchaseDate,
             billScreenshot,
             invoiceNumber,
-            notes
+            notes,
+            packQuantity,
+            packUnit,
+            unitSize,
+            unitMeasure
         } = req.body;
 
         if (!seller || seller.trim() === '') {
@@ -133,7 +137,11 @@ export const createPurchaseRecord = async (req: Request, res: Response) => {
                 sgst: Number(sgst) || 0,
                 seller: seller,
                 lastInventoryUpdate: recordDate,
-                billScreenshot: billScreenshot || undefined
+                billScreenshot: billScreenshot || undefined,
+                packQuantity: Number(packQuantity) || 1,
+                packUnit: packUnit || 'Piece',
+                unitSize: Number(unitSize) || 0,
+                unitMeasure: unitMeasure || ''
             });
 
             targetProduct = await newProduct.save();

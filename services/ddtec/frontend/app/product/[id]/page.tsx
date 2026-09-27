@@ -55,6 +55,10 @@ interface Product {
     lastMonthSales: number;
     brand?: string;
     modelName?: string;
+    packQuantity?: number;
+    packUnit?: string;
+    unitSize?: number;
+    unitMeasure?: string;
     couponCode?: string;
     discountPercentage?: number;
     discountType?: 'percentage' | 'fixed';
@@ -520,6 +524,12 @@ export default function ProductDetailsPage() {
                                     {product.modelName && (
                                         <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-lg flex items-center gap-1 border border-slate-200 dark:border-slate-600">
                                             <Layers className="size-3 text-teal-600 dark:text-teal-400" /> Model: {product.modelName}
+                                        </span>
+                                    )}
+
+                                    {!!product.unitMeasure && (
+                                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-lg flex items-center gap-1 border border-slate-200 dark:border-slate-600">
+                                            {product.packQuantity || 1} {product.packUnit || 'Piece'} &times; {product.unitSize || 0} {product.unitMeasure}
                                         </span>
                                     )}
                                 </div>

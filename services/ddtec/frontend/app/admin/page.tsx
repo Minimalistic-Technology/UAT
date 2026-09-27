@@ -90,6 +90,10 @@ interface Product {
     lengthCm?: number;
     widthCm?: number;
     heightCm?: number;
+    packQuantity?: number;
+    packUnit?: string;
+    unitSize?: number;
+    unitMeasure?: string;
     isActive: boolean;
     codAvailable?: boolean;
     productType?: 'physical' | 'digital';
@@ -178,6 +182,10 @@ const AdminDashboard = () => {
         lengthCm: "",
         widthCm: "",
         heightCm: "",
+        packQuantity: "",
+        packUnit: "Box",
+        unitSize: "",
+        unitMeasure: "Liter",
         codAvailable: true,
         productType: "physical",
         isReturnable: true,
@@ -694,6 +702,10 @@ const AdminDashboard = () => {
             formData.append('lengthCm', String(Number(newProduct.lengthCm) || 10));
             formData.append('widthCm', String(Number(newProduct.widthCm) || 10));
             formData.append('heightCm', String(Number(newProduct.heightCm) || 10));
+            formData.append('packQuantity', String(Number(newProduct.packQuantity) || 1));
+            formData.append('packUnit', newProduct.packUnit);
+            formData.append('unitSize', String(Number(newProduct.unitSize) || 0));
+            formData.append('unitMeasure', newProduct.unitMeasure);
             formData.append('codAvailable', String(newProduct.codAvailable));
             formData.append('productType', newProduct.productType);
             formData.append('isReturnable', String(newProduct.isReturnable));
@@ -711,7 +723,8 @@ const AdminDashboard = () => {
                 setNewProduct({
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", brand: "",
                     modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: "",
-                    weightKg: "", lengthCm: "", widthCm: "", heightCm: "", codAvailable: true,
+                    weightKg: "", lengthCm: "", widthCm: "", heightCm: "",
+                    packQuantity: "", packUnit: "Box", unitSize: "", unitMeasure: "Liter", codAvailable: true,
                     productType: "physical", isReturnable: true, showDeliveryChecker: true,
                     allowedCourierPartners: ["BLUEDART", "DTDC"], customDeliveryEstimate: ""
                 });
@@ -753,6 +766,10 @@ const AdminDashboard = () => {
             lengthCm: String((product as any).lengthCm ?? 10),
             widthCm: String((product as any).widthCm ?? 10),
             heightCm: String((product as any).heightCm ?? 10),
+            packQuantity: String((product as any).packQuantity ?? 1),
+            packUnit: (product as any).packUnit || "Box",
+            unitSize: String((product as any).unitSize ?? ''),
+            unitMeasure: (product as any).unitMeasure || "Liter",
             codAvailable: (product as any).codAvailable !== false,
             productType: (product as any).productType === 'digital' ? 'digital' : 'physical',
             isReturnable: (product as any).isReturnable !== false,
@@ -796,6 +813,10 @@ const AdminDashboard = () => {
             formData.append('lengthCm', String(Number(editingProduct.lengthCm) || 10));
             formData.append('widthCm', String(Number(editingProduct.widthCm) || 10));
             formData.append('heightCm', String(Number(editingProduct.heightCm) || 10));
+            formData.append('packQuantity', String(Number(editingProduct.packQuantity) || 1));
+            formData.append('packUnit', editingProduct.packUnit || 'Piece');
+            formData.append('unitSize', String(Number(editingProduct.unitSize) || 0));
+            formData.append('unitMeasure', editingProduct.unitMeasure || '');
             formData.append('codAvailable', String(editingProduct.codAvailable !== false));
             formData.append('productType', editingProduct.productType === 'digital' ? 'digital' : 'physical');
             formData.append('isReturnable', String(editingProduct.isReturnable !== false));
@@ -2056,6 +2077,60 @@ const AdminDashboard = () => {
                                                     </div>
                                                 </div>
                                                 <p className="text-xs text-slate-400 -mt-2">Packed weight and dimensions are used to calculate Blue Dart / DTDC freight rates at checkout.</p>
+                                                <div className="grid grid-cols-4 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pack Quantity</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            value={newProduct.packQuantity}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, packQuantity: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pack Unit</label>
+                                                        <input
+                                                            type="text"
+                                                            list="pack-unit-options"
+                                                            value={newProduct.packUnit}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, packUnit: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="Box"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit Size</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={newProduct.unitSize}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, unitSize: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="0.10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit Measure</label>
+                                                        <input
+                                                            type="text"
+                                                            list="unit-measure-options"
+                                                            value={newProduct.unitMeasure}
+                                                            onChange={(e) => setNewProduct({ ...newProduct, unitMeasure: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="Liter"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <datalist id="pack-unit-options">
+                                                    <option value="Box" /><option value="Carton" /><option value="Piece" /><option value="Packet" /><option value="Bottle" /><option value="Pouch" />
+                                                </datalist>
+                                                <datalist id="unit-measure-options">
+                                                    <option value="Liter" /><option value="ml" /><option value="Kg" /><option value="gram" /><option value="Piece" />
+                                                </datalist>
+                                                <p className="text-xs text-slate-400 -mt-2">e.g. 10 Box &times; 0.10 Liter each</p>
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="checkbox"
@@ -2507,6 +2582,54 @@ const AdminDashboard = () => {
                                                     </div>
                                                 </div>
                                                 <p className="text-xs text-slate-400 -mt-2">Packed weight and dimensions are used to calculate Blue Dart / DTDC freight rates at checkout.</p>
+                                                <div className="grid grid-cols-4 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pack Quantity</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            value={editingProduct.packQuantity}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, packQuantity: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pack Unit</label>
+                                                        <input
+                                                            type="text"
+                                                            list="pack-unit-options"
+                                                            value={editingProduct.packUnit}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, packUnit: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="Box"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit Size</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={editingProduct.unitSize}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, unitSize: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="0.10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit Measure</label>
+                                                        <input
+                                                            type="text"
+                                                            list="unit-measure-options"
+                                                            value={editingProduct.unitMeasure}
+                                                            onChange={(e) => setEditingProduct({ ...editingProduct, unitMeasure: e.target.value })}
+                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            placeholder="Liter"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-slate-400 -mt-2">e.g. 10 Box &times; 0.10 Liter each</p>
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="checkbox"
@@ -4245,6 +4368,14 @@ const AdminDashboard = () => {
                                                 <span className="text-slate-500">Category:</span>
                                                 <span className="font-medium text-slate-700 dark:text-slate-300">{typeof viewingProductDetails.category === 'object' ? (viewingProductDetails.category as any).name : viewingProductDetails.category}</span>
                                             </div>
+                                            {!!viewingProductDetails.unitMeasure && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Packaging:</span>
+                                                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                        {viewingProductDetails.packQuantity || 1} {viewingProductDetails.packUnit || 'Piece'} &times; {viewingProductDetails.unitSize || 0} {viewingProductDetails.unitMeasure}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

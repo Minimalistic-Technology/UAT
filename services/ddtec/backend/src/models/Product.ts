@@ -36,6 +36,10 @@ export interface IProduct extends Document {
     seller?: string;
     lastInventoryUpdate?: Date;
     billScreenshot?: string;
+    packQuantity?: number; // e.g. 10 (as in "10 Box")
+    packUnit?: string; // e.g. "Box", "Carton", "Piece"
+    unitSize?: number; // e.g. 0.10 (as in "0.10 Liter")
+    unitMeasure?: string; // e.g. "Liter", "ml", "Kg", "gram"
 }
 
 const ProductSchema: Schema = new Schema({
@@ -73,6 +77,10 @@ const ProductSchema: Schema = new Schema({
     seller: { type: String },
     lastInventoryUpdate: { type: Date, default: Date.now },
     billScreenshot: { type: String },
+    packQuantity: { type: Number, default: 1, min: 0 },
+    packUnit: { type: String, default: 'Piece' },
+    unitSize: { type: Number, default: 0, min: 0 },
+    unitMeasure: { type: String, default: '' },
     taxes: [
         {
             name: { type: String },
