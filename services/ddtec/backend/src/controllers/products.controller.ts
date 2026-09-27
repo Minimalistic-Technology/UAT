@@ -1,8 +1,26 @@
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import Product from '../models/Product';
 import Hub from '../models/Hub';
 import WarehouseStock from '../models/WarehouseStock';
 import redisClient from '../config/redis';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+const STAFF_ROLES = ['super_admin', 'admin', 'product_manager', 'order_manager', 'customer_support', 'finance', 'marketing', 'warehouse'];
+
+// These endpoints are public (no `auth` middleware), so a request may or may not carry a
+// staff token. When it does and it's valid, treat the caller as staff so admin product
+// management can still see/edit inactive products; everyone else only ever sees active ones.
+const isStaffRequest = (req: Request): boolean => {
+    const token = (req as any).cookies?.token || req.header('x-auth-token') || req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) return false;
+    try {
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+        return STAFF_ROLES.includes(decoded?.role);
+    } catch {
+        return false;
+    }
+};
 
 // Helper to invalidate all product caches instantly (base + hyper-local pincode keys)
 const clearProductCache = async () => {
@@ -33,25 +51,34 @@ const extractUploadedImageUrls = (req: Request): string[] => {
 export const getProducts = async (req: Request, res: Response) => {
     try {
         const { showOnHome, pincode } = req.query;
+        const staffRequest = isStaffRequest(req);
 
         let cacheKey = showOnHome === 'true' ? 'products:home' : 'products:all';
         if (pincode) cacheKey = `products:pin:${pincode}:${showOnHome || 'all'}`;
 
-        // 1. CACHE CHECK: Ask Redis first (Takes <1ms)
-        let cachedProducts = null;
-        try {
-            cachedProducts = await redisClient.get(cacheKey);
-            if (cachedProducts) {
-                return res.json(JSON.parse(cachedProducts));
+        // Staff (admin/product manager/etc.) must always see the live, unfiltered catalog —
+        // including inactive products — for management, so skip the shared public cache
+        // entirely for them (both read and write) rather than risk it serving inactive
+        // products to shoppers or a stale filtered list back to staff.
+        if (!staffRequest) {
+            // 1. CACHE CHECK: Ask Redis first (Takes <1ms)
+            try {
+                const cachedProducts = await redisClient.get(cacheKey);
+                if (cachedProducts) {
+                    return res.json(JSON.parse(cachedProducts));
+                }
+            } catch (redisErr) {
+                console.error('Redis cache unavailable, falling back to MongoDB...');
             }
-        } catch (redisErr) {
-            console.error('Redis cache unavailable, falling back to MongoDB...');
         }
 
         // 2. FETCH BASE CATALOG
         const filter: any = {};
         if (showOnHome === 'true') {
             filter.showOnHome = true;
+        }
+        if (!staffRequest) {
+            filter.isActive = true;
         }
 
         let products: any = await Product.find(filter).sort({ createdAt: -1 }).populate('category', 'name');
@@ -89,10 +116,12 @@ export const getProducts = async (req: Request, res: Response) => {
             }
         }
 
-        // 4. STORE IN CACHE
-        try {
-            await redisClient.set(cacheKey, JSON.stringify(products), 'EX', 1800); // 30 min cache for local stock
-        } catch (e) { }
+        // 4. STORE IN CACHE (public/active-only results only — see note above)
+        if (!staffRequest) {
+            try {
+                await redisClient.set(cacheKey, JSON.stringify(products), 'EX', 1800); // 30 min cache for local stock
+            } catch (e) { }
+        }
 
         res.json(products);
     } catch (err) {
@@ -105,6 +134,9 @@ export const getProductById = async (req: Request, res: Response) => {
     try {
         const product = await Product.findById(req.params.id).populate('category', 'name');
         if (!product) return res.status(404).json({ msg: 'Product not found' });
+        if (!product.isActive && !isStaffRequest(req)) {
+            return res.status(404).json({ msg: 'Product not found' });
+        }
         res.json(product);
     } catch (err: any) {
         console.error(err);
