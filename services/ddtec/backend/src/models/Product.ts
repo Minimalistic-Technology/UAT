@@ -20,6 +20,8 @@ export interface IProduct extends Document {
     discountValue: number;
     isActive: boolean;
     showOnHome: boolean;
+    showAddToCart: boolean;
+    showBuyNow: boolean;
     codAvailable: boolean;
     productType: 'physical' | 'digital';
     isReturnable: boolean;
@@ -62,6 +64,8 @@ const ProductSchema: Schema = new Schema({
     discountValue: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true },
     showOnHome: { type: Boolean, default: false },
+    showAddToCart: { type: Boolean, default: true },
+    showBuyNow: { type: Boolean, default: true },
     codAvailable: { type: Boolean, default: true },
     productType: { type: String, enum: ['physical', 'digital'], default: 'physical' },
     isReturnable: { type: Boolean, default: true },

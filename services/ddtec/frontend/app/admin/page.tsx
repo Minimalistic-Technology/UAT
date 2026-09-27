@@ -94,6 +94,8 @@ interface Product {
     packUnit?: string;
     unitSize?: number;
     unitMeasure?: string;
+    showAddToCart?: boolean;
+    showBuyNow?: boolean;
     isActive: boolean;
     codAvailable?: boolean;
     productType?: 'physical' | 'digital';
@@ -186,6 +188,8 @@ const AdminDashboard = () => {
         packUnit: "Box",
         unitSize: "",
         unitMeasure: "Liter",
+        showAddToCart: true,
+        showBuyNow: true,
         codAvailable: true,
         productType: "physical",
         isReturnable: true,
@@ -428,6 +432,22 @@ const AdminDashboard = () => {
             showToast?.("Delivery & shipping settings updated successfully!", "success");
         } catch (error: any) {
             showToast?.("Failed to update delivery settings", "error");
+        }
+    };
+
+    const [quotationLogoUrlDraft, setQuotationLogoUrlDraft] = useState<string>("");
+    useEffect(() => {
+        setQuotationLogoUrlDraft(siteSettings?.quotationLogoUrl || "");
+    }, [siteSettings?.quotationLogoUrl]);
+
+    const saveQuotationLogoUrl = async () => {
+        try {
+            const res = await api.put('/settings', { quotationLogoUrl: quotationLogoUrlDraft.trim() });
+            setSiteSettings(res.data);
+            refreshSettings();
+            showToast?.("Quotation logo updated successfully!", "success");
+        } catch (error: any) {
+            showToast?.("Failed to update quotation logo", "error");
         }
     };
 
@@ -706,6 +726,8 @@ const AdminDashboard = () => {
             formData.append('packUnit', newProduct.packUnit);
             formData.append('unitSize', String(Number(newProduct.unitSize) || 0));
             formData.append('unitMeasure', newProduct.unitMeasure);
+            formData.append('showAddToCart', String(newProduct.showAddToCart));
+            formData.append('showBuyNow', String(newProduct.showBuyNow));
             formData.append('codAvailable', String(newProduct.codAvailable));
             formData.append('productType', newProduct.productType);
             formData.append('isReturnable', String(newProduct.isReturnable));
@@ -724,7 +746,8 @@ const AdminDashboard = () => {
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", brand: "",
                     modelName: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: "",
                     weightKg: "", lengthCm: "", widthCm: "", heightCm: "",
-                    packQuantity: "", packUnit: "Box", unitSize: "", unitMeasure: "Liter", codAvailable: true,
+                    packQuantity: "", packUnit: "Box", unitSize: "", unitMeasure: "Liter",
+                    showAddToCart: true, showBuyNow: true, codAvailable: true,
                     productType: "physical", isReturnable: true, showDeliveryChecker: true,
                     allowedCourierPartners: ["BLUEDART", "DTDC"], customDeliveryEstimate: ""
                 });
@@ -770,6 +793,8 @@ const AdminDashboard = () => {
             packUnit: (product as any).packUnit || "Box",
             unitSize: String((product as any).unitSize ?? ''),
             unitMeasure: (product as any).unitMeasure || "Liter",
+            showAddToCart: (product as any).showAddToCart !== false,
+            showBuyNow: (product as any).showBuyNow !== false,
             codAvailable: (product as any).codAvailable !== false,
             productType: (product as any).productType === 'digital' ? 'digital' : 'physical',
             isReturnable: (product as any).isReturnable !== false,
@@ -817,6 +842,8 @@ const AdminDashboard = () => {
             formData.append('packUnit', editingProduct.packUnit || 'Piece');
             formData.append('unitSize', String(Number(editingProduct.unitSize) || 0));
             formData.append('unitMeasure', editingProduct.unitMeasure || '');
+            formData.append('showAddToCart', String(editingProduct.showAddToCart !== false));
+            formData.append('showBuyNow', String(editingProduct.showBuyNow !== false));
             formData.append('codAvailable', String(editingProduct.codAvailable !== false));
             formData.append('productType', editingProduct.productType === 'digital' ? 'digital' : 'physical');
             formData.append('isReturnable', String(editingProduct.isReturnable !== false));
@@ -2141,6 +2168,26 @@ const AdminDashboard = () => {
                                                     />
                                                     <label htmlFor="newProductCodAvailable" className="text-sm font-medium text-slate-700 dark:text-slate-300">Cash on Delivery (COD) available</label>
                                                 </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="newProductShowAddToCart"
+                                                        checked={newProduct.showAddToCart}
+                                                        onChange={(e) => setNewProduct({ ...newProduct, showAddToCart: e.target.checked })}
+                                                        className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                    />
+                                                    <label htmlFor="newProductShowAddToCart" className="text-sm font-medium text-slate-700 dark:text-slate-300">Show "Add to Cart" button</label>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="newProductShowBuyNow"
+                                                        checked={newProduct.showBuyNow}
+                                                        onChange={(e) => setNewProduct({ ...newProduct, showBuyNow: e.target.checked })}
+                                                        className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                    />
+                                                    <label htmlFor="newProductShowBuyNow" className="text-sm font-medium text-slate-700 dark:text-slate-300">Show "Buy Now" button</label>
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Type</label>
@@ -2639,6 +2686,26 @@ const AdminDashboard = () => {
                                                         className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                                                     />
                                                     <label htmlFor="editProductCodAvailable" className="text-sm font-medium text-slate-700 dark:text-slate-300">Cash on Delivery (COD) available</label>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="editProductShowAddToCart"
+                                                        checked={editingProduct.showAddToCart !== false}
+                                                        onChange={(e) => setEditingProduct({ ...editingProduct, showAddToCart: e.target.checked })}
+                                                        className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                    />
+                                                    <label htmlFor="editProductShowAddToCart" className="text-sm font-medium text-slate-700 dark:text-slate-300">Show "Add to Cart" button</label>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="editProductShowBuyNow"
+                                                        checked={editingProduct.showBuyNow !== false}
+                                                        onChange={(e) => setEditingProduct({ ...editingProduct, showBuyNow: e.target.checked })}
+                                                        className="size-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                                    />
+                                                    <label htmlFor="editProductShowBuyNow" className="text-sm font-medium text-slate-700 dark:text-slate-300">Show "Buy Now" button</label>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
@@ -3943,6 +4010,48 @@ const AdminDashboard = () => {
                                                     Save Delivery Settings
                                                 </button>
                                             </div>
+                                        </div>
+
+                                        {/* Quotation Branding Card */}
+                                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-4 col-span-1 md:col-span-2">
+                                            <div className="border-b border-slate-100 dark:border-slate-700 pb-4">
+                                                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                    <ImageIcon className="size-5 text-teal-600" /> Quotation Logo
+                                                </h3>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    Shown at the top of every generated Quotation PDF. Provide a direct image URL (PNG/JPEG) — no file upload.
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                                <div className="flex-1 w-full">
+                                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1.5">
+                                                        Logo Image URL
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        value={quotationLogoUrlDraft}
+                                                        onChange={(e) => setQuotationLogoUrlDraft(e.target.value)}
+                                                        placeholder="https://example.com/logo.png"
+                                                        className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500"
+                                                    />
+                                                </div>
+                                                {quotationLogoUrlDraft && (
+                                                    <img
+                                                        src={quotationLogoUrlDraft}
+                                                        alt="Quotation logo preview"
+                                                        className="h-14 max-w-[140px] object-contain rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-1.5"
+                                                        onError={(e) => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }}
+                                                        onLoad={(e) => { (e.target as HTMLImageElement).style.visibility = 'visible'; }}
+                                                    />
+                                                )}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={saveQuotationLogoUrl}
+                                                className="w-full sm:w-auto py-2.5 px-6 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                                            >
+                                                Save Quotation Logo
+                                            </button>
                                         </div>
 
                                         {/* User Onboarding Restrictions Control Card */}

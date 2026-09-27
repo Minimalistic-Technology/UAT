@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
+import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QuotationItem from '../models/QuotationItem';
 import SavedQuotation from '../models/SavedQuotation';
+import Settings from '../models/Settings';
 import NotificationService from '../services/notification.service';
 
 const COMPANY = {
@@ -58,6 +60,37 @@ function amountInWords(amount: number): string {
 
 function sanitizeForFilename(str: string): string {
     return str.trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+// Fetches the configured logo image by URL and returns it in a form jsPDF's addImage
+// accepts. Never throws — a broken/unreachable logo URL must not block quotation PDF
+// generation, it should just render without a logo.
+async function fetchLogoImage(logoUrl?: string): Promise<{ dataUrl: string; format: string } | null> {
+    if (!logoUrl || !/^https?:\/\//i.test(logoUrl)) return null;
+
+    try {
+        const response = await axios.get<ArrayBuffer>(logoUrl, {
+            responseType: 'arraybuffer',
+            timeout: 8000
+        });
+
+        const contentType = String(response.headers['content-type'] || '').toLowerCase();
+        let format = 'PNG';
+        if (contentType.includes('jpeg') || contentType.includes('jpg') || /\.jpe?g($|\?)/i.test(logoUrl)) {
+            format = 'JPEG';
+        } else if (contentType.includes('webp')) {
+            format = 'WEBP';
+        } else if (contentType.includes('png') || /\.png($|\?)/i.test(logoUrl)) {
+            format = 'PNG';
+        }
+
+        const base64 = Buffer.from(response.data).toString('base64');
+        const mimeType = contentType.split(';')[0] || `image/${format.toLowerCase()}`;
+        return { dataUrl: `data:${mimeType};base64,${base64}`, format };
+    } catch (err) {
+        console.warn('[QUOTATION] Failed to fetch logo image from URL:', logoUrl, (err as any)?.message);
+        return null;
+    }
 }
 
 async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfBuffer: Buffer; downloadFilename: string }> {
@@ -123,13 +156,24 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
         taxGroups.set(key, group);
     }
 
+    const settings = await Settings.findOne();
+    const logo = await fetchLogoImage(settings?.quotationLogoUrl);
+
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 14;
 
+    if (logo) {
+        try {
+            doc.addImage(logo.dataUrl, logo.format, margin, 6, 22, 14, undefined, 'FAST');
+        } catch (err) {
+            console.warn('[QUOTATION] Failed to embed logo image in PDF:', (err as any)?.message);
+        }
+    }
+
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('Tax Invoice', pageWidth / 2, 15, { align: 'center' });
+    doc.text('Quotation', pageWidth / 2, 15, { align: 'center' });
 
     doc.setDrawColor(0);
     doc.rect(margin, 20, pageWidth - margin * 2, 30);

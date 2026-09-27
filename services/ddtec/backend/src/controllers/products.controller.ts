@@ -128,7 +128,7 @@ export const createProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow } = req.body;
         const allowedCourierPartners = normalizeToStringArray(req.body.allowedCourierPartners);
 
         // Combine manually entered image URLs (`imageUrls`) with newly uploaded files,
@@ -172,7 +172,9 @@ export const createProduct = async (req: Request, res: Response) => {
             packQuantity: packQuantity || 1,
             packUnit: packUnit || 'Piece',
             unitSize: unitSize || 0,
-            unitMeasure: unitMeasure || ''
+            unitMeasure: unitMeasure || '',
+            showAddToCart: showAddToCart !== undefined ? showAddToCart !== 'false' && showAddToCart !== false : true,
+            showBuyNow: showBuyNow !== undefined ? showBuyNow !== 'false' && showBuyNow !== false : true
         });
 
         const product = await newProduct.save();
@@ -194,7 +196,7 @@ export const updateProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -246,6 +248,8 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.packUnit = packUnit !== undefined ? packUnit : product.packUnit;
         product.unitSize = unitSize !== undefined ? unitSize : product.unitSize;
         product.unitMeasure = unitMeasure !== undefined ? unitMeasure : product.unitMeasure;
+        product.showAddToCart = showAddToCart !== undefined ? (showAddToCart !== 'false' && showAddToCart !== false) : product.showAddToCart;
+        product.showBuyNow = showBuyNow !== undefined ? (showBuyNow !== 'false' && showBuyNow !== false) : product.showBuyNow;
         if (req.body.allowedCourierPartners !== undefined) {
             const allowedCourierPartners = normalizeToStringArray(req.body.allowedCourierPartners);
             product.allowedCourierPartners = allowedCourierPartners.length ? allowedCourierPartners : ['BLUEDART', 'DTDC'];

@@ -59,6 +59,8 @@ interface Product {
     packUnit?: string;
     unitSize?: number;
     unitMeasure?: string;
+    showAddToCart?: boolean;
+    showBuyNow?: boolean;
     couponCode?: string;
     discountPercentage?: number;
     discountType?: 'percentage' | 'fixed';
@@ -671,21 +673,21 @@ export default function ProductDetailsPage() {
 
                                 {/* Main Buttons */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {isRouteActive('/cart') && (
+                                    {isRouteActive('/cart') && product.showAddToCart !== false && (
                                         <button
                                             onClick={handleAddToCart}
                                             disabled={product.stock === 0}
-                                            className="py-3.5 px-6 rounded-xl font-bold border-2 border-teal-600 text-teal-600 dark:border-teal-500 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                                            className={`py-3.5 px-6 rounded-xl font-bold border-2 border-teal-600 text-teal-600 dark:border-teal-500 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs ${(!isRouteActive('/checkout') || product.showBuyNow === false) ? 'sm:col-span-2' : ''}`}
                                         >
                                             <ShoppingBag className="size-5" /> Add to Cart
                                         </button>
                                     )}
 
-                                    {isRouteActive('/checkout') && (
+                                    {isRouteActive('/checkout') && product.showBuyNow !== false && (
                                         <button
                                             onClick={handleBuyNow}
                                             disabled={product.stock === 0}
-                                            className={`py-3.5 px-6 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-lg shadow-teal-600/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${!isRouteActive('/cart') ? 'sm:col-span-2' : ''}`}
+                                            className={`py-3.5 px-6 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-lg shadow-teal-600/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${(!isRouteActive('/cart') || product.showAddToCart === false) ? 'sm:col-span-2' : ''}`}
                                         >
                                             <PackageCheck className="size-5" /> Buy Now
                                         </button>

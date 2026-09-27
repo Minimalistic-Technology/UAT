@@ -30,6 +30,8 @@ interface Product {
     lastMonthSales: number;
     brand?: string;
     modelName?: string;
+    showAddToCart?: boolean;
+    showBuyNow?: boolean;
 }
 
 // Helper to get all descendant category IDs (recursive)
@@ -421,21 +423,25 @@ export default function ShopSection() {
                                                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">• ({product.numReviews || 0})</span>
                                             </div>
 
-                                            <div className="grid grid-cols-2 gap-2 mt-auto">
-                                                <button
-                                                    disabled={product.stock === 0}
-                                                    onClick={() => addToCart(product._id)}
-                                                    className="group/btn py-2 px-3 rounded-lg font-bold text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                                >
-                                                    <ShoppingBag className="size-3.5" /> Add
-                                                </button>
-                                                <button
-                                                    disabled={product.stock === 0}
-                                                    onClick={() => handleBuyNow(product._id)}
-                                                    className="py-2 px-3 rounded-lg font-bold text-xs bg-teal-600 text-white shadow-md hover:bg-teal-700 transition-all flex items-center justify-center disabled:opacity-50"
-                                                >
-                                                    Buy Now
-                                                </button>
+                                            <div className={`grid gap-2 mt-auto ${product.showAddToCart !== false && product.showBuyNow !== false ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                                {product.showAddToCart !== false && (
+                                                    <button
+                                                        disabled={product.stock === 0}
+                                                        onClick={() => addToCart(product._id)}
+                                                        className="group/btn py-2 px-3 rounded-lg font-bold text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                                    >
+                                                        <ShoppingBag className="size-3.5" /> Add
+                                                    </button>
+                                                )}
+                                                {product.showBuyNow !== false && (
+                                                    <button
+                                                        disabled={product.stock === 0}
+                                                        onClick={() => handleBuyNow(product._id)}
+                                                        className="py-2 px-3 rounded-lg font-bold text-xs bg-teal-600 text-white shadow-md hover:bg-teal-700 transition-all flex items-center justify-center disabled:opacity-50"
+                                                    >
+                                                        Buy Now
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </motion.div>
