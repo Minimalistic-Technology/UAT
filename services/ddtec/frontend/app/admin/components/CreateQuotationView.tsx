@@ -1156,7 +1156,7 @@ export default function CreateQuotationView() {
                             type="button"
                             onClick={handleSaveQuotation}
                             disabled={isSaving || items.length === 0}
-                            className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-medium rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
+                            className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 disabled:hover:bg-teal-600 disabled:cursor-not-allowed text-white font-medium rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                         >
                             {isSaving ? (
                                 <>
@@ -1175,7 +1175,7 @@ export default function CreateQuotationView() {
                             type="button"
                             onClick={handleGeneratePdf}
                             disabled={isGenerating || items.length === 0}
-                            className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-medium rounded-lg border border-slate-700 shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
+                            className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 disabled:cursor-not-allowed text-white font-medium rounded-lg border border-slate-700 shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                         >
                             {isGenerating ? (
                                 <>
@@ -1194,7 +1194,7 @@ export default function CreateQuotationView() {
                             type="button"
                             onClick={handleSendEmail}
                             disabled={isSendingEmail || items.length === 0}
-                            className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-medium rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
+                            className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 disabled:cursor-not-allowed text-slate-950 font-medium rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                         >
                             {isSendingEmail ? (
                                 <>

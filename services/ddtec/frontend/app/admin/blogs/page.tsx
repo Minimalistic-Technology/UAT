@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Edit, Trash2, Plus, X } from "lucide-react";
+import { Loader2, Edit, Trash2, Plus, X, Upload, ImageOff } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
@@ -17,6 +17,152 @@ interface Blog {
     tags: string[];
     createdAt: string;
     updatedAt: string;
+}
+
+// Chip-based tags editor: typing a tag then pressing Enter or a comma commits it as a chip.
+// Replaces the old single derived-value input, where re-splitting the joined string on every
+// keystroke silently ate the comma the user had just typed and never rendered actual chips.
+function TagsInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (next: string[]) => void; placeholder?: string }) {
+    const [draft, setDraft] = useState("");
+
+    const commitTags = (raw: string[]) => {
+        const cleaned = raw.map(t => t.trim()).filter(Boolean);
+        if (!cleaned.length) return;
+        const next = [...tags];
+        for (const t of cleaned) {
+            if (!next.some(existing => existing.toLowerCase() === t.toLowerCase())) next.push(t);
+        }
+        onChange(next);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            if (draft.trim()) {
+                commitTags([draft]);
+                setDraft("");
+            }
+        } else if (e.key === "Backspace" && !draft && tags.length > 0) {
+            onChange(tags.slice(0, -1));
+        }
+    };
+
+    const handleChange = (value: string) => {
+        if (value.includes(",")) {
+            const parts = value.split(",");
+            commitTags(parts.slice(0, -1));
+            setDraft(parts[parts.length - 1]);
+        } else {
+            setDraft(value);
+        }
+    };
+
+    const handleBlur = () => {
+        if (draft.trim()) {
+            commitTags([draft]);
+            setDraft("");
+        }
+    };
+
+    return (
+        <div>
+            {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                    {tags.map(tag => (
+                        <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 text-xs font-medium text-teal-700 dark:text-teal-300">
+                            {tag}
+                            <button
+                                type="button"
+                                onClick={() => onChange(tags.filter(t => t !== tag))}
+                                className="cursor-pointer text-teal-500 hover:text-red-500 transition-colors"
+                                title="Remove tag"
+                            >
+                                <X className="size-3" />
+                            </button>
+                        </span>
+                    ))}
+                </div>
+            )}
+            <input
+                type="text"
+                value={draft}
+                onChange={(e) => handleChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={handleBlur}
+                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                placeholder={placeholder}
+            />
+            <p className="text-xs text-slate-400 mt-1">Press Enter or type a comma to add a tag.</p>
+        </div>
+    );
+}
+
+// Featured-image picker: upload a single file (stored in Cloudinary on submit) or fall back
+// to a pasted URL. Whichever was most recently set wins when the form is submitted.
+function BlogImageField({
+    imageUrl,
+    imageFile,
+    onUrlChange,
+    onFileChange,
+    onRemove
+}: {
+    imageUrl: string;
+    imageFile: File | null;
+    onUrlChange: (url: string) => void;
+    onFileChange: (file: File | null) => void;
+    onRemove: () => void;
+}) {
+    const previewSrc = imageFile ? URL.createObjectURL(imageFile) : imageUrl;
+
+    return (
+        <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Featured Image</label>
+            <div className="flex items-center gap-4">
+                <div className="size-20 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-700/50 shrink-0">
+                    {previewSrc ? (
+                        <img src={previewSrc} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                        <ImageOff className="size-6 text-slate-400" />
+                    )}
+                </div>
+                <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                        <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors">
+                            <Upload className="size-4" />
+                            {imageFile || imageUrl ? "Change Image" : "Upload Image"}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) onFileChange(file);
+                                    e.target.value = "";
+                                }}
+                                className="hidden"
+                            />
+                        </label>
+                        {(imageFile || imageUrl) && (
+                            <button
+                                type="button"
+                                onClick={onRemove}
+                                className="cursor-pointer text-sm text-red-500 hover:text-red-700"
+                            >
+                                Remove
+                            </button>
+                        )}
+                    </div>
+                    <input
+                        type="url"
+                        value={imageFile ? "" : imageUrl}
+                        disabled={!!imageFile}
+                        onChange={(e) => onUrlChange(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        placeholder="Or paste an image URL (https://...)"
+                    />
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export default function BlogsPage() {
@@ -38,6 +184,8 @@ export default function BlogsPage() {
         slug: '',
         tags: [] as string[]
     });
+    const [newBlogImageFile, setNewBlogImageFile] = useState<File | null>(null);
+    const [editBlogImageFile, setEditBlogImageFile] = useState<File | null>(null);
 
     const fetchBlogs = async () => {
         setLoadingData(true);
@@ -59,10 +207,23 @@ export default function BlogsPage() {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const { data } = await api.post('/blogs', newBlog);
+            const formData = new FormData();
+            formData.append('title', newBlog.title);
+            formData.append('content', newBlog.content);
+            formData.append('author', newBlog.author);
+            formData.append('slug', newBlog.slug);
+            newBlog.tags.forEach(tag => formData.append('tags', tag));
+            if (newBlogImageFile) {
+                formData.append('image', newBlogImageFile);
+            } else if (newBlog.image) {
+                formData.append('image', newBlog.image);
+            }
+
+            const { data } = await api.post('/blogs', formData);
             setBlogsList(prev => [data, ...prev]);
             setIsAddBlogModalOpen(false);
             setNewBlog({ title: '', content: '', author: '', image: '', slug: '', tags: [] });
+            setNewBlogImageFile(null);
             showToast("Blog created successfully", "success");
         } catch (error: any) {
             console.error(error);
@@ -77,10 +238,23 @@ export default function BlogsPage() {
         if (!editingBlog) return;
         setIsSubmitting(true);
         try {
-            const { data } = await api.put(`/blogs/${editingBlog._id}`, editingBlog);
+            const formData = new FormData();
+            formData.append('title', editingBlog.title);
+            formData.append('content', editingBlog.content);
+            formData.append('author', editingBlog.author);
+            formData.append('slug', editingBlog.slug);
+            editingBlog.tags.forEach(tag => formData.append('tags', tag));
+            if (editBlogImageFile) {
+                formData.append('image', editBlogImageFile);
+            } else {
+                formData.append('image', editingBlog.image || '');
+            }
+
+            const { data } = await api.put(`/blogs/${editingBlog._id}`, formData);
             setBlogsList(prev => prev.map(b => b._id === editingBlog._id ? data : b));
             setIsEditBlogModalOpen(false);
             setEditingBlog(null);
+            setEditBlogImageFile(null);
             showToast("Blog updated successfully", "success");
         } catch (error: any) {
             console.error(error);
@@ -107,7 +281,7 @@ export default function BlogsPage() {
         <>
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
                 <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-end items-center">
-                    <button onClick={() => setIsAddBlogModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors">
+                    <button onClick={() => setIsAddBlogModalOpen(true)} className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors">
                         <Plus className="size-4" /> Add Blog
                     </button>
                 </div>
@@ -155,15 +329,15 @@ export default function BlogsPage() {
                                         </td>
                                         <td className="p-4 text-right flex justify-end items-center gap-2">
                                             <button
-                                                onClick={() => { setEditingBlog(blog); setIsEditBlogModalOpen(true); }}
-                                                className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+                                                onClick={() => { setEditingBlog(blog); setEditBlogImageFile(null); setIsEditBlogModalOpen(true); }}
+                                                className="cursor-pointer text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
                                                 title="Edit Blog"
                                             >
                                                 <Edit className="size-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteBlog(blog._id)}
-                                                className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                                                className="cursor-pointer text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                                                 title="Delete Blog"
                                             >
                                                 <Trash2 className="size-4" />
@@ -193,14 +367,14 @@ export default function BlogsPage() {
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Create New Blog</h3>
-                                <button onClick={() => setIsAddBlogModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                <button onClick={() => setIsAddBlogModalOpen(false)} className="cursor-pointer text-slate-400 hover:text-red-500 transition-colors">
                                     <X className="size-6" />
                                 </button>
                             </div>
                             <form onSubmit={handleCreateBlog} className="flex flex-col max-h-[90vh]">
                                 <div className="p-6 space-y-4 overflow-y-auto">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title <span className="text-red-500">*</span></label>
                                         <input
                                             required
                                             type="text"
@@ -211,7 +385,7 @@ export default function BlogsPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Slug (URL-friendly)</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Slug (URL-friendly) <span className="text-red-500">*</span></label>
                                         <input
                                             required
                                             type="text"
@@ -221,41 +395,34 @@ export default function BlogsPage() {
                                             placeholder="my-blog-post"
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Author</label>
-                                            <input
-                                                required
-                                                type="text"
-                                                value={newBlog.author}
-                                                onChange={(e) => setNewBlog({ ...newBlog, author: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="John Doe"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image URL</label>
-                                            <input
-                                                type="url"
-                                                value={newBlog.image}
-                                                onChange={(e) => setNewBlog({ ...newBlog, image: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="https://..."
-                                            />
-                                        </div>
-                                    </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tags (comma-separated)</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Author <span className="text-red-500">*</span></label>
                                         <input
+                                            required
                                             type="text"
-                                            value={newBlog.tags.join(', ')}
-                                            onChange={(e) => setNewBlog({ ...newBlog, tags: e.target.value.split(',').map(t => t.trim()).filter(t => t) })}
+                                            value={newBlog.author}
+                                            onChange={(e) => setNewBlog({ ...newBlog, author: e.target.value })}
                                             className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                            placeholder="John Doe"
+                                        />
+                                    </div>
+                                    <BlogImageField
+                                        imageUrl={newBlog.image}
+                                        imageFile={newBlogImageFile}
+                                        onUrlChange={(url) => setNewBlog({ ...newBlog, image: url })}
+                                        onFileChange={setNewBlogImageFile}
+                                        onRemove={() => { setNewBlogImageFile(null); setNewBlog({ ...newBlog, image: '' }); }}
+                                    />
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tags</label>
+                                        <TagsInput
+                                            tags={newBlog.tags}
+                                            onChange={(tags) => setNewBlog({ ...newBlog, tags })}
                                             placeholder="technology, tools, tips"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Content</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Content <span className="text-red-500">*</span></label>
                                         <textarea
                                             required
                                             value={newBlog.content}
@@ -269,14 +436,14 @@ export default function BlogsPage() {
                                     <button
                                         type="button"
                                         onClick={() => setIsAddBlogModalOpen(false)}
-                                        className="flex-1 px-4 py-2.5 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                        className="cursor-pointer flex-1 px-4 py-2.5 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="flex-1 px-4 py-2.5 rounded-xl font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors shadow-lg hover:shadow-teal-500/30 flex items-center justify-center gap-2"
+                                        className="cursor-pointer flex-1 px-4 py-2.5 rounded-xl font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors shadow-lg hover:shadow-teal-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin size-5" /> : 'Create Blog'}
                                     </button>
@@ -303,14 +470,14 @@ export default function BlogsPage() {
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Edit Blog</h3>
-                                <button onClick={() => setIsEditBlogModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                <button onClick={() => setIsEditBlogModalOpen(false)} className="cursor-pointer text-slate-400 hover:text-red-500 transition-colors">
                                     <X className="size-6" />
                                 </button>
                             </div>
                             <form onSubmit={handleUpdateBlog} className="flex flex-col max-h-[90vh]">
                                 <div className="p-6 space-y-4 overflow-y-auto">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title <span className="text-red-500">*</span></label>
                                         <input
                                             required
                                             type="text"
@@ -320,7 +487,7 @@ export default function BlogsPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Slug (URL-friendly)</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Slug (URL-friendly) <span className="text-red-500">*</span></label>
                                         <input
                                             required
                                             type="text"
@@ -329,38 +496,33 @@ export default function BlogsPage() {
                                             className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none font-mono text-sm"
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Author</label>
-                                            <input
-                                                required
-                                                type="text"
-                                                value={editingBlog.author}
-                                                onChange={(e) => setEditingBlog({ ...editingBlog, author: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Image URL</label>
-                                            <input
-                                                type="url"
-                                                value={editingBlog.image}
-                                                onChange={(e) => setEditingBlog({ ...editingBlog, image: e.target.value })}
-                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
-                                            />
-                                        </div>
-                                    </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tags (comma-separated)</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Author <span className="text-red-500">*</span></label>
                                         <input
+                                            required
                                             type="text"
-                                            value={editingBlog.tags.join(', ')}
-                                            onChange={(e) => setEditingBlog({ ...editingBlog, tags: e.target.value.split(',').map(t => t.trim()).filter(t => t) })}
+                                            value={editingBlog.author}
+                                            onChange={(e) => setEditingBlog({ ...editingBlog, author: e.target.value })}
                                             className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
                                         />
                                     </div>
+                                    <BlogImageField
+                                        imageUrl={editingBlog.image || ''}
+                                        imageFile={editBlogImageFile}
+                                        onUrlChange={(url) => setEditingBlog({ ...editingBlog, image: url })}
+                                        onFileChange={setEditBlogImageFile}
+                                        onRemove={() => { setEditBlogImageFile(null); setEditingBlog({ ...editingBlog, image: '' }); }}
+                                    />
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Content</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tags</label>
+                                        <TagsInput
+                                            tags={editingBlog.tags}
+                                            onChange={(tags) => setEditingBlog({ ...editingBlog, tags })}
+                                            placeholder="technology, tools, tips"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Content <span className="text-red-500">*</span></label>
                                         <textarea
                                             required
                                             value={editingBlog.content}
@@ -373,14 +535,14 @@ export default function BlogsPage() {
                                     <button
                                         type="button"
                                         onClick={() => setIsEditBlogModalOpen(false)}
-                                        className="flex-1 px-4 py-2.5 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                        className="cursor-pointer flex-1 px-4 py-2.5 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="flex-1 px-4 py-2.5 rounded-xl font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors shadow-lg hover:shadow-teal-500/30 flex items-center justify-center gap-2"
+                                        className="cursor-pointer flex-1 px-4 py-2.5 rounded-xl font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors shadow-lg hover:shadow-teal-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin size-5" /> : 'Save Changes'}
                                     </button>

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getBlogs, getBlogBySlug, getBlogById, createBlog, updateBlog, deleteBlog } from '../controllers/blog.controller';
 import { auth, checkPermission } from '../middleware/auth.middleware';
+import { uploadBlogImageMiddleware } from '../middleware/upload.middleware';
 
 const router = Router();
 
@@ -22,12 +23,12 @@ router.get('/:id', getBlogById);
 // @route   POST api/blogs
 // @desc    Create a blog
 // @access  Private/Admin
-router.post('/', auth, checkPermission(['marketing']), createBlog);
+router.post('/', auth, checkPermission(['marketing']), uploadBlogImageMiddleware, createBlog);
 
 // @route   PUT api/blogs/:id
 // @desc    Update a blog
 // @access  Private/Admin
-router.put('/:id', auth, checkPermission(['marketing']), updateBlog);
+router.put('/:id', auth, checkPermission(['marketing']), uploadBlogImageMiddleware, updateBlog);
 
 // @route   DELETE api/blogs/:id
 // @desc    Delete a blog

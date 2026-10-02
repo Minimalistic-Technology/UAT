@@ -236,7 +236,7 @@ export default function UsersPage() {
                                 <div className="p-6 space-y-4 overflow-y-auto">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">First Name</label>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">First Name <span className="text-red-500">*</span></label>
                                             <input
                                                 required
                                                 type="text"
@@ -246,7 +246,7 @@ export default function UsersPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Last Name</label>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Last Name <span className="text-red-500">*</span></label>
                                             <input
                                                 required
                                                 type="text"
@@ -257,7 +257,7 @@ export default function UsersPage() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email <span className="text-red-500">*</span></label>
                                         <input
                                             required
                                             type="email"
@@ -276,7 +276,7 @@ export default function UsersPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password <span className="text-red-500">*</span></label>
                                         <input
                                             required
                                             type="password"
