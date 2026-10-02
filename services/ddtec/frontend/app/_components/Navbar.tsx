@@ -9,6 +9,7 @@ import { Menu, X, Sun, Moon, ShoppingBag, ChevronRight, User, LogOut, ChevronDow
 import { cn } from "@/lib/utils";
 import LoadingBar from "./LoadingBar";
 import api from "@/lib/api";
+import { SITE_CONFIG } from "@/lib/constants";
 import { useAuth } from "../_context/AuthContext";
 import { useCart } from "../_context/CartContext";
 import { useDynamicRoutes } from "../_context/RouteContext";
@@ -264,11 +265,11 @@ export default function Navbar() {
 
           <Link href="/" className="flex items-center gap-2 group">
             <div className="size-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold shadow-lg shadow-teal-500/20 group-hover:shadow-teal-500/40 transition-all">
-              D
+              {SITE_CONFIG.logoLetter}
             </div>
             <div className="flex flex-col">
               <span className="font-bold text-xl tracking-tight leading-none text-slate-900 dark:text-white">
-                DDTEC
+                {SITE_CONFIG.name}
               </span>
               {pathname?.startsWith('/warehouse') && (
                 <span className="text-[10px] text-teal-600 dark:text-teal-400 font-extrabold tracking-wider uppercase leading-none mt-0.5">
@@ -364,7 +365,7 @@ export default function Navbar() {
             {mounted && (
               <button
                 onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-                className="p-2 rounded-full transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="p-2 rounded-full transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
               >
                 {theme === "light" ? <Moon className="size-5" /> : <Sun className="size-5" />}
               </button>
@@ -569,7 +570,7 @@ export default function Navbar() {
               </div>
 
               <div className="mt-auto p-5 border-t dark:border-slate-800">
-                <p className="text-xs text-center text-slate-400">© 2024 DDTEC</p>
+                <p className="text-xs text-center text-slate-400">© {new Date().getFullYear()} {SITE_CONFIG.name}</p>
               </div>
             </motion.div>
           </>

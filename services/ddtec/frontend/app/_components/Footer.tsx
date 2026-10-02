@@ -5,6 +5,14 @@ import { useRouter, usePathname } from "next/navigation";
 import { Facebook, Twitter, Instagram, Linkedin, Hammer } from "lucide-react";
 
 import { useSettings } from "../_context/SettingsContext";
+import { SITE_CONFIG, SOCIAL_LINKS } from "@/lib/constants";
+
+const SOCIAL_ICONS = [
+  { Icon: Facebook, href: SOCIAL_LINKS.facebook, label: "Facebook" },
+  { Icon: Twitter, href: SOCIAL_LINKS.twitter, label: "Twitter" },
+  { Icon: Instagram, href: SOCIAL_LINKS.instagram, label: "Instagram" },
+  { Icon: Linkedin, href: SOCIAL_LINKS.linkedin, label: "LinkedIn" },
+].filter((item) => item.href);
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -43,18 +51,27 @@ export default function Footer() {
               <div className="size-8 rounded-lg bg-teal-600 flex items-center justify-center text-white">
                 <span className="font-bold">D</span>
               </div>
-              <span className="font-bold text-xl text-white">DDTEC</span>
+              <span className="font-bold text-xl text-white">{SITE_CONFIG.name}</span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-6">
-              Precision-crafted power tools for professionals who demand excellence. Built to last, engineered to perform.
+              {SITE_CONFIG.tagline}
             </p>
-            <div className="flex gap-4">
-              {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (
-                <a key={i} href="#" className="p-2 bg-slate-900 rounded-full hover:bg-teal-600 hover:text-white transition-colors">
-                  <Icon className="size-4" />
-                </a>
-              ))}
-            </div>
+            {SOCIAL_ICONS.length > 0 && (
+              <div className="flex gap-4">
+                {SOCIAL_ICONS.map(({ Icon, href, label }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="p-2 bg-slate-900 rounded-full hover:bg-teal-600 hover:text-white transition-colors"
+                  >
+                    <Icon className="size-4" />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Quick Links */}
@@ -97,7 +114,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500">
-          <p>© {currentYear} DDTEC. All rights reserved.</p>
+          <p>© {currentYear} {SITE_CONFIG.name}. All rights reserved.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
             <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link href="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link>

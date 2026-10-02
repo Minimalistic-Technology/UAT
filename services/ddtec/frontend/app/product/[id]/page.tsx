@@ -25,6 +25,7 @@ import {
     Check,
     Heart,
     Share2,
+    Link2,
     ChevronRight,
     Info,
     Sparkles,
@@ -38,6 +39,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
+import { SITE_CONFIG, buildWhatsAppLink, buildWhatsAppShareLink } from "@/lib/constants";
 import { useDynamicRoutes } from "../../_context/RouteContext";
 import DeliveryPincodeChecker from "../../_components/DeliveryPincodeChecker";
 
@@ -104,6 +106,7 @@ export default function ProductDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [isWishlisted, setIsWishlisted] = useState(false);
+    const [canNativeShare, setCanNativeShare] = useState(false);
     const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
@@ -173,6 +176,10 @@ export default function ProductDetailsPage() {
             fetchReviews();
         }
     }, [id]);
+
+    useEffect(() => {
+        setCanNativeShare(typeof navigator !== "undefined" && !!navigator.share);
+    }, []);
 
     useEffect(() => {
         const fetchMyReview = async () => {
@@ -439,31 +446,41 @@ export default function ProductDetailsPage() {
 
                             {/* Wishlist & Share floating action buttons */}
                             <div className="absolute top-4 right-4 z-20 flex gap-2">
-                                <button
-                                    onClick={toggleWishlist}
-                                    title="Add to Wishlist"
-                                    className={`p-2.5 rounded-full shadow-md backdrop-blur-md transition-all ${isWishlisted ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-500' : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-rose-500'}`}
-                                >
-                                    <Heart className={`size-5 ${isWishlisted ? 'fill-current text-rose-500' : ''}`} />
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (navigator.share) {
-                                            navigator.share({
-                                                title: product.name,
-                                                text: `Check out ${product.name} on DDTEC`,
-                                                url: window.location.href,
-                                            }).catch(() => { });
-                                        } else {
-                                            navigator.clipboard.writeText(window.location.href);
-                                            showToast?.("Product link copied to clipboard!", "info");
-                                        }
-                                    }}
-                                    title="Share Product"
-                                    className="p-2.5 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-md backdrop-blur-md text-slate-600 dark:text-slate-300 hover:text-teal-600 transition-all"
-                                >
-                                    <Share2 className="size-5" />
-                                </button>
+                                <div className="relative group/tip">
+                                    <button
+                                        onClick={toggleWishlist}
+                                        title="Add to Wishlist"
+                                        className={`p-2.5 rounded-full shadow-md backdrop-blur-md transition-all cursor-pointer ${isWishlisted ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-500' : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-rose-500'}`}
+                                    >
+                                        <Heart className={`size-5 ${isWishlisted ? 'fill-current text-rose-500' : ''}`} />
+                                    </button>
+                                    <span className="pointer-events-none absolute top-full right-0 mt-2 whitespace-nowrap rounded-md bg-slate-900 dark:bg-slate-700 text-white text-[11px] font-medium px-2.5 py-1.5 opacity-0 translate-y-1 group-hover/tip:opacity-100 group-hover/tip:translate-y-0 transition-all duration-200 shadow-lg z-30">
+                                        {isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                                    </span>
+                                </div>
+                                <div className="relative group/tip">
+                                    <button
+                                        onClick={() => {
+                                            if (navigator.share) {
+                                                navigator.share({
+                                                    title: product.name,
+                                                    text: `Check out ${product.name} on DDTEC`,
+                                                    url: window.location.href,
+                                                }).catch(() => { });
+                                            } else {
+                                                navigator.clipboard.writeText(window.location.href);
+                                                showToast?.("Product link copied to clipboard!", "info");
+                                            }
+                                        }}
+                                        title={canNativeShare ? "Share Product" : "Copy Product Link"}
+                                        className="p-2.5 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-md backdrop-blur-md text-slate-600 dark:text-slate-300 hover:text-teal-600 transition-all cursor-pointer"
+                                    >
+                                        {canNativeShare ? <Share2 className="size-5" /> : <Link2 className="size-5" />}
+                                    </button>
+                                    <span className="pointer-events-none absolute top-full right-0 mt-2 whitespace-nowrap rounded-md bg-slate-900 dark:bg-slate-700 text-white text-[11px] font-medium px-2.5 py-1.5 opacity-0 translate-y-1 group-hover/tip:opacity-100 group-hover/tip:translate-y-0 transition-all duration-200 shadow-lg z-30">
+                                        {canNativeShare ? "Share this product" : "Copy link to this product"}
+                                    </span>
+                                </div>
                             </div>
 
                             {/* Main Hero Image */}
@@ -699,7 +716,7 @@ export default function ProductDetailsPage() {
                                     <button
                                         onClick={() => {
                                             const chatMsg = `Hi! I'm interested in this product:\n*${product.name}*\n\nCould you share more details?`;
-                                            window.open(`https://wa.me/917777099930?text=${encodeURIComponent(chatMsg)}`, '_blank');
+                                            window.open(buildWhatsAppLink(chatMsg), '_blank');
                                         }}
                                         className="w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2"
                                     >
@@ -708,8 +725,8 @@ export default function ProductDetailsPage() {
 
                                     <button
                                         onClick={() => {
-                                            const shareMsg = `Hi! Check out this product on DDTEC:\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')}\n\nView here: ${window.location.href}`;
-                                            window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, '_blank');
+                                            const shareMsg = `Hi! Check out this product on ${SITE_CONFIG.name}:\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')}\n\nView here: ${window.location.href}`;
+                                            window.open(buildWhatsAppShareLink(shareMsg), '_blank');
                                         }}
                                         className="w-full py-3 border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
                                     >
