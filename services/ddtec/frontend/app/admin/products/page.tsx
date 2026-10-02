@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Tag, Ticket, Eye, ExternalLink, Edit, Trash2, Calendar, Clock, DollarSign, Image as ImageIcon, Loader2, Upload, X, Info, Truck, Sparkles } from "lucide-react";
 import api from "@/lib/api";
-import { countWords, limitWords } from "@/lib/utils";
+import { countWords, limitWords, formatDate, formatDateTime } from "@/lib/utils";
 import ToggleSwitch from "../components/ToggleSwitch";
 import CreatableSelect from "../components/CreatableSelect";
 import { useToast } from "../../_context/ToastContext";
@@ -797,7 +797,7 @@ export default function ProductsPage() {
                                                 <td className="p-4 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                                     <div className="flex flex-col">
                                                         <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                                            {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : 'N/A'}
+                                                            {p.updatedAt ? formatDate(p.updatedAt) : 'N/A'}
                                                         </span>
                                                         <span className="text-[10px] text-slate-400">
                                                             {p.updatedAt ? new Date(p.updatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : ''}
@@ -868,7 +868,7 @@ export default function ProductsPage() {
                                                     </div>
                                                     {coupon.expiresAt && (
                                                         <div className="text-xs text-slate-400">
-                                                            Expires: {new Date(coupon.expiresAt).toLocaleDateString()}
+                                                            Expires: {formatDate(coupon.expiresAt)}
                                                         </div>
                                                     )}
                                                     {coupon.usageLimit && (
@@ -2067,12 +2067,12 @@ export default function ProductsPage() {
                                 <div className="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-4 text-xs">
                                     <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-medium">
                                         <Clock className="size-4 text-teal-600 dark:text-teal-400" />
-                                        <span><strong>Last Updated:</strong> {viewingProductDetails.updatedAt ? new Date(viewingProductDetails.updatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : 'N/A'} at {viewingProductDetails.updatedAt ? new Date(viewingProductDetails.updatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : 'N/A'}</span>
+                                        <span><strong>Last Updated:</strong> {viewingProductDetails.updatedAt ? formatDateTime(viewingProductDetails.updatedAt) : 'N/A'}</span>
                                     </div>
                                     {viewingProductDetails.createdAt && (
                                         <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                                             <Calendar className="size-3.5 text-teal-600" />
-                                            <span>Created: {new Date(viewingProductDetails.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
+                                            <span>Created: {formatDate(viewingProductDetails.createdAt)}</span>
                                         </div>
                                     )}
                                 </div>

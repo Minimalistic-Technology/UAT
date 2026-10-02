@@ -5,6 +5,29 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+// The single date format used across the whole app, e.g. "2 Oct 2026". Use this instead of
+// calling toLocaleDateString directly so every date (orders, blogs, quotations, admin
+// tables, etc.) reads identically everywhere. Accepts anything `Date` accepts, plus an
+// existing `Date` instance. Returns '' for a missing/invalid input so callers can show a
+// fallback (e.g. '—') without crashing.
+export function formatDate(value: string | number | Date | null | undefined): string {
+    if (value === null || value === undefined || value === '') return '';
+    const date = value instanceof Date ? value : new Date(value);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Same as formatDate but appends the time, e.g. "2 Oct 2026, 5:30 PM" — for call sites that
+// currently show both a date and a time together.
+export function formatDateTime(value: string | number | Date | null | undefined): string {
+    if (value === null || value === undefined || value === '') return '';
+    const date = value instanceof Date ? value : new Date(value);
+    if (isNaN(date.getTime())) return '';
+    const datePart = formatDate(date);
+    const timePart = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${datePart}, ${timePart}`;
+}
+
 // Counts words by whitespace-splitting, ignoring leading/trailing/collapsed whitespace.
 export function countWords(text: string): number {
     const trimmed = text.trim();

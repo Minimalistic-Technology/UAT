@@ -38,6 +38,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
+import { formatDate as formatDateShared } from "@/lib/utils";
 import { SITE_CONFIG, buildWhatsAppLink, buildWhatsAppShareLink } from "@/lib/constants";
 import { DEFAULT_HIGHLIGHTS, getHighlightIcon, getHighlightColorClasses } from "@/lib/productHighlights";
 import { useDynamicRoutes } from "../../_context/RouteContext";
@@ -262,7 +263,7 @@ export default function ProductDetailsPage() {
             if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
             if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
             if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-            return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+            return formatDateShared(d);
         } catch {
             return "";
         }
@@ -271,17 +272,7 @@ export default function ProductDetailsPage() {
     // Date & Time formatting helpers
     const formatDate = (dateString?: string) => {
         if (!dateString) return "N/A";
-        try {
-            const d = new Date(dateString);
-            if (isNaN(d.getTime())) return "N/A";
-            return d.toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-            });
-        } catch {
-            return "N/A";
-        }
+        return formatDateShared(dateString) || "N/A";
     };
 
     const formatTime = (dateString?: string) => {

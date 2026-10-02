@@ -28,6 +28,7 @@ import {
     UserCheck,
 } from 'lucide-react';
 import api from '@/lib/api';
+import { formatDateTime } from '@/lib/utils';
 import { useToast } from '@/app/_context/ToastContext';
 import { useConfirm } from '@/app/_context/ConfirmContext';
 
@@ -958,7 +959,7 @@ export default function LeadsView() {
                                                 {lead.followUpDate && (
                                                     <p className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
                                                         <Calendar className="size-3" />
-                                                        {new Date(lead.followUpDate).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                        {formatDateTime(lead.followUpDate)}
                                                     </p>
                                                 )}
                                                 {lead.assignedTo && typeof lead.assignedTo === 'object' && (

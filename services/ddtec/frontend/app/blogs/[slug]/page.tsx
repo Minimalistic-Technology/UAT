@@ -6,6 +6,7 @@ import { Calendar, User, ArrowLeft, Loader2, Tag } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 
 interface Blog {
     _id: string;
@@ -131,11 +132,7 @@ export default function BlogDetailPage({ params }: { params: Promise<{ slug: str
                             </div>
                             <div className="flex items-center gap-2">
                                 <Calendar className="size-5" />
-                                <span>{new Date(blog.createdAt).toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}</span>
+                                <span>{formatDate(blog.createdAt)}</span>
                             </div>
                         </div>
 
@@ -150,11 +147,7 @@ export default function BlogDetailPage({ params }: { params: Promise<{ slug: str
                         {blog.updatedAt && blog.updatedAt !== blog.createdAt && (
                             <div className="mt-8 pt-8 border-t border-slate-200 dark:border-slate-700">
                                 <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-                                    Last updated: {new Date(blog.updatedAt).toLocaleDateString('en-US', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                    })}
+                                    Last updated: {formatDate(blog.updatedAt)}
                                 </p>
                             </div>
                         )}

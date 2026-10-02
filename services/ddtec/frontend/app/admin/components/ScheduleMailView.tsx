@@ -8,6 +8,7 @@ import {
     Check, ArrowRight, Zap, FileText, SendHorizontal, Info, Search
 } from "lucide-react";
 import api from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
 import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
 
@@ -639,7 +640,7 @@ export default function ScheduleMailView() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                                                     <Calendar className="w-4 h-4 text-slate-400" />
-                                                    <span>{new Date(item.scheduledAt).toLocaleString()}</span>
+                                                    <span>{formatDateTime(item.scheduledAt)}</span>
                                                 </div>
                                                 {isSent && item.sentAt && (
                                                     <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">

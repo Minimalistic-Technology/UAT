@@ -21,6 +21,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 import api from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 import { useToast } from '@/app/_context/ToastContext';
 import { useConfirm } from '@/app/_context/ConfirmContext';
 
@@ -460,11 +461,7 @@ export default function PurchaseRecordsView({
                                         </div>
 
                                         <div className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                                            {new Date(record.purchaseDate).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            })}
+                                            {formatDate(record.purchaseDate)}
                                             <span className="block text-[10px] text-slate-400">
                                                 {new Date(record.purchaseDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>

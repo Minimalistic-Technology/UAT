@@ -10,6 +10,7 @@ import PurchasesGraph from "./components/PurchasesGraph";
 import { useAdminStats } from "./hooks/useAdminStats";
 import { useOrders } from "./hooks/useOrders";
 import { useProducts } from "./hooks/useProducts";
+import { formatDate } from "@/lib/utils";
 
 // Maps the old `/admin?view=xxx` query-param scheme to its real route, so
 // existing bookmarks/links keep working.
@@ -106,7 +107,7 @@ export default function AdminDashboardPage() {
                                     <div className="flex-1">
                                         <p className="font-medium text-slate-900 dark:text-white">Order placed by {order.shippingInfo?.fullName || "Guest"}</p>
                                         <p className="text-sm text-slate-500">
-                                            ₹{order.totalAmount.toFixed(2)} - {new Date(order.createdAt).toLocaleDateString()}
+                                            ₹{order.totalAmount.toFixed(2)} - {formatDate(order.createdAt)}
                                         </p>
                                     </div>
                                     <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 capitalize">

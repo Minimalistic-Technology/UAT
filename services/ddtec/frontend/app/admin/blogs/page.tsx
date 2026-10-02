@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Edit, Trash2, Plus, X, Upload, ImageOff } from "lucide-react";
 import api from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
 
@@ -325,7 +326,7 @@ export default function BlogsPage() {
                                         <td className="p-4 text-slate-600 dark:text-slate-400">{blog.author}</td>
                                         <td className="p-4 text-slate-500 dark:text-slate-400 font-mono text-sm">{blog.slug}</td>
                                         <td className="p-4 text-slate-500 dark:text-slate-400 text-sm">
-                                            {new Date(blog.createdAt).toLocaleDateString()}
+                                            {formatDate(blog.createdAt)}
                                         </td>
                                         <td className="p-4 text-right flex justify-end items-center gap-2">
                                             <button

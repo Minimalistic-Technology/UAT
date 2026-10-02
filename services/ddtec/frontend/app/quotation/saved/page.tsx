@@ -21,6 +21,7 @@ import {
     X
 } from "lucide-react";
 import api from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 import { useToast } from "../../_context/ToastContext";
 import { useAuth } from "../../_context/AuthContext";
 
@@ -304,11 +305,7 @@ export default function SavedQuotationsPage() {
                                                 </span>
                                                 <span className="text-xs text-slate-400 flex items-center gap-1">
                                                     <Calendar className="size-3.5" />
-                                                    {new Date(quotation.createdAt).toLocaleDateString("en-IN", {
-                                                        day: "numeric",
-                                                        month: "short",
-                                                        year: "numeric"
-                                                    })}
+                                                    {formatDate(quotation.createdAt)}
                                                 </span>
                                             </div>
                                             <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-1 line-clamp-1">

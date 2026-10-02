@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Edit, Trash2, Layers, X, Users, Truck, ShoppingBag, Loader2 } from "lucide-react";
 import api from "@/lib/api";
+import { formatDate, formatDateTime } from "@/lib/utils";
 import DeliveredOrdersGraph from "../components/DeliveredOrdersGraph";
 import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
@@ -117,7 +118,7 @@ export default function OrdersPage() {
                                         <tr key={order._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
                                             <td className="p-4">
                                                 <div className="font-mono text-xs uppercase text-slate-900 dark:text-white">#{order._id.slice(-8)}</div>
-                                                <div className="text-xs text-slate-400">{new Date(order.createdAt).toLocaleDateString()}</div>
+                                                <div className="text-xs text-slate-400">{formatDate(order.createdAt)}</div>
                                             </td>
                                             <td className="p-4">
                                                 <div className="text-sm font-medium text-slate-900 dark:text-white">{order.shippingInfo?.fullName || "Guest"}</div>
@@ -207,7 +208,7 @@ export default function OrdersPage() {
                                     </div>
                                     <div className="text-right">
                                         <p className="text-xs text-slate-400 uppercase font-bold mb-1">Date</p>
-                                        <p className="text-sm font-medium text-slate-900 dark:text-white">{new Date(viewingOrder.createdAt).toLocaleString()}</p>
+                                        <p className="text-sm font-medium text-slate-900 dark:text-white">{formatDateTime(viewingOrder.createdAt)}</p>
                                     </div>
                                 </div>
 

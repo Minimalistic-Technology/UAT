@@ -21,7 +21,7 @@ import {
     Check,
     AlertCircle
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 interface Order {
     _id: string;
@@ -186,7 +186,7 @@ export default function OrdersPage() {
                                             <div className="text-left md:text-right">
                                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Purchased On</p>
                                                 <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                                                    {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    {formatDate(order.createdAt)}
                                                 </p>
                                             </div>
                                             <div className={cn(

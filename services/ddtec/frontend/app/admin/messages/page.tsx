@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2, Mail } from "lucide-react";
 import api from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 
 interface Message {
     _id: string;
@@ -69,7 +70,7 @@ export default function MessagesPage() {
                                         <p className="text-slate-600 dark:text-slate-400 line-clamp-2 max-w-md">{msg.message}</p>
                                     </td>
                                     <td className="p-4 text-slate-500 dark:text-slate-400 text-sm">
-                                        {new Date(msg.createdAt).toLocaleDateString()}
+                                        {formatDate(msg.createdAt)}
                                     </td>
                                     <td className="p-4 text-right">
                                         <a
