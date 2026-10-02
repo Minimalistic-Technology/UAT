@@ -1,8 +1,11 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, FileText, X, Loader2, ImagePlus, ImageOff } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
 
 interface QuotationItem {
     _id: string;
@@ -29,7 +32,7 @@ interface CatalogProduct {
 }
 
 const MAX_IMAGE_DIMENSION = 800;
-const UNIT_OPTIONS = ['Nos', 'Kg', 'Pcs', 'Set', 'Meter', 'Ltr', 'Box', 'Gram', 'Tone', 'Dozen', 'Packet', 'Pair', 'Roll'];
+const UNIT_OPTIONS = ['Nos', 'Kg', 'Pcs', 'Set', 'Meter', 'Ltr', 'Box', 'Gram', 'Tone', 'Dozen', 'Packet', 'Pair', 'Roll', 'Bag', 'Bundle', 'Carton', 'Bottle', 'Can', 'Drum', 'Quintal', 'Bale', 'Tablet', 'Sq.Ft', 'Sq.Mtr', 'Unit'];
 
 function fileToCompressedFile(file: File): Promise<File> {
     return new Promise((resolve, reject) => {
@@ -66,6 +69,7 @@ function fileToCompressedFile(file: File): Promise<File> {
 
 const QuotationProductsView = () => {
     const { showToast } = useToast();
+    const confirm = useConfirm();
     const [items, setItems] = useState<QuotationItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -182,7 +186,8 @@ const QuotationProductsView = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this product?')) return;
+        const ok = await confirm({ message: 'Are you sure you want to delete this product?', variant: 'danger' });
+        if (!ok) return;
         try {
             await api.delete(`/quotation-items/${id}`);
             setItems(prev => prev.filter(i => i._id !== id));
@@ -258,14 +263,10 @@ const QuotationProductsView = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <FileText className="size-6 text-teal-600" />
-                    Quotation Products
-                </h2>
+            <div className="flex justify-end items-center mb-6">
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg"
+                    className="cursor-pointer flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg"
                 >
                     <Plus className="size-4" /> Add Product
                 </button>
@@ -321,14 +322,14 @@ const QuotationProductsView = () => {
                                         <td className="p-4 text-right flex justify-end items-center gap-2">
                                             <button
                                                 onClick={() => handleEditClick(item)}
-                                                className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+                                                className="cursor-pointer text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
                                                 title="Edit"
                                             >
                                                 <Edit className="size-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(item._id)}
-                                                className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                                                className="cursor-pointer text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                                                 title="Delete"
                                             >
                                                 <Trash2 className="size-4" />
@@ -344,18 +345,22 @@ const QuotationProductsView = () => {
 
             <AnimatePresence>
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                        onClick={handleCloseModal}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                                     {editingItem ? 'Edit Quotation Product' : 'Add Quotation Product'}
                                 </h3>
-                                <button onClick={handleCloseModal} className="text-slate-400 hover:text-red-500 transition-colors">
+                                <button onClick={handleCloseModal} className="cursor-pointer text-slate-400 hover:text-red-500 transition-colors">
                                     <X className="size-6" />
                                 </button>
                             </div>
@@ -366,7 +371,7 @@ const QuotationProductsView = () => {
                                     <select
                                         value={formData.product}
                                         onChange={(e) => handleSelectProduct(e.target.value)}
-                                        className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                        className="cursor-pointer w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
                                     >
                                         <option value="">— Select a product to copy details —</option>
                                         {availableCatalogProducts.map(p => (
@@ -403,7 +408,7 @@ const QuotationProductsView = () => {
                                                 <button
                                                     type="button"
                                                     onClick={handleRemoveImage}
-                                                    className="ml-2 text-sm text-red-500 hover:text-red-700"
+                                                    className="cursor-pointer ml-2 text-sm text-red-500 hover:text-red-700"
                                                 >
                                                     Remove
                                                 </button>
@@ -456,7 +461,7 @@ const QuotationProductsView = () => {
                                         <select
                                             value={formData.unit}
                                             onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                                            className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                            className="cursor-pointer w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
                                         >
                                             {UNIT_OPTIONS.map(u => (
                                                 <option key={u} value={u}>{u}</option>
@@ -516,14 +521,14 @@ const QuotationProductsView = () => {
                                     <button
                                         type="button"
                                         onClick={handleCloseModal}
-                                        className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-600"
+                                        className="cursor-pointer px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-600"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting || isUploadingImage}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 disabled:opacity-50 flex items-center gap-2"
+                                        className="cursor-pointer px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin size-4" /> : null}
                                         {editingItem ? 'Update Product' : 'Create Product'}

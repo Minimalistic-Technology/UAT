@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Star, ShoppingBag, Search, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "../_context/CartContext";
 import api from "@/lib/api";
 
@@ -20,6 +21,7 @@ interface Product {
 }
 
 export default function FeaturedProducts() {
+    const router = useRouter();
     const { addToCart } = useCart();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -110,7 +112,8 @@ export default function FeaturedProducts() {
                         {products.map((product) => (
                             <div
                                 key={product._id}
-                                className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] shrink-0 group relative bg-slate-900 border border-slate-800 rounded-3xl p-5 hover:border-teal-500/50 hover:shadow-2xl hover:shadow-teal-500/10 transition-all duration-300 flex flex-col justify-between"
+                                onClick={() => router.push(`/product/${product._id}`)}
+                                className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] shrink-0 group relative bg-slate-900 border border-slate-800 rounded-3xl p-5 hover:border-teal-500/50 hover:shadow-2xl hover:shadow-teal-500/10 transition-all duration-300 flex flex-col justify-between cursor-pointer"
                             >
                                 <div>
                                     <div className="relative h-48 bg-slate-950/60 rounded-2xl p-4 overflow-hidden mb-4 flex items-center justify-center">
@@ -154,7 +157,7 @@ export default function FeaturedProducts() {
 
                                     <div className="grid grid-cols-2 gap-2">
                                         <button
-                                            onClick={() => addToCart(product._id)}
+                                            onClick={(e) => { e.stopPropagation(); addToCart(product._id); }}
                                             disabled={product.stock === 0}
                                             className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                                         >

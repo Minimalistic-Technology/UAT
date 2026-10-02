@@ -12,6 +12,7 @@ import {
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Asterisk } from "lucide-react";
 import {
+  Job_Type,
   Work_Mode,
   Company_Type,
   ROLE_CATEGORIES,
@@ -73,6 +74,35 @@ export function InternshipBasicInfo() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-2">
+            <Label>
+              Employment Type <Asterisk className="text-destructive size-3" />
+            </Label>
+            <Controller
+              name="employmentType"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employment type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Job_Type.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {formatLabel(type)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.employmentType && (
+              <p className="text-destructive text-xs">
+                {errors.employmentType.message}
+              </p>
+            )}
+          </div>
+
           <div className="grid gap-2">
             <Label>
               Work Mode <Asterisk className="text-destructive size-3" />

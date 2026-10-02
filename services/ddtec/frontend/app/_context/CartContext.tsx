@@ -14,6 +14,7 @@ interface CartItem {
         image: string;
         couponCode?: string;
         discountPercentage?: number;
+        codAvailable?: boolean;
     };
     quantity: number;
     _id: string; // Item ID (subdocument id)

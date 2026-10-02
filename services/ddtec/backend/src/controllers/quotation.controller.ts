@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
+import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QuotationItem from '../models/QuotationItem';
 import SavedQuotation from '../models/SavedQuotation';
+import Settings from '../models/Settings';
 import NotificationService from '../services/notification.service';
 
 const COMPANY = {
@@ -58,6 +60,37 @@ function amountInWords(amount: number): string {
 
 function sanitizeForFilename(str: string): string {
     return str.trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+// Fetches the configured logo image by URL and returns it in a form jsPDF's addImage
+// accepts. Never throws — a broken/unreachable logo URL must not block quotation PDF
+// generation, it should just render without a logo.
+async function fetchLogoImage(logoUrl?: string): Promise<{ dataUrl: string; format: string } | null> {
+    if (!logoUrl || !/^https?:\/\//i.test(logoUrl)) return null;
+
+    try {
+        const response = await axios.get<ArrayBuffer>(logoUrl, {
+            responseType: 'arraybuffer',
+            timeout: 8000
+        });
+
+        const contentType = String(response.headers['content-type'] || '').toLowerCase();
+        let format = 'PNG';
+        if (contentType.includes('jpeg') || contentType.includes('jpg') || /\.jpe?g($|\?)/i.test(logoUrl)) {
+            format = 'JPEG';
+        } else if (contentType.includes('webp')) {
+            format = 'WEBP';
+        } else if (contentType.includes('png') || /\.png($|\?)/i.test(logoUrl)) {
+            format = 'PNG';
+        }
+
+        const base64 = Buffer.from(response.data).toString('base64');
+        const mimeType = contentType.split(';')[0] || `image/${format.toLowerCase()}`;
+        return { dataUrl: `data:${mimeType};base64,${base64}`, format };
+    } catch (err) {
+        console.warn('[QUOTATION] Failed to fetch logo image from URL:', logoUrl, (err as any)?.message);
+        return null;
+    }
 }
 
 async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfBuffer: Buffer; downloadFilename: string }> {
@@ -123,13 +156,24 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
         taxGroups.set(key, group);
     }
 
+    const settings = await Settings.findOne();
+    const logo = await fetchLogoImage(settings?.quotationLogoUrl);
+
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 14;
 
+    if (logo) {
+        try {
+            doc.addImage(logo.dataUrl, logo.format, margin, 6, 22, 14, undefined, 'FAST');
+        } catch (err) {
+            console.warn('[QUOTATION] Failed to embed logo image in PDF:', (err as any)?.message);
+        }
+    }
+
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('Tax Invoice', pageWidth / 2, 15, { align: 'center' });
+    doc.text('Quotation', pageWidth / 2, 15, { align: 'center' });
 
     doc.setDrawColor(0);
     doc.rect(margin, 20, pageWidth - margin * 2, 30);
@@ -394,15 +438,23 @@ export const saveQuotation = async (req: Request, res: Response) => {
     }
 };
 
+// An admin can see/manage every quotation (including guest ones); everyone
+// else may only see/manage quotations they own.
+function isAdminUser(req: Request): boolean {
+    return (req as any).user?.role === 'admin';
+}
+
+function ownsQuotation(req: Request, quotation: any): boolean {
+    const userId = (req as any).user?.id || (req as any).user?._id;
+    return !!quotation.user && String(quotation.user) === String(userId);
+}
+
 // @route   GET api/quotation/saved
-// @desc    Get all saved quotations
+// @desc    Get all saved quotations owned by the requesting user (or all, for admins)
 export const getAllSavedQuotations = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user?.id || (req as any).user?._id;
-        let query = {};
-        if (userId) {
-            query = { $or: [{ user: userId }, { user: null }] };
-        }
+        const query = isAdminUser(req) ? {} : { user: userId };
         const quotations = await SavedQuotation.find(query).sort({ createdAt: -1 });
         return res.status(200).json(quotations);
     } catch (err: any) {
@@ -412,13 +464,16 @@ export const getAllSavedQuotations = async (req: Request, res: Response) => {
 };
 
 // @route   GET api/quotation/saved/:id
-// @desc    Get a single saved quotation by ID
+// @desc    Get a single saved quotation by ID (owner or admin only)
 export const getSavedQuotationById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const quotation = await SavedQuotation.findById(id);
         if (!quotation) {
             return res.status(404).json({ msg: 'Saved quotation not found' });
+        }
+        if (!isAdminUser(req) && !ownsQuotation(req, quotation)) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to view this quotation.' });
         }
         return res.status(200).json(quotation);
     } catch (err: any) {
@@ -428,14 +483,18 @@ export const getSavedQuotationById = async (req: Request, res: Response) => {
 };
 
 // @route   DELETE api/quotation/saved/:id
-// @desc    Delete a saved quotation
+// @desc    Delete a saved quotation (owner or admin only)
 export const deleteSavedQuotation = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const deleted = await SavedQuotation.findByIdAndDelete(id);
-        if (!deleted) {
+        const quotation = await SavedQuotation.findById(id);
+        if (!quotation) {
             return res.status(404).json({ msg: 'Saved quotation not found' });
         }
+        if (!isAdminUser(req) && !ownsQuotation(req, quotation)) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to delete this quotation.' });
+        }
+        await quotation.deleteOne();
         return res.status(200).json({ success: true, msg: 'Saved quotation deleted successfully' });
     } catch (err: any) {
         console.error('Error deleting saved quotation:', err);
@@ -444,13 +503,16 @@ export const deleteSavedQuotation = async (req: Request, res: Response) => {
 };
 
 // @route   POST api/quotation/saved/:id/duplicate
-// @desc    Duplicate a saved quotation to create a new copy
+// @desc    Duplicate a saved quotation to create a new copy (owner or admin only)
 export const duplicateSavedQuotation = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const source = await SavedQuotation.findById(id);
         if (!source) {
             return res.status(404).json({ msg: 'Saved quotation not found' });
+        }
+        if (!isAdminUser(req) && !ownsQuotation(req, source)) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to duplicate this quotation.' });
         }
 
         const userId = (req as any).user?.id || (req as any).user?._id;

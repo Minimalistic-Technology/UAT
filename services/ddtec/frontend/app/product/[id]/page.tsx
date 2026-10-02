@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../../_context/AuthContext";
 import { useCart } from "../../_context/CartContext";
 import { useToast } from "../../_context/ToastContext";
@@ -18,22 +18,29 @@ import {
     X,
     Maximize2,
     MessageCircle,
-    Clock,
     Calendar,
     RefreshCw,
     Copy,
     Check,
     Heart,
     Share2,
+    Link2,
     ChevronRight,
     Info,
     Sparkles,
     CheckCircle2,
-    PackageCheck
+    PackageCheck,
+    Download,
+    Ban,
+    Trash2,
+    Edit3
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
+import { formatDate as formatDateShared } from "@/lib/utils";
+import { SITE_CONFIG, buildWhatsAppLink, buildWhatsAppShareLink } from "@/lib/constants";
+import { DEFAULT_HIGHLIGHTS, getHighlightIcon, getHighlightColorClasses } from "@/lib/productHighlights";
 import { useDynamicRoutes } from "../../_context/RouteContext";
 import DeliveryPincodeChecker from "../../_components/DeliveryPincodeChecker";
 
@@ -51,6 +58,12 @@ interface Product {
     lastMonthSales: number;
     brand?: string;
     modelName?: string;
+    packQuantity?: number;
+    packUnit?: string;
+    unitSize?: number;
+    unitMeasure?: string;
+    showAddToCart?: boolean;
+    showBuyNow?: boolean;
     couponCode?: string;
     discountPercentage?: number;
     discountType?: 'percentage' | 'fixed';
@@ -59,16 +72,35 @@ interface Product {
     cgst?: number;
     sgst?: number;
     isActive?: boolean;
+    productType?: 'physical' | 'digital';
+    isReturnable?: boolean;
+    showDeliveryChecker?: boolean;
+    allowedCourierPartners?: string[];
+    customDeliveryEstimate?: string;
+    codAvailable?: boolean;
+    highlights?: { icon: string; title: string; description: string; color: string }[];
     createdAt?: string;
     updatedAt?: string;
+}
+
+interface Review {
+    _id: string;
+    product: string;
+    user: string;
+    userName: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
 }
 
 export default function ProductDetailsPage() {
     const { id } = useParams();
     const router = useRouter();
+    const pathname = usePathname();
     const { addToCart, cartItems } = useCart();
     const { showToast } = useToast();
     const { isRouteActive } = useDynamicRoutes();
+    const { user } = useAuth();
 
     const [product, setProduct] = useState<Product | null>(null);
     const [selectedImage, setSelectedImage] = useState<string>("");
@@ -76,10 +108,21 @@ export default function ProductDetailsPage() {
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [isWishlisted, setIsWishlisted] = useState(false);
+    const [canNativeShare, setCanNativeShare] = useState(false);
     const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'specs' | 'shipping' | 'reviews'>('overview');
+
+    // Reviews & Ratings
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [myReview, setMyReview] = useState<Review | null>(null);
+    const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
+    const [reviewRating, setReviewRating] = useState(0);
+    const [hoveredStar, setHoveredStar] = useState(0);
+    const [reviewComment, setReviewComment] = useState("");
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -121,20 +164,115 @@ export default function ProductDetailsPage() {
         }
     }, [id]);
 
+    const fetchReviews = async () => {
+        try {
+            const { data } = await api.get(`/reviews/product/${id}`);
+            setReviews(data || []);
+        } catch (error) {
+            console.error("Failed to fetch reviews", error);
+        }
+    };
+
+    useEffect(() => {
+        if (id) {
+            fetchReviews();
+        }
+    }, [id]);
+
+    useEffect(() => {
+        setCanNativeShare(typeof navigator !== "undefined" && !!navigator.share);
+    }, []);
+
+    useEffect(() => {
+        const fetchMyReview = async () => {
+            if (!id || !user) {
+                setMyReview(null);
+                return;
+            }
+            try {
+                const { data } = await api.get(`/reviews/product/${id}/mine`);
+                setMyReview(data || null);
+            } catch (error) {
+                console.error("Failed to fetch your review", error);
+            }
+        };
+        fetchMyReview();
+    }, [id, user]);
+
+    const openReviewForm = () => {
+        if (!user) {
+            router.push(`/login?redirect=${encodeURIComponent(pathname || `/product/${id}`)}`);
+            return;
+        }
+        setReviewRating(myReview?.rating || 0);
+        setReviewComment(myReview?.comment || "");
+        setIsReviewFormOpen(true);
+    };
+
+    const handleSubmitReview = async () => {
+        if (reviewRating < 1 || reviewRating > 5) {
+            showToast?.("Please select a star rating", "error");
+            return;
+        }
+        setSubmittingReview(true);
+        try {
+            await api.post(`/reviews/product/${id}`, { rating: reviewRating, comment: reviewComment });
+            showToast?.(myReview ? "Review updated successfully!" : "Review submitted successfully!", "success");
+            setIsReviewFormOpen(false);
+            await Promise.all([
+                fetchReviews(),
+                api.get(`/products/${id}`).then(res => setProduct(res.data)),
+                api.get(`/reviews/product/${id}/mine`).then(res => setMyReview(res.data || null))
+            ]);
+        } catch (error: any) {
+            console.error("Failed to submit review", error);
+            showToast?.(error.response?.data?.msg || "Failed to submit review.", "error");
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
+
+    const handleDeleteReview = async (reviewId: string) => {
+        setDeletingReviewId(reviewId);
+        try {
+            await api.delete(`/reviews/${reviewId}`);
+            showToast?.("Review deleted", "success");
+            setMyReview(null);
+            await Promise.all([
+                fetchReviews(),
+                api.get(`/products/${id}`).then(res => setProduct(res.data))
+            ]);
+        } catch (error: any) {
+            console.error("Failed to delete review", error);
+            showToast?.(error.response?.data?.msg || "Failed to delete review.", "error");
+        } finally {
+            setDeletingReviewId(null);
+        }
+    };
+
+    const formatReviewAge = (dateString: string) => {
+        try {
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return "";
+            const diffMs = Date.now() - d.getTime();
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+
+            if (diffMins < 1) return "Just now";
+            if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+            if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+            if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            return formatDateShared(d);
+        } catch {
+            return "";
+        }
+    };
+
     // Date & Time formatting helpers
     const formatDate = (dateString?: string) => {
         if (!dateString) return "N/A";
-        try {
-            const d = new Date(dateString);
-            if (isNaN(d.getTime())) return "N/A";
-            return d.toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-            });
-        } catch {
-            return "N/A";
-        }
+        return formatDateShared(dateString) || "N/A";
     };
 
     const formatTime = (dateString?: string) => {
@@ -178,7 +316,6 @@ export default function ProductDetailsPage() {
         if (!product || quantity <= 0) return;
         try {
             await addToCart(product._id, quantity);
-            showToast?.(`Added ${quantity} ${product.name} to cart!`, "success");
             setQuantity(1); // Reset quantity selector back to default
         } catch {
             showToast?.("Failed to add product to cart", "error");
@@ -243,6 +380,14 @@ export default function ProductDetailsPage() {
 
     const categoryName = typeof product.category === 'object' ? product.category.name : product.category;
     const createdAtDate = product.createdAt ? formatDate(product.createdAt) : "N/A";
+    const isDigital = product.productType === 'digital';
+    const isReturnable = product.isReturnable !== false;
+    const showDeliveryChecker = !isDigital && product.showDeliveryChecker !== false;
+    const deliveryCheckerProps = {
+        codAvailable: product.codAvailable !== false,
+        allowedPartners: product.allowedCourierPartners,
+        customEstimateMessage: product.customDeliveryEstimate || undefined
+    };
 
     const hasDiscount = (product.discountPercentage && product.discountPercentage > 0) || (product.discountValue && product.discountValue > 0);
     const originalPrice = hasDiscount
@@ -293,31 +438,41 @@ export default function ProductDetailsPage() {
 
                             {/* Wishlist & Share floating action buttons */}
                             <div className="absolute top-4 right-4 z-20 flex gap-2">
-                                <button
-                                    onClick={toggleWishlist}
-                                    title="Add to Wishlist"
-                                    className={`p-2.5 rounded-full shadow-md backdrop-blur-md transition-all ${isWishlisted ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-500' : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-rose-500'}`}
-                                >
-                                    <Heart className={`size-5 ${isWishlisted ? 'fill-current text-rose-500' : ''}`} />
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (navigator.share) {
-                                            navigator.share({
-                                                title: product.name,
-                                                text: `Check out ${product.name} on DDTEC`,
-                                                url: window.location.href,
-                                            }).catch(() => { });
-                                        } else {
-                                            navigator.clipboard.writeText(window.location.href);
-                                            showToast?.("Product link copied to clipboard!", "info");
-                                        }
-                                    }}
-                                    title="Share Product"
-                                    className="p-2.5 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-md backdrop-blur-md text-slate-600 dark:text-slate-300 hover:text-teal-600 transition-all"
-                                >
-                                    <Share2 className="size-5" />
-                                </button>
+                                <div className="relative group/tip">
+                                    <button
+                                        onClick={toggleWishlist}
+                                        title="Add to Wishlist"
+                                        className={`p-2.5 rounded-full shadow-md backdrop-blur-md transition-all cursor-pointer ${isWishlisted ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-500' : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-rose-500'}`}
+                                    >
+                                        <Heart className={`size-5 ${isWishlisted ? 'fill-current text-rose-500' : ''}`} />
+                                    </button>
+                                    <span className="pointer-events-none absolute top-full right-0 mt-2 whitespace-nowrap rounded-md bg-slate-900 dark:bg-slate-700 text-white text-[11px] font-medium px-2.5 py-1.5 opacity-0 translate-y-1 group-hover/tip:opacity-100 group-hover/tip:translate-y-0 transition-all duration-200 shadow-lg z-30">
+                                        {isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                                    </span>
+                                </div>
+                                <div className="relative group/tip">
+                                    <button
+                                        onClick={() => {
+                                            if (navigator.share) {
+                                                navigator.share({
+                                                    title: product.name,
+                                                    text: `Check out ${product.name} on DDTEC`,
+                                                    url: window.location.href,
+                                                }).catch(() => { });
+                                            } else {
+                                                navigator.clipboard.writeText(window.location.href);
+                                                showToast?.("Product link copied to clipboard!", "info");
+                                            }
+                                        }}
+                                        title={canNativeShare ? "Share Product" : "Copy Product Link"}
+                                        className="p-2.5 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-md backdrop-blur-md text-slate-600 dark:text-slate-300 hover:text-teal-600 transition-all cursor-pointer"
+                                    >
+                                        {canNativeShare ? <Share2 className="size-5" /> : <Link2 className="size-5" />}
+                                    </button>
+                                    <span className="pointer-events-none absolute top-full right-0 mt-2 whitespace-nowrap rounded-md bg-slate-900 dark:bg-slate-700 text-white text-[11px] font-medium px-2.5 py-1.5 opacity-0 translate-y-1 group-hover/tip:opacity-100 group-hover/tip:translate-y-0 transition-all duration-200 shadow-lg z-30">
+                                        {canNativeShare ? "Share this product" : "Copy link to this product"}
+                                    </span>
+                                </div>
                             </div>
 
                             {/* Main Hero Image */}
@@ -382,6 +537,12 @@ export default function ProductDetailsPage() {
                                             <Layers className="size-3 text-teal-600 dark:text-teal-400" /> Model: {product.modelName}
                                         </span>
                                     )}
+
+                                    {!!product.unitMeasure && (
+                                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-lg flex items-center gap-1 border border-slate-200 dark:border-slate-600">
+                                            {product.packQuantity || 1} {product.packUnit || 'Piece'} &times; {product.unitSize || 0} {product.unitMeasure}
+                                        </span>
+                                    )}
                                 </div>
 
                                 {/* Title */}
@@ -401,11 +562,11 @@ export default function ProductDetailsPage() {
                                             ))}
                                         </div>
                                         <span className="text-amber-800 dark:text-amber-300 font-bold text-xs">
-                                            {product.rating || 4.5}
+                                            {(product.rating || 0).toFixed(1)}
                                         </span>
                                         <span className="text-slate-400 text-xs">•</span>
                                         <span className="text-slate-600 dark:text-slate-400 font-medium text-xs">
-                                            {product.numReviews || 12} reviews
+                                            {product.numReviews || 0} review{product.numReviews === 1 ? '' : 's'}
                                         </span>
                                     </div>
 
@@ -476,9 +637,11 @@ export default function ProductDetailsPage() {
                                 </div>
 
                                 {/* Delivery & Pincode Checker */}
-                                <div className="mb-6">
-                                    <DeliveryPincodeChecker />
-                                </div>
+                                {showDeliveryChecker && (
+                                    <div className="mb-6">
+                                        <DeliveryPincodeChecker {...deliveryCheckerProps} />
+                                    </div>
+                                )}
 
                             </div>
 
@@ -519,37 +682,49 @@ export default function ProductDetailsPage() {
 
                                 {/* Main Buttons */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {isRouteActive('/cart') && (
+                                    {isRouteActive('/cart') && product.showAddToCart !== false && (
                                         <button
                                             onClick={handleAddToCart}
                                             disabled={product.stock === 0}
-                                            className="py-3.5 px-6 rounded-xl font-bold border-2 border-teal-600 text-teal-600 dark:border-teal-500 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                                            className={`py-3.5 px-6 rounded-xl font-bold border-2 border-teal-600 text-teal-600 dark:border-teal-500 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-xs ${(!isRouteActive('/checkout') || product.showBuyNow === false) ? 'sm:col-span-2' : ''}`}
                                         >
                                             <ShoppingBag className="size-5" /> Add to Cart
                                         </button>
                                     )}
 
-                                    {isRouteActive('/checkout') && (
+                                    {isRouteActive('/checkout') && product.showBuyNow !== false && (
                                         <button
                                             onClick={handleBuyNow}
                                             disabled={product.stock === 0}
-                                            className={`py-3.5 px-6 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-lg shadow-teal-600/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${!isRouteActive('/cart') ? 'sm:col-span-2' : ''}`}
+                                            className={`py-3.5 px-6 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-lg shadow-teal-600/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${(!isRouteActive('/cart') || product.showAddToCart === false) ? 'sm:col-span-2' : ''}`}
                                         >
                                             <PackageCheck className="size-5" /> Buy Now
                                         </button>
                                     )}
                                 </div>
 
-                                {/* WhatsApp Share Button */}
-                                <button
-                                    onClick={() => {
-                                        const shareMsg = `Hi! Check out this product on DDTEC:\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')}\n\nView here: ${window.location.href}`;
-                                        window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, '_blank');
-                                    }}
-                                    className="w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2"
-                                >
-                                    <MessageCircle className="size-5" /> Share on WhatsApp
-                                </button>
+                                {/* WhatsApp Buttons */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => {
+                                            const chatMsg = `Hi! I'm interested in this product:\n*${product.name}*\n\nCould you share more details?`;
+                                            window.open(buildWhatsAppLink(chatMsg), '_blank');
+                                        }}
+                                        className="w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <MessageCircle className="size-5" /> Chat on WhatsApp
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            const shareMsg = `Hi! Check out this product on ${SITE_CONFIG.name}:\n*${product.name}*\nPrice: ₹${product.price.toLocaleString('en-IN')}\n\nView here: ${window.location.href}`;
+                                            window.open(buildWhatsAppShareLink(shareMsg), '_blank');
+                                        }}
+                                        className="w-full py-3 border-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <MessageCircle className="size-5" /> Share on WhatsApp
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -573,12 +748,14 @@ export default function ProductDetailsPage() {
                         >
                             <Layers className="size-4" /> Complete Specifications
                         </button>
-                        <button
-                            onClick={() => setActiveTab('shipping')}
-                            className={`px-6 py-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${activeTab === 'shipping' ? 'border-teal-600 text-teal-600 dark:text-teal-400 bg-white dark:bg-slate-800' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
-                        >
-                            <Truck className="size-4" /> Delivery & Warranty
-                        </button>
+                        {!isDigital && (
+                            <button
+                                onClick={() => setActiveTab('shipping')}
+                                className={`px-6 py-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${activeTab === 'shipping' ? 'border-teal-600 text-teal-600 dark:text-teal-400 bg-white dark:bg-slate-800' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                            >
+                                <Truck className="size-4" /> Delivery & Warranty
+                            </button>
+                        )}
                         <button
                             onClick={() => setActiveTab('reviews')}
                             className={`px-6 py-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${activeTab === 'reviews' ? 'border-teal-600 text-teal-600 dark:text-teal-400 bg-white dark:bg-slate-800' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
@@ -601,35 +778,47 @@ export default function ProductDetailsPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-                                    <div className="p-4 rounded-2xl bg-teal-50/50 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-900/50 flex items-start gap-3">
-                                        <div className="p-2.5 bg-teal-600 text-white rounded-xl">
-                                            <ShieldCheck className="size-5" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-slate-900 dark:text-white text-sm">Original Guarantee</h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">100% genuine product sourced directly from brand manufacturer.</p>
-                                        </div>
-                                    </div>
+                                    {(product.highlights && product.highlights.length > 0 ? product.highlights : DEFAULT_HIGHLIGHTS).map((h: any, idx: number) => {
+                                        const HighlightIcon = getHighlightIcon(h.icon);
+                                        const colors = getHighlightColorClasses(h.color);
+                                        return (
+                                            <div key={idx} className={`p-4 rounded-2xl flex items-start gap-3 ${colors.card}`}>
+                                                <div className={`p-2.5 text-white rounded-xl ${colors.iconBg}`}>
+                                                    <HighlightIcon className="size-5" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm">{h.title}</h4>
+                                                    {h.description && (
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{h.description}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
 
-                                    <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 flex items-start gap-3">
-                                        <div className="p-2.5 bg-blue-600 text-white rounded-xl">
-                                            <Truck className="size-5" />
+                                    {isDigital && (
+                                        <div className="p-4 rounded-2xl bg-violet-50/50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/50 flex items-start gap-3">
+                                            <div className="p-2.5 bg-violet-600 text-white rounded-xl">
+                                                <Download className="size-5" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Instant Digital Delivery</h4>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">No physical shipping — access is delivered instantly after purchase.</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="font-bold text-slate-900 dark:text-white text-sm">Express Shipping</h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Fast doorstep delivery within 3-5 business days.</p>
-                                        </div>
-                                    </div>
+                                    )}
 
-                                    <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 flex items-start gap-3">
-                                        <div className="p-2.5 bg-amber-600 text-white rounded-xl">
-                                            <Clock className="size-5" />
+                                    {!isReturnable && (
+                                        <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/50 flex items-start gap-3">
+                                            <div className="p-2.5 bg-rose-600 text-white rounded-xl">
+                                                <Ban className="size-5" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Non-Returnable</h4>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">This product is not eligible for return or refund once purchased.</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 className="font-bold text-slate-900 dark:text-white text-sm">Real-time Stock</h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Inventory and price updated live in real time.</p>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -682,11 +871,17 @@ export default function ProductDetailsPage() {
                         )}
 
                         {/* Tab 3: Shipping & Returns */}
-                        {activeTab === 'shipping' && (
+                        {activeTab === 'shipping' && !isDigital && (
                             <div className="space-y-6">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Shipping & Courier Logistics</h3>
-                                
-                                <DeliveryPincodeChecker />
+
+                                {showDeliveryChecker ? (
+                                    <DeliveryPincodeChecker {...deliveryCheckerProps} />
+                                ) : (
+                                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
+                                        PIN code delivery check is not applicable for this product.
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
@@ -697,13 +892,23 @@ export default function ProductDetailsPage() {
                                         </p>
                                     </div>
 
-                                    <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
-                                        <ShieldCheck className="size-8 text-emerald-600 mb-3" />
-                                        <h4 className="font-bold text-slate-900 dark:text-white mb-1">10-Day Replacement Guarantee</h4>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                                            If your product arrives damaged or defective, easily initiate a hassle-free replacement within 10 days.
-                                        </p>
-                                    </div>
+                                    {isReturnable ? (
+                                        <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+                                            <ShieldCheck className="size-8 text-emerald-600 mb-3" />
+                                            <h4 className="font-bold text-slate-900 dark:text-white mb-1">10-Day Replacement Guarantee</h4>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                If your product arrives damaged or defective, easily initiate a hassle-free replacement within 10 days.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="p-5 rounded-2xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50">
+                                            <Ban className="size-8 text-rose-600 mb-3" />
+                                            <h4 className="font-bold text-slate-900 dark:text-white mb-1">Non-Returnable &amp; Non-Refundable</h4>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                This product cannot be returned, replaced, or refunded once delivered, except in case of a valid warranty claim.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -714,46 +919,121 @@ export default function ProductDetailsPage() {
                                 <div className="flex flex-wrap items-center justify-between gap-4 p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
                                     <div>
                                         <div className="text-4xl font-extrabold text-slate-900 dark:text-white">
-                                            {product.rating || 4.5} <span className="text-lg text-slate-400 font-normal">/ 5</span>
+                                            {(product.rating || 0).toFixed(1)} <span className="text-lg text-slate-400 font-normal">/ 5</span>
                                         </div>
                                         <div className="flex text-amber-400 my-1">
                                             {[...Array(5)].map((_, i) => (
-                                                <Star key={i} className={`size-4 ${i < Math.floor(product.rating || 4.5) ? 'fill-current' : 'text-slate-300 dark:text-slate-600'}`} />
+                                                <Star key={i} className={`size-4 ${i < Math.round(product.rating || 0) ? 'fill-current' : 'text-slate-300 dark:text-slate-600'}`} />
                                             ))}
                                         </div>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">Based on {product.numReviews || 12} customer ratings</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Based on {product.numReviews || 0} customer rating{product.numReviews === 1 ? '' : 's'}</p>
                                     </div>
 
                                     <button
-                                        onClick={() => showToast?.("Review submission opened!", "info")}
-                                        className="px-5 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold hover:bg-teal-700 transition-colors shadow-sm"
+                                        onClick={openReviewForm}
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold hover:bg-teal-700 transition-colors shadow-sm"
                                     >
-                                        Write a Review
+                                        {myReview ? <><Edit3 className="size-3.5" /> Edit Your Review</> : "Write a Review"}
                                     </button>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="font-bold text-sm text-slate-900 dark:text-white">Rahul Verma</span>
-                                            <div className="flex text-amber-400 size-3.5">
-                                                {[...Array(5)].map((_, i) => <Star key={i} className="fill-current" />)}
+                                {/* Review Form */}
+                                <AnimatePresence>
+                                    {isReviewFormOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: "auto" }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="p-5 rounded-2xl border border-teal-200 dark:border-teal-900 bg-teal-50/50 dark:bg-teal-950/20 space-y-4">
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Your Rating</p>
+                                                    <div className="flex gap-1">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <button
+                                                                key={star}
+                                                                type="button"
+                                                                onClick={() => setReviewRating(star)}
+                                                                onMouseEnter={() => setHoveredStar(star)}
+                                                                onMouseLeave={() => setHoveredStar(0)}
+                                                                className="p-0.5"
+                                                            >
+                                                                <Star
+                                                                    className={`size-7 transition-colors ${star <= (hoveredStar || reviewRating) ? 'fill-current text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}
+                                                                />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Your Review (optional)</p>
+                                                    <textarea
+                                                        value={reviewComment}
+                                                        onChange={(e) => setReviewComment(e.target.value)}
+                                                        maxLength={1000}
+                                                        rows={3}
+                                                        placeholder="Share your experience with this product..."
+                                                        className="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={handleSubmitReview}
+                                                        disabled={submittingReview || reviewRating < 1}
+                                                        className="px-5 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                    >
+                                                        {submittingReview && <Loader2 className="size-3.5 animate-spin" />}
+                                                        {myReview ? "Update Review" : "Submit Review"}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setIsReviewFormOpen(false)}
+                                                        className="px-5 py-2.5 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <p className="text-xs text-slate-600 dark:text-slate-300">Excellent build quality and fast delivery. Exactly as described!</p>
-                                        <span className="text-[10px] text-slate-400 block mt-2">Verified Purchase • 3 days ago</span>
-                                    </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
 
-                                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="font-bold text-sm text-slate-900 dark:text-white">Priya Sharma</span>
-                                            <div className="flex text-amber-400 size-3.5">
-                                                {[...Array(5)].map((_, i) => <Star key={i} className={`size-3.5 ${i < 4 ? 'fill-current' : 'text-slate-300'}`} />)}
-                                            </div>
+                                <div className="space-y-4">
+                                    {reviews.length === 0 ? (
+                                        <div className="text-center py-10">
+                                            <MessageCircle className="size-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">No reviews yet. Be the first to review this product!</p>
                                         </div>
-                                        <p className="text-xs text-slate-600 dark:text-slate-300">Great value for money. Very satisfied with the product performance.</p>
-                                        <span className="text-[10px] text-slate-400 block mt-2">Verified Purchase • 1 week ago</span>
-                                    </div>
+                                    ) : (
+                                        reviews.map((review) => (
+                                            <div key={review._id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="font-bold text-sm text-slate-900 dark:text-white">{review.userName}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex text-amber-400 size-3.5">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star key={i} className={`size-3.5 ${i < review.rating ? 'fill-current' : 'text-slate-300 dark:text-slate-600'}`} />
+                                                            ))}
+                                                        </div>
+                                                        {user?.id === review.user && (
+                                                            <button
+                                                                onClick={() => handleDeleteReview(review._id)}
+                                                                disabled={deletingReviewId === review._id}
+                                                                className="text-slate-400 hover:text-red-500 p-1 rounded-full transition-colors disabled:opacity-50"
+                                                                title="Delete your review"
+                                                            >
+                                                                {deletingReviewId === review._id ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {review.comment && (
+                                                    <p className="text-xs text-slate-600 dark:text-slate-300">{review.comment}</p>
+                                                )}
+                                                <span className="text-[10px] text-slate-400 block mt-2">{formatReviewAge(review.createdAt)}</span>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -836,11 +1116,15 @@ export default function ProductDetailsPage() {
             {/* Coupons Modal */}
             <AnimatePresence>
                 {isCouponModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        onClick={() => setIsCouponModalOpen(false)}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">

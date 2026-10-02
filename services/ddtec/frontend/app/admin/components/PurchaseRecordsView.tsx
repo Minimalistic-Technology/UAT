@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     PackageCheck,
     Plus,
@@ -8,7 +9,6 @@ import {
     Edit,
     Trash2,
     Eye,
-    Calendar,
     DollarSign,
     Building2,
     FileText,
@@ -16,14 +16,14 @@ import {
     X,
     Check,
     Loader2,
-    Tag,
-    Clock,
-    Sparkles,
     AlertCircle,
-    Boxes
+    Boxes,
+    ArrowRight
 } from 'lucide-react';
 import api from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
 
 export interface ProductItem {
     _id: string;
@@ -66,6 +66,8 @@ export default function PurchaseRecordsView({
     onRefreshProducts
 }: PurchaseRecordsViewProps) {
     const { showToast } = useToast();
+    const confirm = useConfirm();
+    const router = useRouter();
     const [records, setRecords] = useState<PurchaseRecord[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -77,17 +79,12 @@ export default function PurchaseRecordsView({
     const [viewingScreenshot, setViewingScreenshot] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    // Form State
-    const [isNewProductMode, setIsNewProductMode] = useState<boolean>(false);
+    // Form State — restocking an existing product only; creating a brand new product is
+    // handled entirely on the Products page now (full image upload, highlights, etc. live
+    // there, so this form no longer duplicates a stripped-down version of it).
     const [formData, setFormData] = useState({
         productId: '',
         name: '',
-        price: '',
-        category: '',
-        description: '',
-        image: '',
-        cgst: '',
-        sgst: '',
         seller: '',
         sellerContact: '',
         quantityAdded: '',
@@ -133,6 +130,13 @@ export default function PurchaseRecordsView({
         return records.reduce((sum, r) => sum + (r.quantityAdded || 0), 0);
     }, [records]);
 
+    // Live stock straight from the product catalog — a product can carry stock (e.g. set
+    // directly on the product form, or seeded) without ever having a logged purchase record,
+    // so this must NOT be derived from `records` or it misleadingly reads as 0.
+    const totalCurrentStock = useMemo(() => {
+        return productsList.reduce((sum, p) => sum + (p.stock || 0), 0);
+    }, [productsList]);
+
     // Filtered Records
     const filteredRecords = useMemo(() => {
         return records.filter(r => {
@@ -151,16 +155,9 @@ export default function PurchaseRecordsView({
     // Open Modal for Create
     const handleOpenCreateModal = () => {
         setEditingRecord(null);
-        setIsNewProductMode(false);
         setFormData({
             productId: productsList.length > 0 ? productsList[0]._id : '',
             name: '',
-            price: '',
-            category: categoriesList.length > 0 ? categoriesList[0]._id : '',
-            description: '',
-            image: '',
-            cgst: '',
-            sgst: '',
             seller: '',
             sellerContact: '',
             quantityAdded: '10',
@@ -176,19 +173,12 @@ export default function PurchaseRecordsView({
     // Open Modal for Edit
     const handleOpenEditModal = (record: PurchaseRecord) => {
         setEditingRecord(record);
-        setIsNewProductMode(false);
 
         const prodId = typeof record.product === 'object' && record.product !== null ? record.product._id : record.product;
 
         setFormData({
             productId: prodId || '',
             name: record.productName,
-            price: '',
-            category: '',
-            description: '',
-            image: '',
-            cgst: '',
-            sgst: '',
             seller: record.seller || '',
             sellerContact: record.sellerContact || '',
             quantityAdded: record.quantityAdded.toString(),
@@ -252,17 +242,10 @@ export default function PurchaseRecordsView({
                 });
                 showToast('Purchase record updated & inventory synced!', 'success');
             } else {
-                // Create new record
+                // Create new record (restocking an existing product)
                 await api.post('/purchases', {
-                    isNewProduct: isNewProductMode,
-                    productId: isNewProductMode ? undefined : formData.productId,
-                    name: formData.name,
-                    price: Number(formData.price) || 0,
-                    category: formData.category,
-                    description: formData.description,
-                    image: formData.image,
-                    cgst: Number(formData.cgst) || 0,
-                    sgst: Number(formData.sgst) || 0,
+                    isNewProduct: false,
+                    productId: formData.productId,
                     seller: formData.seller,
                     sellerContact: formData.sellerContact,
                     quantityAdded: qty,
@@ -288,9 +271,11 @@ export default function PurchaseRecordsView({
 
     // Delete Record
     const handleDeleteRecord = async (id: string, productName: string) => {
-        if (!confirm(`Are you sure you want to delete the purchase record for "${productName}"? This will adjust product inventory accordingly.`)) {
-            return;
-        }
+        const ok = await confirm({
+            message: `Are you sure you want to delete the purchase record for "${productName}"? This will adjust product inventory accordingly.`,
+            variant: 'danger'
+        });
+        if (!ok) return;
 
         try {
             await api.delete(`/purchases/${id}`);
@@ -306,7 +291,21 @@ export default function PurchaseRecordsView({
     return (
         <div className="space-y-6">
             {/* Top Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xs">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                            <PackageCheck className="size-6" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Current Stock (All Products)</p>
+                            <h4 className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
+                                {totalCurrentStock.toLocaleString()} units
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xs">
                     <div className="flex items-center gap-3">
                         <div className="p-3 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-xl">
@@ -327,7 +326,7 @@ export default function PurchaseRecordsView({
                             <Boxes className="size-6" />
                         </div>
                         <div>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Units Restocked</p>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Units Restocked (Logged)</p>
                             <h4 className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">
                                 {totalUnitsRestocked.toLocaleString()} units
                             </h4>
@@ -392,12 +391,21 @@ export default function PurchaseRecordsView({
                     </select>
                 </div>
 
-                <button
-                    onClick={handleOpenCreateModal}
-                    className="w-full md:w-auto bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2"
-                >
-                    <Plus className="size-4" /> Add Inventory Record / Purchase
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+                    <button
+                        onClick={handleOpenCreateModal}
+                        className="cursor-pointer w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Plus className="size-4" /> Restock Product
+                    </button>
+                    <button
+                        onClick={() => router.push('/admin/products')}
+                        className="cursor-pointer w-full sm:w-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 px-5 py-2.5 rounded-xl font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-2"
+                        title="New products (with images, highlights, etc.) are created on the Products page"
+                    >
+                        Create New Product <ArrowRight className="size-4" />
+                    </button>
+                </div>
             </div>
 
             {/* Purchase Records Table */}
@@ -406,7 +414,7 @@ export default function PurchaseRecordsView({
                     <h3 className="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-2">
                         <FileText className="size-5 text-teal-600" /> Inventory Update & Purchase History Log
                     </h3>
-                    <span className="text-xs text-slate-500 font-medium">Synced with product inventory</span>
+                    <span className="text-xs text-slate-500 font-medium">New records here add to product stock automatically</span>
                 </div>
 
                 {loading ? (
@@ -418,7 +426,11 @@ export default function PurchaseRecordsView({
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                         <PackageCheck className="size-14 text-slate-300 dark:text-slate-700 mb-2" />
                         <p className="text-slate-700 dark:text-slate-300 font-bold text-sm">No Purchase Records Found</p>
-                        <p className="text-xs text-slate-500 mt-1">Click "+ Add Inventory Record / Purchase" to log new stock updates with seller info and bill screenshots.</p>
+                        <p className="text-xs text-slate-500 mt-1 max-w-md">
+                            This log only tracks restocking done through "Restock Product" — it doesn't affect
+                            or reflect stock set directly on a product. Current live stock across all products is{' '}
+                            <strong>{totalCurrentStock.toLocaleString()} units</strong> (see the Products tab for per-item stock).
+                        </p>
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -449,11 +461,7 @@ export default function PurchaseRecordsView({
                                         </div>
 
                                         <div className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                                            {new Date(record.purchaseDate).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            })}
+                                            {formatDate(record.purchaseDate)}
                                             <span className="block text-[10px] text-slate-400">
                                                 {new Date(record.purchaseDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
@@ -488,7 +496,7 @@ export default function PurchaseRecordsView({
                                         {record.billScreenshot ? (
                                             <button
                                                 onClick={() => setViewingScreenshot(record.billScreenshot!)}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 font-semibold text-[11px] hover:bg-teal-100 transition-colors border border-teal-200/40"
+                                                className="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 font-semibold text-[11px] hover:bg-teal-100 transition-colors border border-teal-200/40"
                                             >
                                                 <Eye className="size-3.5" /> View Bill
                                             </button>
@@ -503,14 +511,14 @@ export default function PurchaseRecordsView({
                                         <div className="flex items-center gap-1.5 ml-auto">
                                             <button
                                                 onClick={() => handleOpenEditModal(record)}
-                                                className="p-1.5 text-slate-600 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                                className="cursor-pointer p-1.5 text-slate-600 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                                                 title="Edit record"
                                             >
                                                 <Edit className="size-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteRecord(record._id, record.productName)}
-                                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                                                className="cursor-pointer p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
                                                 title="Delete record"
                                             >
                                                 <Trash2 className="size-4" />
@@ -533,14 +541,20 @@ export default function PurchaseRecordsView({
 
             {/* Modal: Add or Edit Purchase Record */}
             {isAddModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+                    onClick={() => setIsAddModalOpen(false)}
+                >
+                    <div
+                        className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         {/* Modal Header */}
                         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                     <PackageCheck className="size-5 text-teal-600" />
-                                    {editingRecord ? 'Edit Purchase Record' : 'Add Inventory Update & Purchase'}
+                                    {editingRecord ? 'Edit Purchase Record' : 'Restock Product'}
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
                                     Recorded details will update product stock and seller records automatically.
@@ -548,7 +562,7 @@ export default function PurchaseRecordsView({
                             </div>
                             <button
                                 onClick={() => setIsAddModalOpen(false)}
-                                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                className="cursor-pointer p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                             >
                                 <X className="size-5" />
                             </button>
@@ -556,31 +570,11 @@ export default function PurchaseRecordsView({
 
                         {/* Modal Form */}
                         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-                            {!editingRecord && (
-                                <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 mb-2">
-                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Product Mode:</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsNewProductMode(false)}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${!isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                                    >
-                                        Restock Existing Product
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsNewProductMode(true)}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                                    >
-                                        + Create New Product
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Product Selection vs New Product Creation */}
-                            {!isNewProductMode && !editingRecord ? (
+                            {/* Target Product */}
+                            {!editingRecord ? (
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                        Select Target Product *
+                                        Select Target Product <span className="text-red-500">*</span>
                                     </label>
                                     <select
                                         required
@@ -603,79 +597,9 @@ export default function PurchaseRecordsView({
                                             </option>
                                         ))}
                                     </select>
-                                </div>
-                            ) : isNewProductMode && !editingRecord ? (
-                                <div className="space-y-3 p-4 bg-teal-50/50 dark:bg-teal-950/20 rounded-2xl border border-teal-100 dark:border-teal-900/30">
-                                    <span className="text-xs font-bold text-teal-700 dark:text-teal-400 block mb-2">New Product Details</span>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Product Name *</label>
-                                        <input
-                                            required
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            placeholder="e.g. Bosch Heavy Duty Angle Grinder 800W"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Selling Price (₹)</label>
-                                            <input
-                                                type="number"
-                                                value={formData.price}
-                                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="2499"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
-                                            <select
-                                                value={formData.category}
-                                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            >
-                                                {categoriesList.map(c => (
-                                                    <option key={c._id} value={c._id}>{c.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Product Image URL</label>
-                                        <input
-                                            type="text"
-                                            value={formData.image}
-                                            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            placeholder="https://example.com/product.jpg"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={formData.cgst}
-                                                onChange={(e) => setFormData({ ...formData, cgst: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="9"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={formData.sgst}
-                                                onChange={(e) => setFormData({ ...formData, sgst: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="9"
-                                            />
-                                        </div>
-                                    </div>
+                                    <p className="text-[10px] text-slate-400 mt-1">
+                                        Don't see the product you need? <button type="button" onClick={() => router.push('/admin/products')} className="cursor-pointer text-teal-600 hover:underline font-semibold">Create it on the Products page</button> first.
+                                    </p>
                                 </div>
                             ) : (
                                 <div>
@@ -693,7 +617,7 @@ export default function PurchaseRecordsView({
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                        Seller / Supplier Name *
+                                        Seller / Supplier Name <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         required
@@ -726,7 +650,7 @@ export default function PurchaseRecordsView({
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                        Quantity Added *
+                                        Quantity Added <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         required
@@ -826,7 +750,7 @@ export default function PurchaseRecordsView({
                                         <button
                                             type="button"
                                             onClick={() => setFormData({ ...formData, billScreenshot: '' })}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                                            className="cursor-pointer absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
                                             title="Remove screenshot"
                                         >
                                             <X className="size-3" />
@@ -854,14 +778,14 @@ export default function PurchaseRecordsView({
                                 <button
                                     type="button"
                                     onClick={() => setIsAddModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                    className="cursor-pointer px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-md hover:shadow-teal-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                                    className="cursor-pointer bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-md hover:shadow-teal-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isSubmitting ? (
                                         <>
@@ -881,8 +805,14 @@ export default function PurchaseRecordsView({
 
             {/* Bill Screenshot Lightbox Modal */}
             {viewingScreenshot && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="relative max-w-4xl w-full bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setViewingScreenshot(null)}
+                >
+                    <div
+                        className="relative max-w-4xl w-full bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="p-4 bg-slate-900 text-white flex justify-between items-center border-b border-slate-800">
                             <h4 className="font-bold text-sm flex items-center gap-2">
                                 <Eye className="size-4 text-teal-400" /> Bill Screenshot Preview
@@ -892,13 +822,13 @@ export default function PurchaseRecordsView({
                                     href={viewingScreenshot}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-xs text-teal-400 hover:underline mr-2"
+                                    className="cursor-pointer text-xs text-teal-400 hover:underline mr-2"
                                 >
                                     Open original link
                                 </a>
                                 <button
                                     onClick={() => setViewingScreenshot(null)}
-                                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                                    className="cursor-pointer p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                                 >
                                     <X className="size-5" />
                                 </button>

@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, Send, MessageSquare } from "lucide-react";
 import { useAuth } from "../_context/AuthContext";
 import api from "@/lib/api";
+import { CONTACT_INFO } from "@/lib/constants";
 
 const Contact: React.FC = () => {
     const { user } = useAuth();
@@ -88,7 +89,7 @@ const Contact: React.FC = () => {
                                     </div>
                                     <div>
                                         <p className="text-slate-400 text-sm mb-1">Email Us</p>
-                                        <a href="mailto:parth.ddtec@gmail.com" className="text-lg font-medium hover:text-teal-400 transition-colors">parth.ddtec@gmail.com</a>
+                                        <a href={`mailto:${CONTACT_INFO.email}`} className="text-lg font-medium hover:text-teal-400 transition-colors">{CONTACT_INFO.email}</a>
                                     </div>
                                 </div>
 
@@ -98,7 +99,7 @@ const Contact: React.FC = () => {
                                     </div>
                                     <div>
                                         <p className="text-slate-400 text-sm mb-1">Call Us</p>
-                                        <a href="tel:+917777099930" className="text-lg font-medium hover:text-teal-400 transition-colors">+91 7777099930</a>
+                                        <a href={`tel:+${CONTACT_INFO.phone}`} className="text-lg font-medium hover:text-teal-400 transition-colors">{CONTACT_INFO.phoneDisplay}</a>
                                     </div>
                                 </div>
 
@@ -109,8 +110,8 @@ const Contact: React.FC = () => {
                                     <div>
                                         <p className="text-slate-400 text-sm mb-1">Visit Us</p>
                                         <p className="text-lg font-medium leading-relaxed">
-                                            G-77 Sai Dham Shopping Center,<br />
-                                            PK Road, Mulund(W) -  400080
+                                            {CONTACT_INFO.address.line1}<br />
+                                            {CONTACT_INFO.address.line2}
                                         </p>
                                     </div>
                                 </div>
@@ -119,7 +120,7 @@ const Contact: React.FC = () => {
                             <div className="mt-12 pt-8 border-t border-white/10 relative z-10">
                                 <p className="text-slate-400 text-sm">
                                     Operating Hours: <br />
-                                    Mon - Fri: 9:00 AM - 6:00 PM
+                                    {CONTACT_INFO.hours}
                                 </p>
                             </div>
                         </motion.div>

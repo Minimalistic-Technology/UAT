@@ -95,3 +95,17 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-slate-300 dark:bg-slate-700;
 }
+
+/* Hide scrollbar on elements opted in via .scrollbar-hide, overriding the
+   custom scrollbar above. Must stay unlayered (outside @layer) — Tailwind v4's
+   cascade layers always lose to unlayered rules like the ones above. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

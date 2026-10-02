@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../../../_context/AuthContext";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2, ArrowLeft, Save, RefreshCw } from "lucide-react";
 import api from "@/lib/api";
+import { useToast } from "../../../_context/ToastContext";
+import { countWords, limitWords } from "@/lib/utils";
+
+const COUPON_DESCRIPTION_MAX_WORDS = 100;
 
 interface Product {
     _id: string;
@@ -12,9 +15,9 @@ interface Product {
 }
 
 const EditCouponPage = () => {
-    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
     const { id } = useParams();
+    const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [products, setProducts] = useState<Product[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
@@ -34,15 +37,10 @@ const EditCouponPage = () => {
     });
 
     useEffect(() => {
-        if (!authLoading) {
-            if (!user || user.role !== "admin") {
-                router.push("/");
-            } else {
-                fetchProducts();
-                fetchCoupon();
-            }
-        }
-    }, [user, authLoading, router, id]);
+        fetchProducts();
+        fetchCoupon();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id]);
 
     const fetchProducts = async () => {
         setLoadingProducts(true);
@@ -75,7 +73,7 @@ const EditCouponPage = () => {
             });
         } catch (error) {
             console.error("Failed to fetch coupon", error);
-            alert("Failed to details coupon details.");
+            showToast("Failed to fetch coupon details.", "error");
             router.push('/admin/coupons');
         } finally {
             setLoadingCoupon(false);
@@ -104,11 +102,11 @@ const EditCouponPage = () => {
             };
 
             await api.put(`/coupons/${id}`, payload);
-            alert("Coupon updated successfully!");
+            showToast("Coupon updated successfully!", "success");
             router.push('/admin/coupons');
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.message || "Failed to update coupon");
+            showToast(error.response?.data?.message || "Failed to update coupon", "error");
         } finally {
             setIsSubmitting(false);
         }
@@ -125,21 +123,20 @@ const EditCouponPage = () => {
         });
     };
 
-    if (authLoading || loadingCoupon) {
+    if (loadingCoupon) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+            <div className="flex items-center justify-center py-24">
                 <Loader2 className="animate-spin text-teal-600 size-10" />
             </div>
         );
     }
 
     return (
-        <section className="min-h-screen pt-24 px-6 md:px-12 bg-slate-50 dark:bg-slate-900 pb-12">
-            <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto">
                 <div className="mb-6">
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-2 transition-colors"
+                        className="cursor-pointer flex items-center gap-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-2 transition-colors"
                     >
                         <ArrowLeft className="size-4" /> Back to Coupons
                     </button>
@@ -167,7 +164,7 @@ const EditCouponPage = () => {
                                 <button
                                     type="button"
                                     onClick={generateCode}
-                                    className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center gap-2"
+                                    className="cursor-pointer px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center gap-2"
                                 >
                                     <RefreshCw className="size-4" /> Generate
                                 </button>
@@ -180,10 +177,13 @@ const EditCouponPage = () => {
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Description</label>
                             <textarea
                                 value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                onChange={(e) => setFormData({ ...formData, description: limitWords(e.target.value, COUPON_DESCRIPTION_MAX_WORDS) })}
                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none resize-none h-20"
                                 placeholder="Internal note or description..."
                             />
+                            <p className={`text-xs mt-1 text-right ${countWords(formData.description) >= COUPON_DESCRIPTION_MAX_WORDS ? 'text-red-500 font-semibold' : 'text-slate-400'}`}>
+                                {countWords(formData.description)}/{COUPON_DESCRIPTION_MAX_WORDS} words
+                            </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -297,7 +297,7 @@ const EditCouponPage = () => {
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full py-3 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 transition-colors shadow-lg shadow-teal-500/30 flex items-center justify-center gap-2"
+                                className="cursor-pointer w-full py-3 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 transition-colors shadow-lg shadow-teal-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSubmitting ? <Loader2 className="animate-spin size-5" /> : (
                                     <>
@@ -309,7 +309,6 @@ const EditCouponPage = () => {
                     </form>
                 </div>
             </div>
-        </section>
     );
 };
 

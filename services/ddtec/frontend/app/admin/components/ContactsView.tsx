@@ -17,10 +17,15 @@ import {
     Loader2,
     AlertCircle,
     UserPlus,
-    Sparkles
+    Sparkles,
+    Download,
+    Trash,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
 
 interface ContactEmail {
     label: 'work' | 'personal' | 'other';
@@ -62,6 +67,21 @@ interface Contact {
 const emptyEmail = (): ContactEmail => ({ label: 'work', value: '' });
 const emptyPhone = (): ContactPhone => ({ label: 'mobile', value: '' });
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[+]?[\d\s()-]{7,20}$/;
+
+interface FormErrors {
+    firstName?: string;
+    lastName?: string;
+    birthday?: string;
+    emails: (string | null)[];
+    phones: (string | null)[];
+    emailsGeneral?: string;
+    phonesGeneral?: string;
+}
+
+const emptyErrors = (): FormErrors => ({ emails: [], phones: [] });
+
 const emptyFormData = () => ({
     firstName: '',
     lastName: '',
@@ -99,6 +119,7 @@ const initials = (c: Contact) =>
 
 export default function ContactsView() {
     const { showToast } = useToast();
+    const confirm = useConfirm();
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -120,6 +141,13 @@ export default function ContactsView() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState(emptyFormData());
+    const [formErrors, setFormErrors] = useState<FormErrors>(emptyErrors());
+
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const fetchContacts = async () => {
         setLoading(true);
@@ -173,9 +201,66 @@ export default function ContactsView() {
         });
     }, [contacts, searchQuery, companyFilter, productInterestFilter, newThisWeekOnly]);
 
+    // Reset to page 1 whenever the filtered result set changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, companyFilter, productInterestFilter, newThisWeekOnly, pageSize]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredContacts.length / pageSize));
+    const safeCurrentPage = Math.min(currentPage, totalPages);
+    const paginatedContacts = useMemo(() => {
+        const start = (safeCurrentPage - 1) * pageSize;
+        return filteredContacts.slice(start, start + pageSize);
+    }, [filteredContacts, safeCurrentPage, pageSize]);
+
+    const validateForm = (data: typeof formData): FormErrors => {
+        const errors: FormErrors = emptyErrors();
+
+        if (!data.firstName.trim()) {
+            errors.firstName = 'First name is required';
+        }
+
+        if (!data.lastName.trim()) {
+            errors.lastName = 'Last name is required';
+        }
+
+        const hasEmail = data.emails.some(e => e.value.trim());
+        errors.emails = data.emails.map(e => {
+            if (!e.value.trim()) return null;
+            return EMAIL_REGEX.test(e.value.trim()) ? null : 'Enter a valid email address';
+        });
+        if (!hasEmail) {
+            errors.emailsGeneral = 'At least one email address is required';
+        }
+
+        const hasPhone = data.phones.some(p => p.value.trim());
+        errors.phones = data.phones.map(p => {
+            if (!p.value.trim()) return null;
+            return PHONE_REGEX.test(p.value.trim()) ? null : 'Enter a valid phone number';
+        });
+        if (!hasPhone) {
+            errors.phonesGeneral = 'At least one phone number is required';
+        }
+
+        if (data.birthday) {
+            const bday = new Date(data.birthday);
+            if (bday.getTime() > Date.now()) {
+                errors.birthday = 'Birthday cannot be in the future';
+            }
+        }
+
+        return errors;
+    };
+
+    const hasErrors = (errors: FormErrors): boolean =>
+        Boolean(errors.firstName || errors.lastName || errors.birthday || errors.emailsGeneral || errors.phonesGeneral) ||
+        errors.emails.some(Boolean) ||
+        errors.phones.some(Boolean);
+
     const handleOpenCreateModal = () => {
         setEditingContact(null);
         setFormData(emptyFormData());
+        setFormErrors(emptyErrors());
         setIsFormModalOpen(true);
     };
 
@@ -199,13 +284,17 @@ export default function ContactsView() {
             photo: contact.photo || '',
             note: contact.note || ''
         });
+        setFormErrors(emptyErrors());
         setIsFormModalOpen(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.firstName.trim()) {
-            showToast('First name is required', 'error');
+
+        const errors = validateForm(formData);
+        setFormErrors(errors);
+        if (hasErrors(errors)) {
+            showToast('Please fix the highlighted fields', 'error');
             return;
         }
 
@@ -251,7 +340,8 @@ export default function ContactsView() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Delete contact "${name}"? This cannot be undone.`)) return;
+        const ok = await confirm({ message: `Delete contact "${name}"? This cannot be undone.`, variant: "danger" });
+        if (!ok) return;
         try {
             await api.delete(`/contacts/${id}`);
             showToast('Contact deleted', 'success');
@@ -259,6 +349,81 @@ export default function ContactsView() {
         } catch (error: any) {
             console.error('Failed to delete contact', error);
             showToast(error.response?.data?.msg || 'Failed to delete contact', 'error');
+        }
+    };
+
+    const toggleSelectOne = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        setSelectedIds(prev => {
+            const allSelected = paginatedContacts.length > 0 && paginatedContacts.every(c => prev.has(c._id));
+            const next = new Set(prev);
+            if (allSelected) {
+                paginatedContacts.forEach(c => next.delete(c._id));
+            } else {
+                paginatedContacts.forEach(c => next.add(c._id));
+            }
+            return next;
+        });
+    };
+
+    const csvField = (value: string): string => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+    const handleExportSelected = () => {
+        const selected = contacts.filter(c => selectedIds.has(c._id));
+        if (selected.length === 0) return;
+
+        const headers = ['First Name', 'Last Name', 'Emails', 'Phones', 'Company', 'Job Title', 'Product Interest', 'Tags', 'Birthday', 'Note'];
+        const rows = selected.map(c => [
+            c.firstName,
+            c.lastName || '',
+            c.emails.map(e => e.value).join('; '),
+            c.phones.map(p => p.value).join('; '),
+            c.company || '',
+            c.jobTitle || '',
+            c.productInterest.join('; '),
+            c.tags.join('; '),
+            c.birthday ? c.birthday.slice(0, 10) : '',
+            c.note || ''
+        ]);
+
+        const csv = [headers, ...rows].map(row => row.map(csvField).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `contacts-export-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast(`Exported ${selected.length} contact(s)`, 'success');
+    };
+
+    const handleBulkDelete = async () => {
+        const ids = Array.from(selectedIds);
+        if (ids.length === 0) return;
+        const ok = await confirm({ message: `Delete ${ids.length} selected contact(s)? This cannot be undone.`, variant: "danger" });
+        if (!ok) return;
+
+        setIsBulkDeleting(true);
+        try {
+            await api.post('/contacts/bulk-delete', { ids });
+            showToast(`Deleted ${ids.length} contact(s)`, 'success');
+            setSelectedIds(new Set());
+            fetchContacts();
+        } catch (error: any) {
+            console.error('Failed to bulk delete contacts', error);
+            showToast(error.response?.data?.msg || 'Failed to delete contacts', 'error');
+        } finally {
+            setIsBulkDeleting(false);
         }
     };
 
@@ -272,6 +437,13 @@ export default function ContactsView() {
             if (typeof reader.result === 'string') setImportContent(reader.result);
         };
         reader.readAsText(file);
+    };
+
+    const handleCloseImportModal = () => {
+        setIsImportModalOpen(false);
+        setImportContent('');
+        setImportFileName('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleImportSubmit = async () => {
@@ -408,6 +580,37 @@ export default function ContactsView() {
                 </button>
             </div>
 
+            {/* Bulk Actions Bar */}
+            {selectedIds.size > 0 && (
+                <div className="flex items-center gap-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl px-4 py-2.5">
+                    <span className="text-xs font-bold text-teal-800 dark:text-teal-300">
+                        {selectedIds.size} selected
+                    </span>
+                    <button
+                        onClick={() => setSelectedIds(new Set())}
+                        className="text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    >
+                        Clear
+                    </button>
+                    <div className="ml-auto flex items-center gap-2">
+                        <button
+                            onClick={handleExportSelected}
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-all flex items-center gap-2"
+                        >
+                            <Download className="size-3.5" /> Export
+                        </button>
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={isBulkDeleting}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-md disabled:opacity-60 transition-all flex items-center gap-2"
+                        >
+                            {isBulkDeleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash className="size-3.5" />}
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Contacts List */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xs overflow-hidden">
                 {loading ? (
@@ -423,12 +626,27 @@ export default function ContactsView() {
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                        {filteredContacts.map((c) => {
+                        <div className="px-4 py-2.5 flex items-center gap-3 bg-slate-50/60 dark:bg-slate-900/30 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                            <input
+                                type="checkbox"
+                                checked={paginatedContacts.length > 0 && paginatedContacts.every(c => selectedIds.has(c._id))}
+                                onChange={toggleSelectAll}
+                                className="size-3.5 rounded accent-teal-600"
+                            />
+                            Select All On This Page
+                        </div>
+                        {paginatedContacts.map((c) => {
                             const primaryEmail = c.emails[0]?.value;
                             const primaryPhone = c.phones[0]?.value;
                             return (
                                 <div key={c._id} className="p-4 hover:bg-slate-50/60 dark:hover:bg-slate-700/20 transition-all">
                                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-medium">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(c._id)}
+                                            onChange={() => toggleSelectOne(c._id)}
+                                            className="size-3.5 rounded accent-teal-600 shrink-0"
+                                        />
                                         <div className="flex items-center gap-2.5 min-w-[170px]">
                                             {c.photo ? (
                                                 <img src={c.photo} alt={c.firstName} className="size-9 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
@@ -506,6 +724,50 @@ export default function ContactsView() {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* Pagination Footer */}
+                {!loading && filteredContacts.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                            <span>
+                                Showing {(safeCurrentPage - 1) * pageSize + 1}
+                                –{Math.min(safeCurrentPage * pageSize, filteredContacts.length)} of {filteredContacts.length}
+                            </span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => setPageSize(Number(e.target.value))}
+                                className="ml-2 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[11px] font-bold outline-none"
+                            >
+                                <option value={10}>10 / page</option>
+                                <option value={25}>25 / page</option>
+                                <option value={50}>50 / page</option>
+                                <option value={100}>100 / page</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={safeCurrentPage <= 1}
+                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Previous page"
+                            >
+                                <ChevronLeft className="size-4" />
+                            </button>
+                            <span className="px-3 text-xs font-bold text-slate-600 dark:text-slate-300">
+                                Page {safeCurrentPage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={safeCurrentPage >= totalPages}
+                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Next page"
+                            >
+                                <ChevronRight className="size-4" />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -634,21 +896,40 @@ export default function ContactsView() {
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">First Name *</label>
                                     <input
-                                        required
                                         type="text"
                                         value={formData.firstName}
-                                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, firstName: e.target.value });
+                                            if (formErrors.firstName) setFormErrors(prev => ({ ...prev, firstName: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                            formErrors.firstName
+                                                ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                     />
+                                    {formErrors.firstName && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.firstName}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Last Name</label>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Last Name *</label>
                                     <input
                                         type="text"
                                         value={formData.lastName}
-                                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, lastName: e.target.value });
+                                            if (formErrors.lastName) setFormErrors(prev => ({ ...prev, lastName: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                            formErrors.lastName
+                                                ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                     />
+                                    {formErrors.lastName && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.lastName}</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -675,33 +956,57 @@ export default function ContactsView() {
 
                             {/* Emails */}
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Emails</label>
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Emails *</label>
+                                {formErrors.emailsGeneral && (
+                                    <p className="text-[11px] text-red-600 dark:text-red-400 mb-1">{formErrors.emailsGeneral}</p>
+                                )}
                                 <div className="space-y-2">
                                     {formData.emails.map((email, idx) => (
-                                        <div key={idx} className="flex gap-2">
-                                            <select
-                                                value={email.label}
-                                                onChange={(e) => updateEmailRow(idx, 'label', e.target.value)}
-                                                className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                            >
-                                                <option value="work">Work</option>
-                                                <option value="personal">Personal</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                            <input
-                                                type="email"
-                                                placeholder="name@example.com"
-                                                value={email.value}
-                                                onChange={(e) => updateEmailRow(idx, 'value', e.target.value)}
-                                                className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData(p => ({ ...p, emails: p.emails.filter((_, i) => i !== idx) }))}
-                                                className="p-2 text-slate-400 hover:text-red-500 rounded-lg"
-                                            >
-                                                <X className="size-4" />
-                                            </button>
+                                        <div key={idx}>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={email.label}
+                                                    onChange={(e) => updateEmailRow(idx, 'label', e.target.value)}
+                                                    className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
+                                                >
+                                                    <option value="work">Work</option>
+                                                    <option value="personal">Personal</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                                <input
+                                                    type="email"
+                                                    placeholder="name@example.com"
+                                                    value={email.value}
+                                                    onChange={(e) => {
+                                                        updateEmailRow(idx, 'value', e.target.value);
+                                                        if (formErrors.emails[idx] || formErrors.emailsGeneral) {
+                                                            setFormErrors(prev => ({
+                                                                ...prev,
+                                                                emails: prev.emails.map((err, i) => (i === idx ? null : err)),
+                                                                emailsGeneral: e.target.value.trim() ? undefined : prev.emailsGeneral
+                                                            }));
+                                                        }
+                                                    }}
+                                                    className={`flex-1 px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                                        formErrors.emails[idx]
+                                                            ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                            : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                                    }`}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData(p => ({ ...p, emails: p.emails.filter((_, i) => i !== idx) }));
+                                                        setFormErrors(prev => ({ ...prev, emails: prev.emails.filter((_, i) => i !== idx) }));
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-red-500 rounded-lg"
+                                                >
+                                                    <X className="size-4" />
+                                                </button>
+                                            </div>
+                                            {formErrors.emails[idx] && (
+                                                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.emails[idx]}</p>
+                                            )}
                                         </div>
                                     ))}
                                     <button
@@ -716,34 +1021,58 @@ export default function ContactsView() {
 
                             {/* Phones */}
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Phones</label>
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Phones *</label>
+                                {formErrors.phonesGeneral && (
+                                    <p className="text-[11px] text-red-600 dark:text-red-400 mb-1">{formErrors.phonesGeneral}</p>
+                                )}
                                 <div className="space-y-2">
                                     {formData.phones.map((phone, idx) => (
-                                        <div key={idx} className="flex gap-2">
-                                            <select
-                                                value={phone.label}
-                                                onChange={(e) => updatePhoneRow(idx, 'label', e.target.value)}
-                                                className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                            >
-                                                <option value="mobile">Mobile</option>
-                                                <option value="work">Work</option>
-                                                <option value="home">Home</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                            <input
-                                                type="text"
-                                                placeholder="+91 9876543210"
-                                                value={phone.value}
-                                                onChange={(e) => updatePhoneRow(idx, 'value', e.target.value)}
-                                                className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData(p => ({ ...p, phones: p.phones.filter((_, i) => i !== idx) }))}
-                                                className="p-2 text-slate-400 hover:text-red-500 rounded-lg"
-                                            >
-                                                <X className="size-4" />
-                                            </button>
+                                        <div key={idx}>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={phone.label}
+                                                    onChange={(e) => updatePhoneRow(idx, 'label', e.target.value)}
+                                                    className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
+                                                >
+                                                    <option value="mobile">Mobile</option>
+                                                    <option value="work">Work</option>
+                                                    <option value="home">Home</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                                <input
+                                                    type="text"
+                                                    placeholder="+91 9876543210"
+                                                    value={phone.value}
+                                                    onChange={(e) => {
+                                                        updatePhoneRow(idx, 'value', e.target.value);
+                                                        if (formErrors.phones[idx] || formErrors.phonesGeneral) {
+                                                            setFormErrors(prev => ({
+                                                                ...prev,
+                                                                phones: prev.phones.map((err, i) => (i === idx ? null : err)),
+                                                                phonesGeneral: e.target.value.trim() ? undefined : prev.phonesGeneral
+                                                            }));
+                                                        }
+                                                    }}
+                                                    className={`flex-1 px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                                        formErrors.phones[idx]
+                                                            ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                            : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                                    }`}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData(p => ({ ...p, phones: p.phones.filter((_, i) => i !== idx) }));
+                                                        setFormErrors(prev => ({ ...prev, phones: prev.phones.filter((_, i) => i !== idx) }));
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-red-500 rounded-lg"
+                                                >
+                                                    <X className="size-4" />
+                                                </button>
+                                            </div>
+                                            {formErrors.phones[idx] && (
+                                                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.phones[idx]}</p>
+                                            )}
                                         </div>
                                     ))}
                                     <button
@@ -801,10 +1130,21 @@ export default function ContactsView() {
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Birthday</label>
                                     <input
                                         type="date"
+                                        max={new Date().toISOString().slice(0, 10)}
                                         value={formData.birthday}
-                                        onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none font-mono"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, birthday: e.target.value });
+                                            if (formErrors.birthday) setFormErrors(prev => ({ ...prev, birthday: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none font-mono ${
+                                            formErrors.birthday
+                                                ? 'border-red-400 dark:border-red-600'
+                                                : 'border-slate-200 dark:border-slate-700'
+                                        }`}
                                     />
+                                    {formErrors.birthday && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.birthday}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Photo URL</label>
@@ -855,11 +1195,11 @@ export default function ContactsView() {
 
             {/* Import Modal */}
             {isImportModalOpen && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsImportModalOpen(false)}>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleCloseImportModal}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
                         <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                             <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Import Contacts</h3>
-                            <button onClick={() => setIsImportModalOpen(false)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                            <button onClick={handleCloseImportModal} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                                 <X className="size-4" />
                             </button>
                         </div>
@@ -901,7 +1241,7 @@ export default function ContactsView() {
                         </div>
                         <div className="p-5 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-2">
                             <button
-                                onClick={() => setIsImportModalOpen(false)}
+                                onClick={handleCloseImportModal}
                                 className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                             >
                                 Cancel

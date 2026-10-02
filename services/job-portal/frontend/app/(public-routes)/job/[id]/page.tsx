@@ -48,7 +48,7 @@ const Page = () => {
     applyJob({
       listingId: jobId as string,
       listingType:
-        job?.employmentType === "internship"
+        job?.opportunityType === "INTERNSHIP"
           ? ("internship" as ListingType)
           : ("job" as ListingType),
     });

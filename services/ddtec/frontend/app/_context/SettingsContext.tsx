@@ -12,7 +12,6 @@ export interface ComponentSettings {
     Contact?: boolean;
     Footer?: boolean;
     Login?: boolean;
-    Signup?: boolean;
     [key: string]: boolean | undefined;
 }
 
@@ -51,7 +50,6 @@ const defaultComponents: ComponentSettings = {
     Contact: true,
     Footer: true,
     Login: true,
-    Signup: true,
 };
 
 const defaultDelivery: DeliverySettings = {

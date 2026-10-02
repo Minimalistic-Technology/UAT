@@ -35,13 +35,26 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const isClientErr = status === 400 || status === 401 || status === 403;
 
-    if (error.config?.url?.includes('auth/me') && status === 401) {
+    const url = error.config?.url || '';
+    const isAuthCheck = url.includes('auth/me');
+    const isAuthAction = url.includes('auth/login') || url.includes('auth/google') || url.includes('auth/logout') || url.includes('auth/signup');
+
+    if (isAuthCheck && status === 401) {
       console.log('[SESSION] No active session found (User is guest).');
     } else if (isClientErr) {
       console.warn(`[API WARN] ${error.config?.url} (${status}):`, errorMsg);
     } else {
       console.error(`[API ERROR] ${error.config?.url}:`, errorMsg);
     }
+
+    // Global session-expired handling: any authenticated request that comes back
+    // with 401 (other than the auth check/login endpoints themselves) means the
+    // user's session died server-side mid-use. Notify the app so it can log the
+    // user out client-side and redirect them to login.
+    if (status === 401 && !isAuthCheck && !isAuthAction && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('session-expired'));
+    }
+
     return Promise.reject(error);
   }
 );

@@ -7,6 +7,7 @@ import {
     createContact,
     updateContact,
     deleteContact,
+    bulkDeleteContacts,
     importContacts
 } from '../controllers/crmContact.controller';
 import { auth, checkPermission } from '../middleware/auth.middleware';
@@ -26,6 +27,10 @@ router.get('/emails', auth, adminOnly, getContactEmailsForFilter);
 // @route   POST /api/contacts/import
 // @desc    Bulk import contacts from VCF or CSV content
 router.post('/import', auth, adminOnly, importContacts);
+
+// @route   POST /api/contacts/bulk-delete
+// @desc    Delete multiple contacts by id
+router.post('/bulk-delete', auth, adminOnly, bulkDeleteContacts);
 
 // @route   GET /api/contacts
 router.get('/', auth, adminOnly, getContacts);
