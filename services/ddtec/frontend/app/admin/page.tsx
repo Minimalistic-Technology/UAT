@@ -4,9 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../_context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, ChevronLeft, ChevronRight, Mail, Truck, Folder, Settings, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator, CheckCircle2, BookmarkCheck, Upload, Building2 } from "lucide-react";
+import { Users, Package, DollarSign, ShoppingBag, Loader2, Trash2, Edit, Plus, X, Tag, Image as ImageIcon, Layers, Ticket, Shield, Mail, Truck, Coins, Power, Activity, FileText, Calendar, Eye, ExternalLink, Clock, Calculator, CheckCircle2, BookmarkCheck, Upload } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "./components/ToggleSwitch";
+import Sidebar, { AdminView } from "./components/Sidebar";
 import CategoriesView from "./components/CategoriesView";
 import QuotationProductsView from "./components/QuotationProductsView";
 import CreateQuotationView from "./components/CreateQuotationView";
@@ -136,7 +137,7 @@ const AdminDashboard = () => {
     const { refreshSettings } = useSettings();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loadingStats, setLoadingStats] = useState(true);
-    const [activeView, setActiveView] = useState<'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail' | 'contacts' | 'leads' | 'clients' | 'company'>('dashboard');
+    const [activeView, setActiveView] = useState<AdminView>('dashboard');
 
     // Data for Manage Views
     const [usersList, setUsersList] = useState<User[]>([]);
@@ -871,7 +872,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleViewChange = (view: 'dashboard' | 'products' | 'users' | 'orders' | 'inventory' | 'messages' | 'coupons' | 'blogs' | 'categories' | 'settings' | 'dynamic_routes' | 'quotation_products' | 'create_quotation' | 'saved_quotations' | 'schedule_mail' | 'contacts' | 'leads' | 'clients' | 'company') => {
+    const handleViewChange = (view: AdminView) => {
         setActiveView(view);
         router.push(`/admin?view=${view}`, { scroll: false });
         if (view === 'users') fetchUsers();
@@ -1197,134 +1198,12 @@ const AdminDashboard = () => {
 
     return (
         <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
-            {/* Sidebar */}
-            <aside className={`fixed top-0 left-0 z-40 h-screen pt-24 transition-all duration-300 bg-white border-r border-slate-200 dark:bg-slate-800 dark:border-slate-700 ${isSidebarCollapsed ? 'w-20' : 'w-64'} -translate-x-full md:translate-x-0`} aria-label="Sidebar">
-                {/* Toggle Button */}
-                <button
-                    onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                    className="absolute -right-3 top-28 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full p-1 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors z-50 text-slate-500"
-                >
-                    {isSidebarCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-                </button>
-
-                <div className="h-full px-3 py-4 overflow-y-auto bg-white dark:bg-slate-800 scrollbar-hide">
-                    <ul className="space-y-2 font-medium">
-                        <li>
-                            <button onClick={() => handleViewChange('dashboard')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'dashboard' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Layers className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Overview</span>}
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={() => handleViewChange('categories')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'categories' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Folder className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Categories</span>}
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={() => handleViewChange('products')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'products' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Package className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Products</span>}
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={() => handleViewChange('inventory')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'inventory' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Layers className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Inventory</span>}
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={() => handleViewChange('saved_quotations')} className={`w-full flex items-center p-2 rounded-lg group ${['saved_quotations', 'create_quotation', 'quotation_products'].includes(activeView) ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <FileText className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3 font-semibold">Quotation</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('orders')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'orders' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <ShoppingBag className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Orders</span>}
-                            </button>
-                        </li>
-                        <li>
-                            <button onClick={() => handleViewChange('users')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'users' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Users className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">User & Staff</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('messages')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'messages' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Mail className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Messages</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('coupons')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'coupons' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Ticket className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Coupons</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('schedule_mail')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'schedule_mail' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Calendar className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Schedule Mail</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('contacts')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'contacts' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Users className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Contacts</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('leads')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'leads' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Activity className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Lead</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('clients')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'clients' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Users className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Client</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('company')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'company' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Building2 className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Company</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('blogs')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'blogs' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Edit className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Blogs</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('settings')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'settings' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Settings className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Site Settings</span>}
-                            </button>
-                        </li>
-
-                        <li>
-                            <button onClick={() => handleViewChange('dynamic_routes')} className={`w-full flex items-center p-2 rounded-lg group ${activeView === 'dynamic_routes' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' : 'text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700'} ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-                                <Activity className="size-5 text-slate-500 transition duration-75 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white" />
-                                {!isSidebarCollapsed && <span className="ms-3">Dynamic Routes</span>}
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </aside>
+            <Sidebar
+                activeView={activeView}
+                onViewChange={handleViewChange}
+                collapsed={isSidebarCollapsed}
+                onToggleCollapsed={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            />
 
             <main className={`flex-1 min-w-0 p-8 pt-24 transition-all duration-300 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
                 {/* View Coupons Modal */}

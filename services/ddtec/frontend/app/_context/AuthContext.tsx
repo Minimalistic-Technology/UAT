@@ -76,15 +76,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             setUser(res.data.user);
 
-            if (redirectUrl) {
-                router.push(redirectUrl);
-                return;
-            }
-
             if (res.data.user.role === 'admin') {
                 router.push("/admin");
             } else if (res.data.user.role === 'warehouse') {
                 router.push("/warehouse");
+            } else if (redirectUrl) {
+                router.push(redirectUrl);
             } else {
                 router.push("/");
             }
@@ -103,15 +100,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             setUser(res.data.user);
 
-            if (redirectUrl) {
-                router.push(redirectUrl);
-                return;
-            }
-
             if (res.data.user.role === 'admin') {
                 router.push("/admin");
             } else if (res.data.user.role === 'warehouse') {
                 router.push("/warehouse");
+            } else if (redirectUrl) {
+                router.push(redirectUrl);
             } else {
                 router.push("/");
             }
