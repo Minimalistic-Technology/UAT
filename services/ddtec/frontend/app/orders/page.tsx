@@ -243,11 +243,15 @@ export default function OrdersPage() {
             {/* Premium details + live tracker popup */}
             <AnimatePresence>
                 {viewingOrder && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm"
+                        onClick={() => setViewingOrder(null)}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 15 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh]"
                         >
                             {/* Header */}

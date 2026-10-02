@@ -51,7 +51,7 @@ export const updateCategory = async (req: Request, res: Response) => {
         const { name, parent, description, image } = req.body;
         const slug = name ? createSlug(name) : undefined;
 
-        const updateData: any = { name, parent, description, image };
+        const updateData: any = { name, parent: parent || null, description, image };
         if (slug) updateData.slug = slug;
 
         const category = await Category.findByIdAndUpdate(req.params.id, updateData, { new: true });

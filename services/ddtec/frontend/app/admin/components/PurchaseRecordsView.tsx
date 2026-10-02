@@ -578,8 +578,14 @@ export default function PurchaseRecordsView({
 
             {/* Modal: Add or Edit Purchase Record */}
             {isAddModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+                    onClick={() => setIsAddModalOpen(false)}
+                >
+                    <div
+                        className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         {/* Modal Header */}
                         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30">
                             <div>
@@ -971,8 +977,14 @@ export default function PurchaseRecordsView({
 
             {/* Bill Screenshot Lightbox Modal */}
             {viewingScreenshot && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="relative max-w-4xl w-full bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800">
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setViewingScreenshot(null)}
+                >
+                    <div
+                        className="relative max-w-4xl w-full bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="p-4 bg-slate-900 text-white flex justify-between items-center border-b border-slate-800">
                             <h4 className="font-bold text-sm flex items-center gap-2">
                                 <Eye className="size-4 text-teal-400" /> Bill Screenshot Preview

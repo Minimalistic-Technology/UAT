@@ -7,7 +7,7 @@ import { useAuth } from "../_context/AuthContext";
 import Sidebar from "./components/Sidebar";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, isLoggingOut } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -15,12 +15,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     useEffect(() => {
         if (!authLoading) {
             if (!user) {
-                router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+                router.push(isLoggingOut ? "/login" : `/login?redirect=${encodeURIComponent(pathname)}`);
             } else if (user.role !== "admin") {
                 router.push("/");
             }
         }
-    }, [user, authLoading, router, pathname]);
+    }, [user, authLoading, router, pathname, isLoggingOut]);
 
     if (authLoading || !user || user.role !== "admin") {
         return (

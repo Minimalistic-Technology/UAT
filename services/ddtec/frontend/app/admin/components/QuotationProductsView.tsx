@@ -32,7 +32,7 @@ interface CatalogProduct {
 }
 
 const MAX_IMAGE_DIMENSION = 800;
-const UNIT_OPTIONS = ['Nos', 'Kg', 'Pcs', 'Set', 'Meter', 'Ltr', 'Box', 'Gram', 'Tone', 'Dozen', 'Packet', 'Pair', 'Roll'];
+const UNIT_OPTIONS = ['Nos', 'Kg', 'Pcs', 'Set', 'Meter', 'Ltr', 'Box', 'Gram', 'Tone', 'Dozen', 'Packet', 'Pair', 'Roll', 'Bag', 'Bundle', 'Carton', 'Bottle', 'Can', 'Drum', 'Quintal', 'Bale', 'Tablet', 'Sq.Ft', 'Sq.Mtr', 'Unit'];
 
 function fileToCompressedFile(file: File): Promise<File> {
     return new Promise((resolve, reject) => {
@@ -345,11 +345,15 @@ const QuotationProductsView = () => {
 
             <AnimatePresence>
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                        onClick={handleCloseModal}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">

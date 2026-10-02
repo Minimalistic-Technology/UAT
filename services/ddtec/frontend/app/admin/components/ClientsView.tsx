@@ -708,8 +708,14 @@ export default function ClientsView() {
 
             {/* Add / Edit Client Modal */}
             {isFormOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                    <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[90vh] flex flex-col">
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                    onClick={() => { setIsFormOpen(false); setEditingClient(null); setFormErrors({}); }}
+                >
+                    <div
+                        className="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[90vh] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-start justify-between p-4 border-b border-slate-100 dark:border-slate-700">
                             <div>
                                 <h3 className="font-bold text-slate-900 dark:text-white">{editingClient ? 'Edit Client' : 'Add Client'}</h3>
@@ -853,8 +859,14 @@ export default function ClientsView() {
 
             {/* New Project Modal */}
             {projectClient && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                    <div className="w-full max-w-sm bg-white dark:bg-slate-800 rounded-xl shadow-xl">
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                    onClick={() => setProjectClient(null)}
+                >
+                    <div
+                        className="w-full max-w-sm bg-white dark:bg-slate-800 rounded-xl shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-start justify-between p-4 border-b border-slate-100 dark:border-slate-700">
                             <div>
                                 <h3 className="font-bold text-slate-900 dark:text-white">New Project</h3>

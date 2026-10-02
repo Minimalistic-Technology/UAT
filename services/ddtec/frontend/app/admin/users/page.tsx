@@ -215,11 +215,15 @@ export default function UsersPage() {
             {/* Add User Modal */}
             <AnimatePresence>
                 {isAddUserModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                        onClick={() => setIsAddUserModalOpen(false)}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
@@ -318,11 +322,15 @@ export default function UsersPage() {
             {/* Edit User Modal */}
             <AnimatePresence>
                 {isEditUserModalOpen && editingUser && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                        onClick={() => setIsEditUserModalOpen(false)}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">

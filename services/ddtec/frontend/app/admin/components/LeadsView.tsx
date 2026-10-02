@@ -1045,8 +1045,14 @@ export default function LeadsView() {
 
             {/* New Lead Modal */}
             {isFormOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                    <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[90vh] flex flex-col">
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                    onClick={() => { setIsFormOpen(false); setEditingLead(null); setFormErrors({}); }}
+                >
+                    <div
+                        className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[90vh] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-start justify-between p-4 border-b border-slate-100 dark:border-slate-700">
                             <div>
                                 <h3 className="font-bold text-slate-900 dark:text-white">{editingLead ? 'Edit Lead' : 'New Lead'}</h3>
@@ -1281,8 +1287,14 @@ export default function LeadsView() {
 
             {/* Manage Pipeline Stages Modal */}
             {isStagesOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                    <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[85vh] flex flex-col">
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                    onClick={() => setIsStagesOpen(false)}
+                >
+                    <div
+                        className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[85vh] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-start justify-between p-4 border-b border-slate-100 dark:border-slate-700">
                             <div>
                                 <h3 className="font-bold text-slate-900 dark:text-white">Manage Pipeline Stages</h3>

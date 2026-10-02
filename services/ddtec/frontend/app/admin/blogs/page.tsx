@@ -180,11 +180,15 @@ export default function BlogsPage() {
             {/* Add Blog Modal */}
             <AnimatePresence>
                 {isAddBlogModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                        onClick={() => setIsAddBlogModalOpen(false)}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
@@ -286,11 +290,15 @@ export default function BlogsPage() {
             {/* Edit Blog Modal */}
             <AnimatePresence>
                 {isEditBlogModalOpen && editingBlog && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                        onClick={() => setIsEditBlogModalOpen(false)}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">

@@ -2,12 +2,32 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Tag, Ticket, Eye, ExternalLink, Edit, Trash2, Calendar, Clock, DollarSign, Image as ImageIcon, Loader2, Upload, X } from "lucide-react";
+import { Plus, Tag, Ticket, Eye, ExternalLink, Edit, Trash2, Calendar, Clock, DollarSign, Image as ImageIcon, Loader2, Upload, X, Info } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "../components/ToggleSwitch";
+import CreatableSelect from "../components/CreatableSelect";
 import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
 import { useProducts, Product } from "../hooks/useProducts";
+
+const PACK_UNIT_OPTIONS = ["Box", "Carton", "Piece", "Packet", "Bottle", "Pouch", "Bag", "Crate", "Drum", "Can", "Tube", "Jar", "Bundle", "Roll", "Set", "Sachet", "Tin", "Pack"];
+const UNIT_MEASURE_OPTIONS = ["Liter", "ml", "Kg", "gram", "Piece", "Meter", "cm", "Dozen", "Pair", "Sq.Ft", "Sq.Mtr"];
+
+// Must match the backend's uploadProductImages.array('images', MAX_PRODUCT_IMAGES) limit
+// in backend/src/middleware/upload.middleware.ts
+const MAX_PRODUCT_IMAGES = 6;
+
+// Field label with a hoverable info icon explaining what the field means.
+function LabelWithTooltip({ text, tooltip }: { text: string; tooltip: string }) {
+    return (
+        <label className="flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            {text}
+            <span title={tooltip} className="cursor-help text-slate-400 hover:text-teal-600">
+                <Info className="size-3.5" />
+            </span>
+        </label>
+    );
+}
 
 export default function ProductsPage() {
     const { showToast } = useToast();
@@ -103,6 +123,14 @@ export default function ProductsPage() {
     const parseImageUrlList = (imagesInput: string): string[] =>
         imagesInput.split(',').map(u => u.trim()).filter(Boolean);
 
+    // Total images currently staged for a form (URL tags + queued files), used to
+    // enforce the MAX_PRODUCT_IMAGES cap the backend also enforces.
+    const getTotalImageCount = (target: 'new' | 'edit'): number => {
+        const urlCount = parseImageUrlList(target === 'new' ? newProduct.imagesInput : editingProduct?.imagesInput || '').length;
+        const fileCount = target === 'new' ? newProductImageFiles.length : editProductImageFiles.length;
+        return urlCount + fileCount;
+    };
+
     // Validates that a string is a well-formed, absolute http(s) image URL
     const validateImageUrl = (rawUrl: string): string | null => {
         const url = rawUrl.trim();
@@ -133,6 +161,11 @@ export default function ProductsPage() {
         for (const rawUrl of rawUrls) {
             const url = rawUrl.trim().replace(/,$/, '').trim();
             if (!url) continue;
+
+            if (getTotalImageCount(target) + addedCount >= MAX_PRODUCT_IMAGES) {
+                showToast(`You can only add up to ${MAX_PRODUCT_IMAGES} images per product`, 'error');
+                break;
+            }
 
             const error = validateImageUrl(url);
             if (error) {
@@ -209,10 +242,22 @@ export default function ProductsPage() {
     const queueProductImageFiles = (files: FileList | null, target: 'new' | 'edit') => {
         if (!files || files.length === 0) return;
         const filesArray = Array.from(files);
+
+        const remainingSlots = MAX_PRODUCT_IMAGES - getTotalImageCount(target);
+        if (remainingSlots <= 0) {
+            showToast(`You can only add up to ${MAX_PRODUCT_IMAGES} images per product`, 'error');
+            return;
+        }
+
+        const toQueue = filesArray.slice(0, remainingSlots);
+        if (filesArray.length > toQueue.length) {
+            showToast(`Only ${remainingSlots} more image${remainingSlots === 1 ? '' : 's'} could be added — the ${MAX_PRODUCT_IMAGES}-image limit was reached`, 'error');
+        }
+
         if (target === 'new') {
-            setNewProductImageFiles(prev => [...prev, ...filesArray]);
+            setNewProductImageFiles(prev => [...prev, ...toQueue]);
         } else {
-            setEditProductImageFiles(prev => [...prev, ...filesArray]);
+            setEditProductImageFiles(prev => [...prev, ...toQueue]);
         }
     };
 
@@ -555,11 +600,15 @@ export default function ProductsPage() {
                 {/* View Coupons Modal */}
                 <AnimatePresence>
                     {viewingCoupons && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                        <div
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                            onClick={() => setViewingCoupons(null)}
+                        >
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
+                                onClick={(e) => e.stopPropagation()}
                                 className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700"
                             >
                                 <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
@@ -617,11 +666,15 @@ export default function ProductsPage() {
                     <AnimatePresence>
                         {
                             isAddModalOpen && (
-                                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                                <div
+                                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                                    onClick={() => setIsAddModalOpen(false)}
+                                >
                                     <motion.div
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
+                                        onClick={(e) => e.stopPropagation()}
                                         className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700"
                                     >
                                         <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
@@ -786,7 +839,7 @@ export default function ProductsPage() {
                                                 <p className="text-xs text-slate-400 -mt-2">Packed weight and dimensions are used to calculate Blue Dart / DTDC freight rates at checkout.</p>
                                                 <div className="grid grid-cols-4 gap-4">
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pack Quantity</label>
+                                                        <LabelWithTooltip text="Pack Quantity" tooltip="How many individual units are in one pack, e.g. 10" />
                                                         <input
                                                             type="number"
                                                             min="0"
@@ -797,18 +850,17 @@ export default function ProductsPage() {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pack Unit</label>
-                                                        <input
-                                                            type="text"
-                                                            list="pack-unit-options"
+                                                        <LabelWithTooltip text="Pack Unit" tooltip="What the pack itself is called, e.g. Box, Carton, Bottle" />
+                                                        <CreatableSelect
                                                             value={newProduct.packUnit}
-                                                            onChange={(e) => setNewProduct({ ...newProduct, packUnit: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            onChange={(value) => setNewProduct({ ...newProduct, packUnit: value })}
+                                                            options={PACK_UNIT_OPTIONS}
+                                                            storageKey="ddtec_custom_pack_units"
                                                             placeholder="Box"
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit Size</label>
+                                                        <LabelWithTooltip text="Unit Size" tooltip="The size or amount of a single item inside the pack, e.g. 0.10" />
                                                         <input
                                                             type="number"
                                                             min="0"
@@ -820,23 +872,16 @@ export default function ProductsPage() {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit Measure</label>
-                                                        <input
-                                                            type="text"
-                                                            list="unit-measure-options"
+                                                        <LabelWithTooltip text="Unit Measure" tooltip="The measurement unit for that single item's size, e.g. Liter, ml, Kg" />
+                                                        <CreatableSelect
                                                             value={newProduct.unitMeasure}
-                                                            onChange={(e) => setNewProduct({ ...newProduct, unitMeasure: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                            onChange={(value) => setNewProduct({ ...newProduct, unitMeasure: value })}
+                                                            options={UNIT_MEASURE_OPTIONS}
+                                                            storageKey="ddtec_custom_unit_measures"
                                                             placeholder="Liter"
                                                         />
                                                     </div>
                                                 </div>
-                                                <datalist id="pack-unit-options">
-                                                    <option value="Box" /><option value="Carton" /><option value="Piece" /><option value="Packet" /><option value="Bottle" /><option value="Pouch" />
-                                                </datalist>
-                                                <datalist id="unit-measure-options">
-                                                    <option value="Liter" /><option value="ml" /><option value="Kg" /><option value="gram" /><option value="Piece" />
-                                                </datalist>
                                                 <p className="text-xs text-slate-400 -mt-2">e.g. 10 Box &times; 0.10 Liter each</p>
                                                 <div className="flex items-center gap-2">
                                                     <input
@@ -1104,7 +1149,10 @@ export default function ProductsPage() {
                                                     <label className="flex flex-col items-center justify-center gap-1.5 w-full py-6 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer transition-all">
                                                         <Upload className="size-5" />
                                                         Upload Image(s)
-                                                        <span className="text-[11px] font-normal text-slate-400">You can select multiple image files at once. They&apos;ll be uploaded when you save.</span>
+                                                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">You can select multiple image files at once.</span>
+                                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${getTotalImageCount('new') >= MAX_PRODUCT_IMAGES ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400'}`}>
+                                                            {getTotalImageCount('new')}/{MAX_PRODUCT_IMAGES} images added
+                                                        </span>
                                                         <input
                                                             type="file"
                                                             accept="image/*"
@@ -1174,11 +1222,15 @@ export default function ProductsPage() {
                     <AnimatePresence>
                         {
                             isEditModalOpen && editingProduct && (
-                                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                                <div
+                                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                                    onClick={() => setIsEditModalOpen(false)}
+                                >
                                     <motion.div
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
+                                        onClick={(e) => e.stopPropagation()}
                                         className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700"
                                     >
                                         <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
@@ -1311,7 +1363,7 @@ export default function ProductsPage() {
                                                 <p className="text-xs text-slate-400 -mt-2">Packed weight and dimensions are used to calculate Blue Dart / DTDC freight rates at checkout.</p>
                                                 <div className="grid grid-cols-4 gap-4">
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pack Quantity</label>
+                                                        <LabelWithTooltip text="Pack Quantity" tooltip="How many individual units are in one pack, e.g. 10" />
                                                         <input
                                                             type="number"
                                                             min="0"
@@ -1322,18 +1374,17 @@ export default function ProductsPage() {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pack Unit</label>
-                                                        <input
-                                                            type="text"
-                                                            list="pack-unit-options"
-                                                            value={editingProduct.packUnit}
-                                                            onChange={(e) => setEditingProduct({ ...editingProduct, packUnit: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                        <LabelWithTooltip text="Pack Unit" tooltip="What the pack itself is called, e.g. Box, Carton, Bottle" />
+                                                        <CreatableSelect
+                                                            value={editingProduct.packUnit || ""}
+                                                            onChange={(value) => setEditingProduct({ ...editingProduct, packUnit: value })}
+                                                            options={PACK_UNIT_OPTIONS}
+                                                            storageKey="ddtec_custom_pack_units"
                                                             placeholder="Box"
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit Size</label>
+                                                        <LabelWithTooltip text="Unit Size" tooltip="The size or amount of a single item inside the pack, e.g. 0.10" />
                                                         <input
                                                             type="number"
                                                             min="0"
@@ -1345,13 +1396,12 @@ export default function ProductsPage() {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unit Measure</label>
-                                                        <input
-                                                            type="text"
-                                                            list="unit-measure-options"
-                                                            value={editingProduct.unitMeasure}
-                                                            onChange={(e) => setEditingProduct({ ...editingProduct, unitMeasure: e.target.value })}
-                                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                        <LabelWithTooltip text="Unit Measure" tooltip="The measurement unit for that single item's size, e.g. Liter, ml, Kg" />
+                                                        <CreatableSelect
+                                                            value={editingProduct.unitMeasure || ""}
+                                                            onChange={(value) => setEditingProduct({ ...editingProduct, unitMeasure: value })}
+                                                            options={UNIT_MEASURE_OPTIONS}
+                                                            storageKey="ddtec_custom_unit_measures"
                                                             placeholder="Liter"
                                                         />
                                                     </div>
@@ -1570,7 +1620,10 @@ export default function ProductsPage() {
                                                     <label className="flex flex-col items-center justify-center gap-1.5 w-full py-6 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer transition-all">
                                                         <Upload className="size-5" />
                                                         Upload Image(s)
-                                                        <span className="text-[11px] font-normal text-slate-400">You can select multiple image files at once. They&apos;ll be uploaded when you save.</span>
+                                                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">You can select multiple image files at once.</span>
+                                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${getTotalImageCount('edit') >= MAX_PRODUCT_IMAGES ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400'}`}>
+                                                            {getTotalImageCount('edit')}/{MAX_PRODUCT_IMAGES} images added
+                                                        </span>
                                                         <input
                                                             type="file"
                                                             accept="image/*"
@@ -1637,11 +1690,15 @@ export default function ProductsPage() {
                     </AnimatePresence >
             <AnimatePresence>
                 {viewingProductDetails && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        onClick={() => setViewingProductDetails(null)}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
