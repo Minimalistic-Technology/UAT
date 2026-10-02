@@ -5,7 +5,7 @@ import Coupon from '../models/Coupon';
 import Hub from '../models/Hub';
 import WarehouseStock from '../models/WarehouseStock';
 import redisClient from '../config/redis';
-import cloudinary from '../config/cloudinary';
+import { deleteCloudinaryImages } from '../utils/cloudinaryCleanup';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 const STAFF_ROLES = ['super_admin', 'admin', 'product_manager', 'order_manager', 'customer_support', 'finance', 'marketing', 'warehouse'];
@@ -48,32 +48,6 @@ const normalizeToStringArray = (value: unknown): string[] => {
 const extractUploadedImageUrls = (req: Request): string[] => {
     const files = (req.files as Express.Multer.File[]) || [];
     return files.map(f => (f as any).path || (f as any).secure_url).filter(Boolean);
-};
-
-// Pulls the Cloudinary public_id (e.g. "products/abc123") out of a secure_url so it can be
-// passed to uploader.destroy. Returns null for anything not actually hosted on Cloudinary
-// (e.g. a manually-pasted external image URL), which must never be sent to destroy().
-const extractCloudinaryPublicId = (url: string): string | null => {
-    if (!url || !url.includes('res.cloudinary.com')) return null;
-    const afterUpload = url.split('/upload/')[1];
-    if (!afterUpload) return null;
-    const withoutVersion = afterUpload.replace(/^v\d+\//, '');
-    const withoutExtension = withoutVersion.replace(/\.[a-zA-Z0-9]+$/, '');
-    return withoutExtension || null;
-};
-
-// Best-effort delete of Cloudinary-hosted product images; failures are logged, not thrown,
-// so a Cloudinary outage never blocks the product delete/update itself.
-const deleteCloudinaryImages = async (urls: string[]) => {
-    const publicIds = Array.from(new Set(urls.map(extractCloudinaryPublicId).filter((id): id is string => Boolean(id))));
-    if (!publicIds.length) return;
-    await Promise.all(publicIds.map(async (id) => {
-        try {
-            await cloudinary.uploader.destroy(id);
-        } catch (err) {
-            console.error(`Failed to delete Cloudinary image "${id}":`, err);
-        }
-    }));
 };
 
 // `highlights` arrives as a JSON-encoded string (multipart forms can't carry nested

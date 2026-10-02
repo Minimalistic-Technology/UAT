@@ -120,7 +120,7 @@ export default function UsersPage() {
                         <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg">
                             <button
                                 onClick={() => setUserTabMode('customers')}
-                                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${userTabMode === 'customers'
+                                className={`cursor-pointer px-4 py-1.5 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${userTabMode === 'customers'
                                     ? 'bg-white dark:bg-slate-800 text-teal-600 shadow-sm'
                                     : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                     }`}
@@ -129,7 +129,7 @@ export default function UsersPage() {
                             </button>
                             <button
                                 onClick={() => setUserTabMode('staff')}
-                                className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${userTabMode === 'staff'
+                                className={`cursor-pointer px-4 py-1.5 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${userTabMode === 'staff'
                                     ? 'bg-white dark:bg-slate-800 text-teal-600 shadow-sm'
                                     : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                                     }`}
@@ -138,7 +138,7 @@ export default function UsersPage() {
                             </button>
                         </div>
                     </div>
-                    <button onClick={() => setIsAddUserModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors shrink-0">
+                    <button onClick={() => setIsAddUserModalOpen(true)} className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors shrink-0">
                         <Plus className="size-4" /> Add {userTabMode === 'customers' ? 'User' : 'Staff'}
                     </button>
                 </div>
@@ -190,17 +190,17 @@ export default function UsersPage() {
                                                 {!u.isActive && (
                                                     <button
                                                         onClick={() => toggleUserStatus(u._id, u.isActive)}
-                                                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                                                        className="cursor-pointer px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
                                                         title="Approve User Account"
                                                     >
                                                         <CheckCircle2 className="size-3.5" /> Approve Account
                                                     </button>
                                                 )}
-                                                <ToggleSwitch isOn={u.isActive} onToggle={() => toggleUserStatus(u._id, u.isActive)} />
-                                                <button onClick={() => handleEditUserClick(u)} className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors" title="Edit User">
+                                                <ToggleSwitch isOn={u.isActive} onToggle={() => toggleUserStatus(u._id, u.isActive)} title={u.isActive ? "Deactivate User" : "Activate User"} />
+                                                <button onClick={() => handleEditUserClick(u)} className="cursor-pointer text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors" title="Edit User">
                                                     <Edit className="size-4" />
                                                 </button>
-                                                <button onClick={() => handleDeleteUser(u._id)} className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Delete User">
+                                                <button onClick={() => handleDeleteUser(u._id)} className="cursor-pointer text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Delete User">
                                                     <Trash2 className="size-4" />
                                                 </button>
                                             </td>
@@ -228,7 +228,7 @@ export default function UsersPage() {
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Add New User</h3>
-                                <button onClick={() => setIsAddUserModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                <button onClick={() => setIsAddUserModalOpen(false)} className="cursor-pointer text-slate-400 hover:text-red-500 transition-colors">
                                     <X className="size-6" />
                                 </button>
                             </div>
@@ -290,7 +290,7 @@ export default function UsersPage() {
                                         <select
                                             value={newUser.role}
                                             onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                            className="cursor-pointer w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
                                         >
                                             <option value="user">User</option>
                                             <option value="admin">Admin</option>
@@ -301,14 +301,14 @@ export default function UsersPage() {
                                     <button
                                         type="button"
                                         onClick={() => setIsAddUserModalOpen(false)}
-                                        className="flex-1 px-4 py-2.5 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                        className="cursor-pointer flex-1 px-4 py-2.5 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="flex-1 px-4 py-2.5 rounded-xl font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors shadow-lg hover:shadow-teal-500/30 flex items-center justify-center gap-2"
+                                        className="cursor-pointer flex-1 px-4 py-2.5 rounded-xl font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors shadow-lg hover:shadow-teal-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin size-5" /> : 'Create User'}
                                     </button>
@@ -335,7 +335,7 @@ export default function UsersPage() {
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">Edit User</h3>
-                                <button onClick={() => setIsEditUserModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                <button onClick={() => setIsEditUserModalOpen(false)} className="cursor-pointer text-slate-400 hover:text-red-500 transition-colors">
                                     <X className="size-6" />
                                 </button>
                             </div>
@@ -393,14 +393,14 @@ export default function UsersPage() {
                                     <button
                                         type="button"
                                         onClick={() => setIsEditUserModalOpen(false)}
-                                        className="flex-1 px-4 py-2.5 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                        className="cursor-pointer flex-1 px-4 py-2.5 rounded-xl font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className="flex-1 px-4 py-2.5 rounded-xl font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors shadow-lg hover:shadow-teal-500/30 flex items-center justify-center gap-2"
+                                        className="cursor-pointer flex-1 px-4 py-2.5 rounded-xl font-bold bg-teal-600 text-white hover:bg-teal-700 transition-colors shadow-lg hover:shadow-teal-500/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin size-5" /> : 'Update User'}
                                     </button>

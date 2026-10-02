@@ -266,7 +266,7 @@ const QuotationProductsView = () => {
             <div className="flex justify-end items-center mb-6">
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg"
+                    className="cursor-pointer flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg"
                 >
                     <Plus className="size-4" /> Add Product
                 </button>
@@ -322,14 +322,14 @@ const QuotationProductsView = () => {
                                         <td className="p-4 text-right flex justify-end items-center gap-2">
                                             <button
                                                 onClick={() => handleEditClick(item)}
-                                                className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+                                                className="cursor-pointer text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
                                                 title="Edit"
                                             >
                                                 <Edit className="size-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(item._id)}
-                                                className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                                                className="cursor-pointer text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                                                 title="Delete"
                                             >
                                                 <Trash2 className="size-4" />
@@ -360,7 +360,7 @@ const QuotationProductsView = () => {
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                                     {editingItem ? 'Edit Quotation Product' : 'Add Quotation Product'}
                                 </h3>
-                                <button onClick={handleCloseModal} className="text-slate-400 hover:text-red-500 transition-colors">
+                                <button onClick={handleCloseModal} className="cursor-pointer text-slate-400 hover:text-red-500 transition-colors">
                                     <X className="size-6" />
                                 </button>
                             </div>
@@ -371,7 +371,7 @@ const QuotationProductsView = () => {
                                     <select
                                         value={formData.product}
                                         onChange={(e) => handleSelectProduct(e.target.value)}
-                                        className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                        className="cursor-pointer w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
                                     >
                                         <option value="">— Select a product to copy details —</option>
                                         {availableCatalogProducts.map(p => (
@@ -408,7 +408,7 @@ const QuotationProductsView = () => {
                                                 <button
                                                     type="button"
                                                     onClick={handleRemoveImage}
-                                                    className="ml-2 text-sm text-red-500 hover:text-red-700"
+                                                    className="cursor-pointer ml-2 text-sm text-red-500 hover:text-red-700"
                                                 >
                                                     Remove
                                                 </button>
@@ -461,7 +461,7 @@ const QuotationProductsView = () => {
                                         <select
                                             value={formData.unit}
                                             onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                                            className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                            className="cursor-pointer w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
                                         >
                                             {UNIT_OPTIONS.map(u => (
                                                 <option key={u} value={u}>{u}</option>
@@ -521,14 +521,14 @@ const QuotationProductsView = () => {
                                     <button
                                         type="button"
                                         onClick={handleCloseModal}
-                                        className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-600"
+                                        className="cursor-pointer px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-600"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting || isUploadingImage}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 disabled:opacity-50 flex items-center gap-2"
+                                        className="cursor-pointer px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin size-4" /> : null}
                                         {editingItem ? 'Update Product' : 'Create Product'}

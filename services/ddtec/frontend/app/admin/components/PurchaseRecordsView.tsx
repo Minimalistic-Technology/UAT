@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     PackageCheck,
     Plus,
@@ -8,7 +9,6 @@ import {
     Edit,
     Trash2,
     Eye,
-    Calendar,
     DollarSign,
     Building2,
     FileText,
@@ -16,11 +16,9 @@ import {
     X,
     Check,
     Loader2,
-    Tag,
-    Clock,
-    Sparkles,
     AlertCircle,
-    Boxes
+    Boxes,
+    ArrowRight
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
@@ -68,6 +66,7 @@ export default function PurchaseRecordsView({
 }: PurchaseRecordsViewProps) {
     const { showToast } = useToast();
     const confirm = useConfirm();
+    const router = useRouter();
     const [records, setRecords] = useState<PurchaseRecord[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -79,21 +78,12 @@ export default function PurchaseRecordsView({
     const [viewingScreenshot, setViewingScreenshot] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    // Form State
-    const [isNewProductMode, setIsNewProductMode] = useState<boolean>(false);
+    // Form State — restocking an existing product only; creating a brand new product is
+    // handled entirely on the Products page now (full image upload, highlights, etc. live
+    // there, so this form no longer duplicates a stripped-down version of it).
     const [formData, setFormData] = useState({
         productId: '',
         name: '',
-        price: '',
-        category: '',
-        description: '',
-        image: '',
-        cgst: '',
-        sgst: '',
-        packQuantity: '10',
-        packUnit: 'Box',
-        unitSize: '',
-        unitMeasure: 'Liter',
         seller: '',
         sellerContact: '',
         quantityAdded: '',
@@ -164,20 +154,9 @@ export default function PurchaseRecordsView({
     // Open Modal for Create
     const handleOpenCreateModal = () => {
         setEditingRecord(null);
-        setIsNewProductMode(false);
         setFormData({
             productId: productsList.length > 0 ? productsList[0]._id : '',
             name: '',
-            price: '',
-            category: categoriesList.length > 0 ? categoriesList[0]._id : '',
-            description: '',
-            image: '',
-            cgst: '',
-            sgst: '',
-            packQuantity: '10',
-            packUnit: 'Box',
-            unitSize: '',
-            unitMeasure: 'Liter',
             seller: '',
             sellerContact: '',
             quantityAdded: '10',
@@ -193,23 +172,12 @@ export default function PurchaseRecordsView({
     // Open Modal for Edit
     const handleOpenEditModal = (record: PurchaseRecord) => {
         setEditingRecord(record);
-        setIsNewProductMode(false);
 
         const prodId = typeof record.product === 'object' && record.product !== null ? record.product._id : record.product;
 
         setFormData({
             productId: prodId || '',
             name: record.productName,
-            price: '',
-            category: '',
-            description: '',
-            image: '',
-            cgst: '',
-            sgst: '',
-            packQuantity: '10',
-            packUnit: 'Box',
-            unitSize: '',
-            unitMeasure: 'Liter',
             seller: record.seller || '',
             sellerContact: record.sellerContact || '',
             quantityAdded: record.quantityAdded.toString(),
@@ -237,26 +205,6 @@ export default function PurchaseRecordsView({
             if (typeof reader.result === 'string') {
                 setFormData(prev => ({ ...prev, billScreenshot: reader.result as string }));
                 showToast('Bill screenshot uploaded successfully', 'success');
-            }
-        };
-        reader.readAsDataURL(file);
-    };
-
-    // Handle Product Image Upload to Base64 Data URL (for new-product creation)
-    const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        if (file.size > 10 * 1024 * 1024) {
-            showToast('File size must be under 10MB', 'error');
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            if (typeof reader.result === 'string') {
-                setFormData(prev => ({ ...prev, image: reader.result as string }));
-                showToast('Product image uploaded successfully', 'success');
             }
         };
         reader.readAsDataURL(file);
@@ -293,21 +241,10 @@ export default function PurchaseRecordsView({
                 });
                 showToast('Purchase record updated & inventory synced!', 'success');
             } else {
-                // Create new record
+                // Create new record (restocking an existing product)
                 await api.post('/purchases', {
-                    isNewProduct: isNewProductMode,
-                    productId: isNewProductMode ? undefined : formData.productId,
-                    name: formData.name,
-                    price: Number(formData.price) || 0,
-                    category: formData.category,
-                    description: formData.description,
-                    image: formData.image,
-                    cgst: Number(formData.cgst) || 0,
-                    sgst: Number(formData.sgst) || 0,
-                    packQuantity: Number(formData.packQuantity) || 1,
-                    packUnit: formData.packUnit,
-                    unitSize: Number(formData.unitSize) || 0,
-                    unitMeasure: formData.unitMeasure,
+                    isNewProduct: false,
+                    productId: formData.productId,
                     seller: formData.seller,
                     sellerContact: formData.sellerContact,
                     quantityAdded: qty,
@@ -453,12 +390,21 @@ export default function PurchaseRecordsView({
                     </select>
                 </div>
 
-                <button
-                    onClick={handleOpenCreateModal}
-                    className="cursor-pointer w-full md:w-auto bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2"
-                >
-                    <Plus className="size-4" /> Add Inventory Record / Purchase
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+                    <button
+                        onClick={handleOpenCreateModal}
+                        className="cursor-pointer w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Plus className="size-4" /> Restock Product
+                    </button>
+                    <button
+                        onClick={() => router.push('/admin/products')}
+                        className="cursor-pointer w-full sm:w-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 px-5 py-2.5 rounded-xl font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-2"
+                        title="New products (with images, highlights, etc.) are created on the Products page"
+                    >
+                        Create New Product <ArrowRight className="size-4" />
+                    </button>
+                </div>
             </div>
 
             {/* Purchase Records Table */}
@@ -480,7 +426,7 @@ export default function PurchaseRecordsView({
                         <PackageCheck className="size-14 text-slate-300 dark:text-slate-700 mb-2" />
                         <p className="text-slate-700 dark:text-slate-300 font-bold text-sm">No Purchase Records Found</p>
                         <p className="text-xs text-slate-500 mt-1 max-w-md">
-                            This log only tracks restocking done through "+ Add Inventory Record / Purchase" — it doesn't affect
+                            This log only tracks restocking done through "Restock Product" — it doesn't affect
                             or reflect stock set directly on a product. Current live stock across all products is{' '}
                             <strong>{totalCurrentStock.toLocaleString()} units</strong> (see the Products tab for per-item stock).
                         </p>
@@ -611,7 +557,7 @@ export default function PurchaseRecordsView({
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                     <PackageCheck className="size-5 text-teal-600" />
-                                    {editingRecord ? 'Edit Purchase Record' : 'Add Inventory Update & Purchase'}
+                                    {editingRecord ? 'Edit Purchase Record' : 'Restock Product'}
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
                                     Recorded details will update product stock and seller records automatically.
@@ -627,28 +573,8 @@ export default function PurchaseRecordsView({
 
                         {/* Modal Form */}
                         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-                            {!editingRecord && (
-                                <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 mb-2">
-                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Product Mode:</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsNewProductMode(false)}
-                                        className={`cursor-pointer px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${!isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                                    >
-                                        Restock Existing Product
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsNewProductMode(true)}
-                                        className={`cursor-pointer px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                                    >
-                                        + Create New Product
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Product Selection vs New Product Creation */}
-                            {!isNewProductMode && !editingRecord ? (
+                            {/* Target Product */}
+                            {!editingRecord ? (
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                                         Select Target Product <span className="text-red-500">*</span>
@@ -674,156 +600,9 @@ export default function PurchaseRecordsView({
                                             </option>
                                         ))}
                                     </select>
-                                </div>
-                            ) : isNewProductMode && !editingRecord ? (
-                                <div className="space-y-3 p-4 bg-teal-50/50 dark:bg-teal-950/20 rounded-2xl border border-teal-100 dark:border-teal-900/30">
-                                    <span className="text-xs font-bold text-teal-700 dark:text-teal-400 block mb-2">New Product Details</span>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Product Name <span className="text-red-500">*</span></label>
-                                        <input
-                                            required
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            placeholder="e.g. Bosch Heavy Duty Angle Grinder 800W"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Selling Price (₹)</label>
-                                            <input
-                                                type="number"
-                                                value={formData.price}
-                                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="2499"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
-                                            <select
-                                                value={formData.category}
-                                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            >
-                                                {categoriesList.map(c => (
-                                                    <option key={c._id} value={c._id}>{c.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Product Image</label>
-                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                                            <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-700/60 border border-dashed border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all">
-                                                <Upload className="size-4 text-teal-600" /> Upload Image File
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleProductImageUpload}
-                                                    className="hidden"
-                                                />
-                                            </label>
-
-                                            <div className="flex-1">
-                                                <input
-                                                    type="text"
-                                                    value={formData.image}
-                                                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                                                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                    placeholder="Or paste image URL (https://...)"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {formData.image && (
-                                            <div className="mt-2 relative inline-block group">
-                                                <img
-                                                    src={formData.image}
-                                                    alt="Product Image Preview"
-                                                    className="h-24 max-w-full rounded-xl border border-slate-200 dark:border-slate-700 object-cover shadow-xs"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setFormData({ ...formData, image: '' })}
-                                                    className="cursor-pointer absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
-                                                    title="Remove image"
-                                                >
-                                                    <X className="size-3" />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={formData.cgst}
-                                                onChange={(e) => setFormData({ ...formData, cgst: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="9"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={formData.sgst}
-                                                onChange={(e) => setFormData({ ...formData, sgst: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="9"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Packaging / Unit Size</label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={formData.packQuantity}
-                                                onChange={(e) => setFormData({ ...formData, packQuantity: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="10"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={formData.packUnit}
-                                                onChange={(e) => setFormData({ ...formData, packUnit: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="Box"
-                                                list="pack-unit-list"
-                                            />
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={formData.unitSize}
-                                                onChange={(e) => setFormData({ ...formData, unitSize: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="0.10"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={formData.unitMeasure}
-                                                onChange={(e) => setFormData({ ...formData, unitMeasure: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="Liter"
-                                                list="unit-measure-list"
-                                            />
-                                        </div>
-                                        <datalist id="pack-unit-list">
-                                            <option value="Box" /><option value="Carton" /><option value="Piece" /><option value="Packet" /><option value="Bottle" /><option value="Pouch" />
-                                        </datalist>
-                                        <datalist id="unit-measure-list">
-                                            <option value="Liter" /><option value="ml" /><option value="Kg" /><option value="gram" /><option value="Piece" />
-                                        </datalist>
-                                        <p className="text-[10px] text-slate-400 mt-1">e.g. 10 Box &times; 0.10 Liter</p>
-                                    </div>
+                                    <p className="text-[10px] text-slate-400 mt-1">
+                                        Don't see the product you need? <button type="button" onClick={() => router.push('/admin/products')} className="cursor-pointer text-teal-600 hover:underline font-semibold">Create it on the Products page</button> first.
+                                    </p>
                                 </div>
                             ) : (
                                 <div>
