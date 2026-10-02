@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
     Users,
     Package,
@@ -19,70 +21,51 @@ import {
     LucideIcon,
 } from "lucide-react";
 
-export type AdminView =
-    | "dashboard"
-    | "products"
-    | "users"
-    | "orders"
-    | "inventory"
-    | "messages"
-    | "coupons"
-    | "blogs"
-    | "categories"
-    | "settings"
-    | "dynamic_routes"
-    | "quotation_products"
-    | "create_quotation"
-    | "saved_quotations"
-    | "schedule_mail"
-    | "contacts"
-    | "leads"
-    | "clients"
-    | "company";
-
 export interface NavItem {
-    view: AdminView;
+    href: string;
     label: string;
     icon: LucideIcon;
-    // Other views that should also light up this nav item (e.g. sub-views)
-    matches?: AdminView[];
     boldLabel?: boolean;
 }
 
 export const ADMIN_NAV_ITEMS: NavItem[] = [
-    { view: "dashboard", label: "Overview", icon: Layers },
-    { view: "categories", label: "Categories", icon: Folder },
-    { view: "products", label: "Products", icon: Package },
-    { view: "inventory", label: "Inventory", icon: Layers },
-    {
-        view: "saved_quotations",
-        label: "Quotation",
-        icon: FileText,
-        matches: ["saved_quotations", "create_quotation", "quotation_products"],
-        boldLabel: true,
-    },
-    { view: "orders", label: "Orders", icon: ShoppingBag },
-    { view: "users", label: "User & Staff", icon: Users },
-    { view: "messages", label: "Messages", icon: Mail },
-    { view: "coupons", label: "Coupons", icon: Ticket },
-    { view: "schedule_mail", label: "Schedule Mail", icon: Calendar },
-    { view: "contacts", label: "Contacts", icon: Users },
-    { view: "leads", label: "Lead", icon: Activity },
-    { view: "clients", label: "Client", icon: Users },
-    { view: "company", label: "Company", icon: Building2 },
-    { view: "blogs", label: "Blogs", icon: Edit },
-    { view: "settings", label: "Site Settings", icon: Settings },
-    { view: "dynamic_routes", label: "Dynamic Routes", icon: Activity },
+    { href: "/admin", label: "Overview", icon: Layers },
+    { href: "/admin/categories", label: "Categories", icon: Folder },
+    { href: "/admin/products", label: "Products", icon: Package },
+    { href: "/admin/inventory", label: "Inventory", icon: Layers },
+    { href: "/admin/quotation-products", label: "Quotation Products", icon: FileText },
+    { href: "/admin/create-quotation", label: "Create Quotation", icon: FileText },
+    { href: "/admin/saved-quotations", label: "Saved Quotations", icon: FileText },
+    { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
+    { href: "/admin/users", label: "User & Staff", icon: Users },
+    { href: "/admin/messages", label: "Messages", icon: Mail },
+    { href: "/admin/coupons", label: "Coupons", icon: Ticket },
+    { href: "/admin/schedule-mail", label: "Schedule Mail", icon: Calendar },
+    { href: "/admin/contacts", label: "Contacts", icon: Users },
+    { href: "/admin/leads", label: "Lead", icon: Activity },
+    { href: "/admin/clients", label: "Client", icon: Users },
+    { href: "/admin/company", label: "Company", icon: Building2 },
+    { href: "/admin/blogs", label: "Blogs", icon: Edit },
+    { href: "/admin/settings", label: "Site Settings", icon: Settings },
+    { href: "/admin/dynamic-routes", label: "Dynamic Routes", icon: Activity },
 ];
 
+// Is this nav item the active one for the given pathname? "/admin" only matches
+// exactly (it's the dashboard index); every other item matches its own subtree too.
+export function isNavItemActive(href: string, pathname: string | null): boolean {
+    if (!pathname) return false;
+    if (href === "/admin") return pathname === "/admin";
+    return pathname === href || pathname.startsWith(href + "/");
+}
+
 interface SidebarProps {
-    activeView: AdminView;
-    onViewChange: (view: AdminView) => void;
     collapsed: boolean;
     onToggleCollapsed: () => void;
 }
 
-export default function Sidebar({ activeView, onViewChange, collapsed, onToggleCollapsed }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggleCollapsed }: SidebarProps) {
+    const pathname = usePathname();
+
     return (
         <aside
             className={`fixed top-0 left-0 z-40 h-screen pt-24 transition-all duration-300 bg-white border-r border-slate-200 dark:bg-slate-800 dark:border-slate-700 ${collapsed ? "w-20" : "w-64"} -translate-x-full md:translate-x-0`}
@@ -98,12 +81,12 @@ export default function Sidebar({ activeView, onViewChange, collapsed, onToggleC
 
             <div className="h-full px-3 py-4 overflow-y-auto overflow-x-hidden bg-white dark:bg-slate-800 scrollbar-hide">
                 <ul className="space-y-2 font-medium">
-                    {ADMIN_NAV_ITEMS.map(({ view, label, icon: Icon, matches, boldLabel }) => {
-                        const isActive = matches ? matches.includes(activeView) : activeView === view;
+                    {ADMIN_NAV_ITEMS.map(({ href, label, icon: Icon, boldLabel }) => {
+                        const isActive = isNavItemActive(href, pathname);
                         return (
-                            <li key={view}>
-                                <button
-                                    onClick={() => onViewChange(view)}
+                            <li key={href}>
+                                <Link
+                                    href={href}
                                     title={collapsed ? label : undefined}
                                     className={`w-full flex items-center p-2 rounded-lg group cursor-pointer ${isActive
                                             ? "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400"
@@ -117,7 +100,7 @@ export default function Sidebar({ activeView, onViewChange, collapsed, onToggleC
                                     >
                                         {label}
                                     </span>
-                                </button>
+                                </Link>
                             </li>
                         );
                     })}

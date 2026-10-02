@@ -3,13 +3,13 @@
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Sun, Moon, ShoppingBag, ChevronRight, User, LogOut, ChevronDown, Package, Settings, FileText, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LoadingBar from "./LoadingBar";
 import { SITE_CONFIG } from "@/lib/constants";
-import { ADMIN_NAV_ITEMS } from "../admin/components/Sidebar";
+import { ADMIN_NAV_ITEMS, isNavItemActive } from "../admin/components/Sidebar";
 import { useAuth } from "../_context/AuthContext";
 import { useCart } from "../_context/CartContext";
 import { useDynamicRoutes } from "../_context/RouteContext";
@@ -28,32 +28,14 @@ export default function Navbar() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [currentHash, setCurrentHash] = useState("");
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
 
-  const ADMIN_VIEW_TITLES: Record<string, string> = {
-    dashboard: "Overview",
-    categories: "Categories",
-    products: "Products",
-    inventory: "Inventory",
-    saved_quotations: "Saved Quotations",
-    create_quotation: "Create Quotation",
-    quotation_products: "Quotation Catalog",
-    orders: "Orders",
-    users: "User & Staff",
-    messages: "Messages",
-    coupons: "Coupons",
-    schedule_mail: "Schedule Mail",
-    contacts: "Contacts",
-    leads: "Leads",
-    clients: "Clients",
-    company: "Company",
-    blogs: "Blogs",
-    settings: "Site Settings",
-    dynamic_routes: "Dynamic Routes",
-  };
+  // Longest-href-first so a nested route (e.g. /admin/coupons/new) matches its
+  // closest ancestor nav item (/admin/coupons) rather than a shorter unrelated one.
   const activeAdminTitle = pathname?.startsWith('/admin')
-    ? ADMIN_VIEW_TITLES[searchParams?.get('view') || 'dashboard']
+    ? [...ADMIN_NAV_ITEMS]
+        .sort((a, b) => b.href.length - a.href.length)
+        .find((item) => isNavItemActive(item.href, pathname))?.label
     : undefined;
 
 
@@ -432,17 +414,16 @@ export default function Navbar() {
 
               <div className="flex flex-col p-4 gap-2 overflow-y-auto scrollbar-hide">
                 {pathname?.startsWith('/admin') && user?.role === 'admin' ? (
-                  ADMIN_NAV_ITEMS.map(({ view, label, icon: Icon, matches }) => {
-                    const currentView = searchParams?.get('view') || 'dashboard';
-                    const isActiveView = matches ? matches.includes(currentView as any) : currentView === view;
+                  ADMIN_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+                    const isActiveItem = isNavItemActive(href, pathname);
                     return (
                       <Link
-                        key={view}
-                        href={`/admin?view=${view}`}
+                        key={href}
+                        href={href}
                         onClick={() => setMenuOpen(false)}
                         className={cn(
                           "flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer",
-                          isActiveView
+                          isActiveItem
                             ? "bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 font-semibold"
                             : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                         )}

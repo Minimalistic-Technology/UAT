@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../../../_context/AuthContext";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, Save, RefreshCw } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "../../../_context/ToastContext";
@@ -13,9 +12,7 @@ interface Product {
 }
 
 const NewCouponPage = () => {
-    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const pathname = usePathname();
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [products, setProducts] = useState<Product[]>([]);
@@ -34,16 +31,9 @@ const NewCouponPage = () => {
     });
 
     useEffect(() => {
-        if (!authLoading) {
-            if (!user) {
-                router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
-            } else if (user.role !== "admin") {
-                router.push("/");
-            } else {
-                fetchProducts();
-            }
-        }
-    }, [user, authLoading, router, pathname]);
+        fetchProducts();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const fetchProducts = async () => {
         setLoadingProducts(true);
@@ -100,17 +90,8 @@ const NewCouponPage = () => {
         });
     };
 
-    if (authLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-                <Loader2 className="animate-spin text-teal-600 size-10" />
-            </div>
-        );
-    }
-
     return (
-        <section className="min-h-screen pt-24 px-6 md:px-12 bg-slate-50 dark:bg-slate-900 pb-12">
-            <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto">
                 <div className="mb-6">
                     <button
                         onClick={() => router.back()}
@@ -281,7 +262,6 @@ const NewCouponPage = () => {
                     </form>
                 </div>
             </div>
-        </section>
     );
 };
 

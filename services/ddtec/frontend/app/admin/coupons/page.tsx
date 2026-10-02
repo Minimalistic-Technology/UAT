@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../../_context/AuthContext";
-import { useRouter, usePathname } from "next/navigation";
-import { Loader2, Trash2, Plus, Tag, ArrowLeft, Edit } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Loader2, Trash2, Plus, Tag, Edit } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "../components/ToggleSwitch";
 import { useToast } from "../../_context/ToastContext";
@@ -24,28 +23,16 @@ interface Coupon {
 }
 
 const CouponsPage = () => {
-    const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const pathname = usePathname();
     const { showToast } = useToast();
     const confirm = useConfirm();
     const [coupons, setCoupons] = useState<Coupon[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!authLoading) {
-            if (!user) {
-                // No session: let the login page bounce us back here afterwards.
-                // (If this was a session expiry, AuthContext's global handler already
-                // redirects to /login with this same destination and shows a toast.)
-                router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
-            } else if (user.role !== "admin") {
-                router.push("/");
-            } else {
-                fetchCoupons();
-            }
-        }
-    }, [user, authLoading, router, pathname]);
+        fetchCoupons();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const fetchCoupons = async () => {
         try {
@@ -84,26 +71,19 @@ const CouponsPage = () => {
         }
     };
 
-    if (authLoading || loading) {
+    if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+            <div className="flex items-center justify-center py-24">
                 <Loader2 className="animate-spin text-teal-600 size-10" />
             </div>
         );
     }
 
     return (
-        <section className="min-h-screen pt-24 px-6 md:px-12 bg-slate-50 dark:bg-slate-900">
-            <div className="max-w-7xl mx-auto">
-                <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <button
-                            onClick={() => router.push('/admin')}
-                            className="flex items-center gap-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-2 transition-colors"
-                        >
-                            <ArrowLeft className="size-4" /> Back to Dashboard
-                        </button>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+        <div className="max-w-7xl mx-auto">
+            <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
                             <Tag className="size-8 text-teal-600" />
                             Manage Coupons
                         </h1>
@@ -206,7 +186,6 @@ const CouponsPage = () => {
                     </div>
                 </div>
             </div>
-        </section>
     );
 };
 

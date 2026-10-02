@@ -104,7 +104,7 @@ export default function SavedQuotationsPage() {
     };
 
     const handleCreateSimilar = (id: string) => {
-        router.push(`/admin?view=create_quotation&load=${id}`);
+        router.push(`/admin/create-quotation?load=${id}`);
     };
 
     const handleDuplicate = async (id: string) => {
@@ -192,7 +192,7 @@ export default function SavedQuotationsPage() {
 
     const handleCreateNewClick = (e: React.MouseEvent) => {
         e.preventDefault();
-        router.push("/admin?view=create_quotation");
+        router.push("/admin/create-quotation");
     };
 
     return (
