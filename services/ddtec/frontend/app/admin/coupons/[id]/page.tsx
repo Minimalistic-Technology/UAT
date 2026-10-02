@@ -5,6 +5,9 @@ import { useRouter, useParams } from "next/navigation";
 import { Loader2, ArrowLeft, Save, RefreshCw } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "../../../_context/ToastContext";
+import { countWords, limitWords } from "@/lib/utils";
+
+const COUPON_DESCRIPTION_MAX_WORDS = 100;
 
 interface Product {
     _id: string;
@@ -174,10 +177,13 @@ const EditCouponPage = () => {
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Description</label>
                             <textarea
                                 value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                onChange={(e) => setFormData({ ...formData, description: limitWords(e.target.value, COUPON_DESCRIPTION_MAX_WORDS) })}
                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none resize-none h-20"
                                 placeholder="Internal note or description..."
                             />
+                            <p className={`text-xs mt-1 text-right ${countWords(formData.description) >= COUPON_DESCRIPTION_MAX_WORDS ? 'text-red-500 font-semibold' : 'text-slate-400'}`}>
+                                {countWords(formData.description)}/{COUPON_DESCRIPTION_MAX_WORDS} words
+                            </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

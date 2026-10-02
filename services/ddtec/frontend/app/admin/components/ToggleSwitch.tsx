@@ -8,11 +8,12 @@ interface ToggleSwitchProps {
     onToggle: () => void;
     label?: string;
     description?: string;
+    title?: string;
 }
 
-const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ isOn, onToggle, label, description }) => {
+const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ isOn, onToggle, label, description, title }) => {
     return (
-        <div className={`flex justify-between gap-3 pointer-events-auto cursor-pointer ${description ? 'items-start' : 'items-center'}`} onClick={onToggle}>
+        <div className={`flex justify-between gap-3 pointer-events-auto cursor-pointer ${description ? 'items-start' : 'items-center'}`} onClick={onToggle} title={title}>
             {(label || description) && (
                 <div className="min-w-0 flex-1">
                     {label && <div className="font-medium text-slate-900 dark:text-white">{label}</div>}

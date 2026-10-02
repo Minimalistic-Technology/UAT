@@ -42,6 +42,7 @@ export interface IProduct extends Document {
     packUnit?: string; // e.g. "Box", "Carton", "Piece"
     unitSize?: number; // e.g. 0.10 (as in "0.10 Liter")
     unitMeasure?: string; // e.g. "Liter", "ml", "Kg", "gram"
+    highlights: Array<{ icon: string; title: string; description: string; color: string }>;
 }
 
 const ProductSchema: Schema = new Schema({
@@ -90,7 +91,18 @@ const ProductSchema: Schema = new Schema({
             name: { type: String },
             rate: { type: Number }
         }
-    ]
+    ],
+    highlights: {
+        type: [
+            {
+                icon: { type: String, default: 'ShieldCheck' },
+                title: { type: String, required: true },
+                description: { type: String, default: '' },
+                color: { type: String, default: 'teal' }
+            }
+        ],
+        default: []
+    }
 }, { timestamps: true });
 
 export default mongoose.model<IProduct>('Product', ProductSchema);

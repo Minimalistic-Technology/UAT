@@ -198,7 +198,7 @@ export default function Navbar() {
       >
         <nav className={cn("px-4 md:px-6 h-16 flex items-center justify-between relative", (pathname?.startsWith('/admin') || pathname?.startsWith('/warehouse')) ? "w-full" : "container mx-auto")}>
 
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href={user?.role === "admin" ? "/admin" : "/"} className="flex items-center gap-2 group">
             <div className="size-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold shadow-lg shadow-teal-500/20 group-hover:shadow-teal-500/40 transition-all">
               {SITE_CONFIG.logoLetter}
             </div>

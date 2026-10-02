@@ -18,7 +18,6 @@ import {
     X,
     Maximize2,
     MessageCircle,
-    Clock,
     Calendar,
     RefreshCw,
     Copy,
@@ -40,6 +39,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
 import { SITE_CONFIG, buildWhatsAppLink, buildWhatsAppShareLink } from "@/lib/constants";
+import { DEFAULT_HIGHLIGHTS, getHighlightIcon, getHighlightColorClasses } from "@/lib/productHighlights";
 import { useDynamicRoutes } from "../../_context/RouteContext";
 import DeliveryPincodeChecker from "../../_components/DeliveryPincodeChecker";
 
@@ -77,6 +77,7 @@ interface Product {
     allowedCourierPartners?: string[];
     customDeliveryEstimate?: string;
     codAvailable?: boolean;
+    highlights?: { icon: string; title: string; description: string; color: string }[];
     createdAt?: string;
     updatedAt?: string;
 }
@@ -786,17 +787,25 @@ export default function ProductDetailsPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-                                    <div className="p-4 rounded-2xl bg-teal-50/50 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-900/50 flex items-start gap-3">
-                                        <div className="p-2.5 bg-teal-600 text-white rounded-xl">
-                                            <ShieldCheck className="size-5" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-slate-900 dark:text-white text-sm">Original Guarantee</h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">100% genuine product sourced directly from brand manufacturer.</p>
-                                        </div>
-                                    </div>
+                                    {(product.highlights && product.highlights.length > 0 ? product.highlights : DEFAULT_HIGHLIGHTS).map((h: any, idx: number) => {
+                                        const HighlightIcon = getHighlightIcon(h.icon);
+                                        const colors = getHighlightColorClasses(h.color);
+                                        return (
+                                            <div key={idx} className={`p-4 rounded-2xl flex items-start gap-3 ${colors.card}`}>
+                                                <div className={`p-2.5 text-white rounded-xl ${colors.iconBg}`}>
+                                                    <HighlightIcon className="size-5" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm">{h.title}</h4>
+                                                    {h.description && (
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{h.description}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
 
-                                    {isDigital ? (
+                                    {isDigital && (
                                         <div className="p-4 rounded-2xl bg-violet-50/50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/50 flex items-start gap-3">
                                             <div className="p-2.5 bg-violet-600 text-white rounded-xl">
                                                 <Download className="size-5" />
@@ -806,27 +815,7 @@ export default function ProductDetailsPage() {
                                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">No physical shipping — access is delivered instantly after purchase.</p>
                                             </div>
                                         </div>
-                                    ) : (
-                                        <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 flex items-start gap-3">
-                                            <div className="p-2.5 bg-blue-600 text-white rounded-xl">
-                                                <Truck className="size-5" />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Express Shipping</h4>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Fast doorstep delivery within 3-5 business days.</p>
-                                            </div>
-                                        </div>
                                     )}
-
-                                    <div className="p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 flex items-start gap-3">
-                                        <div className="p-2.5 bg-amber-600 text-white rounded-xl">
-                                            <Clock className="size-5" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-slate-900 dark:text-white text-sm">Real-time Stock</h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Inventory and price updated live in real time.</p>
-                                        </div>
-                                    </div>
 
                                     {!isReturnable && (
                                         <div className="p-4 rounded-2xl bg-rose-50/50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/50 flex items-start gap-3">

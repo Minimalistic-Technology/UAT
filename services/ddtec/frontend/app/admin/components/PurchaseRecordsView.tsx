@@ -242,6 +242,26 @@ export default function PurchaseRecordsView({
         reader.readAsDataURL(file);
     };
 
+    // Handle Product Image Upload to Base64 Data URL (for new-product creation)
+    const handleProductImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('File size must be under 10MB', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+                setFormData(prev => ({ ...prev, image: reader.result as string }));
+                showToast('Product image uploaded successfully', 'success');
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
     // Handle Form Submit (Create or Update)
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -435,7 +455,7 @@ export default function PurchaseRecordsView({
 
                 <button
                     onClick={handleOpenCreateModal}
-                    className="w-full md:w-auto bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2"
+                    className="cursor-pointer w-full md:w-auto bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md hover:shadow-teal-500/20 transition-all flex items-center justify-center gap-2"
                 >
                     <Plus className="size-4" /> Add Inventory Record / Purchase
                 </button>
@@ -533,7 +553,7 @@ export default function PurchaseRecordsView({
                                         {record.billScreenshot ? (
                                             <button
                                                 onClick={() => setViewingScreenshot(record.billScreenshot!)}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 font-semibold text-[11px] hover:bg-teal-100 transition-colors border border-teal-200/40"
+                                                className="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 font-semibold text-[11px] hover:bg-teal-100 transition-colors border border-teal-200/40"
                                             >
                                                 <Eye className="size-3.5" /> View Bill
                                             </button>
@@ -548,14 +568,14 @@ export default function PurchaseRecordsView({
                                         <div className="flex items-center gap-1.5 ml-auto">
                                             <button
                                                 onClick={() => handleOpenEditModal(record)}
-                                                className="p-1.5 text-slate-600 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                                className="cursor-pointer p-1.5 text-slate-600 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                                                 title="Edit record"
                                             >
                                                 <Edit className="size-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteRecord(record._id, record.productName)}
-                                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                                                className="cursor-pointer p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
                                                 title="Delete record"
                                             >
                                                 <Trash2 className="size-4" />
@@ -599,7 +619,7 @@ export default function PurchaseRecordsView({
                             </div>
                             <button
                                 onClick={() => setIsAddModalOpen(false)}
-                                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                className="cursor-pointer p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                             >
                                 <X className="size-5" />
                             </button>
@@ -613,14 +633,14 @@ export default function PurchaseRecordsView({
                                     <button
                                         type="button"
                                         onClick={() => setIsNewProductMode(false)}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${!isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                                        className={`cursor-pointer px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${!isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
                                     >
                                         Restock Existing Product
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setIsNewProductMode(true)}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                                        className={`cursor-pointer px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
                                     >
                                         + Create New Product
                                     </button>
@@ -631,7 +651,7 @@ export default function PurchaseRecordsView({
                             {!isNewProductMode && !editingRecord ? (
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                        Select Target Product *
+                                        Select Target Product <span className="text-red-500">*</span>
                                     </label>
                                     <select
                                         required
@@ -659,7 +679,7 @@ export default function PurchaseRecordsView({
                                 <div className="space-y-3 p-4 bg-teal-50/50 dark:bg-teal-950/20 rounded-2xl border border-teal-100 dark:border-teal-900/30">
                                     <span className="text-xs font-bold text-teal-700 dark:text-teal-400 block mb-2">New Product Details</span>
                                     <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Product Name *</label>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Product Name <span className="text-red-500">*</span></label>
                                         <input
                                             required
                                             type="text"
@@ -694,14 +714,46 @@ export default function PurchaseRecordsView({
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Product Image URL</label>
-                                        <input
-                                            type="text"
-                                            value={formData.image}
-                                            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            placeholder="https://example.com/product.jpg"
-                                        />
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Product Image</label>
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                            <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-700/60 border border-dashed border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all">
+                                                <Upload className="size-4 text-teal-600" /> Upload Image File
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleProductImageUpload}
+                                                    className="hidden"
+                                                />
+                                            </label>
+
+                                            <div className="flex-1">
+                                                <input
+                                                    type="text"
+                                                    value={formData.image}
+                                                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                                                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                                    placeholder="Or paste image URL (https://...)"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {formData.image && (
+                                            <div className="mt-2 relative inline-block group">
+                                                <img
+                                                    src={formData.image}
+                                                    alt="Product Image Preview"
+                                                    className="h-24 max-w-full rounded-xl border border-slate-200 dark:border-slate-700 object-cover shadow-xs"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, image: '' })}
+                                                    className="cursor-pointer absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                                                    title="Remove image"
+                                                >
+                                                    <X className="size-3" />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
@@ -789,7 +841,7 @@ export default function PurchaseRecordsView({
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                        Seller / Supplier Name *
+                                        Seller / Supplier Name <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         required
@@ -822,7 +874,7 @@ export default function PurchaseRecordsView({
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                        Quantity Added *
+                                        Quantity Added <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         required
@@ -922,7 +974,7 @@ export default function PurchaseRecordsView({
                                         <button
                                             type="button"
                                             onClick={() => setFormData({ ...formData, billScreenshot: '' })}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                                            className="cursor-pointer absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
                                             title="Remove screenshot"
                                         >
                                             <X className="size-3" />
@@ -950,14 +1002,14 @@ export default function PurchaseRecordsView({
                                 <button
                                     type="button"
                                     onClick={() => setIsAddModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                    className="cursor-pointer px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-md hover:shadow-teal-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                                    className="cursor-pointer bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-md hover:shadow-teal-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isSubmitting ? (
                                         <>
@@ -994,13 +1046,13 @@ export default function PurchaseRecordsView({
                                     href={viewingScreenshot}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-xs text-teal-400 hover:underline mr-2"
+                                    className="cursor-pointer text-xs text-teal-400 hover:underline mr-2"
                                 >
                                     Open original link
                                 </a>
                                 <button
                                     onClick={() => setViewingScreenshot(null)}
-                                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                                    className="cursor-pointer p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                                 >
                                     <X className="size-5" />
                                 </button>

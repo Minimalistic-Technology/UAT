@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import Product from '../models/Product';
+import Coupon from '../models/Coupon';
 import Hub from '../models/Hub';
 import WarehouseStock from '../models/WarehouseStock';
 import redisClient from '../config/redis';
+import cloudinary from '../config/cloudinary';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 const STAFF_ROLES = ['super_admin', 'admin', 'product_manager', 'order_manager', 'customer_support', 'finance', 'marketing', 'warehouse'];
@@ -46,6 +48,52 @@ const normalizeToStringArray = (value: unknown): string[] => {
 const extractUploadedImageUrls = (req: Request): string[] => {
     const files = (req.files as Express.Multer.File[]) || [];
     return files.map(f => (f as any).path || (f as any).secure_url).filter(Boolean);
+};
+
+// Pulls the Cloudinary public_id (e.g. "products/abc123") out of a secure_url so it can be
+// passed to uploader.destroy. Returns null for anything not actually hosted on Cloudinary
+// (e.g. a manually-pasted external image URL), which must never be sent to destroy().
+const extractCloudinaryPublicId = (url: string): string | null => {
+    if (!url || !url.includes('res.cloudinary.com')) return null;
+    const afterUpload = url.split('/upload/')[1];
+    if (!afterUpload) return null;
+    const withoutVersion = afterUpload.replace(/^v\d+\//, '');
+    const withoutExtension = withoutVersion.replace(/\.[a-zA-Z0-9]+$/, '');
+    return withoutExtension || null;
+};
+
+// Best-effort delete of Cloudinary-hosted product images; failures are logged, not thrown,
+// so a Cloudinary outage never blocks the product delete/update itself.
+const deleteCloudinaryImages = async (urls: string[]) => {
+    const publicIds = Array.from(new Set(urls.map(extractCloudinaryPublicId).filter((id): id is string => Boolean(id))));
+    if (!publicIds.length) return;
+    await Promise.all(publicIds.map(async (id) => {
+        try {
+            await cloudinary.uploader.destroy(id);
+        } catch (err) {
+            console.error(`Failed to delete Cloudinary image "${id}":`, err);
+        }
+    }));
+};
+
+// `highlights` arrives as a JSON-encoded string (multipart forms can't carry nested
+// objects natively); fall back to [] for anything missing/unparsable/malformed.
+const parseHighlights = (value: unknown): Array<{ icon: string; title: string; description: string; color: string }> => {
+    if (value === undefined || value === null || value === '') return [];
+    try {
+        const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+            .filter((h) => h && typeof h.title === 'string' && h.title.trim())
+            .map((h) => ({
+                icon: typeof h.icon === 'string' && h.icon.trim() ? h.icon.trim() : 'ShieldCheck',
+                title: String(h.title).trim(),
+                description: typeof h.description === 'string' ? h.description.trim() : '',
+                color: typeof h.color === 'string' && h.color.trim() ? h.color.trim() : 'teal'
+            }));
+    } catch {
+        return [];
+    }
 };
 
 export const getProducts = async (req: Request, res: Response) => {
@@ -160,8 +208,9 @@ export const createProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow, seller } = req.body;
         const allowedCourierPartners = normalizeToStringArray(req.body.allowedCourierPartners);
+        const highlights = parseHighlights(req.body.highlights);
 
         // Combine manually entered image URLs (`imageUrls`) with newly uploaded files,
         // uploaded to Cloudinary by `uploadProductImagesMiddleware` above this handler.
@@ -206,7 +255,9 @@ export const createProduct = async (req: Request, res: Response) => {
             unitSize: unitSize || 0,
             unitMeasure: unitMeasure || '',
             showAddToCart: showAddToCart !== undefined ? showAddToCart !== 'false' && showAddToCart !== false : true,
-            showBuyNow: showBuyNow !== undefined ? showBuyNow !== 'false' && showBuyNow !== false : true
+            showBuyNow: showBuyNow !== undefined ? showBuyNow !== 'false' && showBuyNow !== false : true,
+            seller: seller || '',
+            highlights
         });
 
         const product = await newProduct.save();
@@ -228,7 +279,7 @@ export const updateProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow, seller } = req.body;
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -243,6 +294,9 @@ export const updateProduct = async (req: Request, res: Response) => {
         const imagesSubmitted = req.body.imagesFieldPresent === 'true' || uploadedImageUrls.length > 0;
         if (imagesSubmitted) {
             const allImages = [...manualImageUrls, ...uploadedImageUrls];
+            const previousImages = [...(product.images || []), product.image].filter(Boolean);
+            const removedImages = previousImages.filter((url) => !allImages.includes(url));
+            await deleteCloudinaryImages(removedImages);
             product.images = allImages;
             product.image = allImages[0] || '';
         } else if (images !== undefined) {
@@ -260,6 +314,7 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.lastMonthSales = req.body.lastMonthSales !== undefined ? req.body.lastMonthSales : product.lastMonthSales;
         product.brand = brand || product.brand;
         product.modelName = modelName || product.modelName;
+        product.seller = seller !== undefined ? seller : product.seller;
         product.couponCode = couponCode !== undefined ? couponCode : product.couponCode;
         product.discountPercentage = discountPercentage !== undefined ? discountPercentage : product.discountPercentage;
         product.discountType = discountType || product.discountType;
@@ -286,6 +341,9 @@ export const updateProduct = async (req: Request, res: Response) => {
             const allowedCourierPartners = normalizeToStringArray(req.body.allowedCourierPartners);
             product.allowedCourierPartners = allowedCourierPartners.length ? allowedCourierPartners : ['BLUEDART', 'DTDC'];
         }
+        if (req.body.highlights !== undefined) {
+            product.highlights = parseHighlights(req.body.highlights);
+        }
 
         await product.save();
 
@@ -301,16 +359,35 @@ export const updateProduct = async (req: Request, res: Response) => {
 
 export const deleteProduct = async (req: Request, res: Response) => {
     try {
-        const product = await Product.findByIdAndDelete(req.params.id);
+        const product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
 
-        // Optional: Delete associated coupon?
-        // await Coupon.deleteOne({ code: product.couponCode, type: 'product-specific' });
+        // Find every coupon that references this product before it's gone, so we can pull
+        // the reference out rather than leave coupons pointing at a deleted product.
+        const linkedCoupons = await Coupon.find({ applicableProducts: product._id });
+
+        await Product.findByIdAndDelete(req.params.id);
+
+        const affectedCoupons: { code: string; deactivated: boolean }[] = [];
+        for (const coupon of linkedCoupons) {
+            coupon.applicableProducts = coupon.applicableProducts.filter(
+                (id) => id.toString() !== (product._id as any).toString()
+            );
+            // A `type: 'product'` coupon with no applicable products left can never validate
+            // against a cart (see validateCoupon) — deactivate it instead of leaving a
+            // silently-dead coupon active in the admin's coupon list.
+            const deactivated = coupon.type === 'product' && coupon.applicableProducts.length === 0;
+            if (deactivated) coupon.isActive = false;
+            await coupon.save();
+            affectedCoupons.push({ code: coupon.code, deactivated });
+        }
+
+        await deleteCloudinaryImages([...(product.images || []), product.image].filter(Boolean));
 
         // 4. INVALIDATE CACHE: Product deleted, wipe old list!
         await clearProductCache();
 
-        res.json({ msg: 'Product removed' });
+        res.json({ msg: 'Product removed', affectedCoupons });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
