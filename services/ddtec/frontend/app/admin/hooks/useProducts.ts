@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import api from "@/lib/api";
+import { ProductHighlight } from "@/lib/productHighlights";
 
 export interface Product {
     _id: string;
@@ -44,6 +45,7 @@ export interface Product {
     createdAt?: string;
     updatedAt?: string;
     couponDetails?: any[];
+    highlights?: ProductHighlight[];
 }
 
 export function useProducts() {
@@ -55,7 +57,7 @@ export function useProducts() {
         setLoadingProducts(true);
         try {
             const [productsRes, couponsRes] = await Promise.all([
-                api.get('/products'),
+                api.get('/products?includeInactive=true'),
                 api.get('/coupons')
             ]);
 

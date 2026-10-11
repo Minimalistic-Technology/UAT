@@ -32,6 +32,7 @@ interface Product {
     modelName?: string;
     showAddToCart?: boolean;
     showBuyNow?: boolean;
+    isActive?: boolean;
 }
 
 // Helper to get all descendant category IDs (recursive)
@@ -166,7 +167,8 @@ export default function ShopSection() {
                 api.get('/products'),
                 api.get('/categories')
             ]);
-            setProducts(productsRes.data);
+            const activeProducts = (productsRes.data || []).filter((p: any) => p.isActive !== false);
+            setProducts(activeProducts);
             setCategories(categoriesRes.data);
         } catch (error) {
             console.error("Failed to fetch data", error);
@@ -318,7 +320,7 @@ export default function ShopSection() {
 
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Sidebar Filters */}
-                    <aside className="w-full lg:w-64 flex-shrink-0 space-y-8">
+                    <aside className="w-full lg:w-64 flex-0 space-y-8">
                         <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                                 <Filter className="size-5 text-teal-600" />

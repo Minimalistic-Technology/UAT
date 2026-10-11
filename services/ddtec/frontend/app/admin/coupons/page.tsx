@@ -76,7 +76,7 @@ const CouponsPage = () => {
     const fetchProducts = async () => {
         setLoadingProducts(true);
         try {
-            const res = await api.get('/products');
+            const res = await api.get('/products?includeInactive=true');
             setProducts(res.data);
         } catch (error) {
             console.error("Failed to fetch products", error);

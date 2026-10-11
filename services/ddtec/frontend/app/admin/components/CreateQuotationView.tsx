@@ -256,7 +256,7 @@ export default function CreateQuotationView() {
         try {
             const [quotationItemsRes, mainProductsRes] = await Promise.all([
                 api.get("/quotation-items/all").catch(() => ({ data: [] })),
-                api.get("/products").catch(() => ({ data: [] }))
+                api.get("/products?includeInactive=true").catch(() => ({ data: [] }))
             ]);
 
             const list: CatalogItem[] = [];

@@ -663,7 +663,7 @@ export default function ProductsPage() {
             showDeliveryChecker: (product as any).showDeliveryChecker !== false,
             allowedCourierPartners: (product as any).allowedCourierPartners?.length ? (product as any).allowedCourierPartners : ["BLUEDART", "DTDC"],
             customDeliveryEstimate: (product as any).customDeliveryEstimate || "",
-            highlights: ((product as any).highlights?.length ? (product as any).highlights : DEFAULT_HIGHLIGHTS).map((h: ProductHighlight) => ({ ...h }))
+            highlights: (((product as any).highlights !== undefined && (product as any).highlights !== null) ? (product as any).highlights : DEFAULT_HIGHLIGHTS).map((h: ProductHighlight) => ({ ...h }))
         });
         setEditProductImageDraft("");
         setEditProductImageFiles([]);

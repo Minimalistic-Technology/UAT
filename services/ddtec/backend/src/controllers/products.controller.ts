@@ -72,17 +72,16 @@ const parseHighlights = (value: unknown): Array<{ icon: string; title: string; d
 
 export const getProducts = async (req: Request, res: Response) => {
     try {
-        const { showOnHome, pincode } = req.query;
+        const { showOnHome, pincode, includeInactive } = req.query;
         const staffRequest = isStaffRequest(req);
+        const shouldIncludeInactive = staffRequest && includeInactive === 'true';
 
         let cacheKey = showOnHome === 'true' ? 'products:home' : 'products:all';
         if (pincode) cacheKey = `products:pin:${pincode}:${showOnHome || 'all'}`;
 
-        // Staff (admin/product manager/etc.) must always see the live, unfiltered catalog —
-        // including inactive products — for management, so skip the shared public cache
-        // entirely for them (both read and write) rather than risk it serving inactive
-        // products to shoppers or a stale filtered list back to staff.
-        if (!staffRequest) {
+        // Only management endpoints explicitly requesting inactive products skip the public cache.
+        // Public storefront requests (even from logged-in staff browsing the store) use the cache.
+        if (!shouldIncludeInactive) {
             // 1. CACHE CHECK: Ask Redis first (Takes <1ms)
             try {
                 const cachedProducts = await redisClient.get(cacheKey);
@@ -99,7 +98,7 @@ export const getProducts = async (req: Request, res: Response) => {
         if (showOnHome === 'true') {
             filter.showOnHome = true;
         }
-        if (!staffRequest) {
+        if (!shouldIncludeInactive) {
             filter.isActive = true;
         }
 
@@ -138,8 +137,8 @@ export const getProducts = async (req: Request, res: Response) => {
             }
         }
 
-        // 4. STORE IN CACHE (public/active-only results only — see note above)
-        if (!staffRequest) {
+        // 4. STORE IN CACHE (public/active-only results only)
+        if (!shouldIncludeInactive) {
             try {
                 await redisClient.set(cacheKey, JSON.stringify(products), 'EX', 1800); // 30 min cache for local stock
             } catch (e) { }
@@ -317,6 +316,7 @@ export const updateProduct = async (req: Request, res: Response) => {
         }
         if (req.body.highlights !== undefined) {
             product.highlights = parseHighlights(req.body.highlights);
+            product.markModified('highlights');
         }
 
         await product.save();

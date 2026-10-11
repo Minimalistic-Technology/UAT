@@ -113,7 +113,7 @@ const QuotationProductsView = () => {
 
     const fetchCatalogProducts = async () => {
         try {
-            const { data } = await api.get('/products');
+            const { data } = await api.get('/products?includeInactive=true');
             setCatalogProducts(data);
         } catch (error) {
             console.error('Failed to fetch products', error);

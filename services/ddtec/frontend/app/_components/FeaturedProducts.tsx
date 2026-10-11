@@ -18,6 +18,9 @@ interface Product {
     numReviews: number;
     lastMonthSales: number;
     stock: number;
+    isActive?: boolean;
+    showAddToCart?: boolean;
+    showBuyNow?: boolean;
 }
 
 export default function FeaturedProducts() {
@@ -31,7 +34,7 @@ export default function FeaturedProducts() {
         const fetchFeaturedProducts = async () => {
             try {
                 const res = await api.get("/products");
-                const allProducts: Product[] = res.data || [];
+                const allProducts: Product[] = (res.data || []).filter((p: any) => p.isActive !== false);
                 // Sort by lastMonthSales or rating to find top featured products
                 const featured = [...allProducts]
                     .sort((a, b) => (b.lastMonthSales || 0) + (b.rating || 0) - ((a.lastMonthSales || 0) + (a.rating || 0)))
@@ -52,6 +55,12 @@ export default function FeaturedProducts() {
 
     const nextSlide = () => {
         setCurrentIndex((prev) => (prev >= products.length - 3 ? 0 : prev + 1));
+    };
+
+    const handleBuyNow = async (e: React.MouseEvent, productId: string) => {
+        e.stopPropagation();
+        await addToCart(productId);
+        router.push("/checkout");
     };
 
     if (loading) {
@@ -155,21 +164,40 @@ export default function FeaturedProducts() {
                                         <span className="text-xs text-slate-500">({product.numReviews || 12} reviews)</span>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); addToCart(product._id); }}
-                                            disabled={product.stock === 0}
-                                            className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-50"
-                                        >
-                                            <ShoppingBag className="size-3.5" /> Add
-                                        </button>
-                                        <Link
-                                            href={`/product/${product._id}`}
-                                            className="py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 text-center shadow-lg shadow-teal-600/20"
-                                        >
-                                            <Search className="size-3.5" /> View
-                                        </Link>
-                                    </div>
+                                    {(() => {
+                                        const canAdd = product.showAddToCart !== false;
+                                        const canBuy = product.showBuyNow !== false;
+                                        const hasAction = canAdd || canBuy;
+
+                                        return (
+                                            <div className={`grid gap-2 ${hasAction ? "grid-cols-2" : "grid-cols-1"}`}>
+                                                {canAdd ? (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); addToCart(product._id); }}
+                                                        disabled={product.stock === 0}
+                                                        className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                                    >
+                                                        <ShoppingBag className="size-3.5" /> Add
+                                                    </button>
+                                                ) : canBuy ? (
+                                                    <button
+                                                        onClick={(e) => handleBuyNow(e, product._id)}
+                                                        disabled={product.stock === 0}
+                                                        className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                                                    >
+                                                        Buy Now
+                                                    </button>
+                                                ) : null}
+                                                <Link
+                                                    href={`/product/${product._id}`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 text-center shadow-lg shadow-teal-600/20"
+                                                >
+                                                    <Search className="size-3.5" /> View
+                                                </Link>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         ))}

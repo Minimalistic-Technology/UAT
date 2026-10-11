@@ -22,7 +22,6 @@ import {
     RefreshCw,
     Copy,
     Check,
-    Heart,
     Share2,
     Link2,
     ChevronRight,
@@ -107,7 +106,6 @@ export default function ProductDetailsPage() {
     const [coupons, setCoupons] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
-    const [isWishlisted, setIsWishlisted] = useState(false);
     const [canNativeShare, setCanNativeShare] = useState(false);
     const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -347,14 +345,6 @@ export default function ProductDetailsPage() {
         setTimeout(() => setCopiedCoupon(null), 2500);
     };
 
-    const toggleWishlist = () => {
-        setIsWishlisted(!isWishlisted);
-        showToast?.(
-            !isWishlisted ? `${product?.name} added to Wishlist` : `${product?.name} removed from Wishlist`,
-            !isWishlisted ? "success" : "info"
-        );
-    };
-
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 gap-4">
@@ -436,20 +426,8 @@ export default function ProductDetailsPage() {
                                 )}
                             </div>
 
-                            {/* Wishlist & Share floating action buttons */}
+                            {/* Share floating action button */}
                             <div className="absolute top-4 right-4 z-20 flex gap-2">
-                                <div className="relative group/tip">
-                                    <button
-                                        onClick={toggleWishlist}
-                                        title="Add to Wishlist"
-                                        className={`p-2.5 rounded-full shadow-md backdrop-blur-md transition-all cursor-pointer ${isWishlisted ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-500' : 'bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-rose-500'}`}
-                                    >
-                                        <Heart className={`size-5 ${isWishlisted ? 'fill-current text-rose-500' : ''}`} />
-                                    </button>
-                                    <span className="pointer-events-none absolute top-full right-0 mt-2 whitespace-nowrap rounded-md bg-slate-900 dark:bg-slate-700 text-white text-[11px] font-medium px-2.5 py-1.5 opacity-0 translate-y-1 group-hover/tip:opacity-100 group-hover/tip:translate-y-0 transition-all duration-200 shadow-lg z-30">
-                                        {isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
-                                    </span>
-                                </div>
                                 <div className="relative group/tip">
                                     <button
                                         onClick={() => {
@@ -777,24 +755,25 @@ export default function ProductDetailsPage() {
                                     </p>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-                                    {(product.highlights && product.highlights.length > 0 ? product.highlights : DEFAULT_HIGHLIGHTS).map((h: any, idx: number) => {
-                                        const HighlightIcon = getHighlightIcon(h.icon);
-                                        const colors = getHighlightColorClasses(h.color);
-                                        return (
-                                            <div key={idx} className={`p-4 rounded-2xl flex items-start gap-3 ${colors.card}`}>
-                                                <div className={`p-2.5 text-white rounded-xl ${colors.iconBg}`}>
-                                                    <HighlightIcon className="size-5" />
+                                {(((product.highlights !== undefined && product.highlights !== null) ? product.highlights : DEFAULT_HIGHLIGHTS).length > 0 || isDigital) && (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                                        {((product.highlights !== undefined && product.highlights !== null) ? product.highlights : DEFAULT_HIGHLIGHTS).map((h: any, idx: number) => {
+                                            const HighlightIcon = getHighlightIcon(h.icon);
+                                            const colors = getHighlightColorClasses(h.color);
+                                            return (
+                                                <div key={idx} className={`p-4 rounded-2xl flex items-start gap-3 ${colors.card}`}>
+                                                    <div className={`p-2.5 text-white rounded-xl ${colors.iconBg}`}>
+                                                        <HighlightIcon className="size-5" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">{h.title}</h4>
+                                                        {h.description && (
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{h.description}</p>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm">{h.title}</h4>
-                                                    {h.description && (
-                                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{h.description}</p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
 
                                     {isDigital && (
                                         <div className="p-4 rounded-2xl bg-violet-50/50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900/50 flex items-start gap-3">
@@ -820,8 +799,9 @@ export default function ProductDetailsPage() {
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
+                    )}
 
                         {/* Tab 2: Full Specifications Matrix including Last Updated Time & Date */}
                         {activeTab === 'specs' && (

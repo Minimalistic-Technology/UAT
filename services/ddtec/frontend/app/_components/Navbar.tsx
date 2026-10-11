@@ -248,7 +248,7 @@ export default function Navbar() {
 
 
           <div className="flex items-center gap-2 sm:gap-4">
-            {(!user || (user.role !== 'admin' && user.role !== 'warehouse')) && isRouteActive('/cart') && (
+            {isRouteActive('/cart') && (
               <Link
                 href="/cart"
                 onClick={(e) => {
@@ -257,6 +257,8 @@ export default function Navbar() {
                   setMenuOpen(false);
                 }}
                 className="p-2 rounded-full transition-colors relative group hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
+                title="Cart"
+                aria-label="Cart"
               >
                 <ShoppingBag className="size-5" />
                 {cartCount > 0 && (
@@ -450,6 +452,30 @@ export default function Navbar() {
                       <ChevronRight className="size-4 opacity-50" />
                     </Link>
                   ))
+                )}
+                {isRouteActive('/cart') && (
+                  <Link
+                    href="/cart"
+                    onClick={() => setMenuOpen(false)}
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer",
+                      pathname === "/cart"
+                        ? "bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 font-semibold"
+                        : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ShoppingBag className="size-4" />
+                      <span>Cart</span>
+                    </div>
+                    {cartCount > 0 ? (
+                      <span className="size-5 bg-teal-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold">
+                        {cartCount}
+                      </span>
+                    ) : (
+                      <ChevronRight className="size-4 opacity-50" />
+                    )}
+                  </Link>
                 )}
               </div>
 

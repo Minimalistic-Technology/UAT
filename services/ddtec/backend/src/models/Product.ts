@@ -42,7 +42,7 @@ export interface IProduct extends Document {
     packUnit?: string; // e.g. "Box", "Carton", "Piece"
     unitSize?: number; // e.g. 0.10 (as in "0.10 Liter")
     unitMeasure?: string; // e.g. "Liter", "ml", "Kg", "gram"
-    highlights: Array<{ icon: string; title: string; description: string; color: string }>;
+    highlights?: Array<{ icon: string; title: string; description: string; color: string }>;
 }
 
 const ProductSchema: Schema = new Schema({
@@ -101,7 +101,7 @@ const ProductSchema: Schema = new Schema({
                 color: { type: String, default: 'teal' }
             }
         ],
-        default: []
+        default: undefined
     }
 }, { timestamps: true });
 
