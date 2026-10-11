@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useCart } from "../_context/CartContext";
 import { useAuth } from "../_context/AuthContext";
 import { useToast } from "../_context/ToastContext";
@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
     const { cartItems, totalPrice, clearCart, appliedCoupon, subtotal, applyCoupon, removeCoupon, loading: cartLoading } = useCart();
     const { user, loading, checkUser } = useAuth();
     const { siteSettings } = useSettings();
@@ -1193,5 +1193,19 @@ export default function CheckoutPage() {
 
             </div>
         </section>
+    );
+}
+
+export default function CheckoutPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen pt-24 pb-16 flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+                    <Loader2 className="size-10 animate-spin text-teal-600" />
+                </div>
+            }
+        >
+            <CheckoutContent />
+        </Suspense>
     );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Users, Package, ShoppingBag, DollarSign } from "lucide-react";
+import { Users, Package, ShoppingBag, DollarSign, Loader2 } from "lucide-react";
 import StatCard from "./components/StatCard";
 import DeliveredOrdersGraph from "./components/DeliveredOrdersGraph";
 import PurchasesGraph from "./components/PurchasesGraph";
@@ -35,7 +35,7 @@ const LEGACY_VIEW_REDIRECTS: Record<string, string> = {
     company: "/admin/company",
 };
 
-export default function AdminDashboardPage() {
+function AdminDashboardContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { stats, fetchStats } = useAdminStats();
@@ -136,5 +136,19 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function AdminDashboardPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-[400px] flex items-center justify-center">
+                    <Loader2 className="size-8 animate-spin text-teal-600" />
+                </div>
+            }
+        >
+            <AdminDashboardContent />
+        </Suspense>
     );
 }
