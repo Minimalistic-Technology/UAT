@@ -10,7 +10,6 @@ export interface ISettings extends Document {
         FeaturedProducts: boolean;
         Contact: boolean;
         Login: boolean;
-        Signup: boolean;
         [key: string]: boolean;
     };
     onboarding?: {
@@ -23,6 +22,7 @@ export interface ISettings extends Document {
         flatDeliveryFee: number;
         isFreeDeliveryEnabled: boolean;
     };
+    quotationLogoUrl?: string;
     updatedAt: Date;
 }
 
@@ -36,7 +36,6 @@ const SettingsSchema: Schema = new Schema({
         FeaturedProducts: { type: Boolean, default: true },
         Contact: { type: Boolean, default: true },
         Login: { type: Boolean, default: true },
-        Signup: { type: Boolean, default: true },
     },
     onboarding: {
         mode: { type: String, enum: ['open', 'closed', 'invite_only', 'admin_approval'], default: 'open' },
@@ -47,7 +46,8 @@ const SettingsSchema: Schema = new Schema({
         freeDeliveryThreshold: { type: Number, default: 500 },
         flatDeliveryFee: { type: Number, default: 50 },
         isFreeDeliveryEnabled: { type: Boolean, default: false }
-    }
+    },
+    quotationLogoUrl: { type: String, default: '' }
 }, { timestamps: true });
 
 export default mongoose.model<ISettings>("Settings", SettingsSchema);

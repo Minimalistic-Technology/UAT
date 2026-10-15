@@ -25,7 +25,7 @@ export async function POST(request: Request) {
         });
 
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: `"DDTEC" <${process.env.EMAIL_FROM || 'info@ddtec.in'}>`,
             to: process.env.EMAIL_TO, // The owner's email
             subject: `New Contact Form Submission from ${firstName} ${lastName}`,
             html: `

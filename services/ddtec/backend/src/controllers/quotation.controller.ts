@@ -1,8 +1,11 @@
 import { Request, Response } from 'express';
+import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QuotationItem from '../models/QuotationItem';
+import Product from '../models/Product';
 import SavedQuotation from '../models/SavedQuotation';
+import Settings from '../models/Settings';
 import NotificationService from '../services/notification.service';
 
 const COMPANY = {
@@ -60,7 +63,92 @@ function sanitizeForFilename(str: string): string {
     return str.trim().replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfBuffer: Buffer; downloadFilename: string }> {
+// Fetches the configured logo image by URL and returns it in a form jsPDF's addImage
+// accepts. Never throws — a broken/unreachable logo URL must not block quotation PDF
+// generation, it should just render without a logo.
+async function fetchLogoImage(logoUrl?: string): Promise<{ dataUrl: string; format: string } | null> {
+    if (!logoUrl || !/^https?:\/\//i.test(logoUrl)) return null;
+
+    try {
+        const response = await axios.get<ArrayBuffer>(logoUrl, {
+            responseType: 'arraybuffer',
+            timeout: 8000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        });
+
+        const contentType = String(response.headers['content-type'] || '').toLowerCase();
+        let format = 'PNG';
+        if (contentType.includes('jpeg') || contentType.includes('jpg') || /\.jpe?g($|\?)/i.test(logoUrl)) {
+            format = 'JPEG';
+        } else if (contentType.includes('png') || /\.png($|\?)/i.test(logoUrl)) {
+            format = 'PNG';
+        }
+
+        const base64 = Buffer.from(response.data).toString('base64');
+        const mimeType = contentType.split(';')[0].trim() || `image/${format.toLowerCase()}`;
+        return { dataUrl: `data:${mimeType};base64,${base64}`, format };
+    } catch (err) {
+        console.warn('[QUOTATION] Failed to fetch logo image from URL:', logoUrl, (err as any)?.message);
+        return null;
+    }
+}
+
+function formatDescriptionForPdf(rawDesc?: string): string {
+    if (!rawDesc || typeof rawDesc !== 'string') return '';
+
+    let text = rawDesc;
+
+    // 1. If HTML tags are present, convert <br>, <p>, <li> into line breaks / bullets
+    text = text
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<li[^>]*>/gi, '• ')
+        .replace(/<[^>]+>/g, '');
+
+    // 2. Unescape basic HTML entities
+    text = text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ');
+
+    // 3. Clean up markdown bold/italic tags for clean print (e.g. **bold** -> bold)
+    text = text
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
+        .replace(/_([^_]+)_/g, '$1');
+
+    // 4. Normalize bullet characters and lines
+    const lines = text.split(/\r?\n/).map(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return '';
+        // If line starts with bullet '-', '*', or '•', format with clean indent and standard bullet
+        if (/^[\*\-•]\s+/.test(trimmed)) {
+            return `  • ${trimmed.replace(/^[\*\-•]\s+/, '')}`;
+        }
+        return `  ${trimmed}`;
+    });
+
+    // 5. Remove excessive consecutive empty lines
+    const cleaned = lines.filter((l, idx, arr) => {
+        if (l === '' && (idx === 0 || arr[idx - 1] === '')) return false;
+        return true;
+    }).join('\n').trim();
+
+    return cleaned;
+}
+
+async function buildQuotationPdfHelper(
+    items: any[],
+    buyer: any,
+    options?: { logoUrl?: string; title?: string }
+): Promise<{ pdfBuffer: Buffer; downloadFilename: string }> {
     const itemIds = items
         .map((i: any) => i.itemId)
         .filter((id: any) => id && typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id));
@@ -69,7 +157,13 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
     if (itemIds.length > 0) {
         try {
             const dbItems = await QuotationItem.find({ _id: { $in: itemIds } });
-            dbItemMap = new Map(dbItems.map((i: any) => [String(i._id), i]));
+            dbItems.forEach((i: any) => dbItemMap.set(String(i._id), i));
+
+            const remainingIds = itemIds.filter((id: string) => !dbItemMap.has(String(id)));
+            if (remainingIds.length > 0) {
+                const dbProducts = await Product.find({ _id: { $in: remainingIds } });
+                dbProducts.forEach((p: any) => dbItemMap.set(String(p._id), p));
+            }
         } catch (e) {
             console.warn('[QUOTATION] Warning fetching dbItems:', e);
         }
@@ -83,6 +177,9 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
             ? Number(i.price)
             : (dbItem ? (dbItem as any).price : 0);
         const name = i.name || (dbItem ? (dbItem as any).name : `Item #${idx + 1}`);
+        const description = (i.description !== undefined && i.description !== null && String(i.description).trim() !== '')
+            ? String(i.description)
+            : (dbItem ? ((dbItem as any).description || '') : '');
         const hsnCode = i.hsnCode !== undefined ? i.hsnCode : (dbItem ? ((dbItem as any).hsnCode || '') : '');
         const unit = i.unit || (dbItem ? ((dbItem as any).unit || 'Nos') : 'Nos');
         const itemCgstRate = i.cgst !== undefined && i.cgst !== null && i.cgst !== ''
@@ -95,6 +192,7 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
         const amount = price * quantity;
         return {
             name,
+            description,
             hsnCode,
             unit,
             price,
@@ -123,13 +221,26 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
         taxGroups.set(key, group);
     }
 
+    const settings = await Settings.findOne();
+    const effectiveLogoUrl = options?.logoUrl || settings?.quotationLogoUrl;
+    const logo = await fetchLogoImage(effectiveLogoUrl);
+
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 14;
 
+    if (logo) {
+        try {
+            doc.addImage(logo.dataUrl, logo.format, margin, 6, 22, 14, undefined, 'FAST');
+        } catch (err) {
+            console.warn('[QUOTATION] Failed to embed logo image in PDF:', (err as any)?.message);
+        }
+    }
+
+    const docTitle = options?.title?.trim() || 'Quotation';
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('Tax Invoice', pageWidth / 2, 15, { align: 'center' });
+    doc.text(docTitle, pageWidth / 2, 15, { align: 'center' });
 
     doc.setDrawColor(0);
     doc.rect(margin, 20, pageWidth - margin * 2, 30);
@@ -149,7 +260,7 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
     const dateForFilename = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     const buyerNameForFilename = sanitizeForFilename(buyer?.name || '') || 'Customer';
     const downloadFilename = `QT-${buyerNameForFilename}-${dateForFilename}.pdf`;
-    doc.text(`Invoice No.: ${invoiceNo}`, rightX, 26);
+    doc.text(`Quotation No.: ${invoiceNo}`, rightX, 26);
     doc.text(`Dated: ${new Date().toLocaleDateString('en-IN')}`, rightX, 31);
 
     doc.rect(margin, 50, pageWidth - margin * 2, 24);
@@ -160,15 +271,20 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
     doc.text(buyer?.address || '', margin + 2, 66, { maxWidth: pageWidth - margin * 2 - 4 });
     doc.text(`GSTIN/UIN: ${buyer?.gstin || 'N/A'}   State Name: ${buyer?.stateName || 'N/A'}`, margin + 2, 71);
 
-    const tableBody = lineItems.map((item, idx) => [
-        idx + 1,
-        item.name,
-        item.hsnCode,
-        `${item.quantity} ${item.unit}`,
-        item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-        item.unit,
-        item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })
-    ]);
+    const tableBody = lineItems.map((item, idx) => {
+        const formattedDesc = formatDescriptionForPdf(item.description);
+        const goodsDescription = formattedDesc ? `${item.name}\n${formattedDesc}` : item.name;
+
+        return [
+            idx + 1,
+            goodsDescription,
+            item.hsnCode,
+            `${item.quantity} ${item.unit}`,
+            item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+            item.unit,
+            item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })
+        ];
+    });
 
     autoTable(doc, {
         startY: 78,
@@ -184,11 +300,12 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
         footStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: 'bold' },
         columnStyles: {
             0: { halign: 'center' },
+            1: { halign: 'left' },
             3: { halign: 'center' },
             4: { halign: 'right' },
             6: { halign: 'right' }
         },
-        styles: { fontSize: 9 }
+        styles: { fontSize: 8.5, valign: 'top' }
     });
 
     let finalY = (doc as any).lastAutoTable.finalY + 8;
@@ -244,13 +361,17 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
 
 export const generateQuotationPdf = async (req: Request, res: Response) => {
     try {
-        const { items, buyer } = req.body;
+        const { items, buyer, logoUrl, title } = req.body;
 
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ msg: 'No items provided' });
         }
 
-        const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer);
+        const effectiveLogoUrl = logoUrl || buyer?.logoUrl;
+        const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer, {
+            logoUrl: effectiveLogoUrl,
+            title
+        });
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
@@ -263,7 +384,7 @@ export const generateQuotationPdf = async (req: Request, res: Response) => {
 
 export const sendQuotationEmail = async (req: Request, res: Response) => {
     try {
-        const { items, buyer, toEmail, notes, subject } = req.body;
+        const { items, buyer, toEmail, notes, subject, logoUrl, title } = req.body;
 
         const targetEmail = toEmail || buyer?.toEmail;
 
@@ -282,7 +403,11 @@ export const sendQuotationEmail = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'No items provided for quotation email.' });
         }
 
-        const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer);
+        const effectiveLogoUrl = logoUrl || buyer?.logoUrl;
+        const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer, {
+            logoUrl: effectiveLogoUrl,
+            title
+        });
 
         const emailResult = await NotificationService.sendQuotationEmail(
             recipientList,
@@ -328,6 +453,7 @@ export const saveQuotation = async (req: Request, res: Response) => {
             return {
                 itemId: i.itemId || i._id,
                 name: i.name || 'Unnamed Item',
+                description: (i.description !== undefined && i.description !== null) ? String(i.description) : '',
                 price,
                 unit: i.unit || 'Nos',
                 quantity: qty,
@@ -394,15 +520,23 @@ export const saveQuotation = async (req: Request, res: Response) => {
     }
 };
 
+// An admin can see/manage every quotation (including guest ones); everyone
+// else may only see/manage quotations they own.
+function isAdminUser(req: Request): boolean {
+    return (req as any).user?.role === 'admin';
+}
+
+function ownsQuotation(req: Request, quotation: any): boolean {
+    const userId = (req as any).user?.id || (req as any).user?._id;
+    return !!quotation.user && String(quotation.user) === String(userId);
+}
+
 // @route   GET api/quotation/saved
-// @desc    Get all saved quotations
+// @desc    Get all saved quotations owned by the requesting user (or all, for admins)
 export const getAllSavedQuotations = async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user?.id || (req as any).user?._id;
-        let query = {};
-        if (userId) {
-            query = { $or: [{ user: userId }, { user: null }] };
-        }
+        const query = isAdminUser(req) ? {} : { user: userId };
         const quotations = await SavedQuotation.find(query).sort({ createdAt: -1 });
         return res.status(200).json(quotations);
     } catch (err: any) {
@@ -412,13 +546,16 @@ export const getAllSavedQuotations = async (req: Request, res: Response) => {
 };
 
 // @route   GET api/quotation/saved/:id
-// @desc    Get a single saved quotation by ID
+// @desc    Get a single saved quotation by ID (owner or admin only)
 export const getSavedQuotationById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const quotation = await SavedQuotation.findById(id);
         if (!quotation) {
             return res.status(404).json({ msg: 'Saved quotation not found' });
+        }
+        if (!isAdminUser(req) && !ownsQuotation(req, quotation)) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to view this quotation.' });
         }
         return res.status(200).json(quotation);
     } catch (err: any) {
@@ -428,14 +565,18 @@ export const getSavedQuotationById = async (req: Request, res: Response) => {
 };
 
 // @route   DELETE api/quotation/saved/:id
-// @desc    Delete a saved quotation
+// @desc    Delete a saved quotation (owner or admin only)
 export const deleteSavedQuotation = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const deleted = await SavedQuotation.findByIdAndDelete(id);
-        if (!deleted) {
+        const quotation = await SavedQuotation.findById(id);
+        if (!quotation) {
             return res.status(404).json({ msg: 'Saved quotation not found' });
         }
+        if (!isAdminUser(req) && !ownsQuotation(req, quotation)) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to delete this quotation.' });
+        }
+        await quotation.deleteOne();
         return res.status(200).json({ success: true, msg: 'Saved quotation deleted successfully' });
     } catch (err: any) {
         console.error('Error deleting saved quotation:', err);
@@ -444,13 +585,16 @@ export const deleteSavedQuotation = async (req: Request, res: Response) => {
 };
 
 // @route   POST api/quotation/saved/:id/duplicate
-// @desc    Duplicate a saved quotation to create a new copy
+// @desc    Duplicate a saved quotation to create a new copy (owner or admin only)
 export const duplicateSavedQuotation = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const source = await SavedQuotation.findById(id);
         if (!source) {
             return res.status(404).json({ msg: 'Saved quotation not found' });
+        }
+        if (!isAdminUser(req) && !ownsQuotation(req, source)) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to duplicate this quotation.' });
         }
 
         const userId = (req as any).user?.id || (req as any).user?._id;

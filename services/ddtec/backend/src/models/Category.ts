@@ -12,7 +12,7 @@ const CategorySchema: Schema = new Schema({
     name: { type: String, required: true, unique: true },
     slug: { type: String, required: true, unique: true },
     parent: { type: Schema.Types.ObjectId, ref: 'Category', default: null },
-    description: { type: String },
+    description: { type: String, maxlength: 750 },
     image: { type: String }
 }, { timestamps: true });
 

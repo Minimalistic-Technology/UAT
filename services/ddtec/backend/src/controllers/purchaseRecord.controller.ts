@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import PurchaseRecord from '../models/PurchaseRecord';
 import Product from '../models/Product';
 import redisClient from '../config/redis';
+import { deleteCloudinaryImagesNotUsedByProducts } from '../utils/cloudinaryCleanup';
 
 // Keep in sync with products.controller.ts's cache invalidation
 const clearProductCache = async () => {
@@ -76,6 +77,47 @@ export const getPurchaseRecordById = async (req: Request, res: Response) => {
     }
 };
 
+// @desc    Upload single image to Cloudinary (for product image or bill screenshot)
+// @route   POST /api/purchases/upload-image
+// @access  Private/Admin
+export const uploadPurchaseImage = async (req: Request, res: Response) => {
+    try {
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+        const file = (req as any).file || files?.image?.[0] || files?.file?.[0] || files?.billScreenshot?.[0];
+
+        if (!file) {
+            return res.status(400).json({ msg: 'No image file uploaded' });
+        }
+
+        const url = (file as any).path || (file as any).secure_url;
+        res.json({
+            url,
+            msg: 'Image uploaded to Cloudinary successfully'
+        });
+    } catch (err: any) {
+        console.error('Error uploading image to Cloudinary:', err);
+        res.status(500).json({ msg: err.message || 'Failed to upload image' });
+    }
+};
+
+// @desc    Delete an image from Cloudinary (if not in use by any live product)
+// @route   POST /api/purchases/delete-image
+// @access  Private/Admin
+export const deletePurchaseImage = async (req: Request, res: Response) => {
+    try {
+        const { imageUrl } = req.body;
+        if (!imageUrl) {
+            return res.status(400).json({ msg: 'Image URL is required' });
+        }
+
+        await deleteCloudinaryImagesNotUsedByProducts([imageUrl]);
+        res.json({ msg: 'Image removed from Cloudinary successfully' });
+    } catch (err: any) {
+        console.error('Error deleting image from Cloudinary:', err);
+        res.status(500).json({ msg: err.message || 'Server Error' });
+    }
+};
+
 // @desc    Create a purchase record & sync with Product inventory
 // @route   POST /api/purchases
 // @access  Private/Admin
@@ -98,10 +140,14 @@ export const createPurchaseRecord = async (req: Request, res: Response) => {
             purchaseDate,
             billScreenshot,
             invoiceNumber,
-            notes
+            notes,
+            packQuantity,
+            packUnit,
+            unitSize,
+            unitMeasure
         } = req.body;
 
-        if (!seller || seller.trim() === '') {
+        if (!seller || String(seller).trim() === '') {
             return res.status(400).json({ msg: 'Seller name is required' });
         }
 
@@ -110,30 +156,52 @@ export const createPurchaseRecord = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Valid quantity added is required' });
         }
 
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+        const uploadedProductImage = files?.image?.[0]?.path || (files?.image?.[0] as any)?.secure_url || (files?.file?.[0] as any)?.path;
+        const uploadedBillScreenshot = files?.billScreenshot?.[0]?.path || (files?.billScreenshot?.[0] as any)?.secure_url;
+
+        const effectiveProductImage = uploadedProductImage || image || '';
+        const effectiveBillScreenshot = uploadedBillScreenshot || billScreenshot || '';
+
         const cost = Number(unitCost) || 0;
         const recordDate = purchaseDate ? new Date(purchaseDate) : new Date();
 
         let targetProduct: any = null;
 
-        if (isNewProduct || !productId) {
+        const isNew = isNewProduct === true || isNewProduct === 'true' || !productId;
+
+        if (isNew) {
             // Create a brand new Product synced with this purchase
-            if (!name || name.trim() === '') {
+            if (!name || String(name).trim() === '') {
                 return res.status(400).json({ msg: 'Product name is required for new product creation' });
             }
 
+            const parsedPackQty = Number(packQuantity);
+            const parsedUnitSize = Number(unitSize);
+            const hasValidUnitSize = !isNaN(parsedUnitSize) && parsedUnitSize > 0;
+            const finalPackQty = (!isNaN(parsedPackQty) && parsedPackQty > 0) ? parsedPackQty : 1;
+            const finalPackUnit = packUnit ? String(packUnit).trim() : 'Piece';
+            const finalUnitSize = hasValidUnitSize ? parsedUnitSize : 0;
+            const finalUnitMeasure = (hasValidUnitSize && unitMeasure) ? String(unitMeasure).trim() : '';
+
             const newProduct = new Product({
-                name,
+                name: String(name).trim(),
                 price: Number(price) || (cost > 0 ? Math.round(cost * 1.3) : 0),
                 costPrice: cost,
                 stock: Math.max(0, qty),
                 category: category || undefined,
                 description: description || '',
-                image: image || '',
+                image: effectiveProductImage,
+                images: effectiveProductImage ? [effectiveProductImage] : [],
                 cgst: Number(cgst) || 0,
                 sgst: Number(sgst) || 0,
-                seller: seller,
+                seller: String(seller).trim(),
                 lastInventoryUpdate: recordDate,
-                billScreenshot: billScreenshot || undefined
+                billScreenshot: effectiveBillScreenshot || undefined,
+                packQuantity: finalPackQty,
+                packUnit: finalPackUnit,
+                unitSize: finalUnitSize,
+                unitMeasure: finalUnitMeasure
             });
 
             targetProduct = await newProduct.save();
@@ -146,10 +214,10 @@ export const createPurchaseRecord = async (req: Request, res: Response) => {
 
             // Sync stock and latest purchase info
             targetProduct.stock = Math.max(0, (targetProduct.stock || 0) + qty);
-            targetProduct.seller = seller || targetProduct.seller;
+            targetProduct.seller = String(seller).trim() || targetProduct.seller;
             if (cost > 0) targetProduct.costPrice = cost;
             targetProduct.lastInventoryUpdate = recordDate;
-            if (billScreenshot) targetProduct.billScreenshot = billScreenshot;
+            if (effectiveBillScreenshot) targetProduct.billScreenshot = effectiveBillScreenshot;
 
             await targetProduct.save();
         }
@@ -158,15 +226,15 @@ export const createPurchaseRecord = async (req: Request, res: Response) => {
         const purchaseRecord = new PurchaseRecord({
             product: targetProduct._id,
             productName: targetProduct.name,
-            seller,
-            sellerContact,
+            seller: String(seller).trim(),
+            sellerContact: sellerContact || undefined,
             quantityAdded: qty,
             unitCost: cost,
             totalCost: Math.round(cost * qty),
             purchaseDate: recordDate,
-            billScreenshot,
-            invoiceNumber,
-            notes,
+            billScreenshot: effectiveBillScreenshot || undefined,
+            invoiceNumber: invoiceNumber || undefined,
+            notes: notes || undefined,
             createdBy: (req as any).user?.id || (req as any).user?._id
         });
 
@@ -206,6 +274,12 @@ export const updatePurchaseRecord = async (req: Request, res: Response) => {
             return res.status(404).json({ msg: 'Purchase record not found' });
         }
 
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+        const uploadedBillScreenshot = files?.billScreenshot?.[0]?.path || (files?.billScreenshot?.[0] as any)?.secure_url;
+        const effectiveBillScreenshot = uploadedBillScreenshot !== undefined ? uploadedBillScreenshot : billScreenshot;
+
+        const previousBillScreenshot = record.billScreenshot;
+
         const newQty = Number(quantityAdded);
         const oldQty = record.quantityAdded;
         const qtyDiff = newQty - oldQty;
@@ -219,25 +293,30 @@ export const updatePurchaseRecord = async (req: Request, res: Response) => {
             if (qtyDiff !== 0) {
                 product.stock = Math.max(0, (product.stock || 0) + qtyDiff);
             }
-            if (seller) product.seller = seller;
+            if (seller) product.seller = String(seller).trim();
             if (cost > 0) product.costPrice = cost;
             product.lastInventoryUpdate = recordDate;
-            if (billScreenshot !== undefined) product.billScreenshot = billScreenshot;
+            if (effectiveBillScreenshot !== undefined) product.billScreenshot = effectiveBillScreenshot;
             await product.save();
         }
 
         // Update PurchaseRecord fields
-        if (seller !== undefined) record.seller = seller;
+        if (seller !== undefined) record.seller = String(seller).trim();
         if (sellerContact !== undefined) record.sellerContact = sellerContact;
         record.quantityAdded = newQty;
         record.unitCost = cost;
         record.totalCost = Math.round(cost * newQty);
         record.purchaseDate = recordDate;
-        if (billScreenshot !== undefined) record.billScreenshot = billScreenshot;
+        if (effectiveBillScreenshot !== undefined) record.billScreenshot = effectiveBillScreenshot;
         if (invoiceNumber !== undefined) record.invoiceNumber = invoiceNumber;
         if (notes !== undefined) record.notes = notes;
 
         const updatedRecord = await record.save();
+
+        // If bill screenshot was replaced or removed, clean up old Cloudinary image
+        if (previousBillScreenshot && effectiveBillScreenshot !== undefined && previousBillScreenshot !== effectiveBillScreenshot) {
+            await deleteCloudinaryImagesNotUsedByProducts([previousBillScreenshot]);
+        }
 
         await clearProductCache();
 
@@ -269,6 +348,11 @@ export const deletePurchaseRecord = async (req: Request, res: Response) => {
             await product.save();
         }
 
+        // Clean up Cloudinary bill screenshot if attached
+        if (record.billScreenshot) {
+            await deleteCloudinaryImagesNotUsedByProducts([record.billScreenshot]);
+        }
+
         await PurchaseRecord.findByIdAndDelete(req.params.id);
 
         await clearProductCache();
@@ -282,3 +366,4 @@ export const deletePurchaseRecord = async (req: Request, res: Response) => {
         res.status(500).send('Server Error');
     }
 };
+

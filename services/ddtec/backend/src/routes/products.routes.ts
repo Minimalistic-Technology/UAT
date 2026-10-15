@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getProducts, getProductById, createProduct, updateProduct, deleteProduct, toggleProductStatus } from '../controllers/products.controller';
 import { auth, checkPermission } from '../middleware/auth.middleware';
+import { uploadProductImagesMiddleware } from '../middleware/upload.middleware';
 
 const router = Router();
 
@@ -15,14 +16,14 @@ router.get('/', getProducts);
 router.get('/:id', getProductById);
 
 // @route   POST api/products
-// @desc    Create a product
+// @desc    Create a product (accepts multipart form data with image files, or plain JSON)
 // @access  Private/Admin
-router.post('/', auth, checkPermission(['product_manager']), createProduct);
+router.post('/', auth, checkPermission(['product_manager']), uploadProductImagesMiddleware, createProduct);
 
 // @route   PUT api/products/:id
-// @desc    Update a product
+// @desc    Update a product (accepts multipart form data with image files, or plain JSON)
 // @access  Private/Admin
-router.put('/:id', auth as any, checkPermission(['product_manager', 'order_manager', 'finance', 'warehouse']), updateProduct);
+router.put('/:id', auth as any, checkPermission(['product_manager', 'order_manager', 'finance', 'warehouse']), uploadProductImagesMiddleware, updateProduct);
 
 // @route   DELETE api/products/:id
 // @desc    Delete a product

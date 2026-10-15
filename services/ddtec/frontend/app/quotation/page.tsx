@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "../_context/ToastContext";
+import { useAuth } from "../_context/AuthContext";
 
 interface QuotationProduct {
     _id: string;
@@ -35,6 +36,8 @@ interface QuotationProduct {
 interface SelectedItem {
     itemId: string;
     name: string;
+    description?: string;
+    hsnCode?: string;
     price: number;
     unit: string;
     quantity: number;
@@ -46,6 +49,7 @@ function QuotationContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { showToast } = useToast();
+    const { user } = useAuth();
 
     const [products, setProducts] = useState<QuotationProduct[]>([]);
     const [loading, setLoading] = useState(true);
@@ -105,6 +109,7 @@ function QuotationContent() {
                         data.items.map((i: any) => ({
                             itemId: i.itemId || i._id,
                             name: i.name,
+                            description: i.description || "",
                             price: i.price,
                             unit: i.unit || "Nos",
                             quantity: i.quantity || 1,
@@ -136,6 +141,8 @@ function QuotationContent() {
             return [...prev, {
                 itemId: product._id,
                 name: product.name,
+                description: product.description || "",
+                hsnCode: product.hsnCode || "",
                 price: product.price,
                 unit: product.unit || "Nos",
                 quantity: initialQty,
@@ -215,8 +222,14 @@ function QuotationContent() {
             const response = await api.post(
                 "/quotation/generate",
                 {
-                    items: selectedItems.map(i => ({ itemId: i.itemId, quantity: i.quantity })),
-                    buyer
+                    items: selectedItems.map(i => ({
+                        itemId: i.itemId,
+                        quantity: i.quantity,
+                        description: i.description || "",
+                        hsnCode: i.hsnCode || ""
+                    })),
+                    buyer,
+                    title: "Quotation"
                 },
                 { responseType: "blob" }
             );
@@ -260,13 +273,15 @@ function QuotationContent() {
 
                     {/* View Saved Quotations Page Option */}
                     <div className="flex items-center gap-3 shrink-0">
-                        <Link
-                            href="/quotation/saved"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 font-bold rounded-xl border border-teal-200 dark:border-teal-800 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-all text-sm shadow-sm"
-                        >
-                            <BookmarkCheck className="size-4" />
-                            View Saved Quotations
-                        </Link>
+                        {user && (
+                            <Link
+                                href="/quotation/saved"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 font-bold rounded-xl border border-teal-200 dark:border-teal-800 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-all text-sm shadow-sm"
+                            >
+                                <BookmarkCheck className="size-4" />
+                                View Saved Quotations
+                            </Link>
+                        )}
 
                         {(selectedItems.length > 0 || buyer.name) && (
                             <button
@@ -361,6 +376,9 @@ function QuotationContent() {
                                     <div key={item.itemId} className="flex items-center justify-between gap-2">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{item.name}</p>
+                                            {item.description && (
+                                                <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">{item.description.replace(/\n/g, " • ")}</p>
+                                            )}
                                             <p className="text-xs text-slate-500 dark:text-slate-400">₹{item.price.toLocaleString("en-IN")} x {item.quantity}</p>
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0">

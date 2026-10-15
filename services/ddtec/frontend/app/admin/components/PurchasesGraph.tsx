@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -202,9 +204,9 @@ const PurchasesGraph: React.FC<PurchasesGraphProps> = ({ products = [] }) => {
                             <Boxes className="size-5" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex flex-wrap items-center gap-2">
                                 Inventory & Purchase Analytics
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                                <span className="shrink-0 whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
                                     Stock In
                                 </span>
                             </h2>

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Category from '../models/Category';
+import Product from '../models/Product';
 
 // Helper to create slug
 const createSlug = (name: string) => {
@@ -50,7 +51,7 @@ export const updateCategory = async (req: Request, res: Response) => {
         const { name, parent, description, image } = req.body;
         const slug = name ? createSlug(name) : undefined;
 
-        const updateData: any = { name, parent, description, image };
+        const updateData: any = { name, parent: parent || null, description, image };
         if (slug) updateData.slug = slug;
 
         const category = await Category.findByIdAndUpdate(req.params.id, updateData, { new: true });
@@ -63,8 +64,24 @@ export const updateCategory = async (req: Request, res: Response) => {
 
 export const deleteCategory = async (req: Request, res: Response) => {
     try {
-        const category = await Category.findByIdAndDelete(req.params.id);
+        const category = await Category.findById(req.params.id);
         if (!category) return res.status(404).json({ msg: 'Category not found' });
+
+        const productCount = await Product.countDocuments({ category: req.params.id });
+        if (productCount > 0) {
+            return res.status(400).json({
+                msg: `Cannot delete "${category.name}" because it has ${productCount} product${productCount > 1 ? 's' : ''} assigned to it. Move or delete those products first.`
+            });
+        }
+
+        const subCategoryCount = await Category.countDocuments({ parent: req.params.id });
+        if (subCategoryCount > 0) {
+            return res.status(400).json({
+                msg: `Cannot delete "${category.name}" because it has ${subCategoryCount} subcategor${subCategoryCount > 1 ? 'ies' : 'y'}. Delete or reassign those first.`
+            });
+        }
+
+        await category.deleteOne();
         res.status(200).json({ msg: 'Category deleted successfully' });
     } catch (error: any) {
         res.status(500).json({ msg: error.message });

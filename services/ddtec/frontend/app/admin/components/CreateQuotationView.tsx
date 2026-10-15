@@ -10,10 +10,7 @@ import {
     Loader2,
     Download,
     Search,
-    DollarSign,
-    Calculator,
     Building,
-    User,
     MapPin,
     Hash,
     Sparkles,
@@ -23,7 +20,8 @@ import {
     Mail,
     Send,
     ChevronDown,
-    X
+    X,
+    Users
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "@/app/_context/ToastContext";
@@ -34,14 +32,25 @@ interface CatalogItem {
     price: number;
     hsnCode?: string;
     unit?: string;
+    description?: string;
     cgst?: number;
     sgst?: number;
+}
+
+interface ClientRecord {
+    _id: string;
+    name: string;
+    company?: string;
+    gstin?: string;
+    email?: string;
+    phone?: string;
 }
 
 interface QuotationLineItem {
     id: string; // Internal temporary ID for React key
     itemId?: string; // Optional reference ID if pre-filled from catalog
     name: string;
+    description?: string;
     price: number;
     unit: string;
     quantity: number;
@@ -49,6 +58,47 @@ interface QuotationLineItem {
     cgst: number;
     sgst: number;
 }
+
+// Indian states / union territories with their GST state codes
+const INDIAN_STATES: { name: string; code: string }[] = [
+    { name: "Jammu and Kashmir", code: "01" },
+    { name: "Himachal Pradesh", code: "02" },
+    { name: "Punjab", code: "03" },
+    { name: "Chandigarh", code: "04" },
+    { name: "Uttarakhand", code: "05" },
+    { name: "Haryana", code: "06" },
+    { name: "Delhi", code: "07" },
+    { name: "Rajasthan", code: "08" },
+    { name: "Uttar Pradesh", code: "09" },
+    { name: "Bihar", code: "10" },
+    { name: "Sikkim", code: "11" },
+    { name: "Arunachal Pradesh", code: "12" },
+    { name: "Nagaland", code: "13" },
+    { name: "Manipur", code: "14" },
+    { name: "Mizoram", code: "15" },
+    { name: "Tripura", code: "16" },
+    { name: "Meghalaya", code: "17" },
+    { name: "Assam", code: "18" },
+    { name: "West Bengal", code: "19" },
+    { name: "Jharkhand", code: "20" },
+    { name: "Odisha", code: "21" },
+    { name: "Chhattisgarh", code: "22" },
+    { name: "Madhya Pradesh", code: "23" },
+    { name: "Gujarat", code: "24" },
+    { name: "Dadra and Nagar Haveli and Daman and Diu", code: "26" },
+    { name: "Maharashtra", code: "27" },
+    { name: "Karnataka", code: "29" },
+    { name: "Goa", code: "30" },
+    { name: "Lakshadweep", code: "31" },
+    { name: "Kerala", code: "32" },
+    { name: "Tamil Nadu", code: "33" },
+    { name: "Puducherry", code: "34" },
+    { name: "Andaman and Nicobar Islands", code: "35" },
+    { name: "Telangana", code: "36" },
+    { name: "Andhra Pradesh", code: "37" },
+    { name: "Ladakh", code: "38" },
+    { name: "Other Territory", code: "97" }
+];
 
 export default function CreateQuotationView() {
     const { showToast } = useToast();
@@ -62,11 +112,27 @@ export default function CreateQuotationView() {
     const [isCatalogOpen, setIsCatalogOpen] = useState(false);
     const catalogDropdownRef = React.useRef<HTMLDivElement>(null);
 
-    // Close catalog dropdown on click outside
+    // Searchable state combobox state (Local search, zero network calls)
+    const [isStateOpen, setIsStateOpen] = useState(false);
+    const stateDropdownRef = React.useRef<HTMLDivElement>(null);
+
+    // Existing clients (for prefilling company details) + searchable combobox state
+    const [clients, setClients] = useState<ClientRecord[]>([]);
+    const [clientSearch, setClientSearch] = useState("");
+    const [isClientOpen, setIsClientOpen] = useState(false);
+    const clientDropdownRef = React.useRef<HTMLDivElement>(null);
+
+    // Close catalog / state / client dropdowns on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (catalogDropdownRef.current && !catalogDropdownRef.current.contains(event.target as Node)) {
                 setIsCatalogOpen(false);
+            }
+            if (stateDropdownRef.current && !stateDropdownRef.current.contains(event.target as Node)) {
+                setIsStateOpen(false);
+            }
+            if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target as Node)) {
+                setIsClientOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -120,6 +186,7 @@ export default function CreateQuotationView() {
 
     useEffect(() => {
         fetchCatalogItems();
+        fetchClients();
     }, []);
 
     useEffect(() => {
@@ -148,6 +215,7 @@ export default function CreateQuotationView() {
                             id: `loaded-${index}-${Date.now()}`,
                             itemId: i.itemId || i._id,
                             name: i.name,
+                            description: i.description || "",
                             price: i.price,
                             unit: i.unit || "Nos",
                             quantity: i.quantity || 1,
@@ -166,12 +234,32 @@ export default function CreateQuotationView() {
     };
 
 
+    const fetchClients = async () => {
+        try {
+            const { data } = await api.get("/clients");
+            if (Array.isArray(data)) setClients(data);
+        } catch (error) {
+            console.error("Failed to load clients", error);
+        }
+    };
+
+    const handleSelectClient = (client: ClientRecord) => {
+        setBuyer(prev => ({
+            ...prev,
+            name: client.company?.trim() || client.name || prev.name,
+            gstin: client.gstin || prev.gstin,
+            toEmail: client.email || prev.toEmail
+        }));
+        setIsClientOpen(false);
+        setClientSearch("");
+    };
+
     const fetchCatalogItems = async () => {
         setLoadingCatalog(true);
         try {
             const [quotationItemsRes, mainProductsRes] = await Promise.all([
                 api.get("/quotation-items/all").catch(() => ({ data: [] })),
-                api.get("/products").catch(() => ({ data: [] }))
+                api.get("/products?includeInactive=true").catch(() => ({ data: [] }))
             ]);
 
             const list: CatalogItem[] = [];
@@ -183,6 +271,7 @@ export default function CreateQuotationView() {
                         name: item.name,
                         price: item.price || 0,
                         hsnCode: item.hsnCode || "",
+                        description: item.description || "",
                         unit: item.unit || "Nos",
                         cgst: item.cgst || 0,
                         sgst: item.sgst || 0
@@ -197,10 +286,11 @@ export default function CreateQuotationView() {
                             _id: p._id,
                             name: p.name,
                             price: p.price || 0,
-                            hsnCode: "8471",
-                            unit: "Nos",
-                            cgst: p.cgst || 9,
-                            sgst: p.sgst || 9
+                            hsnCode: p.hsnCode || "",
+                            description: p.description || "",
+                            unit: p.packUnit || "Nos",
+                            cgst: p.cgst !== undefined ? p.cgst : 9,
+                            sgst: p.sgst !== undefined ? p.sgst : 9
                         });
                     }
                 });
@@ -219,6 +309,7 @@ export default function CreateQuotationView() {
             id: Math.random().toString(36).substr(2, 9),
             itemId: catalogObj._id,
             name: catalogObj.name,
+            description: catalogObj.description || "",
             price: catalogObj.price,
             unit: catalogObj.unit || "Nos",
             quantity: 1,
@@ -243,6 +334,7 @@ export default function CreateQuotationView() {
         const newItem: QuotationLineItem = {
             id: Math.random().toString(36).substr(2, 9),
             name: "Custom Product / Service Item",
+            description: "",
             price: 1000,
             unit: "Nos",
             quantity: 1,
@@ -269,6 +361,100 @@ export default function CreateQuotationView() {
         showToast("Removed line item", "info");
     };
 
+    const descTextareaRefs = React.useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+
+    const handleInsertBullet = (itemId: string) => {
+        const textarea = descTextareaRefs.current[itemId];
+        const item = items.find(i => i.id === itemId);
+        const value = item?.description || "";
+
+        if (!textarea) {
+            const nextVal = value ? `${value}\n• ` : "• ";
+            handleItemChange(itemId, "description", nextVal);
+            return;
+        }
+
+        const { selectionStart, selectionEnd } = textarea;
+        if (selectionStart !== selectionEnd) {
+            const selectedText = value.substring(selectionStart, selectionEnd);
+            const lines = selectedText.split("\n");
+            const bulleted = lines.map(line => /^[\*\-•]\s+/.test(line.trim()) ? line : `• ${line}`).join("\n");
+            const nextVal = value.substring(0, selectionStart) + bulleted + value.substring(selectionEnd);
+            handleItemChange(itemId, "description", nextVal);
+            setTimeout(() => {
+                textarea.focus();
+                textarea.selectionStart = selectionStart;
+                textarea.selectionEnd = selectionStart + bulleted.length;
+            }, 0);
+        } else {
+            const textBefore = value.substring(0, selectionStart);
+            const needsNewline = textBefore.length > 0 && !textBefore.endsWith("\n");
+            const insertion = needsNewline ? "\n• " : "• ";
+            const nextVal = value.substring(0, selectionStart) + insertion + value.substring(selectionEnd);
+            handleItemChange(itemId, "description", nextVal);
+            setTimeout(() => {
+                textarea.focus();
+                const newPos = selectionStart + insertion.length;
+                textarea.selectionStart = textarea.selectionEnd = newPos;
+            }, 0);
+        }
+    };
+
+    const handleInsertBold = (itemId: string) => {
+        const textarea = descTextareaRefs.current[itemId];
+        const item = items.find(i => i.id === itemId);
+        const value = item?.description || "";
+        if (!textarea) return;
+
+        const { selectionStart, selectionEnd } = textarea;
+        const selected = value.substring(selectionStart, selectionEnd) || "bold text";
+        const insertion = `**${selected}**`;
+        const nextVal = value.substring(0, selectionStart) + insertion + value.substring(selectionEnd);
+        handleItemChange(itemId, "description", nextVal);
+        setTimeout(() => {
+            textarea.focus();
+            textarea.selectionStart = selectionStart + 2;
+            textarea.selectionEnd = selectionStart + 2 + selected.length;
+        }, 0);
+    };
+
+    const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, itemId: string) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            const textarea = e.currentTarget;
+            const { selectionStart, selectionEnd, value } = textarea;
+            if (selectionStart !== selectionEnd) return;
+
+            const textBeforeCursor = value.substring(0, selectionStart);
+            const lastNewline = textBeforeCursor.lastIndexOf("\n");
+            const currentLine = textBeforeCursor.substring(lastNewline + 1);
+
+            const bulletMatch = currentLine.match(/^(\s*)([•\-\*])\s+/);
+            if (bulletMatch) {
+                e.preventDefault();
+                // If current line has ONLY the bullet and no content, pressing Enter clears the bullet (exits list)
+                if (currentLine.trim() === bulletMatch[2]) {
+                    const startOfCurrentLine = lastNewline === -1 ? 0 : lastNewline + 1;
+                    const newValue = value.substring(0, startOfCurrentLine) + value.substring(selectionStart);
+                    handleItemChange(itemId, "description", newValue);
+                    setTimeout(() => {
+                        textarea.selectionStart = textarea.selectionEnd = startOfCurrentLine;
+                    }, 0);
+                    return;
+                }
+
+                // Otherwise, automatically start next line with bullet
+                const indent = bulletMatch[1];
+                const insertion = `\n${indent}• `;
+                const newValue = value.substring(0, selectionStart) + insertion + value.substring(selectionEnd);
+                handleItemChange(itemId, "description", newValue);
+                setTimeout(() => {
+                    const nextPos = selectionStart + insertion.length;
+                    textarea.selectionStart = textarea.selectionEnd = nextPos;
+                }, 0);
+            }
+        }
+    };
+
     // Filter out catalog items that are already added to quotation line items
     const availableCatalogItems = catalogItems.filter(c =>
         !items.some(item => (item.itemId && item.itemId === c._id) || item.name.trim().toLowerCase() === c.name.trim().toLowerCase())
@@ -278,6 +464,24 @@ export default function CreateQuotationView() {
     const filteredCatalogItems = availableCatalogItems.filter(c =>
         c.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
         (c.hsnCode && c.hsnCode.toLowerCase().includes(catalogSearch.toLowerCase()))
+    );
+
+    // Filter existing clients locally in-memory by search query
+    const filteredClients = clients.filter(c => {
+        const q = clientSearch.toLowerCase();
+        if (!q) return true;
+        return (
+            c.name?.toLowerCase().includes(q) ||
+            c.company?.toLowerCase().includes(q) ||
+            c.email?.toLowerCase().includes(q) ||
+            c.gstin?.toLowerCase().includes(q)
+        );
+    });
+
+    // Filter predefined Indian states locally in-memory by search query
+    const filteredStates = INDIAN_STATES.filter(s =>
+        s.name.toLowerCase().includes(buyer.stateName.toLowerCase()) ||
+        s.code.includes(buyer.stateName.trim())
     );
 
     // Financial Calculations
@@ -295,6 +499,30 @@ export default function CreateQuotationView() {
     const [isSaving, setIsSaving] = useState(false);
     const [savedQuotationId, setSavedQuotationId] = useState<string | null>(null);
 
+    const persistQuotation = async () => {
+        const { data } = await api.post("/quotation/save", {
+            id: savedQuotationId,
+            title: `Quotation for ${buyer.name.trim()}`,
+            buyer,
+            items: items.map(i => ({
+                itemId: i.itemId || i.id,
+                name: i.name,
+                description: i.description || "",
+                price: i.price,
+                unit: i.unit,
+                quantity: i.quantity,
+                cgst: i.cgst,
+                sgst: i.sgst,
+                hsnCode: i.hsnCode
+            }))
+        });
+
+        if (data.quotation) {
+            setSavedQuotationId(data.quotation._id);
+        }
+        return data;
+    };
+
     const handleSaveQuotation = async () => {
         if (items.length === 0) {
             showToast("Please add at least one line item to save quotation.", "warning");
@@ -307,25 +535,7 @@ export default function CreateQuotationView() {
 
         setIsSaving(true);
         try {
-            const { data } = await api.post("/quotation/save", {
-                id: savedQuotationId,
-                title: `Quotation for ${buyer.name.trim()}`,
-                buyer,
-                items: items.map(i => ({
-                    itemId: i.itemId || i.id,
-                    name: i.name,
-                    price: i.price,
-                    unit: i.unit,
-                    quantity: i.quantity,
-                    cgst: i.cgst,
-                    sgst: i.sgst,
-                    hsnCode: i.hsnCode
-                }))
-            });
-
-            if (data.quotation) {
-                setSavedQuotationId(data.quotation._id);
-            }
+            const data = await persistQuotation();
             showToast(data.msg || "Quotation saved successfully!", "success");
         } catch (error: any) {
             console.error("Save quotation error:", error);
@@ -351,6 +561,7 @@ export default function CreateQuotationView() {
             const payloadItems = items.map(item => {
                 const obj: any = {
                     name: item.name,
+                    description: item.description || "",
                     price: Number(item.price) || 0,
                     unit: item.unit || "Nos",
                     quantity: Number(item.quantity) || 1,
@@ -366,7 +577,7 @@ export default function CreateQuotationView() {
 
             const response = await api.post(
                 "/quotation/generate",
-                { items: payloadItems, buyer },
+                { items: payloadItems, buyer, title: "Quotation" },
                 { responseType: "blob" }
             );
 
@@ -427,6 +638,7 @@ export default function CreateQuotationView() {
             const payloadItems = items.map(item => {
                 const obj: any = {
                     name: item.name,
+                    description: item.description || "",
                     price: Number(item.price) || 0,
                     unit: item.unit || "Nos",
                     quantity: Number(item.quantity) || 1,
@@ -443,10 +655,13 @@ export default function CreateQuotationView() {
             const { data } = await api.post("/quotation/send-email", {
                 items: payloadItems,
                 buyer,
-                toEmail: buyer.toEmail
+                toEmail: buyer.toEmail,
+                title: "Quotation"
             });
 
-            showToast(data.msg || `Quotation PDF successfully emailed to ${emailList.join(", ")}`, "success");
+            await persistQuotation();
+
+            showToast(data.msg || `Quotation PDF successfully emailed to ${emailList.join(", ")} and saved.`, "success");
         } catch (error: any) {
             console.error("Email sending error:", error);
             showToast(error.response?.data?.msg || "Failed to send quotation email.", "error");
@@ -456,80 +671,190 @@ export default function CreateQuotationView() {
     };
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-5 text-sm">
             {/* Page Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-slate-800">
-                <div>
-                    <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                        Create & Manipulate Quotation
-                    </h2>
-                </div>
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Build a GST quotation, save it, and share it with the buyer.
+                </p>
 
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={fetchCatalogItems}
-                        className="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
-                        title="Reload catalog items"
-                    >
-                        <RefreshCw className={`size-3.5 ${loadingCatalog ? 'animate-spin' : ''}`} /> Refresh Catalog
-                    </button>
-                </div>
+                <button
+                    onClick={fetchCatalogItems}
+                    className="px-3 py-2 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg text-xs font-medium transition-all shadow-xs flex items-center gap-1.5"
+                    title="Reload catalog items"
+                >
+                    <RefreshCw className={`size-3.5 ${loadingCatalog ? 'animate-spin' : ''}`} /> Refresh Catalog
+                </button>
             </div>
 
             {/* Company Info Form */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-200 dark:border-slate-700 space-y-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-xs border border-slate-200 dark:border-slate-700 space-y-4">
                 <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-700">
-                    <Building className="size-4.5 text-teal-600 dark:text-teal-400" />
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Company Details</h3>
+                    <Building className="size-4 text-teal-600 dark:text-teal-400" />
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Company Details</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {/* Select Existing Client (prefills company details below) */}
+                <div className="relative" ref={clientDropdownRef}>
+                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
+                        Select Existing Client
+                    </label>
+                    <div className="relative flex items-center">
+                        <Users className="absolute left-3 size-4 text-slate-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder={clients.length === 0 ? "-- No saved clients --" : "Search clients by name, company, GSTIN, email..."}
+                            value={clientSearch}
+                            onChange={(e) => { setClientSearch(e.target.value); setIsClientOpen(true); }}
+                            onFocus={() => setIsClientOpen(true)}
+                            disabled={clients.length === 0}
+                            className="w-full pl-9 pr-8 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none disabled:opacity-50 transition"
+                        />
+                        {clientSearch ? (
+                            <button
+                                type="button"
+                                onClick={() => setClientSearch("")}
+                                className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                title="Clear search"
+                            >
+                                <X className="size-3.5" />
+                            </button>
+                        ) : (
+                            <ChevronDown className="absolute right-2.5 size-3.5 text-slate-400 pointer-events-none" />
+                        )}
+                    </div>
+
+                    {isClientOpen && clients.length > 0 && (
+                        <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                            {filteredClients.length === 0 ? (
+                                <div className="px-4 py-4 text-xs text-slate-400 text-center">
+                                    No matching clients found
+                                </div>
+                            ) : (
+                                filteredClients.map(c => (
+                                    <button
+                                        key={c._id}
+                                        type="button"
+                                        onClick={() => handleSelectClient(c)}
+                                        className="w-full text-left px-3 py-2.5 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-2 group cursor-pointer"
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
+                                                {c.company || c.name}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                {c.company && c.name && (
+                                                    <span className="text-xs text-slate-400 truncate">{c.name}</span>
+                                                )}
+                                                {c.gstin && (
+                                                    <span className="text-xs text-slate-400 font-mono">• {c.gstin}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {c.email && (
+                                            <span className="text-xs text-slate-400 shrink-0 truncate max-w-[10rem]">{c.email}</span>
+                                        )}
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Company Name */}
                     <div className="col-span-1">
-                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
                             Company Name <span className="text-rose-500">*</span>
                         </label>
                         <div className="relative">
-                            <Building className="absolute left-3.5 top-2.5 size-4 text-slate-400" />
+                            <Building className="absolute left-3 top-2.5 size-4 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="e.g. Acme Infra Ltd."
                                 value={buyer.name}
                                 onChange={(e) => setBuyer({ ...buyer, name: e.target.value })}
-                                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
+                                className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                             />
                         </div>
                     </div>
 
                     {/* GSTIN / UIN Number */}
                     <div className="col-span-1">
-                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
                             GSTIN / UIN Number
                         </label>
                         <div className="relative">
-                            <Hash className="absolute left-3.5 top-2.5 size-4 text-slate-400" />
+                            <Hash className="absolute left-3 top-2.5 size-4 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="27AAACG0000A1Z5"
                                 value={buyer.gstin}
                                 onChange={(e) => setBuyer({ ...buyer, gstin: e.target.value })}
-                                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold font-mono uppercase focus:ring-2 focus:ring-teal-500 outline-none"
+                                className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-mono uppercase focus:ring-2 focus:ring-teal-500 outline-none"
                             />
                         </div>
                     </div>
 
                     {/* State Name */}
                     <div className="col-span-1">
-                        <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
                             State Name
                         </label>
-                        <input
-                            type="text"
-                            placeholder="Maharashtra (27)"
-                            value={buyer.stateName}
-                            onChange={(e) => setBuyer({ ...buyer, stateName: e.target.value })}
-                            className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
-                        />
+                        <div className="relative" ref={stateDropdownRef}>
+                            <input
+                                type="text"
+                                placeholder="Search state... e.g. Maharashtra (27)"
+                                value={buyer.stateName}
+                                onChange={(e) => {
+                                    setBuyer({ ...buyer, stateName: e.target.value });
+                                    setIsStateOpen(true);
+                                }}
+                                onFocus={() => setIsStateOpen(true)}
+                                className="w-full pl-3 pr-8 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                            />
+                            {buyer.stateName ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setBuyer({ ...buyer, stateName: "" })}
+                                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                    title="Clear"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
+                            ) : (
+                                <ChevronDown className="absolute right-2.5 top-2.5 size-3.5 text-slate-400 pointer-events-none" />
+                            )}
+
+                            {isStateOpen && (
+                                <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                                    {filteredStates.length === 0 ? (
+                                        <div className="px-4 py-4 text-xs text-slate-400 text-center">
+                                            No matching state found
+                                        </div>
+                                    ) : (
+                                        filteredStates.map(s => (
+                                            <button
+                                                key={s.code}
+                                                type="button"
+                                                onClick={() => {
+                                                    setBuyer({ ...buyer, stateName: `${s.name} (${s.code})` });
+                                                    setIsStateOpen(false);
+                                                }}
+                                                className="w-full text-left px-3 py-2 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-2 group cursor-pointer"
+                                            >
+                                                <span className="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
+                                                    {s.name}
+                                                </span>
+                                                <span className="text-xs text-slate-400 font-mono shrink-0">
+                                                    {s.code}
+                                                </span>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Recipient Email(s) (TO) */}
@@ -541,14 +866,14 @@ export default function CreateQuotationView() {
 
                             return (
                                 <>
-                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                    <label className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
                                         <span>Recipient Email(s) (TO)</span>
-                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-400">
+                                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-400">
                                             Press Enter to add
                                         </span>
                                     </label>
                                     <div className="relative flex items-center">
-                                        <Mail className="absolute left-3.5 top-3 size-4 text-teal-600 dark:text-teal-400 pointer-events-none" />
+                                        <Mail className="absolute left-3 size-4 text-slate-400 pointer-events-none" />
                                         <input
                                             type="text"
                                             placeholder={parsedEmails.length > 0 ? "Add another email & press Enter..." : "e.g. client@acme.com (Press Enter)"}
@@ -572,33 +897,32 @@ export default function CreateQuotationView() {
                                                     handleAddEmailTag(pastedText);
                                                 }
                                             }}
-                                            className="w-full pl-10 pr-16 py-2.5 rounded-xl border border-teal-200 dark:border-teal-900/60 bg-teal-50/40 dark:bg-teal-950/20 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none transition"
+                                            className="w-full pl-9 pr-16 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none transition"
                                         />
                                         {emailInput.trim() && (
                                             <button
                                                 type="button"
                                                 onClick={() => handleAddEmailTag(emailInput)}
-                                                className="absolute right-2 px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-extrabold rounded-lg transition cursor-pointer"
+                                                className="absolute right-2 px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-md transition cursor-pointer"
                                             >
-                                                + Add
+                                                Add
                                             </button>
                                         )}
                                     </div>
 
                                     {/* Email Badges List */}
                                     {parsedEmails.length > 0 ? (
-                                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                                        <div className="flex flex-wrap gap-1.5 mt-2">
                                             {parsedEmails.map((email, idx) => (
                                                 <span
                                                     key={idx}
-                                                    className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-xl bg-teal-100/90 dark:bg-teal-950/90 text-teal-900 dark:text-teal-200 border border-teal-200 dark:border-teal-800/80 shadow-xs"
+                                                    className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border border-teal-100 dark:border-teal-900"
                                                 >
-                                                    <Mail className="size-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
                                                     <span className="truncate max-w-[200px]">{email}</span>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRemoveEmailTag(idx)}
-                                                        className="p-0.5 rounded-md hover:bg-teal-200 dark:hover:bg-teal-800 text-teal-600 dark:text-teal-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors ml-0.5 cursor-pointer"
+                                                        className="text-teal-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
                                                         title={`Remove ${email}`}
                                                     >
                                                         <X className="size-3.5" />
@@ -607,8 +931,8 @@ export default function CreateQuotationView() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-[10px] text-slate-400 mt-1.5">
-                                            Type an email address and press <kbd className="px-1 py-0.5 text-[9px] font-mono bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">Enter</kbd> or <kbd className="px-1 py-0.5 text-[9px] font-mono bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">,</kbd> to add.
+                                        <p className="text-xs text-slate-400 mt-1.5">
+                                            Type an email address and press <kbd className="px-1 py-0.5 text-xs font-mono bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">Enter</kbd> to add.
                                         </p>
                                     )}
                                 </>
@@ -618,17 +942,17 @@ export default function CreateQuotationView() {
 
                     {/* Address / Location */}
                     <div className="col-span-1 md:col-span-2">
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
                             Address / Location
                         </label>
                         <div className="relative">
-                            <MapPin className="absolute left-3.5 top-3 size-4 text-slate-400" />
+                            <MapPin className="absolute left-3 top-2.5 size-4 text-slate-400" />
                             <textarea
                                 rows={3}
                                 placeholder="Plot 42, Tech Park, Pune..."
                                 value={buyer.address}
                                 onChange={(e) => setBuyer({ ...buyer, address: e.target.value })}
-                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none resize-y"
+                                className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none resize-y"
                             />
                         </div>
                     </div>
@@ -636,16 +960,16 @@ export default function CreateQuotationView() {
             </div>
 
             {/* Item Selector & Manipulation Workspace */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200 dark:border-slate-700 space-y-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 shadow-xs border border-slate-200 dark:border-slate-700 space-y-4">
 
                 {/* Bar to Add from Catalog or Custom */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
                     <div className="flex items-center gap-2">
-                        <FileText className="size-4.5 text-teal-600 dark:text-teal-400" />
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Quotation Line Items</h3>
+                        <FileText className="size-4 text-teal-600 dark:text-teal-400" />
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Quotation Line Items</h3>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                         {/* Searchable Catalog Items Combobox */}
                         <div className="relative w-full sm:w-72" ref={catalogDropdownRef}>
                             <div className="relative flex items-center">
@@ -660,13 +984,13 @@ export default function CreateQuotationView() {
                                     }}
                                     onFocus={() => setIsCatalogOpen(true)}
                                     disabled={availableCatalogItems.length === 0}
-                                    className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none disabled:opacity-50 transition"
+                                    className="w-full pl-9 pr-8 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none disabled:opacity-50 transition"
                                 />
                                 {catalogSearch ? (
                                     <button
                                         type="button"
                                         onClick={() => setCatalogSearch("")}
-                                        className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+                                        className="absolute right-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                         title="Clear search"
                                     >
                                         <X className="size-3.5" />
@@ -678,8 +1002,8 @@ export default function CreateQuotationView() {
 
                             {/* Dropdown Menu Popup */}
                             {isCatalogOpen && availableCatalogItems.length > 0 && (
-                                <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl py-1 divide-y divide-slate-100 dark:divide-slate-800">
-                                    <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                                    <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-xs font-medium text-slate-400">
                                         <span>Catalog Items ({filteredCatalogItems.length})</span>
                                         <span>Click to add</span>
                                     </div>
@@ -693,27 +1017,27 @@ export default function CreateQuotationView() {
                                                 key={item._id}
                                                 type="button"
                                                 onClick={() => handleAddSpecificCatalogItem(item)}
-                                                className="w-full text-left px-3.5 py-2.5 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-2 group cursor-pointer"
+                                                className="w-full text-left px-3 py-2.5 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-2 group cursor-pointer"
                                             >
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
+                                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
                                                         {item.name}
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-0.5">
                                                         {item.hsnCode && (
-                                                            <span className="text-[10px] text-slate-400 font-mono">
+                                                            <span className="text-xs text-slate-400 font-mono">
                                                                 HSN: {item.hsnCode}
                                                             </span>
                                                         )}
                                                         {item.unit && (
-                                                            <span className="text-[10px] text-slate-400">
+                                                            <span className="text-xs text-slate-400">
                                                                 • {item.unit}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 shrink-0">
-                                                    <span className="text-xs font-extrabold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/40 px-2 py-0.5 rounded-lg border border-teal-100 dark:border-teal-800">
+                                                    <span className="text-xs font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/40 px-2 py-0.5 rounded-md">
                                                         ₹{item.price}
                                                     </span>
                                                     <Plus className="size-3.5 text-slate-400 group-hover:text-teal-600 dark:group-hover:text-teal-400" />
@@ -725,26 +1049,24 @@ export default function CreateQuotationView() {
                             )}
                         </div>
 
-                        <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-
                         {/* Add Custom Ad-Hoc Item */}
                         <button
                             type="button"
                             onClick={handleAddCustomItem}
-                            className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 w-full sm:w-auto justify-center"
+                            className="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-medium transition flex items-center gap-1.5 w-full sm:w-auto justify-center"
                         >
-                            <Sparkles className="size-3.5 text-teal-600 dark:text-teal-400" /> + Add Custom Line Item
+                            <Sparkles className="size-3.5 text-teal-600 dark:text-teal-400" /> Add Custom Item
                         </button>
                     </div>
                 </div>
 
                 {/* Items Line Items Workspace */}
                 {items.length === 0 ? (
-                    <div className="py-10 text-center text-slate-400 text-xs sm:text-sm bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-                        No items added yet. Click <strong>"Search catalog items..."</strong> or <strong>"+ Add Custom Line Item"</strong> above.
+                    <div className="py-10 text-center text-slate-400 text-sm bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                        No items added yet. Search the catalog or add a custom line item above.
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                         {items.map((item, index) => {
                             const qty = Number(item.quantity) || 0;
                             const rate = Number(item.price) || 0;
@@ -754,11 +1076,11 @@ export default function CreateQuotationView() {
                             const lineTotal = lineTaxable + cgstVal + sgstVal;
 
                             return (
-                                <div key={item.id} className="p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-700/90 bg-slate-50/40 dark:bg-slate-900/40 hover:border-teal-500/40 transition-all space-y-2.5">
+                                <div key={item.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/40 hover:border-teal-500/40 transition-all space-y-3">
                                     {/* Line 1: Item # Badge, Description (Wide Focus), Line Total & Delete Button */}
                                     <div className="flex flex-wrap items-center gap-2.5">
-                                        <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 shrink-0">
-                                            Item #{index + 1}
+                                        <span className="text-xs font-medium px-2 py-1 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 shrink-0">
+                                            #{index + 1}
                                         </span>
 
                                         <div className="flex-1 min-w-[200px]">
@@ -766,15 +1088,15 @@ export default function CreateQuotationView() {
                                                 type="text"
                                                 value={item.name}
                                                 onChange={(e) => handleItemChange(item.id, "name", e.target.value)}
-                                                className="w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="Item title / product description..."
+                                                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                                                placeholder="Item title / product name..."
                                             />
                                         </div>
 
                                         <div className="flex items-center gap-3 shrink-0 ml-auto">
                                             <div className="text-right">
-                                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Line Total</span>
-                                                <span className="text-xs font-black text-slate-900 dark:text-white font-mono">
+                                                <span className="text-xs text-slate-400 block">Line Total</span>
+                                                <span className="text-sm font-semibold text-slate-900 dark:text-white font-mono">
                                                     ₹{lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </span>
                                             </div>
@@ -790,18 +1112,57 @@ export default function CreateQuotationView() {
                                         </div>
                                     </div>
 
+                                    {/* Line Item Description / Specifications (with bullet & formatting tools) */}
+                                    <div className="space-y-1.5 pt-0.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                <span>Description / Specifications</span>
+                                                <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">(printed on PDF under item name)</span>
+                                            </label>
+
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleInsertBullet(item.id)}
+                                                    className="px-2 py-0.5 text-[11px] font-medium rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 border border-slate-200 dark:border-slate-700 transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                                    title="Insert bullet point (Enter continues list)"
+                                                >
+                                                    <span className="font-bold text-teal-600 dark:text-teal-400">•</span> Bullet
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleInsertBold(item.id)}
+                                                    className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 border border-slate-200 dark:border-slate-700 transition cursor-pointer shadow-2xs"
+                                                    title="Bold text"
+                                                >
+                                                    B
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <textarea
+                                            ref={(el) => { descTextareaRefs.current[item.id] = el; }}
+                                            rows={4}
+                                            value={item.description || ""}
+                                            onChange={(e) => handleItemChange(item.id, "description", e.target.value)}
+                                            onKeyDown={(e) => handleDescriptionKeyDown(e, item.id)}
+                                            placeholder="Item specifications, bullet points (e.g. • 800W Motor), warranty notes..."
+                                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500 outline-none resize-y min-h-[100px] leading-relaxed"
+                                        />
+                                    </div>
+
                                     {/* Line 2: Segregated Parameters Grid (Rate, Qty, Unit, HSN Code (Wider), CGST %, SGST %) */}
-                                    <div className="grid grid-cols-12 gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-800">
+                                    <div className="grid grid-cols-12 gap-2 pt-2.5 border-t border-slate-200/70 dark:border-slate-800">
                                         {/* Rate (₹) */}
                                         <div className="col-span-6 sm:col-span-3 lg:col-span-2">
-                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Rate (₹)</label>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Rate (₹)</label>
                                             <div className="relative">
-                                                <span className="absolute left-2.5 top-1.5 text-xs text-slate-400 font-semibold">₹</span>
+                                                <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">₹</span>
                                                 <input
                                                     type="number"
                                                     value={item.price}
                                                     onChange={(e) => handleItemChange(item.id, "price", e.target.value)}
-                                                    className="w-full pl-6 pr-2 py-1 rounded-lg border border-teal-500/40 bg-teal-50/30 dark:bg-teal-950/30 text-teal-800 dark:text-teal-200 text-xs font-extrabold focus:ring-2 focus:ring-teal-500 outline-none"
+                                                    className="w-full pl-6 pr-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-teal-500 outline-none"
                                                     placeholder="0"
                                                     min="0"
                                                     step="any"
@@ -811,48 +1172,49 @@ export default function CreateQuotationView() {
 
                                         {/* Quantity */}
                                         <div className="col-span-3 sm:col-span-2 lg:col-span-1">
-                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Qty</label>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Qty</label>
                                             <input
                                                 type="number"
                                                 value={item.quantity}
                                                 onChange={(e) => handleItemChange(item.id, "quantity", Math.max(1, parseInt(e.target.value) || 1))}
-                                                className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-bold text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                                                className="w-full px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
                                                 min="1"
                                             />
                                         </div>
 
                                         {/* Unit */}
                                         <div className="col-span-3 sm:col-span-2 lg:col-span-2">
-                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Unit</label>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Unit</label>
                                             <input
                                                 type="text"
                                                 value={item.unit}
                                                 onChange={(e) => handleItemChange(item.id, "unit", e.target.value)}
-                                                className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                                                className="w-full px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
                                                 placeholder="Nos"
                                             />
                                         </div>
 
                                         {/* HSN Code (Wider Field for 8-digit HSN/SAC codes) */}
                                         <div className="col-span-6 sm:col-span-5 lg:col-span-3">
-                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">HSN / SAC Code</label>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">HSN / SAC Code</label>
                                             <input
                                                 type="text"
+                                                maxLength={8}
                                                 value={item.hsnCode}
                                                 onChange={(e) => handleItemChange(item.id, "hsnCode", e.target.value)}
-                                                className="w-full px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono uppercase focus:ring-2 focus:ring-teal-500 outline-none font-semibold tracking-wide"
+                                                className="w-full px-3 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-mono uppercase focus:ring-2 focus:ring-teal-500 outline-none"
                                                 placeholder="e.g. 84713010"
                                             />
                                         </div>
 
                                         {/* CGST % */}
                                         <div className="col-span-3 sm:col-span-2 lg:col-span-2">
-                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">CGST %</label>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">CGST %</label>
                                             <input
                                                 type="number"
                                                 value={item.cgst}
                                                 onChange={(e) => handleItemChange(item.id, "cgst", parseFloat(e.target.value) || 0)}
-                                                className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-medium text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                                                className="w-full px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
                                                 min="0"
                                                 step="0.5"
                                             />
@@ -860,12 +1222,12 @@ export default function CreateQuotationView() {
 
                                         {/* SGST % */}
                                         <div className="col-span-3 sm:col-span-2 lg:col-span-2">
-                                            <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">SGST %</label>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">SGST %</label>
                                             <input
                                                 type="number"
                                                 value={item.sgst}
                                                 onChange={(e) => handleItemChange(item.id, "sgst", parseFloat(e.target.value) || 0)}
-                                                className="w-full px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-medium text-center focus:ring-2 focus:ring-teal-500 outline-none"
+                                                className="w-full px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
                                                 min="0"
                                                 step="0.5"
                                             />
@@ -882,17 +1244,17 @@ export default function CreateQuotationView() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
                 {/* Left Column: Quick Notes / Verification */}
-                <div className="lg:col-span-6 bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                <div className="lg:col-span-5 bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-5 shadow-xs border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
                     <div>
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
-                            <CheckCircle2 className="size-4 text-emerald-500" /> Admin Quotation Summary
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
+                            <CheckCircle2 className="size-4 text-emerald-500" /> Summary
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Generating this quotation will calculate taxes and produce an official GST tax invoice format PDF with unique quotation number <span className="font-mono text-teal-600 dark:text-teal-400 font-bold">QT-{Date.now()}</span>.
+                            Generating this quotation calculates taxes and produces a GST quotation PDF with quotation number <span className="font-mono text-teal-600 dark:text-teal-400 font-medium">QT-{Date.now()}</span>.
                         </p>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center gap-3">
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
                         <button
                             type="button"
                             onClick={() => {
@@ -900,7 +1262,7 @@ export default function CreateQuotationView() {
                                 setBuyer({ name: "", address: "", gstin: "", stateName: "", toEmail: "" });
                                 showToast("Cleared quotation form", "info");
                             }}
-                            className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition"
+                            className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition"
                         >
                             Reset Form
                         </button>
@@ -908,38 +1270,38 @@ export default function CreateQuotationView() {
                 </div>
 
                 {/* Right Column: Grand Total Calculations & Download PDF */}
-                <div className="lg:col-span-6 bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Financial Calculation Matrix</h4>
+                <div className="lg:col-span-7 bg-slate-900 text-white rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
+                    <h4 className="text-xs font-medium uppercase tracking-wide text-slate-400">Financial Summary</h4>
 
                     <div className="space-y-2 text-sm border-b border-slate-800 pb-4">
-                        <div className="flex justify-between text-slate-300 text-xs">
-                            <span>Taxable Value (Subtotal):</span>
-                            <span className="font-mono font-bold text-white">₹{taxableTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <div className="flex justify-between text-slate-300 text-sm">
+                            <span>Taxable Value (Subtotal)</span>
+                            <span className="font-mono font-medium text-white">₹{taxableTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
-                        <div className="flex justify-between text-slate-300 text-xs">
-                            <span>Central Tax (CGST):</span>
-                            <span className="font-mono font-bold text-teal-400">₹{cgstTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <div className="flex justify-between text-slate-300 text-sm">
+                            <span>Central Tax (CGST)</span>
+                            <span className="font-mono font-medium text-teal-400">₹{cgstTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
-                        <div className="flex justify-between text-slate-300 text-xs">
-                            <span>State Tax (SGST):</span>
-                            <span className="font-mono font-bold text-teal-400">₹{sgstTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <div className="flex justify-between text-slate-300 text-sm">
+                            <span>State Tax (SGST)</span>
+                            <span className="font-mono font-medium text-teal-400">₹{sgstTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     </div>
 
                     <div className="flex items-baseline justify-between pt-1">
-                        <span className="text-sm font-bold uppercase tracking-wider text-teal-300">Grand Total:</span>
-                        <span className="text-3xl font-black text-emerald-400 font-mono tracking-tight">
+                        <span className="text-sm font-medium uppercase tracking-wide text-teal-300">Grand Total</span>
+                        <span className="text-2xl font-semibold text-emerald-400 font-mono tracking-tight">
                             ₹{grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                     </div>
 
                     {/* Action Buttons: Save Quotation, Download PDF & Send Email */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-4">
                         <button
                             type="button"
                             onClick={handleSaveQuotation}
                             disabled={isSaving || items.length === 0}
-                            className="w-full py-3.5 px-4 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-extrabold rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm"
+                            className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 disabled:hover:bg-teal-600 disabled:cursor-not-allowed text-white font-medium rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                         >
                             {isSaving ? (
                                 <>
@@ -949,7 +1311,7 @@ export default function CreateQuotationView() {
                             ) : (
                                 <>
                                     <Save className="size-4" />
-                                    <span>Save Quotation</span>
+                                    <span>Save</span>
                                 </>
                             )}
                         </button>
@@ -958,12 +1320,12 @@ export default function CreateQuotationView() {
                             type="button"
                             onClick={handleGeneratePdf}
                             disabled={isGenerating || items.length === 0}
-                            className="w-full py-3.5 px-4 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-extrabold rounded-2xl border border-slate-700 shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm"
+                            className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 disabled:cursor-not-allowed text-white font-medium rounded-lg border border-slate-700 shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                         >
                             {isGenerating ? (
                                 <>
                                     <Loader2 className="size-4 animate-spin" />
-                                    <span>Generating PDF...</span>
+                                    <span>Generating...</span>
                                 </>
                             ) : (
                                 <>
@@ -977,12 +1339,12 @@ export default function CreateQuotationView() {
                             type="button"
                             onClick={handleSendEmail}
                             disabled={isSendingEmail || items.length === 0}
-                            className="w-full py-3.5 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-extrabold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm"
+                            className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 disabled:cursor-not-allowed text-slate-950 font-medium rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                         >
                             {isSendingEmail ? (
                                 <>
                                     <Loader2 className="size-4 animate-spin" />
-                                    <span>Sending Email...</span>
+                                    <span>Sending...</span>
                                 </>
                             ) : (
                                 <>

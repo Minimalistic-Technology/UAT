@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import QuotationItem from '../models/QuotationItem';
+import { deleteCloudinaryImagesNotUsedByProducts } from '../utils/cloudinaryCleanup';
 
 export const getQuotationItems = async (req: Request, res: Response) => {
     try {
@@ -43,6 +44,16 @@ export const createQuotationItem = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Price, CGST and SGST cannot be negative, and quantity must be at least 1' });
         }
 
+        if (hsnCode && String(hsnCode).trim() !== '') {
+            const hsn = String(hsnCode).trim();
+            if (!/^\d+$/.test(hsn)) {
+                return res.status(400).json({ msg: 'HSN / SAC code must contain digits only' });
+            }
+            if (hsn.length < 2 || hsn.length > 8) {
+                return res.status(400).json({ msg: 'HSN / SAC code must be between 2 and 8 digits' });
+            }
+        }
+
         // Handle Cloudinary uploaded file
         let uploadedImage = image || '';
         if (req.file) {
@@ -82,9 +93,21 @@ export const updateQuotationItem = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Price, CGST and SGST cannot be negative, and quantity must be at least 1' });
         }
 
+        if (hsnCode !== undefined && String(hsnCode).trim() !== '') {
+            const hsn = String(hsnCode).trim();
+            if (!/^\d+$/.test(hsn)) {
+                return res.status(400).json({ msg: 'HSN / SAC code must contain digits only' });
+            }
+            if (hsn.length < 2 || hsn.length > 8) {
+                return res.status(400).json({ msg: 'HSN / SAC code must be between 2 and 8 digits' });
+            }
+        }
+
         const uploadedImage = (req.file as Express.Multer.File & { path?: string; secure_url?: string })?.path || (req.file as any)?.secure_url;
         const item = await QuotationItem.findById(req.params.id);
         if (!item) return res.status(404).json({ msg: 'Item not found' });
+
+        const previousImage = item.image;
 
         if (name !== undefined) item.name = String(name).trim();
         if (price !== undefined && price !== '') item.price = Number(price);
@@ -105,6 +128,14 @@ export const updateQuotationItem = async (req: Request, res: Response) => {
         if (sgst !== undefined && sgst !== '') item.sgst = Number(sgst);
 
         await item.save();
+
+        // Clean up the replaced image, but only if it isn't the exact same Cloudinary asset a
+        // live Product still uses — "Prefill from Product" copies a Product's image URL
+        // verbatim onto a quotation item, so this item may never have "owned" that file.
+        if (previousImage && previousImage !== item.image) {
+            await deleteCloudinaryImagesNotUsedByProducts([previousImage]);
+        }
+
         res.json(item);
     } catch (err: any) {
         console.error('Error updating quotation item:', err);
@@ -116,6 +147,14 @@ export const deleteQuotationItem = async (req: Request, res: Response) => {
     try {
         const item = await QuotationItem.findByIdAndDelete(req.params.id);
         if (!item) return res.status(404).json({ msg: 'Item not found' });
+
+        // Same ownership caveat as updateQuotationItem: never delete an image a Product
+        // still references, since "Prefill from Product" can leave a quotation item
+        // pointing at the exact same Cloudinary asset.
+        if (item.image) {
+            await deleteCloudinaryImagesNotUsedByProducts([item.image]);
+        }
+
         res.json({ msg: 'Item removed' });
     } catch (err: any) {
         console.error('Error deleting quotation item:', err);
