@@ -18,7 +18,8 @@ import {
     Loader2,
     AlertCircle,
     Boxes,
-    ArrowRight
+    ArrowRight,
+    Sparkles
 } from 'lucide-react';
 import api from '@/lib/api';
 import { formatDate } from '@/lib/utils';
@@ -79,21 +80,35 @@ export default function PurchaseRecordsView({
     const [viewingScreenshot, setViewingScreenshot] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    // Form State — restocking an existing product only; creating a brand new product is
-    // handled entirely on the Products page now (full image upload, highlights, etc. live
-    // there, so this form no longer duplicates a stripped-down version of it).
-    const [formData, setFormData] = useState({
+    // Form State
+    const [isNewProductMode, setIsNewProductMode] = useState<boolean>(false);
+    const [isUploadingProductImage, setIsUploadingProductImage] = useState<boolean>(false);
+    const [isUploadingBillScreenshot, setIsUploadingBillScreenshot] = useState<boolean>(false);
+
+    const initialFormData = {
         productId: '',
         name: '',
+        price: '',
+        category: '',
+        description: '',
+        image: '',
+        cgst: '9',
+        sgst: '9',
+        packQuantity: '10',
+        packUnit: 'Box',
+        unitSize: '',
+        unitMeasure: 'Liter',
         seller: '',
         sellerContact: '',
-        quantityAdded: '',
+        quantityAdded: '10',
         unitCost: '',
         purchaseDate: new Date().toISOString().slice(0, 16),
         billScreenshot: '',
         invoiceNumber: '',
         notes: ''
-    });
+    };
+
+    const [formData, setFormData] = useState(initialFormData);
 
     const fetchRecords = async () => {
         setLoading(true);
@@ -155,17 +170,12 @@ export default function PurchaseRecordsView({
     // Open Modal for Create
     const handleOpenCreateModal = () => {
         setEditingRecord(null);
+        setIsNewProductMode(false);
         setFormData({
+            ...initialFormData,
             productId: productsList.length > 0 ? productsList[0]._id : '',
-            name: '',
-            seller: '',
-            sellerContact: '',
-            quantityAdded: '10',
-            unitCost: '0',
-            purchaseDate: new Date().toISOString().slice(0, 16),
-            billScreenshot: '',
-            invoiceNumber: '',
-            notes: ''
+            category: categoriesList.length > 0 ? categoriesList[0]._id : '',
+            purchaseDate: new Date().toISOString().slice(0, 16)
         });
         setIsAddModalOpen(true);
     };
@@ -173,10 +183,12 @@ export default function PurchaseRecordsView({
     // Open Modal for Edit
     const handleOpenEditModal = (record: PurchaseRecord) => {
         setEditingRecord(record);
+        setIsNewProductMode(false);
 
         const prodId = typeof record.product === 'object' && record.product !== null ? record.product._id : record.product;
 
         setFormData({
+            ...initialFormData,
             productId: prodId || '',
             name: record.productName,
             seller: record.seller || '',
@@ -191,29 +203,100 @@ export default function PurchaseRecordsView({
         setIsAddModalOpen(true);
     };
 
-    // Handle File Upload to Base64 Data URL
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle Upload for Product Image
+    const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         if (file.size > 10 * 1024 * 1024) {
             showToast('File size must be under 10MB', 'error');
+            e.target.value = '';
             return;
         }
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            if (typeof reader.result === 'string') {
-                setFormData(prev => ({ ...prev, billScreenshot: reader.result as string }));
-                showToast('Bill screenshot uploaded successfully', 'success');
+        setIsUploadingProductImage(true);
+        try {
+            const uploadData = new FormData();
+            uploadData.append('image', file);
+            const { data } = await api.post('/purchases/upload-image?folder=products', uploadData);
+            setFormData(prev => ({ ...prev, image: data.url }));
+            showToast('Product image uploaded to Cloudinary successfully', 'success');
+        } catch (error: any) {
+            console.error('Failed to upload product image to Cloudinary', error);
+            showToast(error.response?.data?.msg || 'Failed to upload product image', 'error');
+        } finally {
+            setIsUploadingProductImage(false);
+            e.target.value = '';
+        }
+    };
+
+    // Handle Remove for Product Image (cleans up from Cloudinary if hosted there)
+    const handleRemoveProductImage = async () => {
+        const currentUrl = formData.image;
+        if (!currentUrl) return;
+
+        if (currentUrl.includes('res.cloudinary.com')) {
+            try {
+                await api.post('/purchases/delete-image', { imageUrl: currentUrl });
+                showToast('Product image removed from Cloudinary', 'success');
+            } catch (error) {
+                console.error('Failed to delete image from Cloudinary', error);
             }
-        };
-        reader.readAsDataURL(file);
+        }
+        setFormData(prev => ({ ...prev, image: '' }));
+    };
+
+    // Handle Upload for Bill Screenshot
+    const handleBillScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('File size must be under 10MB', 'error');
+            e.target.value = '';
+            return;
+        }
+
+        setIsUploadingBillScreenshot(true);
+        try {
+            const uploadData = new FormData();
+            uploadData.append('billScreenshot', file);
+            const { data } = await api.post('/purchases/upload-image?folder=purchases', uploadData);
+            setFormData(prev => ({ ...prev, billScreenshot: data.url }));
+            showToast('Bill screenshot uploaded to Cloudinary successfully', 'success');
+        } catch (error: any) {
+            console.error('Failed to upload bill screenshot to Cloudinary', error);
+            showToast(error.response?.data?.msg || 'Failed to upload bill screenshot', 'error');
+        } finally {
+            setIsUploadingBillScreenshot(false);
+            e.target.value = '';
+        }
+    };
+
+    // Handle Remove for Bill Screenshot (cleans up from Cloudinary if hosted there)
+    const handleRemoveBillScreenshot = async () => {
+        const currentUrl = formData.billScreenshot;
+        if (!currentUrl) return;
+
+        if (currentUrl.includes('res.cloudinary.com')) {
+            try {
+                await api.post('/purchases/delete-image', { imageUrl: currentUrl });
+                showToast('Bill screenshot removed from Cloudinary', 'success');
+            } catch (error) {
+                console.error('Failed to delete screenshot from Cloudinary', error);
+            }
+        }
+        setFormData(prev => ({ ...prev, billScreenshot: '' }));
     };
 
     // Handle Form Submit (Create or Update)
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (isNewProductMode && !formData.name.trim()) {
+            showToast('Product name is required for new product creation', 'error');
+            return;
+        }
 
         if (!formData.seller.trim()) {
             showToast('Seller name is required', 'error');
@@ -241,6 +324,35 @@ export default function PurchaseRecordsView({
                     notes: formData.notes
                 });
                 showToast('Purchase record updated & inventory synced!', 'success');
+            } else if (isNewProductMode) {
+                // Create a new product and purchase record
+                const parsedPackQty = Number(formData.packQuantity);
+                const parsedUnitSize = Number(formData.unitSize);
+                const hasValidUnitSize = !isNaN(parsedUnitSize) && parsedUnitSize > 0;
+
+                await api.post('/purchases', {
+                    isNewProduct: true,
+                    name: formData.name.trim(),
+                    price: Number(formData.price) || 0,
+                    category: formData.category || undefined,
+                    description: formData.description,
+                    image: formData.image,
+                    cgst: Number(formData.cgst) || 0,
+                    sgst: Number(formData.sgst) || 0,
+                    packQuantity: (!isNaN(parsedPackQty) && parsedPackQty > 0) ? parsedPackQty : 1,
+                    packUnit: formData.packUnit?.trim() || 'Piece',
+                    unitSize: hasValidUnitSize ? parsedUnitSize : 0,
+                    unitMeasure: hasValidUnitSize ? (formData.unitMeasure?.trim() || '') : '',
+                    seller: formData.seller,
+                    sellerContact: formData.sellerContact,
+                    quantityAdded: qty,
+                    unitCost: Number(formData.unitCost) || 0,
+                    purchaseDate: formData.purchaseDate,
+                    billScreenshot: formData.billScreenshot,
+                    invoiceNumber: formData.invoiceNumber,
+                    notes: formData.notes
+                });
+                showToast('New product created & inventory record saved!', 'success');
             } else {
                 // Create new record (restocking an existing product)
                 await api.post('/purchases', {
@@ -255,12 +367,12 @@ export default function PurchaseRecordsView({
                     invoiceNumber: formData.invoiceNumber,
                     notes: formData.notes
                 });
-                showToast('Purchase record created & inventory synced!', 'success');
+                showToast('Inventory restocked & purchase recorded successfully!', 'success');
             }
 
             setIsAddModalOpen(false);
             fetchRecords();
-            onRefreshProducts();
+            onRefreshProducts?.();
         } catch (error: any) {
             console.error('Error saving purchase record:', error);
             showToast(error.response?.data?.msg || 'Failed to save purchase record', 'error');
@@ -272,7 +384,7 @@ export default function PurchaseRecordsView({
     // Delete Record
     const handleDeleteRecord = async (id: string, productName: string) => {
         const ok = await confirm({
-            message: `Are you sure you want to delete the purchase record for "${productName}"? This will adjust product inventory accordingly.`,
+            message: `Are you sure you want to delete the purchase record for "${productName}"? This will adjust product inventory accordingly and remove any attached bill screenshot from Cloudinary.`,
             variant: 'danger'
         });
         if (!ok) return;
@@ -281,7 +393,7 @@ export default function PurchaseRecordsView({
             await api.delete(`/purchases/${id}`);
             showToast('Purchase record deleted and inventory stock adjusted', 'success');
             fetchRecords();
-            onRefreshProducts();
+            onRefreshProducts?.();
         } catch (error: any) {
             console.error('Failed to delete purchase record', error);
             showToast(error.response?.data?.msg || 'Failed to delete record', 'error');
@@ -570,8 +682,29 @@ export default function PurchaseRecordsView({
 
                         {/* Modal Form */}
                         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-                            {/* Target Product */}
-                            {!editingRecord ? (
+                            {/* Product Mode Selection (When creating record) */}
+                            {!editingRecord && (
+                                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1.5">Product Mode:</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsNewProductMode(false)}
+                                        className={`cursor-pointer px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${!isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                                    >
+                                        Restock Existing Product
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsNewProductMode(true)}
+                                        className={`cursor-pointer px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+                                    >
+                                        + Create New Product
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Product Selection vs New Product Creation */}
+                            {!isNewProductMode && !editingRecord ? (
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                                         Select Target Product <span className="text-red-500">*</span>
@@ -598,8 +731,201 @@ export default function PurchaseRecordsView({
                                         ))}
                                     </select>
                                     <p className="text-[10px] text-slate-400 mt-1">
-                                        Don't see the product you need? <button type="button" onClick={() => router.push('/admin/products')} className="cursor-pointer text-teal-600 hover:underline font-semibold">Create it on the Products page</button> first.
+                                        Need to create a brand-new product? Click the <button type="button" onClick={() => setIsNewProductMode(true)} className="cursor-pointer text-teal-600 hover:underline font-semibold">+ Create New Product</button> tab above.
                                     </p>
+                                </div>
+                            ) : isNewProductMode && !editingRecord ? (
+                                <div className="space-y-3.5 p-4 bg-teal-50/50 dark:bg-teal-950/20 rounded-2xl border border-teal-100 dark:border-teal-900/30">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-teal-800 dark:text-teal-300 flex items-center gap-1.5">
+                                            <Sparkles className="size-3.5" /> New Product Details
+                                        </span>
+                                        <span className="text-[10px] text-teal-600 dark:text-teal-400">
+                                            Auto-creates catalog product with packaging &amp; stock
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                            Product Name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={formData.name}
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                            placeholder="e.g. Bosch Heavy Duty Angle Grinder 800W"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Selling Price (₹)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={formData.price}
+                                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                                placeholder="2499"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
+                                            <select
+                                                value={formData.category}
+                                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
+                                            >
+                                                {categoriesList.map(c => (
+                                                    <option key={c._id} value={c._id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* Product Image Upload with Cloudinary Support */}
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                            Product Image
+                                        </label>
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                                            <label className="cursor-pointer bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border border-dashed border-teal-500/50 text-teal-700 dark:text-teal-300 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-2xs hover:border-teal-600 shrink-0">
+                                                {isUploadingProductImage ? (
+                                                    <>
+                                                        <Loader2 className="size-4 animate-spin text-teal-600" />
+                                                        <span>Uploading to Cloudinary...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Upload className="size-4 text-teal-600" />
+                                                        <span>Upload Image File</span>
+                                                    </>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    disabled={isUploadingProductImage}
+                                                    onChange={handleProductImageUpload}
+                                                    className="hidden"
+                                                />
+                                            </label>
+
+                                            <div className="flex-1">
+                                                <input
+                                                    type="text"
+                                                    value={formData.image}
+                                                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                                                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                                    placeholder="https://example.com/product.jpg"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {formData.image && (
+                                            <div className="mt-2.5 flex items-center gap-3 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                                                <div className="relative group shrink-0">
+                                                    <img
+                                                        src={formData.image}
+                                                        alt="Product Image Preview"
+                                                        className="size-14 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shadow-2xs"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mb-0.5 ${formData.image.includes('res.cloudinary.com') ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                                                        {formData.image.includes('res.cloudinary.com') ? 'Cloudinary Hosted Image' : 'External Image URL'}
+                                                    </span>
+                                                    <p className="text-[11px] text-slate-400 truncate">{formData.image}</p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRemoveProductImage}
+                                                    className="cursor-pointer px-2.5 py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center gap-1 font-semibold shrink-0"
+                                                    title="Remove and delete image from Cloudinary"
+                                                >
+                                                    <Trash2 className="size-3.5" /> Remove
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* CGST & SGST */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={formData.cgst}
+                                                onChange={(e) => setFormData({ ...formData, cgst: e.target.value })}
+                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                                placeholder="9"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={formData.sgst}
+                                                onChange={(e) => setFormData({ ...formData, sgst: e.target.value })}
+                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                                placeholder="9"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Packaging / Unit Size */}
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Packaging / Unit Size</label>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={formData.packQuantity}
+                                                onChange={(e) => setFormData({ ...formData, packQuantity: e.target.value })}
+                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                                placeholder="10"
+                                                title="Pack Quantity"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={formData.packUnit}
+                                                onChange={(e) => setFormData({ ...formData, packUnit: e.target.value })}
+                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                                placeholder="Box"
+                                                list="pack-unit-list"
+                                                title="Pack Unit"
+                                            />
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={formData.unitSize}
+                                                onChange={(e) => setFormData({ ...formData, unitSize: e.target.value })}
+                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                                placeholder="0.10"
+                                                title="Unit Size"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={formData.unitMeasure}
+                                                onChange={(e) => setFormData({ ...formData, unitMeasure: e.target.value })}
+                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                                placeholder="Liter"
+                                                list="unit-measure-list"
+                                                title="Unit Measure"
+                                            />
+                                        </div>
+                                        <datalist id="pack-unit-list">
+                                            <option value="Box" /><option value="Carton" /><option value="Piece" /><option value="Packet" /><option value="Bottle" /><option value="Pouch" />
+                                        </datalist>
+                                        <datalist id="unit-measure-list">
+                                            <option value="Liter" /><option value="ml" /><option value="Kg" /><option value="gram" /><option value="Piece" />
+                                        </datalist>
+                                        <p className="text-[10px] text-slate-400 mt-1">e.g. 10 Box &times; 0.10 Liter</p>
+                                    </div>
                                 </div>
                             ) : (
                                 <div>
@@ -713,18 +1039,29 @@ export default function PurchaseRecordsView({
                                 </div>
                             </div>
 
-                            {/* Bill Screenshot Attachment (File Upload & URL Input) */}
+                            {/* Bill Screenshot Attachment (Cloudinary Upload & URL Input) */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                                     Bill Screenshot Attachment
                                 </label>
-                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                                    <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-700/60 border border-dashed border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all">
-                                        <Upload className="size-4 text-teal-600" /> Upload Image File
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                                    <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-700/60 border border-dashed border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-2xs shrink-0">
+                                        {isUploadingBillScreenshot ? (
+                                            <>
+                                                <Loader2 className="size-4 animate-spin text-teal-600" />
+                                                <span>Uploading to Cloudinary...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="size-4 text-teal-600" />
+                                                <span>Upload Image File</span>
+                                            </>
+                                        )}
                                         <input
                                             type="file"
                                             accept="image/*"
-                                            onChange={handleFileUpload}
+                                            disabled={isUploadingBillScreenshot}
+                                            onChange={handleBillScreenshotUpload}
                                             className="hidden"
                                         />
                                     </label>
@@ -741,19 +1078,27 @@ export default function PurchaseRecordsView({
                                 </div>
 
                                 {formData.billScreenshot && (
-                                    <div className="mt-2 relative inline-block group">
-                                        <img
-                                            src={formData.billScreenshot}
-                                            alt="Bill Screenshot Preview"
-                                            className="h-24 max-w-full rounded-xl border border-slate-200 dark:border-slate-700 object-cover shadow-xs"
-                                        />
+                                    <div className="mt-2.5 flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                                        <div className="relative group shrink-0">
+                                            <img
+                                                src={formData.billScreenshot}
+                                                alt="Bill Screenshot Preview"
+                                                className="size-14 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shadow-2xs"
+                                            />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mb-0.5 ${formData.billScreenshot.includes('res.cloudinary.com') ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                                                {formData.billScreenshot.includes('res.cloudinary.com') ? 'Cloudinary Hosted Bill' : 'Screenshot Image URL'}
+                                            </span>
+                                            <p className="text-[11px] text-slate-400 truncate">{formData.billScreenshot}</p>
+                                        </div>
                                         <button
                                             type="button"
-                                            onClick={() => setFormData({ ...formData, billScreenshot: '' })}
-                                            className="cursor-pointer absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
-                                            title="Remove screenshot"
+                                            onClick={handleRemoveBillScreenshot}
+                                            className="cursor-pointer px-2.5 py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center gap-1 font-semibold shrink-0"
+                                            title="Remove and delete screenshot from Cloudinary"
                                         >
-                                            <X className="size-3" />
+                                            <Trash2 className="size-3.5" /> Remove
                                         </button>
                                     </div>
                                 )}

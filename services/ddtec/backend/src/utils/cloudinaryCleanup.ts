@@ -8,7 +8,7 @@ export const extractCloudinaryPublicId = (url: string): string | null => {
     if (!url || !url.includes('res.cloudinary.com')) return null;
     const afterUpload = url.split('/upload/')[1];
     if (!afterUpload) return null;
-    const withoutVersion = afterUpload.replace(/^v\d+\//, '');
+    const withoutVersion = afterUpload.replace(/^(?:[a-zA-Z0-9_,-]+\/)*v\d+\//, '').replace(/^v\d+\//, '');
     const withoutExtension = withoutVersion.replace(/\.[a-zA-Z0-9]+$/, '');
     return withoutExtension || null;
 };
