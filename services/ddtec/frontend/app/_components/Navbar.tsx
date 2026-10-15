@@ -91,7 +91,7 @@ export default function Navbar() {
     // Links to separate, dedicated pages
     { name: "Blog", href: "/blogs" },
     { name: "Quotation", href: "/quotation" },
-    ...(user && user.role === 'warehouse' ? [{ name: "Warehouse", href: "/warehouse" }] : [])
+    ...(mounted && user && user.role === 'warehouse' ? [{ name: "Warehouse", href: "/warehouse" }] : [])
   ];
 
   // Filter out any links that have been explicitly disabled by the Admin!
@@ -198,7 +198,11 @@ export default function Navbar() {
       >
         <nav className={cn("px-4 md:px-6 h-16 flex items-center justify-between relative", (pathname?.startsWith('/admin') || pathname?.startsWith('/warehouse')) ? "w-full" : "container mx-auto")}>
 
-          <Link href={user?.role === "admin" ? "/admin" : "/"} className="flex items-center gap-2 group">
+          <Link
+            href={mounted && user?.role === "admin" ? "/admin" : "/"}
+            suppressHydrationWarning
+            className="flex items-center gap-2 group"
+          >
             <div className="size-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold shadow-lg shadow-teal-500/20 group-hover:shadow-teal-500/40 transition-all">
               {SITE_CONFIG.logoLetter}
             </div>
@@ -261,7 +265,7 @@ export default function Navbar() {
                 aria-label="Cart"
               >
                 <ShoppingBag className="size-5" />
-                {cartCount > 0 && (
+                {mounted && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 size-5 bg-teal-500 rounded-full border-2 border-white dark:border-slate-900 text-[10px] flex items-center justify-center text-white font-bold">
                     {cartCount}
                   </span>
@@ -415,7 +419,7 @@ export default function Navbar() {
               </div>
 
               <div className="flex flex-col p-4 gap-2 overflow-y-auto scrollbar-hide">
-                {pathname?.startsWith('/admin') && user?.role === 'admin' ? (
+                {pathname?.startsWith('/admin') && mounted && user?.role === 'admin' ? (
                   ADMIN_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
                     const isActiveItem = isNavItemActive(href, pathname);
                     return (
@@ -468,7 +472,7 @@ export default function Navbar() {
                       <ShoppingBag className="size-4" />
                       <span>Cart</span>
                     </div>
-                    {cartCount > 0 ? (
+                    {mounted && cartCount > 0 ? (
                       <span className="size-5 bg-teal-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold">
                         {cartCount}
                       </span>
@@ -480,46 +484,48 @@ export default function Navbar() {
               </div>
 
               <div className="p-4 border-t dark:border-slate-800">
-                {user ? (
-                  <div className="flex flex-col gap-2">
-                    {user.role === 'admin' && !pathname?.startsWith('/admin') && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setMenuOpen(false)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-semibold cursor-pointer"
+                {mounted ? (
+                  user ? (
+                    <div className="flex flex-col gap-2">
+                      {user.role === 'admin' && !pathname?.startsWith('/admin') && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setMenuOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-semibold cursor-pointer"
+                        >
+                          <LayoutDashboard className="size-5" /> Dashboard
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => { logout(); setMenuOpen(false); }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-semibold cursor-pointer"
                       >
-                        <LayoutDashboard className="size-5" /> Dashboard
-                      </Link>
-                    )}
-                    <button
-                      onClick={() => { logout(); setMenuOpen(false); }}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-semibold cursor-pointer"
-                    >
-                      <LogOut className="size-5" /> Logout
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {isRouteActive('/login') && isComponentEnabled('Login') && (
-                      <Link
-                        href="/login"
-                        onClick={() => setMenuOpen(false)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-bold"
-                      >
-                        <User className="size-5" /> Login
-                      </Link>
-                    )}
-                    {isRouteActive('/signup') && (
-                      <Link
-                        href="/signup"
-                        onClick={() => setMenuOpen(false)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg shadow-teal-500/20"
-                      >
-                        Sign Up
-                      </Link>
-                    )}
-                  </div>
-                )}
+                        <LogOut className="size-5" /> Logout
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {isRouteActive('/login') && isComponentEnabled('Login') && (
+                        <Link
+                          href="/login"
+                          onClick={() => setMenuOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-bold"
+                        >
+                          <User className="size-5" /> Login
+                        </Link>
+                      )}
+                      {isRouteActive('/signup') && (
+                        <Link
+                          href="/signup"
+                          onClick={() => setMenuOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg shadow-teal-500/20"
+                        >
+                          Sign Up
+                        </Link>
+                      )}
+                    </div>
+                  )
+                ) : null}
               </div>
 
               <div className="mt-auto p-5 border-t dark:border-slate-800">

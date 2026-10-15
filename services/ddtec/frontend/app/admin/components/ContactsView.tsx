@@ -26,6 +26,7 @@ import {
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
 import { useConfirm } from '@/app/_context/ConfirmContext';
+import CompanySelect from './CompanySelect';
 
 interface ContactEmail {
     label: 'work' | 'personal' | 'other';
@@ -936,11 +937,11 @@ export default function ContactsView() {
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Company</label>
-                                    <input
-                                        type="text"
+                                    <CompanySelect
                                         value={formData.company}
-                                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(companyName) => setFormData(prev => ({ ...prev, company: companyName }))}
+                                        placeholder="Company"
+                                        size="sm"
                                     />
                                 </div>
                                 <div>

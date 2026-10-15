@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IInvoiceItem {
+    productId?: string;
     itemDescription: string;
     hsnCode?: string;
     qty: number;
@@ -68,6 +69,7 @@ const PartyDetailsSchema = new Schema({
 }, { _id: false });
 
 const InvoiceItemSchema = new Schema({
+    productId: { type: String, trim: true },
     itemDescription: { type: String, required: true, trim: true },
     hsnCode: { type: String, trim: true },
     qty: { type: Number, required: true, default: 1, min: 1 },

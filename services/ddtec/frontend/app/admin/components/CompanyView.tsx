@@ -193,7 +193,10 @@ export default function CompanyView() {
                     <div className="flex items-center justify-center size-11 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600">
                         <Building2 className="size-5" />
                     </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Manage companies, their location and GST number</p>
+                    <div>
+                        <h2 className="text-base font-bold text-slate-900 dark:text-white">Companies</h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Manage companies, their location and GST number</p>
+                    </div>
                 </div>
 
                 <button

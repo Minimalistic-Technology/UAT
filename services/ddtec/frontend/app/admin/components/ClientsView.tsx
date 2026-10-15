@@ -25,6 +25,7 @@ import {
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
 import { useConfirm } from '@/app/_context/ConfirmContext';
+import CompanySelect from './CompanySelect';
 
 interface ClientProject {
     _id: string;
@@ -743,13 +744,18 @@ export default function ClientsView() {
 
                             <div>
                                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Company</label>
-                                <input
-                                    type="text"
+                                <CompanySelect
                                     value={formData.company}
-                                    onChange={(e) => { setFormData({ ...formData, company: e.target.value }); setFormErrors({ ...formErrors, company: undefined }); }}
-                                    placeholder="Company name"
-                                    maxLength={MAX_COMPANY_LEN}
-                                    className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${formErrors.company ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
+                                    onChange={(companyName, company) => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            company: companyName,
+                                            gstin: (!prev.gstin && company?.gstNumber) ? company.gstNumber : prev.gstin,
+                                        }));
+                                        setFormErrors(prev => ({ ...prev, company: undefined }));
+                                    }}
+                                    placeholder="Select or enter company..."
+                                    error={formErrors.company}
                                 />
                                 {formErrors.company && <p className="text-xs text-red-500 mt-1">{formErrors.company}</p>}
                             </div>

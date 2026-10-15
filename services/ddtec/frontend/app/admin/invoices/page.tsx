@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
     Receipt,
     Plus,
@@ -25,13 +26,15 @@ import {
     ChevronDown,
     ChevronUp,
     Sparkles,
-    ShoppingBag
+    ShoppingBag,
+    Loader2
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "@/app/_context/ToastContext";
 import { useConfirm } from "@/app/_context/ConfirmContext";
 
 interface InvoiceItem {
+    productId?: string;
     itemDescription: string;
     hsnCode: string;
     qty: number;
@@ -170,12 +173,49 @@ function InvoiceStatusDropdown({
     );
 }
 
-export default function AdminInvoicesPage() {
+function AdminInvoicesContent() {
     const { showToast } = useToast();
     const confirm = useConfirm();
+    const searchParams = useSearchParams();
 
-    // Active Tab: 'create' | 'list'
-    const [activeTab, setActiveTab] = useState<"create" | "list">("create");
+    // Active Tab: 'create' | 'list' - initialized from URL query param if present
+    const queryTab = searchParams.get("tab");
+    const [activeTab, setActiveTab] = useState<"create" | "list">(
+        queryTab === "list" ? "list" : "create"
+    );
+
+    const handleTabChange = (tab: "create" | "list") => {
+        setActiveTab(tab);
+        try {
+            localStorage.setItem("admin_invoices_tab", tab);
+            const url = new URL(window.location.href);
+            url.searchParams.set("tab", tab);
+            window.history.replaceState(null, "", url.toString());
+        } catch (e) {
+            console.error("Failed to update tab URL/storage", e);
+        }
+    };
+
+    // Keep tab in sync with URL searchParams or fallback to saved localStorage value
+    useEffect(() => {
+        const currentParamTab = searchParams.get("tab");
+        if (currentParamTab === "list" || currentParamTab === "create") {
+            setActiveTab(currentParamTab);
+            try {
+                localStorage.setItem("admin_invoices_tab", currentParamTab);
+            } catch (e) {}
+        } else {
+            try {
+                const savedTab = localStorage.getItem("admin_invoices_tab");
+                if (savedTab === "list" || savedTab === "create") {
+                    setActiveTab(savedTab);
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("tab", savedTab);
+                    window.history.replaceState(null, "", url.toString());
+                }
+            } catch (e) {}
+        }
+    }, [searchParams]);
 
     // Client & Product catalogs for auto-picker
     const [clientsList, setClientsList] = useState<ClientOption[]>([]);
@@ -309,6 +349,7 @@ export default function AdminInvoicesPage() {
         if (!prod) return;
 
         const newItem: InvoiceItem = {
+            productId: prod._id,
             itemDescription: prod.name,
             hsnCode: prod.hsnCode || "",
             qty: 1,
@@ -331,12 +372,36 @@ export default function AdminInvoicesPage() {
         showToast(`Added ${prod.name}`, "info");
     };
 
+    // Filter out products already present in line items so they cannot be selected twice
+    const availableProducts = useMemo(() => {
+        return productsList.filter((p) => {
+            const isAlreadyAdded = items.some((item) => {
+                if (item.productId && item.productId === p._id) return true;
+                if (
+                    item.itemDescription &&
+                    item.itemDescription.trim().toLowerCase() === p.name.trim().toLowerCase()
+                ) {
+                    return true;
+                }
+                return false;
+            });
+            return !isAlreadyAdded;
+        });
+    }, [productsList, items]);
+
     // Line item editing handlers
     const updateItem = (index: number, patch: Partial<InvoiceItem>) => {
         setItems((prev) =>
             prev.map((item, i) => {
                 if (i !== index) return item;
                 const updated = { ...item, ...patch };
+                // If user edited the description away from the catalog product name, detach productId
+                if (patch.itemDescription !== undefined && updated.productId) {
+                    const prod = productsList.find((p) => p._id === updated.productId);
+                    if (prod && prod.name.trim().toLowerCase() !== patch.itemDescription.trim().toLowerCase()) {
+                        delete updated.productId;
+                    }
+                }
                 const qty = Math.max(0, Number(updated.qty) || 0);
                 const price = Math.max(0, Number(updated.price) || 0);
                 updated.amount = Number((qty * price).toFixed(2));
@@ -505,6 +570,7 @@ export default function AdminInvoicesPage() {
             taxId: ""
         });
         setItems([{ itemDescription: "", hsnCode: "", qty: 1, price: 0, amount: 0 }]);
+        setSelectedCatalogProduct("");
         setDiscount(0);
         setTaxRate(18);
     };
@@ -557,7 +623,7 @@ export default function AdminInvoicesPage() {
                 <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 w-fit">
                     <button
                         type="button"
-                        onClick={() => setActiveTab("create")}
+                        onClick={() => handleTabChange("create")}
                         className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                             activeTab === "create"
                                 ? "bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm font-bold"
@@ -569,7 +635,7 @@ export default function AdminInvoicesPage() {
                     </button>
                     <button
                         type="button"
-                        onClick={() => setActiveTab("list")}
+                        onClick={() => handleTabChange("list")}
                         className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                             activeTab === "list"
                                 ? "bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 shadow-sm font-bold"
@@ -910,10 +976,15 @@ export default function AdminInvoicesPage() {
                                         <select
                                             value={selectedCatalogProduct}
                                             onChange={(e) => handleAddCatalogProduct(e.target.value)}
-                                            className="px-2.5 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 max-w-[200px]"
+                                            disabled={availableProducts.length === 0}
+                                            className={`px-2.5 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 max-w-[200px] ${
+                                                availableProducts.length === 0 ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                                            }`}
                                         >
-                                            <option value="">Select a product...</option>
-                                            {productsList.map((p) => (
+                                            <option value="">
+                                                {availableProducts.length > 0 ? "Select a product..." : "All products added"}
+                                            </option>
+                                            {availableProducts.map((p) => (
                                                 <option key={p._id} value={p._id}>
                                                     {p.name} ({currSym}{p.price})
                                                 </option>
@@ -1474,7 +1545,7 @@ export default function AdminInvoicesPage() {
                                     type="button"
                                     onClick={() => {
                                         setCreatedInvoiceData(null);
-                                        setActiveTab("list");
+                                        handleTabChange("list");
                                     }}
                                     className="px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-right cursor-pointer"
                                 >
@@ -1672,5 +1743,19 @@ export default function AdminInvoicesPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function AdminInvoicesPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-[400px] flex items-center justify-center">
+                    <Loader2 className="size-8 animate-spin text-teal-600" />
+                </div>
+            }
+        >
+            <AdminInvoicesContent />
+        </Suspense>
     );
 }
