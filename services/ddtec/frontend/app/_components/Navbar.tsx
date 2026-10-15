@@ -8,60 +8,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Sun, Moon, ShoppingBag, ChevronRight, User, LogOut, ChevronDown, Package, Settings, FileText, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LoadingBar from "./LoadingBar";
-import api from "@/lib/api";
+import { SITE_CONFIG } from "@/lib/constants";
+import { ADMIN_NAV_ITEMS, isNavItemActive } from "../admin/components/Sidebar";
 import { useAuth } from "../_context/AuthContext";
 import { useCart } from "../_context/CartContext";
 import { useDynamicRoutes } from "../_context/RouteContext";
 import { useSettings } from "../_context/SettingsContext";
 
-// Helper component for recursive category rendering
-const CategoryItem = ({ category, allCategories, depth = 0 }: { category: any, allCategories: any[], depth?: number }) => {
-  const children = allCategories.filter(c => c.parent && (c.parent._id === category._id || c.parent === category._id));
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const handleToggle = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsExpanded(!isExpanded);
-  };
-
-  return (
-    <div className="flex flex-col">
-      <div className={cn(
-        "flex items-center justify-between pr-2 transition-colors",
-        depth === 0 ? "hover:bg-slate-50 dark:hover:bg-slate-800" : "hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
-      )}>
-        <Link
-          href={`/shop?category=${category.slug || category._id}`}
-          className={cn(
-            "block py-1.5 text-sm transition-colors hover:text-teal-600 dark:hover:text-teal-400 truncate flex-1",
-            depth === 0
-              ? "font-bold text-slate-800 dark:text-slate-100 px-4 py-2"
-              : "text-slate-600 dark:text-slate-400 border-l-2 border-transparent hover:border-teal-100"
-          )}
-          style={{ paddingLeft: depth > 0 ? `${depth * 12 + 16}px` : undefined }}
-        >
-          {category.name}
-        </Link>
-        {children.length > 0 && (
-          <button
-            onClick={handleToggle}
-            className="p-1 rounded-md text-slate-400 hover:text-teal-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-          >
-            {isExpanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-          </button>
-        )}
-      </div>
-      {children.length > 0 && isExpanded && (
-        <div className="flex flex-col">
-          {children.map(child => (
-            <CategoryItem key={child._id} category={child} allCategories={allCategories} depth={depth + 1} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function Navbar() {
   const { theme, setTheme } = useTheme();
@@ -74,10 +27,16 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [currentHash, setCurrentHash] = useState("");
-  const [categories, setCategories] = useState<any[]>([]);
-  const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const pathname = usePathname();
   const router = useRouter();
+
+  // Longest-href-first so a nested route (e.g. /admin/coupons/new) matches its
+  // closest ancestor nav item (/admin/coupons) rather than a shorter unrelated one.
+  const activeAdminTitle = pathname?.startsWith('/admin')
+    ? [...ADMIN_NAV_ITEMS]
+        .sort((a, b) => b.href.length - a.href.length)
+        .find((item) => isNavItemActive(item.href, pathname))?.label
+    : undefined;
 
 
   useEffect(() => {
@@ -85,17 +44,18 @@ export default function Navbar() {
     if (window.location.hash) {
       setCurrentHash(window.location.hash.substring(1));
     }
-    const fetchCategories = async () => {
-      try {
-        const { data } = await api.get('/categories');
-        console.log("Navbar: Fetched categories:", data);
-        setCategories(data);
-      } catch (error) {
-        console.error("Navbar: Failed to fetch categories", error);
-      }
-    };
-    fetchCategories();
   }, []);
+
+  // Lock background scroll while the mobile menu drawer is open
+  useEffect(() => {
+    if (menuOpen) {
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = previousOverflow;
+      };
+    }
+  }, [menuOpen]);
 
   // Scroll Spy Logic
   useEffect(() => {
@@ -122,13 +82,15 @@ export default function Navbar() {
   }, [pathname]);
 
   const navLinks = [
+    // Landing page sections, in the order they appear on the page
     { name: "Home", href: "/" },
-    { name: "Shop", href: "/shop" },
     { name: "Who we are", href: "/who" },
     { name: "What we offer", href: "/what" },
+    { name: "Shop", href: "/shop" },
+    { name: "Contact", href: "/contact" },
+    // Links to separate, dedicated pages
     { name: "Blog", href: "/blogs" },
     { name: "Quotation", href: "/quotation" },
-    { name: "Contact", href: "/contact" },
     ...(user && user.role === 'warehouse' ? [{ name: "Warehouse", href: "/warehouse" }] : [])
   ];
 
@@ -236,13 +198,13 @@ export default function Navbar() {
       >
         <nav className={cn("px-4 md:px-6 h-16 flex items-center justify-between relative", (pathname?.startsWith('/admin') || pathname?.startsWith('/warehouse')) ? "w-full" : "container mx-auto")}>
 
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href={user?.role === "admin" ? "/admin" : "/"} className="flex items-center gap-2 group">
             <div className="size-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold shadow-lg shadow-teal-500/20 group-hover:shadow-teal-500/40 transition-all">
-              D
+              {SITE_CONFIG.logoLetter}
             </div>
             <div className="flex flex-col">
               <span className="font-bold text-xl tracking-tight leading-none text-slate-900 dark:text-white">
-                DDTEC
+                {SITE_CONFIG.name}
               </span>
               {pathname?.startsWith('/warehouse') && (
                 <span className="text-[10px] text-teal-600 dark:text-teal-400 font-extrabold tracking-wider uppercase leading-none mt-0.5">
@@ -252,14 +214,15 @@ export default function Navbar() {
             </div>
           </Link>
 
+          {activeAdminTitle && (
+            <span className="hidden sm:block absolute left-1/2 -translate-x-1/2 text-sm md:text-base font-bold text-slate-900 dark:text-white tracking-tight">
+              {activeAdminTitle}
+            </span>
+          )}
+
           <div className="hidden md:flex items-center gap-1">
             {activeNavLinks.map((link) => (
-              <div
-                key={link.href}
-                className="relative"
-                onMouseEnter={() => { console.log("Hovering:", link.name); setHoveredLink(link.name); }}
-                onMouseLeave={() => setHoveredLink(null)}
-              >
+              <div key={link.href} className="relative">
                 <Link
                   href={link.href}
                   onClick={(e) => handleNavClick(e, link.href)}
@@ -279,38 +242,13 @@ export default function Navbar() {
                   )}
                   {link.name}
                 </Link>
-
-                {/* Shop Dropdown */}
-                <AnimatePresence>
-                  {link.name === "Shop" && hoveredLink === "Shop" && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 py-3 overflow-hidden z-50"
-                    >
-                      {categories.length > 0 ? (
-                        <div className="max-h-[60vh] overflow-y-auto">
-                          {categories
-                            .filter(cat => !cat.parent) // Top-level categories
-                            .map((parent) => (
-                              <CategoryItem key={parent._id} category={parent} allCategories={categories} depth={0} />
-                            ))}
-                        </div>
-                      ) : (
-                        <div className="px-4 py-2.5 text-sm text-slate-500 italic">No categories found</div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             ))}
           </div>
 
 
           <div className="flex items-center gap-2 sm:gap-4">
-            {(!user || (user.role !== 'admin' && user.role !== 'warehouse')) && isRouteActive('/cart') && (
+            {isRouteActive('/cart') && (
               <Link
                 href="/cart"
                 onClick={(e) => {
@@ -319,6 +257,8 @@ export default function Navbar() {
                   setMenuOpen(false);
                 }}
                 className="p-2 rounded-full transition-colors relative group hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
+                title="Cart"
+                aria-label="Cart"
               >
                 <ShoppingBag className="size-5" />
                 {cartCount > 0 && (
@@ -332,7 +272,7 @@ export default function Navbar() {
             {mounted && (
               <button
                 onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-                className="p-2 rounded-full transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="p-2 rounded-full transition-colors hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
               >
                 {theme === "light" ? <Moon className="size-5" /> : <Sun className="size-5" />}
               </button>
@@ -346,7 +286,7 @@ export default function Navbar() {
                   <button
                     onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                     onBlur={() => setTimeout(() => setShowProfileDropdown(false), 200)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer"
                   >
                     <div className="size-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600">
                       <User className="size-4" />
@@ -474,40 +414,86 @@ export default function Navbar() {
                 </button>
               </div>
 
-              <div className="flex flex-col p-4 gap-2">
-                {activeNavLinks.map((link) => (
+              <div className="flex flex-col p-4 gap-2 overflow-y-auto scrollbar-hide">
+                {pathname?.startsWith('/admin') && user?.role === 'admin' ? (
+                  ADMIN_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+                    const isActiveItem = isNavItemActive(href, pathname);
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setMenuOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer",
+                          isActiveItem
+                            ? "bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 font-semibold"
+                            : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        )}
+                      >
+                        <Icon className="size-4 shrink-0" />
+                        {label}
+                      </Link>
+                    );
+                  })
+                ) : (
+                  activeNavLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={(e) => handleNavClick(e, link.href)}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer",
+                        isActive(link.href)
+                          ? "bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 font-semibold"
+                          : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      )}
+                    >
+                      {link.name}
+                      <ChevronRight className="size-4 opacity-50" />
+                    </Link>
+                  ))
+                )}
+                {isRouteActive('/cart') && (
                   <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={(e) => handleNavClick(e, link.href)}
+                    href="/cart"
+                    onClick={() => setMenuOpen(false)}
                     className={cn(
-                      "flex items-center justify-between p-3 rounded-xl transition-all",
-                      isActive(link.href)
+                      "flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer",
+                      pathname === "/cart"
                         ? "bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 font-semibold"
                         : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                     )}
                   >
-                    {link.name}
-                    <ChevronRight className="size-4 opacity-50" />
+                    <div className="flex items-center gap-2">
+                      <ShoppingBag className="size-4" />
+                      <span>Cart</span>
+                    </div>
+                    {cartCount > 0 ? (
+                      <span className="size-5 bg-teal-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold">
+                        {cartCount}
+                      </span>
+                    ) : (
+                      <ChevronRight className="size-4 opacity-50" />
+                    )}
                   </Link>
-                ))}
+                )}
               </div>
 
               <div className="p-4 border-t dark:border-slate-800">
                 {user ? (
                   <div className="flex flex-col gap-2">
-                    {user.role === 'admin' && (
+                    {user.role === 'admin' && !pathname?.startsWith('/admin') && (
                       <Link
                         href="/admin"
                         onClick={() => setMenuOpen(false)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-semibold"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-semibold cursor-pointer"
                       >
                         <LayoutDashboard className="size-5" /> Dashboard
                       </Link>
                     )}
                     <button
                       onClick={() => { logout(); setMenuOpen(false); }}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-semibold"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-semibold cursor-pointer"
                     >
                       <LogOut className="size-5" /> Logout
                     </button>
@@ -537,7 +523,7 @@ export default function Navbar() {
               </div>
 
               <div className="mt-auto p-5 border-t dark:border-slate-800">
-                <p className="text-xs text-center text-slate-400">© 2024 DDTEC</p>
+                <p className="text-xs text-center text-slate-400">© {new Date().getFullYear()} {SITE_CONFIG.name}</p>
               </div>
             </motion.div>
           </>

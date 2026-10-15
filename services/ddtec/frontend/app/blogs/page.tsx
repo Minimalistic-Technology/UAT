@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Calendar, User, ArrowRight, Loader2, Tag } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 
 interface Blog {
     _id: string;
@@ -132,7 +133,7 @@ export default function BlogsPage() {
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <Calendar className="size-4" />
-                                                        <span>{new Date(blog.createdAt).toLocaleDateString()}</span>
+                                                        <span>{formatDate(blog.createdAt)}</span>
                                                     </div>
                                                 </div>
                                                 <ArrowRight className="size-5 text-teal-600 dark:text-teal-400 group-hover:translate-x-1 transition-transform" />

@@ -23,8 +23,13 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import routes from './routes';
 import connectDB from './config/database';
+import { generalLimiter } from './middleware/rateLimit.middleware';
 
 const app = express();
+
+// Trust the first hop proxy (Render/any load balancer) so req.ip reflects the real client
+// IP instead of the proxy's — required for IP-based rate limiting to work correctly.
+app.set('trust proxy', 1);
 
 // Middleware
 // Middleware
@@ -49,6 +54,7 @@ app.use(express.json({
     }
 }));
 app.use(morgan('dev'));
+app.use(generalLimiter);
 
 // Database Connection
 // Only connect if MONGO_URI is present to avoid crashing on start without it

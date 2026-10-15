@@ -22,6 +22,7 @@ export interface ISettings extends Document {
         flatDeliveryFee: number;
         isFreeDeliveryEnabled: boolean;
     };
+    quotationLogoUrl?: string;
     updatedAt: Date;
 }
 
@@ -45,7 +46,8 @@ const SettingsSchema: Schema = new Schema({
         freeDeliveryThreshold: { type: Number, default: 500 },
         flatDeliveryFee: { type: Number, default: 50 },
         isFreeDeliveryEnabled: { type: Boolean, default: false }
-    }
+    },
+    quotationLogoUrl: { type: String, default: '' }
 }, { timestamps: true });
 
 export default mongoose.model<ISettings>("Settings", SettingsSchema);

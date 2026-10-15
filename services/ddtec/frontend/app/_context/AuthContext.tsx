@@ -24,6 +24,7 @@ interface AuthContextType {
     logout: () => void;
     loading: boolean;
     checkUser: () => Promise<void>;
+    isLoggingOut: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
     const { showToast } = useToast();
@@ -70,21 +72,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => window.removeEventListener("session-expired", handleSessionExpired);
     }, [pathname, router, showToast]);
 
+    useEffect(() => {
+        if (isLoggingOut && pathname === "/login") {
+            setIsLoggingOut(false);
+        }
+    }, [isLoggingOut, pathname]);
+
     const login = async (email: string, password: string, redirectUrl?: string) => {
         try {
             const res = await api.post('/auth/login', { email, password });
 
             setUser(res.data.user);
 
-            if (redirectUrl) {
-                router.push(redirectUrl);
-                return;
-            }
-
             if (res.data.user.role === 'admin') {
                 router.push("/admin");
             } else if (res.data.user.role === 'warehouse') {
                 router.push("/warehouse");
+            } else if (redirectUrl) {
+                router.push(redirectUrl);
             } else {
                 router.push("/");
             }
@@ -103,15 +108,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             setUser(res.data.user);
 
-            if (redirectUrl) {
-                router.push(redirectUrl);
-                return;
-            }
-
             if (res.data.user.role === 'admin') {
                 router.push("/admin");
             } else if (res.data.user.role === 'warehouse') {
                 router.push("/warehouse");
+            } else if (redirectUrl) {
+                router.push(redirectUrl);
             } else {
                 router.push("/");
             }
@@ -123,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const logout = async () => {
+        setIsLoggingOut(true);
         try {
             await api.post('/auth/logout');
         } catch (error) {
@@ -137,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // We keep interface clean.
 
     return (
-        <AuthContext.Provider value={{ user, login, loginWithGoogle, logout, loading, checkUser }}>
+        <AuthContext.Provider value={{ user, login, loginWithGoogle, logout, loading, checkUser, isLoggingOut }}>
             {children}
         </AuthContext.Provider>
     );

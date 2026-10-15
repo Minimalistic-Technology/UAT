@@ -8,6 +8,7 @@ import {
     Check, ArrowRight, Zap, FileText, SendHorizontal, Info, Search
 } from "lucide-react";
 import api from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
 import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
 
@@ -459,14 +460,9 @@ export default function ScheduleMailView() {
                         <div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
                             <Mail className="w-6 h-6" />
                         </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                Email Scheduler
-                            </h1>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                                Schedule marketing dispatches, newsletters, and automated emails with pre-built HTML templates.
-                            </p>
-                        </div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Schedule marketing dispatches, newsletters, and automated emails with pre-built HTML templates.
+                        </p>
                     </div>
                 </div>
 
@@ -644,7 +640,7 @@ export default function ScheduleMailView() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                                                     <Calendar className="w-4 h-4 text-slate-400" />
-                                                    <span>{new Date(item.scheduledAt).toLocaleString()}</span>
+                                                    <span>{formatDateTime(item.scheduledAt)}</span>
                                                 </div>
                                                 {isSent && item.sentAt && (
                                                     <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">
@@ -728,11 +724,15 @@ export default function ScheduleMailView() {
             {/* CREATE / EDIT SCHEDULE MODAL */}
             <AnimatePresence>
                 {isCreateModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto"
+                        onClick={() => setIsCreateModalOpen(false)}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-3xl max-w-4xl w-full border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden my-8"
                         >
                             {/* Modal Header */}
@@ -1197,11 +1197,15 @@ export default function ScheduleMailView() {
             {/* ADD CUSTOM TEMPLATE MODAL */}
             <AnimatePresence>
                 {isAddTemplateModalOpen && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+                    <div
+                        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto"
+                        onClick={() => { setIsAddTemplateModalOpen(false); setEditingTemplateId(null); }}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-3xl max-w-2xl w-full border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden my-8"
                         >
                             <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
@@ -1344,11 +1348,15 @@ export default function ScheduleMailView() {
             {/* PREVIEW HTML MODAL (For existing schedules in table) */}
             <AnimatePresence>
                 {previewItem && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+                        onClick={() => setPreviewItem(null)}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-3xl max-w-3xl w-full border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden my-8"
                         >
                             <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">

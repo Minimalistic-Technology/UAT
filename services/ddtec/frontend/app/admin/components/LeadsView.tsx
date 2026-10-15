@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Target,
     Plus,
@@ -20,8 +21,14 @@ import {
     MapPin,
     Calendar,
     User as UserIcon,
+    Phone,
+    LayoutGrid,
+    Users,
+    ChevronRight,
+    UserCheck,
 } from 'lucide-react';
 import api from '@/lib/api';
+import { formatDateTime } from '@/lib/utils';
 import { useToast } from '@/app/_context/ToastContext';
 import { useConfirm } from '@/app/_context/ConfirmContext';
 
@@ -55,6 +62,8 @@ interface Lead {
     assignedTo?: AssignedUser | string | null;
     followUpDate?: string;
     note?: string;
+    convertedClient?: string | null;
+    convertedContact?: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -120,6 +129,14 @@ const formatCurrency = (n: number) => `₹${(n || 0).toLocaleString('en-IN')}`;
 const staffLabel = (u: AssignedUser) =>
     u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Unknown';
 
+const initialsFor = (label: string) =>
+    label
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(w => w[0]?.toUpperCase())
+        .join('') || '?';
+
 export default function LeadsView() {
     const { showToast } = useToast();
     const confirm = useConfirm();
@@ -143,11 +160,73 @@ export default function LeadsView() {
     const [savingStages, setSavingStages] = useState(false);
 
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [menuAnchor, setMenuAnchor] = useState<{ top: number; bottom: number; right: number } | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+    const menuRef = useRef<HTMLDivElement | null>(null);
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
+    const closeLeadMenu = () => { setOpenMenuId(null); setMenuAnchor(null); setMenuPosition(null); };
+
+    useEffect(() => {
+        if (!openMenuId) return;
+        const handleScroll = (e: Event) => {
+            if (menuRef.current && e.target instanceof Node && menuRef.current.contains(e.target)) return;
+            closeLeadMenu();
+        };
+        window.addEventListener('scroll', handleScroll, true);
+        window.addEventListener('resize', closeLeadMenu);
+        return () => {
+            window.removeEventListener('scroll', handleScroll, true);
+            window.removeEventListener('resize', closeLeadMenu);
+        };
+    }, [openMenuId]);
+
+    useLayoutEffect(() => {
+        if (!openMenuId || !menuAnchor) return;
+        const margin = 8;
+        const width = menuRef.current?.offsetWidth ?? 176;
+        const height = menuRef.current?.offsetHeight ?? 0;
+        let left = menuAnchor.right - width;
+        left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
+        let top = menuAnchor.bottom + 4;
+        if (top + height > window.innerHeight - margin) {
+            top = menuAnchor.top - height - 4;
+        }
+        top = Math.max(margin, top);
+        setMenuPosition({ top, left });
+    }, [openMenuId, menuAnchor]);
+
     const [staffList, setStaffList] = useState<StaffUser[]>([]);
     const [locatingCurrent, setLocatingCurrent] = useState(false);
+
+    const [isAssignOpen, setIsAssignOpen] = useState(false);
+    const [assignSearch, setAssignSearch] = useState('');
+    const assignDropdownRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (!isAssignOpen) return;
+        const handleClickOutside = (e: MouseEvent) => {
+            if (assignDropdownRef.current && !assignDropdownRef.current.contains(e.target as Node)) {
+                setIsAssignOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isAssignOpen]);
+
+    const [viewMode, setViewMode] = useState<'board' | 'person'>('board');
+    const [personFilter, setPersonFilter] = useState<string>('everyone');
+    const [collapsedPersons, setCollapsedPersons] = useState<Set<string>>(new Set());
+
+    const togglePersonCollapsed = (id: string) => {
+        setCollapsedPersons(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
 
     const fetchStaff = async () => {
         try {
@@ -187,6 +266,12 @@ export default function LeadsView() {
         fetchStaff();
     }, []);
 
+    const filteredStaffList = useMemo(() => {
+        const q = assignSearch.trim().toLowerCase();
+        if (!q) return staffList;
+        return staffList.filter(u => staffLabel(u).toLowerCase().includes(q));
+    }, [staffList, assignSearch]);
+
     const sortedStages = useMemo(() => [...stages].sort((a, b) => a.order - b.order), [stages]);
     const boardStages = useMemo(() => sortedStages.filter(s => !s.isWon && !s.isLost), [sortedStages]);
 
@@ -197,16 +282,66 @@ export default function LeadsView() {
 
     const leadsByStage = (stageId: string) => boardLeads.filter(l => l.stage === stageId);
 
+    const stageMap = useMemo(() => new Map(stages.map(s => [s._id, s])), [stages]);
+
+    const resolvePerson = (lead: Lead): { id: string; label: string } => {
+        if (lead.assignedTo && typeof lead.assignedTo === 'object') {
+            return { id: lead.assignedTo._id, label: staffLabel(lead.assignedTo) };
+        }
+        if (lead.assignedTo) {
+            const staff = staffList.find(s => s._id === lead.assignedTo);
+            return { id: lead.assignedTo as string, label: staff ? staffLabel(staff) : 'Unknown' };
+        }
+        return { id: 'unassigned', label: 'Unassigned' };
+    };
+
+    const personGroups = useMemo(() => {
+        const map = new Map<string, { id: string; label: string; leads: Lead[] }>();
+        leads.forEach(lead => {
+            const { id, label } = resolvePerson(lead);
+            if (!map.has(id)) map.set(id, { id, label, leads: [] });
+            map.get(id)!.leads.push(lead);
+        });
+        return Array.from(map.values()).sort((a, b) => {
+            if (a.id === 'unassigned') return 1;
+            if (b.id === 'unassigned') return -1;
+            return a.label.localeCompare(b.label);
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [leads, staffList]);
+
+    const personGroupStats = (groupLeads: Lead[]) => {
+        let open = 0;
+        let pipeline = 0;
+        let won = 0;
+        groupLeads.forEach(l => {
+            const stage = stageMap.get(l.stage);
+            if (stage?.isWon) won += 1;
+            else if (!stage?.isLost) {
+                open += 1;
+                pipeline += l.value || 0;
+            }
+        });
+        return { open, pipeline, won };
+    };
+
+    const visiblePersonGroups = useMemo(
+        () => (personFilter === 'everyone' ? personGroups : personGroups.filter(g => g.id === personFilter)),
+        [personGroups, personFilter]
+    );
+
     const openNewLeadForm = () => {
         setEditingLead(null);
         setFormData({ ...emptyFormData(), stage: boardStages[0]?._id || '' });
         setFormErrors({});
+        setAssignSearch('');
         setIsFormOpen(true);
     };
 
     const openEditLeadForm = (lead: Lead) => {
         setOpenMenuId(null);
         setEditingLead(lead);
+        setAssignSearch('');
         const followUp = lead.followUpDate ? new Date(lead.followUpDate) : null;
         const pad = (n: number) => String(n).padStart(2, '0');
         setFormData({
@@ -384,6 +519,28 @@ export default function LeadsView() {
         }
     };
 
+    const [convertingId, setConvertingId] = useState<string | null>(null);
+
+    const handleConvertLead = async (lead: Lead) => {
+        const ok = await confirm({
+            title: 'Convert to Client',
+            message: `Convert "${lead.name}" into a Client and add them to Contacts?`,
+            confirmLabel: 'Convert',
+        });
+        if (!ok) return;
+        setConvertingId(lead._id);
+        try {
+            const { data } = await api.post(`leads/${lead._id}/convert`);
+            setLeads(prev => prev.map(l => (l._id === lead._id ? { ...l, convertedClient: data.client?._id, convertedContact: data.contact?._id } : l)));
+            showToast('Lead converted to Client & Contact', 'success');
+        } catch (err: any) {
+            console.error('Error converting lead:', err);
+            showToast(err?.response?.data?.msg || 'Failed to convert lead', 'error');
+        } finally {
+            setConvertingId(null);
+        }
+    };
+
     const handleDrop = (stageId: string) => {
         setDragOverStage(null);
         if (draggingId) {
@@ -462,6 +619,7 @@ export default function LeadsView() {
         try {
             const res = await api.post('lead-stages', { name: trimmedName, color: newStageColor });
             setStageDrafts(prev => [...prev, res.data]);
+            setStages(prev => [...prev, res.data]);
             setNewStageName('');
             setNewStageColor(STAGE_COLOR_PRESETS[0]);
         } catch (err) {
@@ -514,17 +672,14 @@ export default function LeadsView() {
     };
 
     return (
-        <div className="space-y-5">
+        <div className="flex flex-col gap-5 h-[calc(100vh-8rem)] min-w-0">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="shrink-0 flex flex-wrap items-center justify-between gap-4 p-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center size-11 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600">
                         <Target className="size-5" />
                     </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Leads</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Your sales pipeline</p>
-                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Your sales pipeline</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -562,29 +717,181 @@ export default function LeadsView() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                <div className="relative flex-1 min-w-[220px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search leads..."
-                        className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
+            <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center p-0.5 rounded-lg bg-slate-100 dark:bg-slate-700/60 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('board')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'board'
+                                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                }`}
+                        >
+                            <LayoutGrid className="size-3.5" /> Board
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setViewMode('person')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'person'
+                                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                }`}
+                        >
+                            <Users className="size-3.5" /> By person
+                        </button>
+                    </div>
+                    <div className="relative flex-1 min-w-[220px] max-w-sm">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search leads..."
+                            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        />
+                    </div>
                 </div>
                 <div className="text-sm text-slate-500 dark:text-slate-400">
                     Active leads {boardLeads.length}
                 </div>
             </div>
 
-            {/* Board */}
+            {/* Person filter chips */}
+            {!loading && viewMode === 'person' && (
+                <div className="shrink-0 flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setPersonFilter('everyone')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${personFilter === 'everyone'
+                            ? 'border-teal-400 bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-600'
+                            : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                            }`}
+                    >
+                        Everyone
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-900/10 dark:bg-white/10">{leads.length}</span>
+                    </button>
+                    {personGroups.map(g => (
+                        <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => setPersonFilter(g.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors ${personFilter === g.id
+                                ? 'border-teal-400 bg-teal-50 text-teal-700 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-600'
+                                : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                }`}
+                        >
+                            {g.label}
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-900/10 dark:bg-white/10">{g.leads.length}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Board / By person */}
+            <div className="flex-1 min-h-0 min-w-0">
             {loading ? (
                 <div className="flex items-center justify-center py-20">
                     <Loader2 className="size-8 animate-spin text-teal-600" />
                 </div>
+            ) : viewMode === 'person' ? (
+                <div className="h-full space-y-4 overflow-y-auto pr-1 -mr-1">
+                    {visiblePersonGroups.length === 0 ? (
+                        <div className="text-center text-sm text-slate-400 dark:text-slate-500 py-16 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                            No leads found
+                        </div>
+                    ) : (
+                        visiblePersonGroups.map(group => {
+                            const { open, pipeline, won } = personGroupStats(group.leads);
+                            const collapsed = collapsedPersons.has(group.id);
+                            const stagesWithLeads = sortedStages
+                                .map(stage => ({ stage, leads: group.leads.filter(l => l.stage === stage._id) }))
+                                .filter(s => s.leads.length > 0);
+                            return (
+                                <div key={group.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => togglePersonCollapsed(group.id)}
+                                        className="w-full flex flex-wrap items-center justify-between gap-3 p-4 text-left"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {collapsed ? (
+                                                <ChevronRight className="size-4 text-slate-400 shrink-0" />
+                                            ) : (
+                                                <ChevronDown className="size-4 text-slate-400 shrink-0" />
+                                            )}
+                                            <div className="flex items-center justify-center size-9 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-xs font-bold shrink-0">
+                                                {initialsFor(group.label)}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-sm text-slate-900 dark:text-white">{group.label}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                    {group.leads.length} lead{group.leads.length === 1 ? '' : 's'} · {open} open · {won} won
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-center min-w-[64px]">
+                                                <div className="text-[10px] text-slate-500 dark:text-slate-400">Open</div>
+                                                <div className="font-bold text-sm text-slate-900 dark:text-white">{open}</div>
+                                            </div>
+                                            <div className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-center min-w-[80px]">
+                                                <div className="text-[10px] text-slate-500 dark:text-slate-400">Pipeline</div>
+                                                <div className="font-bold text-sm text-slate-900 dark:text-white">{formatCurrency(pipeline)}</div>
+                                            </div>
+                                            <div className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-center min-w-[64px]">
+                                                <div className="text-[10px] text-slate-500 dark:text-slate-400">Won</div>
+                                                <div className="font-bold text-sm text-slate-900 dark:text-white">{won}</div>
+                                            </div>
+                                        </div>
+                                    </button>
+
+                                    {!collapsed && (
+                                        <div className="border-t border-slate-100 dark:border-slate-700 p-4 space-y-4">
+                                            {stagesWithLeads.map(({ stage, leads: stageLeads }) => (
+                                                <div key={stage._id}>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="size-2 rounded-full" style={{ backgroundColor: stage.color }} />
+                                                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{stage.name}</span>
+                                                        <span className="text-xs text-slate-400">{stageLeads.length}</span>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        {stageLeads.map(lead => (
+                                                            <div
+                                                                key={lead._id}
+                                                                className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-slate-50/60 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-700"
+                                                            >
+                                                                <div>
+                                                                    <p className="font-medium text-sm text-slate-900 dark:text-white">{lead.name}</p>
+                                                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                                        {lead.company && (
+                                                                            <span className="flex items-center gap-1"><Building2 className="size-3" /> {lead.company}</span>
+                                                                        )}
+                                                                        {lead.phone && (
+                                                                            <span className="flex items-center gap-1"><Phone className="size-3" /> {lead.phone}</span>
+                                                                        )}
+                                                                        {lead.location && (
+                                                                            <span className="flex items-center gap-1"><MapPin className="size-3" /> {lead.location}</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                {lead.value > 0 && (
+                                                                    <p className="font-semibold text-sm text-teal-600 dark:text-teal-400">{formatCurrency(lead.value)}</p>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="flex h-full flex-nowrap items-stretch gap-4 overflow-x-auto pb-2">
                     {boardStages.map(col => {
                         const colLeads = leadsByStage(col._id);
                         return (
@@ -593,12 +900,12 @@ export default function LeadsView() {
                                 onDragOver={(e) => { e.preventDefault(); setDragOverStage(col._id); }}
                                 onDragLeave={() => setDragOverStage(prev => (prev === col._id ? null : prev))}
                                 onDrop={(e) => { e.preventDefault(); handleDrop(col._id); }}
-                                className={`rounded-xl border p-3 min-h-[220px] transition-colors ${dragOverStage === col._id
+                                className={`flex flex-col rounded-xl border p-3 h-full w-72 shrink-0 transition-colors ${dragOverStage === col._id
                                     ? 'border-teal-400 bg-teal-50/50 dark:bg-teal-900/10'
                                     : 'border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/30'
                                     }`}
                             >
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center justify-between mb-3 shrink-0">
                                     <div className="flex items-center gap-2">
                                         <span className="size-2.5 rounded-full" style={{ backgroundColor: col.color }} />
                                         <span className="font-semibold text-sm text-slate-900 dark:text-white">{col.name}</span>
@@ -606,7 +913,7 @@ export default function LeadsView() {
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="flex-1 space-y-2 overflow-y-auto pr-1 -mr-1">
                                     {colLeads.length === 0 ? (
                                         <div className="text-center text-xs text-slate-400 dark:text-slate-500 py-8">
                                             No leads
@@ -624,7 +931,16 @@ export default function LeadsView() {
                                                 <div className="flex items-start justify-between gap-2">
                                                     <p className="font-medium text-sm text-slate-900 dark:text-white break-words">{lead.name}</p>
                                                     <button
-                                                        onClick={() => setOpenMenuId(openMenuId === lead._id ? null : lead._id)}
+                                                        onClick={(e) => {
+                                                            if (openMenuId === lead._id) {
+                                                                closeLeadMenu();
+                                                            } else {
+                                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                                setMenuAnchor({ top: rect.top, bottom: rect.bottom, right: rect.right });
+                                                                setMenuPosition({ top: rect.bottom + 4, left: rect.right - 176 });
+                                                                setOpenMenuId(lead._id);
+                                                            }
+                                                        }}
                                                         className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
                                                     >
                                                         <MoreHorizontal className="size-4" />
@@ -643,7 +959,7 @@ export default function LeadsView() {
                                                 {lead.followUpDate && (
                                                     <p className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
                                                         <Calendar className="size-3" />
-                                                        {new Date(lead.followUpDate).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                        {formatDateTime(lead.followUpDate)}
                                                     </p>
                                                 )}
                                                 {lead.assignedTo && typeof lead.assignedTo === 'object' && (
@@ -651,40 +967,13 @@ export default function LeadsView() {
                                                         <UserIcon className="size-3" /> {staffLabel(lead.assignedTo)}
                                                     </p>
                                                 )}
-
-                                                {openMenuId === lead._id && (
-                                                    <div className="absolute right-2 top-9 z-10 w-44 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg py-1 text-sm max-h-72 overflow-y-auto">
-                                                        {sortedStages.filter(s => s._id !== lead.stage).map(s => (
-                                                            <button
-                                                                key={s._id}
-                                                                onClick={() => updateLeadStage(lead._id, s._id)}
-                                                                className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
-                                                            >
-                                                                {s.isWon ? (
-                                                                    <Trophy className="size-3.5 text-emerald-600" />
-                                                                ) : s.isLost ? (
-                                                                    <XCircle className="size-3.5 text-amber-600" />
-                                                                ) : (
-                                                                    <span className="size-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-                                                                )}
-                                                                Move to {s.name}
-                                                            </button>
-                                                        ))}
-                                                        <div className="my-1 border-t border-slate-100 dark:border-slate-600" />
-                                                        <button
-                                                            onClick={() => openEditLeadForm(lead)}
-                                                            className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
-                                                        >
-                                                            <Pencil className="size-3.5" /> Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteLead(lead._id)}
-                                                            className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-red-600"
-                                                        >
-                                                            <Trash2 className="size-3.5" /> Delete
-                                                        </button>
-                                                    </div>
+                                                {(lead.convertedClient || lead.convertedContact) && (
+                                                    <p className={`flex items-center gap-1 text-xs font-semibold mt-1 ${lead.convertedClient && lead.convertedContact ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                                        <UserCheck className="size-3" />
+                                                        {lead.convertedClient && lead.convertedContact ? 'Converted to Client' : 'Partially converted'}
+                                                    </p>
                                                 )}
+
                                             </div>
                                         ))
                                     )}
@@ -694,11 +983,77 @@ export default function LeadsView() {
                     })}
                 </div>
             )}
+            </div>
+
+            {/* Lead card action menu (portal to escape column scroll clipping) */}
+            {openMenuId && menuPosition && typeof document !== 'undefined' && createPortal(
+                (() => {
+                    const lead = leads.find(l => l._id === openMenuId);
+                    if (!lead) return null;
+                    return (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={closeLeadMenu} />
+                            <div
+                                ref={menuRef}
+                                className="fixed z-50 w-44 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg py-1 text-sm max-h-72 overflow-y-auto"
+                                style={{ top: menuPosition.top, left: menuPosition.left }}
+                            >
+                                {sortedStages.filter(s => s._id !== lead.stage).map(s => (
+                                    <button
+                                        key={s._id}
+                                        onClick={() => { updateLeadStage(lead._id, s._id); closeLeadMenu(); }}
+                                        className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
+                                    >
+                                        {s.isWon ? (
+                                            <Trophy className="size-3.5 text-emerald-600" />
+                                        ) : s.isLost ? (
+                                            <XCircle className="size-3.5 text-amber-600" />
+                                        ) : (
+                                            <span className="size-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                                        )}
+                                        Move to {s.name}
+                                    </button>
+                                ))}
+                                <div className="my-1 border-t border-slate-100 dark:border-slate-600" />
+                                {!(lead.convertedClient && lead.convertedContact) && (
+                                    <button
+                                        disabled={convertingId === lead._id}
+                                        onClick={() => { closeLeadMenu(); handleConvertLead(lead); }}
+                                        className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-teal-700 dark:text-teal-400 disabled:opacity-50"
+                                    >
+                                        <UserCheck className="size-3.5" />
+                                        {lead.convertedClient || lead.convertedContact ? 'Finish Conversion' : 'Convert to Client'}
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => { openEditLeadForm(lead); closeLeadMenu(); }}
+                                    className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
+                                >
+                                    <Pencil className="size-3.5" /> Edit
+                                </button>
+                                <button
+                                    onClick={() => { handleDeleteLead(lead._id); closeLeadMenu(); }}
+                                    className="w-full flex items-center gap-2 text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-600 text-red-600"
+                                >
+                                    <Trash2 className="size-3.5" /> Delete
+                                </button>
+                            </div>
+                        </>
+                    );
+                })(),
+                document.body
+            )}
 
             {/* New Lead Modal */}
             {isFormOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                    <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[90vh] flex flex-col">
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                    onClick={() => { setIsFormOpen(false); setEditingLead(null); setFormErrors({}); }}
+                >
+                    <div
+                        className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[90vh] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-start justify-between p-4 border-b border-slate-100 dark:border-slate-700">
                             <div>
                                 <h3 className="font-bold text-slate-900 dark:text-white">{editingLead ? 'Edit Lead' : 'New Lead'}</h3>
@@ -831,18 +1186,49 @@ export default function LeadsView() {
                                     </select>
                                     {formErrors.stage && <p className="text-xs text-red-500 mt-1">{formErrors.stage}</p>}
                                 </div>
-                                <div>
+                                <div className="relative" ref={assignDropdownRef}>
                                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Assign To</label>
-                                    <select
-                                        value={formData.assignedTo}
-                                        onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
-                                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                    >
-                                        <option value="">Unassigned</option>
-                                        {staffList.map(u => (
-                                            <option key={u._id} value={u._id}>{staffLabel(u)}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative flex items-center">
+                                        <Search className="absolute left-3 size-4 text-slate-400 pointer-events-none" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search staff..."
+                                            value={isAssignOpen ? assignSearch : (formData.assignedTo ? (staffList.find(u => u._id === formData.assignedTo) ? staffLabel(staffList.find(u => u._id === formData.assignedTo)!) : 'Unknown') : 'Unassigned')}
+                                            onChange={(e) => setAssignSearch(e.target.value)}
+                                            onFocus={() => { setIsAssignOpen(true); setAssignSearch(''); }}
+                                            readOnly={!isAssignOpen}
+                                            className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                                        />
+                                        <ChevronDown className="absolute right-2.5 size-3.5 text-slate-400 pointer-events-none" />
+                                    </div>
+
+                                    {isAssignOpen && (
+                                        <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-56 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setFormData({ ...formData, assignedTo: '' }); setIsAssignOpen(false); setAssignSearch(''); }}
+                                                className="w-full text-left px-3 py-2 text-sm hover:bg-teal-50 dark:hover:bg-teal-950/40 transition text-slate-600 dark:text-slate-300"
+                                            >
+                                                Unassigned
+                                            </button>
+                                            {filteredStaffList.length === 0 ? (
+                                                <div className="px-4 py-4 text-xs text-slate-400 text-center">
+                                                    No matching staff found
+                                                </div>
+                                            ) : (
+                                                filteredStaffList.map(u => (
+                                                    <button
+                                                        key={u._id}
+                                                        type="button"
+                                                        onClick={() => { setFormData({ ...formData, assignedTo: u._id }); setIsAssignOpen(false); setAssignSearch(''); }}
+                                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-teal-50 dark:hover:bg-teal-950/40 transition ${formData.assignedTo === u._id ? 'text-teal-600 dark:text-teal-400 font-medium' : 'text-slate-800 dark:text-slate-200'}`}
+                                                    >
+                                                        {staffLabel(u)}
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -902,8 +1288,14 @@ export default function LeadsView() {
 
             {/* Manage Pipeline Stages Modal */}
             {isStagesOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-                    <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[85vh] flex flex-col">
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                    onClick={() => setIsStagesOpen(false)}
+                >
+                    <div
+                        className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-xl max-h-[85vh] flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="flex items-start justify-between p-4 border-b border-slate-100 dark:border-slate-700">
                             <div>
                                 <h3 className="font-bold text-slate-900 dark:text-white">Manage Pipeline Stages</h3>

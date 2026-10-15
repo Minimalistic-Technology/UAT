@@ -20,6 +20,14 @@ export interface IProduct extends Document {
     discountValue: number;
     isActive: boolean;
     showOnHome: boolean;
+    showAddToCart: boolean;
+    showBuyNow: boolean;
+    codAvailable: boolean;
+    productType: 'physical' | 'digital';
+    isReturnable: boolean;
+    showDeliveryChecker: boolean;
+    allowedCourierPartners: string[];
+    customDeliveryEstimate?: string;
     taxes: Array<{ name: string; rate: number }>;
     cgst: number;
     sgst: number;
@@ -30,6 +38,11 @@ export interface IProduct extends Document {
     seller?: string;
     lastInventoryUpdate?: Date;
     billScreenshot?: string;
+    packQuantity?: number; // e.g. 10 (as in "10 Box")
+    packUnit?: string; // e.g. "Box", "Carton", "Piece"
+    unitSize?: number; // e.g. 0.10 (as in "0.10 Liter")
+    unitMeasure?: string; // e.g. "Liter", "ml", "Kg", "gram"
+    highlights?: Array<{ icon: string; title: string; description: string; color: string }>;
 }
 
 const ProductSchema: Schema = new Schema({
@@ -52,6 +65,14 @@ const ProductSchema: Schema = new Schema({
     discountValue: { type: Number, default: 0, min: 0 },
     isActive: { type: Boolean, default: true },
     showOnHome: { type: Boolean, default: false },
+    showAddToCart: { type: Boolean, default: true },
+    showBuyNow: { type: Boolean, default: true },
+    codAvailable: { type: Boolean, default: true },
+    productType: { type: String, enum: ['physical', 'digital'], default: 'physical' },
+    isReturnable: { type: Boolean, default: true },
+    showDeliveryChecker: { type: Boolean, default: true },
+    allowedCourierPartners: { type: [String], enum: ['BLUEDART', 'DTDC'], default: ['BLUEDART', 'DTDC'] },
+    customDeliveryEstimate: { type: String, default: '' },
     cgst: { type: Number, default: 0, min: 0 },
     sgst: { type: Number, default: 0, min: 0 },
     weightKg: { type: Number, default: 0.5, min: 0.05 },
@@ -61,12 +82,27 @@ const ProductSchema: Schema = new Schema({
     seller: { type: String },
     lastInventoryUpdate: { type: Date, default: Date.now },
     billScreenshot: { type: String },
+    packQuantity: { type: Number, default: 1, min: 0 },
+    packUnit: { type: String, default: 'Piece' },
+    unitSize: { type: Number, default: 0, min: 0 },
+    unitMeasure: { type: String, default: '' },
     taxes: [
         {
             name: { type: String },
             rate: { type: Number }
         }
-    ]
+    ],
+    highlights: {
+        type: [
+            {
+                icon: { type: String, default: 'ShieldCheck' },
+                title: { type: String, required: true },
+                description: { type: String, default: '' },
+                color: { type: String, default: 'teal' }
+            }
+        ],
+        default: undefined
+    }
 }, { timestamps: true });
 
 export default mongoose.model<IProduct>('Product', ProductSchema);

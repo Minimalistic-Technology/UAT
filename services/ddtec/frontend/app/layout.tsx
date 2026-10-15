@@ -1,4 +1,6 @@
 import "./globals.css";
+import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Poppins } from "next/font/google";
 import { ThemeProvider } from "./provider/theme-provider";
 import Navbar from "./_components/Navbar";
@@ -17,6 +19,12 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
+export const metadata: Metadata = {
+  icons: {
+    icon: "/favicon.ico",
+  },
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -34,7 +42,9 @@ export default function RootLayout({
               <SettingsProvider>
                 <RouteProvider>
                   <CartProvider>
-                    <Navbar />
+                    <Suspense fallback={null}>
+                      <Navbar />
+                    </Suspense>
 
                     {/* Main content grows to push footer down */}
                     <main className="min-h-screen flex-1">

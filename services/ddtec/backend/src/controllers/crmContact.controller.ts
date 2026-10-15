@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import CrmContact from '../models/CrmContact';
+import Lead from '../models/Lead';
 import { parseVCard, parseGoogleCsv } from '../utils/contactImport';
 
 const ADMIN_ROLES = ['admin', 'super_admin'];
@@ -223,6 +224,7 @@ export const bulkDeleteContacts = async (req: Request, res: Response): Promise<v
         }
 
         const result = await CrmContact.deleteMany({ _id: { $in: ids } });
+        await Lead.updateMany({ convertedContact: { $in: ids } }, { $set: { convertedContact: null } });
         res.json({ deleted: result.deletedCount || 0 });
     } catch (err: any) {
         console.error('Error bulk deleting contacts:', err);
@@ -239,6 +241,7 @@ export const deleteContact = async (req: Request, res: Response): Promise<void> 
             res.status(404).json({ msg: 'Contact not found' });
             return;
         }
+        await Lead.updateMany({ convertedContact: contact._id }, { $set: { convertedContact: null } });
         res.json({ msg: 'Contact deleted' });
     } catch (err: any) {
         console.error('Error deleting contact:', err);

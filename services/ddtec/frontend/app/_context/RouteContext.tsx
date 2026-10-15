@@ -28,7 +28,6 @@ export const useDynamicRoutes = () => useContext(RouteContext);
 
 export const RouteProvider = ({ children }: { children: React.ReactNode }) => {
     const [routes, setRoutes] = useState<RouteConfig[]>([]);
-    const [loading, setLoading] = useState(true);
     const pathname = usePathname();
 
     const fetchRoutes = async () => {
@@ -37,8 +36,6 @@ export const RouteProvider = ({ children }: { children: React.ReactNode }) => {
             setRoutes(data);
         } catch (error) {
             console.error("Failed to fetch dynamic routes", error);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -46,12 +43,10 @@ export const RouteProvider = ({ children }: { children: React.ReactNode }) => {
         fetchRoutes();
     }, [pathname]);
 
-    // Skip route checking if loading or if it's admin route (to prevent lockout from admin)
-    // You cannot block the route checking itself, but you can always allow /admin
-    if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-    }
-
+    // Render children immediately rather than blocking on a provider-level loader — while
+    // `routes` is still empty (fetch in flight), the disabled-route check below is simply
+    // skipped (routes default to active) until the real data arrives and this re-renders.
+    // This avoids stacking a redundant loading screen behind each page's own spinner.
     // Sort routes by length path descending so that specific routes (e.g. /signup) match before generic routes (e.g. / )
     const sortedRoutes = [...routes].sort((a, b) => b.path.length - a.path.length);
     const currentRouteConfig = sortedRoutes.find(r => pathname === r.path || pathname.startsWith(r.path + '/'));

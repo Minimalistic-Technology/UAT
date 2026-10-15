@@ -25,11 +25,11 @@ export const getSettings = async (req: Request, res: Response): Promise<void> =>
 
 export const updateSettings = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { components, onboarding, delivery } = req.body;
+        const { components, onboarding, delivery, quotationLogoUrl } = req.body;
         let settings = await Settings.findOne();
 
         if (!settings) {
-            settings = await Settings.create({ components, onboarding, delivery });
+            settings = await Settings.create({ components, onboarding, delivery, quotationLogoUrl });
         } else {
             if (components) {
                 const currentComponents = (settings.components as any)?.toObject ? (settings.components as any).toObject() : (settings.components || {});
@@ -45,6 +45,9 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
                 const currentDelivery = (settings.delivery as any)?.toObject ? (settings.delivery as any).toObject() : (settings.delivery || {});
                 settings.delivery = { ...currentDelivery, ...delivery };
                 settings.markModified('delivery');
+            }
+            if (quotationLogoUrl !== undefined) {
+                settings.quotationLogoUrl = quotationLogoUrl;
             }
             await settings.save();
         }

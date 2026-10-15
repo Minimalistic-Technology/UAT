@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import Lead from '../models/Lead';
 import LeadStage, { DEFAULT_LEAD_STAGES } from '../models/LeadStage';
+import Client from '../models/Client';
+import CrmContact from '../models/CrmContact';
 
 // Empty strings from optional selects/dates should not be cast as ObjectId/Date
 const sanitizeLeadBody = (body: any) => {
@@ -114,6 +116,64 @@ export const updateLead = async (req: Request, res: Response): Promise<void> => 
         res.json(lead);
     } catch (err: any) {
         sendLeadError(res, err, 'Server error updating lead');
+    }
+};
+
+// @desc    Convert a lead into a Client + CRM Contact
+// @route   POST /api/leads/:id/convert
+export const convertLeadToClient = async (req: any, res: Response): Promise<void> => {
+    try {
+        const lead = await Lead.findById(req.params.id);
+        if (!lead) {
+            res.status(404).json({ msg: 'Lead not found' });
+            return;
+        }
+
+        // Re-check that the previously linked records still exist — one side
+        // may have been deleted independently (e.g. the Contact was removed
+        // from the Contacts screen) while the other survives.
+        let client = lead.convertedClient ? await Client.findById(lead.convertedClient) : null;
+        let contact = lead.convertedContact ? await CrmContact.findById(lead.convertedContact) : null;
+
+        if (client && contact) {
+            res.status(400).json({ msg: 'Lead has already been converted' });
+            return;
+        }
+
+        if (!client) {
+            client = new Client({
+                name: lead.name,
+                phone: lead.phone,
+                email: lead.email,
+                company: lead.company,
+                note: lead.note,
+                createdBy: req.user?._id
+            });
+            await client.save();
+        }
+
+        if (!contact) {
+            const nameParts = lead.name.trim().split(/\s+/);
+            contact = new CrmContact({
+                firstName: nameParts[0],
+                lastName: nameParts.slice(1).join(' ') || '-',
+                emails: lead.email ? [{ label: 'work', value: lead.email }] : [],
+                phones: lead.phone ? [{ label: 'mobile', value: lead.phone }] : [],
+                company: lead.company,
+                note: lead.note,
+                source: 'manual',
+                createdBy: req.user?._id
+            });
+            await contact.save();
+        }
+
+        lead.convertedClient = client._id as any;
+        lead.convertedContact = contact._id as any;
+        await lead.save();
+
+        res.json({ lead, client, contact });
+    } catch (err: any) {
+        sendLeadError(res, err, 'Server error converting lead');
     }
 };
 

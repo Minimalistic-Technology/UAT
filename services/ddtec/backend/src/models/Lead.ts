@@ -13,6 +13,8 @@ export interface ILead extends Document {
     followUpDate?: Date;
     note?: string;
     createdBy?: mongoose.Types.ObjectId;
+    convertedClient?: mongoose.Types.ObjectId;
+    convertedContact?: mongoose.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -46,7 +48,9 @@ const LeadSchema: Schema = new Schema({
     assignedTo: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     followUpDate: { type: Date },
     note: { type: String, maxlength: 2000 },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' }
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    convertedClient: { type: Schema.Types.ObjectId, ref: 'Client', default: null },
+    convertedContact: { type: Schema.Types.ObjectId, ref: 'CrmContact', default: null }
 }, { timestamps: true });
 
 LeadSchema.index({ name: 'text', company: 'text', email: 'text' });

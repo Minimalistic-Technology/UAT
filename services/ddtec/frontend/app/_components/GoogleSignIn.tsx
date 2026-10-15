@@ -70,7 +70,7 @@ export default function GoogleSignIn({ onCredential, onError, text = "continue_w
           theme: "outline",
           size: "large",
           text,
-          shape: "pill",
+          shape: "rectangular",
           width: 350,
         });
       } catch (e) {
@@ -108,5 +108,12 @@ export default function GoogleSignIn({ onCredential, onError, text = "continue_w
     );
   }
 
-  return <div ref={containerRef} className="flex justify-center" />;
+  // Google's widget caps out at size="large" (~40px tall), noticeably shorter than this
+  // site's own buttons (py-4, ~56px). There's no taller option in the API, so scale the
+  // rendered button up via CSS to visually match.
+  return (
+    <div className="flex justify-center py-1.5">
+      <div ref={containerRef} style={{ transform: "scale(1.25)", transformOrigin: "center" }} />
+    </div>
+  );
 }
