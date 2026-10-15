@@ -218,7 +218,8 @@ function QuotationContent() {
                 "/quotation/generate",
                 {
                     items: selectedItems.map(i => ({ itemId: i.itemId, quantity: i.quantity })),
-                    buyer
+                    buyer,
+                    title: "Quotation"
                 },
                 { responseType: "blob" }
             );

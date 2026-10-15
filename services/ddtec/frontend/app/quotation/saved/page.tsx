@@ -146,7 +146,8 @@ export default function SavedQuotationsPage() {
                 "/quotation/generate",
                 {
                     items: quotation.items,
-                    buyer: quotation.buyer
+                    buyer: quotation.buyer,
+                    title: "Quotation"
                 },
                 { responseType: "blob" }
             );

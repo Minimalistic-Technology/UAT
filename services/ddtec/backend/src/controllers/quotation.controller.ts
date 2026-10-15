@@ -71,21 +71,22 @@ async function fetchLogoImage(logoUrl?: string): Promise<{ dataUrl: string; form
     try {
         const response = await axios.get<ArrayBuffer>(logoUrl, {
             responseType: 'arraybuffer',
-            timeout: 8000
+            timeout: 8000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
         });
 
         const contentType = String(response.headers['content-type'] || '').toLowerCase();
         let format = 'PNG';
         if (contentType.includes('jpeg') || contentType.includes('jpg') || /\.jpe?g($|\?)/i.test(logoUrl)) {
             format = 'JPEG';
-        } else if (contentType.includes('webp')) {
-            format = 'WEBP';
         } else if (contentType.includes('png') || /\.png($|\?)/i.test(logoUrl)) {
             format = 'PNG';
         }
 
         const base64 = Buffer.from(response.data).toString('base64');
-        const mimeType = contentType.split(';')[0] || `image/${format.toLowerCase()}`;
+        const mimeType = contentType.split(';')[0].trim() || `image/${format.toLowerCase()}`;
         return { dataUrl: `data:${mimeType};base64,${base64}`, format };
     } catch (err) {
         console.warn('[QUOTATION] Failed to fetch logo image from URL:', logoUrl, (err as any)?.message);
@@ -93,7 +94,11 @@ async function fetchLogoImage(logoUrl?: string): Promise<{ dataUrl: string; form
     }
 }
 
-async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfBuffer: Buffer; downloadFilename: string }> {
+async function buildQuotationPdfHelper(
+    items: any[],
+    buyer: any,
+    options?: { logoUrl?: string; title?: string }
+): Promise<{ pdfBuffer: Buffer; downloadFilename: string }> {
     const itemIds = items
         .map((i: any) => i.itemId)
         .filter((id: any) => id && typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id));
@@ -157,7 +162,8 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
     }
 
     const settings = await Settings.findOne();
-    const logo = await fetchLogoImage(settings?.quotationLogoUrl);
+    const effectiveLogoUrl = options?.logoUrl || settings?.quotationLogoUrl;
+    const logo = await fetchLogoImage(effectiveLogoUrl);
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -171,9 +177,10 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
         }
     }
 
+    const docTitle = options?.title?.trim() || 'Quotation';
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('Quotation', pageWidth / 2, 15, { align: 'center' });
+    doc.text(docTitle, pageWidth / 2, 15, { align: 'center' });
 
     doc.setDrawColor(0);
     doc.rect(margin, 20, pageWidth - margin * 2, 30);
@@ -193,7 +200,7 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
     const dateForFilename = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     const buyerNameForFilename = sanitizeForFilename(buyer?.name || '') || 'Customer';
     const downloadFilename = `QT-${buyerNameForFilename}-${dateForFilename}.pdf`;
-    doc.text(`Invoice No.: ${invoiceNo}`, rightX, 26);
+    doc.text(`Quotation No.: ${invoiceNo}`, rightX, 26);
     doc.text(`Dated: ${new Date().toLocaleDateString('en-IN')}`, rightX, 31);
 
     doc.rect(margin, 50, pageWidth - margin * 2, 24);
@@ -288,13 +295,17 @@ async function buildQuotationPdfHelper(items: any[], buyer: any): Promise<{ pdfB
 
 export const generateQuotationPdf = async (req: Request, res: Response) => {
     try {
-        const { items, buyer } = req.body;
+        const { items, buyer, logoUrl, title } = req.body;
 
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ msg: 'No items provided' });
         }
 
-        const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer);
+        const effectiveLogoUrl = logoUrl || buyer?.logoUrl;
+        const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer, {
+            logoUrl: effectiveLogoUrl,
+            title
+        });
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
@@ -307,7 +318,7 @@ export const generateQuotationPdf = async (req: Request, res: Response) => {
 
 export const sendQuotationEmail = async (req: Request, res: Response) => {
     try {
-        const { items, buyer, toEmail, notes, subject } = req.body;
+        const { items, buyer, toEmail, notes, subject, logoUrl, title } = req.body;
 
         const targetEmail = toEmail || buyer?.toEmail;
 
@@ -326,7 +337,11 @@ export const sendQuotationEmail = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'No items provided for quotation email.' });
         }
 
-        const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer);
+        const effectiveLogoUrl = logoUrl || buyer?.logoUrl;
+        const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer, {
+            logoUrl: effectiveLogoUrl,
+            title
+        });
 
         const emailResult = await NotificationService.sendQuotationEmail(
             recipientList,

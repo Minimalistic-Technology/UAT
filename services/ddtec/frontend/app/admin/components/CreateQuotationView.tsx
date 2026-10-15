@@ -474,7 +474,7 @@ export default function CreateQuotationView() {
 
             const response = await api.post(
                 "/quotation/generate",
-                { items: payloadItems, buyer },
+                { items: payloadItems, buyer, title: "Quotation" },
                 { responseType: "blob" }
             );
 
@@ -551,7 +551,8 @@ export default function CreateQuotationView() {
             const { data } = await api.post("/quotation/send-email", {
                 items: payloadItems,
                 buyer,
-                toEmail: buyer.toEmail
+                toEmail: buyer.toEmail,
+                title: "Quotation"
             });
 
             await persistQuotation();
@@ -1105,7 +1106,7 @@ export default function CreateQuotationView() {
                             <CheckCircle2 className="size-4 text-emerald-500" /> Summary
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Generating this quotation calculates taxes and produces a GST tax invoice PDF with quotation number <span className="font-mono text-teal-600 dark:text-teal-400 font-medium">QT-{Date.now()}</span>.
+                            Generating this quotation calculates taxes and produces a GST quotation PDF with quotation number <span className="font-mono text-teal-600 dark:text-teal-400 font-medium">QT-{Date.now()}</span>.
                         </p>
                     </div>
 
