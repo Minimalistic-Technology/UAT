@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Tag, Ticket, Eye, ExternalLink, Edit, Trash2, Calendar, Clock, DollarSign, Image as ImageIcon, Loader2, Upload, X, Info, Truck, Sparkles } from "lucide-react";
 import api from "@/lib/api";
-import { countWords, limitWords, formatDate, formatDateTime } from "@/lib/utils";
+import { countWords, limitWords, formatDate, formatDateTime, formatProductPackaging } from "@/lib/utils";
 import ToggleSwitch from "../components/ToggleSwitch";
 import CreatableSelect from "../components/CreatableSelect";
 import { useToast } from "../../_context/ToastContext";
@@ -270,9 +270,9 @@ export default function ProductsPage() {
         widthCm: "",
         heightCm: "",
         packQuantity: "",
-        packUnit: "Box",
+        packUnit: "",
         unitSize: "",
-        unitMeasure: "Liter",
+        unitMeasure: "",
         showAddToCart: true,
         showBuyNow: true,
         codAvailable: true,
@@ -581,10 +581,13 @@ export default function ProductsPage() {
             formData.append('lengthCm', String(Number(newProduct.lengthCm) || 10));
             formData.append('widthCm', String(Number(newProduct.widthCm) || 10));
             formData.append('heightCm', String(Number(newProduct.heightCm) || 10));
-            formData.append('packQuantity', String(Number(newProduct.packQuantity) || 1));
-            formData.append('packUnit', newProduct.packUnit);
-            formData.append('unitSize', String(Number(newProduct.unitSize) || 0));
-            formData.append('unitMeasure', newProduct.unitMeasure);
+            const parsedNewPackQty = Number(newProduct.packQuantity);
+            const parsedNewUnitSize = Number(newProduct.unitSize);
+            const hasValidNewUnitSize = !isNaN(parsedNewUnitSize) && parsedNewUnitSize > 0;
+            formData.append('packQuantity', String((!isNaN(parsedNewPackQty) && parsedNewPackQty > 0) ? parsedNewPackQty : 1));
+            formData.append('packUnit', newProduct.packUnit?.trim() || '');
+            formData.append('unitSize', String(hasValidNewUnitSize ? parsedNewUnitSize : 0));
+            formData.append('unitMeasure', hasValidNewUnitSize ? (newProduct.unitMeasure?.trim() || '') : '');
             formData.append('showAddToCart', String(newProduct.showAddToCart));
             formData.append('showBuyNow', String(newProduct.showBuyNow));
             formData.append('codAvailable', String(newProduct.codAvailable));
@@ -606,7 +609,7 @@ export default function ProductsPage() {
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", costPrice: "", brand: "",
                     modelName: "", seller: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: "",
                     weightKg: "", lengthCm: "", widthCm: "", heightCm: "",
-                    packQuantity: "", packUnit: "Box", unitSize: "", unitMeasure: "Liter",
+                    packQuantity: "", packUnit: "", unitSize: "", unitMeasure: "",
                     showAddToCart: true, showBuyNow: true, codAvailable: true,
                     productType: "physical", isReturnable: true, showDeliveryChecker: true,
                     allowedCourierPartners: ["BLUEDART", "DTDC"], customDeliveryEstimate: "",
@@ -651,10 +654,10 @@ export default function ProductsPage() {
             lengthCm: String((product as any).lengthCm ?? 10),
             widthCm: String((product as any).widthCm ?? 10),
             heightCm: String((product as any).heightCm ?? 10),
-            packQuantity: String((product as any).packQuantity ?? 1),
-            packUnit: (product as any).packUnit || "Box",
-            unitSize: String((product as any).unitSize ?? ''),
-            unitMeasure: (product as any).unitMeasure || "Liter",
+            packQuantity: (product as any).packQuantity !== undefined ? String((product as any).packQuantity) : '',
+            packUnit: (product as any).packUnit || "",
+            unitSize: (product as any).unitSize ? String((product as any).unitSize) : '',
+            unitMeasure: (product as any).unitMeasure || "",
             showAddToCart: (product as any).showAddToCart !== false,
             showBuyNow: (product as any).showBuyNow !== false,
             codAvailable: (product as any).codAvailable !== false,
@@ -704,10 +707,13 @@ export default function ProductsPage() {
             formData.append('lengthCm', String(Number(editingProduct.lengthCm) || 10));
             formData.append('widthCm', String(Number(editingProduct.widthCm) || 10));
             formData.append('heightCm', String(Number(editingProduct.heightCm) || 10));
-            formData.append('packQuantity', String(Number(editingProduct.packQuantity) || 1));
-            formData.append('packUnit', editingProduct.packUnit || 'Piece');
-            formData.append('unitSize', String(Number(editingProduct.unitSize) || 0));
-            formData.append('unitMeasure', editingProduct.unitMeasure || '');
+            const parsedEditPackQty = Number(editingProduct.packQuantity);
+            const parsedEditUnitSize = Number(editingProduct.unitSize);
+            const hasValidEditUnitSize = !isNaN(parsedEditUnitSize) && parsedEditUnitSize > 0;
+            formData.append('packQuantity', String((!isNaN(parsedEditPackQty) && parsedEditPackQty > 0) ? parsedEditPackQty : 1));
+            formData.append('packUnit', editingProduct.packUnit?.trim() || '');
+            formData.append('unitSize', String(hasValidEditUnitSize ? parsedEditUnitSize : 0));
+            formData.append('unitMeasure', hasValidEditUnitSize ? (editingProduct.unitMeasure?.trim() || '') : '');
             formData.append('showAddToCart', String(editingProduct.showAddToCart !== false));
             formData.append('showBuyNow', String(editingProduct.showBuyNow !== false));
             formData.append('codAvailable', String(editingProduct.codAvailable !== false));
@@ -1332,7 +1338,7 @@ export default function ProductsPage() {
                                                                 onChange={(value) => setNewProduct({ ...newProduct, packUnit: value })}
                                                                 options={PACK_UNIT_OPTIONS}
                                                                 storageKey="ddtec_custom_pack_units"
-                                                                placeholder="Box"
+                                                                placeholder="e.g. Box, Carton (Optional)"
                                                             />
                                                         </div>
                                                         <div>
@@ -1344,7 +1350,7 @@ export default function ProductsPage() {
                                                                 value={newProduct.unitSize}
                                                                 onChange={(e) => setNewProduct({ ...newProduct, unitSize: e.target.value })}
                                                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
-                                                                placeholder="0.10"
+                                                                placeholder="e.g. 0.10 (Optional)"
                                                             />
                                                         </div>
                                                         <div>
@@ -1354,7 +1360,7 @@ export default function ProductsPage() {
                                                                 onChange={(value) => setNewProduct({ ...newProduct, unitMeasure: value })}
                                                                 options={UNIT_MEASURE_OPTIONS}
                                                                 storageKey="ddtec_custom_unit_measures"
-                                                                placeholder="Liter"
+                                                                placeholder="e.g. Liter, Kg, Meter (Optional)"
                                                             />
                                                         </div>
                                                     </div>
@@ -1852,7 +1858,7 @@ export default function ProductsPage() {
                                                                 onChange={(value) => setEditingProduct({ ...editingProduct, packUnit: value })}
                                                                 options={PACK_UNIT_OPTIONS}
                                                                 storageKey="ddtec_custom_pack_units"
-                                                                placeholder="Box"
+                                                                placeholder="e.g. Box, Carton (Optional)"
                                                             />
                                                         </div>
                                                         <div>
@@ -1864,7 +1870,7 @@ export default function ProductsPage() {
                                                                 value={editingProduct.unitSize}
                                                                 onChange={(e) => setEditingProduct({ ...editingProduct, unitSize: e.target.value })}
                                                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
-                                                                placeholder="0.10"
+                                                                placeholder="e.g. 0.10 (Optional)"
                                                             />
                                                         </div>
                                                         <div>
@@ -1874,7 +1880,7 @@ export default function ProductsPage() {
                                                                 onChange={(value) => setEditingProduct({ ...editingProduct, unitMeasure: value })}
                                                                 options={UNIT_MEASURE_OPTIONS}
                                                                 storageKey="ddtec_custom_unit_measures"
-                                                                placeholder="Liter"
+                                                                placeholder="e.g. Liter, Kg, Meter (Optional)"
                                                             />
                                                         </div>
                                                     </div>
@@ -2112,14 +2118,17 @@ export default function ProductsPage() {
                                                 <span className="text-slate-500">Category:</span>
                                                 <span className="font-medium text-slate-700 dark:text-slate-300">{typeof viewingProductDetails.category === 'object' ? (viewingProductDetails.category as any).name : viewingProductDetails.category}</span>
                                             </div>
-                                            {!!viewingProductDetails.unitMeasure && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-500">Packaging:</span>
-                                                    <span className="font-medium text-slate-700 dark:text-slate-300">
-                                                        {viewingProductDetails.packQuantity || 1} {viewingProductDetails.packUnit || 'Piece'} &times; {viewingProductDetails.unitSize || 0} {viewingProductDetails.unitMeasure}
-                                                    </span>
-                                                </div>
-                                            )}
+                                            {(() => {
+                                                const packagingText = formatProductPackaging(viewingProductDetails);
+                                                return packagingText ? (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-500">Packaging:</span>
+                                                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                            {packagingText}
+                                                        </span>
+                                                    </div>
+                                                ) : null;
+                                            })()}
                                         </div>
                                     </div>
                                 </div>

@@ -193,6 +193,14 @@ export const createProduct = async (req: Request, res: Response) => {
             ? [...manualImageUrls, ...uploadedImageUrls]
             : (images || []);
 
+        const parsedPackQty = Number(packQuantity);
+        const parsedUnitSize = Number(unitSize);
+        const hasValidUnitSize = !isNaN(parsedUnitSize) && parsedUnitSize > 0;
+        const finalPackQty = (!isNaN(parsedPackQty) && parsedPackQty > 0) ? parsedPackQty : 1;
+        const finalPackUnit = packUnit ? String(packUnit).trim() : 'Piece';
+        const finalUnitSize = hasValidUnitSize ? parsedUnitSize : 0;
+        const finalUnitMeasure = (hasValidUnitSize && unitMeasure) ? String(unitMeasure).trim() : '';
+
         const newProduct = new Product({
             name,
             price,
@@ -223,10 +231,10 @@ export const createProduct = async (req: Request, res: Response) => {
             showDeliveryChecker: showDeliveryChecker !== undefined ? showDeliveryChecker !== 'false' && showDeliveryChecker !== false : true,
             allowedCourierPartners: allowedCourierPartners.length ? allowedCourierPartners : ['BLUEDART', 'DTDC'],
             customDeliveryEstimate: customDeliveryEstimate || '',
-            packQuantity: packQuantity || 1,
-            packUnit: packUnit || 'Piece',
-            unitSize: unitSize || 0,
-            unitMeasure: unitMeasure || '',
+            packQuantity: finalPackQty,
+            packUnit: finalPackUnit,
+            unitSize: finalUnitSize,
+            unitMeasure: finalUnitMeasure,
             showAddToCart: showAddToCart !== undefined ? showAddToCart !== 'false' && showAddToCart !== false : true,
             showBuyNow: showBuyNow !== undefined ? showBuyNow !== 'false' && showBuyNow !== false : true,
             seller: seller || '',
@@ -304,10 +312,23 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.isReturnable = isReturnable !== undefined ? (isReturnable !== 'false' && isReturnable !== false) : product.isReturnable;
         product.showDeliveryChecker = showDeliveryChecker !== undefined ? (showDeliveryChecker !== 'false' && showDeliveryChecker !== false) : product.showDeliveryChecker;
         product.customDeliveryEstimate = customDeliveryEstimate !== undefined ? customDeliveryEstimate : product.customDeliveryEstimate;
-        product.packQuantity = packQuantity !== undefined ? packQuantity : product.packQuantity;
-        product.packUnit = packUnit !== undefined ? packUnit : product.packUnit;
-        product.unitSize = unitSize !== undefined ? unitSize : product.unitSize;
-        product.unitMeasure = unitMeasure !== undefined ? unitMeasure : product.unitMeasure;
+        if (packQuantity !== undefined) {
+            const parsed = Number(packQuantity);
+            product.packQuantity = (!isNaN(parsed) && parsed > 0) ? parsed : 1;
+        }
+        if (packUnit !== undefined) {
+            product.packUnit = String(packUnit).trim() || 'Piece';
+        }
+        if (unitSize !== undefined || unitMeasure !== undefined) {
+            const effectiveUnitSize = Number(unitSize !== undefined ? unitSize : (product.unitSize || 0));
+            const hasValidUnitSize = !isNaN(effectiveUnitSize) && effectiveUnitSize > 0;
+            product.unitSize = hasValidUnitSize ? effectiveUnitSize : 0;
+            if (!hasValidUnitSize) {
+                product.unitMeasure = '';
+            } else if (unitMeasure !== undefined) {
+                product.unitMeasure = String(unitMeasure).trim();
+            }
+        }
         product.showAddToCart = showAddToCart !== undefined ? (showAddToCart !== 'false' && showAddToCart !== false) : product.showAddToCart;
         product.showBuyNow = showBuyNow !== undefined ? (showBuyNow !== 'false' && showBuyNow !== false) : product.showBuyNow;
         if (req.body.allowedCourierPartners !== undefined) {

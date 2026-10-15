@@ -37,7 +37,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import api from "@/lib/api";
-import { formatDate as formatDateShared } from "@/lib/utils";
+import { formatDate as formatDateShared, formatProductPackaging } from "@/lib/utils";
 import { SITE_CONFIG, buildWhatsAppLink, buildWhatsAppShareLink } from "@/lib/constants";
 import { DEFAULT_HIGHLIGHTS, getHighlightIcon, getHighlightColorClasses } from "@/lib/productHighlights";
 import { useDynamicRoutes } from "../../_context/RouteContext";
@@ -516,11 +516,14 @@ export default function ProductDetailsPage() {
                                         </span>
                                     )}
 
-                                    {!!product.unitMeasure && (
-                                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-lg flex items-center gap-1 border border-slate-200 dark:border-slate-600">
-                                            {product.packQuantity || 1} {product.packUnit || 'Piece'} &times; {product.unitSize || 0} {product.unitMeasure}
-                                        </span>
-                                    )}
+                                    {(() => {
+                                        const packagingText = formatProductPackaging(product);
+                                        return packagingText ? (
+                                            <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-lg flex items-center gap-1 border border-slate-200 dark:border-slate-600">
+                                                {packagingText}
+                                            </span>
+                                        ) : null;
+                                    })()}
                                 </div>
 
                                 {/* Title */}

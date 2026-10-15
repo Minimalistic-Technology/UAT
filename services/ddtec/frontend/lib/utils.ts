@@ -51,3 +51,53 @@ export function limitWords(text: string, maxWords: number): string {
     }
     return result;
 }
+
+/**
+ * Formats a product's packaging / unit specification into a clean human-readable badge text.
+ * Gracefully handles missing, partial, or zero measurements so badges like "10 Box × 0 Liter"
+ * or "1 Piece × 0" can never occur.
+ */
+export function formatProductPackaging(product?: {
+    packQuantity?: number | string | null;
+    packUnit?: string | null;
+    unitSize?: number | string | null;
+    unitMeasure?: string | null;
+} | null): string | null {
+    if (!product) return null;
+
+    const packQty = Number(product.packQuantity);
+    const unitSz = Number(product.unitSize);
+    const hasPackQty = !isNaN(packQty) && packQty > 0;
+    const hasUnitSize = !isNaN(unitSz) && unitSz > 0;
+    const packUnit = product.packUnit?.trim() || '';
+    const unitMeasure = product.unitMeasure?.trim() || '';
+
+    // If unit size is valid (> 0)
+    if (hasUnitSize) {
+        const sizeWithMeasure = unitMeasure ? `${unitSz} ${unitMeasure}` : `${unitSz}`;
+
+        if (hasPackQty && packQty > 1) {
+            const unitLabel = packUnit || 'Pack';
+            return `${packQty} ${unitLabel} × ${sizeWithMeasure}`;
+        }
+
+        if (packUnit && !['Piece', 'Piece(s)', 'Nos', 'Unit'].includes(packUnit)) {
+            return `1 ${packUnit} × ${sizeWithMeasure}`;
+        }
+
+        return sizeWithMeasure;
+    }
+
+    // If unitSize <= 0 or not provided: NEVER display "× 0 [measure]"!
+    // Only display pack info if pack quantity is greater than 1, or custom packUnit is specified.
+    if (hasPackQty && packQty > 1) {
+        const unitLabel = packUnit || 'Pieces';
+        return `${packQty} ${unitLabel}`;
+    }
+
+    if (packUnit && !['Piece', 'Piece(s)', 'Nos', 'Unit'].includes(packUnit)) {
+        return `1 ${packUnit}`;
+    }
+
+    return null;
+}

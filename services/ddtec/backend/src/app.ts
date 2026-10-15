@@ -24,6 +24,7 @@ import morgan from 'morgan';
 import routes from './routes';
 import connectDB from './config/database';
 import { generalLimiter } from './middleware/rateLimit.middleware';
+import compressionMiddleware from './middleware/compression.middleware';
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use(cors({
     exposedHeaders: ['Content-Disposition']
 }));
 app.use(cookieParser());
+app.use(compressionMiddleware);
 app.use(express.json({
     limit: '10mb',
     // Preserve raw body for Cashfree webhook signature verification
