@@ -26,6 +26,9 @@ interface CatalogProduct {
     _id: string;
     name: string;
     price: number;
+    description?: string;
+    hsnCode?: string;
+    packUnit?: string;
     image?: string;
     cgst?: number;
     sgst?: number;
@@ -131,6 +134,9 @@ const QuotationProductsView = () => {
             product: product._id,
             name: product.name,
             price: String(product.price),
+            hsnCode: product.hsnCode || formData.hsnCode || '',
+            description: product.description || formData.description || '',
+            unit: product.packUnit || formData.unit || 'Nos',
             cgst: String(product.cgst ?? 0),
             sgst: String(product.sgst ?? 0),
             image: product.image || ''
@@ -148,6 +154,20 @@ const QuotationProductsView = () => {
                 showToast('Price, CGST and SGST cannot be negative, and quantity must be at least 1', 'error');
                 setIsSubmitting(false);
                 return;
+            }
+
+            if (formData.hsnCode && formData.hsnCode.trim()) {
+                const hsn = formData.hsnCode.trim();
+                if (!/^\d+$/.test(hsn)) {
+                    showToast('HSN / SAC code must contain digits only', 'error');
+                    setIsSubmitting(false);
+                    return;
+                }
+                if (hsn.length < 2 || hsn.length > 8) {
+                    showToast('HSN / SAC code must be between 2 and 8 digits', 'error');
+                    setIsSubmitting(false);
+                    return;
+                }
             }
 
             const payload = new FormData();
@@ -499,6 +519,7 @@ const QuotationProductsView = () => {
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">HSN/SAC Code (Optional)</label>
                                     <input
                                         type="text"
+                                        maxLength={8}
                                         value={formData.hsnCode}
                                         onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
                                         className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"

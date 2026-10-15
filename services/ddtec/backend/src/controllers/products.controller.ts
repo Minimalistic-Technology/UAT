@@ -181,7 +181,17 @@ export const createProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow, seller } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, hsnCode, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow, seller } = req.body;
+
+        if (hsnCode && String(hsnCode).trim() !== '') {
+            const hsn = String(hsnCode).trim();
+            if (!/^\d+$/.test(hsn)) {
+                return res.status(400).json({ msg: 'HSN / SAC code must contain digits only' });
+            }
+            if (hsn.length < 2 || hsn.length > 8) {
+                return res.status(400).json({ msg: 'HSN / SAC code must be between 2 and 8 digits' });
+            }
+        }
         const allowedCourierPartners = normalizeToStringArray(req.body.allowedCourierPartners);
         const highlights = parseHighlights(req.body.highlights);
 
@@ -220,6 +230,7 @@ export const createProduct = async (req: Request, res: Response) => {
             discountValue: discountValue || 0,
             showOnHome: showOnHome || false,
             codAvailable: codAvailable !== undefined ? codAvailable !== 'false' && codAvailable !== false : true,
+            hsnCode: hsnCode ? String(hsnCode).trim() : '',
             cgst: cgst || 0,
             sgst: sgst || 0,
             weightKg: weightKg || 0.5,
@@ -260,7 +271,17 @@ export const updateProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `${negativeField} cannot be negative` });
         }
 
-        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow, seller } = req.body;
+        const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, hsnCode, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow, seller } = req.body;
+
+        if (hsnCode !== undefined && String(hsnCode).trim() !== '') {
+            const hsn = String(hsnCode).trim();
+            if (!/^\d+$/.test(hsn)) {
+                return res.status(400).json({ msg: 'HSN / SAC code must contain digits only' });
+            }
+            if (hsn.length < 2 || hsn.length > 8) {
+                return res.status(400).json({ msg: 'HSN / SAC code must be between 2 and 8 digits' });
+            }
+        }
 
         let product = await Product.findById(req.params.id);
         if (!product) return res.status(404).json({ msg: 'Product not found' });
@@ -302,6 +323,7 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.discountValue = discountValue !== undefined ? discountValue : product.discountValue;
         product.showOnHome = showOnHome !== undefined ? showOnHome : product.showOnHome;
         product.codAvailable = codAvailable !== undefined ? (codAvailable !== 'false' && codAvailable !== false) : product.codAvailable;
+        product.hsnCode = hsnCode !== undefined ? String(hsnCode).trim() : product.hsnCode;
         product.cgst = cgst !== undefined ? cgst : product.cgst;
         product.sgst = sgst !== undefined ? sgst : product.sgst;
         product.weightKg = weightKg !== undefined ? weightKg : product.weightKg;

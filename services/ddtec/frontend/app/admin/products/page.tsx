@@ -163,6 +163,7 @@ const REQUIRED_FIELD_TAB_MAP: Record<string, ProductFormTab> = {
     discountPercentage: 'basic',
     price: 'pricing',
     stock: 'pricing',
+    hsnCode: 'pricing',
     cgst: 'pricing',
     sgst: 'pricing',
 };
@@ -263,6 +264,7 @@ export default function ProductsPage() {
         lastMonthSales: "",
         couponCode: "",
         discountPercentage: "",
+        hsnCode: "",
         cgst: "",
         sgst: "",
         weightKg: "",
@@ -289,6 +291,7 @@ export default function ProductsPage() {
         price?: string;
         stock?: string;
         category?: string;
+        hsnCode?: string;
         cgst?: string;
         sgst?: string;
         discountPercentage?: string;
@@ -539,6 +542,15 @@ export default function ProductsPage() {
             errors.couponCode = 'Coupon code must be 3-20 letters, numbers, hyphens or underscores';
         }
 
+        if (data.hsnCode && data.hsnCode.trim()) {
+            const hsnTrimmed = data.hsnCode.trim();
+            if (!/^\d+$/.test(hsnTrimmed)) {
+                errors.hsnCode = 'HSN / SAC code must contain digits only';
+            } else if (hsnTrimmed.length < 2 || hsnTrimmed.length > 8) {
+                errors.hsnCode = 'HSN / SAC code must be between 2 and 8 digits';
+            }
+        }
+
         return errors;
     };
 
@@ -575,6 +587,7 @@ export default function ProductsPage() {
             formData.append('lastMonthSales', String(Number(newProduct.lastMonthSales) || 0));
             if (newProduct.couponCode) formData.append('couponCode', newProduct.couponCode);
             formData.append('discountPercentage', String(Number(newProduct.discountPercentage) || 0));
+            formData.append('hsnCode', newProduct.hsnCode?.trim() || '');
             formData.append('cgst', String(Number(newProduct.cgst) || 0));
             formData.append('sgst', String(Number(newProduct.sgst) || 0));
             formData.append('weightKg', String(Number(newProduct.weightKg) || 0.5));
@@ -607,7 +620,7 @@ export default function ProductsPage() {
                 setIsAddModalOpen(false);
                 setNewProduct({
                     name: "", price: "", description: "", image: "", imagesInput: "", category: "", stock: "", costPrice: "", brand: "",
-                    modelName: "", seller: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", cgst: "", sgst: "",
+                    modelName: "", seller: "", rating: "", lastMonthSales: "", couponCode: "", discountPercentage: "", hsnCode: "", cgst: "", sgst: "",
                     weightKg: "", lengthCm: "", widthCm: "", heightCm: "",
                     packQuantity: "", packUnit: "", unitSize: "", unitMeasure: "",
                     showAddToCart: true, showBuyNow: true, codAvailable: true,
@@ -648,6 +661,7 @@ export default function ProductsPage() {
             lastMonthSales: String((product as any).lastMonthSales || 0),
             couponCode: (product as any).couponCode || "",
             discountPercentage: String((product as any).discountPercentage || 0),
+            hsnCode: (product as any).hsnCode || "",
             cgst: String((product as any).cgst || 0),
             sgst: String((product as any).sgst || 0),
             weightKg: String((product as any).weightKg ?? 0.5),
@@ -683,6 +697,20 @@ export default function ProductsPage() {
             return;
         }
 
+        if (editingProduct.hsnCode && editingProduct.hsnCode.trim()) {
+            const hsn = editingProduct.hsnCode.trim();
+            if (!/^\d+$/.test(hsn)) {
+                showToast("HSN / SAC code must contain digits only", "error");
+                setEditProductActiveTab('pricing');
+                return;
+            }
+            if (hsn.length < 2 || hsn.length > 8) {
+                showToast("HSN / SAC code must be between 2 and 8 digits", "error");
+                setEditProductActiveTab('pricing');
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         try {
             const imageUrls = parseImageUrlList(editingProduct.imagesInput);
@@ -701,6 +729,7 @@ export default function ProductsPage() {
             formData.append('lastMonthSales', String(Number(editingProduct.lastMonthSales) || 0));
             if (editingProduct.couponCode) formData.append('couponCode', editingProduct.couponCode);
             formData.append('discountPercentage', String(Number(editingProduct.discountPercentage) || 0));
+            formData.append('hsnCode', editingProduct.hsnCode?.trim() || '');
             formData.append('cgst', String(Number(editingProduct.cgst) || 0));
             formData.append('sgst', String(Number(editingProduct.sgst) || 0));
             formData.append('weightKg', String(Number(editingProduct.weightKg) || 0.5));
@@ -1144,7 +1173,25 @@ export default function ProductsPage() {
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">HSN / SAC Code</label>
+                                                            <input
+                                                                type="text"
+                                                                name="hsnCode"
+                                                                maxLength={8}
+                                                                value={newProduct.hsnCode}
+                                                                onChange={(e) => {
+                                                                    setNewProduct({ ...newProduct, hsnCode: e.target.value });
+                                                                    if (newProductErrors.hsnCode) setNewProductErrors(prev => ({ ...prev, hsnCode: undefined }));
+                                                                }}
+                                                                className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none uppercase font-mono text-sm ${newProductErrors.hsnCode ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
+                                                                placeholder="e.g. 8467"
+                                                            />
+                                                            {newProductErrors.hsnCode && (
+                                                                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.hsnCode}</p>
+                                                            )}
+                                                        </div>
                                                         <div>
                                                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
                                                             <input
@@ -1678,7 +1725,19 @@ export default function ProductsPage() {
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">HSN / SAC Code</label>
+                                                            <input
+                                                                type="text"
+                                                                name="hsnCode"
+                                                                maxLength={8}
+                                                                value={editingProduct.hsnCode}
+                                                                onChange={(e) => setEditingProduct({ ...editingProduct, hsnCode: e.target.value })}
+                                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none uppercase font-mono text-sm"
+                                                                placeholder="e.g. 8467"
+                                                            />
+                                                        </div>
                                                         <div>
                                                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
                                                             <input
@@ -2099,6 +2158,10 @@ export default function ProductsPage() {
                                             <div className="flex justify-between">
                                                 <span className="text-slate-500">CGST / SGST Rate:</span>
                                                 <span className="font-medium text-slate-700 dark:text-slate-300">{viewingProductDetails.cgst || 0}% / {viewingProductDetails.sgst || 0}%</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">HSN / SAC Code:</span>
+                                                <span className="font-mono font-medium text-slate-700 dark:text-slate-300">{viewingProductDetails.hsnCode || 'N/A'}</span>
                                             </div>
                                         </div>
                                     </div>

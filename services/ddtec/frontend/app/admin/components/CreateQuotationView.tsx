@@ -271,6 +271,7 @@ export default function CreateQuotationView() {
                         name: item.name,
                         price: item.price || 0,
                         hsnCode: item.hsnCode || "",
+                        description: item.description || "",
                         unit: item.unit || "Nos",
                         cgst: item.cgst || 0,
                         sgst: item.sgst || 0
@@ -285,10 +286,11 @@ export default function CreateQuotationView() {
                             _id: p._id,
                             name: p.name,
                             price: p.price || 0,
-                            hsnCode: "8471",
-                            unit: "Nos",
-                            cgst: p.cgst || 9,
-                            sgst: p.sgst || 9
+                            hsnCode: p.hsnCode || "",
+                            description: p.description || "",
+                            unit: p.packUnit || "Nos",
+                            cgst: p.cgst !== undefined ? p.cgst : 9,
+                            sgst: p.sgst !== undefined ? p.sgst : 9
                         });
                     }
                 });
@@ -1197,6 +1199,7 @@ export default function CreateQuotationView() {
                                             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">HSN / SAC Code</label>
                                             <input
                                                 type="text"
+                                                maxLength={8}
                                                 value={item.hsnCode}
                                                 onChange={(e) => handleItemChange(item.id, "hsnCode", e.target.value)}
                                                 className="w-full px-3 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-mono uppercase focus:ring-2 focus:ring-teal-500 outline-none"

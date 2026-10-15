@@ -3,6 +3,7 @@ import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import QuotationItem from '../models/QuotationItem';
+import Product from '../models/Product';
 import SavedQuotation from '../models/SavedQuotation';
 import Settings from '../models/Settings';
 import NotificationService from '../services/notification.service';
@@ -156,7 +157,13 @@ async function buildQuotationPdfHelper(
     if (itemIds.length > 0) {
         try {
             const dbItems = await QuotationItem.find({ _id: { $in: itemIds } });
-            dbItemMap = new Map(dbItems.map((i: any) => [String(i._id), i]));
+            dbItems.forEach((i: any) => dbItemMap.set(String(i._id), i));
+
+            const remainingIds = itemIds.filter((id: string) => !dbItemMap.has(String(id)));
+            if (remainingIds.length > 0) {
+                const dbProducts = await Product.find({ _id: { $in: remainingIds } });
+                dbProducts.forEach((p: any) => dbItemMap.set(String(p._id), p));
+            }
         } catch (e) {
             console.warn('[QUOTATION] Warning fetching dbItems:', e);
         }

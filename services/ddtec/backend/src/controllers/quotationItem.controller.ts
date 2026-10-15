@@ -44,6 +44,16 @@ export const createQuotationItem = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Price, CGST and SGST cannot be negative, and quantity must be at least 1' });
         }
 
+        if (hsnCode && String(hsnCode).trim() !== '') {
+            const hsn = String(hsnCode).trim();
+            if (!/^\d+$/.test(hsn)) {
+                return res.status(400).json({ msg: 'HSN / SAC code must contain digits only' });
+            }
+            if (hsn.length < 2 || hsn.length > 8) {
+                return res.status(400).json({ msg: 'HSN / SAC code must be between 2 and 8 digits' });
+            }
+        }
+
         // Handle Cloudinary uploaded file
         let uploadedImage = image || '';
         if (req.file) {
@@ -81,6 +91,16 @@ export const updateQuotationItem = async (req: Request, res: Response) => {
             (cgst !== undefined && cgst !== '' && (isNaN(Number(cgst)) || Number(cgst) < 0)) ||
             (sgst !== undefined && sgst !== '' && (isNaN(Number(sgst)) || Number(sgst) < 0))) {
             return res.status(400).json({ msg: 'Price, CGST and SGST cannot be negative, and quantity must be at least 1' });
+        }
+
+        if (hsnCode !== undefined && String(hsnCode).trim() !== '') {
+            const hsn = String(hsnCode).trim();
+            if (!/^\d+$/.test(hsn)) {
+                return res.status(400).json({ msg: 'HSN / SAC code must contain digits only' });
+            }
+            if (hsn.length < 2 || hsn.length > 8) {
+                return res.status(400).json({ msg: 'HSN / SAC code must be between 2 and 8 digits' });
+            }
         }
 
         const uploadedImage = (req.file as Express.Multer.File & { path?: string; secure_url?: string })?.path || (req.file as any)?.secure_url;

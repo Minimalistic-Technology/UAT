@@ -23,6 +23,7 @@ export interface Product {
     discountPercentage?: number;
     discountType?: 'percentage' | 'fixed';
     discountValue?: number;
+    hsnCode?: string;
     cgst?: number;
     sgst?: number;
     weightKg?: number;

@@ -29,6 +29,7 @@ export interface IProduct extends Document {
     allowedCourierPartners: string[];
     customDeliveryEstimate?: string;
     taxes: Array<{ name: string; rate: number }>;
+    hsnCode?: string;
     cgst: number;
     sgst: number;
     weightKg?: number; // Weight in KG for B2B carrier freight calculation
@@ -73,6 +74,7 @@ const ProductSchema: Schema = new Schema({
     showDeliveryChecker: { type: Boolean, default: true },
     allowedCourierPartners: { type: [String], enum: ['BLUEDART', 'DTDC'], default: ['BLUEDART', 'DTDC'] },
     customDeliveryEstimate: { type: String, default: '' },
+    hsnCode: { type: String, default: '', trim: true },
     cgst: { type: Number, default: 0, min: 0 },
     sgst: { type: Number, default: 0, min: 0 },
     weightKg: { type: Number, default: 0.5, min: 0.05 },

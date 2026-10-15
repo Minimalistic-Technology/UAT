@@ -37,6 +37,7 @@ interface SelectedItem {
     itemId: string;
     name: string;
     description?: string;
+    hsnCode?: string;
     price: number;
     unit: string;
     quantity: number;
@@ -141,6 +142,7 @@ function QuotationContent() {
                 itemId: product._id,
                 name: product.name,
                 description: product.description || "",
+                hsnCode: product.hsnCode || "",
                 price: product.price,
                 unit: product.unit || "Nos",
                 quantity: initialQty,
@@ -223,7 +225,8 @@ function QuotationContent() {
                     items: selectedItems.map(i => ({
                         itemId: i.itemId,
                         quantity: i.quantity,
-                        description: i.description || ""
+                        description: i.description || "",
+                        hsnCode: i.hsnCode || ""
                     })),
                     buyer,
                     title: "Quotation"
