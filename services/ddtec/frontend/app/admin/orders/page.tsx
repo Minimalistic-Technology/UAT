@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Edit, Trash2, Layers, X, Users, Truck, ShoppingBag, Loader2 } from "lucide-react";
 import api from "@/lib/api";
@@ -10,12 +10,25 @@ import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
 import { useAdminStats } from "../hooks/useAdminStats";
 import { useOrders } from "../hooks/useOrders";
+import Pagination from "@/app/_components/Pagination";
 
 export default function OrdersPage() {
     const { showToast } = useToast();
     const confirm = useConfirm();
     const { stats, fetchStats } = useAdminStats();
     const { ordersList, setOrdersList, loadingOrders, fetchOrders } = useOrders();
+
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    useEffect(() => {
+        setPage(1);
+    }, [ordersList.length]);
+
+    const totalPages = Math.max(1, Math.ceil(ordersList.length / pageSize));
+    const pagedOrders = useMemo(() => {
+        return ordersList.slice((page - 1) * pageSize, page * pageSize);
+    }, [ordersList, page, pageSize]);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState(false);
@@ -114,7 +127,7 @@ export default function OrdersPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                    {ordersList.map(order => (
+                                    {pagedOrders.map(order => (
                                         <tr key={order._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
                                             <td className="p-4">
                                                 <div className="font-mono text-xs uppercase text-slate-900 dark:text-white">#{order._id.slice(-8)}</div>
@@ -170,6 +183,19 @@ export default function OrdersPage() {
                             </table>
                         )}
                     </div>
+                    {ordersList.length > 0 && (
+                        <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+                            <Pagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                totalItems={ordersList.length}
+                                pageSize={pageSize}
+                                onPageChange={setPage}
+                                onPageSizeChange={setPageSize}
+                                variant="admin"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit, Trash2, FileText, X, Loader2, ImagePlus, ImageOff } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/app/_context/ToastContext';
 import { useConfirm } from '@/app/_context/ConfirmContext';
+import Pagination from '@/app/_components/Pagination';
 
 interface QuotationItem {
     _id: string;
@@ -96,6 +97,18 @@ const QuotationProductsView = () => {
         image: ''
     });
     const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([]);
+
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(15);
+
+    useEffect(() => {
+        setPage(1);
+    }, [items.length]);
+
+    const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+    const pagedItems = useMemo(() => {
+        return items.slice((page - 1) * pageSize, page * pageSize);
+    }, [items, page, pageSize]);
 
     useEffect(() => {
         fetchItems();
@@ -318,7 +331,7 @@ const QuotationProductsView = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                {items.map(item => (
+                                {pagedItems.map(item => (
                                     <tr key={item._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
                                         <td className="p-4">
                                             {item.image ? (
@@ -359,6 +372,19 @@ const QuotationProductsView = () => {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                )}
+                {items.length > 0 && (
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={items.length}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                            onPageSizeChange={setPageSize}
+                            variant="admin"
+                        />
                     </div>
                 )}
             </div>

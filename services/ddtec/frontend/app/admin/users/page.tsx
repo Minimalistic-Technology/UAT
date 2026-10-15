@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Shield, Plus, Coins, CheckCircle2, Edit, Trash2, Loader2, X } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "../components/ToggleSwitch";
 import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
+import Pagination from "@/app/_components/Pagination";
 
 interface User {
     _id: string;
@@ -28,6 +29,22 @@ export default function UsersPage() {
     const [userTabMode, setUserTabMode] = useState<'customers' | 'staff'>('customers');
     const [loadingData, setLoadingData] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    const filteredUsers = useMemo(() => {
+        return usersList.filter(u => userTabMode === 'customers' ? u.role === 'user' : u.role !== 'user');
+    }, [usersList, userTabMode]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [userTabMode, usersList.length]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+    const pagedUsers = useMemo(() => {
+        return filteredUsers.slice((page - 1) * pageSize, page * pageSize);
+    }, [filteredUsers, page, pageSize]);
 
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
     const [newUser, setNewUser] = useState({ firstName: "", lastName: "", email: "", phone: "", password: "", role: "user" });
@@ -162,54 +179,65 @@ export default function UsersPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                usersList
-                                    .filter(u => userTabMode === 'customers' ? u.role === 'user' : u.role !== 'user')
-                                    .map(u => (
-                                        <tr key={u._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                                            <td className="p-4 font-medium text-slate-900 dark:text-white">{u.firstName ? `${u.firstName} ${u.lastName || ''}` : (u.name || u.email.split('@')[0])}</td>
-                                            <td className="p-4 text-slate-600 dark:text-slate-400">{u.email}</td>
+                                pagedUsers.map(u => (
+                                    <tr key={u._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                                        <td className="p-4 font-medium text-slate-900 dark:text-white">{u.firstName ? `${u.firstName} ${u.lastName || ''}` : (u.name || u.email.split('@')[0])}</td>
+                                        <td className="p-4 text-slate-600 dark:text-slate-400">{u.email}</td>
+                                        <td className="p-4">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${u.role === 'super_admin' ? 'bg-purple-100 text-purple-700' : u.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
+                                                {u.role.replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                {u.isActive ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        {userTabMode === 'customers' && (
                                             <td className="p-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${u.role === 'super_admin' ? 'bg-purple-100 text-purple-700' : u.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
-                                                    {u.role.replace('_', ' ')}
-                                                </span>
+                                                <div className="flex items-center gap-1 font-mono font-bold text-slate-700 dark:text-slate-300">
+                                                    <Coins className="size-3.5 text-amber-500" />
+                                                    {u.creditBalance || 0}
+                                                </div>
                                             </td>
-                                            <td className="p-4">
-                                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                    {u.isActive ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </td>
-                                            {userTabMode === 'customers' && (
-                                                <td className="p-4">
-                                                    <div className="flex items-center gap-1 font-mono font-bold text-slate-700 dark:text-slate-300">
-                                                        <Coins className="size-3.5 text-amber-500" />
-                                                        {u.creditBalance || 0}
-                                                    </div>
-                                                </td>
+                                        )}
+                                        <td className="p-4 text-right flex justify-end items-center gap-2">
+                                            {!u.isActive && (
+                                                <button
+                                                    onClick={() => toggleUserStatus(u._id, u.isActive)}
+                                                    className="cursor-pointer px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                                                    title="Approve User Account"
+                                                >
+                                                    <CheckCircle2 className="size-3.5" /> Approve Account
+                                                </button>
                                             )}
-                                            <td className="p-4 text-right flex justify-end items-center gap-2">
-                                                {!u.isActive && (
-                                                    <button
-                                                        onClick={() => toggleUserStatus(u._id, u.isActive)}
-                                                        className="cursor-pointer px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
-                                                        title="Approve User Account"
-                                                    >
-                                                        <CheckCircle2 className="size-3.5" /> Approve Account
-                                                    </button>
-                                                )}
-                                                <ToggleSwitch isOn={u.isActive} onToggle={() => toggleUserStatus(u._id, u.isActive)} title={u.isActive ? "Deactivate User" : "Activate User"} />
-                                                <button onClick={() => handleEditUserClick(u)} className="cursor-pointer text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors" title="Edit User">
-                                                    <Edit className="size-4" />
-                                                </button>
-                                                <button onClick={() => handleDeleteUser(u._id)} className="cursor-pointer text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Delete User">
-                                                    <Trash2 className="size-4" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
+                                            <ToggleSwitch isOn={u.isActive} onToggle={() => toggleUserStatus(u._id, u.isActive)} title={u.isActive ? "Deactivate User" : "Activate User"} />
+                                            <button onClick={() => handleEditUserClick(u)} className="cursor-pointer text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors" title="Edit User">
+                                                <Edit className="size-4" />
+                                            </button>
+                                            <button onClick={() => handleDeleteUser(u._id)} className="cursor-pointer text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Delete User">
+                                                <Trash2 className="size-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
                         </tbody>
                     </table>
                 </div>
+                {filteredUsers.length > 0 && (
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={filteredUsers.length}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                            onPageSizeChange={setPageSize}
+                            variant="admin"
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Add User Modal */}

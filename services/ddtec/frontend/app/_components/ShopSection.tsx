@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HardHat, Bell, Plus, X, Image as ImageIcon, Tag, DollarSign, Loader2, ShoppingBag, Search, Filter, Star, TrendingUp, Layers, ChevronDown, ChevronRight } from "lucide-react";
 import { useAuth } from "../_context/AuthContext";
@@ -9,6 +9,7 @@ import { useToast } from "../_context/ToastContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
+import Pagination from "./Pagination";
 
 interface Category {
     _id: string;
@@ -231,6 +232,18 @@ export default function ShopSection() {
             return 0;
         });
 
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(12);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, selectedCategory, sortOption, products.length]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+    const pagedProducts = useMemo(() => {
+        return filteredProducts.slice((page - 1) * pageSize, page * pageSize);
+    }, [filteredProducts, page, pageSize]);
+
     const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -356,8 +369,9 @@ export default function ShopSection() {
                                 <div className="animate-spin text-teal-600"><Loader2 className="size-10" /></div>
                             </div>
                         ) : filteredProducts.length > 0 ? (
+                            <>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredProducts.map((product) => (
+                                {pagedProducts.map((product) => (
                                     <motion.div
                                         key={product._id}
                                         initial={{ opacity: 0, y: 20 }}
@@ -457,6 +471,20 @@ export default function ShopSection() {
                                     </motion.div>
                                 ))}
                             </div>
+                            {filteredProducts.length > 0 && (
+                                <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                    <Pagination
+                                        currentPage={page}
+                                        totalPages={totalPages}
+                                        totalItems={filteredProducts.length}
+                                        pageSize={pageSize}
+                                        onPageChange={setPage}
+                                        onPageSizeChange={setPageSize}
+                                        variant="storefront"
+                                    />
+                                </div>
+                            )}
+                            </>
                         ) : (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9 }}

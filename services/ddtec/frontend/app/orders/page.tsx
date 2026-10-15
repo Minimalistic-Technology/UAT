@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../_context/AuthContext";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -22,6 +22,7 @@ import {
     AlertCircle
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
+import Pagination from "../_components/Pagination";
 
 interface Order {
     _id: string;
@@ -57,6 +58,18 @@ export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [isFetching, setIsFetching] = useState(true);
     const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
+
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(5);
+
+    useEffect(() => {
+        setPage(1);
+    }, [orders.length]);
+
+    const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
+    const pagedOrders = useMemo(() => {
+        return orders.slice((page - 1) * pageSize, page * pageSize);
+    }, [orders, page, pageSize]);
 
     const fetchOrders = async () => {
         try {
@@ -163,7 +176,7 @@ export default function OrdersPage() {
                     </motion.div>
                 ) : (
                     <div className="space-y-6">
-                        {orders.map((order, index) => (
+                        {pagedOrders.map((order, index) => (
                             <motion.div
                                 key={order._id}
                                 initial={{ opacity: 0, y: 20 }}
@@ -236,6 +249,19 @@ export default function OrdersPage() {
                                 </div>
                             </motion.div>
                         ))}
+                    </div>
+                )}
+                {orders.length > 0 && (
+                    <div className="pt-2">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={orders.length}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                            onPageSizeChange={setPageSize}
+                            variant="storefront"
+                        />
                     </div>
                 )}
             </div>

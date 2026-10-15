@@ -10,6 +10,7 @@ import CreatableSelect from "../components/CreatableSelect";
 import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
 import { useProducts, Product } from "../hooks/useProducts";
+import Pagination from "@/app/_components/Pagination";
 import {
     type ProductHighlight,
     DEFAULT_HIGHLIGHTS,
@@ -243,6 +244,19 @@ export default function ProductsPage() {
 
     const [viewingProductDetails, setViewingProductDetails] = useState<Product | null>(null);
     const [viewingCoupons, setViewingCoupons] = useState<{ productName: string, coupons: any[] } | null>(null);
+
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(25);
+
+    useEffect(() => {
+        setPage(1);
+    }, [productsList.length]);
+
+    const totalPages = Math.max(1, Math.ceil(productsList.length / pageSize));
+    const pagedProducts = useMemo(() => {
+        return productsList.slice((page - 1) * pageSize, page * pageSize);
+    }, [productsList, page, pageSize]);
 
     // Add/Edit Product Modal State
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -796,7 +810,7 @@ export default function ProductsPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                        {productsList.map(p => (
+                                        {pagedProducts.map(p => (
                                             <tr key={p._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
                                                 <td className="p-4 font-medium text-slate-900 dark:text-white">{p.name}</td>
                                                 <td className="p-4 text-slate-600 dark:text-slate-400">
@@ -864,6 +878,19 @@ export default function ProductsPage() {
                                     </tbody>
                                 </table>
                             </div>
+                            {productsList.length > 0 && (
+                                <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+                                    <Pagination
+                                        currentPage={page}
+                                        totalPages={totalPages}
+                                        totalItems={productsList.length}
+                                        pageSize={pageSize}
+                                        onPageChange={setPage}
+                                        onPageSizeChange={setPageSize}
+                                        variant="admin"
+                                    />
+                                </div>
+                            )}
                         </div>
                 {/* View Coupons Modal */}
                 <AnimatePresence>

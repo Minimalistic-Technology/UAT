@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -24,6 +24,7 @@ import api from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "../../_context/ToastContext";
 import { useAuth } from "../../_context/AuthContext";
+import Pagination from "@/app/_components/Pagination";
 
 interface SavedQuotationItem {
     itemId?: string;
@@ -193,6 +194,18 @@ export default function SavedQuotationsPage() {
             return 0;
         });
 
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(6);
+
+    useEffect(() => {
+        setPage(1);
+    }, [search, sortBy, quotations.length]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredQuotations.length / pageSize));
+    const pagedQuotations = useMemo(() => {
+        return filteredQuotations.slice((page - 1) * pageSize, page * pageSize);
+    }, [filteredQuotations, page, pageSize]);
+
     const handleCreateNewClick = (e: React.MouseEvent) => {
         e.preventDefault();
         router.push("/admin/create-quotation");
@@ -288,7 +301,7 @@ export default function SavedQuotationsPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {filteredQuotations.map(quotation => {
+                        {pagedQuotations.map(quotation => {
                             const isExpanded = !!expandedIds[quotation._id];
                             const previewItems = isExpanded ? quotation.items : quotation.items.slice(0, 2);
                             const remainingCount = quotation.items.length - 2;
@@ -444,6 +457,19 @@ export default function SavedQuotationsPage() {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+                {filteredQuotations.length > 0 && (
+                    <div className="pt-2">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={filteredQuotations.length}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                            onPageSizeChange={setPageSize}
+                            variant={isAdminView ? "admin" : "storefront"}
+                        />
                     </div>
                 )}
             </div>

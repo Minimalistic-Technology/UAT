@@ -25,6 +25,7 @@ import api from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { useToast } from '@/app/_context/ToastContext';
 import { useConfirm } from '@/app/_context/ConfirmContext';
+import Pagination from '@/app/_components/Pagination';
 
 export interface ProductItem {
     _id: string;
@@ -166,6 +167,19 @@ export default function PurchaseRecordsView({
             return matchesSearch && matchesSeller;
         });
     }, [records, searchQuery, selectedSellerFilter]);
+
+    // Pagination State
+    const [page, setPage] = useState<number>(1);
+    const [pageSize, setPageSize] = useState<number>(15);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchQuery, selectedSellerFilter, records.length]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
+    const pagedRecords = useMemo(() => {
+        return filteredRecords.slice((page - 1) * pageSize, page * pageSize);
+    }, [filteredRecords, page, pageSize]);
 
     // Open Modal for Create
     const handleOpenCreateModal = () => {
@@ -546,7 +560,7 @@ export default function PurchaseRecordsView({
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                        {filteredRecords.map((record) => {
+                        {pagedRecords.map((record) => {
                             const pImg = typeof record.product === 'object' && record.product?.image ? record.product.image : null;
 
                             return (
@@ -647,6 +661,20 @@ export default function PurchaseRecordsView({
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {filteredRecords.length > 0 && (
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-700/60">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={filteredRecords.length}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                            onPageSizeChange={setPageSize}
+                            variant="admin"
+                        />
                     </div>
                 )}
             </div>

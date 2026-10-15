@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../../_context/AuthContext";
 import { useCart } from "../../_context/CartContext";
 import { useToast } from "../../_context/ToastContext";
+import Pagination from "@/app/_components/Pagination";
 import {
     Loader2,
     Star,
@@ -121,6 +122,18 @@ export default function ProductDetailsPage() {
     const [reviewComment, setReviewComment] = useState("");
     const [submittingReview, setSubmittingReview] = useState(false);
     const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+
+    const [reviewPage, setReviewPage] = useState(1);
+    const [reviewPageSize, setReviewPageSize] = useState(5);
+
+    useEffect(() => {
+        setReviewPage(1);
+    }, [reviews.length]);
+
+    const totalReviewPages = Math.max(1, Math.ceil(reviews.length / reviewPageSize));
+    const pagedReviews = useMemo(() => {
+        return reviews.slice((reviewPage - 1) * reviewPageSize, reviewPage * reviewPageSize);
+    }, [reviews, reviewPage, reviewPageSize]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -988,7 +1001,7 @@ export default function ProductDetailsPage() {
                                             <p className="text-sm text-slate-500 dark:text-slate-400">No reviews yet. Be the first to review this product!</p>
                                         </div>
                                     ) : (
-                                        reviews.map((review) => (
+                                        pagedReviews.map((review) => (
                                             <div key={review._id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className="font-bold text-sm text-slate-900 dark:text-white">{review.userName}</span>
@@ -1018,6 +1031,19 @@ export default function ProductDetailsPage() {
                                         ))
                                     )}
                                 </div>
+                                {reviews.length > 0 && (
+                                    <div className="pt-2">
+                                        <Pagination
+                                            currentPage={reviewPage}
+                                            totalPages={totalReviewPages}
+                                            totalItems={reviews.length}
+                                            pageSize={reviewPageSize}
+                                            onPageChange={setReviewPage}
+                                            onPageSizeChange={setReviewPageSize}
+                                            variant="storefront"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         )}
 

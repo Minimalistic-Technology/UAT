@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Trash2, Plus, Tag, Edit, X, Save, RefreshCw } from "lucide-react";
@@ -9,6 +9,7 @@ import ToggleSwitch from "../components/ToggleSwitch";
 import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
 import { countWords, limitWords } from "@/lib/utils";
+import Pagination from "@/app/_components/Pagination";
 
 const COUPON_DESCRIPTION_MAX_WORDS = 100;
 
@@ -49,6 +50,18 @@ const CouponsPage = () => {
     const confirm = useConfirm();
     const [coupons, setCoupons] = useState<Coupon[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    useEffect(() => {
+        setPage(1);
+    }, [coupons.length]);
+
+    const totalPages = Math.max(1, Math.ceil(coupons.length / pageSize));
+    const pagedCoupons = useMemo(() => {
+        return coupons.slice((page - 1) * pageSize, page * pageSize);
+    }, [coupons, page, pageSize]);
 
     // Create Coupon Modal State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -208,7 +221,7 @@ const CouponsPage = () => {
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                             {coupons.length > 0 ? (
-                                coupons.map(coupon => (
+                                pagedCoupons.map(coupon => (
                                     <tr key={coupon._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                                         <td className="p-4">
                                             <div className="flex flex-col">
@@ -274,6 +287,19 @@ const CouponsPage = () => {
                         </tbody>
                     </table>
                 </div>
+                {coupons.length > 0 && (
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={coupons.length}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                            onPageSizeChange={setPageSize}
+                            variant="admin"
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Create Coupon Modal */}

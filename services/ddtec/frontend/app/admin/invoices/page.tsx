@@ -32,6 +32,7 @@ import {
 import api from "@/lib/api";
 import { useToast } from "@/app/_context/ToastContext";
 import { useConfirm } from "@/app/_context/ConfirmContext";
+import Pagination from "@/app/_components/Pagination";
 
 interface InvoiceItem {
     productId?: string;
@@ -227,6 +228,10 @@ function AdminInvoicesContent() {
     const [loadingInvoices, setLoadingInvoices] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [invoicePage, setInvoicePage] = useState(1);
+    const [invoicePageSize, setInvoicePageSize] = useState(15);
+    const [invoiceTotal, setInvoiceTotal] = useState(0);
+    const [invoiceTotalPages, setInvoiceTotalPages] = useState(1);
 
     // Creation form state
     const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -279,12 +284,12 @@ function AdminInvoicesContent() {
         fetchProducts();
     }, []);
 
-    // Fetch invoices whenever switching to list tab or filters change
+    // Fetch invoices whenever switching to list tab or filters/pagination change
     useEffect(() => {
         if (activeTab === "list") {
-            fetchInvoices();
+            fetchInvoices(invoicePage, invoicePageSize);
         }
-    }, [activeTab, statusFilter]);
+    }, [activeTab, statusFilter, invoicePage, invoicePageSize]);
 
     const fetchClients = async () => {
         try {
@@ -306,15 +311,17 @@ function AdminInvoicesContent() {
         }
     };
 
-    const fetchInvoices = async () => {
+    const fetchInvoices = async (targetPage = invoicePage, targetLimit = invoicePageSize) => {
         setLoadingInvoices(true);
         try {
-            const params: any = { limit: 50 };
+            const params: any = { page: targetPage, limit: targetLimit };
             if (statusFilter !== "all") params.status = statusFilter;
             if (searchQuery.trim()) params.search = searchQuery.trim();
 
             const res = await api.get("/invoices", { params });
             setInvoices(res.data?.invoices || []);
+            setInvoiceTotal(res.data?.total || 0);
+            setInvoiceTotalPages(res.data?.totalPages || 1);
         } catch (err) {
             console.error("Failed to fetch invoices:", err);
             showToast("Failed to load invoices", "error");
@@ -1569,7 +1576,12 @@ function AdminInvoicesContent() {
                                 placeholder="Search by invoice #, client name, or public ID..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === "Enter" && fetchInvoices()}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        setInvoicePage(1);
+                                        fetchInvoices(1, invoicePageSize);
+                                    }
+                                }}
                                 className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                             />
                         </div>
@@ -1577,7 +1589,10 @@ function AdminInvoicesContent() {
                         <div className="flex items-center gap-2">
                             <select
                                 value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
+                                onChange={(e) => {
+                                    setStatusFilter(e.target.value);
+                                    setInvoicePage(1);
+                                }}
                                 className="px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-teal-500/20"
                             >
                                 <option value="all">All Statuses</option>
@@ -1589,7 +1604,7 @@ function AdminInvoicesContent() {
 
                             <button
                                 type="button"
-                                onClick={fetchInvoices}
+                                onClick={() => fetchInvoices(invoicePage, invoicePageSize)}
                                 className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
                                 title="Refresh"
                             >
@@ -1737,6 +1752,23 @@ function AdminInvoicesContent() {
                                         })}
                                     </tbody>
                                 </table>
+                            </div>
+                        )}
+
+                        {invoices.length > 0 && (
+                            <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+                                <Pagination
+                                    currentPage={invoicePage}
+                                    totalPages={invoiceTotalPages}
+                                    totalItems={invoiceTotal}
+                                    pageSize={invoicePageSize}
+                                    onPageChange={(p) => setInvoicePage(p)}
+                                    onPageSizeChange={(sz) => {
+                                        setInvoicePageSize(sz);
+                                        setInvoicePage(1);
+                                    }}
+                                    variant="admin"
+                                />
                             </div>
                         )}
                     </div>

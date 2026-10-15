@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Calendar, User, ArrowRight, Loader2, Tag } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import Pagination from "../_components/Pagination";
 
 interface Blog {
     _id: string;
@@ -22,6 +23,18 @@ interface Blog {
 export default function BlogsPage() {
     const [blogs, setBlogs] = useState<Blog[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(9);
+
+    useEffect(() => {
+        setPage(1);
+    }, [blogs.length]);
+
+    const totalPages = Math.max(1, Math.ceil(blogs.length / pageSize));
+    const pagedBlogs = useMemo(() => {
+        return blogs.slice((page - 1) * pageSize, page * pageSize);
+    }, [blogs, page, pageSize]);
 
     useEffect(() => {
         fetchBlogs();
@@ -77,7 +90,7 @@ export default function BlogsPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {blogs.map((blog, index) => (
+                        {pagedBlogs.map((blog, index) => (
                             <motion.div
                                 key={blog._id}
                                 initial={{ opacity: 0, y: 20 }}
@@ -143,6 +156,19 @@ export default function BlogsPage() {
                                 </Link>
                             </motion.div>
                         ))}
+                    </div>
+                )}
+                {blogs.length > 0 && (
+                    <div className="mt-12 pt-4 border-t border-slate-200 dark:border-slate-800">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={blogs.length}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                            onPageSizeChange={setPageSize}
+                            variant="storefront"
+                        />
                     </div>
                 )}
             </div>

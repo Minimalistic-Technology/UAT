@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Edit, Trash2, Plus, X, Upload, ImageOff } from "lucide-react";
 import api from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "../../_context/ToastContext";
 import { useConfirm } from "../../_context/ConfirmContext";
+import Pagination from "@/app/_components/Pagination";
 
 interface Blog {
     _id: string;
@@ -174,6 +175,18 @@ export default function BlogsPage() {
     const [loadingData, setLoadingData] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    useEffect(() => {
+        setPage(1);
+    }, [blogsList.length]);
+
+    const totalPages = Math.max(1, Math.ceil(blogsList.length / pageSize));
+    const pagedBlogs = useMemo(() => {
+        return blogsList.slice((page - 1) * pageSize, page * pageSize);
+    }, [blogsList, page, pageSize]);
+
     const [isAddBlogModalOpen, setIsAddBlogModalOpen] = useState(false);
     const [isEditBlogModalOpen, setIsEditBlogModalOpen] = useState(false);
     const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
@@ -309,7 +322,7 @@ export default function BlogsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                {blogsList.map(blog => (
+                                {pagedBlogs.map(blog => (
                                     <tr key={blog._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
                                         <td className="p-4">
                                             <div className="font-medium text-slate-900 dark:text-white line-clamp-1 max-w-xs">{blog.title}</div>
@@ -350,6 +363,19 @@ export default function BlogsPage() {
                         </table>
                     )}
                 </div>
+                {blogsList.length > 0 && (
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={blogsList.length}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                            onPageSizeChange={setPageSize}
+                            variant="admin"
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Add Blog Modal */}

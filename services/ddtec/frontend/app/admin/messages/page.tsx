@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Loader2, Mail } from "lucide-react";
 import api from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import Pagination from "@/app/_components/Pagination";
 
 interface Message {
     _id: string;
@@ -17,6 +18,18 @@ interface Message {
 export default function MessagesPage() {
     const [messagesList, setMessagesList] = useState<Message[]>([]);
     const [loadingData, setLoadingData] = useState(true);
+
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    useEffect(() => {
+        setPage(1);
+    }, [messagesList.length]);
+
+    const totalPages = Math.max(1, Math.ceil(messagesList.length / pageSize));
+    const pagedMessages = useMemo(() => {
+        return messagesList.slice((page - 1) * pageSize, page * pageSize);
+    }, [messagesList, page, pageSize]);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -60,7 +73,7 @@ export default function MessagesPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                            {messagesList.map(msg => (
+                            {pagedMessages.map(msg => (
                                 <tr key={msg._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
                                     <td className="p-4">
                                         <div className="font-medium text-slate-900 dark:text-white">{msg.firstName} {msg.lastName}</div>
@@ -87,6 +100,19 @@ export default function MessagesPage() {
                     </table>
                 )}
             </div>
+            {messagesList.length > 0 && (
+                <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={messagesList.length}
+                        pageSize={pageSize}
+                        onPageChange={setPage}
+                        onPageSizeChange={setPageSize}
+                        variant="admin"
+                    />
+                </div>
+            )}
         </div>
     );
 }

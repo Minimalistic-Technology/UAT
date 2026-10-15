@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useMemo, useEffect } from "react";
 import {
     Activity,
     Inbox,
     Search
 } from "lucide-react";
+import Pagination from "@/app/_components/Pagination";
 
 interface Product {
     _id: string;
@@ -31,6 +33,20 @@ export default function InventoryList({
     setProductSearch,
     handleToggleStock
 }: InventoryListProps) {
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    // Reset page to 1 when products or search query change
+    useEffect(() => {
+        setPage(1);
+    }, [productSearch, products.length]);
+
+    const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+    const pagedProducts = useMemo(
+        () => products.slice((page - 1) * pageSize, page * pageSize),
+        [products, page, pageSize]
+    );
+
     return (
         <div className="bg-white dark:bg-slate-900 border-0 rounded-3xl p-6 shadow-xl dark:shadow-slate-900 drop-shadow-md flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-850 pb-4">
@@ -64,11 +80,11 @@ export default function InventoryList({
                         <p className="text-slate-800 dark:text-slate-350 font-black text-xs">Catalog empty</p>
                     </div>
                 ) : (
-                    products.slice(0, 15).map((product) => {
+                    pagedProducts.map((product) => {
                         const inStock = product.stock > 25;
                         const lowStock = product.stock <= 25 && product.stock > 0;
 
-                        let stockStatusBadgeClass = "bg-emerald-50 dark:bg-emerald-955/20 text-emerald-750 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-950/40";
+                        let stockStatusBadgeClass = "bg-emerald-50 dark:bg-emerald-955/20 text-emerald-750 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-955/40";
                         let stockStatusLabelUser = "In Stock";
                         if (lowStock) {
                             stockStatusBadgeClass = "bg-orange-50 dark:bg-orange-955/20 text-orange-700 dark:text-orange-400 border border-orange-200/50 dark:border-orange-950/40 animate-pulse";
@@ -121,6 +137,20 @@ export default function InventoryList({
                     })
                 )}
             </div>
+
+            {products.length > 0 && (
+                <div className="border-t border-slate-100 dark:border-slate-850 pt-2">
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={products.length}
+                        pageSize={pageSize}
+                        onPageChange={setPage}
+                        onPageSizeChange={setPageSize}
+                        variant="warehouse"
+                    />
+                </div>
+            )}
         </div>
     );
 }
