@@ -26,6 +26,7 @@ import leadStageRoutes from './leadStage.routes';
 import clientRoutes from './client.routes';
 import companyRoutes from './company.routes';
 import reviewRoutes from './review.routes';
+import invoiceRoutes from './invoice.routes';
 
 const router = Router();
 
@@ -60,5 +61,6 @@ router.use('/companies', companyRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/delivery', deliveryRoutes);
 router.use('/pincode', deliveryRoutes);
+router.use('/invoices', invoiceRoutes);
 
 export default router;

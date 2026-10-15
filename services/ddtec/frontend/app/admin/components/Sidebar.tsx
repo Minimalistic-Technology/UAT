@@ -18,6 +18,7 @@ import {
     Calendar,
     Edit,
     Building2,
+    Receipt,
     LucideIcon,
 } from "lucide-react";
 
@@ -36,6 +37,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     { href: "/admin/quotation-products", label: "Quotation Products", icon: FileText },
     { href: "/admin/create-quotation", label: "Create Quotation", icon: FileText },
     { href: "/admin/saved-quotations", label: "Saved Quotations", icon: FileText },
+    { href: "/admin/invoices", label: "Invoices", icon: Receipt },
     { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
     { href: "/admin/users", label: "User & Staff", icon: Users },
     { href: "/admin/messages", label: "Messages", icon: Mail },
