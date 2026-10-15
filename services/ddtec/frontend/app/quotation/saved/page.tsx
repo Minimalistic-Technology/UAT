@@ -28,6 +28,7 @@ import { useAuth } from "../../_context/AuthContext";
 interface SavedQuotationItem {
     itemId?: string;
     name: string;
+    description?: string;
     price: number;
     unit: string;
     quantity: number;
@@ -366,6 +367,11 @@ export default function SavedQuotationsPage() {
                                                     <div key={idx} className="flex justify-between items-center text-xs">
                                                         <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[180px] sm:max-w-[240px]">
                                                             {item.name}
+                                                            {item.description && (
+                                                                <span className="block text-[10px] text-slate-400 font-normal truncate">
+                                                                    {item.description.replace(/\n/g, " • ")}
+                                                                </span>
+                                                            )}
                                                         </span>
                                                         <span className="text-slate-500 dark:text-slate-400 font-mono">
                                                             {item.quantity} {item.unit || "Nos"} × ₹{item.price.toLocaleString("en-IN")}

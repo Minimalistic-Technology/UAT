@@ -115,10 +115,21 @@ export default function Footer() {
 
         <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500">
           <p>© {currentYear} {SITE_CONFIG.name}. All rights reserved.</p>
-          <div className="flex gap-6 mt-4 md:mt-0">
+          <div className="flex flex-wrap gap-6 mt-4 md:mt-0">
             <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link href="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link>
             <Link href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new CustomEvent("ddtec:open-cookie-banner"));
+                }
+              }}
+              className="hover:text-white transition-colors cursor-pointer text-left"
+            >
+              Cookie Settings
+            </button>
           </div>
         </div>
       </div>

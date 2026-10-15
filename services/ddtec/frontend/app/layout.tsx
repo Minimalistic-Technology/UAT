@@ -5,6 +5,7 @@ import { Poppins } from "next/font/google";
 import { ThemeProvider } from "./provider/theme-provider";
 import Navbar from "./_components/Navbar";
 import Footer from "./_components/Footer";
+import CookieConsent from "./_components/CookieConsent";
 import { AuthProvider } from "./_context/AuthContext";
 import { CartProvider } from "./_context/CartContext";
 import { ToastProvider } from "./_context/ToastContext";
@@ -52,6 +53,7 @@ export default function RootLayout({
                     </main>
 
                     <Footer />
+                    <CookieConsent />
                   </CartProvider>
                 </RouteProvider>
               </SettingsProvider>

@@ -32,6 +32,7 @@ interface CatalogItem {
     price: number;
     hsnCode?: string;
     unit?: string;
+    description?: string;
     cgst?: number;
     sgst?: number;
 }
@@ -49,6 +50,7 @@ interface QuotationLineItem {
     id: string; // Internal temporary ID for React key
     itemId?: string; // Optional reference ID if pre-filled from catalog
     name: string;
+    description?: string;
     price: number;
     unit: string;
     quantity: number;
@@ -213,6 +215,7 @@ export default function CreateQuotationView() {
                             id: `loaded-${index}-${Date.now()}`,
                             itemId: i.itemId || i._id,
                             name: i.name,
+                            description: i.description || "",
                             price: i.price,
                             unit: i.unit || "Nos",
                             quantity: i.quantity || 1,
@@ -304,6 +307,7 @@ export default function CreateQuotationView() {
             id: Math.random().toString(36).substr(2, 9),
             itemId: catalogObj._id,
             name: catalogObj.name,
+            description: catalogObj.description || "",
             price: catalogObj.price,
             unit: catalogObj.unit || "Nos",
             quantity: 1,
@@ -328,6 +332,7 @@ export default function CreateQuotationView() {
         const newItem: QuotationLineItem = {
             id: Math.random().toString(36).substr(2, 9),
             name: "Custom Product / Service Item",
+            description: "",
             price: 1000,
             unit: "Nos",
             quantity: 1,
@@ -352,6 +357,100 @@ export default function CreateQuotationView() {
     const handleRemoveItem = (id: string) => {
         setItems(prev => prev.filter(item => item.id !== id));
         showToast("Removed line item", "info");
+    };
+
+    const descTextareaRefs = React.useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+
+    const handleInsertBullet = (itemId: string) => {
+        const textarea = descTextareaRefs.current[itemId];
+        const item = items.find(i => i.id === itemId);
+        const value = item?.description || "";
+
+        if (!textarea) {
+            const nextVal = value ? `${value}\n• ` : "• ";
+            handleItemChange(itemId, "description", nextVal);
+            return;
+        }
+
+        const { selectionStart, selectionEnd } = textarea;
+        if (selectionStart !== selectionEnd) {
+            const selectedText = value.substring(selectionStart, selectionEnd);
+            const lines = selectedText.split("\n");
+            const bulleted = lines.map(line => /^[\*\-•]\s+/.test(line.trim()) ? line : `• ${line}`).join("\n");
+            const nextVal = value.substring(0, selectionStart) + bulleted + value.substring(selectionEnd);
+            handleItemChange(itemId, "description", nextVal);
+            setTimeout(() => {
+                textarea.focus();
+                textarea.selectionStart = selectionStart;
+                textarea.selectionEnd = selectionStart + bulleted.length;
+            }, 0);
+        } else {
+            const textBefore = value.substring(0, selectionStart);
+            const needsNewline = textBefore.length > 0 && !textBefore.endsWith("\n");
+            const insertion = needsNewline ? "\n• " : "• ";
+            const nextVal = value.substring(0, selectionStart) + insertion + value.substring(selectionEnd);
+            handleItemChange(itemId, "description", nextVal);
+            setTimeout(() => {
+                textarea.focus();
+                const newPos = selectionStart + insertion.length;
+                textarea.selectionStart = textarea.selectionEnd = newPos;
+            }, 0);
+        }
+    };
+
+    const handleInsertBold = (itemId: string) => {
+        const textarea = descTextareaRefs.current[itemId];
+        const item = items.find(i => i.id === itemId);
+        const value = item?.description || "";
+        if (!textarea) return;
+
+        const { selectionStart, selectionEnd } = textarea;
+        const selected = value.substring(selectionStart, selectionEnd) || "bold text";
+        const insertion = `**${selected}**`;
+        const nextVal = value.substring(0, selectionStart) + insertion + value.substring(selectionEnd);
+        handleItemChange(itemId, "description", nextVal);
+        setTimeout(() => {
+            textarea.focus();
+            textarea.selectionStart = selectionStart + 2;
+            textarea.selectionEnd = selectionStart + 2 + selected.length;
+        }, 0);
+    };
+
+    const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, itemId: string) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            const textarea = e.currentTarget;
+            const { selectionStart, selectionEnd, value } = textarea;
+            if (selectionStart !== selectionEnd) return;
+
+            const textBeforeCursor = value.substring(0, selectionStart);
+            const lastNewline = textBeforeCursor.lastIndexOf("\n");
+            const currentLine = textBeforeCursor.substring(lastNewline + 1);
+
+            const bulletMatch = currentLine.match(/^(\s*)([•\-\*])\s+/);
+            if (bulletMatch) {
+                e.preventDefault();
+                // If current line has ONLY the bullet and no content, pressing Enter clears the bullet (exits list)
+                if (currentLine.trim() === bulletMatch[2]) {
+                    const startOfCurrentLine = lastNewline === -1 ? 0 : lastNewline + 1;
+                    const newValue = value.substring(0, startOfCurrentLine) + value.substring(selectionStart);
+                    handleItemChange(itemId, "description", newValue);
+                    setTimeout(() => {
+                        textarea.selectionStart = textarea.selectionEnd = startOfCurrentLine;
+                    }, 0);
+                    return;
+                }
+
+                // Otherwise, automatically start next line with bullet
+                const indent = bulletMatch[1];
+                const insertion = `\n${indent}• `;
+                const newValue = value.substring(0, selectionStart) + insertion + value.substring(selectionEnd);
+                handleItemChange(itemId, "description", newValue);
+                setTimeout(() => {
+                    const nextPos = selectionStart + insertion.length;
+                    textarea.selectionStart = textarea.selectionEnd = nextPos;
+                }, 0);
+            }
+        }
     };
 
     // Filter out catalog items that are already added to quotation line items
@@ -406,6 +505,7 @@ export default function CreateQuotationView() {
             items: items.map(i => ({
                 itemId: i.itemId || i.id,
                 name: i.name,
+                description: i.description || "",
                 price: i.price,
                 unit: i.unit,
                 quantity: i.quantity,
@@ -459,6 +559,7 @@ export default function CreateQuotationView() {
             const payloadItems = items.map(item => {
                 const obj: any = {
                     name: item.name,
+                    description: item.description || "",
                     price: Number(item.price) || 0,
                     unit: item.unit || "Nos",
                     quantity: Number(item.quantity) || 1,
@@ -535,6 +636,7 @@ export default function CreateQuotationView() {
             const payloadItems = items.map(item => {
                 const obj: any = {
                     name: item.name,
+                    description: item.description || "",
                     price: Number(item.price) || 0,
                     unit: item.unit || "Nos",
                     quantity: Number(item.quantity) || 1,
@@ -985,7 +1087,7 @@ export default function CreateQuotationView() {
                                                 value={item.name}
                                                 onChange={(e) => handleItemChange(item.id, "name", e.target.value)}
                                                 className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="Item title / product description..."
+                                                placeholder="Item title / product name..."
                                             />
                                         </div>
 
@@ -1006,6 +1108,45 @@ export default function CreateQuotationView() {
                                                 <Trash2 className="size-4" />
                                             </button>
                                         </div>
+                                    </div>
+
+                                    {/* Line Item Description / Specifications (with bullet & formatting tools) */}
+                                    <div className="space-y-1.5 pt-0.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                <span>Description / Specifications</span>
+                                                <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">(printed on PDF under item name)</span>
+                                            </label>
+
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleInsertBullet(item.id)}
+                                                    className="px-2 py-0.5 text-[11px] font-medium rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 border border-slate-200 dark:border-slate-700 transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                                    title="Insert bullet point (Enter continues list)"
+                                                >
+                                                    <span className="font-bold text-teal-600 dark:text-teal-400">•</span> Bullet
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleInsertBold(item.id)}
+                                                    className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 border border-slate-200 dark:border-slate-700 transition cursor-pointer shadow-2xs"
+                                                    title="Bold text"
+                                                >
+                                                    B
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <textarea
+                                            ref={(el) => { descTextareaRefs.current[item.id] = el; }}
+                                            rows={4}
+                                            value={item.description || ""}
+                                            onChange={(e) => handleItemChange(item.id, "description", e.target.value)}
+                                            onKeyDown={(e) => handleDescriptionKeyDown(e, item.id)}
+                                            placeholder="Item specifications, bullet points (e.g. • 800W Motor), warranty notes..."
+                                            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500 outline-none resize-y min-h-[100px] leading-relaxed"
+                                        />
                                     </div>
 
                                     {/* Line 2: Segregated Parameters Grid (Rate, Qty, Unit, HSN Code (Wider), CGST %, SGST %) */}

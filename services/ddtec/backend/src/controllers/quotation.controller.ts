@@ -94,6 +94,55 @@ async function fetchLogoImage(logoUrl?: string): Promise<{ dataUrl: string; form
     }
 }
 
+function formatDescriptionForPdf(rawDesc?: string): string {
+    if (!rawDesc || typeof rawDesc !== 'string') return '';
+
+    let text = rawDesc;
+
+    // 1. If HTML tags are present, convert <br>, <p>, <li> into line breaks / bullets
+    text = text
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<li[^>]*>/gi, '• ')
+        .replace(/<[^>]+>/g, '');
+
+    // 2. Unescape basic HTML entities
+    text = text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ');
+
+    // 3. Clean up markdown bold/italic tags for clean print (e.g. **bold** -> bold)
+    text = text
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
+        .replace(/_([^_]+)_/g, '$1');
+
+    // 4. Normalize bullet characters and lines
+    const lines = text.split(/\r?\n/).map(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return '';
+        // If line starts with bullet '-', '*', or '•', format with clean indent and standard bullet
+        if (/^[\*\-•]\s+/.test(trimmed)) {
+            return `  • ${trimmed.replace(/^[\*\-•]\s+/, '')}`;
+        }
+        return `  ${trimmed}`;
+    });
+
+    // 5. Remove excessive consecutive empty lines
+    const cleaned = lines.filter((l, idx, arr) => {
+        if (l === '' && (idx === 0 || arr[idx - 1] === '')) return false;
+        return true;
+    }).join('\n').trim();
+
+    return cleaned;
+}
+
 async function buildQuotationPdfHelper(
     items: any[],
     buyer: any,
@@ -121,6 +170,9 @@ async function buildQuotationPdfHelper(
             ? Number(i.price)
             : (dbItem ? (dbItem as any).price : 0);
         const name = i.name || (dbItem ? (dbItem as any).name : `Item #${idx + 1}`);
+        const description = (i.description !== undefined && i.description !== null && String(i.description).trim() !== '')
+            ? String(i.description)
+            : (dbItem ? ((dbItem as any).description || '') : '');
         const hsnCode = i.hsnCode !== undefined ? i.hsnCode : (dbItem ? ((dbItem as any).hsnCode || '') : '');
         const unit = i.unit || (dbItem ? ((dbItem as any).unit || 'Nos') : 'Nos');
         const itemCgstRate = i.cgst !== undefined && i.cgst !== null && i.cgst !== ''
@@ -133,6 +185,7 @@ async function buildQuotationPdfHelper(
         const amount = price * quantity;
         return {
             name,
+            description,
             hsnCode,
             unit,
             price,
@@ -211,15 +264,20 @@ async function buildQuotationPdfHelper(
     doc.text(buyer?.address || '', margin + 2, 66, { maxWidth: pageWidth - margin * 2 - 4 });
     doc.text(`GSTIN/UIN: ${buyer?.gstin || 'N/A'}   State Name: ${buyer?.stateName || 'N/A'}`, margin + 2, 71);
 
-    const tableBody = lineItems.map((item, idx) => [
-        idx + 1,
-        item.name,
-        item.hsnCode,
-        `${item.quantity} ${item.unit}`,
-        item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
-        item.unit,
-        item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })
-    ]);
+    const tableBody = lineItems.map((item, idx) => {
+        const formattedDesc = formatDescriptionForPdf(item.description);
+        const goodsDescription = formattedDesc ? `${item.name}\n${formattedDesc}` : item.name;
+
+        return [
+            idx + 1,
+            goodsDescription,
+            item.hsnCode,
+            `${item.quantity} ${item.unit}`,
+            item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+            item.unit,
+            item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })
+        ];
+    });
 
     autoTable(doc, {
         startY: 78,
@@ -235,11 +293,12 @@ async function buildQuotationPdfHelper(
         footStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: 'bold' },
         columnStyles: {
             0: { halign: 'center' },
+            1: { halign: 'left' },
             3: { halign: 'center' },
             4: { halign: 'right' },
             6: { halign: 'right' }
         },
-        styles: { fontSize: 9 }
+        styles: { fontSize: 8.5, valign: 'top' }
     });
 
     let finalY = (doc as any).lastAutoTable.finalY + 8;
@@ -387,6 +446,7 @@ export const saveQuotation = async (req: Request, res: Response) => {
             return {
                 itemId: i.itemId || i._id,
                 name: i.name || 'Unnamed Item',
+                description: (i.description !== undefined && i.description !== null) ? String(i.description) : '',
                 price,
                 unit: i.unit || 'Nos',
                 quantity: qty,
