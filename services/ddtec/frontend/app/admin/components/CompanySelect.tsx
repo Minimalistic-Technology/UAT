@@ -142,8 +142,11 @@ export default function CompanySelect({
         setNewCompanyError(null);
     };
 
-    const handleSaveNewCompany = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSaveNewCompany = async (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         const trimmedName = newCompanyName.trim();
         if (!trimmedName) {
             setNewCompanyError('Company name is required');
@@ -236,7 +239,7 @@ export default function CompanySelect({
 
             {/* Dropdown Popover */}
             {isOpen && (
-                <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden animate-in fade-in-50 zoom-in-95 duration-100">
+                <div className="absolute z-50 left-0 mt-1.5 w-[min(360px,calc(100vw-3rem))] min-w-full bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden animate-in fade-in-50 zoom-in-95 duration-100">
                     {!isAddingNew ? (
                         <>
                             {/* Search Header */}
@@ -326,12 +329,22 @@ export default function CompanySelect({
                         </>
                     ) : (
                         /* Inline Quick Add Form */
-                        <form onSubmit={handleSaveNewCompany} className="p-3 space-y-2.5">
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleSaveNewCompany(e);
+                                }
+                            }}
+                            className="p-3 space-y-2.5"
+                        >
                             <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-700">
                                 <button
                                     type="button"
                                     onClick={handleCancelAddNew}
-                                    className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                                    className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
                                 >
                                     <ArrowLeft className="size-3" /> Back
                                 </button>
@@ -352,7 +365,7 @@ export default function CompanySelect({
                                     }}
                                     placeholder="Company name"
                                     maxLength={150}
-                                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-teal-500"
+                                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-1 focus:ring-teal-500"
                                 />
                             </div>
 
@@ -366,7 +379,7 @@ export default function CompanySelect({
                                     onChange={(e) => setNewCompanyLocation(e.target.value)}
                                     placeholder="City, State"
                                     maxLength={200}
-                                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-teal-500"
+                                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-1 focus:ring-teal-500"
                                 />
                             </div>
 
@@ -378,9 +391,9 @@ export default function CompanySelect({
                                     type="text"
                                     value={newCompanyGstin}
                                     onChange={(e) => setNewCompanyGstin(e.target.value.toUpperCase())}
-                                    placeholder="27AAPFU0939F1ZV"
+                                    placeholder="e.g. 27AAPFU0939F1ZV"
                                     maxLength={15}
-                                    className="w-full px-2.5 py-1.5 text-xs uppercase font-mono rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-teal-500"
+                                    className="w-full px-2.5 py-1.5 text-xs uppercase font-mono rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-1 focus:ring-teal-500"
                                 />
                             </div>
 
@@ -392,20 +405,21 @@ export default function CompanySelect({
                                 <button
                                     type="button"
                                     onClick={handleCancelAddNew}
-                                    className="px-2.5 py-1.5 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                                    className="px-2.5 py-1.5 text-xs font-semibold rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={handleSaveNewCompany}
                                     disabled={isSavingNew}
-                                    className="px-3 py-1.5 text-xs font-bold rounded-lg bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-60 flex items-center gap-1.5 shadow-xs"
+                                    className="px-3 py-1.5 text-xs font-bold rounded-lg bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-60 flex items-center gap-1.5 shadow-xs cursor-pointer"
                                 >
                                     {isSavingNew && <Loader2 className="size-3 animate-spin" />}
                                     Save & Select
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     )}
                 </div>
             )}

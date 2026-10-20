@@ -28,7 +28,7 @@ import {
     UserCheck,
 } from 'lucide-react';
 import api from '@/lib/api';
-import { formatDateTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { useToast } from '@/app/_context/ToastContext';
 import { useConfirm } from '@/app/_context/ConfirmContext';
 import CompanySelect from './CompanySelect';
@@ -121,7 +121,6 @@ const emptyFormData = () => ({
     stage: '',
     assignedTo: '',
     followUpDate: '',
-    followUpTime: '',
     note: '',
 });
 
@@ -356,7 +355,6 @@ export default function LeadsView() {
             stage: lead.stage || '',
             assignedTo: typeof lead.assignedTo === 'object' && lead.assignedTo ? lead.assignedTo._id : (lead.assignedTo || ''),
             followUpDate: followUp ? `${followUp.getFullYear()}-${pad(followUp.getMonth() + 1)}-${pad(followUp.getDate())}` : '',
-            followUpTime: followUp ? `${pad(followUp.getHours())}:${pad(followUp.getMinutes())}` : '',
             note: lead.note || '',
         });
         setFormErrors({});
@@ -402,10 +400,6 @@ export default function LeadsView() {
             errors.stage = 'Select a stage';
         }
 
-        if (formData.followUpTime && !formData.followUpDate) {
-            errors.followUpDate = 'Pick a date for the follow-up time';
-        }
-
         if (formData.note.length > MAX_NOTE_LEN) {
             errors.note = `Notes must be under ${MAX_NOTE_LEN} characters`;
         }
@@ -423,11 +417,10 @@ export default function LeadsView() {
         try {
             setIsSubmitting(true);
             const followUpDate = formData.followUpDate
-                ? new Date(`${formData.followUpDate}T${formData.followUpTime || '09:00'}`).toISOString()
+                ? new Date(`${formData.followUpDate}T00:00:00`).toISOString()
                 : '';
-            const { followUpTime, ...rest } = formData;
             const payload = {
-                ...rest,
+                ...formData,
                 name: formData.name.trim(),
                 company: formData.company.trim(),
                 email: formData.email.trim(),
@@ -960,7 +953,7 @@ export default function LeadsView() {
                                                 {lead.followUpDate && (
                                                     <p className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
                                                         <Calendar className="size-3" />
-                                                        {formatDateTime(lead.followUpDate)}
+                                                        {formatDate(lead.followUpDate)}
                                                     </p>
                                                 )}
                                                 {lead.assignedTo && typeof lead.assignedTo === 'object' && (
@@ -1240,20 +1233,12 @@ export default function LeadsView() {
 
                             <div>
                                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Follow-up Date</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <input
-                                        type="date"
-                                        value={formData.followUpDate}
-                                        onChange={(e) => { setFormData({ ...formData, followUpDate: e.target.value }); setFormErrors({ ...formErrors, followUpDate: undefined }); }}
-                                        className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${formErrors.followUpDate ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
-                                    />
-                                    <input
-                                        type="time"
-                                        value={formData.followUpTime}
-                                        onChange={(e) => { setFormData({ ...formData, followUpTime: e.target.value }); setFormErrors({ ...formErrors, followUpDate: undefined }); }}
-                                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                    />
-                                </div>
+                                <input
+                                    type="date"
+                                    value={formData.followUpDate}
+                                    onChange={(e) => { setFormData({ ...formData, followUpDate: e.target.value }); setFormErrors({ ...formErrors, followUpDate: undefined }); }}
+                                    className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${formErrors.followUpDate ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
+                                />
                                 {formErrors.followUpDate && <p className="text-xs text-red-500 mt-1">{formErrors.followUpDate}</p>}
                             </div>
 
