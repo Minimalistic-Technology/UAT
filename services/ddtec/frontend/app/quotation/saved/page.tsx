@@ -149,7 +149,8 @@ export default function SavedQuotationsPage() {
                 {
                     items: quotation.items,
                     buyer: quotation.buyer,
-                    title: "Quotation"
+                    title: "Quotation",
+                    quotationNumber: quotation.quotationNumber
                 },
                 { responseType: "blob" }
             );

@@ -270,7 +270,7 @@ export const PREDEFINED_EMAIL_TEMPLATES: EmailTemplate[] = [
                                 <tr>
                                     <td width="40" valign="top">
                                         <div style="background-color: #ccfbf1; color: #0f766e; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-weight: bold; font-size: 14px;">1</div>
-                                    </td>Button name is send email and save Quotation, also need to save this quotation after sending the email
+                                    </td>
                                     <td style="padding-left: 10px; padding-bottom: 15px;">
                                         <strong style="color: #0f172a; font-size: 15px;">Explore Products</strong>
                                         <p style="color: #64748b; font-size: 13px; margin: 3px 0 0 0;">Browse our full catalog of cutting-edge tools.</p>

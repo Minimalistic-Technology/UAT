@@ -176,6 +176,20 @@ function QuotationContent() {
     const sgstAmount = selectedItems.reduce((sum, i) => sum + (i.price * i.quantity * i.sgst) / 100, 0);
     const grandTotal = subtotal + cgstAmount + sgstAmount;
 
+    const persistQuotation = async () => {
+        const { data } = await api.post("/quotation/save", {
+            id: savedQuotationId,
+            title: title.trim() || `Quotation for ${buyer.name.trim()}`,
+            buyer,
+            items: selectedItems
+        });
+
+        if (data.quotation) {
+            setSavedQuotationId(data.quotation._id);
+        }
+        return data;
+    };
+
     const handleSaveQuotation = async () => {
         if (selectedItems.length === 0) {
             showToast("Please add at least one product to save the quotation.", "warning");
@@ -188,16 +202,7 @@ function QuotationContent() {
 
         setIsSaving(true);
         try {
-            const { data } = await api.post("/quotation/save", {
-                id: savedQuotationId,
-                title: title.trim() || `Quotation for ${buyer.name.trim()}`,
-                buyer,
-                items: selectedItems
-            });
-
-            if (data.quotation) {
-                setSavedQuotationId(data.quotation._id);
-            }
+            const data = await persistQuotation();
             showToast(data.msg || "Quotation saved successfully!", "success");
         } catch (error: any) {
             console.error("Save quotation error:", error);
@@ -219,6 +224,10 @@ function QuotationContent() {
 
         setIsGenerating(true);
         try {
+            // First save the quotation to database
+            const saveData = await persistQuotation();
+            const quotationNumber = saveData?.quotation?.quotationNumber;
+
             const response = await api.post(
                 "/quotation/generate",
                 {
@@ -229,14 +238,15 @@ function QuotationContent() {
                         hsnCode: i.hsnCode || ""
                     })),
                     buyer,
-                    title: "Quotation"
+                    title: "Quotation",
+                    quotationNumber
                 },
                 { responseType: "blob" }
             );
 
             const disposition = response.headers["content-disposition"];
             const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-            const filename = filenameMatch?.[1] || `quotation-${Date.now()}.pdf`;
+            const filename = filenameMatch?.[1] || `${quotationNumber || 'QT'}-${(buyer.name || 'Quotation').replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}.pdf`;
 
             const blob = new Blob([response.data], { type: "application/pdf" });
             const url = window.URL.createObjectURL(blob);
@@ -247,7 +257,7 @@ function QuotationContent() {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            showToast("Quotation PDF generated successfully!", "success");
+            showToast("Quotation saved & PDF downloaded successfully!", "success");
         } catch (error: any) {
             console.error(error);
             showToast(error.response?.data?.msg || "Failed to generate quotation. Please try again.", "error");
@@ -477,7 +487,7 @@ function QuotationContent() {
                             <div className="pt-2 grid grid-cols-1 gap-2">
                                 <button
                                     onClick={handleSaveQuotation}
-                                    disabled={isSaving || selectedItems.length === 0 || !buyer.name.trim()}
+                                    disabled={isSaving || isGenerating || selectedItems.length === 0 || !buyer.name.trim()}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-bold transition-colors disabled:opacity-50 text-sm shadow-sm"
                                 >
                                     {isSaving ? <Loader2 className="animate-spin size-4" /> : <Save className="size-4" />}
@@ -486,11 +496,11 @@ function QuotationContent() {
 
                                 <button
                                     onClick={handleGenerateQuotation}
-                                    disabled={isGenerating || selectedItems.length === 0 || !buyer.name.trim()}
+                                    disabled={isGenerating || isSaving || selectedItems.length === 0 || !buyer.name.trim()}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-xl font-bold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 text-sm shadow-sm"
                                 >
                                     {isGenerating ? <Loader2 className="animate-spin size-4" /> : <Download className="size-4 text-teal-400" />}
-                                    Generate & Download PDF
+                                    {isGenerating ? "Saving & Downloading..." : "Save & Download PDF"}
                                 </button>
                             </div>
                         </div>

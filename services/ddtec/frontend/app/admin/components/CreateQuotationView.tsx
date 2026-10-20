@@ -558,6 +558,10 @@ export default function CreateQuotationView() {
 
         setIsGenerating(true);
         try {
+            // First save/persist the Quotation to the database
+            const saveData = await persistQuotation();
+            const quotationNumber = saveData?.quotation?.quotationNumber;
+
             const payloadItems = items.map(item => {
                 const obj: any = {
                     name: item.name,
@@ -577,13 +581,13 @@ export default function CreateQuotationView() {
 
             const response = await api.post(
                 "/quotation/generate",
-                { items: payloadItems, buyer, title: "Quotation" },
+                { items: payloadItems, buyer, title: "Quotation", quotationNumber },
                 { responseType: "blob" }
             );
 
             const disposition = response.headers["content-disposition"];
             const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-            const filename = filenameMatch?.[1] || `QT-${(buyer.name || 'Quotation').replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}.pdf`;
+            const filename = filenameMatch?.[1] || `${quotationNumber || 'QT'}-${(buyer.name || 'Quotation').replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}.pdf`;
 
             const blob = new Blob([response.data], { type: "application/pdf" });
             const url = window.URL.createObjectURL(blob);
@@ -595,7 +599,7 @@ export default function CreateQuotationView() {
             link.remove();
             window.URL.revokeObjectURL(url);
 
-            showToast("Quotation PDF generated and downloaded successfully!", "success");
+            showToast("Quotation saved & PDF downloaded successfully!", "success");
         } catch (error: any) {
             console.error("Quotation generation error:", error);
             let errMsg = "Failed to generate quotation PDF.";
@@ -635,6 +639,10 @@ export default function CreateQuotationView() {
 
         setIsSendingEmail(true);
         try {
+            // First save/persist the Quotation to the database
+            const saveData = await persistQuotation();
+            const quotationNumber = saveData?.quotation?.quotationNumber;
+
             const payloadItems = items.map(item => {
                 const obj: any = {
                     name: item.name,
@@ -656,12 +664,11 @@ export default function CreateQuotationView() {
                 items: payloadItems,
                 buyer,
                 toEmail: buyer.toEmail,
-                title: "Quotation"
+                title: "Quotation",
+                quotationNumber
             });
 
-            await persistQuotation();
-
-            showToast(data.msg || `Quotation PDF successfully emailed to ${emailList.join(", ")} and saved.`, "success");
+            showToast(data.msg || `Quotation saved & emailed to ${emailList.join(", ")}.`, "success");
         } catch (error: any) {
             console.error("Email sending error:", error);
             showToast(error.response?.data?.msg || "Failed to send quotation email.", "error");
@@ -1300,7 +1307,7 @@ export default function CreateQuotationView() {
                         <button
                             type="button"
                             onClick={handleSaveQuotation}
-                            disabled={isSaving || items.length === 0}
+                            disabled={isSaving || isGenerating || isSendingEmail || items.length === 0}
                             className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 disabled:hover:bg-teal-600 disabled:cursor-not-allowed text-white font-medium rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                         >
                             {isSaving ? (
@@ -1319,13 +1326,13 @@ export default function CreateQuotationView() {
                         <button
                             type="button"
                             onClick={handleGeneratePdf}
-                            disabled={isGenerating || items.length === 0}
+                            disabled={isGenerating || isSaving || isSendingEmail || items.length === 0}
                             className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 disabled:cursor-not-allowed text-white font-medium rounded-lg border border-slate-700 shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                         >
                             {isGenerating ? (
                                 <>
                                     <Loader2 className="size-4 animate-spin" />
-                                    <span>Generating...</span>
+                                    <span>Saving & Downloading...</span>
                                 </>
                             ) : (
                                 <>
@@ -1338,13 +1345,13 @@ export default function CreateQuotationView() {
                         <button
                             type="button"
                             onClick={handleSendEmail}
-                            disabled={isSendingEmail || items.length === 0}
+                            disabled={isSendingEmail || isSaving || isGenerating || items.length === 0}
                             className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:hover:bg-emerald-500 disabled:cursor-not-allowed text-slate-950 font-medium rounded-lg shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
                         >
                             {isSendingEmail ? (
                                 <>
                                     <Loader2 className="size-4 animate-spin" />
-                                    <span>Sending...</span>
+                                    <span>Saving & Sending...</span>
                                 </>
                             ) : (
                                 <>

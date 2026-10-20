@@ -147,7 +147,7 @@ function formatDescriptionForPdf(rawDesc?: string): string {
 async function buildQuotationPdfHelper(
     items: any[],
     buyer: any,
-    options?: { logoUrl?: string; title?: string }
+    options?: { logoUrl?: string; title?: string; quotationNumber?: string }
 ): Promise<{ pdfBuffer: Buffer; downloadFilename: string }> {
     const itemIds = items
         .map((i: any) => i.itemId)
@@ -256,7 +256,7 @@ async function buildQuotationPdfHelper(
     doc.text(`State Name: ${COMPANY.stateName}`, margin + 2, 46);
 
     const rightX = pageWidth / 2 + 2;
-    const invoiceNo = `QT-${Date.now()}`;
+    const invoiceNo = options?.quotationNumber?.trim() || `QT-${Date.now()}`;
     const dateForFilename = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     const buyerNameForFilename = sanitizeForFilename(buyer?.name || '') || 'Customer';
     const downloadFilename = `QT-${buyerNameForFilename}-${dateForFilename}.pdf`;
@@ -361,7 +361,7 @@ async function buildQuotationPdfHelper(
 
 export const generateQuotationPdf = async (req: Request, res: Response) => {
     try {
-        const { items, buyer, logoUrl, title } = req.body;
+        const { items, buyer, logoUrl, title, quotationNumber } = req.body;
 
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ msg: 'No items provided' });
@@ -370,7 +370,8 @@ export const generateQuotationPdf = async (req: Request, res: Response) => {
         const effectiveLogoUrl = logoUrl || buyer?.logoUrl;
         const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer, {
             logoUrl: effectiveLogoUrl,
-            title
+            title,
+            quotationNumber
         });
 
         res.setHeader('Content-Type', 'application/pdf');
@@ -384,7 +385,7 @@ export const generateQuotationPdf = async (req: Request, res: Response) => {
 
 export const sendQuotationEmail = async (req: Request, res: Response) => {
     try {
-        const { items, buyer, toEmail, notes, subject, logoUrl, title } = req.body;
+        const { items, buyer, toEmail, notes, subject, logoUrl, title, quotationNumber } = req.body;
 
         const targetEmail = toEmail || buyer?.toEmail;
 
@@ -406,7 +407,8 @@ export const sendQuotationEmail = async (req: Request, res: Response) => {
         const effectiveLogoUrl = logoUrl || buyer?.logoUrl;
         const { pdfBuffer, downloadFilename } = await buildQuotationPdfHelper(items, buyer, {
             logoUrl: effectiveLogoUrl,
-            title
+            title,
+            quotationNumber
         });
 
         const emailResult = await NotificationService.sendQuotationEmail(
