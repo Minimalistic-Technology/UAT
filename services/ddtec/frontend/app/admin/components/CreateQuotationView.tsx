@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 
 import {
@@ -37,6 +37,13 @@ interface CatalogItem {
     sgst?: number;
 }
 
+interface CompanyRecord {
+    _id: string;
+    name: string;
+    location?: string;
+    gstNumber?: string;
+}
+
 interface ClientRecord {
     _id: string;
     name: string;
@@ -44,6 +51,7 @@ interface ClientRecord {
     gstin?: string;
     email?: string;
     phone?: string;
+    address?: string;
 }
 
 interface QuotationLineItem {
@@ -114,15 +122,20 @@ export default function CreateQuotationView() {
 
     // Searchable state combobox state (Local search, zero network calls)
     const [isStateOpen, setIsStateOpen] = useState(false);
-    const stateDropdownRef = React.useRef<HTMLDivElement>(null);
+    const stateDropdownRef = useRef<HTMLDivElement>(null);
 
-    // Existing clients (for prefilling company details) + searchable combobox state
+    // Existing clients & companies (for prefilling company details) + searchable combobox state
+    const [companies, setCompanies] = useState<CompanyRecord[]>([]);
     const [clients, setClients] = useState<ClientRecord[]>([]);
     const [clientSearch, setClientSearch] = useState("");
     const [isClientOpen, setIsClientOpen] = useState(false);
-    const clientDropdownRef = React.useRef<HTMLDivElement>(null);
+    const clientDropdownRef = useRef<HTMLDivElement>(null);
 
-    // Close catalog / state / client dropdowns on click outside
+    // Company Name autocomplete state
+    const [isCompanyNameOpen, setIsCompanyNameOpen] = useState(false);
+    const companyNameDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close catalog / state / client / company dropdowns on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (catalogDropdownRef.current && !catalogDropdownRef.current.contains(event.target as Node)) {
@@ -133,6 +146,9 @@ export default function CreateQuotationView() {
             }
             if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target as Node)) {
                 setIsClientOpen(false);
+            }
+            if (companyNameDropdownRef.current && !companyNameDropdownRef.current.contains(event.target as Node)) {
+                setIsCompanyNameOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -186,7 +202,7 @@ export default function CreateQuotationView() {
 
     useEffect(() => {
         fetchCatalogItems();
-        fetchClients();
+        fetchClientsAndCompanies();
     }, []);
 
     useEffect(() => {
@@ -233,25 +249,157 @@ export default function CreateQuotationView() {
         }
     };
 
+    const getStateFromGstin = (gstin?: string): string => {
+        if (!gstin || typeof gstin !== "string") return "";
+        const clean = gstin.trim().replace(/[^0-9A-Za-z]/g, "");
+        if (clean.length < 2) return "";
+        const code = clean.substring(0, 2);
+        const match = INDIAN_STATES.find(s => s.code === code);
+        return match ? `${match.name} (${match.code})` : "";
+    };
 
-    const fetchClients = async () => {
+    const fetchClientsAndCompanies = async () => {
         try {
-            const { data } = await api.get("/clients");
-            if (Array.isArray(data)) setClients(data);
+            const [clientsRes, companiesRes] = await Promise.all([
+                api.get("/clients").catch(() => ({ data: [] })),
+                api.get("/companies").catch(() => ({ data: [] }))
+            ]);
+            if (Array.isArray(clientsRes.data)) setClients(clientsRes.data);
+            if (Array.isArray(companiesRes.data)) setCompanies(companiesRes.data);
         } catch (error) {
-            console.error("Failed to load clients", error);
+            console.error("Failed to load clients and companies", error);
         }
     };
 
-    const handleSelectClient = (client: ClientRecord) => {
+    const fillBuyerDetails = async (params: {
+        name?: string;
+        gstin?: string;
+        address?: string;
+        toEmail?: string;
+        stateName?: string;
+    }) => {
+        const compName = params.name?.trim() || "";
+        let resolvedGstin = params.gstin?.trim() || "";
+        let resolvedAddress = params.address?.trim() || "";
+        let resolvedEmail = params.toEmail?.trim() || "";
+        let resolvedState = params.stateName?.trim() || "";
+
+        // 1. Look up in companies & clients list if details are missing
+        if (compName) {
+            const lower = compName.toLowerCase();
+            const matchingCompany = companies.find(c => c.name.trim().toLowerCase() === lower);
+            const matchingClient = clients.find(c =>
+                (c.company && c.company.trim().toLowerCase() === lower) ||
+                c.name.trim().toLowerCase() === lower
+            );
+
+            if (!resolvedGstin) {
+                resolvedGstin = matchingCompany?.gstNumber || matchingClient?.gstin || "";
+            }
+            if (!resolvedAddress) {
+                resolvedAddress = matchingCompany?.location || (matchingClient as any)?.address || "";
+            }
+            if (!resolvedEmail) {
+                resolvedEmail = matchingClient?.email || "";
+            }
+        }
+
+        // 2. Auto-derive state from GSTIN if state is empty
+        if (!resolvedState && resolvedGstin) {
+            resolvedState = getStateFromGstin(resolvedGstin);
+        }
+
+        // 3. Fallback: match state name inside location text if still empty
+        if (!resolvedState && resolvedAddress) {
+            const addrLower = resolvedAddress.toLowerCase();
+            const match = INDIAN_STATES.find(s => addrLower.includes(s.name.toLowerCase()));
+            if (match) {
+                resolvedState = `${match.name} (${match.code})`;
+            }
+        }
+
+        // 4. If email is still empty and we have a company name, fetch from CRM contacts
+        if (!resolvedEmail && compName) {
+            try {
+                const { data } = await api.get("/crm/contacts/emails", {
+                    params: { company: compName }
+                });
+                if (Array.isArray(data) && data.length > 0) {
+                    resolvedEmail = data.join(", ");
+                }
+            } catch (_) {}
+        }
+
         setBuyer(prev => ({
             ...prev,
-            name: client.company?.trim() || client.name || prev.name,
-            gstin: client.gstin || prev.gstin,
-            toEmail: client.email || prev.toEmail
+            name: compName || prev.name,
+            gstin: resolvedGstin || prev.gstin,
+            address: resolvedAddress || prev.address,
+            toEmail: resolvedEmail || prev.toEmail,
+            stateName: resolvedState || prev.stateName
         }));
+
+        if (compName) {
+            showToast(`Auto-filled details for "${compName}"`, "info");
+        }
+    };
+
+    const handleSelectUnifiedEntry = (entry: {
+        name: string;
+        gstin?: string;
+        location?: string;
+        email?: string;
+    }) => {
+        fillBuyerDetails({
+            name: entry.name,
+            gstin: entry.gstin,
+            address: entry.location,
+            toEmail: entry.email
+        });
+        setIsClientOpen(false);
+        setIsCompanyNameOpen(false);
+        setClientSearch("");
+    };
+
+    const handleSelectClient = (client: ClientRecord) => {
+        const compName = client.company?.trim() || client.name;
+        fillBuyerDetails({
+            name: compName,
+            gstin: client.gstin,
+            address: (client as any)?.address,
+            toEmail: client.email
+        });
         setIsClientOpen(false);
         setClientSearch("");
+    };
+
+    const handleSelectCompany = (company: CompanyRecord) => {
+        fillBuyerDetails({
+            name: company.name,
+            gstin: company.gstNumber,
+            address: company.location
+        });
+        setIsCompanyNameOpen(false);
+        setIsClientOpen(false);
+        setClientSearch("");
+    };
+
+    const handleGstinChange = (value: string) => {
+        const uppercaseGstin = value.toUpperCase();
+        const autoState = getStateFromGstin(uppercaseGstin);
+
+        // Check if any saved company has this GSTIN
+        const matchingCompany = companies.find(c => c.gstNumber && c.gstNumber.toUpperCase() === uppercaseGstin);
+        const matchingClient = clients.find(c => c.gstin && c.gstin.toUpperCase() === uppercaseGstin);
+
+        setBuyer(prev => ({
+            ...prev,
+            gstin: uppercaseGstin,
+            stateName: autoState || prev.stateName,
+            name: prev.name || matchingCompany?.name || matchingClient?.company || matchingClient?.name || "",
+            address: prev.address || matchingCompany?.location || (matchingClient as any)?.address || "",
+            toEmail: prev.toEmail || matchingClient?.email || ""
+        }));
     };
 
     const fetchCatalogItems = async () => {
@@ -478,6 +626,94 @@ export default function CreateQuotationView() {
         );
     });
 
+    // Unified list of saved clients and companies matching clientSearch
+    const filteredClientAndCompanyList = useMemo(() => {
+        const q = clientSearch.trim().toLowerCase();
+        const results: Array<{
+            id: string;
+            type: 'company' | 'client';
+            name: string;
+            secondaryName?: string;
+            gstin?: string;
+            location?: string;
+            email?: string;
+        }> = [];
+
+        companies.forEach(comp => {
+            if (!q || comp.name.toLowerCase().includes(q) || (comp.location && comp.location.toLowerCase().includes(q)) || (comp.gstNumber && comp.gstNumber.toLowerCase().includes(q))) {
+                const cl = clients.find(c => c.company && c.company.trim().toLowerCase() === comp.name.trim().toLowerCase());
+                results.push({
+                    id: `comp-${comp._id}`,
+                    type: 'company',
+                    name: comp.name,
+                    gstin: comp.gstNumber,
+                    location: comp.location,
+                    email: cl?.email
+                });
+            }
+        });
+
+        clients.forEach(cl => {
+            const clientMatch = !q || cl.name.toLowerCase().includes(q) || (cl.company && cl.company.toLowerCase().includes(q)) || (cl.email && cl.email.toLowerCase().includes(q)) || (cl.gstin && cl.gstin.toLowerCase().includes(q));
+            if (clientMatch) {
+                const displayName = cl.company?.trim() || cl.name;
+                if (!results.some(r => r.name.toLowerCase() === displayName.toLowerCase())) {
+                    results.push({
+                        id: `client-${cl._id}`,
+                        type: 'client',
+                        name: displayName,
+                        secondaryName: cl.company ? cl.name : undefined,
+                        gstin: cl.gstin,
+                        email: cl.email
+                    });
+                }
+            }
+        });
+
+        return results;
+    }, [clientSearch, companies, clients]);
+
+    // Suggestions matching typed buyer.name
+    const matchingCompanySuggestions = useMemo(() => {
+        const q = buyer.name.trim().toLowerCase();
+        if (!q || q.length < 1) return [];
+
+        const results: Array<{
+            id: string;
+            name: string;
+            gstin?: string;
+            location?: string;
+            email?: string;
+        }> = [];
+
+        companies.forEach(comp => {
+            if (comp.name.toLowerCase().includes(q)) {
+                const cl = clients.find(c => c.company && c.company.trim().toLowerCase() === comp.name.trim().toLowerCase());
+                results.push({
+                    id: `comp-${comp._id}`,
+                    name: comp.name,
+                    gstin: comp.gstNumber,
+                    location: comp.location,
+                    email: cl?.email
+                });
+            }
+        });
+
+        clients.forEach(cl => {
+            const displayName = cl.company?.trim() || cl.name;
+            if (displayName.toLowerCase().includes(q) && !results.some(r => r.name.toLowerCase() === displayName.toLowerCase())) {
+                results.push({
+                    id: `client-${cl._id}`,
+                    name: displayName,
+                    gstin: cl.gstin,
+                    email: cl.email
+                });
+            }
+        });
+
+        return results.slice(0, 6);
+    }, [buyer.name, companies, clients]);
+
     // Filter predefined Indian states locally in-memory by search query
     const filteredStates = INDIAN_STATES.filter(s =>
         s.name.toLowerCase().includes(buyer.stateName.toLowerCase()) ||
@@ -701,20 +937,21 @@ export default function CreateQuotationView() {
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Company Details</h3>
                 </div>
 
-                {/* Select Existing Client (prefills company details below) */}
+                {/* Select Existing Client / Company (prefills company details below) */}
                 <div className="relative" ref={clientDropdownRef}>
-                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                        Select Existing Client
+                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 flex items-center justify-between">
+                        <span>Select Existing Client / Company</span>
+                        <span className="text-[11px] text-teal-600 dark:text-teal-400 font-normal">Auto-fills details below</span>
                     </label>
                     <div className="relative flex items-center">
                         <Users className="absolute left-3 size-4 text-slate-400 pointer-events-none" />
                         <input
                             type="text"
-                            placeholder={clients.length === 0 ? "-- No saved clients --" : "Search clients by name, company, GSTIN, email..."}
+                            placeholder={clients.length === 0 && companies.length === 0 ? "-- No saved records --" : "Search saved clients or companies by name, GSTIN, location, email..."}
                             value={clientSearch}
                             onChange={(e) => { setClientSearch(e.target.value); setIsClientOpen(true); }}
                             onFocus={() => setIsClientOpen(true)}
-                            disabled={clients.length === 0}
+                            disabled={clients.length === 0 && companies.length === 0}
                             className="w-full pl-9 pr-8 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none disabled:opacity-50 transition"
                         />
                         {clientSearch ? (
@@ -731,35 +968,52 @@ export default function CreateQuotationView() {
                         )}
                     </div>
 
-                    {isClientOpen && clients.length > 0 && (
-                        <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg py-1 divide-y divide-slate-100 dark:divide-slate-800">
-                            {filteredClients.length === 0 ? (
+                    {isClientOpen && (clients.length > 0 || companies.length > 0) && (
+                        <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                            {filteredClientAndCompanyList.length === 0 ? (
                                 <div className="px-4 py-4 text-xs text-slate-400 text-center">
-                                    No matching clients found
+                                    No matching clients or companies found
                                 </div>
                             ) : (
-                                filteredClients.map(c => (
+                                filteredClientAndCompanyList.map(item => (
                                     <button
-                                        key={c._id}
+                                        key={item.id}
                                         type="button"
-                                        onClick={() => handleSelectClient(c)}
-                                        className="w-full text-left px-3 py-2.5 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-2 group cursor-pointer"
+                                        onClick={() => handleSelectUnifiedEntry({
+                                            name: item.name,
+                                            gstin: item.gstin,
+                                            location: item.location,
+                                            email: item.email
+                                        })}
+                                        className="w-full text-left px-3.5 py-2.5 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-3 group cursor-pointer"
                                     >
                                         <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
-                                                {c.company || c.name}
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                {c.company && c.name && (
-                                                    <span className="text-xs text-slate-400 truncate">{c.name}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
+                                                    {item.name}
+                                                </span>
+                                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                                                    item.type === 'company'
+                                                        ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
+                                                        : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                                                }`}>
+                                                    {item.type}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-xs text-slate-400">
+                                                {item.secondaryName && (
+                                                    <span className="truncate">Contact: {item.secondaryName}</span>
                                                 )}
-                                                {c.gstin && (
-                                                    <span className="text-xs text-slate-400 font-mono">• {c.gstin}</span>
+                                                {item.gstin && (
+                                                    <span className="font-mono text-slate-500 dark:text-slate-400">• GST: {item.gstin}</span>
+                                                )}
+                                                {item.location && (
+                                                    <span className="truncate">• {item.location}</span>
                                                 )}
                                             </div>
                                         </div>
-                                        {c.email && (
-                                            <span className="text-xs text-slate-400 shrink-0 truncate max-w-[10rem]">{c.email}</span>
+                                        {item.email && (
+                                            <span className="text-xs text-slate-400 shrink-0 truncate max-w-[12rem]">{item.email}</span>
                                         )}
                                     </button>
                                 ))
@@ -769,35 +1023,107 @@ export default function CreateQuotationView() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Company Name */}
+                    {/* Company Name (with autocomplete suggestions) */}
                     <div className="col-span-1">
-                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                            Company Name <span className="text-rose-500">*</span>
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 flex items-center justify-between">
+                            <span>Company Name <span className="text-rose-500">*</span></span>
+                            {matchingCompanySuggestions.length > 0 && isCompanyNameOpen && (
+                                <span className="text-[10px] text-teal-600 dark:text-teal-400 font-normal">Found in records</span>
+                            )}
                         </label>
-                        <div className="relative">
-                            <Building className="absolute left-3 top-2.5 size-4 text-slate-400" />
+                        <div className="relative" ref={companyNameDropdownRef}>
+                            <Building className="absolute left-3 top-2.5 size-4 text-slate-400 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="e.g. Acme Infra Ltd."
+                                placeholder="e.g. Bhavin and Co"
                                 value={buyer.name}
-                                onChange={(e) => setBuyer({ ...buyer, name: e.target.value })}
+                                onChange={(e) => {
+                                    setBuyer(prev => ({ ...prev, name: e.target.value }));
+                                    setIsCompanyNameOpen(true);
+                                }}
+                                onFocus={() => {
+                                    if (buyer.name.trim()) setIsCompanyNameOpen(true);
+                                }}
+                                onBlur={() => {
+                                    // If exact match found in companies or clients, auto-fill any missing fields
+                                    if (buyer.name.trim()) {
+                                        const lower = buyer.name.trim().toLowerCase();
+                                        const foundComp = companies.find(c => c.name.trim().toLowerCase() === lower);
+                                        const foundCl = clients.find(c =>
+                                            (c.company && c.company.trim().toLowerCase() === lower) ||
+                                            c.name.trim().toLowerCase() === lower
+                                        );
+                                        if (foundComp || foundCl) {
+                                            fillBuyerDetails({
+                                                name: foundComp?.name || foundCl?.company || buyer.name,
+                                                gstin: buyer.gstin || foundComp?.gstNumber || foundCl?.gstin,
+                                                address: buyer.address || foundComp?.location || (foundCl as any)?.address,
+                                                toEmail: buyer.toEmail || foundCl?.email
+                                            });
+                                        }
+                                    }
+                                }}
                                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none"
                             />
+
+                            {/* Autocomplete suggestions dropdown when typing */}
+                            {isCompanyNameOpen && matchingCompanySuggestions.length > 0 && (
+                                <div className="absolute z-30 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl py-1 divide-y divide-slate-100 dark:divide-slate-800">
+                                    {matchingCompanySuggestions.map(sug => (
+                                        <button
+                                            key={sug.id}
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                handleSelectUnifiedEntry({
+                                                    name: sug.name,
+                                                    gstin: sug.gstin,
+                                                    location: sug.location,
+                                                    email: sug.email
+                                                });
+                                            }}
+                                            className="w-full text-left px-3.5 py-2 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-2 group cursor-pointer"
+                                        >
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
+                                                    {sug.name}
+                                                </p>
+                                                <div className="flex flex-wrap items-center gap-x-2 text-xs text-slate-400 mt-0.5">
+                                                    {sug.gstin && (
+                                                        <span className="font-mono text-slate-500 dark:text-slate-400">GST: {sug.gstin}</span>
+                                                    )}
+                                                    {sug.location && (
+                                                        <span className="truncate">• {sug.location}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {sug.email && (
+                                                <span className="text-xs text-slate-400 shrink-0 truncate max-w-[12rem]">{sug.email}</span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* GSTIN / UIN Number */}
+                    {/* GSTIN / UIN Number (auto-detects State Name on change) */}
                     <div className="col-span-1">
-                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-                            GSTIN / UIN Number
+                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 flex items-center justify-between">
+                            <span>GSTIN / UIN Number</span>
+                            {buyer.gstin && getStateFromGstin(buyer.gstin) && (
+                                <span className="text-[10px] text-teal-600 dark:text-teal-400 font-normal">
+                                    State: {getStateFromGstin(buyer.gstin)}
+                                </span>
+                            )}
                         </label>
                         <div className="relative">
-                            <Hash className="absolute left-3 top-2.5 size-4 text-slate-400" />
+                            <Hash className="absolute left-3 top-2.5 size-4 text-slate-400 pointer-events-none" />
                             <input
                                 type="text"
                                 placeholder="27AAACG0000A1Z5"
                                 value={buyer.gstin}
-                                onChange={(e) => setBuyer({ ...buyer, gstin: e.target.value })}
+                                onChange={(e) => handleGstinChange(e.target.value)}
                                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-mono uppercase focus:ring-2 focus:ring-teal-500 outline-none"
                             />
                         </div>
