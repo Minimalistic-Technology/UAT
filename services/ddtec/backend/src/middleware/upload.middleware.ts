@@ -128,3 +128,28 @@ export const uploadSinglePurchaseImageMiddleware = (req: any, res: any, next: an
     });
 };
 
+const quotationLogoStorage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'quotation-logo',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+    } as any
+});
+
+export const uploadQuotationLogo = multer({
+    storage: quotationLogoStorage,
+    fileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+export const uploadQuotationLogoMiddleware = (req: any, res: any, next: any) => {
+    uploadQuotationLogo.single('logo')(req, res, (err: any) => {
+        if (err) {
+            console.error('[UPLOAD ERROR] Quotation logo upload error:', err);
+            return res.status(400).json({ msg: err.message || 'Failed to upload quotation logo' });
+        }
+        next();
+    });
+};
+
+

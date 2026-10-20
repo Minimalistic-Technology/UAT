@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Loader2, Truck, Image as ImageIcon, Shield, CheckCircle2 } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Loader2, Truck, Image as ImageIcon, Shield, CheckCircle2, Upload, Trash2 } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "../components/ToggleSwitch";
 import { useToast } from "../../_context/ToastContext";
@@ -13,7 +13,11 @@ export default function SettingsPage() {
 
     const [siteSettings, setSiteSettings] = useState<any>(null);
     const [loadingSettings, setLoadingSettings] = useState(true);
-    const [quotationLogoUrlDraft, setQuotationLogoUrlDraft] = useState<string>("");
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string>("");
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const [isRemovingLogo, setIsRemovingLogo] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     const fetchSettings = async () => {
         setLoadingSettings(true);
@@ -32,7 +36,8 @@ export default function SettingsPage() {
     }, []);
 
     useEffect(() => {
-        setQuotationLogoUrlDraft(siteSettings?.quotationLogoUrl || "");
+        setLogoPreview(siteSettings?.quotationLogoUrl || "");
+        setLogoFile(null);
     }, [siteSettings?.quotationLogoUrl]);
 
     const toggleSettingComponent = async (componentKey: string, currentValue: boolean) => {
@@ -97,15 +102,81 @@ export default function SettingsPage() {
         }
     };
 
-    const saveQuotationLogoUrl = async () => {
-        try {
-            const res = await api.put('/settings', { quotationLogoUrl: quotationLogoUrlDraft.trim() });
-            setSiteSettings(res.data);
-            refreshSettings();
-            showToast?.("Quotation logo updated successfully!", "success");
-        } catch (error: any) {
-            showToast?.("Failed to update quotation logo", "error");
+    const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            showToast?.("Please select a valid image file (PNG, JPG, WebP)", "error");
+            return;
         }
+
+        if (file.size > 5 * 1024 * 1024) {
+            showToast?.("Image size must be less than 5MB", "error");
+            return;
+        }
+
+        setLogoFile(file);
+        const objectUrl = URL.createObjectURL(file);
+        setLogoPreview(objectUrl);
+    };
+
+    const handleUploadLogo = async () => {
+        if (!logoFile) {
+            showToast?.("Please select an image file to upload", "warning");
+            return;
+        }
+
+        setIsUploadingLogo(true);
+        try {
+            const formData = new FormData();
+            formData.append('logo', logoFile);
+
+            const res = await api.post('/settings/logo', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (res.data?.quotationLogoUrl) {
+                setLogoPreview(res.data.quotationLogoUrl);
+                setLogoFile(null);
+            }
+            if (res.data?.settings) {
+                setSiteSettings(res.data.settings);
+            } else {
+                await fetchSettings();
+            }
+            refreshSettings();
+            showToast?.(res.data?.msg || "Quotation logo uploaded to Cloudinary successfully!", "success");
+        } catch (error: any) {
+            console.error("Failed to upload quotation logo:", error);
+            showToast?.(error.response?.data?.msg || "Failed to upload logo to Cloudinary", "error");
+        } finally {
+            setIsUploadingLogo(false);
+        }
+    };
+
+    const handleRemoveLogo = async () => {
+        setIsRemovingLogo(true);
+        try {
+            const res = await api.delete('/settings/logo');
+            setLogoPreview("");
+            setLogoFile(null);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            await fetchSettings();
+            refreshSettings();
+            showToast?.(res.data?.msg || "Quotation logo removed successfully!", "success");
+        } catch (error: any) {
+            console.error("Failed to remove quotation logo:", error);
+            showToast?.(error.response?.data?.msg || "Failed to remove quotation logo", "error");
+        } finally {
+            setIsRemovingLogo(false);
+        }
+    };
+
+    const handleCancelSelection = () => {
+        setLogoFile(null);
+        setLogoPreview(siteSettings?.quotationLogoUrl || "");
+        if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     return (
@@ -212,45 +283,118 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Quotation Branding Card */}
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-4 col-span-1 md:col-span-2">
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-5 col-span-1 md:col-span-2">
                             <div className="border-b border-slate-100 dark:border-slate-700 pb-4">
                                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                     <ImageIcon className="size-5 text-teal-600" /> Quotation Logo
                                 </h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                    Shown at the top of every generated Quotation PDF. Provide a direct image URL (PNG/JPEG) — no file upload.
+                                    Shown at the top of every generated Quotation PDF. Upload your company logo directly to Cloudinary (PNG, JPG, or WebP).
                                 </p>
                             </div>
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                <div className="flex-1 w-full">
-                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1.5">
-                                        Logo Image URL
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={quotationLogoUrlDraft}
-                                        onChange={(e) => setQuotationLogoUrlDraft(e.target.value)}
-                                        placeholder="https://example.com/logo.png"
-                                        className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500"
-                                    />
+
+                            <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-700">
+                                {/* Logo Preview Frame */}
+                                <div className="h-24 w-36 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center overflow-hidden bg-white dark:bg-slate-800 shrink-0 p-2 shadow-2xs">
+                                    {logoPreview ? (
+                                        <img
+                                            src={logoPreview}
+                                            alt="Quotation logo preview"
+                                            className="max-h-full max-w-full object-contain"
+                                        />
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-1">
+                                            <ImageIcon className="size-7" />
+                                            <span className="text-[10px] uppercase font-semibold tracking-wider">No Logo</span>
+                                        </div>
+                                    )}
                                 </div>
-                                {quotationLogoUrlDraft && (
-                                    <img
-                                        src={quotationLogoUrlDraft}
-                                        alt="Quotation logo preview"
-                                        className="h-14 max-w-[140px] object-contain rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-1.5"
-                                        onError={(e) => { (e.target as HTMLImageElement).style.visibility = 'hidden'; }}
-                                        onLoad={(e) => { (e.target as HTMLImageElement).style.visibility = 'visible'; }}
-                                    />
-                                )}
+
+                                {/* Upload Controls & Details */}
+                                <div className="flex-1 space-y-2 text-center sm:text-left">
+                                    <div>
+                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                            Upload Logo File
+                                        </span>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                            Recommended dimensions: 300x150px. Max file size: 5MB.
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-2 pt-1 justify-center sm:justify-start">
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                                            onChange={handleLogoFileChange}
+                                            className="hidden"
+                                            id="quotation-logo-file-input"
+                                        />
+
+                                        <label
+                                            htmlFor="quotation-logo-file-input"
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-xs font-semibold cursor-pointer transition shadow-2xs"
+                                        >
+                                            <Upload className="size-3.5 text-teal-600" />
+                                            {logoPreview ? "Change Logo" : "Upload Logo"}
+                                        </label>
+
+                                        {logoFile && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleUploadLogo}
+                                                    disabled={isUploadingLogo}
+                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition shadow-xs disabled:opacity-50 cursor-pointer"
+                                                >
+                                                    {isUploadingLogo ? (
+                                                        <>
+                                                            <Loader2 className="size-3.5 animate-spin" />
+                                                            <span>Uploading to Cloudinary...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Upload className="size-3.5" />
+                                                            <span>Save Quotation Logo</span>
+                                                        </>
+                                                    )}
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCancelSelection}
+                                                    disabled={isUploadingLogo}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl text-xs font-medium transition cursor-pointer"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </>
+                                        )}
+
+                                        {!logoFile && siteSettings?.quotationLogoUrl && (
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveLogo}
+                                                disabled={isRemovingLogo}
+                                                className="inline-flex items-center gap-1.5 px-3 py-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl text-xs font-semibold transition cursor-pointer"
+                                            >
+                                                {isRemovingLogo ? (
+                                                    <Loader2 className="size-3.5 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="size-3.5" />
+                                                )}
+                                                <span>Remove Logo</span>
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {logoFile && (
+                                        <p className="text-[11px] text-teal-700 dark:text-teal-400 font-medium pt-0.5">
+                                            Selected: <span className="font-mono">{logoFile.name}</span> ({(logoFile.size / 1024).toFixed(1)} KB) — click <strong>Save Quotation Logo</strong> to upload.
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={saveQuotationLogoUrl}
-                                className="w-full sm:w-auto py-2.5 px-6 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
-                            >
-                                Save Quotation Logo
-                            </button>
                         </div>
 
                         {/* User Onboarding Restrictions Control Card */}
