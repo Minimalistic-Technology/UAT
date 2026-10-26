@@ -27,7 +27,10 @@ import {
     ChevronUp,
     Sparkles,
     ShoppingBag,
-    Loader2
+    Loader2,
+    Mail,
+    Send,
+    X
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "@/app/_context/ToastContext";
@@ -60,6 +63,26 @@ interface ProductOption {
     hsnCode?: string;
 }
 
+const INDIAN_STATES = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+    "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+    "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+    "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+    "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+    "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+];
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[+]?[\d\s()-]{7,20}$/;
+const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+const INDIAN_PIN_REGEX = /^[1-9][0-9]{5}$/;
+const HSN_REGEX = /^[0-9]{2,8}$/;
+const INVOICE_NUMBER_REGEX = /^[A-Za-z0-9\-_/]{3,50}$/;
+const BANK_ACCOUNT_REGEX = /^[0-9]{9,18}$/;
+const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const UPI_REGEX = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+
 const DEFAULT_SELLER = {
     name: "DDTEC Solutions",
     email: "contact@ddtec.in",
@@ -88,6 +111,7 @@ function InvoiceStatusDropdown({
     onChange: (next: string) => void;
 }) {
     const [open, setOpen] = useState(false);
+    const [openUpward, setOpenUpward] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -103,6 +127,15 @@ function InvoiceStatusDropdown({
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [open]);
+
+    const handleToggle = () => {
+        if (!open && dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            setOpenUpward(spaceBelow < 190);
+        }
+        setOpen(!open);
+    };
 
     const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
         unpaid: {
@@ -133,7 +166,7 @@ function InvoiceStatusDropdown({
         <div className="relative inline-block text-left" ref={dropdownRef}>
             <button
                 type="button"
-                onClick={() => setOpen(!open)}
+                onClick={handleToggle}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg border uppercase tracking-wider transition-all cursor-pointer shadow-xs ${current.badge}`}
             >
                 <span className={`size-1.5 rounded-full ${current.dot}`} />
@@ -142,7 +175,7 @@ function InvoiceStatusDropdown({
             </button>
 
             {open && (
-                <div className="absolute left-0 mt-1.5 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-1 divide-y-0 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                <div className={`absolute left-0 ${openUpward ? "bottom-full mb-1.5" : "top-full mt-1.5"} w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-1 divide-y-0 overflow-hidden animate-in fade-in zoom-in-95 duration-100`}>
                     {(["unpaid", "paid", "draft", "cancelled"] as const).map((s) => {
                         const conf = statusConfig[s];
                         const isSelected = s === status;
@@ -278,11 +311,35 @@ function AdminInvoicesContent() {
     const [copiedLink, setCopiedLink] = useState(false);
     const [copiedListId, setCopiedListId] = useState<string | null>(null);
 
+    // Email dispatch state
+    const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+    const [emailModalData, setEmailModalData] = useState<{ id: string; email: string; invoiceNumber: string } | null>(null);
+    const [customEmail, setCustomEmail] = useState("");
+
     // Fetch initial auxiliary data
     useEffect(() => {
         fetchClients();
         fetchProducts();
+        fetchCompanySettings();
     }, []);
+
+    const fetchCompanySettings = async () => {
+        try {
+            const res = await api.get("/companies");
+            const companies = Array.isArray(res.data) ? res.data : (res.data?.companies || []);
+            if (companies.length > 0) {
+                const company = companies[0];
+                setSellerDetails(prev => ({
+                    ...prev,
+                    name: company.name || prev.name,
+                    taxId: company.gstNumber || prev.taxId,
+                    address: company.location || prev.address
+                }));
+            }
+        } catch (err) {
+            console.error("Failed to fetch company details:", err);
+        }
+    };
 
     // Fetch invoices whenever switching to list tab or filters/pagination change
     useEffect(() => {
@@ -409,15 +466,21 @@ function AdminInvoicesContent() {
                         delete updated.productId;
                     }
                 }
-                const qty = Math.max(0, Number(updated.qty) || 0);
-                const price = Math.max(0, Number(updated.price) || 0);
-                updated.amount = Number((qty * price).toFixed(2));
+                const qty = Number(updated.qty);
+                const price = Number(updated.price);
+                const validQty = !isNaN(qty) && isFinite(qty) ? qty : 0;
+                const validPrice = !isNaN(price) && isFinite(price) ? price : 0;
+                updated.amount = Number((validQty * validPrice).toFixed(2));
                 return updated;
             })
         );
     };
 
     const addItem = () => {
+        if (items.length >= 100) {
+            showToast("Maximum 100 line items allowed per invoice", "warning");
+            return;
+        }
         setItems((prev) => [
             ...prev,
             { itemDescription: "", hsnCode: "", qty: 1, price: 0, amount: 0 }
@@ -426,7 +489,7 @@ function AdminInvoicesContent() {
 
     const removeItem = (index: number) => {
         if (items.length <= 1) {
-            setItems([{ itemDescription: "", hsnCode: "", qty: 1, price: 0, amount: 0 }]);
+            showToast("At least one line item is required on an invoice", "warning");
             return;
         }
         setItems((prev) => prev.filter((_, i) => i !== index));
@@ -446,13 +509,90 @@ function AdminInvoicesContent() {
         const taxAmount = Number(((taxableAmount * rate) / 100).toFixed(2));
         const grandTotal = Number((taxableAmount + taxAmount).toFixed(2));
 
+        const sellerStateClean = (sellerDetails.state || "").trim().toLowerCase();
+        const clientStateClean = (clientDetails.state || "").trim().toLowerCase();
+        const isIntraState = Boolean(sellerStateClean && clientStateClean && sellerStateClean === clientStateClean);
+
+        const cgstAmount = isIntraState ? Number((taxAmount / 2).toFixed(2)) : 0;
+        const sgstAmount = isIntraState ? Number((taxAmount - cgstAmount).toFixed(2)) : 0;
+        const igstAmount = !isIntraState ? taxAmount : 0;
+
         return {
             subtotal: Number(subtotal.toFixed(2)),
             discount: computedDiscount,
             taxAmount,
-            grandTotal
+            grandTotal,
+            isIntraState,
+            cgstAmount,
+            sgstAmount,
+            igstAmount
         };
-    }, [items, discount, discountType, taxRate]);
+    }, [items, discount, discountType, taxRate, sellerDetails.state, clientDetails.state]);
+
+    // Check if form is empty for reset button state
+    const isFormEmpty = useMemo(() => {
+        return (
+            !invoiceNumber.trim() &&
+            !clientDetails.name.trim() &&
+            !clientDetails.email.trim() &&
+            !clientDetails.phone.trim() &&
+            !clientDetails.address.trim() &&
+            !clientDetails.city.trim() &&
+            !clientDetails.state.trim() &&
+            !clientDetails.zip.trim() &&
+            !clientDetails.taxId.trim() &&
+            discount === 0 &&
+            (items.length === 1 && !items[0].itemDescription && items[0].price === 0)
+        );
+    }, [invoiceNumber, clientDetails, discount, items]);
+
+    // Check if all required fields are filled to enable the Save & Generate button
+    const isFormValid = useMemo(() => {
+        if (!issueDate) return false;
+        const todayStr = new Date().toISOString().split("T")[0];
+        if (issueDate > todayStr) return false;
+
+        if (status !== "draft" && !dueDate) return false;
+        if (dueDate && dueDate < issueDate) return false;
+
+        if (!clientDetails.name.trim()) return false;
+        if (status !== "draft") {
+            if (!clientDetails.address.trim()) return false;
+            if (!clientDetails.state.trim()) return false;
+            if (!clientDetails.city.trim()) return false;
+        }
+
+        if (!sellerDetails.name.trim()) return false;
+
+        if (!items || items.length === 0) return false;
+        const allItemsValid = items.every((it) => {
+            const desc = (it.itemDescription || "").trim();
+            const q = Number(it.qty);
+            const p = Number(it.price);
+            return desc.length > 0 && !isNaN(q) && isFinite(q) && q > 0 && !isNaN(p) && isFinite(p) && p >= 0;
+        });
+        if (!allItemsValid) return false;
+
+        const discNum = Number(discount);
+        if (isNaN(discNum) || !isFinite(discNum) || discNum < 0) return false;
+        if (discountType === "percentage" && discNum > 100) return false;
+        if (discountType === "fixed" && discNum > calculatedTotals.subtotal) return false;
+
+        return true;
+    }, [
+        issueDate,
+        dueDate,
+        status,
+        clientDetails.name,
+        clientDetails.address,
+        clientDetails.state,
+        clientDetails.city,
+        sellerDetails.name,
+        items,
+        discount,
+        discountType,
+        calculatedTotals.subtotal
+    ]);
 
     // Currency symbol helper
     const getCurrencySymbol = (cur: string) => {
@@ -474,18 +614,180 @@ function AdminInvoicesContent() {
 
     const currSym = getCurrencySymbol(currency);
 
-    // Form submit / save invoice
+    // Form submit / save invoice with comprehensive validation
     const handleSaveInvoice = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!clientDetails.name.trim()) {
-            showToast("Please enter the client / customer name", "warning");
+        // 1. Invoice Number format check if manually provided
+        if (invoiceNumber.trim() && !INVOICE_NUMBER_REGEX.test(invoiceNumber.trim())) {
+            showToast("Invoice number must be 3-50 characters (alphanumeric, -, _, /)", "warning");
             return;
         }
 
-        const validItems = items.filter((it) => it.itemDescription.trim() !== "");
-        if (validItems.length === 0) {
-            showToast("Please add at least one line item with description", "warning");
+        // 2. Date checks
+        const todayStr = new Date().toISOString().split("T")[0];
+        if (!issueDate) {
+            showToast("Issue date is required", "warning");
+            return;
+        }
+        if (issueDate > todayStr) {
+            showToast("Issue date cannot be in the future", "warning");
+            return;
+        }
+        if (dueDate && dueDate < issueDate) {
+            showToast("Due date must be on or after the issue date", "warning");
+            return;
+        }
+        if (status !== "draft" && !dueDate) {
+            showToast("Due date is required for finalized invoices", "warning");
+            return;
+        }
+
+        // 3. Client details checks
+        const trimmedClientName = clientDetails.name.trim();
+        if (!trimmedClientName) {
+            showToast("Please enter the client / customer name", "warning");
+            return;
+        }
+        if (trimmedClientName.length > 150) {
+            showToast("Client name cannot exceed 150 characters", "warning");
+            return;
+        }
+        if (clientDetails.email && !EMAIL_REGEX.test(clientDetails.email.trim())) {
+            showToast("Please enter a valid client email address", "warning");
+            return;
+        }
+        if (clientDetails.phone && !PHONE_REGEX.test(clientDetails.phone.trim())) {
+            showToast("Please enter a valid client phone number (7-20 digits)", "warning");
+            return;
+        }
+        if (
+            clientDetails.taxId &&
+            clientDetails.country.toLowerCase() === "india" &&
+            !GSTIN_REGEX.test(clientDetails.taxId.trim())
+        ) {
+            showToast("Invalid client GSTIN format (expected 15 characters, e.g. 29ABCDE1234F1Z5)", "warning");
+            return;
+        }
+        if (status !== "draft") {
+            if (!clientDetails.address.trim()) {
+                showToast("Client street address is required for finalized invoices", "warning");
+                return;
+            }
+            if (!clientDetails.city.trim()) {
+                showToast("Client city is required for finalized invoices", "warning");
+                return;
+            }
+            if (!clientDetails.state.trim()) {
+                showToast("Client state is required for finalized invoices", "warning");
+                return;
+            }
+            if (
+                clientDetails.zip &&
+                clientDetails.country.toLowerCase() === "india" &&
+                !INDIAN_PIN_REGEX.test(clientDetails.zip.trim())
+            ) {
+                showToast("Invalid Indian PIN code (must be 6 digits)", "warning");
+                return;
+            }
+        }
+
+        // 4. Seller details checks
+        if (!sellerDetails.name.trim()) {
+            showToast("Seller name is required", "warning");
+            return;
+        }
+        if (sellerDetails.email && !EMAIL_REGEX.test(sellerDetails.email.trim())) {
+            showToast("Please enter a valid seller email address", "warning");
+            return;
+        }
+        if (sellerDetails.phone && !PHONE_REGEX.test(sellerDetails.phone.trim())) {
+            showToast("Please enter a valid seller phone number", "warning");
+            return;
+        }
+        if (
+            sellerDetails.taxId &&
+            sellerDetails.country.toLowerCase() === "india" &&
+            !GSTIN_REGEX.test(sellerDetails.taxId.trim())
+        ) {
+            showToast("Invalid seller GSTIN format", "warning");
+            return;
+        }
+
+        // 5. Line items checks
+        if (!items || items.length === 0) {
+            showToast("At least one line item is required", "warning");
+            return;
+        }
+        if (items.length > 100) {
+            showToast("An invoice cannot contain more than 100 line items", "warning");
+            return;
+        }
+
+        for (let i = 0; i < items.length; i++) {
+            const it = items[i];
+            const row = i + 1;
+            const desc = (it.itemDescription || "").trim();
+            if (!desc) {
+                showToast(`Line item #${row}: description is required and cannot be empty`, "warning");
+                return;
+            }
+            if (desc.length > 500) {
+                showToast(`Line item #${row}: description cannot exceed 500 characters`, "warning");
+                return;
+            }
+            const q = Number(it.qty);
+            if (typeof q !== "number" || isNaN(q) || !isFinite(q) || q <= 0) {
+                showToast(`Line item #${row}: quantity must be a valid number greater than zero`, "warning");
+                return;
+            }
+            const p = Number(it.price);
+            if (typeof p !== "number" || isNaN(p) || !isFinite(p) || p < 0) {
+                showToast(`Line item #${row}: price must be a valid non-negative number`, "warning");
+                return;
+            }
+            if (it.hsnCode && !HSN_REGEX.test(it.hsnCode.trim())) {
+                showToast(`Line item #${row}: HSN code must be 2 to 8 digits`, "warning");
+                return;
+            }
+        }
+
+        // 6. Discount checks
+        const discNum = Number(discount);
+        if (isNaN(discNum) || !isFinite(discNum) || discNum < 0) {
+            showToast("Discount must be a valid non-negative number", "warning");
+            return;
+        }
+        if (discountType === "percentage" && discNum > 100) {
+            showToast("Percentage discount cannot exceed 100%", "warning");
+            return;
+        }
+        if (discountType === "fixed" && discNum > calculatedTotals.subtotal) {
+            showToast(`Fixed discount (${discNum}) cannot exceed subtotal (${calculatedTotals.subtotal.toFixed(2)})`, "warning");
+            return;
+        }
+
+        // 7. Tax rate check
+        if (![0, 5, 12, 18, 28].includes(Number(taxRate))) {
+            showToast("Please select a supported GST rate (0%, 5%, 12%, 18%, 28%)", "warning");
+            return;
+        }
+
+        // 8. Payment details checks
+        if (paymentDetails.accountNumber && !BANK_ACCOUNT_REGEX.test(paymentDetails.accountNumber.trim())) {
+            showToast("Invalid bank account number (must be 9 to 18 digits)", "warning");
+            return;
+        }
+        if (paymentDetails.ifscCode && !IFSC_REGEX.test(paymentDetails.ifscCode.trim().toUpperCase())) {
+            showToast("Invalid Indian IFSC code format (e.g. HDFC0001234)", "warning");
+            return;
+        }
+        if (paymentDetails.upiId && !UPI_REGEX.test(paymentDetails.upiId.trim())) {
+            showToast("Invalid UPI ID format (e.g. username@bank)", "warning");
+            return;
+        }
+        if (notes && notes.trim().length > 2000) {
+            showToast("Notes cannot exceed 2000 characters", "warning");
             return;
         }
 
@@ -499,12 +801,12 @@ function AdminInvoicesContent() {
                 status,
                 sellerDetails,
                 clientDetails,
-                items: validItems,
+                items,
                 discount: Number(discount) || 0,
                 discountType,
                 taxRate: Number(taxRate) || 0,
                 paymentDetails,
-                notes
+                notes: notes.trim()
             };
 
             const res = await api.post("/invoices", payload);
@@ -519,6 +821,28 @@ function AdminInvoicesContent() {
             showToast(err.response?.data?.msg || "Failed to create invoice", "error");
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleSendInvoiceEmail = async (invoiceId: string, recipientEmail: string) => {
+        if (!recipientEmail || !EMAIL_REGEX.test(recipientEmail.trim())) {
+            showToast("Please enter a valid recipient email address", "warning");
+            return;
+        }
+
+        setSendingEmailId(invoiceId);
+        try {
+            const res = await api.post(`/invoices/${invoiceId}/send-email`, { toEmail: recipientEmail.trim() });
+            if (res.data?.success) {
+                showToast(`Invoice emailed successfully to ${recipientEmail}`, "success");
+                setEmailModalData(null);
+            } else {
+                showToast(res.data?.msg || "Failed to send invoice email", "error");
+            }
+        } catch (err: any) {
+            showToast(err.response?.data?.msg || "Failed to send invoice email", "error");
+        } finally {
+            setSendingEmailId(null);
         }
     };
 
@@ -613,7 +937,7 @@ function AdminInvoicesContent() {
     };
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto pb-16">
+        <div className="space-y-6 w-full">
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -689,6 +1013,7 @@ function AdminInvoicesContent() {
                                     <input
                                         type="date"
                                         required
+                                        max={new Date().toISOString().split("T")[0]}
                                         value={issueDate}
                                         onChange={(e) => setIssueDate(e.target.value)}
                                         className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -700,6 +1025,7 @@ function AdminInvoicesContent() {
                                     </label>
                                     <input
                                         type="date"
+                                        min={issueDate}
                                         value={dueDate}
                                         onChange={(e) => setDueDate(e.target.value)}
                                         className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
@@ -730,7 +1056,6 @@ function AdminInvoicesContent() {
                                 <h2 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
                                     <User className="size-4 text-teal-600 dark:text-teal-400" />
                                     <span>Bill To (Client / Customer)</span>
-                                    <span className="text-red-500 font-bold ml-0.5">*</span>
                                 </h2>
                                 {clientsList.length > 0 && (
                                     <div className="flex items-center gap-2">
@@ -813,10 +1138,11 @@ function AdminInvoicesContent() {
                                 </div>
                                 <div className="sm:col-span-2">
                                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                                        Street Address
+                                        Street Address {status !== "draft" && <span className="text-red-500 font-bold ml-0.5">*</span>}
                                     </label>
                                     <input
                                         type="text"
+                                        required={status !== "draft"}
                                         placeholder="Floor 4, Tower B, Business Park"
                                         value={clientDetails.address}
                                         onChange={(e) =>
@@ -827,26 +1153,61 @@ function AdminInvoicesContent() {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                                        City & State
+                                        State & City {status !== "draft" && <span className="text-red-500 font-bold ml-0.5">*</span>}
                                     </label>
                                     <div className="grid grid-cols-2 gap-2">
+                                        {clientDetails.country.toLowerCase() === "india" ? (
+                                            <select
+                                                required={status !== "draft"}
+                                                value={clientDetails.state}
+                                                onChange={(e) => {
+                                                    const nextState = e.target.value;
+                                                    setClientDetails({
+                                                        ...clientDetails,
+                                                        state: nextState,
+                                                        city: nextState ? clientDetails.city : ""
+                                                    });
+                                                }}
+                                                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                            >
+                                                <option value="">Select State...</option>
+                                                {INDIAN_STATES.map((st) => (
+                                                    <option key={st} value={st}>
+                                                        {st}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                required={status !== "draft"}
+                                                placeholder="State / Province"
+                                                value={clientDetails.state}
+                                                onChange={(e) => {
+                                                    const nextState = e.target.value;
+                                                    setClientDetails({
+                                                        ...clientDetails,
+                                                        state: nextState,
+                                                        city: nextState ? clientDetails.city : ""
+                                                    });
+                                                }}
+                                                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                            />
+                                        )}
                                         <input
                                             type="text"
-                                            placeholder="City"
+                                            required={status !== "draft"}
+                                            disabled={!clientDetails.state.trim()}
+                                            placeholder={!clientDetails.state.trim() ? "Select state first..." : "City"}
                                             value={clientDetails.city}
                                             onChange={(e) =>
                                                 setClientDetails({ ...clientDetails, city: e.target.value })
                                             }
-                                            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="State"
-                                            value={clientDetails.state}
-                                            onChange={(e) =>
-                                                setClientDetails({ ...clientDetails, state: e.target.value })
-                                            }
-                                            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                            className={`w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 ${
+                                                !clientDetails.state.trim()
+                                                    ? "bg-slate-100 dark:bg-slate-800/50 opacity-60 cursor-not-allowed text-slate-400 placeholder:text-slate-400"
+                                                    : "bg-white dark:bg-slate-800"
+                                            }`}
                                         />
                                     </div>
                                 </div>
@@ -973,7 +1334,6 @@ function AdminInvoicesContent() {
                                 <h2 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
                                     <ShoppingBag className="size-4 text-teal-600 dark:text-teal-400" />
                                     <span>Line Items</span>
-                                    <span className="text-red-500 font-bold ml-0.5">*</span>
                                 </h2>
 
                                 {/* Quick Catalog Picker */}
@@ -1043,7 +1403,8 @@ function AdminInvoicesContent() {
                                             </label>
                                             <input
                                                 type="number"
-                                                min="1"
+                                                min="0.001"
+                                                step="any"
                                                 required
                                                 value={item.qty}
                                                 onChange={(e) =>
@@ -1079,8 +1440,9 @@ function AdminInvoicesContent() {
                                             <button
                                                 type="button"
                                                 onClick={() => removeItem(idx)}
-                                                className="p-1 text-slate-400 hover:text-red-500 rounded transition cursor-pointer"
-                                                title="Remove item"
+                                                disabled={items.length <= 1}
+                                                className={`p-1 rounded transition ${items.length <= 1 ? "opacity-30 cursor-not-allowed text-slate-300 dark:text-slate-600" : "text-slate-400 hover:text-red-500 cursor-pointer"}`}
+                                                title={items.length <= 1 ? "At least one item is required" : "Remove item"}
                                             >
                                                 <Trash2 className="size-4" />
                                             </button>
@@ -1271,15 +1633,21 @@ function AdminInvoicesContent() {
                         <div className="pt-4 flex items-center justify-end gap-3">
                             <button
                                 type="button"
+                                disabled={isFormEmpty}
                                 onClick={handleResetForm}
-                                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 Reset
                             </button>
                             <button
                                 type="submit"
-                                disabled={isSaving}
-                                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold shadow-md shadow-teal-500/20 transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                                disabled={isSaving || !isFormValid}
+                                title={
+                                    !isFormValid
+                                        ? "Fill in all required fields (Client Name, Street Address, State, City, Line Items) to enable"
+                                        : "Save & Generate Invoice"
+                                }
+                                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold shadow-md shadow-teal-500/20 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none cursor-pointer"
                             >
                                 {isSaving ? (
                                     <>
@@ -1442,15 +1810,45 @@ function AdminInvoicesContent() {
                                         </span>
                                     </div>
                                 )}
-                                <div className="flex justify-between text-slate-500">
-                                    <span>GST / Tax ({taxRate}%)</span>
-                                    <span className="font-mono">
-                                        +{currSym}
-                                        {calculatedTotals.taxAmount.toLocaleString("en-IN", {
-                                            minimumFractionDigits: 2
-                                        })}
-                                    </span>
-                                </div>
+                                {taxRate > 0 ? (
+                                    calculatedTotals.isIntraState ? (
+                                        <>
+                                            <div className="flex justify-between text-slate-500">
+                                                <span>CGST ({(taxRate / 2).toFixed(1)}%)</span>
+                                                <span className="font-mono">
+                                                    +{currSym}
+                                                    {calculatedTotals.cgstAmount.toLocaleString("en-IN", {
+                                                        minimumFractionDigits: 2
+                                                    })}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between text-slate-500">
+                                                <span>SGST ({(taxRate / 2).toFixed(1)}%)</span>
+                                                <span className="font-mono">
+                                                    +{currSym}
+                                                    {calculatedTotals.sgstAmount.toLocaleString("en-IN", {
+                                                        minimumFractionDigits: 2
+                                                    })}
+                                                </span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="flex justify-between text-slate-500">
+                                            <span>IGST ({taxRate}%)</span>
+                                            <span className="font-mono">
+                                                +{currSym}
+                                                {calculatedTotals.igstAmount.toLocaleString("en-IN", {
+                                                    minimumFractionDigits: 2
+                                                })}
+                                            </span>
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="flex justify-between text-slate-500">
+                                        <span>GST (0% - Exempt/Zero-Rated)</span>
+                                        <span className="font-mono">{currSym}0.00</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between font-bold text-sm text-slate-900 dark:text-white pt-2 border-t border-slate-100 dark:border-slate-800">
                                     <span>Grand Total</span>
                                     <span className="font-mono text-teal-600 dark:text-teal-400">
@@ -1539,6 +1937,22 @@ function AdminInvoicesContent() {
                                 <Download className="size-4" />
                                 Download PDF Directly
                             </a>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEmailModalData({
+                                        id: createdInvoiceData.invoice?._id || createdInvoiceData._id,
+                                        email: clientDetails.email || "",
+                                        invoiceNumber: createdInvoiceData.invoice?.invoiceNumber || ""
+                                    });
+                                    setCustomEmail(clientDetails.email || "");
+                                }}
+                                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/50 text-teal-700 dark:text-teal-300 text-xs font-semibold transition border border-teal-200 dark:border-teal-800 cursor-pointer"
+                            >
+                                <Mail className="size-4" />
+                                Email Invoice to Client
+                            </button>
 
                             <div className="grid grid-cols-2 gap-2 pt-2">
                                 <button
@@ -1633,7 +2047,7 @@ function AdminInvoicesContent() {
                                 </p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto min-h-[320px] pb-16">
+                            <div className="overflow-x-auto">
                                 <table className="w-full text-left text-xs">
                                     <thead className="bg-slate-50/75 dark:bg-slate-800/50 text-slate-500 border-b border-slate-200 dark:border-slate-800">
                                         <tr>
@@ -1739,6 +2153,22 @@ function AdminInvoicesContent() {
 
                                                             <button
                                                                 type="button"
+                                                                onClick={() => {
+                                                                    setEmailModalData({
+                                                                        id: inv._id,
+                                                                        email: inv.clientDetails?.email || "",
+                                                                        invoiceNumber: inv.invoiceNumber
+                                                                    });
+                                                                    setCustomEmail(inv.clientDetails?.email || "");
+                                                                }}
+                                                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition cursor-pointer"
+                                                                title="Email Invoice"
+                                                            >
+                                                                <Mail className="size-3.5" />
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
                                                                 onClick={() => handleDeleteInvoice(inv)}
                                                                 className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition cursor-pointer"
                                                                 title="Delete invoice"
@@ -1762,6 +2192,9 @@ function AdminInvoicesContent() {
                                     totalPages={invoiceTotalPages}
                                     totalItems={invoiceTotal}
                                     pageSize={invoicePageSize}
+                                    pageSizeOptions={[10, 15, 25, 50, 100]}
+                                    itemName="invoices"
+                                    alwaysShow={true}
                                     onPageChange={(p) => setInvoicePage(p)}
                                     onPageSizeChange={(sz) => {
                                         setInvoicePageSize(sz);
@@ -1771,6 +2204,72 @@ function AdminInvoicesContent() {
                                 />
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* EMAIL DISPATCH MODAL */}
+            {emailModalData && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <Mail className="size-4 text-teal-600 dark:text-teal-400" />
+                                Send Invoice by Email
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setEmailModalData(null)}
+                                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        </div>
+
+                        <p className="text-xs text-slate-500">
+                            Sending PDF attachment for invoice <strong>{emailModalData.invoiceNumber}</strong>.
+                        </p>
+
+                        <div>
+                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                Recipient Email Address <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="email"
+                                value={customEmail}
+                                onChange={(e) => setCustomEmail(e.target.value)}
+                                placeholder="client@example.com"
+                                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setEmailModalData(null)}
+                                className="px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={sendingEmailId === emailModalData.id}
+                                onClick={() => handleSendInvoiceEmail(emailModalData.id, customEmail)}
+                                className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                            >
+                                {sendingEmailId === emailModalData.id ? (
+                                    <>
+                                        <RefreshCw className="size-3.5 animate-spin" />
+                                        Sending...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Send className="size-3.5" />
+                                        Send Email
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

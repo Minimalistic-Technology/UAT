@@ -14,6 +14,7 @@ export interface PaginationProps {
     itemName?: string;
     className?: string;
     variant?: 'admin' | 'storefront' | 'warehouse';
+    alwaysShow?: boolean;
 }
 
 export default function Pagination({
@@ -27,8 +28,9 @@ export default function Pagination({
     itemName = 'items',
     className = '',
     variant = 'admin',
+    alwaysShow = false,
 }: PaginationProps) {
-    if (totalPages <= 1 && (!totalItems || (pageSize && totalItems <= pageSize))) {
+    if (!alwaysShow && totalPages <= 1 && (!totalItems || (pageSize && totalItems <= pageSize))) {
         return null;
     }
 

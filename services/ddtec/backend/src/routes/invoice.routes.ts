@@ -6,7 +6,8 @@ import {
     getInvoiceById,
     updateInvoice,
     deleteInvoice,
-    generateInvoicePdf
+    generateInvoicePdf,
+    sendInvoiceEmail
 } from '../controllers/invoice.controller';
 import optionalAuth from '../middleware/optionalAuth.middleware';
 
@@ -23,5 +24,6 @@ router.get('/:id', optionalAuth, getInvoiceById);
 router.put('/:id', optionalAuth, updateInvoice);
 router.delete('/:id', optionalAuth, deleteInvoice);
 router.get('/:id/pdf', optionalAuth, generateInvoicePdf);
+router.post('/:id/send-email', optionalAuth, sendInvoiceEmail);
 
 export default router;
