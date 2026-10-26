@@ -9,6 +9,7 @@ import { useToast } from "../_context/ToastContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
+import { useScrollLock } from "@/lib/useScrollLock";
 import Pagination from "./Pagination";
 
 interface Category {
@@ -139,6 +140,9 @@ export default function ShopSection() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Prevent background scrolling when modal is open
+    useScrollLock(isModalOpen);
 
     // Filters & Sort State
     const [searchQuery, setSearchQuery] = useState("");
@@ -515,7 +519,7 @@ export default function ShopSection() {
                 {
                     isModalOpen && (
                         <div
-                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto overscroll-contain"
                             onClick={() => setIsModalOpen(false)}
                         >
                             <motion.div
@@ -523,7 +527,7 @@ export default function ShopSection() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700"
+                                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700 my-auto overscroll-contain"
                             >
                                 <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                     <h3 className="text-xl font-bold text-slate-900 dark:text-white">Add New Product</h3>
@@ -532,7 +536,7 @@ export default function ShopSection() {
                                     </button>
                                 </div>
                                 <form onSubmit={handleAddProduct} className="flex flex-col max-h-[90vh]">
-                                    <div className="p-6 space-y-4 overflow-y-auto">
+                                    <div className="p-6 space-y-4 overflow-y-auto overscroll-contain">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Name</label>
                                             <div className="relative">

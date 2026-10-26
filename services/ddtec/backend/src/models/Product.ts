@@ -14,7 +14,7 @@ export interface IProduct extends Document {
     lastMonthSales: number;
     brand: string;
     modelName: string;
-    couponCode: string;
+    couponCode?: string;
     discountPercentage: number;
     discountType: 'percentage' | 'fixed';
     discountValue: number;

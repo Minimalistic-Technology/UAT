@@ -183,6 +183,39 @@ export const createProduct = async (req: Request, res: Response) => {
 
         const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, hsnCode, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow, seller } = req.body;
 
+        if (!name || String(name).trim() === '') {
+            return res.status(400).json({ msg: 'Product name is required' });
+        }
+
+        if (price === undefined || price === null || price === '' || isNaN(Number(price)) || Number(price) <= 0) {
+            return res.status(400).json({ msg: 'Price must be a number greater than 0' });
+        }
+
+        if (stock !== undefined && stock !== '' && (isNaN(Number(stock)) || Number(stock) < 0 || !Number.isInteger(Number(stock)))) {
+            return res.status(400).json({ msg: 'Stock must be a whole number of 0 or more' });
+        }
+
+        if (cgst !== undefined && cgst !== '') {
+            const numCgst = Number(cgst);
+            if (isNaN(numCgst) || numCgst < 0 || numCgst > 100) {
+                return res.status(400).json({ msg: 'CGST must be between 0 and 100' });
+            }
+        }
+
+        if (sgst !== undefined && sgst !== '') {
+            const numSgst = Number(sgst);
+            if (isNaN(numSgst) || numSgst < 0 || numSgst > 100) {
+                return res.status(400).json({ msg: 'SGST must be between 0 and 100' });
+            }
+        }
+
+        if (packQuantity !== undefined && packQuantity !== '') {
+            const numPackQty = Number(packQuantity);
+            if (isNaN(numPackQty) || numPackQty < 1 || !Number.isInteger(numPackQty)) {
+                return res.status(400).json({ msg: 'Pack quantity must be a whole number of 1 or more' });
+            }
+        }
+
         if (hsnCode && String(hsnCode).trim() !== '') {
             const hsn = String(hsnCode).trim();
             if (!/^\d+$/.test(hsn)) {
@@ -258,7 +291,10 @@ export const createProduct = async (req: Request, res: Response) => {
         await clearProductCache();
 
         res.json(product);
-    } catch (err) {
+    } catch (err: any) {
+        if (err?.code === 11000 && (err.keyPattern?.couponCode || err.keyValue?.couponCode)) {
+            return res.status(400).json({ msg: 'Coupon code already exists for another product' });
+        }
         console.error(err);
         res.status(500).send('Server Error');
     }
@@ -272,6 +308,45 @@ export const updateProduct = async (req: Request, res: Response) => {
         }
 
         const { name, price, description, image, images, category, stock, brand, modelName, couponCode, discountPercentage, discountType, discountValue, showOnHome, codAvailable, hsnCode, cgst, sgst, costPrice, weightKg, lengthCm, widthCm, heightCm, productType, isReturnable, showDeliveryChecker, customDeliveryEstimate, packQuantity, packUnit, unitSize, unitMeasure, showAddToCart, showBuyNow, seller } = req.body;
+
+        if (name !== undefined && String(name).trim() === '') {
+            return res.status(400).json({ msg: 'Product name cannot be empty' });
+        }
+
+        if (price !== undefined && price !== '') {
+            const numPrice = Number(price);
+            if (isNaN(numPrice) || numPrice <= 0) {
+                return res.status(400).json({ msg: 'Price must be a number greater than 0' });
+            }
+        }
+
+        if (stock !== undefined && stock !== '') {
+            const numStock = Number(stock);
+            if (isNaN(numStock) || numStock < 0 || !Number.isInteger(numStock)) {
+                return res.status(400).json({ msg: 'Stock must be a whole number of 0 or more' });
+            }
+        }
+
+        if (cgst !== undefined && cgst !== '') {
+            const numCgst = Number(cgst);
+            if (isNaN(numCgst) || numCgst < 0 || numCgst > 100) {
+                return res.status(400).json({ msg: 'CGST must be between 0 and 100' });
+            }
+        }
+
+        if (sgst !== undefined && sgst !== '') {
+            const numSgst = Number(sgst);
+            if (isNaN(numSgst) || numSgst < 0 || numSgst > 100) {
+                return res.status(400).json({ msg: 'SGST must be between 0 and 100' });
+            }
+        }
+
+        if (packQuantity !== undefined && packQuantity !== '') {
+            const numPackQty = Number(packQuantity);
+            if (isNaN(numPackQty) || numPackQty < 1 || !Number.isInteger(numPackQty)) {
+                return res.status(400).json({ msg: 'Pack quantity must be a whole number of 1 or more' });
+            }
+        }
 
         if (hsnCode !== undefined && String(hsnCode).trim() !== '') {
             const hsn = String(hsnCode).trim();
@@ -317,8 +392,10 @@ export const updateProduct = async (req: Request, res: Response) => {
         product.brand = brand || product.brand;
         product.modelName = modelName || product.modelName;
         product.seller = seller !== undefined ? seller : product.seller;
-        product.couponCode = couponCode !== undefined ? couponCode : product.couponCode;
-        product.discountPercentage = discountPercentage !== undefined ? discountPercentage : product.discountPercentage;
+        if (couponCode !== undefined) {
+            product.couponCode = (couponCode && String(couponCode).trim()) ? String(couponCode).trim() : undefined;
+        }
+        product.discountPercentage = discountPercentage !== undefined ? (Number(discountPercentage) || 0) : product.discountPercentage;
         product.discountType = discountType || product.discountType;
         product.discountValue = discountValue !== undefined ? discountValue : product.discountValue;
         product.showOnHome = showOnHome !== undefined ? showOnHome : product.showOnHome;
@@ -368,7 +445,10 @@ export const updateProduct = async (req: Request, res: Response) => {
         await clearProductCache();
 
         res.json(product);
-    } catch (err) {
+    } catch (err: any) {
+        if (err?.code === 11000 && (err.keyPattern?.couponCode || err.keyValue?.couponCode)) {
+            return res.status(400).json({ msg: 'Coupon code already exists for another product' });
+        }
         console.error(err);
         res.status(500).send('Server Error');
     }

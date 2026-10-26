@@ -18,11 +18,11 @@ import {
     Loader2,
     AlertCircle,
     Boxes,
-    ArrowRight,
-    Sparkles
+    ArrowRight
 } from 'lucide-react';
 import api from '@/lib/api';
 import { formatDate } from '@/lib/utils';
+import { useScrollLock } from '@/lib/useScrollLock';
 import { useToast } from '@/app/_context/ToastContext';
 import { useConfirm } from '@/app/_context/ConfirmContext';
 import Pagination from '@/app/_components/Pagination';
@@ -81,29 +81,145 @@ export default function PurchaseRecordsView({
     const [viewingScreenshot, setViewingScreenshot] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+    // Prevent background scrolling when modals are open
+    useScrollLock(isAddModalOpen || Boolean(viewingScreenshot));
+
     // Form State
-    const [isNewProductMode, setIsNewProductMode] = useState<boolean>(false);
-    const [isUploadingProductImage, setIsUploadingProductImage] = useState<boolean>(false);
-    const [isUploadingBillScreenshot, setIsUploadingBillScreenshot] = useState<boolean>(false);
+    const [billScreenshotFile, setBillScreenshotFile] = useState<File | null>(null);
+    const [billScreenshotPreview, setBillScreenshotPreview] = useState<string | null>(null);
+    const [isUploadingToCloudinary, setIsUploadingToCloudinary] = useState<boolean>(false);
+
+    // Clean up local object URL preview on unmount
+    useEffect(() => {
+        return () => {
+            if (billScreenshotPreview) {
+                URL.revokeObjectURL(billScreenshotPreview);
+            }
+        };
+    }, [billScreenshotPreview]);
+
+    const formatForDateInput = (date: Date = new Date()): string => {
+        const pad = (n: number) => (n < 10 ? '0' + n : String(n));
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    };
+
+    // Backward-compatible alias for any in-flight or cached renders
+    const formatForDateTimeInput = formatForDateInput;
+
+    interface RestockFormErrors {
+        productId?: string;
+        seller?: string;
+        sellerContact?: string;
+        quantityAdded?: string;
+        unitCost?: string;
+        purchaseDate?: string;
+        invoiceNumber?: string;
+        billScreenshot?: string;
+        notes?: string;
+    }
+
+    const [formErrors, setFormErrors] = useState<RestockFormErrors>({});
+
+    const validateRestockForm = (data: typeof formData): RestockFormErrors => {
+        const errors: RestockFormErrors = {};
+
+        // Product selection (when creating new restock)
+        if (!editingRecord && !data.productId) {
+            errors.productId = 'Please select a product to restock';
+        }
+
+        // Seller Name
+        const sellerTrimmed = data.seller.trim();
+        if (!sellerTrimmed) {
+            errors.seller = 'Seller / Supplier name is required';
+        } else if (sellerTrimmed.length < 2) {
+            errors.seller = 'Seller name must be at least 2 characters';
+        } else if (sellerTrimmed.length > 100) {
+            errors.seller = 'Seller name must be 100 characters or fewer';
+        }
+
+        // Seller Contact (Optional)
+        if (data.sellerContact.trim()) {
+            const contactTrimmed = data.sellerContact.trim();
+            if (contactTrimmed.length > 100) {
+                errors.sellerContact = 'Seller contact must be 100 characters or fewer';
+            } else {
+                const isPhone = /^(\+?[0-9\s\-()]{7,20})$/.test(contactTrimmed);
+                const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactTrimmed);
+                if (!isPhone && !isEmail) {
+                    errors.sellerContact = 'Please enter a valid phone number (7-15 digits) or email address';
+                }
+            }
+        }
+
+        // Quantity Added (Mandatory, positive integer > 0)
+        if (data.quantityAdded === '' || data.quantityAdded === null || data.quantityAdded === undefined) {
+            errors.quantityAdded = 'Quantity added is required';
+        } else {
+            const qty = Number(data.quantityAdded);
+            if (isNaN(qty)) {
+                errors.quantityAdded = 'Quantity must be a valid number';
+            } else if (qty <= 0) {
+                errors.quantityAdded = 'Quantity must be greater than 0';
+            } else if (!Number.isInteger(qty)) {
+                errors.quantityAdded = 'Quantity must be a whole number (no decimals)';
+            } else if (qty > 1000000) {
+                errors.quantityAdded = 'Quantity cannot exceed 1,000,000 units';
+            }
+        }
+
+        // Unit Cost (Mandatory, positive number)
+        if (data.unitCost === '' || data.unitCost === null || data.unitCost === undefined) {
+            errors.unitCost = 'Unit cost price is required';
+        } else {
+            const cost = Number(data.unitCost);
+            if (isNaN(cost)) {
+                errors.unitCost = 'Unit cost must be a valid number';
+            } else if (cost <= 0) {
+                errors.unitCost = 'Unit cost price must be greater than 0';
+            } else if (cost > 10000000) {
+                errors.unitCost = 'Unit cost cannot exceed ₹10,000,000';
+            }
+        }
+
+        // Purchase Date (Mandatory & cannot be in the future)
+        if (!data.purchaseDate || !data.purchaseDate.trim()) {
+            errors.purchaseDate = 'Purchase date is required';
+        } else {
+            const todayStr = formatForDateInput(new Date());
+            if (isNaN(new Date(data.purchaseDate).getTime())) {
+                errors.purchaseDate = 'Please enter a valid purchase date';
+            } else if (data.purchaseDate.trim() > todayStr) {
+                errors.purchaseDate = 'Purchase date cannot be in the future';
+            }
+        }
+
+        // Invoice Reference (Optional)
+        if (data.invoiceNumber.trim() && data.invoiceNumber.trim().length > 50) {
+            errors.invoiceNumber = 'Invoice reference must be 50 characters or fewer';
+        }
+
+        // Bill Screenshot URL (Optional)
+        if (!billScreenshotFile && data.billScreenshot.trim() && !data.billScreenshot.startsWith('/') && !/^https?:\/\/.+/i.test(data.billScreenshot.trim())) {
+            errors.billScreenshot = 'Please enter a valid image URL starting with http:// or https://';
+        }
+
+        // Batch Notes (Optional)
+        if (data.notes.trim() && data.notes.trim().length > 500) {
+            errors.notes = 'Batch notes cannot exceed 500 characters';
+        }
+
+        return errors;
+    };
 
     const initialFormData = {
         productId: '',
         name: '',
-        price: '',
-        category: '',
-        description: '',
-        image: '',
-        cgst: '9',
-        sgst: '9',
-        packQuantity: '10',
-        packUnit: 'Box',
-        unitSize: '',
-        unitMeasure: 'Liter',
         seller: '',
         sellerContact: '',
         quantityAdded: '10',
         unitCost: '',
-        purchaseDate: new Date().toISOString().slice(0, 16),
+        purchaseDate: formatForDateInput(new Date()),
         billScreenshot: '',
         invoiceNumber: '',
         notes: ''
@@ -181,15 +297,32 @@ export default function PurchaseRecordsView({
         return filteredRecords.slice((page - 1) * pageSize, page * pageSize);
     }, [filteredRecords, page, pageSize]);
 
-    // Open Modal for Create
+    const handleCloseModal = () => {
+        setIsAddModalOpen(false);
+        setFormErrors({});
+        if (billScreenshotPreview) {
+            URL.revokeObjectURL(billScreenshotPreview);
+        }
+        setBillScreenshotFile(null);
+        setBillScreenshotPreview(null);
+    };
+
+    // Open Modal for Create (Restock Product)
     const handleOpenCreateModal = () => {
         setEditingRecord(null);
-        setIsNewProductMode(false);
+        setFormErrors({});
+        if (billScreenshotPreview) {
+            URL.revokeObjectURL(billScreenshotPreview);
+        }
+        setBillScreenshotFile(null);
+        setBillScreenshotPreview(null);
+        const defaultProduct = productsList.length > 0 ? productsList[0] : null;
         setFormData({
             ...initialFormData,
-            productId: productsList.length > 0 ? productsList[0]._id : '',
-            category: categoriesList.length > 0 ? categoriesList[0]._id : '',
-            purchaseDate: new Date().toISOString().slice(0, 16)
+            productId: defaultProduct ? defaultProduct._id : '',
+            seller: defaultProduct?.seller || '',
+            unitCost: defaultProduct?.costPrice ? defaultProduct.costPrice.toString() : '',
+            purchaseDate: formatForDateInput(new Date())
         });
         setIsAddModalOpen(true);
     };
@@ -197,7 +330,12 @@ export default function PurchaseRecordsView({
     // Open Modal for Edit
     const handleOpenEditModal = (record: PurchaseRecord) => {
         setEditingRecord(record);
-        setIsNewProductMode(false);
+        setFormErrors({});
+        if (billScreenshotPreview) {
+            URL.revokeObjectURL(billScreenshotPreview);
+        }
+        setBillScreenshotFile(null);
+        setBillScreenshotPreview(null);
 
         const prodId = typeof record.product === 'object' && record.product !== null ? record.product._id : record.product;
 
@@ -209,7 +347,7 @@ export default function PurchaseRecordsView({
             sellerContact: record.sellerContact || '',
             quantityAdded: record.quantityAdded.toString(),
             unitCost: record.unitCost.toString(),
-            purchaseDate: record.purchaseDate ? new Date(record.purchaseDate).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+            purchaseDate: record.purchaseDate ? formatForDateInput(new Date(record.purchaseDate)) : formatForDateInput(new Date()),
             billScreenshot: record.billScreenshot || '',
             invoiceNumber: record.invoiceNumber || '',
             notes: record.notes || ''
@@ -217,8 +355,8 @@ export default function PurchaseRecordsView({
         setIsAddModalOpen(true);
     };
 
-    // Handle Upload for Product Image
-    const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle Local File Selection for Bill Screenshot (Stored locally, uploaded on submit)
+    const handleBillScreenshotSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -228,71 +366,53 @@ export default function PurchaseRecordsView({
             return;
         }
 
-        setIsUploadingProductImage(true);
-        try {
-            const uploadData = new FormData();
-            uploadData.append('image', file);
-            const { data } = await api.post('/purchases/upload-image?folder=products', uploadData);
-            setFormData(prev => ({ ...prev, image: data.url }));
-            showToast('Product image uploaded to Cloudinary successfully', 'success');
-        } catch (error: any) {
-            console.error('Failed to upload product image to Cloudinary', error);
-            showToast(error.response?.data?.msg || 'Failed to upload product image', 'error');
-        } finally {
-            setIsUploadingProductImage(false);
+        if (!file.type.startsWith('image/')) {
+            showToast('Please select a valid image file (JPG, PNG, WebP)', 'error');
             e.target.value = '';
+            return;
         }
+
+        if (billScreenshotPreview) {
+            URL.revokeObjectURL(billScreenshotPreview);
+        }
+
+        const previewUrl = URL.createObjectURL(file);
+        setBillScreenshotFile(file);
+        setBillScreenshotPreview(previewUrl);
+        // Clear text URL since the selected file takes precedence
+        setFormData(prev => ({ ...prev, billScreenshot: '' }));
+        if (formErrors.billScreenshot) {
+            setFormErrors(prev => ({ ...prev, billScreenshot: undefined }));
+        }
+        e.target.value = '';
     };
 
-    // Handle Remove for Product Image (cleans up from Cloudinary if hosted there)
-    const handleRemoveProductImage = async () => {
-        const currentUrl = formData.image;
-        if (!currentUrl) return;
-
-        if (currentUrl.includes('res.cloudinary.com')) {
-            try {
-                await api.post('/purchases/delete-image', { imageUrl: currentUrl });
-                showToast('Product image removed from Cloudinary', 'success');
-            } catch (error) {
-                console.error('Failed to delete image from Cloudinary', error);
+    // Handle Manual URL input change
+    const handleBillScreenshotUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        if (billScreenshotFile || billScreenshotPreview) {
+            if (billScreenshotPreview) {
+                URL.revokeObjectURL(billScreenshotPreview);
             }
+            setBillScreenshotFile(null);
+            setBillScreenshotPreview(null);
         }
-        setFormData(prev => ({ ...prev, image: '' }));
-    };
-
-    // Handle Upload for Bill Screenshot
-    const handleBillScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        if (file.size > 10 * 1024 * 1024) {
-            showToast('File size must be under 10MB', 'error');
-            e.target.value = '';
-            return;
-        }
-
-        setIsUploadingBillScreenshot(true);
-        try {
-            const uploadData = new FormData();
-            uploadData.append('billScreenshot', file);
-            const { data } = await api.post('/purchases/upload-image?folder=purchases', uploadData);
-            setFormData(prev => ({ ...prev, billScreenshot: data.url }));
-            showToast('Bill screenshot uploaded to Cloudinary successfully', 'success');
-        } catch (error: any) {
-            console.error('Failed to upload bill screenshot to Cloudinary', error);
-            showToast(error.response?.data?.msg || 'Failed to upload bill screenshot', 'error');
-        } finally {
-            setIsUploadingBillScreenshot(false);
-            e.target.value = '';
+        setFormData(prev => ({ ...prev, billScreenshot: val }));
+        if (formErrors.billScreenshot) {
+            setFormErrors(prev => ({ ...prev, billScreenshot: undefined }));
         }
     };
 
-    // Handle Remove for Bill Screenshot (cleans up from Cloudinary if hosted there)
+    // Handle Remove for Bill Screenshot
     const handleRemoveBillScreenshot = async () => {
-        const currentUrl = formData.billScreenshot;
-        if (!currentUrl) return;
+        if (billScreenshotPreview) {
+            URL.revokeObjectURL(billScreenshotPreview);
+        }
+        setBillScreenshotFile(null);
+        setBillScreenshotPreview(null);
 
-        if (currentUrl.includes('res.cloudinary.com')) {
+        const currentUrl = formData.billScreenshot;
+        if (currentUrl && currentUrl.includes('res.cloudinary.com')) {
             try {
                 await api.post('/purchases/delete-image', { imageUrl: currentUrl });
                 showToast('Bill screenshot removed from Cloudinary', 'success');
@@ -301,90 +421,86 @@ export default function PurchaseRecordsView({
             }
         }
         setFormData(prev => ({ ...prev, billScreenshot: '' }));
+        if (formErrors.billScreenshot) setFormErrors(prev => ({ ...prev, billScreenshot: undefined }));
     };
 
-    // Handle Form Submit (Create or Update)
+    // Handle Form Submit (Create or Update Restock Record)
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (isNewProductMode && !formData.name.trim()) {
-            showToast('Product name is required for new product creation', 'error');
+        const errors = validateRestockForm(formData);
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            const firstError = Object.values(errors)[0];
+            showToast(firstError || 'Please fix the errors in the form', 'error');
             return;
         }
-
-        if (!formData.seller.trim()) {
-            showToast('Seller name is required', 'error');
-            return;
-        }
+        setFormErrors({});
 
         const qty = Number(formData.quantityAdded);
-        if (isNaN(qty) || qty === 0) {
-            showToast('Please enter a valid quantity', 'error');
-            return;
-        }
 
         setIsSubmitting(true);
         try {
+            let finalBillScreenshot = formData.billScreenshot.trim();
+
+            // Upload bill image file or direct external link to Cloudinary upon submission
+            if (billScreenshotFile) {
+                setIsUploadingToCloudinary(true);
+                try {
+                    const uploadData = new FormData();
+                    uploadData.append('billScreenshot', billScreenshotFile);
+                    const { data } = await api.post('/purchases/upload-image?folder=purchases', uploadData);
+                    finalBillScreenshot = data.url;
+                } finally {
+                    setIsUploadingToCloudinary(false);
+                }
+            } else if (finalBillScreenshot && !finalBillScreenshot.includes('res.cloudinary.com')) {
+                setIsUploadingToCloudinary(true);
+                try {
+                    const { data } = await api.post('/purchases/upload-image?folder=purchases', { imageUrl: finalBillScreenshot });
+                    finalBillScreenshot = data.url;
+                } finally {
+                    setIsUploadingToCloudinary(false);
+                }
+            }
+
             if (editingRecord) {
                 // Update existing record
                 await api.put(`/purchases/${editingRecord._id}`, {
-                    seller: formData.seller,
-                    sellerContact: formData.sellerContact,
+                    seller: formData.seller.trim(),
+                    sellerContact: formData.sellerContact.trim() || undefined,
                     quantityAdded: qty,
                     unitCost: Number(formData.unitCost) || 0,
                     purchaseDate: formData.purchaseDate,
-                    billScreenshot: formData.billScreenshot,
-                    invoiceNumber: formData.invoiceNumber,
-                    notes: formData.notes
+                    billScreenshot: finalBillScreenshot || undefined,
+                    invoiceNumber: formData.invoiceNumber.trim() || undefined,
+                    notes: formData.notes.trim() || undefined
                 });
                 showToast('Purchase record updated & inventory synced!', 'success');
-            } else if (isNewProductMode) {
-                // Create a new product and purchase record
-                const parsedPackQty = Number(formData.packQuantity);
-                const parsedUnitSize = Number(formData.unitSize);
-                const hasValidUnitSize = !isNaN(parsedUnitSize) && parsedUnitSize > 0;
-
-                await api.post('/purchases', {
-                    isNewProduct: true,
-                    name: formData.name.trim(),
-                    price: Number(formData.price) || 0,
-                    category: formData.category || undefined,
-                    description: formData.description,
-                    image: formData.image,
-                    cgst: Number(formData.cgst) || 0,
-                    sgst: Number(formData.sgst) || 0,
-                    packQuantity: (!isNaN(parsedPackQty) && parsedPackQty > 0) ? parsedPackQty : 1,
-                    packUnit: formData.packUnit?.trim() || 'Piece',
-                    unitSize: hasValidUnitSize ? parsedUnitSize : 0,
-                    unitMeasure: hasValidUnitSize ? (formData.unitMeasure?.trim() || '') : '',
-                    seller: formData.seller,
-                    sellerContact: formData.sellerContact,
-                    quantityAdded: qty,
-                    unitCost: Number(formData.unitCost) || 0,
-                    purchaseDate: formData.purchaseDate,
-                    billScreenshot: formData.billScreenshot,
-                    invoiceNumber: formData.invoiceNumber,
-                    notes: formData.notes
-                });
-                showToast('New product created & inventory record saved!', 'success');
             } else {
                 // Create new record (restocking an existing product)
                 await api.post('/purchases', {
                     isNewProduct: false,
                     productId: formData.productId,
-                    seller: formData.seller,
-                    sellerContact: formData.sellerContact,
+                    seller: formData.seller.trim(),
+                    sellerContact: formData.sellerContact.trim() || undefined,
                     quantityAdded: qty,
                     unitCost: Number(formData.unitCost) || 0,
                     purchaseDate: formData.purchaseDate,
-                    billScreenshot: formData.billScreenshot,
-                    invoiceNumber: formData.invoiceNumber,
-                    notes: formData.notes
+                    billScreenshot: finalBillScreenshot || undefined,
+                    invoiceNumber: formData.invoiceNumber.trim() || undefined,
+                    notes: formData.notes.trim() || undefined
                 });
                 showToast('Inventory restocked & purchase recorded successfully!', 'success');
             }
 
+            if (billScreenshotPreview) {
+                URL.revokeObjectURL(billScreenshotPreview);
+            }
+            setBillScreenshotFile(null);
+            setBillScreenshotPreview(null);
             setIsAddModalOpen(false);
+            setFormErrors({});
             fetchRecords();
             onRefreshProducts?.();
         } catch (error: any) {
@@ -392,6 +508,7 @@ export default function PurchaseRecordsView({
             showToast(error.response?.data?.msg || 'Failed to save purchase record', 'error');
         } finally {
             setIsSubmitting(false);
+            setIsUploadingToCloudinary(false);
         }
     };
 
@@ -588,9 +705,6 @@ export default function PurchaseRecordsView({
 
                                         <div className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
                                             {formatDate(record.purchaseDate)}
-                                            <span className="block text-[10px] text-slate-400">
-                                                {new Date(record.purchaseDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
                                         </div>
 
                                         <div className="text-slate-800 dark:text-slate-200 min-w-[140px]">
@@ -682,11 +796,11 @@ export default function PurchaseRecordsView({
             {/* Modal: Add or Edit Purchase Record */}
             {isAddModalOpen && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
-                    onClick={() => setIsAddModalOpen(false)}
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto overscroll-contain"
+                    onClick={handleCloseModal}
                 >
                     <div
-                        className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200"
+                        className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] my-auto overscroll-contain animate-in fade-in zoom-in duration-200"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
@@ -701,7 +815,7 @@ export default function PurchaseRecordsView({
                                 </p>
                             </div>
                             <button
-                                onClick={() => setIsAddModalOpen(false)}
+                                onClick={handleCloseModal}
                                 className="cursor-pointer p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                             >
                                 <X className="size-5" />
@@ -709,251 +823,64 @@ export default function PurchaseRecordsView({
                         </div>
 
                         {/* Modal Form */}
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
-                            {/* Product Mode Selection (When creating record) */}
-                            {!editingRecord && (
-                                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700">
-                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1.5">Product Mode:</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsNewProductMode(false)}
-                                        className={`cursor-pointer px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${!isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                                    >
-                                        Restock Existing Product
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsNewProductMode(true)}
-                                        className={`cursor-pointer px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${isNewProductMode ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
-                                    >
-                                        + Create New Product
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Product Selection vs New Product Creation */}
-                            {!isNewProductMode && !editingRecord ? (
+                        <form onSubmit={handleSubmit} noValidate className="p-6 space-y-4 overflow-y-auto overscroll-contain flex-1">
+                            {/* Product Selection (When creating record) */}
+                            {!editingRecord ? (
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                                         Select Target Product <span className="text-red-500">*</span>
                                     </label>
-                                    <select
-                                        required
-                                        value={formData.productId}
-                                        onChange={(e) => {
-                                            const selectedId = e.target.value;
-                                            const prod = productsList.find(p => p._id === selectedId);
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                productId: selectedId,
-                                                seller: prod?.seller || prev.seller,
-                                                unitCost: prod?.costPrice ? prod.costPrice.toString() : prev.unitCost
-                                            }));
-                                        }}
-                                        className="w-full px-4 py-2.5 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
-                                    >
-                                        {productsList.map(p => (
-                                            <option key={p._id} value={p._id}>
-                                                {p.name} (Current Stock: {p.stock} units)
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <p className="text-[10px] text-slate-400 mt-1">
-                                        Need to create a brand-new product? Click the <button type="button" onClick={() => setIsNewProductMode(true)} className="cursor-pointer text-teal-600 hover:underline font-semibold">+ Create New Product</button> tab above.
-                                    </p>
-                                </div>
-                            ) : isNewProductMode && !editingRecord ? (
-                                <div className="space-y-3.5 p-4 bg-teal-50/50 dark:bg-teal-950/20 rounded-2xl border border-teal-100 dark:border-teal-900/30">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-teal-800 dark:text-teal-300 flex items-center gap-1.5">
-                                            <Sparkles className="size-3.5" /> New Product Details
-                                        </span>
-                                        <span className="text-[10px] text-teal-600 dark:text-teal-400">
-                                            Auto-creates catalog product with packaging &amp; stock
-                                        </span>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                            Product Name <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            required
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            placeholder="e.g. Bosch Heavy Duty Angle Grinder 800W"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Selling Price (₹)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={formData.price}
-                                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="2499"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
-                                            <select
-                                                value={formData.category}
-                                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
+                                    {productsList.length === 0 ? (
+                                        <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-700 dark:text-amber-300">
+                                            No products available to restock.{' '}
+                                            <button
+                                                type="button"
+                                                onClick={() => { handleCloseModal(); router.push('/admin/products'); }}
+                                                className="underline font-bold"
                                             >
-                                                {categoriesList.map(c => (
-                                                    <option key={c._id} value={c._id}>{c.name}</option>
-                                                ))}
-                                            </select>
+                                                Create a product first on the Products page
+                                            </button>.
                                         </div>
-                                    </div>
-
-                                    {/* Product Image Upload with Cloudinary Support */}
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                                            Product Image
-                                        </label>
-                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                                            <label className="cursor-pointer bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border border-dashed border-teal-500/50 text-teal-700 dark:text-teal-300 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-2xs hover:border-teal-600 shrink-0">
-                                                {isUploadingProductImage ? (
-                                                    <>
-                                                        <Loader2 className="size-4 animate-spin text-teal-600" />
-                                                        <span>Uploading to Cloudinary...</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Upload className="size-4 text-teal-600" />
-                                                        <span>Upload Image File</span>
-                                                    </>
-                                                )}
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    disabled={isUploadingProductImage}
-                                                    onChange={handleProductImageUpload}
-                                                    className="hidden"
-                                                />
-                                            </label>
-
-                                            <div className="flex-1">
-                                                <input
-                                                    type="text"
-                                                    value={formData.image}
-                                                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                                                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                    placeholder="https://example.com/product.jpg"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {formData.image && (
-                                            <div className="mt-2.5 flex items-center gap-3 p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
-                                                <div className="relative group shrink-0">
-                                                    <img
-                                                        src={formData.image}
-                                                        alt="Product Image Preview"
-                                                        className="size-14 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shadow-2xs"
-                                                    />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mb-0.5 ${formData.image.includes('res.cloudinary.com') ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                                                        {formData.image.includes('res.cloudinary.com') ? 'Cloudinary Hosted Image' : 'External Image URL'}
-                                                    </span>
-                                                    <p className="text-[11px] text-slate-400 truncate">{formData.image}</p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleRemoveProductImage}
-                                                    className="cursor-pointer px-2.5 py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center gap-1 font-semibold shrink-0"
-                                                    title="Remove and delete image from Cloudinary"
-                                                >
-                                                    <Trash2 className="size-3.5" /> Remove
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* CGST & SGST */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">CGST (%)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={formData.cgst}
-                                                onChange={(e) => setFormData({ ...formData, cgst: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="9"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">SGST (%)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={formData.sgst}
-                                                onChange={(e) => setFormData({ ...formData, sgst: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="9"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Packaging / Unit Size */}
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Packaging / Unit Size</label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={formData.packQuantity}
-                                                onChange={(e) => setFormData({ ...formData, packQuantity: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="10"
-                                                title="Pack Quantity"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={formData.packUnit}
-                                                onChange={(e) => setFormData({ ...formData, packUnit: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="Box"
-                                                list="pack-unit-list"
-                                                title="Pack Unit"
-                                            />
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={formData.unitSize}
-                                                onChange={(e) => setFormData({ ...formData, unitSize: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="0.10"
-                                                title="Unit Size"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={formData.unitMeasure}
-                                                onChange={(e) => setFormData({ ...formData, unitMeasure: e.target.value })}
-                                                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="Liter"
-                                                list="unit-measure-list"
-                                                title="Unit Measure"
-                                            />
-                                        </div>
-                                        <datalist id="pack-unit-list">
-                                            <option value="Box" /><option value="Carton" /><option value="Piece" /><option value="Packet" /><option value="Bottle" /><option value="Pouch" />
-                                        </datalist>
-                                        <datalist id="unit-measure-list">
-                                            <option value="Liter" /><option value="ml" /><option value="Kg" /><option value="gram" /><option value="Piece" />
-                                        </datalist>
-                                        <p className="text-[10px] text-slate-400 mt-1">e.g. 10 Box &times; 0.10 Liter</p>
-                                    </div>
+                                    ) : (
+                                        <select
+                                            value={formData.productId}
+                                            onChange={(e) => {
+                                                const selectedId = e.target.value;
+                                                const prod = productsList.find(p => p._id === selectedId);
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    productId: selectedId,
+                                                    seller: prod?.seller || prev.seller,
+                                                    unitCost: prod?.costPrice ? prod.costPrice.toString() : prev.unitCost
+                                                }));
+                                                if (formErrors.productId) setFormErrors(prev => ({ ...prev, productId: undefined }));
+                                            }}
+                                            className={`w-full px-4 py-2.5 text-xs font-medium rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none cursor-pointer transition-colors ${
+                                                formErrors.productId ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                            }`}
+                                        >
+                                            <option value="">Select a product to restock...</option>
+                                            {productsList.map(p => (
+                                                <option key={p._id} value={p._id}>
+                                                    {p.name} (Current Stock: {p.stock} units)
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                    {formErrors.productId && (
+                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">{formErrors.productId}</p>
+                                    )}
+                                    <p className="text-[10px] text-slate-400 mt-1">
+                                        Need to create a brand-new product? Add it from the{' '}
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsAddModalOpen(false); setFormErrors({}); router.push('/admin/products'); }}
+                                            className="cursor-pointer text-teal-600 dark:text-teal-400 hover:underline font-semibold"
+                                        >
+                                            Products page
+                                        </button>{' '}
+                                        with complete images, specifications, and highlights.
+                                    </p>
                                 </div>
                             ) : (
                                 <div>
@@ -974,14 +901,21 @@ export default function PurchaseRecordsView({
                                         Seller / Supplier Name <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        required
                                         type="text"
                                         list="sellers-list"
                                         value={formData.seller}
-                                        onChange={(e) => setFormData({ ...formData, seller: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, seller: e.target.value });
+                                            if (formErrors.seller) setFormErrors(prev => ({ ...prev, seller: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none transition-colors ${
+                                            formErrors.seller ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                         placeholder="e.g. Hardware Wholesale Corp / Bosch Direct"
                                     />
+                                    {formErrors.seller && (
+                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">{formErrors.seller}</p>
+                                    )}
                                     <datalist id="sellers-list">
                                         {uniqueSellers.map(s => <option key={s} value={s} />)}
                                     </datalist>
@@ -993,10 +927,18 @@ export default function PurchaseRecordsView({
                                     <input
                                         type="text"
                                         value={formData.sellerContact}
-                                        onChange={(e) => setFormData({ ...formData, sellerContact: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, sellerContact: e.target.value });
+                                            if (formErrors.sellerContact) setFormErrors(prev => ({ ...prev, sellerContact: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none transition-colors ${
+                                            formErrors.sellerContact ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                         placeholder="+91 9876543210 / vendor@example.com"
                                     />
+                                    {formErrors.sellerContact && (
+                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">{formErrors.sellerContact}</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -1007,25 +949,44 @@ export default function PurchaseRecordsView({
                                         Quantity Added <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        required
                                         type="number"
+                                        min="1"
+                                        step="1"
                                         value={formData.quantityAdded}
-                                        onChange={(e) => setFormData({ ...formData, quantityAdded: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, quantityAdded: e.target.value });
+                                            if (formErrors.quantityAdded) setFormErrors(prev => ({ ...prev, quantityAdded: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs font-bold rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none transition-colors ${
+                                            formErrors.quantityAdded ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                         placeholder="50"
                                     />
+                                    {formErrors.quantityAdded && (
+                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">{formErrors.quantityAdded}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                        Unit Cost Price (₹)
+                                        Unit Cost Price (₹) <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="number"
+                                        min="0"
+                                        step="any"
                                         value={formData.unitCost}
-                                        onChange={(e) => setFormData({ ...formData, unitCost: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, unitCost: e.target.value });
+                                            if (formErrors.unitCost) setFormErrors(prev => ({ ...prev, unitCost: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs font-bold rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none transition-colors ${
+                                            formErrors.unitCost ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                         placeholder="1200"
                                     />
+                                    {formErrors.unitCost && (
+                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">{formErrors.unitCost}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -1044,14 +1005,23 @@ export default function PurchaseRecordsView({
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                        Inventory Update / Purchase Date
+                                        Purchase Date <span className="text-red-500">*</span>
                                     </label>
                                     <input
-                                        type="datetime-local"
+                                        type="date"
+                                        max={formatForDateInput(new Date())}
                                         value={formData.purchaseDate}
-                                        onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none font-mono"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, purchaseDate: e.target.value });
+                                            if (formErrors.purchaseDate) setFormErrors(prev => ({ ...prev, purchaseDate: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none font-mono transition-colors ${
+                                            formErrors.purchaseDate ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                     />
+                                    {formErrors.purchaseDate && (
+                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">{formErrors.purchaseDate}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -1059,37 +1029,37 @@ export default function PurchaseRecordsView({
                                     </label>
                                     <input
                                         type="text"
+                                        maxLength={50}
                                         value={formData.invoiceNumber}
-                                        onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none font-mono"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, invoiceNumber: e.target.value });
+                                            if (formErrors.invoiceNumber) setFormErrors(prev => ({ ...prev, invoiceNumber: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none font-mono transition-colors ${
+                                            formErrors.invoiceNumber ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                         placeholder="INV-2026-0042"
                                     />
+                                    {formErrors.invoiceNumber && (
+                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1">{formErrors.invoiceNumber}</p>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Bill Screenshot Attachment (Cloudinary Upload & URL Input) */}
+                            {/* Bill Screenshot Attachment (Cloudinary Upload on Submit & URL Input) */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                                     Bill Screenshot Attachment
                                 </label>
                                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                                     <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-700/60 border border-dashed border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-2xs shrink-0">
-                                        {isUploadingBillScreenshot ? (
-                                            <>
-                                                <Loader2 className="size-4 animate-spin text-teal-600" />
-                                                <span>Uploading to Cloudinary...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Upload className="size-4 text-teal-600" />
-                                                <span>Upload Image File</span>
-                                            </>
-                                        )}
+                                        <Upload className="size-4 text-teal-600" />
+                                        <span>Choose Image File</span>
                                         <input
                                             type="file"
                                             accept="image/*"
-                                            disabled={isUploadingBillScreenshot}
-                                            onChange={handleBillScreenshotUpload}
+                                            disabled={isSubmitting}
+                                            onChange={handleBillScreenshotSelect}
                                             className="hidden"
                                         />
                                     </label>
@@ -1098,33 +1068,67 @@ export default function PurchaseRecordsView({
                                         <input
                                             type="text"
                                             value={formData.billScreenshot}
-                                            onChange={(e) => setFormData({ ...formData, billScreenshot: e.target.value })}
-                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            placeholder="Or paste screenshot image URL (https://...)"
+                                            disabled={isSubmitting || Boolean(billScreenshotFile)}
+                                            onChange={handleBillScreenshotUrlChange}
+                                            className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-800/60 ${
+                                                formErrors.billScreenshot ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                            }`}
+                                            placeholder={billScreenshotFile ? `Image file attached (${billScreenshotFile.name}) — remove file to enter URL` : "Or paste screenshot image URL (https://...)"}
+                                            title={billScreenshotFile ? "An image file is already attached. Remove it to enter an image link URL." : ""}
                                         />
                                     </div>
                                 </div>
+                                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                                    Selected image file or direct link will be uploaded to Cloudinary when the form is submitted.
+                                </p>
+                                {formErrors.billScreenshot && (
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">{formErrors.billScreenshot}</p>
+                                )}
 
-                                {formData.billScreenshot && (
+                                {(billScreenshotPreview || formData.billScreenshot) && (
                                     <div className="mt-2.5 flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                                         <div className="relative group shrink-0">
                                             <img
-                                                src={formData.billScreenshot}
+                                                src={billScreenshotPreview || formData.billScreenshot}
                                                 alt="Bill Screenshot Preview"
                                                 className="size-14 rounded-lg object-cover border border-slate-200 dark:border-slate-700 shadow-2xs"
                                             />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mb-0.5 ${formData.billScreenshot.includes('res.cloudinary.com') ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                                                {formData.billScreenshot.includes('res.cloudinary.com') ? 'Cloudinary Hosted Bill' : 'Screenshot Image URL'}
-                                            </span>
-                                            <p className="text-[11px] text-slate-400 truncate">{formData.billScreenshot}</p>
+                                            {billScreenshotFile ? (
+                                                <>
+                                                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mb-0.5 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                                        Selected File • Uploads on Submit
+                                                    </span>
+                                                    <p className="text-[11px] text-slate-700 dark:text-slate-200 font-medium truncate">
+                                                        {billScreenshotFile.name}
+                                                        <span className="text-slate-400 dark:text-slate-500 font-normal ml-1.5">
+                                                            ({(billScreenshotFile.size / (1024 * 1024)).toFixed(2)} MB)
+                                                        </span>
+                                                    </p>
+                                                </>
+                                            ) : formData.billScreenshot.includes('res.cloudinary.com') ? (
+                                                <>
+                                                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mb-0.5 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                                                        Cloudinary Hosted Bill
+                                                    </span>
+                                                    <p className="text-[11px] text-slate-400 truncate">{formData.billScreenshot}</p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold mb-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                                        Direct Link • Uploads to Cloudinary on Submit
+                                                    </span>
+                                                    <p className="text-[11px] text-slate-400 truncate">{formData.billScreenshot}</p>
+                                                </>
+                                            )}
                                         </div>
                                         <button
                                             type="button"
+                                            disabled={isSubmitting}
                                             onClick={handleRemoveBillScreenshot}
-                                            className="cursor-pointer px-2.5 py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center gap-1 font-semibold shrink-0"
-                                            title="Remove and delete screenshot from Cloudinary"
+                                            className="cursor-pointer px-2.5 py-1.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center gap-1 font-semibold shrink-0 disabled:opacity-50"
+                                            title="Remove image"
                                         >
                                             <Trash2 className="size-3.5" /> Remove
                                         </button>
@@ -1139,18 +1143,27 @@ export default function PurchaseRecordsView({
                                 </label>
                                 <textarea
                                     rows={2}
+                                    maxLength={500}
                                     value={formData.notes}
-                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none resize-none"
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, notes: e.target.value });
+                                        if (formErrors.notes) setFormErrors(prev => ({ ...prev, notes: undefined }));
+                                    }}
+                                    className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none resize-none transition-colors ${
+                                        formErrors.notes ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                    }`}
                                     placeholder="Add any batch notes, warranty terms, or storage instructions..."
                                 />
+                                {formErrors.notes && (
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">{formErrors.notes}</p>
+                                )}
                             </div>
 
                             {/* Submit Controls */}
                             <div className="pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => setIsAddModalOpen(false)}
+                                    onClick={handleCloseModal}
                                     className="cursor-pointer px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                                 >
                                     Cancel
@@ -1162,7 +1175,8 @@ export default function PurchaseRecordsView({
                                 >
                                     {isSubmitting ? (
                                         <>
-                                            <Loader2 className="size-4 animate-spin" /> Syncing Inventory...
+                                            <Loader2 className="size-4 animate-spin" />
+                                            {isUploadingToCloudinary ? 'Uploading Bill to Cloudinary...' : 'Syncing Inventory...'}
                                         </>
                                     ) : (
                                         <>

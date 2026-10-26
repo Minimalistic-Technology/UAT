@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit, Trash2, FileText, X, Loader2, ImagePlus, ImageOff } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useScrollLock } from '@/lib/useScrollLock';
 import { useToast } from '@/app/_context/ToastContext';
 import { useConfirm } from '@/app/_context/ConfirmContext';
 import Pagination from '@/app/_components/Pagination';
@@ -35,8 +36,10 @@ interface CatalogProduct {
     sgst?: number;
 }
 
+import { STANDARD_UNITS } from './CreateQuotationView';
+
 const MAX_IMAGE_DIMENSION = 800;
-const UNIT_OPTIONS = ['Nos', 'Kg', 'Pcs', 'Set', 'Meter', 'Ltr', 'Box', 'Gram', 'Tone', 'Dozen', 'Packet', 'Pair', 'Roll', 'Bag', 'Bundle', 'Carton', 'Bottle', 'Can', 'Drum', 'Quintal', 'Bale', 'Tablet', 'Sq.Ft', 'Sq.Mtr', 'Unit'];
+const UNIT_OPTIONS = STANDARD_UNITS;
 
 function fileToCompressedFile(file: File): Promise<File> {
     return new Promise((resolve, reject) => {
@@ -78,6 +81,9 @@ const QuotationProductsView = () => {
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Prevent background scrolling when modal is open
+    useScrollLock(isModalOpen);
     const [editingItem, setEditingItem] = useState<QuotationItem | null>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -163,8 +169,42 @@ const QuotationProductsView = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            if (Number(formData.price) < 0 || Number(formData.quantity) < 1 || Number(formData.cgst) < 0 || Number(formData.sgst) < 0) {
-                showToast('Price, CGST and SGST cannot be negative, and quantity must be at least 1', 'error');
+            if (!formData.name.trim()) {
+                showToast('Product name is required', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const price = Number(formData.price);
+            if (formData.price === '' || isNaN(price) || price <= 0) {
+                showToast('Price / Rate must be greater than 0', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const qty = Number(formData.quantity);
+            if (formData.quantity === '' || isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
+                showToast('Quantity must be a positive whole number greater than 0', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (!formData.unit || !formData.unit.trim()) {
+                showToast('Quantity unit is required', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const cgst = Number(formData.cgst);
+            if (formData.cgst !== '' && (isNaN(cgst) || cgst < 0 || cgst > 100)) {
+                showToast('CGST must be between 0 and 100', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const sgst = Number(formData.sgst);
+            if (formData.sgst !== '' && (isNaN(sgst) || sgst < 0 || sgst > 100)) {
+                showToast('SGST must be between 0 and 100', 'error');
                 setIsSubmitting(false);
                 return;
             }
@@ -392,7 +432,7 @@ const QuotationProductsView = () => {
             <AnimatePresence>
                 {isModalOpen && (
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto overscroll-contain"
                         onClick={handleCloseModal}
                     >
                         <motion.div
@@ -400,7 +440,7 @@ const QuotationProductsView = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto border border-slate-200 dark:border-slate-700"
+                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto overscroll-contain my-auto border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -464,7 +504,9 @@ const QuotationProductsView = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Name <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         required
@@ -477,11 +519,13 @@ const QuotationProductsView = () => {
 
                                 <div className="col-span-2 grid grid-cols-3 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Price (₹)</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Price / Rate (₹) <span className="text-red-500">*</span>
+                                        </label>
                                         <input
                                             type="number"
                                             required
-                                            min="0"
+                                            min="0.01"
                                             step="0.01"
                                             value={formData.price}
                                             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -490,7 +534,9 @@ const QuotationProductsView = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Quantity <span className="text-red-500">*</span>
+                                        </label>
                                         <input
                                             type="number"
                                             required
@@ -503,13 +549,18 @@ const QuotationProductsView = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity Unit</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Quantity Unit <span className="text-red-500">*</span>
+                                        </label>
                                         <select
                                             value={formData.unit}
                                             onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                                             className="cursor-pointer w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
                                         >
-                                            {UNIT_OPTIONS.map(u => (
+                                            {formData.unit && !STANDARD_UNITS.includes(formData.unit) && (
+                                                <option value={formData.unit}>{formData.unit}</option>
+                                            )}
+                                            {STANDARD_UNITS.map(u => (
                                                 <option key={u} value={u}>{u}</option>
                                             ))}
                                         </select>
@@ -521,6 +572,7 @@ const QuotationProductsView = () => {
                                     <input
                                         type="number"
                                         min="0"
+                                        max="100"
                                         step="0.01"
                                         value={formData.cgst}
                                         onChange={(e) => setFormData({ ...formData, cgst: e.target.value })}
@@ -533,6 +585,7 @@ const QuotationProductsView = () => {
                                     <input
                                         type="number"
                                         min="0"
+                                        max="100"
                                         step="0.01"
                                         value={formData.sgst}
                                         onChange={(e) => setFormData({ ...formData, sgst: e.target.value })}

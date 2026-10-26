@@ -36,12 +36,36 @@ export const createQuotationItem = async (req: Request, res: Response) => {
         }
 
         const numPrice = Number(price);
-        const numQuantity = (quantity !== undefined && quantity !== '' && !isNaN(Number(quantity))) ? Math.max(1, Number(quantity)) : 1;
-        const numCgst = (cgst !== undefined && cgst !== '' && !isNaN(Number(cgst))) ? Number(cgst) : 0;
-        const numSgst = (sgst !== undefined && sgst !== '' && !isNaN(Number(sgst))) ? Number(sgst) : 0;
+        if (numPrice <= 0) {
+            return res.status(400).json({ msg: 'Price must be greater than 0' });
+        }
 
-        if (numPrice < 0 || numQuantity < 1 || numCgst < 0 || numSgst < 0) {
-            return res.status(400).json({ msg: 'Price, CGST and SGST cannot be negative, and quantity must be at least 1' });
+        let numQuantity = 1;
+        if (quantity !== undefined && quantity !== '') {
+            numQuantity = Number(quantity);
+            if (isNaN(numQuantity) || numQuantity < 1 || !Number.isInteger(numQuantity)) {
+                return res.status(400).json({ msg: 'Quantity must be a whole number of 1 or more' });
+            }
+        }
+
+        if (!unit || String(unit).trim() === '') {
+            return res.status(400).json({ msg: 'Quantity unit is required' });
+        }
+
+        let numCgst = 0;
+        if (cgst !== undefined && cgst !== '') {
+            numCgst = Number(cgst);
+            if (isNaN(numCgst) || numCgst < 0 || numCgst > 100) {
+                return res.status(400).json({ msg: 'CGST must be between 0 and 100' });
+            }
+        }
+
+        let numSgst = 0;
+        if (sgst !== undefined && sgst !== '') {
+            numSgst = Number(sgst);
+            if (isNaN(numSgst) || numSgst < 0 || numSgst > 100) {
+                return res.status(400).json({ msg: 'SGST must be between 0 and 100' });
+            }
         }
 
         if (hsnCode && String(hsnCode).trim() !== '') {
@@ -86,11 +110,40 @@ export const updateQuotationItem = async (req: Request, res: Response) => {
     try {
         const { name, price, quantity, hsnCode, unit, description, image, isActive, product, cgst, sgst } = req.body;
 
-        if ((price !== undefined && price !== '' && (isNaN(Number(price)) || Number(price) < 0)) ||
-            (quantity !== undefined && quantity !== '' && (isNaN(Number(quantity)) || Number(quantity) < 1)) ||
-            (cgst !== undefined && cgst !== '' && (isNaN(Number(cgst)) || Number(cgst) < 0)) ||
-            (sgst !== undefined && sgst !== '' && (isNaN(Number(sgst)) || Number(sgst) < 0))) {
-            return res.status(400).json({ msg: 'Price, CGST and SGST cannot be negative, and quantity must be at least 1' });
+        if (name !== undefined && String(name).trim() === '') {
+            return res.status(400).json({ msg: 'Product name cannot be empty' });
+        }
+
+        if (price !== undefined && price !== '') {
+            const numPrice = Number(price);
+            if (isNaN(numPrice) || numPrice <= 0) {
+                return res.status(400).json({ msg: 'Price must be greater than 0' });
+            }
+        }
+
+        if (quantity !== undefined && quantity !== '') {
+            const numQty = Number(quantity);
+            if (isNaN(numQty) || numQty < 1 || !Number.isInteger(numQty)) {
+                return res.status(400).json({ msg: 'Quantity must be a whole number of 1 or more' });
+            }
+        }
+
+        if (unit !== undefined && String(unit).trim() === '') {
+            return res.status(400).json({ msg: 'Quantity unit cannot be empty' });
+        }
+
+        if (cgst !== undefined && cgst !== '') {
+            const numCgst = Number(cgst);
+            if (isNaN(numCgst) || numCgst < 0 || numCgst > 100) {
+                return res.status(400).json({ msg: 'CGST must be between 0 and 100' });
+            }
+        }
+
+        if (sgst !== undefined && sgst !== '') {
+            const numSgst = Number(sgst);
+            if (isNaN(numSgst) || numSgst < 0 || numSgst > 100) {
+                return res.status(400).json({ msg: 'SGST must be between 0 and 100' });
+            }
         }
 
         if (hsnCode !== undefined && String(hsnCode).trim() !== '') {

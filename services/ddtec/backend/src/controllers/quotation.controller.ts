@@ -359,12 +359,69 @@ async function buildQuotationPdfHelper(
     return { pdfBuffer, downloadFilename };
 }
 
+const validateQuotationItemsPayload = (items: any[]): string | null => {
+    if (!Array.isArray(items) || items.length === 0) {
+        return 'At least one line item is required';
+    }
+
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const num = i + 1;
+        const itemName = item?.name && String(item.name).trim() ? `"${String(item.name).trim()}"` : `Item #${num}`;
+
+        if (!item || !item.name || !String(item.name).trim()) {
+            return `Item #${num}: Name / description is required`;
+        }
+
+        const price = Number(item.price);
+        if (item.price === undefined || item.price === null || String(item.price).trim() === '' || isNaN(price) || price <= 0) {
+            return `${itemName}: Rate must be a number greater than 0`;
+        }
+
+        const qty = Number(item.quantity);
+        if (item.quantity === undefined || item.quantity === null || String(item.quantity).trim() === '' || isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
+            return `${itemName}: Quantity must be a whole number of 1 or more`;
+        }
+
+        if (!item.unit || !String(item.unit).trim()) {
+            return `${itemName}: Unit is required`;
+        }
+
+        if (item.hsnCode && String(item.hsnCode).trim() !== '') {
+            const hsn = String(item.hsnCode).trim();
+            if (!/^\d+$/.test(hsn)) {
+                return `${itemName}: HSN / SAC code must contain digits only`;
+            }
+            if (hsn.length < 2 || hsn.length > 8) {
+                return `${itemName}: HSN / SAC code must be between 2 and 8 digits`;
+            }
+        }
+
+        if (item.cgst !== undefined && item.cgst !== null && String(item.cgst).trim() !== '') {
+            const cgst = Number(item.cgst);
+            if (isNaN(cgst) || cgst < 0 || cgst > 100) {
+                return `${itemName}: CGST must be between 0 and 100`;
+            }
+        }
+
+        if (item.sgst !== undefined && item.sgst !== null && String(item.sgst).trim() !== '') {
+            const sgst = Number(item.sgst);
+            if (isNaN(sgst) || sgst < 0 || sgst > 100) {
+                return `${itemName}: SGST must be between 0 and 100`;
+            }
+        }
+    }
+
+    return null;
+};
+
 export const generateQuotationPdf = async (req: Request, res: Response) => {
     try {
         const { items, buyer, logoUrl, title, quotationNumber } = req.body;
 
-        if (!Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({ msg: 'No items provided' });
+        const itemsError = validateQuotationItemsPayload(items);
+        if (itemsError) {
+            return res.status(400).json({ msg: itemsError });
         }
 
         const effectiveLogoUrl = logoUrl || buyer?.logoUrl;
@@ -400,8 +457,9 @@ export const sendQuotationEmail = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'At least one valid recipient email address (TO field) is required.' });
         }
 
-        if (!Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({ msg: 'No items provided for quotation email.' });
+        const itemsError = validateQuotationItemsPayload(items);
+        if (itemsError) {
+            return res.status(400).json({ msg: itemsError });
         }
 
         const effectiveLogoUrl = logoUrl || buyer?.logoUrl;
@@ -443,8 +501,9 @@ export const saveQuotation = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Buyer name is required' });
         }
 
-        if (!Array.isArray(items) || items.length === 0) {
-            return res.status(400).json({ msg: 'At least one item is required to save quotation' });
+        const itemsError = validateQuotationItemsPayload(items);
+        if (itemsError) {
+            return res.status(400).json({ msg: itemsError });
         }
 
         const processedItems = items.map((i: any) => {

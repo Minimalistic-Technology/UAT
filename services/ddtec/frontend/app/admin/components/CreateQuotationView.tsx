@@ -26,6 +26,13 @@ import {
 import api from "@/lib/api";
 import { useToast } from "@/app/_context/ToastContext";
 
+export const STANDARD_UNITS = [
+    "Nos", "Piece", "Pcs", "Box", "Carton", "Packet", "Set", "Meter", "Ltr",
+    "Liter", "ml", "Kg", "Gram", "Dozen", "Pair", "Roll", "Bag", "Bundle",
+    "Bottle", "Can", "Drum", "Pouch", "Crate", "Tube", "Jar", "Tin", "Pack",
+    "Tablet", "Sq.Ft", "Sq.Mtr", "Tone", "Quintal", "Bale", "Unit"
+];
+
 interface CatalogItem {
     _id: string;
     name: string;
@@ -759,9 +766,62 @@ export default function CreateQuotationView() {
         return data;
     };
 
+    const validateQuotationItems = (itemsToValidate: QuotationLineItem[]): string | null => {
+        if (!itemsToValidate || itemsToValidate.length === 0) {
+            return "Please add at least one line item to proceed.";
+        }
+
+        for (let i = 0; i < itemsToValidate.length; i++) {
+            const item = itemsToValidate[i];
+            const num = i + 1;
+            const itemName = item.name?.trim() ? `"${item.name.trim()}"` : `Item #${num}`;
+
+            if (!item.name || !item.name.trim()) {
+                return `Item #${num}: Title / product name is required.`;
+            }
+
+            const price = Number(item.price);
+            if (item.price === undefined || item.price === null || String(item.price).trim() === '' || isNaN(price) || price <= 0) {
+                return `${itemName}: Rate must be a number greater than 0.`;
+            }
+
+            const qty = Number(item.quantity);
+            if (item.quantity === undefined || item.quantity === null || String(item.quantity).trim() === '' || isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
+                return `${itemName}: Quantity must be a whole number of 1 or more.`;
+            }
+
+            if (!item.unit || !item.unit.trim()) {
+                return `${itemName}: Unit is required.`;
+            }
+
+            if (item.hsnCode && item.hsnCode.trim()) {
+                const hsn = item.hsnCode.trim();
+                if (!/^\d+$/.test(hsn)) {
+                    return `${itemName}: HSN / SAC code must contain digits only.`;
+                }
+                if (hsn.length < 2 || hsn.length > 8) {
+                    return `${itemName}: HSN / SAC code must be between 2 and 8 digits.`;
+                }
+            }
+
+            const cgst = Number(item.cgst);
+            if (isNaN(cgst) || cgst < 0 || cgst > 100) {
+                return `${itemName}: CGST must be between 0% and 100%.`;
+            }
+
+            const sgst = Number(item.sgst);
+            if (isNaN(sgst) || sgst < 0 || sgst > 100) {
+                return `${itemName}: SGST must be between 0% and 100%.`;
+            }
+        }
+
+        return null;
+    };
+
     const handleSaveQuotation = async () => {
-        if (items.length === 0) {
-            showToast("Please add at least one line item to save quotation.", "warning");
+        const itemError = validateQuotationItems(items);
+        if (itemError) {
+            showToast(itemError, "error");
             return;
         }
         if (!buyer.name.trim()) {
@@ -782,9 +842,9 @@ export default function CreateQuotationView() {
     };
 
     const handleGeneratePdf = async () => {
-
-        if (items.length === 0) {
-            showToast("Please add at least one line item to generate a quotation.", "warning");
+        const itemError = validateQuotationItems(items);
+        if (itemError) {
+            showToast(itemError, "error");
             return;
         }
         if (!buyer.name.trim()) {
@@ -855,8 +915,9 @@ export default function CreateQuotationView() {
     };
 
     const handleSendEmail = async () => {
-        if (items.length === 0) {
-            showToast("Please add at least one line item to send a quotation email.", "warning");
+        const itemError = validateQuotationItems(items);
+        if (itemError) {
+            showToast(itemError, "error");
             return;
         }
         if (!buyer.name.trim()) {
@@ -1488,7 +1549,9 @@ export default function CreateQuotationView() {
                                     <div className="grid grid-cols-12 gap-2 pt-2.5 border-t border-slate-200/70 dark:border-slate-800">
                                         {/* Rate (₹) */}
                                         <div className="col-span-6 sm:col-span-3 lg:col-span-2">
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Rate (₹)</label>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                                                Rate (₹) <span className="text-red-500">*</span>
+                                            </label>
                                             <div className="relative">
                                                 <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">₹</span>
                                                 <input
@@ -1497,7 +1560,7 @@ export default function CreateQuotationView() {
                                                     onChange={(e) => handleItemChange(item.id, "price", e.target.value)}
                                                     className="w-full pl-6 pr-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-teal-500 outline-none"
                                                     placeholder="0"
-                                                    min="0"
+                                                    min="0.01"
                                                     step="any"
                                                 />
                                             </div>
@@ -1505,26 +1568,36 @@ export default function CreateQuotationView() {
 
                                         {/* Quantity */}
                                         <div className="col-span-3 sm:col-span-2 lg:col-span-1">
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Qty</label>
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                                                Qty <span className="text-red-500">*</span>
+                                            </label>
                                             <input
                                                 type="number"
                                                 value={item.quantity}
                                                 onChange={(e) => handleItemChange(item.id, "quantity", Math.max(1, parseInt(e.target.value) || 1))}
                                                 className="w-full px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
                                                 min="1"
+                                                step="1"
                                             />
                                         </div>
 
                                         {/* Unit */}
                                         <div className="col-span-3 sm:col-span-2 lg:col-span-2">
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Unit</label>
-                                            <input
-                                                type="text"
-                                                value={item.unit}
+                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                                                Unit <span className="text-red-500">*</span>
+                                            </label>
+                                            <select
+                                                value={item.unit || "Nos"}
                                                 onChange={(e) => handleItemChange(item.id, "unit", e.target.value)}
-                                                className="w-full px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
-                                                placeholder="Nos"
-                                            />
+                                                className="w-full px-2 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-teal-500 outline-none cursor-pointer"
+                                            >
+                                                {item.unit && !STANDARD_UNITS.includes(item.unit) && (
+                                                    <option value={item.unit}>{item.unit}</option>
+                                                )}
+                                                {STANDARD_UNITS.map(u => (
+                                                    <option key={u} value={u}>{u}</option>
+                                                ))}
+                                            </select>
                                         </div>
 
                                         {/* HSN Code (Wider Field for 8-digit HSN/SAC codes) */}
@@ -1549,6 +1622,7 @@ export default function CreateQuotationView() {
                                                 onChange={(e) => handleItemChange(item.id, "cgst", parseFloat(e.target.value) || 0)}
                                                 className="w-full px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
                                                 min="0"
+                                                max="100"
                                                 step="0.5"
                                             />
                                         </div>
@@ -1562,6 +1636,7 @@ export default function CreateQuotationView() {
                                                 onChange={(e) => handleItemChange(item.id, "sgst", parseFloat(e.target.value) || 0)}
                                                 className="w-full px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm text-center focus:ring-2 focus:ring-teal-500 outline-none"
                                                 min="0"
+                                                max="100"
                                                 step="0.5"
                                             />
                                         </div>

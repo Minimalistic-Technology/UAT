@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import PurchaseRecord from '../models/PurchaseRecord';
 import Product from '../models/Product';
 import redisClient from '../config/redis';
+import cloudinary from '../config/cloudinary';
 import { deleteCloudinaryImagesNotUsedByProducts } from '../utils/cloudinaryCleanup';
 
 // Keep in sync with products.controller.ts's cache invalidation
@@ -77,7 +78,7 @@ export const getPurchaseRecordById = async (req: Request, res: Response) => {
     }
 };
 
-// @desc    Upload single image to Cloudinary (for product image or bill screenshot)
+// @desc    Upload single image to Cloudinary (for product image or bill screenshot, via file or image URL)
 // @route   POST /api/purchases/upload-image
 // @access  Private/Admin
 export const uploadPurchaseImage = async (req: Request, res: Response) => {
@@ -85,15 +86,44 @@ export const uploadPurchaseImage = async (req: Request, res: Response) => {
         const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
         const file = (req as any).file || files?.image?.[0] || files?.file?.[0] || files?.billScreenshot?.[0];
 
-        if (!file) {
-            return res.status(400).json({ msg: 'No image file uploaded' });
+        if (file) {
+            const url = (file as any).path || (file as any).secure_url;
+            return res.json({
+                url,
+                msg: 'Image uploaded to Cloudinary successfully'
+            });
         }
 
-        const url = (file as any).path || (file as any).secure_url;
-        res.json({
-            url,
-            msg: 'Image uploaded to Cloudinary successfully'
-        });
+        const rawUrl = req.body?.imageUrl || req.body?.url;
+        if (rawUrl && typeof rawUrl === 'string' && rawUrl.trim()) {
+            const trimmedUrl = rawUrl.trim();
+            if (trimmedUrl.includes('res.cloudinary.com')) {
+                return res.json({
+                    url: trimmedUrl,
+                    msg: 'Image is already hosted on Cloudinary'
+                });
+            }
+
+            if (!/^https?:\/\//i.test(trimmedUrl)) {
+                return res.status(400).json({ msg: 'Please provide a valid HTTP or HTTPS image URL' });
+            }
+
+            const folder = (req.query?.folder === 'products' || req.body?.folder === 'products')
+                ? 'products'
+                : 'purchases';
+
+            const uploadRes = await cloudinary.uploader.upload(trimmedUrl, {
+                folder,
+                allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+            });
+
+            return res.json({
+                url: uploadRes.secure_url || uploadRes.url,
+                msg: 'Image uploaded to Cloudinary successfully'
+            });
+        }
+
+        return res.status(400).json({ msg: 'No image file or image URL provided' });
     } catch (err: any) {
         console.error('Error uploading image to Cloudinary:', err);
         res.status(500).json({ msg: err.message || 'Failed to upload image' });
@@ -117,6 +147,88 @@ export const deletePurchaseImage = async (req: Request, res: Response) => {
         res.status(500).json({ msg: err.message || 'Server Error' });
     }
 };
+
+function validatePurchaseFields(data: {
+    seller?: any;
+    sellerContact?: any;
+    quantityAdded?: any;
+    unitCost?: any;
+    purchaseDate?: any;
+    invoiceNumber?: any;
+    notes?: any;
+}): string | null {
+    const {
+        seller,
+        sellerContact,
+        quantityAdded,
+        unitCost,
+        purchaseDate,
+        invoiceNumber,
+        notes
+    } = data;
+
+    const sellerTrimmed = String(seller || '').trim();
+    if (!sellerTrimmed) {
+        return 'Seller / Supplier name is required';
+    }
+    if (sellerTrimmed.length < 2 || sellerTrimmed.length > 100) {
+        return 'Seller name must be between 2 and 100 characters';
+    }
+
+    const qty = Number(quantityAdded);
+    if (quantityAdded === undefined || quantityAdded === null || isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
+        return 'Quantity added must be a positive whole number greater than 0';
+    }
+    if (qty > 1000000) {
+        return 'Quantity added cannot exceed 1,000,000 units';
+    }
+
+    const cost = Number(unitCost);
+    if (unitCost === undefined || unitCost === null || unitCost === '' || isNaN(cost)) {
+        return 'Unit cost price is required';
+    }
+    if (cost <= 0) {
+        return 'Unit cost price must be greater than 0';
+    }
+    if (cost > 10000000) {
+        return 'Unit cost cannot exceed 10,000,000';
+    }
+
+    if (!purchaseDate) {
+        return 'Purchase date is required';
+    }
+    const recordDate = new Date(purchaseDate);
+    if (isNaN(recordDate.getTime())) {
+        return 'A valid purchase date is required';
+    }
+    const now = new Date();
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    if (recordDate.getTime() > endOfToday.getTime() + 14 * 60 * 60 * 1000) {
+        return 'Purchase date cannot be in the future';
+    }
+
+    if (sellerContact && String(sellerContact).trim()) {
+        const contactTrimmed = String(sellerContact).trim();
+        if (contactTrimmed.length > 100) {
+            return 'Seller contact must be 100 characters or fewer';
+        }
+        const isPhone = /^(\+?[0-9\s\-()]{7,20})$/.test(contactTrimmed);
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactTrimmed);
+        if (!isPhone && !isEmail) {
+            return 'Seller contact must be a valid phone number or email address';
+        }
+    }
+
+    if (invoiceNumber && String(invoiceNumber).trim().length > 50) {
+        return 'Invoice reference must be 50 characters or fewer';
+    }
+
+    if (notes && String(notes).trim().length > 500) {
+        return 'Batch notes cannot exceed 500 characters';
+    }
+
+    return null;
+}
 
 // @desc    Create a purchase record & sync with Product inventory
 // @route   POST /api/purchases
@@ -147,21 +259,43 @@ export const createPurchaseRecord = async (req: Request, res: Response) => {
             unitMeasure
         } = req.body;
 
-        if (!seller || String(seller).trim() === '') {
-            return res.status(400).json({ msg: 'Seller name is required' });
+        const validationError = validatePurchaseFields({
+            seller,
+            sellerContact,
+            quantityAdded,
+            unitCost,
+            purchaseDate,
+            invoiceNumber,
+            notes
+        });
+        if (validationError) {
+            return res.status(400).json({ msg: validationError });
         }
 
         const qty = Number(quantityAdded);
-        if (isNaN(qty) || qty === 0) {
-            return res.status(400).json({ msg: 'Valid quantity added is required' });
-        }
 
         const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
         const uploadedProductImage = files?.image?.[0]?.path || (files?.image?.[0] as any)?.secure_url || (files?.file?.[0] as any)?.path;
         const uploadedBillScreenshot = files?.billScreenshot?.[0]?.path || (files?.billScreenshot?.[0] as any)?.secure_url;
 
         const effectiveProductImage = uploadedProductImage || image || '';
-        const effectiveBillScreenshot = uploadedBillScreenshot || billScreenshot || '';
+        let effectiveBillScreenshot = uploadedBillScreenshot || billScreenshot || '';
+
+        // If a direct external bill image link was provided without being in Cloudinary, upload to Cloudinary
+        if (!uploadedBillScreenshot && typeof billScreenshot === 'string' && billScreenshot.trim()) {
+            const trimmedBill = billScreenshot.trim();
+            if (!trimmedBill.includes('res.cloudinary.com') && /^https?:\/\//i.test(trimmedBill)) {
+                try {
+                    const uploadRes = await cloudinary.uploader.upload(trimmedBill, {
+                        folder: 'purchases',
+                        allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+                    });
+                    effectiveBillScreenshot = uploadRes.secure_url || uploadRes.url;
+                } catch (uploadErr) {
+                    console.error('Failed to upload external bill URL to Cloudinary in createPurchaseRecord:', uploadErr);
+                }
+            }
+        }
 
         const cost = Number(unitCost) || 0;
         const recordDate = purchaseDate ? new Date(purchaseDate) : new Date();
@@ -274,9 +408,38 @@ export const updatePurchaseRecord = async (req: Request, res: Response) => {
             return res.status(404).json({ msg: 'Purchase record not found' });
         }
 
+        const validationError = validatePurchaseFields({
+            seller: seller !== undefined ? seller : record.seller,
+            sellerContact: sellerContact !== undefined ? sellerContact : record.sellerContact,
+            quantityAdded: quantityAdded !== undefined ? quantityAdded : record.quantityAdded,
+            unitCost: unitCost !== undefined ? unitCost : record.unitCost,
+            purchaseDate: purchaseDate !== undefined ? purchaseDate : record.purchaseDate,
+            invoiceNumber: invoiceNumber !== undefined ? invoiceNumber : record.invoiceNumber,
+            notes: notes !== undefined ? notes : record.notes
+        });
+        if (validationError) {
+            return res.status(400).json({ msg: validationError });
+        }
+
         const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
         const uploadedBillScreenshot = files?.billScreenshot?.[0]?.path || (files?.billScreenshot?.[0] as any)?.secure_url;
-        const effectiveBillScreenshot = uploadedBillScreenshot !== undefined ? uploadedBillScreenshot : billScreenshot;
+        let effectiveBillScreenshot = uploadedBillScreenshot !== undefined ? uploadedBillScreenshot : billScreenshot;
+
+        // If an external bill image link was provided without being in Cloudinary, upload to Cloudinary
+        if (!uploadedBillScreenshot && typeof billScreenshot === 'string' && billScreenshot.trim()) {
+            const trimmedBill = billScreenshot.trim();
+            if (!trimmedBill.includes('res.cloudinary.com') && /^https?:\/\//i.test(trimmedBill)) {
+                try {
+                    const uploadRes = await cloudinary.uploader.upload(trimmedBill, {
+                        folder: 'purchases',
+                        allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+                    });
+                    effectiveBillScreenshot = uploadRes.secure_url || uploadRes.url;
+                } catch (uploadErr) {
+                    console.error('Failed to upload external bill URL to Cloudinary in updatePurchaseRecord:', uploadErr);
+                }
+            }
+        }
 
         const previousBillScreenshot = record.billScreenshot;
 

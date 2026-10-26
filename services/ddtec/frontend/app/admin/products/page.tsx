@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Tag, Ticket, Eye, ExternalLink, Edit, Trash2, Calendar, Clock, DollarSign, Image as ImageIcon, Loader2, Upload, X, Info, Truck, Sparkles } from "lucide-react";
 import api from "@/lib/api";
+import { useScrollLock } from "@/lib/useScrollLock";
 import { countWords, limitWords, formatDate, formatDateTime, formatProductPackaging } from "@/lib/utils";
 import ToggleSwitch from "../components/ToggleSwitch";
 import CreatableSelect from "../components/CreatableSelect";
@@ -167,6 +168,7 @@ const REQUIRED_FIELD_TAB_MAP: Record<string, ProductFormTab> = {
     hsnCode: 'pricing',
     cgst: 'pricing',
     sgst: 'pricing',
+    packQuantity: 'shipping',
 };
 
 function ProductFormTabBar({ active, onChange }: { active: ProductFormTab; onChange: (tab: ProductFormTab) => void }) {
@@ -262,6 +264,9 @@ export default function ProductsPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Prevent background scrolling when any modal is open
+    useScrollLock(isAddModalOpen || isEditModalOpen || Boolean(viewingCoupons) || Boolean(viewingProductDetails));
     const [newProduct, setNewProduct] = useState({
         name: "",
         price: "",
@@ -312,6 +317,7 @@ export default function ProductsPage() {
         rating?: string;
         lastMonthSales?: string;
         couponCode?: string;
+        packQuantity?: string;
     }
     const [newProductErrors, setNewProductErrors] = useState<NewProductFormErrors>({});
 
@@ -565,6 +571,13 @@ export default function ProductsPage() {
             }
         }
 
+        if (data.packQuantity !== "" && data.packQuantity !== null && data.packQuantity !== undefined) {
+            const packQty = Number(data.packQuantity);
+            if (isNaN(packQty) || packQty < 1 || !Number.isInteger(packQty)) {
+                errors.packQuantity = 'Pack quantity must be a whole number of 1 or more';
+            }
+        }
+
         return errors;
     };
 
@@ -674,7 +687,9 @@ export default function ProductsPage() {
             rating: String((product as any).rating || 0),
             lastMonthSales: String((product as any).lastMonthSales || 0),
             couponCode: (product as any).couponCode || "",
-            discountPercentage: String((product as any).discountPercentage || 0),
+            discountPercentage: ((product as any).discountPercentage !== undefined && (product as any).discountPercentage !== null && Number((product as any).discountPercentage) > 0)
+                ? String((product as any).discountPercentage)
+                : "",
             hsnCode: (product as any).hsnCode || "",
             cgst: String((product as any).cgst || 0),
             sgst: String((product as any).sgst || 0),
@@ -705,9 +720,77 @@ export default function ProductsPage() {
     const handleUpdateProduct = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if ([editingProduct.price, editingProduct.stock, editingProduct.discountPercentage, editingProduct.cgst, editingProduct.sgst, editingProduct.weightKg, editingProduct.lengthCm, editingProduct.widthCm, editingProduct.heightCm]
-            .some((v: string) => v !== "" && Number(v) < 0)) {
-            showToast("Price, stock, discount, CGST, SGST, weight and dimensions cannot be negative", "error");
+        if (!editingProduct.name || !editingProduct.name.trim()) {
+            showToast("Product name is required", "error");
+            setEditProductActiveTab('basic');
+            return;
+        }
+
+        if (editingProduct.name.trim().length > 150) {
+            showToast("Product name must be 150 characters or fewer", "error");
+            setEditProductActiveTab('basic');
+            return;
+        }
+
+        if (!editingProduct.category) {
+            showToast("Category is required", "error");
+            setEditProductActiveTab('basic');
+            return;
+        }
+
+        if (editingProduct.price === "" || editingProduct.price === null || editingProduct.price === undefined) {
+            showToast("Price is required", "error");
+            setEditProductActiveTab('pricing');
+            return;
+        }
+
+        const editPrice = Number(editingProduct.price);
+        if (isNaN(editPrice) || editPrice <= 0) {
+            showToast("Price must be a number greater than 0", "error");
+            setEditProductActiveTab('pricing');
+            return;
+        }
+
+        if (editingProduct.stock === "" || editingProduct.stock === null || editingProduct.stock === undefined) {
+            showToast("Stock is required", "error");
+            setEditProductActiveTab('pricing');
+            return;
+        }
+
+        const editStock = Number(editingProduct.stock);
+        if (isNaN(editStock) || editStock < 0 || !Number.isInteger(editStock)) {
+            showToast("Stock must be a whole number of 0 or more", "error");
+            setEditProductActiveTab('pricing');
+            return;
+        }
+
+        if (editingProduct.cgst !== "" && editingProduct.cgst !== null && editingProduct.cgst !== undefined) {
+            const numCgst = Number(editingProduct.cgst);
+            if (isNaN(numCgst) || numCgst < 0 || numCgst > 100) {
+                showToast("CGST must be between 0 and 100", "error");
+                setEditProductActiveTab('pricing');
+                return;
+            }
+        }
+
+        if (editingProduct.sgst !== "" && editingProduct.sgst !== null && editingProduct.sgst !== undefined) {
+            const numSgst = Number(editingProduct.sgst);
+            if (isNaN(numSgst) || numSgst < 0 || numSgst > 100) {
+                showToast("SGST must be between 0 and 100", "error");
+                setEditProductActiveTab('pricing');
+                return;
+            }
+        }
+
+        if (editingProduct.discountPercentage !== "" && (isNaN(Number(editingProduct.discountPercentage)) || Number(editingProduct.discountPercentage) < 0 || Number(editingProduct.discountPercentage) > 100)) {
+            showToast("Discount must be between 0 and 100", "error");
+            setEditProductActiveTab('basic');
+            return;
+        }
+
+        if (editingProduct.couponCode && editingProduct.couponCode.trim() && !COUPON_CODE_REGEX.test(editingProduct.couponCode.trim())) {
+            showToast("Coupon code must be 3-20 letters, numbers, hyphens or underscores", "error");
+            setEditProductActiveTab('basic');
             return;
         }
 
@@ -723,6 +806,21 @@ export default function ProductsPage() {
                 setEditProductActiveTab('pricing');
                 return;
             }
+        }
+
+        if (editingProduct.packQuantity !== "" && editingProduct.packQuantity !== null && editingProduct.packQuantity !== undefined) {
+            const packQty = Number(editingProduct.packQuantity);
+            if (isNaN(packQty) || packQty < 1 || !Number.isInteger(packQty)) {
+                showToast("Pack quantity must be a whole number of 1 or more", "error");
+                setEditProductActiveTab('shipping');
+                return;
+            }
+        }
+
+        if ([editingProduct.costPrice, editingProduct.weightKg, editingProduct.lengthCm, editingProduct.widthCm, editingProduct.heightCm]
+            .some((v: string) => v !== "" && v !== null && v !== undefined && Number(v) < 0)) {
+            showToast("Cost price, weight and dimensions cannot be negative", "error");
+            return;
         }
 
         setIsSubmitting(true);
@@ -741,7 +839,7 @@ export default function ProductsPage() {
             formData.append('seller', editingProduct.seller || '');
             formData.append('rating', String(Number(editingProduct.rating) || 0));
             formData.append('lastMonthSales', String(Number(editingProduct.lastMonthSales) || 0));
-            if (editingProduct.couponCode) formData.append('couponCode', editingProduct.couponCode);
+            formData.append('couponCode', editingProduct.couponCode ? editingProduct.couponCode.trim() : '');
             formData.append('discountPercentage', String(Number(editingProduct.discountPercentage) || 0));
             formData.append('hsnCode', editingProduct.hsnCode?.trim() || '');
             formData.append('cgst', String(Number(editingProduct.cgst) || 0));
@@ -896,7 +994,7 @@ export default function ProductsPage() {
                 <AnimatePresence>
                     {viewingCoupons && (
                         <div
-                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto overscroll-contain"
                             onClick={() => setViewingCoupons(null)}
                         >
                             <motion.div
@@ -904,7 +1002,7 @@ export default function ProductsPage() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 onClick={(e) => e.stopPropagation()}
-                                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700"
+                                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 my-auto overscroll-contain"
                             >
                                 <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                     <h3 className="text-xl font-bold text-slate-900 dark:text-white">Active Coupons for {viewingCoupons.productName}</h3>
@@ -912,7 +1010,7 @@ export default function ProductsPage() {
                                         <X className="size-6" />
                                     </button>
                                 </div>
-                                <div className="p-6 max-h-[60vh] overflow-y-auto">
+                                <div className="p-6 max-h-[60vh] overflow-y-auto overscroll-contain">
                                     <div className="space-y-4">
                                         {viewingCoupons.coupons.length > 0 ? (
                                             viewingCoupons.coupons.map((coupon: any) => (
@@ -962,7 +1060,7 @@ export default function ProductsPage() {
                         {
                             isAddModalOpen && (
                                 <div
-                                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto overscroll-contain"
                                     onClick={() => setIsAddModalOpen(false)}
                                 >
                                     <motion.div
@@ -970,7 +1068,7 @@ export default function ProductsPage() {
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-200 dark:border-slate-700"
+                                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-200 dark:border-slate-700 my-auto overscroll-contain"
                                     >
                                         <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">Add New Product</h3>
@@ -980,7 +1078,7 @@ export default function ProductsPage() {
                                         </div>
                                         <form onSubmit={handleAddProduct} onInvalidCapture={makeFormInvalidHandler(setNewProductActiveTab)} className="flex flex-col max-h-[90vh]">
                                             <ProductFormTabBar active={newProductActiveTab} onChange={setNewProductActiveTab} />
-                                            <div className="p-6 space-y-4 overflow-y-auto">
+                                            <div className="p-6 space-y-4 overflow-y-auto overscroll-contain">
                                                 <div hidden={newProductActiveTab !== 'basic'} className="space-y-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Name <span className="text-red-500">*</span></label>
@@ -1398,12 +1496,19 @@ export default function ProductsPage() {
                                                             <LabelWithTooltip text="Pack Quantity" tooltip="How many individual units are in one pack, e.g. 10" />
                                                             <input
                                                                 type="number"
-                                                                min="0"
+                                                                min="1"
+                                                                step="1"
                                                                 value={newProduct.packQuantity}
-                                                                onChange={(e) => setNewProduct({ ...newProduct, packQuantity: e.target.value })}
-                                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                                onChange={(e) => {
+                                                                    setNewProduct({ ...newProduct, packQuantity: e.target.value });
+                                                                    if (newProductErrors.packQuantity) setNewProductErrors(prev => ({ ...prev, packQuantity: undefined }));
+                                                                }}
+                                                                className={`w-full px-4 py-2 rounded-lg border bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none ${newProductErrors.packQuantity ? 'border-red-400 dark:border-red-600 focus:ring-red-500' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                                                 placeholder="10"
                                                             />
+                                                            {newProductErrors.packQuantity && (
+                                                                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{newProductErrors.packQuantity}</p>
+                                                            )}
                                                         </div>
                                                         <div>
                                                             <LabelWithTooltip text="Pack Unit" tooltip="What the pack itself is called, e.g. Box, Carton, Bottle" />
@@ -1587,7 +1692,7 @@ export default function ProductsPage() {
                         {
                             isEditModalOpen && editingProduct && (
                                 <div
-                                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto overscroll-contain"
                                     onClick={() => setIsEditModalOpen(false)}
                                 >
                                     <motion.div
@@ -1595,7 +1700,7 @@ export default function ProductsPage() {
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-200 dark:border-slate-700"
+                                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden border border-slate-200 dark:border-slate-700 my-auto overscroll-contain"
                                     >
                                         <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
                                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">Edit Product</h3>
@@ -1605,7 +1710,7 @@ export default function ProductsPage() {
                                         </div>
                                         <form onSubmit={handleUpdateProduct} onInvalidCapture={makeFormInvalidHandler(setEditProductActiveTab)} className="flex flex-col max-h-[90vh]">
                                             <ProductFormTabBar active={editProductActiveTab} onChange={setEditProductActiveTab} />
-                                            <div className="p-6 space-y-4 overflow-y-auto">
+                                            <div className="p-6 space-y-4 overflow-y-auto overscroll-contain">
                                                 <div hidden={editProductActiveTab !== 'basic'} className="space-y-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Product Name <span className="text-red-500">*</span></label>
@@ -1705,6 +1810,30 @@ export default function ProductsPage() {
                                                                 onChange={(e) => setEditingProduct({ ...editingProduct, lastMonthSales: e.target.value })}
                                                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
                                                                 placeholder="50"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Coupon Code</label>
+                                                            <input
+                                                                type="text"
+                                                                value={editingProduct.couponCode || ''}
+                                                                onChange={(e) => setEditingProduct({ ...editingProduct, couponCode: e.target.value })}
+                                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                                placeholder="e.g. SAVE10"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Discount (%)</label>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                max="100"
+                                                                value={editingProduct.discountPercentage ?? ''}
+                                                                onChange={(e) => setEditingProduct({ ...editingProduct, discountPercentage: e.target.value })}
+                                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
+                                                                placeholder="10"
                                                             />
                                                         </div>
                                                     </div>
@@ -1930,7 +2059,8 @@ export default function ProductsPage() {
                                                             <LabelWithTooltip text="Pack Quantity" tooltip="How many individual units are in one pack, e.g. 10" />
                                                             <input
                                                                 type="number"
-                                                                min="0"
+                                                                min="1"
+                                                                step="1"
                                                                 value={editingProduct.packQuantity}
                                                                 onChange={(e) => setEditingProduct({ ...editingProduct, packQuantity: e.target.value })}
                                                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-teal-500 outline-none"
@@ -2118,7 +2248,7 @@ export default function ProductsPage() {
             <AnimatePresence>
                 {viewingProductDetails && (
                     <div
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto overscroll-contain"
                         onClick={() => setViewingProductDetails(null)}
                     >
                         <motion.div
@@ -2126,7 +2256,7 @@ export default function ProductsPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 dark:border-slate-700"
+                            className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 dark:border-slate-700 my-auto overscroll-contain"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
                                 <div className="flex items-center gap-3">
@@ -2154,7 +2284,7 @@ export default function ProductsPage() {
                                 </div>
                             </div>
 
-                            <div className="p-6 max-h-[75vh] overflow-y-auto space-y-6">
+                            <div className="p-6 max-h-[75vh] overflow-y-auto overscroll-contain space-y-6">
                                 {/* Timestamp Banner */}
                                 <div className="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-wrap items-center justify-between gap-4 text-xs">
                                     <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-medium">
@@ -2190,6 +2320,14 @@ export default function ProductsPage() {
                                                 <span className="text-slate-500">HSN / SAC Code:</span>
                                                 <span className="font-mono font-medium text-slate-700 dark:text-slate-300">{viewingProductDetails.hsnCode || 'N/A'}</span>
                                             </div>
+                                            {viewingProductDetails.couponCode && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Coupon / Discount:</span>
+                                                    <span className="font-mono font-bold text-teal-600 dark:text-teal-400">
+                                                        {viewingProductDetails.couponCode} ({viewingProductDetails.discountPercentage || 0}% OFF)
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
