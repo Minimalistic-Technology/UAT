@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -162,7 +162,18 @@ function QuotationContent() {
         setSelectedItems(prev => prev.filter(i => i.itemId !== itemId));
     };
 
+    const isFormEmpty = useMemo(() => {
+        return selectedItems.length === 0 &&
+            !buyer.name.trim() &&
+            !buyer.address.trim() &&
+            !buyer.gstin.trim() &&
+            !buyer.stateName?.trim() &&
+            !title.trim() &&
+            !savedQuotationId;
+    }, [selectedItems, buyer, title, savedQuotationId]);
+
     const clearForm = () => {
+        if (isFormEmpty) return;
         setSelectedItems([]);
         setBuyer({ name: "", address: "", gstin: "", stateName: "" });
         setTitle("");
@@ -293,16 +304,16 @@ function QuotationContent() {
                             </Link>
                         )}
 
-                        {(selectedItems.length > 0 || buyer.name) && (
-                            <button
-                                onClick={clearForm}
-                                className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-xs"
-                                title="Reset builder"
-                            >
-                                <RotateCcw className="size-3.5" />
-                                Clear
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            onClick={clearForm}
+                            disabled={isFormEmpty}
+                            className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-200 dark:disabled:hover:bg-slate-700"
+                            title={isFormEmpty ? "Form is already empty" : "Reset builder"}
+                        >
+                            <RotateCcw className="size-3.5" />
+                            Clear
+                        </button>
                     </div>
                 </div>
 

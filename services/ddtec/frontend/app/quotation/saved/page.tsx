@@ -18,7 +18,8 @@ import {
     ChevronUp,
     ExternalLink,
     AlertTriangle,
-    X
+    X,
+    Pencil
 } from "lucide-react";
 import api from "@/lib/api";
 import { formatDate } from "@/lib/utils";
@@ -72,7 +73,19 @@ export default function SavedQuotationsPage() {
     const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [deleteModal, setDeleteModal] = useState<{ id: string; title: string } | null>(null);
+    const [editTitleModal, setEditTitleModal] = useState<{ id: string; currentTitle: string } | null>(null);
+    const [newTitle, setNewTitle] = useState("");
+    const [editTitleError, setEditTitleError] = useState<string | null>(null);
+    const [isUpdatingTitle, setIsUpdatingTitle] = useState(false);
     const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+
+    const isDuplicateName = useMemo(() => {
+        if (!editTitleModal || !newTitle.trim()) return false;
+        const trimmed = newTitle.trim().toLowerCase();
+        const currentLower = editTitleModal.currentTitle.trim().toLowerCase();
+        if (trimmed === currentLower) return false;
+        return quotations.some(q => q._id !== editTitleModal.id && (q.title?.trim().toLowerCase() === trimmed));
+    }, [editTitleModal, newTitle, quotations]);
 
     useEffect(() => {
         // Admin view guards itself at the /admin route level; here we only need
@@ -104,6 +117,58 @@ export default function SavedQuotationsPage() {
 
     const toggleExpand = (id: string) => {
         setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const openEditTitleModal = (quotation: SavedQuotation) => {
+        const current = quotation.title || `Quotation for ${quotation.buyer?.name || 'Customer'}`;
+        setEditTitleModal({
+            id: quotation._id,
+            currentTitle: current
+        });
+        setNewTitle(current);
+        setEditTitleError(null);
+    };
+
+    const handleUpdateTitle = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!editTitleModal) return;
+        const trimmed = newTitle.trim();
+        if (!trimmed) {
+            setEditTitleError("Quotation name cannot be empty.");
+            showToast("Quotation name cannot be empty.", "warning");
+            return;
+        }
+
+        // If the title hasn't changed, simply close the modal
+        if (trimmed.toLowerCase() === editTitleModal.currentTitle.trim().toLowerCase()) {
+            setEditTitleModal(null);
+            return;
+        }
+
+        if (isDuplicateName) {
+            const msg = `A quotation with the name "${trimmed}" already exists. Please choose a unique name.`;
+            setEditTitleError(msg);
+            showToast(msg, "error");
+            return;
+        }
+
+        setIsUpdatingTitle(true);
+        setEditTitleError(null);
+        try {
+            const { data } = await api.patch(`/quotation/saved/${editTitleModal.id}/title`, {
+                title: trimmed
+            });
+            setQuotations(prev => prev.map(q => q._id === editTitleModal.id ? { ...q, title: trimmed } : q));
+            showToast(data.msg || "Quotation name updated successfully!", "success");
+            setEditTitleModal(null);
+        } catch (error: any) {
+            console.error("Failed to update quotation title", error);
+            const errMsg = error.response?.data?.msg || "Failed to update quotation name.";
+            setEditTitleError(errMsg);
+            showToast(errMsg, "error");
+        } finally {
+            setIsUpdatingTitle(false);
+        }
     };
 
     const handleCreateSimilar = (id: string) => {
@@ -314,7 +379,7 @@ export default function SavedQuotationsPage() {
                                 >
                                     {/* Card Header */}
                                     <div className="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-start justify-between gap-3">
-                                        <div>
+                                        <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
                                                     {quotation.quotationNumber}
@@ -324,9 +389,23 @@ export default function SavedQuotationsPage() {
                                                     {formatDate(quotation.createdAt)}
                                                 </span>
                                             </div>
-                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-1 line-clamp-1">
-                                                {quotation.title || `Quotation for ${quotation.buyer?.name}`}
-                                            </h3>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <h3
+                                                    onClick={() => openEditTitleModal(quotation)}
+                                                    className="text-lg font-bold text-slate-900 dark:text-white line-clamp-1 cursor-pointer hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                                                    title="Click to edit quotation name"
+                                                >
+                                                    {quotation.title || `Quotation for ${quotation.buyer?.name}`}
+                                                </h3>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEditTitleModal(quotation)}
+                                                    className="cursor-pointer p-1 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 rounded-lg transition-colors shrink-0"
+                                                    title="Edit quotation name"
+                                                >
+                                                    <Pencil className="size-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <div className="text-right shrink-0">
@@ -474,6 +553,95 @@ export default function SavedQuotationsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Edit Quotation Name Modal */}
+            {editTitleModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+                    onClick={() => !isUpdatingTitle && setEditTitleModal(null)}
+                >
+                    <div
+                        className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-700 animate-in fade-in zoom-in-95 duration-200 space-y-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+                            <div className="flex items-center gap-3">
+                                <div className="size-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0">
+                                    <Pencil className="size-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Edit Quotation Name</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Rename this saved quotation for easier identification</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => !isUpdatingTitle && setEditTitleModal(null)}
+                                className="cursor-pointer p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleUpdateTitle} className="space-y-4 pt-1">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                                    Quotation Name / Title <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    maxLength={150}
+                                    value={newTitle}
+                                    onChange={(e) => {
+                                        setNewTitle(e.target.value);
+                                        if (editTitleError) setEditTitleError(null);
+                                    }}
+                                    placeholder="Enter quotation name..."
+                                    className={`w-full px-3.5 py-2.5 rounded-xl border ${
+                                        (editTitleError || isDuplicateName)
+                                            ? "border-red-400 focus:ring-2 focus:ring-red-400 dark:border-red-500"
+                                            : "border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500"
+                                    } bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm outline-none transition`}
+                                />
+                            </div>
+
+                            {(editTitleError || isDuplicateName) && (
+                                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs animate-in fade-in duration-150">
+                                    <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+                                    <span>
+                                        {editTitleError || `A quotation with the name "${newTitle.trim()}" already exists. Please choose a unique name.`}
+                                    </span>
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                <button
+                                    type="button"
+                                    disabled={isUpdatingTitle}
+                                    onClick={() => setEditTitleModal(null)}
+                                    className="cursor-pointer px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isUpdatingTitle || !newTitle.trim() || isDuplicateName}
+                                    className="cursor-pointer px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                    {isUpdatingTitle ? (
+                                        <>
+                                            <Loader2 className="size-3.5 animate-spin" /> Saving...
+                                        </>
+                                    ) : (
+                                        "Save Name"
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Custom Confirmation Alert Modal */}
             {deleteModal && (

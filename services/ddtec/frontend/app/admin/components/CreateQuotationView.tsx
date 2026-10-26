@@ -223,6 +223,9 @@ export default function CreateQuotationView() {
         try {
             const { data } = await api.get(`/quotation/saved/${id}`);
             if (data) {
+                if (data.title) {
+                    setQuotationTitle(data.title);
+                }
                 if (data.buyer) {
                     setBuyer({
                         name: data.buyer.name || "",
@@ -741,11 +744,41 @@ export default function CreateQuotationView() {
 
     const [isSaving, setIsSaving] = useState(false);
     const [savedQuotationId, setSavedQuotationId] = useState<string | null>(null);
+    const [quotationTitle, setQuotationTitle] = useState("");
+
+    const isFormEmpty = useMemo(() => {
+        const hasItems = items.length > 0;
+        const hasBuyer = Boolean(
+            buyer.name?.trim() ||
+            buyer.address?.trim() ||
+            buyer.gstin?.trim() ||
+            buyer.stateName?.trim() ||
+            buyer.toEmail?.trim()
+        );
+        const hasTitle = Boolean(quotationTitle?.trim());
+        const hasEmailInput = Boolean(emailInput?.trim());
+        const hasSavedId = Boolean(savedQuotationId);
+        const hasClientSearch = Boolean(clientSearch?.trim());
+
+        return !hasItems && !hasBuyer && !hasTitle && !hasEmailInput && !hasSavedId && !hasClientSearch;
+    }, [items, buyer, quotationTitle, emailInput, savedQuotationId, clientSearch]);
+
+    const handleResetForm = () => {
+        if (isFormEmpty) return;
+        setItems([]);
+        setBuyer({ name: "", address: "", gstin: "", stateName: "", toEmail: "" });
+        setQuotationTitle("");
+        setEmailInput("");
+        setSavedQuotationId(null);
+        setClientSearch("");
+        showToast("Cleared quotation form", "info");
+    };
 
     const persistQuotation = async () => {
+        const finalTitle = quotationTitle.trim() || `Quotation for ${buyer.name.trim()}`;
         const { data } = await api.post("/quotation/save", {
             id: savedQuotationId,
-            title: `Quotation for ${buyer.name.trim()}`,
+            title: finalTitle,
             buyer,
             items: items.map(i => ({
                 itemId: i.itemId || i.id,
@@ -762,6 +795,9 @@ export default function CreateQuotationView() {
 
         if (data.quotation) {
             setSavedQuotationId(data.quotation._id);
+            if (data.quotation.title) {
+                setQuotationTitle(data.quotation.title);
+            }
         }
         return data;
     };
@@ -875,15 +911,16 @@ export default function CreateQuotationView() {
                 return obj;
             });
 
+            const finalTitle = quotationTitle.trim() || "Quotation";
             const response = await api.post(
                 "/quotation/generate",
-                { items: payloadItems, buyer, title: "Quotation", quotationNumber },
+                { items: payloadItems, buyer, title: finalTitle, quotationNumber },
                 { responseType: "blob" }
             );
 
             const disposition = response.headers["content-disposition"];
             const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-            const filename = filenameMatch?.[1] || `${quotationNumber || 'QT'}-${(buyer.name || 'Quotation').replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}.pdf`;
+            const filename = filenameMatch?.[1] || `${quotationNumber || 'QT'}-${(quotationTitle.trim() || buyer.name || 'Quotation').replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}.pdf`;
 
             const blob = new Blob([response.data], { type: "application/pdf" });
             const url = window.URL.createObjectURL(blob);
@@ -961,7 +998,7 @@ export default function CreateQuotationView() {
                 items: payloadItems,
                 buyer,
                 toEmail: buyer.toEmail,
-                title: "Quotation",
+                title: quotationTitle.trim() || "Quotation",
                 quotationNumber
             });
 
@@ -995,7 +1032,25 @@ export default function CreateQuotationView() {
             <div className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-xs border border-slate-200 dark:border-slate-700 space-y-4">
                 <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-700">
                     <Building className="size-4 text-teal-600 dark:text-teal-400" />
-                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Company Details</h3>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Quotation & Company Details</h3>
+                </div>
+
+                {/* Quotation Name / Reference Title */}
+                <div>
+                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 flex items-center justify-between">
+                        <span>Quotation Name / Reference Title</span>
+                        <span className="text-[11px] text-slate-400 font-normal">Custom title (auto-generated if left empty)</span>
+                    </label>
+                    <div className="relative">
+                        <FileText className="absolute left-3 top-2.5 size-4 text-slate-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder={buyer.name ? `Quotation for ${buyer.name.trim()}` : "e.g. Annual IT Support & Hardware Procurement"}
+                            value={quotationTitle}
+                            onChange={(e) => setQuotationTitle(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                        />
+                    </div>
                 </div>
 
                 {/* Select Existing Client / Company (prefills company details below) */}
@@ -1665,12 +1720,10 @@ export default function CreateQuotationView() {
                     <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
                         <button
                             type="button"
-                            onClick={() => {
-                                setItems([]);
-                                setBuyer({ name: "", address: "", gstin: "", stateName: "", toEmail: "" });
-                                showToast("Cleared quotation form", "info");
-                            }}
-                            className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition"
+                            disabled={isFormEmpty}
+                            onClick={handleResetForm}
+                            className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-100 dark:disabled:hover:bg-slate-700"
+                            title={isFormEmpty ? "Form is already empty" : "Reset quotation form"}
                         >
                             Reset Form
                         </button>

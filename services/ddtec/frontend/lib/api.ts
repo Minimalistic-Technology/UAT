@@ -7,9 +7,6 @@ const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || defaultUrl,
   withCredentials: true,
   timeout: 20000, // 20 seconds timeout
-  headers: {
-    'Accept-Encoding': 'gzip, deflate, br, zstd',
-  },
 });
 
 // Add a request interceptor to handle path prefixes and logging

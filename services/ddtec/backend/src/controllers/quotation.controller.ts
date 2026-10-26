@@ -529,7 +529,43 @@ export const saveQuotation = async (req: Request, res: Response) => {
         const sgstAmount = processedItems.reduce((sum: number, i: any) => sum + (i.price * i.quantity * i.sgst) / 100, 0);
         const grandTotal = subtotal + cgstAmount + sgstAmount;
 
-        const defaultTitle = title?.trim() || `Quotation for ${buyer.name.trim()}`;
+        const trimmedCustomTitle = (title && typeof title === 'string' && title.trim()) ? title.trim() : '';
+
+        // If user explicitly provided a custom title, check for duplicate
+        if (trimmedCustomTitle) {
+            const duplicateQuery: any = {
+                title: { $regex: new RegExp(`^${escapeRegex(trimmedCustomTitle)}$`, 'i') }
+            };
+            if (id) duplicateQuery._id = { $ne: id };
+            if (!isAdminUser(req) && userId) duplicateQuery.user = userId;
+
+            const existingWithTitle = await SavedQuotation.findOne(duplicateQuery);
+            if (existingWithTitle) {
+                return res.status(400).json({
+                    msg: `A quotation with the name "${trimmedCustomTitle}" already exists. Please choose a unique name.`
+                });
+            }
+        }
+
+        // Determine final title: if no title provided, auto-generate a unique title from buyer name
+        let defaultTitle = trimmedCustomTitle;
+        if (!defaultTitle) {
+            const baseTitle = `Quotation for ${buyer.name.trim()}`;
+            defaultTitle = baseTitle;
+            let counter = 1;
+            while (true) {
+                const autoQuery: any = {
+                    title: { $regex: new RegExp(`^${escapeRegex(defaultTitle)}$`, 'i') }
+                };
+                if (id) autoQuery._id = { $ne: id };
+                if (!isAdminUser(req) && userId) autoQuery.user = userId;
+
+                const exists = await SavedQuotation.findOne(autoQuery);
+                if (!exists) break;
+                counter += 1;
+                defaultTitle = `${baseTitle} (${counter})`;
+            }
+        }
 
         if (id) {
             const existing = await SavedQuotation.findById(id);
@@ -583,8 +619,15 @@ export const saveQuotation = async (req: Request, res: Response) => {
 
 // An admin can see/manage every quotation (including guest ones); everyone
 // else may only see/manage quotations they own.
+const ADMIN_ROLES = ['super_admin', 'product_manager', 'order_manager', 'customer_support', 'finance', 'marketing', 'admin'];
+
+function escapeRegex(text: string): string {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function isAdminUser(req: Request): boolean {
-    return (req as any).user?.role === 'admin';
+    const role = (req as any).user?.role;
+    return !!role && ADMIN_ROLES.includes(role);
 }
 
 function ownsQuotation(req: Request, quotation: any): boolean {
@@ -659,8 +702,24 @@ export const duplicateSavedQuotation = async (req: Request, res: Response) => {
         }
 
         const userId = (req as any).user?.id || (req as any).user?._id;
+
+        // Auto-generate unique title for duplicated quotation
+        const baseDuplicateTitle = `${source.title || 'Quotation'} (Copy)`;
+        let finalDuplicateTitle = baseDuplicateTitle;
+        let counter = 1;
+        while (true) {
+            const dupCheckQuery: any = {
+                title: { $regex: new RegExp(`^${escapeRegex(finalDuplicateTitle)}$`, 'i') }
+            };
+            if (!isAdminUser(req) && userId) dupCheckQuery.user = userId;
+            const exists = await SavedQuotation.findOne(dupCheckQuery);
+            if (!exists) break;
+            counter += 1;
+            finalDuplicateTitle = `${baseDuplicateTitle} ${counter}`;
+        }
+
         const newQuotation = new SavedQuotation({
-            title: `${source.title} (Copy)`,
+            title: finalDuplicateTitle,
             user: userId || source.user,
             quotationNumber: `QT-${Date.now()}`,
             buyer: source.buyer,
@@ -677,6 +736,71 @@ export const duplicateSavedQuotation = async (req: Request, res: Response) => {
     } catch (err: any) {
         console.error('Error duplicating saved quotation:', err);
         return res.status(500).json({ msg: err.message || 'Server error duplicating quotation' });
+    }
+};
+
+// @route   PATCH api/quotation/saved/:id/title
+// @desc    Update the title/name of a saved quotation (owner or admin only)
+export const updateSavedQuotationTitle = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { title } = req.body;
+
+        if (!title || typeof title !== 'string' || !title.trim()) {
+            return res.status(400).json({ msg: 'Quotation name/title cannot be empty' });
+        }
+
+        const quotation = await SavedQuotation.findById(id);
+        if (!quotation) {
+            return res.status(404).json({ msg: 'Saved quotation not found' });
+        }
+        if (!isAdminUser(req) && !ownsQuotation(req, quotation)) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to edit this quotation.' });
+        }
+
+        const trimmedTitle = title.trim();
+
+        // If title unchanged (case-insensitive), return success immediately
+        if (quotation.title && quotation.title.trim().toLowerCase() === trimmedTitle.toLowerCase()) {
+            quotation.title = trimmedTitle;
+            await quotation.save();
+            return res.status(200).json({
+                success: true,
+                quotation,
+                msg: 'Quotation name updated successfully!'
+            });
+        }
+
+        // Check if another quotation already uses this name
+        const duplicateQuery: any = {
+            _id: { $ne: quotation._id },
+            title: { $regex: new RegExp(`^${escapeRegex(trimmedTitle)}$`, 'i') }
+        };
+        if (!isAdminUser(req)) {
+            const userId = (req as any).user?.id || (req as any).user?._id;
+            if (userId) {
+                duplicateQuery.user = userId;
+            }
+        }
+
+        const existingWithTitle = await SavedQuotation.findOne(duplicateQuery);
+        if (existingWithTitle) {
+            return res.status(400).json({
+                msg: `A quotation with the name "${trimmedTitle}" already exists. Please choose a unique name.`
+            });
+        }
+
+        quotation.title = trimmedTitle;
+        await quotation.save();
+
+        return res.status(200).json({
+            success: true,
+            quotation,
+            msg: 'Quotation name updated successfully!'
+        });
+    } catch (err: any) {
+        console.error('Error updating saved quotation title:', err);
+        return res.status(500).json({ msg: err.message || 'Server error updating quotation title' });
     }
 };
 

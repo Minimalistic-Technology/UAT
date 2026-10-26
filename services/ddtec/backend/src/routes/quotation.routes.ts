@@ -6,7 +6,8 @@ import {
     getAllSavedQuotations,
     getSavedQuotationById,
     deleteSavedQuotation,
-    duplicateSavedQuotation
+    duplicateSavedQuotation,
+    updateSavedQuotationTitle
 } from '../controllers/quotation.controller';
 import optionalAuth from '../middleware/optionalAuth.middleware';
 import { auth } from '../middleware/auth.middleware';
@@ -46,6 +47,12 @@ router.delete('/saved/:id', auth, deleteSavedQuotation);
 // @desc    Duplicate a saved quotation (owner or admin only)
 // @access  Private
 router.post('/saved/:id/duplicate', auth, duplicateSavedQuotation);
+
+// @route   PATCH / PUT api/quotation/saved/:id/title
+// @desc    Update the title/name of a saved quotation (owner or admin only)
+// @access  Private
+router.patch('/saved/:id/title', auth, updateSavedQuotationTitle);
+router.put('/saved/:id/title', auth, updateSavedQuotationTitle);
 
 export default router;
 
