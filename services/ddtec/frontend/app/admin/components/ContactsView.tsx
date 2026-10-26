@@ -148,7 +148,7 @@ export default function ContactsView() {
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(25);
 
     const fetchContacts = async () => {
         setLoading(true);
@@ -736,16 +736,6 @@ export default function ContactsView() {
                                 Showing {(safeCurrentPage - 1) * pageSize + 1}
                                 –{Math.min(safeCurrentPage * pageSize, filteredContacts.length)} of {filteredContacts.length}
                             </span>
-                            <select
-                                value={pageSize}
-                                onChange={(e) => setPageSize(Number(e.target.value))}
-                                className="ml-2 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[11px] font-bold outline-none"
-                            >
-                                <option value={10}>10 / page</option>
-                                <option value={25}>25 / page</option>
-                                <option value={50}>50 / page</option>
-                                <option value={100}>100 / page</option>
-                            </select>
                         </div>
 
                         <div className="flex items-center gap-1">

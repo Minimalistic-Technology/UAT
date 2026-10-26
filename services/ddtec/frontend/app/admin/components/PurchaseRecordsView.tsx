@@ -74,6 +74,7 @@ export default function PurchaseRecordsView({
     const [loading, setLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [selectedSellerFilter, setSelectedSellerFilter] = useState<string>('All');
+    const [selectedProductFilter, setSelectedProductFilter] = useState<string>('All');
 
     // Modals
     const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -250,8 +251,20 @@ export default function PurchaseRecordsView({
         records.forEach(r => {
             if (r.seller) sellersSet.add(r.seller);
         });
-        return Array.from(sellersSet);
+        return Array.from(sellersSet).sort((a, b) => a.localeCompare(b));
     }, [records]);
+
+    // Extract unique products list across catalog and purchase history
+    const uniqueProducts = useMemo(() => {
+        const prodSet = new Set<string>();
+        records.forEach(r => {
+            if (r.productName) prodSet.add(r.productName);
+        });
+        productsList.forEach(p => {
+            if (p.name) prodSet.add(p.name);
+        });
+        return Array.from(prodSet).sort((a, b) => a.localeCompare(b));
+    }, [records, productsList]);
 
     // Computed Metrics
     const totalPurchasesValuation = useMemo(() => {
@@ -269,7 +282,7 @@ export default function PurchaseRecordsView({
         return productsList.reduce((sum, p) => sum + (p.stock || 0), 0);
     }, [productsList]);
 
-    // Filtered Records
+    // Filtered Records (filtered across all records before pagination)
     const filteredRecords = useMemo(() => {
         return records.filter(r => {
             const matchesSearch =
@@ -280,17 +293,20 @@ export default function PurchaseRecordsView({
             const matchesSeller =
                 selectedSellerFilter === 'All' || r.seller.toLowerCase() === selectedSellerFilter.toLowerCase();
 
-            return matchesSearch && matchesSeller;
-        });
-    }, [records, searchQuery, selectedSellerFilter]);
+            const matchesProduct =
+                selectedProductFilter === 'All' || r.productName.toLowerCase() === selectedProductFilter.toLowerCase();
 
-    // Pagination State
+            return matchesSearch && matchesSeller && matchesProduct;
+        });
+    }, [records, searchQuery, selectedSellerFilter, selectedProductFilter]);
+
+    // Pagination State (Fixed 25 items per page)
     const [page, setPage] = useState<number>(1);
-    const [pageSize, setPageSize] = useState<number>(15);
+    const [pageSize] = useState<number>(25);
 
     useEffect(() => {
         setPage(1);
-    }, [searchQuery, selectedSellerFilter, records.length]);
+    }, [searchQuery, selectedSellerFilter, selectedProductFilter, records.length]);
 
     const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
     const pagedRecords = useMemo(() => {
@@ -621,6 +637,18 @@ export default function PurchaseRecordsView({
                         />
                     </div>
 
+                    {/* Filter Product */}
+                    <select
+                        value={selectedProductFilter}
+                        onChange={(e) => setSelectedProductFilter(e.target.value)}
+                        className="w-full sm:w-48 px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                    >
+                        <option value="All">All Products</option>
+                        {uniqueProducts.map(p => (
+                            <option key={p} value={p}>{p}</option>
+                        ))}
+                    </select>
+
                     {/* Filter Seller */}
                     <select
                         value={selectedSellerFilter}
@@ -785,8 +813,9 @@ export default function PurchaseRecordsView({
                             totalPages={totalPages}
                             totalItems={filteredRecords.length}
                             pageSize={pageSize}
+                            itemName="records"
+                            alwaysShow={true}
                             onPageChange={setPage}
-                            onPageSizeChange={setPageSize}
                             variant="admin"
                         />
                     </div>

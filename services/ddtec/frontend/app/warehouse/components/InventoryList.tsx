@@ -34,7 +34,7 @@ export default function InventoryList({
     handleToggleStock
 }: InventoryListProps) {
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(25);
 
     // Reset page to 1 when products or search query change
     useEffect(() => {
@@ -146,7 +146,6 @@ export default function InventoryList({
                         totalItems={products.length}
                         pageSize={pageSize}
                         onPageChange={setPage}
-                        onPageSizeChange={setPageSize}
                         variant="warehouse"
                     />
                 </div>

@@ -21,14 +21,14 @@ export default function Pagination({
     currentPage,
     totalPages,
     totalItems,
-    pageSize,
+    pageSize = 25,
     onPageChange,
     onPageSizeChange,
-    pageSizeOptions = [10, 25, 50, 100],
+    pageSizeOptions = [25],
     itemName = 'items',
     className = '',
     variant = 'admin',
-    alwaysShow = false,
+    alwaysShow = variant === 'admin',
 }: PaginationProps) {
     if (!alwaysShow && totalPages <= 1 && (!totalItems || (pageSize && totalItems <= pageSize))) {
         return null;
@@ -125,22 +125,6 @@ export default function Pagination({
                     <span>
                         Showing {startItem}–{endItem} of {totalItems} {itemName}
                     </span>
-                )}
-                {onPageSizeChange && pageSize !== undefined && (
-                    <select
-                        value={pageSize}
-                        onChange={(e) => {
-                            onPageSizeChange(Number(e.target.value));
-                            onPageChange(1);
-                        }}
-                        className="ml-1 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold outline-none cursor-pointer"
-                    >
-                        {pageSizeOptions.map((opt) => (
-                            <option key={opt} value={opt}>
-                                {opt} / page
-                            </option>
-                        ))}
-                    </select>
                 )}
             </div>
 

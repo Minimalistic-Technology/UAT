@@ -46,7 +46,7 @@ export default function OrdersTable({
     updateOrderStage
 }: OrdersTableProps) {
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(25);
 
     // Reset to page 1 if orders list length changes significantly
     useEffect(() => {
@@ -199,7 +199,6 @@ export default function OrdersTable({
                         totalItems={orders.length}
                         pageSize={pageSize}
                         onPageChange={setPage}
-                        onPageSizeChange={setPageSize}
                         variant="warehouse"
                     />
                 </div>

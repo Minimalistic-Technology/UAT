@@ -52,7 +52,7 @@ const CouponsPage = () => {
     const [loading, setLoading] = useState(true);
 
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(25);
 
     useEffect(() => {
         setPage(1);
@@ -294,8 +294,9 @@ const CouponsPage = () => {
                             totalPages={totalPages}
                             totalItems={coupons.length}
                             pageSize={pageSize}
+                            itemName="coupons"
+                            alwaysShow={true}
                             onPageChange={setPage}
-                            onPageSizeChange={setPageSize}
                             variant="admin"
                         />
                     </div>

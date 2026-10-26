@@ -20,7 +20,7 @@ export default function MessagesPage() {
     const [loadingData, setLoadingData] = useState(true);
 
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(25);
 
     useEffect(() => {
         setPage(1);
@@ -107,8 +107,9 @@ export default function MessagesPage() {
                         totalPages={totalPages}
                         totalItems={messagesList.length}
                         pageSize={pageSize}
+                        itemName="messages"
+                        alwaysShow={true}
                         onPageChange={setPage}
-                        onPageSizeChange={setPageSize}
                         variant="admin"
                     />
                 </div>

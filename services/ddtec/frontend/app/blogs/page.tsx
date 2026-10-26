@@ -166,7 +166,6 @@ export default function BlogsPage() {
                             totalItems={blogs.length}
                             pageSize={pageSize}
                             onPageChange={setPage}
-                            onPageSizeChange={setPageSize}
                             variant="storefront"
                         />
                     </div>

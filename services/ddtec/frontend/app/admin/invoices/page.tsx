@@ -262,7 +262,7 @@ function AdminInvoicesContent() {
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [invoicePage, setInvoicePage] = useState(1);
-    const [invoicePageSize, setInvoicePageSize] = useState(15);
+    const [invoicePageSize] = useState(25);
     const [invoiceTotal, setInvoiceTotal] = useState(0);
     const [invoiceTotalPages, setInvoiceTotalPages] = useState(1);
 
@@ -2192,14 +2192,9 @@ function AdminInvoicesContent() {
                                     totalPages={invoiceTotalPages}
                                     totalItems={invoiceTotal}
                                     pageSize={invoicePageSize}
-                                    pageSizeOptions={[10, 15, 25, 50, 100]}
                                     itemName="invoices"
                                     alwaysShow={true}
                                     onPageChange={(p) => setInvoicePage(p)}
-                                    onPageSizeChange={(sz) => {
-                                        setInvoicePageSize(sz);
-                                        setInvoicePage(1);
-                                    }}
                                     variant="admin"
                                 />
                             </div>

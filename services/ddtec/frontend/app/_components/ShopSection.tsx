@@ -483,7 +483,6 @@ export default function ShopSection() {
                                         totalItems={filteredProducts.length}
                                         pageSize={pageSize}
                                         onPageChange={setPage}
-                                        onPageSizeChange={setPageSize}
                                         variant="storefront"
                                     />
                                 </div>

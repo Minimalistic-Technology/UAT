@@ -105,7 +105,7 @@ const QuotationProductsView = () => {
     const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([]);
 
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(15);
+    const [pageSize] = useState(25);
 
     useEffect(() => {
         setPage(1);
@@ -422,7 +422,6 @@ const QuotationProductsView = () => {
                             totalItems={items.length}
                             pageSize={pageSize}
                             onPageChange={setPage}
-                            onPageSizeChange={setPageSize}
                             variant="admin"
                         />
                     </div>

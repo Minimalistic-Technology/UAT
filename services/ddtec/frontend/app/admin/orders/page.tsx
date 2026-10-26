@@ -19,7 +19,7 @@ export default function OrdersPage() {
     const { ordersList, setOrdersList, loadingOrders, fetchOrders } = useOrders();
 
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(25);
 
     useEffect(() => {
         setPage(1);
@@ -190,8 +190,9 @@ export default function OrdersPage() {
                                 totalPages={totalPages}
                                 totalItems={ordersList.length}
                                 pageSize={pageSize}
+                                itemName="orders"
+                                alwaysShow={true}
                                 onPageChange={setPage}
-                                onPageSizeChange={setPageSize}
                                 variant="admin"
                             />
                         </div>

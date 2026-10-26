@@ -35,10 +35,16 @@ const HIGHLIGHT_DESCRIPTION_MAX_WORDS = 25;
 // Field label with a hoverable info icon explaining what the field means.
 function LabelWithTooltip({ text, tooltip }: { text: string; tooltip: string }) {
     return (
-        <label className="flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-            {text}
-            <span title={tooltip} className="cursor-help text-slate-400 hover:text-teal-600">
-                <Info className="size-3.5" />
+        <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <span>{text}</span>
+            <span className="relative inline-flex items-center group cursor-pointer" title={tooltip}>
+                <Info className="size-3.5 text-slate-400 group-hover:text-teal-600 transition-colors" />
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50 w-64 max-w-xs animate-in fade-in zoom-in-95 duration-100">
+                    <span className="px-2.5 py-1.5 text-xs text-white bg-slate-900 dark:bg-slate-800 border border-slate-700 rounded-lg shadow-xl text-left font-normal leading-relaxed">
+                        {tooltip}
+                    </span>
+                    <span className="w-2 h-2 -mt-1 bg-slate-900 dark:bg-slate-800 border-r border-b border-slate-700 rotate-45" />
+                </span>
             </span>
         </label>
     );
@@ -227,7 +233,7 @@ const makeFormInvalidHandler = (setTab: (tab: ProductFormTab) => void) => {
 export default function ProductsPage() {
     const { showToast } = useToast();
     const confirm = useConfirm();
-    const { productsList, setProductsList, categoriesList, fetchProducts, fetchCategories } = useProducts();
+    const { productsList, setProductsList, categoriesList, loadingProducts, fetchProducts, fetchCategories } = useProducts();
 
     useEffect(() => {
         fetchProducts();
@@ -249,7 +255,7 @@ export default function ProductsPage() {
 
     // Pagination state
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(25);
+    const [pageSize] = useState(25);
 
     useEffect(() => {
         setPage(1);
@@ -908,83 +914,101 @@ export default function ProductsPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                        {pagedProducts.map(p => (
-                                            <tr key={p._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                                                <td className="p-4 font-medium text-slate-900 dark:text-white">{p.name}</td>
-                                                <td className="p-4 text-slate-600 dark:text-slate-400">
-                                                    {(typeof p.category === 'object' && p.category !== null) ? (p.category as any).name : p.category}
-                                                </td>
-                                                <td className="p-4 text-slate-900 dark:text-white font-medium">₹{p.price}</td>
-                                                <td className="p-4">
-                                                    <div className="flex flex-col gap-1">
-                                                        {p.couponCode && (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 text-xs font-mono font-bold">
-                                                                <Tag className="size-3" /> {p.couponCode}
-                                                            </span>
-                                                        )}
-                                                        {(p as any).couponDetails && (p as any).couponDetails.length > 0 && (
-                                                            <button
-                                                                onClick={() => setViewingCoupons({ productName: p.name, coupons: (p as any).couponDetails })}
-                                                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                                                            >
-                                                                <Ticket className="size-3" />
-                                                                {(p as any).couponDetails.length} Linked Coupon{(p as any).couponDetails.length !== 1 ? 's' : ''}
-                                                            </button>
-                                                        )}
-                                                        {!p.couponCode && (!(p as any).couponDetails || (p as any).couponDetails.length === 0) && (
-                                                            <span className="text-xs text-slate-400 italic">None</span>
-                                                        )}
+                                        {loadingProducts ? (
+                                            <tr>
+                                                <td colSpan={8} className="py-20 text-center">
+                                                    <div className="flex flex-col items-center justify-center gap-3">
+                                                        <Loader2 className="size-8 text-teal-600 animate-spin" />
+                                                        <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading products...</span>
                                                     </div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${p.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                        {p.stock}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                                                    <div className="flex flex-col">
-                                                        <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                                            {p.updatedAt ? formatDate(p.updatedAt) : 'N/A'}
-                                                        </span>
-                                                        <span className="text-[10px] text-slate-400">
-                                                            {p.updatedAt ? new Date(p.updatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : ''}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${p.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                        {p.isActive ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 text-right flex justify-end items-center gap-1">
-                                                    <button onClick={() => setViewingProductDetails(p)} className="cursor-pointer text-teal-600 hover:text-teal-800 p-2 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-full transition-colors" title="View Full Product Details & Timestamps">
-                                                        <Eye className="size-4" />
-                                                    </button>
-                                                    <a href={`/product/${p._id}`} target="_blank" rel="noopener noreferrer" className="cursor-pointer text-slate-500 hover:text-teal-600 p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-full transition-colors" title="Preview Public Storefront">
-                                                        <ExternalLink className="size-4" />
-                                                    </a>
-                                                    <ToggleSwitch isOn={p.isActive} onToggle={() => toggleProductStatus(p._id, p.isActive)} title={p.isActive ? "Deactivate Product" : "Activate Product"} />
-                                                    <button onClick={() => handleEditClick(p)} className="cursor-pointer text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors" title="Edit Product">
-                                                        <Edit className="size-4" />
-                                                    </button>
-                                                    <button onClick={() => handleDeleteProduct(p._id)} className="cursor-pointer text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Delete Product">
-                                                        <Trash2 className="size-4" />
-                                                    </button>
                                                 </td>
                                             </tr>
-                                        ))}
+                                        ) : productsList.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={8} className="py-16 text-center text-sm font-medium text-slate-500 dark:text-slate-400">
+                                                    No products found
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            pagedProducts.map(p => (
+                                                <tr key={p._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                                                    <td className="p-4 font-medium text-slate-900 dark:text-white">{p.name}</td>
+                                                    <td className="p-4 text-slate-600 dark:text-slate-400">
+                                                        {(typeof p.category === 'object' && p.category !== null) ? (p.category as any).name : p.category}
+                                                    </td>
+                                                    <td className="p-4 text-slate-900 dark:text-white font-medium">₹{p.price}</td>
+                                                    <td className="p-4">
+                                                        <div className="flex flex-col gap-1">
+                                                            {p.couponCode && (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 text-xs font-mono font-bold">
+                                                                    <Tag className="size-3" /> {p.couponCode}
+                                                                </span>
+                                                            )}
+                                                            {(p as any).couponDetails && (p as any).couponDetails.length > 0 && (
+                                                                <button
+                                                                    onClick={() => setViewingCoupons({ productName: p.name, coupons: (p as any).couponDetails })}
+                                                                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                                                                >
+                                                                    <Ticket className="size-3" />
+                                                                    {(p as any).couponDetails.length} Linked Coupon{(p as any).couponDetails.length !== 1 ? 's' : ''}
+                                                                </button>
+                                                            )}
+                                                            {!p.couponCode && (!(p as any).couponDetails || (p as any).couponDetails.length === 0) && (
+                                                                <span className="text-xs text-slate-400 italic">None</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${p.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                            {p.stock}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                                                                {p.updatedAt ? formatDate(p.updatedAt) : 'N/A'}
+                                                            </span>
+                                                            <span className="text-[10px] text-slate-400">
+                                                                {p.updatedAt ? new Date(p.updatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : ''}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${p.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                            {p.isActive ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-right flex justify-end items-center gap-1">
+                                                        <button onClick={() => setViewingProductDetails(p)} className="cursor-pointer text-teal-600 hover:text-teal-800 p-2 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-full transition-colors" title="View Full Product Details & Timestamps">
+                                                            <Eye className="size-4" />
+                                                        </button>
+                                                        <a href={`/product/${p._id}`} target="_blank" rel="noopener noreferrer" className="cursor-pointer text-slate-500 hover:text-teal-600 p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-full transition-colors" title="Preview Public Storefront">
+                                                            <ExternalLink className="size-4" />
+                                                        </a>
+                                                        <ToggleSwitch isOn={p.isActive} onToggle={() => toggleProductStatus(p._id, p.isActive)} title={p.isActive ? "Deactivate Product" : "Activate Product"} />
+                                                        <button onClick={() => handleEditClick(p)} className="cursor-pointer text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors" title="Edit Product">
+                                                            <Edit className="size-4" />
+                                                        </button>
+                                                        <button onClick={() => handleDeleteProduct(p._id)} className="cursor-pointer text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors" title="Delete Product">
+                                                            <Trash2 className="size-4" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
-                            {productsList.length > 0 && (
+                            {!loadingProducts && productsList.length > 0 && (
                                 <div className="p-4 border-t border-slate-100 dark:border-slate-700">
                                     <Pagination
                                         currentPage={page}
                                         totalPages={totalPages}
                                         totalItems={productsList.length}
                                         pageSize={pageSize}
+                                        itemName="products"
+                                        alwaysShow={true}
                                         onPageChange={setPage}
-                                        onPageSizeChange={setPageSize}
                                         variant="admin"
                                     />
                                 </div>

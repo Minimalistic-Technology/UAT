@@ -31,7 +31,7 @@ export default function UsersPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(25);
 
     const filteredUsers = useMemo(() => {
         return usersList.filter(u => userTabMode === 'customers' ? u.role === 'user' : u.role !== 'user');
@@ -233,7 +233,6 @@ export default function UsersPage() {
                             totalItems={filteredUsers.length}
                             pageSize={pageSize}
                             onPageChange={setPage}
-                            onPageSizeChange={setPageSize}
                             variant="admin"
                         />
                     </div>

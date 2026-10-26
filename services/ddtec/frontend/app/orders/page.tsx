@@ -259,7 +259,6 @@ export default function OrdersPage() {
                             totalItems={orders.length}
                             pageSize={pageSize}
                             onPageChange={setPage}
-                            onPageSizeChange={setPageSize}
                             variant="storefront"
                         />
                     </div>

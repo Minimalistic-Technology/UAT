@@ -176,7 +176,7 @@ export default function BlogsPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(25);
 
     useEffect(() => {
         setPage(1);
@@ -371,7 +371,6 @@ export default function BlogsPage() {
                             totalItems={blogsList.length}
                             pageSize={pageSize}
                             onPageChange={setPage}
-                            onPageSizeChange={setPageSize}
                             variant="admin"
                         />
                     </div>

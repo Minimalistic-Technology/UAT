@@ -261,7 +261,7 @@ export default function SavedQuotationsPage() {
         });
 
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(6);
+    const [pageSize] = useState(25);
 
     useEffect(() => {
         setPage(1);
@@ -547,7 +547,6 @@ export default function SavedQuotationsPage() {
                             totalItems={filteredQuotations.length}
                             pageSize={pageSize}
                             onPageChange={setPage}
-                            onPageSizeChange={setPageSize}
                             variant={isAdminView ? "admin" : "storefront"}
                         />
                     </div>
