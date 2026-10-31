@@ -27,8 +27,8 @@ interface Company {
 }
 
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-const MAX_NAME_LEN = 150;
-const MAX_LOCATION_LEN = 200;
+const MAX_NAME_LEN = 100;
+const MAX_LOCATION_LEN = 100;
 const PAGE_SIZE = 25;
 
 interface CompanyFormErrors {
@@ -122,7 +122,7 @@ export default function CompanyView() {
         if (!name) {
             errors.name = 'Company name is required';
         } else if (name.length > MAX_NAME_LEN) {
-            errors.name = `Name must be under ${MAX_NAME_LEN} characters`;
+            errors.name = `Company name must be under ${MAX_NAME_LEN} characters`;
         }
         if (formData.location.trim().length > MAX_LOCATION_LEN) {
             errors.location = `Location must be under ${MAX_LOCATION_LEN} characters`;
@@ -332,7 +332,14 @@ export default function CompanyView() {
                         </div>
                         <form onSubmit={handleSubmitCompany} className="p-4 space-y-3 overflow-y-auto">
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Company Name *</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                        Company Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <span className={`text-[11px] ${formData.name.length >= MAX_NAME_LEN ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                        {formData.name.length}/{MAX_NAME_LEN}
+                                    </span>
+                                </div>
                                 <input
                                     type="text"
                                     autoFocus
@@ -346,9 +353,14 @@ export default function CompanyView() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
-                                    Location <span className="font-normal text-slate-400">(optional)</span>
-                                </label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                        Location <span className="font-normal text-slate-400">(optional)</span>
+                                    </label>
+                                    <span className={`text-[11px] ${formData.location.length >= MAX_LOCATION_LEN ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                        {formData.location.length}/{MAX_LOCATION_LEN}
+                                    </span>
+                                </div>
                                 <input
                                     type="text"
                                     value={formData.location}

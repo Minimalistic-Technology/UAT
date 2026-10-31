@@ -63,8 +63,11 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[+]?[\d\s()-]{7,20}$/;
 const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const MAX_NAME_LEN = 100;
+const MAX_PHONE_LEN = 20;
+const MAX_EMAIL_LEN = 100;
 const MAX_COMPANY_LEN = 100;
-const MAX_NOTE_LEN = 2000;
+const MAX_NOTE_LEN = 1000;
+const MAX_PROJECT_TITLE_LEN = 150;
 const PAGE_SIZE = 25;
 
 const CURRENCY_OPTIONS = [
@@ -84,6 +87,7 @@ interface ClientFormErrors {
     email?: string;
     company?: string;
     gstin?: string;
+    note?: string;
 }
 
 const emptyClientForm = () => ({ name: '', phone: '', email: '', company: '', gstin: '', currency: 'INR', note: '' });
@@ -135,6 +139,7 @@ export default function ClientsView() {
 
     const [projectClient, setProjectClient] = useState<Client | null>(null);
     const [projectTitle, setProjectTitle] = useState('');
+    const [projectError, setProjectError] = useState<string | null>(null);
     const [isSubmittingProject, setIsSubmittingProject] = useState(false);
 
     const [viewingClientId, setViewingClientId] = useState<string | null>(null);
@@ -204,21 +209,43 @@ export default function ClientsView() {
         const name = formData.name.trim();
         if (!name) {
             errors.name = 'Client name is required';
+        } else if (name.length < 2) {
+            errors.name = 'Client name must be at least 2 characters';
         } else if (name.length > MAX_NAME_LEN) {
-            errors.name = `Name must be under ${MAX_NAME_LEN} characters`;
+            errors.name = `Client name must be under ${MAX_NAME_LEN} characters`;
         }
-        if (formData.phone.trim() && !PHONE_REGEX.test(formData.phone.trim())) {
-            errors.phone = 'Enter a valid phone number';
+
+        const phone = formData.phone.trim();
+        if (phone) {
+            if (phone.length > MAX_PHONE_LEN) {
+                errors.phone = `Phone number must be under ${MAX_PHONE_LEN} characters`;
+            } else if (!PHONE_REGEX.test(phone)) {
+                errors.phone = 'Enter a valid phone number';
+            }
         }
-        if (formData.email.trim() && !EMAIL_REGEX.test(formData.email.trim())) {
-            errors.email = 'Enter a valid email address';
+
+        const email = formData.email.trim();
+        if (email) {
+            if (email.length > MAX_EMAIL_LEN) {
+                errors.email = `Email must be under ${MAX_EMAIL_LEN} characters`;
+            } else if (!EMAIL_REGEX.test(email)) {
+                errors.email = 'Enter a valid email address';
+            }
         }
+
         if (formData.company.trim().length > MAX_COMPANY_LEN) {
             errors.company = `Company must be under ${MAX_COMPANY_LEN} characters`;
         }
-        if (formData.gstin.trim() && !GSTIN_REGEX.test(formData.gstin.trim().toUpperCase())) {
+
+        const gstin = formData.gstin.trim().toUpperCase();
+        if (gstin && !GSTIN_REGEX.test(gstin)) {
             errors.gstin = 'Enter a valid GSTIN (e.g., 27AAPFU0939F1ZV)';
         }
+
+        if (formData.note && formData.note.length > MAX_NOTE_LEN) {
+            errors.note = `Notes must be under ${MAX_NOTE_LEN} characters`;
+        }
+
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -281,6 +308,7 @@ export default function ClientsView() {
     const openNewProjectForm = (client: Client) => {
         setProjectClient(client);
         setProjectTitle('');
+        setProjectError(null);
     };
 
     const handleSubmitProject = async (e: React.FormEvent) => {
@@ -288,7 +316,11 @@ export default function ClientsView() {
         if (!projectClient) return;
         const title = projectTitle.trim();
         if (!title) {
-            showToast('Project title is required', 'error');
+            setProjectError('Project title is required');
+            return;
+        }
+        if (title.length > MAX_PROJECT_TITLE_LEN) {
+            setProjectError(`Project title must be under ${MAX_PROJECT_TITLE_LEN} characters`);
             return;
         }
         try {
@@ -297,10 +329,13 @@ export default function ClientsView() {
             showToast('Project added', 'success');
             setProjectClient(null);
             setProjectTitle('');
+            setProjectError(null);
             fetchAll(true);
         } catch (err: any) {
             console.error('Error creating project:', err);
-            showToast(err?.response?.data?.msg || 'Failed to add project', 'error');
+            const msg = err?.response?.data?.msg || 'Failed to add project';
+            setProjectError(msg);
+            showToast(msg, 'error');
         } finally {
             setIsSubmittingProject(false);
         }
@@ -730,7 +765,9 @@ export default function ClientsView() {
                         </div>
                         <form onSubmit={handleSubmitClient} className="p-4 space-y-3 overflow-y-auto">
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Client Name *</label>
+                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    Client Name <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     type="text"
                                     value={formData.name}
@@ -743,7 +780,9 @@ export default function ClientsView() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Company</label>
+                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    Company <span className="font-normal text-slate-400">(optional)</span>
+                                </label>
                                 <CompanySelect
                                     value={formData.company}
                                     onChange={(companyName, company) => {
@@ -769,6 +808,7 @@ export default function ClientsView() {
                                     value={formData.email}
                                     onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors({ ...formErrors, email: undefined }); }}
                                     placeholder="client@example.com"
+                                    maxLength={MAX_EMAIL_LEN}
                                     className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${formErrors.email ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                 />
                                 {formErrors.email ? (
@@ -781,12 +821,15 @@ export default function ClientsView() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Phone Number</label>
+                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    Phone Number <span className="font-normal text-slate-400">(optional)</span>
+                                </label>
                                 <input
                                     type="text"
                                     value={formData.phone}
                                     onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setFormErrors({ ...formErrors, phone: undefined }); }}
                                     placeholder="+1 (555) 123-4567"
+                                    maxLength={MAX_PHONE_LEN}
                                     className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${formErrors.phone ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                 />
                                 {formErrors.phone && <p className="text-xs text-red-500 mt-1">{formErrors.phone}</p>}
@@ -830,15 +873,23 @@ export default function ClientsView() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Notes</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                        Notes <span className="font-normal text-slate-400">(optional)</span>
+                                    </label>
+                                    <span className={`text-[11px] ${formData.note.length >= MAX_NOTE_LEN ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                        {formData.note.length}/{MAX_NOTE_LEN}
+                                    </span>
+                                </div>
                                 <textarea
                                     value={formData.note}
-                                    onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                                    onChange={(e) => { setFormData({ ...formData, note: e.target.value }); setFormErrors({ ...formErrors, note: undefined }); }}
                                     placeholder="Anything useful about this client..."
                                     rows={3}
                                     maxLength={MAX_NOTE_LEN}
-                                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500 resize-y"
+                                    className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 resize-y ${formErrors.note ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                 />
+                                {formErrors.note && <p className="text-xs text-red-500 mt-1">{formErrors.note}</p>}
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2">
@@ -867,7 +918,7 @@ export default function ClientsView() {
             {projectClient && (
                 <div
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
-                    onClick={() => setProjectClient(null)}
+                    onClick={() => { setProjectClient(null); setProjectError(null); }}
                 >
                     <div
                         className="w-full max-w-sm bg-white dark:bg-slate-800 rounded-xl shadow-xl"
@@ -878,27 +929,37 @@ export default function ClientsView() {
                                 <h3 className="font-bold text-slate-900 dark:text-white">New Project</h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">For {projectClient.name}</p>
                             </div>
-                            <button onClick={() => setProjectClient(null)} className="text-slate-400 hover:text-red-500">
+                            <button onClick={() => { setProjectClient(null); setProjectError(null); }} className="text-slate-400 hover:text-red-500">
                                 <X className="size-5" />
                             </button>
                         </div>
                         <form onSubmit={handleSubmitProject} className="p-4 space-y-3">
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Project Title *</label>
+                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    Project Title <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     type="text"
                                     autoFocus
                                     value={projectTitle}
-                                    onChange={(e) => setProjectTitle(e.target.value)}
+                                    onChange={(e) => {
+                                        setProjectTitle(e.target.value);
+                                        setProjectError(null);
+                                    }}
                                     placeholder="e.g., Website Redesign"
-                                    maxLength={150}
-                                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                    maxLength={MAX_PROJECT_TITLE_LEN}
+                                    className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${
+                                        projectError
+                                            ? 'border-red-400 focus:ring-red-400'
+                                            : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'
+                                    }`}
                                 />
+                                {projectError && <p className="text-xs text-red-500 mt-1">{projectError}</p>}
                             </div>
                             <div className="flex justify-end gap-2 pt-2">
                                 <button
                                     type="button"
-                                    onClick={() => setProjectClient(null)}
+                                    onClick={() => { setProjectClient(null); setProjectError(null); }}
                                     className="px-4 py-2 text-sm font-semibold rounded-lg text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
                                 >
                                     Cancel

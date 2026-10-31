@@ -152,6 +152,14 @@ export default function CompanySelect({
             setNewCompanyError('Company name is required');
             return;
         }
+        if (trimmedName.length > 100) {
+            setNewCompanyError('Company name must be under 100 characters');
+            return;
+        }
+        if (newCompanyLocation.trim().length > 100) {
+            setNewCompanyError('Location must be under 100 characters');
+            return;
+        }
 
         const trimmedGstin = newCompanyGstin.trim().toUpperCase();
         if (trimmedGstin && !GSTIN_REGEX.test(trimmedGstin)) {
@@ -352,9 +360,14 @@ export default function CompanySelect({
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">
-                                    Name *
-                                </label>
+                                <div className="flex items-center justify-between mb-0.5">
+                                    <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
+                                        Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <span className={`text-[10px] ${newCompanyName.length >= 100 ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                        {newCompanyName.length}/100
+                                    </span>
+                                </div>
                                 <input
                                     type="text"
                                     autoFocus
@@ -364,21 +377,26 @@ export default function CompanySelect({
                                         setNewCompanyError(null);
                                     }}
                                     placeholder="Company name"
-                                    maxLength={150}
+                                    maxLength={100}
                                     className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-1 focus:ring-teal-500"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-0.5">
-                                    Location (optional)
-                                </label>
+                                <div className="flex items-center justify-between mb-0.5">
+                                    <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">
+                                        Location <span className="font-normal text-slate-400 lowercase">(optional)</span>
+                                    </label>
+                                    <span className={`text-[10px] ${newCompanyLocation.length >= 100 ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                        {newCompanyLocation.length}/100
+                                    </span>
+                                </div>
                                 <input
                                     type="text"
                                     value={newCompanyLocation}
                                     onChange={(e) => setNewCompanyLocation(e.target.value)}
                                     placeholder="City, State"
-                                    maxLength={200}
+                                    maxLength={100}
                                     className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:ring-1 focus:ring-teal-500"
                                 />
                             </div>

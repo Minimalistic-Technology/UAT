@@ -10,8 +10,8 @@ export interface ICompany extends Document {
 }
 
 const CompanySchema: Schema = new Schema({
-    name: { type: String, required: true, trim: true, maxlength: 150 },
-    location: { type: String, trim: true, maxlength: 200 },
+    name: { type: String, required: true, trim: true, maxlength: 100 },
+    location: { type: String, trim: true, maxlength: 100 },
     gstNumber: {
         type: String,
         trim: true,
