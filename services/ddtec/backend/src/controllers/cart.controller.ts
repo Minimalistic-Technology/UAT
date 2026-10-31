@@ -1,6 +1,7 @@
 
 import { Request, Response } from 'express';
 import Cart from '../models/Cart';
+import Product from '../models/Product';
 
 interface AuthRequest extends Request {
     user?: any;
@@ -29,6 +30,11 @@ export const addToCart = async (req: AuthRequest, res: Response) => {
     const { productId, quantity } = req.body;
 
     try {
+        const product = await Product.findById(productId);
+        if (!product || product.isActive === false || (product.showAddToCart === false && product.showBuyNow === false)) {
+            return res.status(400).json({ msg: 'This product is currently not available for purchase' });
+        }
+
         let cart = await Cart.findOne({ user: req.user.id });
 
         if (!cart) {

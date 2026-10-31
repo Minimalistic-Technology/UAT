@@ -14,6 +14,7 @@ interface CartItem {
         image: string;
         couponCode?: string;
         discountPercentage?: number;
+        codAvailable?: boolean;
     };
     quantity: number;
     _id: string; // Item ID (subdocument id)
@@ -117,6 +118,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const productRes = await api.get(`/products/${productId}`);
                 const product = productRes.data;
 
+                if (!product || product.isActive === false || (product.showAddToCart === false && product.showBuyNow === false)) {
+                    showToast("This product is currently not available for purchase.", "error");
+                    return;
+                }
+
                 setCartItems(prev => {
                     // Filter out any broken items already in cart
                     const cleanPrev = prev.filter(item => item && item.product);
@@ -151,9 +157,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setAppliedCoupon(null);
                 showToast("Item successfully added to cart!", "success");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            showToast("Failed to add product to cart.", "error");
+            const msg = error?.response?.data?.msg || "Failed to add product to cart.";
+            showToast(msg, "error");
         }
     };
 

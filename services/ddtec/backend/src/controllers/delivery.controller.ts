@@ -90,6 +90,7 @@ export const calculateCarrierRatesHandler = async (req: Request, res: Response):
         const pincode = req.body?.pincode || req.query?.pincode;
         let weightKg = Number(req.body?.weightKg || req.query?.weightKg || req.query?.weight);
         const items = req.body?.items;
+        let volumetricWeightKg = 0;
 
         if (!pincode) {
             res.status(400).json({
@@ -99,27 +100,38 @@ export const calculateCarrierRatesHandler = async (req: Request, res: Response):
             return;
         }
 
-        // If items list is passed without explicit weight, compute from DB products
-        if ((!weightKg || isNaN(weightKg) || weightKg <= 0) && Array.isArray(items) && items.length > 0) {
+        // Whenever a cart/order item list is passed, look up each product's packed
+        // dimensions and weight from the DB so we can bill on the carrier-standard
+        // chargeable weight (the greater of actual weight and volumetric weight),
+        // rather than trusting a client-computed weight that ignores dimensions.
+        if (Array.isArray(items) && items.length > 0) {
             const Product = (await import('../models/Product')).default;
             let computedWeight = 0;
+            let computedVolumetricWeight = 0;
             for (const item of items) {
                 const pId = item.product?._id || item.product || item._id;
                 const qty = Number(item.quantity) || 1;
                 if (pId) {
-                    const prod = await Product.findById(pId).select('weightKg');
+                    const prod = await Product.findById(pId).select('weightKg lengthCm widthCm heightCm');
                     const singleWeight = prod?.weightKg || 0.5;
+                    const lengthCm = prod?.lengthCm || 10;
+                    const widthCm = prod?.widthCm || 10;
+                    const heightCm = prod?.heightCm || 10;
+                    // Standard courier volumetric weight divisor (Blue Dart / DTDC surface & air cargo)
+                    const singleVolumetricWeight = (lengthCm * widthCm * heightCm) / 5000;
                     computedWeight += singleWeight * qty;
+                    computedVolumetricWeight += singleVolumetricWeight * qty;
                 }
             }
             weightKg = Math.max(0.5, computedWeight);
+            volumetricWeightKg = computedVolumetricWeight;
         }
 
         if (!weightKg || isNaN(weightKg) || weightKg <= 0) {
             weightKg = 1.0;
         }
 
-        const ratesResponse = await DeliveryService.calculateCarrierRates(pincode.toString(), weightKg);
+        const ratesResponse = await DeliveryService.calculateCarrierRates(pincode.toString(), weightKg, volumetricWeightKg);
         res.status(200).json(ratesResponse);
     } catch (error: any) {
         console.error('[DELIVERY-CONTROLLER-ERROR] Error calculating carrier rates:', error);

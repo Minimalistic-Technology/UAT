@@ -1,11 +1,13 @@
 "use client";
 
+import { useState, useMemo, useEffect } from "react";
 import {
     Activity,
     Inbox,
     CheckCircle,
     ChevronDown
 } from "lucide-react";
+import Pagination from "@/app/_components/Pagination";
 
 interface Order {
     _id: string;
@@ -43,6 +45,19 @@ export default function OrdersTable({
     actionLoadingId,
     updateOrderStage
 }: OrdersTableProps) {
+    const [page, setPage] = useState(1);
+    const [pageSize] = useState(25);
+
+    // Reset to page 1 if orders list length changes significantly
+    useEffect(() => {
+        setPage(1);
+    }, [orders.length]);
+
+    const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
+    const pagedOrders = useMemo(
+        () => orders.slice((page - 1) * pageSize, page * pageSize),
+        [orders, page, pageSize]
+    );
     return (
         <div className="xl:col-span-2 bg-white dark:bg-slate-900 border-0 rounded-3xl p-6 shadow-xl dark:shadow-slate-900 drop-shadow-md flex flex-col gap-5 min-h-[450px]">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-850 pb-4">
@@ -80,7 +95,7 @@ export default function OrdersTable({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100/50 dark:divide-slate-850/50">
-                            {orders.slice(0, 10).map((order) => {
+                            {pagedOrders.map((order) => {
                                 const firstItem = order.items[0];
                                 const itemQuantity = order.items.reduce((acc, it) => acc + it.quantity, 0);
 
@@ -107,7 +122,7 @@ export default function OrdersTable({
                                         {/* Product details thumbnail slot */}
                                         <td className="py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="size-9 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex-shrink-0 flex items-center justify-center">
+                                                <div className="size-9 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-950 flex-shrink-0 flex items-center justify-center">
                                                     <img
                                                         src={firstItem?.product?.image || "/fallback.jpg"}
                                                         alt={firstItem?.product?.name}
@@ -176,6 +191,18 @@ export default function OrdersTable({
                     </table>
                 )}
             </div>
+            {orders.length > 0 && (
+                <div className="border-t border-slate-100 dark:border-slate-850 pt-2">
+                    <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        totalItems={orders.length}
+                        pageSize={pageSize}
+                        onPageChange={setPage}
+                        variant="warehouse"
+                    />
+                </div>
+            )}
         </div>
     );
 }

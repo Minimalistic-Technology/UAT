@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "../_context/ToastContext";
+import { useAuth } from "../_context/AuthContext";
 
 interface QuotationProduct {
     _id: string;
@@ -35,6 +36,8 @@ interface QuotationProduct {
 interface SelectedItem {
     itemId: string;
     name: string;
+    description?: string;
+    hsnCode?: string;
     price: number;
     unit: string;
     quantity: number;
@@ -46,6 +49,7 @@ function QuotationContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { showToast } = useToast();
+    const { user } = useAuth();
 
     const [products, setProducts] = useState<QuotationProduct[]>([]);
     const [loading, setLoading] = useState(true);
@@ -105,6 +109,7 @@ function QuotationContent() {
                         data.items.map((i: any) => ({
                             itemId: i.itemId || i._id,
                             name: i.name,
+                            description: i.description || "",
                             price: i.price,
                             unit: i.unit || "Nos",
                             quantity: i.quantity || 1,
@@ -136,6 +141,8 @@ function QuotationContent() {
             return [...prev, {
                 itemId: product._id,
                 name: product.name,
+                description: product.description || "",
+                hsnCode: product.hsnCode || "",
                 price: product.price,
                 unit: product.unit || "Nos",
                 quantity: initialQty,
@@ -155,7 +162,18 @@ function QuotationContent() {
         setSelectedItems(prev => prev.filter(i => i.itemId !== itemId));
     };
 
+    const isFormEmpty = useMemo(() => {
+        return selectedItems.length === 0 &&
+            !buyer.name.trim() &&
+            !buyer.address.trim() &&
+            !buyer.gstin.trim() &&
+            !buyer.stateName?.trim() &&
+            !title.trim() &&
+            !savedQuotationId;
+    }, [selectedItems, buyer, title, savedQuotationId]);
+
     const clearForm = () => {
+        if (isFormEmpty) return;
         setSelectedItems([]);
         setBuyer({ name: "", address: "", gstin: "", stateName: "" });
         setTitle("");
@@ -169,6 +187,20 @@ function QuotationContent() {
     const sgstAmount = selectedItems.reduce((sum, i) => sum + (i.price * i.quantity * i.sgst) / 100, 0);
     const grandTotal = subtotal + cgstAmount + sgstAmount;
 
+    const persistQuotation = async () => {
+        const { data } = await api.post("/quotation/save", {
+            id: savedQuotationId,
+            title: title.trim() || `Quotation for ${buyer.name.trim()}`,
+            buyer,
+            items: selectedItems
+        });
+
+        if (data.quotation) {
+            setSavedQuotationId(data.quotation._id);
+        }
+        return data;
+    };
+
     const handleSaveQuotation = async () => {
         if (selectedItems.length === 0) {
             showToast("Please add at least one product to save the quotation.", "warning");
@@ -181,16 +213,7 @@ function QuotationContent() {
 
         setIsSaving(true);
         try {
-            const { data } = await api.post("/quotation/save", {
-                id: savedQuotationId,
-                title: title.trim() || `Quotation for ${buyer.name.trim()}`,
-                buyer,
-                items: selectedItems
-            });
-
-            if (data.quotation) {
-                setSavedQuotationId(data.quotation._id);
-            }
+            const data = await persistQuotation();
             showToast(data.msg || "Quotation saved successfully!", "success");
         } catch (error: any) {
             console.error("Save quotation error:", error);
@@ -212,18 +235,29 @@ function QuotationContent() {
 
         setIsGenerating(true);
         try {
+            // First save the quotation to database
+            const saveData = await persistQuotation();
+            const quotationNumber = saveData?.quotation?.quotationNumber;
+
             const response = await api.post(
                 "/quotation/generate",
                 {
-                    items: selectedItems.map(i => ({ itemId: i.itemId, quantity: i.quantity })),
-                    buyer
+                    items: selectedItems.map(i => ({
+                        itemId: i.itemId,
+                        quantity: i.quantity,
+                        description: i.description || "",
+                        hsnCode: i.hsnCode || ""
+                    })),
+                    buyer,
+                    title: "Quotation",
+                    quotationNumber
                 },
                 { responseType: "blob" }
             );
 
             const disposition = response.headers["content-disposition"];
             const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-            const filename = filenameMatch?.[1] || `quotation-${Date.now()}.pdf`;
+            const filename = filenameMatch?.[1] || `${quotationNumber || 'QT'}-${(buyer.name || 'Quotation').replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}.pdf`;
 
             const blob = new Blob([response.data], { type: "application/pdf" });
             const url = window.URL.createObjectURL(blob);
@@ -234,7 +268,7 @@ function QuotationContent() {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            showToast("Quotation PDF generated successfully!", "success");
+            showToast("Quotation saved & PDF downloaded successfully!", "success");
         } catch (error: any) {
             console.error(error);
             showToast(error.response?.data?.msg || "Failed to generate quotation. Please try again.", "error");
@@ -260,24 +294,26 @@ function QuotationContent() {
 
                     {/* View Saved Quotations Page Option */}
                     <div className="flex items-center gap-3 shrink-0">
-                        <Link
-                            href="/quotation/saved"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 font-bold rounded-xl border border-teal-200 dark:border-teal-800 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-all text-sm shadow-sm"
-                        >
-                            <BookmarkCheck className="size-4" />
-                            View Saved Quotations
-                        </Link>
-
-                        {(selectedItems.length > 0 || buyer.name) && (
-                            <button
-                                onClick={clearForm}
-                                className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-xs"
-                                title="Reset builder"
+                        {user && (
+                            <Link
+                                href="/quotation/saved"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 font-bold rounded-xl border border-teal-200 dark:border-teal-800 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-all text-sm shadow-sm"
                             >
-                                <RotateCcw className="size-3.5" />
-                                Clear
-                            </button>
+                                <BookmarkCheck className="size-4" />
+                                View Saved Quotations
+                            </Link>
                         )}
+
+                        <button
+                            type="button"
+                            onClick={clearForm}
+                            disabled={isFormEmpty}
+                            className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-200 dark:disabled:hover:bg-slate-700"
+                            title={isFormEmpty ? "Form is already empty" : "Reset builder"}
+                        >
+                            <RotateCcw className="size-3.5" />
+                            Clear
+                        </button>
                     </div>
                 </div>
 
@@ -361,6 +397,9 @@ function QuotationContent() {
                                     <div key={item.itemId} className="flex items-center justify-between gap-2">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{item.name}</p>
+                                            {item.description && (
+                                                <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">{item.description.replace(/\n/g, " • ")}</p>
+                                            )}
                                             <p className="text-xs text-slate-500 dark:text-slate-400">₹{item.price.toLocaleString("en-IN")} x {item.quantity}</p>
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0">
@@ -459,7 +498,7 @@ function QuotationContent() {
                             <div className="pt-2 grid grid-cols-1 gap-2">
                                 <button
                                     onClick={handleSaveQuotation}
-                                    disabled={isSaving || selectedItems.length === 0 || !buyer.name.trim()}
+                                    disabled={isSaving || isGenerating || selectedItems.length === 0 || !buyer.name.trim()}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-bold transition-colors disabled:opacity-50 text-sm shadow-sm"
                                 >
                                     {isSaving ? <Loader2 className="animate-spin size-4" /> : <Save className="size-4" />}
@@ -468,11 +507,11 @@ function QuotationContent() {
 
                                 <button
                                     onClick={handleGenerateQuotation}
-                                    disabled={isGenerating || selectedItems.length === 0 || !buyer.name.trim()}
+                                    disabled={isGenerating || isSaving || selectedItems.length === 0 || !buyer.name.trim()}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-xl font-bold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 text-sm shadow-sm"
                                 >
                                     {isGenerating ? <Loader2 className="animate-spin size-4" /> : <Download className="size-4 text-teal-400" />}
-                                    Generate & Download PDF
+                                    {isGenerating ? "Saving & Downloading..." : "Save & Download PDF"}
                                 </button>
                             </div>
                         </div>
