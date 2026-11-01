@@ -152,4 +152,29 @@ export const uploadQuotationLogoMiddleware = (req: any, res: any, next: any) => 
     });
 };
 
+const contactPhotoStorage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'contacts',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+    } as any
+});
+
+export const uploadContactPhoto = multer({
+    storage: contactPhotoStorage,
+    fileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+export const uploadContactPhotoMiddleware = (req: any, res: any, next: any) => {
+    uploadContactPhoto.single('photo')(req, res, (err: any) => {
+        if (err) {
+            console.error('[UPLOAD ERROR] Contact photo upload error:', err);
+            return res.status(400).json({ msg: err.message || 'Failed to upload contact photo' });
+        }
+        next();
+    });
+};
+
+
 

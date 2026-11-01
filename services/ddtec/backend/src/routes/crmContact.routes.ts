@@ -8,9 +8,12 @@ import {
     updateContact,
     deleteContact,
     bulkDeleteContacts,
-    importContacts
+    importContacts,
+    uploadContactPhotoController,
+    deleteContactPhotoController
 } from '../controllers/crmContact.controller';
 import { auth, checkPermission } from '../middleware/auth.middleware';
+import { uploadContactPhotoMiddleware } from '../middleware/upload.middleware';
 
 const router = Router();
 
@@ -23,6 +26,14 @@ router.get('/meta', auth, adminOnly, getContactMeta);
 // @route   GET /api/contacts/emails
 // @desc    Deduped emails for contacts matching company/productInterest (used by Schedule Mail)
 router.get('/emails', auth, adminOnly, getContactEmailsForFilter);
+
+// @route   POST /api/contacts/upload-photo
+// @desc    Upload contact photo to Cloudinary
+router.post('/upload-photo', auth, adminOnly, uploadContactPhotoMiddleware, uploadContactPhotoController);
+
+// @route   POST /api/contacts/delete-photo
+// @desc    Delete contact photo from Cloudinary
+router.post('/delete-photo', auth, adminOnly, deleteContactPhotoController);
 
 // @route   POST /api/contacts/import
 // @desc    Bulk import contacts from VCF or CSV content
