@@ -20,7 +20,7 @@ export interface ILead extends Document {
 }
 
 const LeadSchema: Schema = new Schema({
-    name: { type: String, required: true, trim: true, maxlength: 100 },
+    name: { type: String, required: true, trim: true, minlength: 2, maxlength: 100 },
     company: { type: String, trim: true, maxlength: 100 },
     email: {
         type: String,

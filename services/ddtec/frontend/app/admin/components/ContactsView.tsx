@@ -268,19 +268,19 @@ export default function ContactsView() {
     const handleOpenEditModal = (contact: Contact) => {
         setEditingContact(contact);
         setFormData({
-            firstName: contact.firstName,
+            firstName: contact.firstName || '',
             lastName: contact.lastName || '',
             company: contact.company || '',
             jobTitle: contact.jobTitle || '',
-            emails: contact.emails.length > 0 ? contact.emails : [emptyEmail()],
-            phones: contact.phones.length > 0 ? contact.phones : [emptyPhone()],
+            emails: contact.emails && contact.emails.length > 0 ? contact.emails.map(e => ({ ...e })) : [emptyEmail()],
+            phones: contact.phones && contact.phones.length > 0 ? contact.phones.map(p => ({ ...p })) : [emptyPhone()],
             street: contact.address?.street || '',
             city: contact.address?.city || '',
             state: contact.address?.state || '',
             postalCode: contact.address?.postalCode || '',
             country: contact.address?.country || '',
-            productInterest: contact.productInterest.join(', '),
-            tags: contact.tags.join(', '),
+            productInterest: Array.isArray(contact.productInterest) ? contact.productInterest.join(', ') : '',
+            tags: Array.isArray(contact.tags) ? contact.tags.join(', ') : '',
             birthday: contact.birthday ? contact.birthday.slice(0, 10) : '',
             photo: contact.photo || '',
             note: contact.note || ''

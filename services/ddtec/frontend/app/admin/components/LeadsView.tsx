@@ -26,6 +26,7 @@ import {
     Users,
     ChevronRight,
     UserCheck,
+    Mail,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { formatDate } from '@/lib/utils';
@@ -91,12 +92,28 @@ const SOURCE_OPTIONS = ['Website', 'Referral', 'Cold Call', 'Social Media', 'Ema
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^[+]?[\d\s()-]{7,20}$/;
+const MIN_NAME_LEN = 2;
 const MAX_NAME_LEN = 100;
+const MIN_COMPANY_LEN = 2;
 const MAX_COMPANY_LEN = 100;
+const MIN_PHONE_LEN = 7;
+const MAX_PHONE_LEN = 20;
+const MIN_EMAIL_LEN = 5;
+const MAX_EMAIL_LEN = 254;
+const MIN_LOCATION_LEN = 2;
 const MAX_LOCATION_LEN = 150;
 const MAX_VALUE = 999999999;
 const MAX_NOTE_LEN = 2000;
 const MAX_STAGE_NAME_LEN = 40;
+
+const getTomorrowDateStr = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const y = tomorrow.getFullYear();
+    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const d = String(tomorrow.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
 
 interface LeadFormErrors {
     name?: string;
@@ -367,24 +384,50 @@ export default function LeadsView() {
         const name = formData.name.trim();
         if (!name) {
             errors.name = 'Contact name is required';
+        } else if (name.length < MIN_NAME_LEN) {
+            errors.name = `Contact name must be at least ${MIN_NAME_LEN} characters`;
         } else if (name.length > MAX_NAME_LEN) {
-            errors.name = `Name must be under ${MAX_NAME_LEN} characters`;
+            errors.name = `Contact name cannot exceed ${MAX_NAME_LEN} characters`;
         }
 
-        if (formData.company.trim().length > MAX_COMPANY_LEN) {
-            errors.company = `Company must be under ${MAX_COMPANY_LEN} characters`;
+        const company = formData.company.trim();
+        if (company) {
+            if (company.length < MIN_COMPANY_LEN) {
+                errors.company = `Company name must be at least ${MIN_COMPANY_LEN} characters`;
+            } else if (company.length > MAX_COMPANY_LEN) {
+                errors.company = `Company name cannot exceed ${MAX_COMPANY_LEN} characters`;
+            }
         }
 
-        if (formData.email.trim() && !EMAIL_REGEX.test(formData.email.trim())) {
-            errors.email = 'Enter a valid email address';
+        const phone = formData.phone.trim();
+        if (phone) {
+            if (phone.length < MIN_PHONE_LEN) {
+                errors.phone = `Phone number must be at least ${MIN_PHONE_LEN} characters`;
+            } else if (phone.length > MAX_PHONE_LEN) {
+                errors.phone = `Phone number cannot exceed ${MAX_PHONE_LEN} characters`;
+            } else if (!PHONE_REGEX.test(phone)) {
+                errors.phone = 'Enter a valid phone number (7-20 digits)';
+            }
         }
 
-        if (formData.phone.trim() && !PHONE_REGEX.test(formData.phone.trim())) {
-            errors.phone = 'Enter a valid phone number';
+        const email = formData.email.trim();
+        if (email) {
+            if (email.length < MIN_EMAIL_LEN) {
+                errors.email = `Email address must be at least ${MIN_EMAIL_LEN} characters`;
+            } else if (email.length > MAX_EMAIL_LEN) {
+                errors.email = `Email address cannot exceed ${MAX_EMAIL_LEN} characters`;
+            } else if (!EMAIL_REGEX.test(email)) {
+                errors.email = 'Enter a valid email address';
+            }
         }
 
-        if (formData.location.trim().length > MAX_LOCATION_LEN) {
-            errors.location = `Location must be under ${MAX_LOCATION_LEN} characters`;
+        const location = formData.location.trim();
+        if (location) {
+            if (location.length < MIN_LOCATION_LEN) {
+                errors.location = `Location must be at least ${MIN_LOCATION_LEN} characters`;
+            } else if (location.length > MAX_LOCATION_LEN) {
+                errors.location = `Location cannot exceed ${MAX_LOCATION_LEN} characters`;
+            }
         }
 
         if (formData.value !== '') {
@@ -392,7 +435,7 @@ export default function LeadsView() {
             if (Number.isNaN(numericValue) || numericValue < 0) {
                 errors.value = 'Value must be a positive number';
             } else if (numericValue > MAX_VALUE) {
-                errors.value = 'Value is too large';
+                errors.value = `Value cannot exceed ₹${MAX_VALUE.toLocaleString('en-IN')}`;
             }
         }
 
@@ -400,8 +443,30 @@ export default function LeadsView() {
             errors.stage = 'Select a stage';
         }
 
-        if (formData.note.length > MAX_NOTE_LEN) {
-            errors.note = `Notes must be under ${MAX_NOTE_LEN} characters`;
+        if (formData.followUpDate) {
+            const [y, m, d] = formData.followUpDate.split('-').map(Number);
+            const selectedDate = new Date(y, m - 1, d);
+            selectedDate.setHours(0, 0, 0, 0);
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const originalFollowUp = editingLead?.followUpDate
+                ? (() => {
+                    const dt = new Date(editingLead.followUpDate);
+                    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+                })()
+                : null;
+
+            const isNewDate = !editingLead || formData.followUpDate !== originalFollowUp;
+
+            if (isNewDate && selectedDate <= today) {
+                errors.followUpDate = 'Follow-up date must be a future date';
+            }
+        }
+
+        if (formData.note && formData.note.length > MAX_NOTE_LEN) {
+            errors.note = `Notes cannot exceed ${MAX_NOTE_LEN} characters`;
         }
 
         setFormErrors(errors);
@@ -514,24 +579,96 @@ export default function LeadsView() {
     };
 
     const [convertingId, setConvertingId] = useState<string | null>(null);
+    const [convertModalLead, setConvertModalLead] = useState<Lead | null>(null);
+    const [convertEmail, setConvertEmail] = useState('');
+    const [convertPhone, setConvertPhone] = useState('');
+    const [convertErrors, setConvertErrors] = useState<{ email?: string; phone?: string }>({});
+    const [isSubmittingConvert, setIsSubmittingConvert] = useState(false);
 
     const handleConvertLead = async (lead: Lead) => {
-        const ok = await confirm({
-            title: 'Convert to Client',
-            message: `Convert "${lead.name}" into a Client and add them to Contacts?`,
-            confirmLabel: 'Convert',
-        });
-        if (!ok) return;
-        setConvertingId(lead._id);
+        const hasValidEmail = Boolean(lead.email && EMAIL_REGEX.test(lead.email.trim()));
+        const hasValidPhone = Boolean(lead.phone && PHONE_REGEX.test(lead.phone.trim()));
+
+        if (hasValidEmail && hasValidPhone) {
+            const ok = await confirm({
+                title: 'Convert to Client',
+                message: `Convert "${lead.name}" into a Client and add them to Contacts?`,
+                confirmLabel: 'Convert',
+            });
+            if (!ok) return;
+            setConvertingId(lead._id);
+            try {
+                const { data } = await api.post(`leads/${lead._id}/convert`);
+                setLeads(prev => prev.map(l => (l._id === lead._id ? {
+                    ...l,
+                    convertedClient: data.client?._id,
+                    convertedContact: data.contact?._id
+                } : l)));
+                showToast('Lead converted to Client & Contact', 'success');
+            } catch (err: any) {
+                console.error('Error converting lead:', err);
+                showToast(err?.response?.data?.msg || 'Failed to convert lead', 'error');
+            } finally {
+                setConvertingId(null);
+            }
+        } else {
+            setConvertModalLead(lead);
+            setConvertEmail(lead.email || '');
+            setConvertPhone(lead.phone || '');
+            setConvertErrors({});
+        }
+    };
+
+    const handleConvertModalSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!convertModalLead) return;
+
+        const errors: { email?: string; phone?: string } = {};
+        const trimmedEmail = convertEmail.trim();
+        const trimmedPhone = convertPhone.trim();
+
+        if (!trimmedEmail) {
+            errors.email = 'Email address is required to create a contact';
+        } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+            errors.email = 'Enter a valid email address';
+        } else if (trimmedEmail.length > 254) {
+            errors.email = 'Email cannot exceed 254 characters';
+        }
+
+        if (!trimmedPhone) {
+            errors.phone = 'Phone number is required to create a contact';
+        } else if (!PHONE_REGEX.test(trimmedPhone)) {
+            errors.phone = 'Enter a valid phone number (7-20 digits)';
+        } else if (trimmedPhone.length > 20) {
+            errors.phone = 'Phone cannot exceed 20 characters';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setConvertErrors(errors);
+            return;
+        }
+
+        setIsSubmittingConvert(true);
         try {
-            const { data } = await api.post(`leads/${lead._id}/convert`);
-            setLeads(prev => prev.map(l => (l._id === lead._id ? { ...l, convertedClient: data.client?._id, convertedContact: data.contact?._id } : l)));
+            const { data } = await api.post(`leads/${convertModalLead._id}/convert`, {
+                email: trimmedEmail,
+                phone: trimmedPhone
+            });
+            setLeads(prev => prev.map(l => (l._id === convertModalLead._id ? {
+                ...l,
+                email: trimmedEmail,
+                phone: trimmedPhone,
+                convertedClient: data.client?._id,
+                convertedContact: data.contact?._id
+            } : l)));
             showToast('Lead converted to Client & Contact', 'success');
+            setConvertModalLead(null);
+            setConvertErrors({});
         } catch (err: any) {
             console.error('Error converting lead:', err);
             showToast(err?.response?.data?.msg || 'Failed to convert lead', 'error');
         } finally {
-            setConvertingId(null);
+            setIsSubmittingConvert(false);
         }
     };
 
@@ -1061,12 +1198,20 @@ export default function LeadsView() {
                         </div>
                         <form onSubmit={handleSubmitLead} className="p-4 space-y-3 overflow-y-auto">
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Contact Name *</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">
+                                        Contact Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <span className={`text-[10px] ${formData.name.trim().length >= MAX_NAME_LEN ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                        {formData.name.length}/{MAX_NAME_LEN}
+                                    </span>
+                                </div>
                                 <input
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setFormErrors({ ...formErrors, name: undefined }); }}
                                     placeholder="e.g., Jane Doe"
+                                    minLength={MIN_NAME_LEN}
                                     maxLength={MAX_NAME_LEN}
                                     className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${formErrors.name ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                 />
@@ -1075,7 +1220,14 @@ export default function LeadsView() {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Company</label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">Company</label>
+                                        {formData.company.length > 0 && (
+                                            <span className={`text-[10px] ${formData.company.length >= MAX_COMPANY_LEN ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                                {formData.company.length}/{MAX_COMPANY_LEN}
+                                            </span>
+                                        )}
+                                    </div>
                                     <CompanySelect
                                         value={formData.company}
                                         onChange={(companyName, company) => {
@@ -1092,12 +1244,21 @@ export default function LeadsView() {
                                     {formErrors.company && <p className="text-xs text-red-500 mt-1">{formErrors.company}</p>}
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Phone</label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">Phone</label>
+                                        {formData.phone.length > 0 && (
+                                            <span className={`text-[10px] ${formData.phone.length >= MAX_PHONE_LEN ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                                {formData.phone.length}/{MAX_PHONE_LEN}
+                                            </span>
+                                        )}
+                                    </div>
                                     <input
-                                        type="text"
+                                        type="tel"
                                         value={formData.phone}
                                         onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setFormErrors({ ...formErrors, phone: undefined }); }}
-                                        placeholder="Phone"
+                                        placeholder="e.g. +91 98765 43210"
+                                        minLength={MIN_PHONE_LEN}
+                                        maxLength={MAX_PHONE_LEN}
                                         className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${formErrors.phone ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                     />
                                     {formErrors.phone && <p className="text-xs text-red-500 mt-1">{formErrors.phone}</p>}
@@ -1106,18 +1267,33 @@ export default function LeadsView() {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Email</label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">Email</label>
+                                        {formData.email.length > 0 && (
+                                            <span className={`text-[10px] ${formData.email.length >= MAX_EMAIL_LEN ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                                {formData.email.length}/{MAX_EMAIL_LEN}
+                                            </span>
+                                        )}
+                                    </div>
                                     <input
                                         type="email"
                                         value={formData.email}
                                         onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setFormErrors({ ...formErrors, email: undefined }); }}
                                         placeholder="email@example.com"
+                                        maxLength={MAX_EMAIL_LEN}
                                         className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${formErrors.email ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                     />
                                     {formErrors.email && <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>}
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Location</label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">Location</label>
+                                        {formData.location.length > 0 && (
+                                            <span className={`text-[10px] ${formData.location.length >= MAX_LOCATION_LEN ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                                {formData.location.length}/{MAX_LOCATION_LEN}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="flex gap-1.5">
                                         <input
                                             type="text"
@@ -1156,10 +1332,11 @@ export default function LeadsView() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Estimated Value</label>
+                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Estimated Value (₹)</label>
                                     <input
                                         type="number"
                                         min={0}
+                                        max={MAX_VALUE}
                                         step="0.01"
                                         value={formData.value}
                                         onChange={(e) => { setFormData({ ...formData, value: e.target.value }); setFormErrors({ ...formErrors, value: undefined }); }}
@@ -1172,7 +1349,9 @@ export default function LeadsView() {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Stage</label>
+                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                        Stage <span className="text-red-500">*</span>
+                                    </label>
                                     <select
                                         value={formData.stage}
                                         onChange={(e) => { setFormData({ ...formData, stage: e.target.value }); setFormErrors({ ...formErrors, stage: undefined }); }}
@@ -1232,18 +1411,30 @@ export default function LeadsView() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Follow-up Date</label>
+                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    Follow-up Date
+                                </label>
                                 <input
                                     type="date"
+                                    min={!editingLead ? getTomorrowDateStr() : undefined}
                                     value={formData.followUpDate}
                                     onChange={(e) => { setFormData({ ...formData, followUpDate: e.target.value }); setFormErrors({ ...formErrors, followUpDate: undefined }); }}
                                     className={`w-full px-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${formErrors.followUpDate ? 'border-red-400 focus:ring-red-400' : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'}`}
                                 />
-                                {formErrors.followUpDate && <p className="text-xs text-red-500 mt-1">{formErrors.followUpDate}</p>}
+                                {formErrors.followUpDate ? (
+                                    <p className="text-xs text-red-500 mt-1">{formErrors.followUpDate}</p>
+                                ) : (
+                                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Must be a future date</p>
+                                )}
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Notes</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">Notes</label>
+                                    <span className={`text-[11px] ${formData.note.length >= MAX_NOTE_LEN ? 'text-red-500 font-medium' : 'text-slate-400'}`}>
+                                        {formData.note.length}/{MAX_NOTE_LEN}
+                                    </span>
+                                </div>
                                 <textarea
                                     value={formData.note}
                                     onChange={(e) => { setFormData({ ...formData, note: e.target.value }); setFormErrors({ ...formErrors, note: undefined }); }}
@@ -1403,6 +1594,132 @@ export default function LeadsView() {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* Complete Contact Details to Convert Modal */}
+            {convertModalLead && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                    onClick={() => { if (!isSubmittingConvert) { setConvertModalLead(null); setConvertErrors({}); } }}
+                >
+                    <div
+                        className="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-xl flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+                            <div>
+                                <h3 className="font-bold text-slate-900 dark:text-white">Convert to Client & Contact</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Contacts require both an email and a phone number.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={isSubmittingConvert}
+                                onClick={() => { setConvertModalLead(null); setConvertErrors({}); }}
+                                className="text-slate-400 hover:text-red-500 disabled:opacity-50"
+                            >
+                                <X className="size-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleConvertModalSubmit} className="p-4 space-y-4">
+                            {/* Lead Summary Info */}
+                            <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-1 text-xs">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500 dark:text-slate-400">Lead Name:</span>
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">{convertModalLead.name}</span>
+                                </div>
+                                {convertModalLead.company && (
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500 dark:text-slate-400">Company:</span>
+                                        <span className="font-medium text-slate-700 dark:text-slate-300">{convertModalLead.company}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Email Field */}
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    Email Address <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <Mail className="size-4" />
+                                    </div>
+                                    <input
+                                        type="email"
+                                        value={convertEmail}
+                                        onChange={(e) => {
+                                            setConvertEmail(e.target.value);
+                                            setConvertErrors(prev => ({ ...prev, email: undefined }));
+                                        }}
+                                        placeholder="e.g. contact@example.com"
+                                        maxLength={254}
+                                        disabled={isSubmittingConvert}
+                                        className={`w-full pl-9 pr-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${
+                                            convertErrors.email
+                                                ? 'border-red-400 focus:ring-red-400'
+                                                : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'
+                                        }`}
+                                    />
+                                </div>
+                                {convertErrors.email && (
+                                    <p className="text-xs text-red-500 mt-1">{convertErrors.email}</p>
+                                )}
+                            </div>
+
+                            {/* Phone Field */}
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                                    Phone Number <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <Phone className="size-4" />
+                                    </div>
+                                    <input
+                                        type="tel"
+                                        value={convertPhone}
+                                        onChange={(e) => {
+                                            setConvertPhone(e.target.value);
+                                            setConvertErrors(prev => ({ ...prev, phone: undefined }));
+                                        }}
+                                        placeholder="e.g. +91 98765 43210"
+                                        maxLength={20}
+                                        disabled={isSubmittingConvert}
+                                        className={`w-full pl-9 pr-3 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${
+                                            convertErrors.phone
+                                                ? 'border-red-400 focus:ring-red-400'
+                                                : 'border-slate-200 dark:border-slate-600 focus:ring-teal-500'
+                                        }`}
+                                    />
+                                </div>
+                                {convertErrors.phone && (
+                                    <p className="text-xs text-red-500 mt-1">{convertErrors.phone}</p>
+                                )}
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={isSubmittingConvert}
+                                    onClick={() => { setConvertModalLead(null); setConvertErrors({}); }}
+                                    className="px-4 py-2 text-sm font-semibold rounded-lg text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmittingConvert}
+                                    className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg disabled:opacity-60"
+                                >
+                                    {isSubmittingConvert && <Loader2 className="size-4 animate-spin" />}
+                                    Convert to Client
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

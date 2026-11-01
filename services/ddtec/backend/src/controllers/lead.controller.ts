@@ -83,10 +83,100 @@ export const getLeadStats = async (req: any, res: Response): Promise<void> => {
     }
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[+]?[\d\s()-]{7,20}$/;
+
 // @desc    Create a lead
 // @route   POST /api/leads
 export const createLead = async (req: any, res: Response): Promise<void> => {
     try {
+        const { name, company, email, phone, location, followUpDate, note } = req.body;
+
+        const trimmedName = typeof name === 'string' ? name.trim() : '';
+        if (!trimmedName) {
+            res.status(400).json({ msg: 'Contact name is required' });
+            return;
+        }
+        if (trimmedName.length < 2) {
+            res.status(400).json({ msg: 'Contact name must be at least 2 characters' });
+            return;
+        }
+        if (trimmedName.length > 100) {
+            res.status(400).json({ msg: 'Contact name cannot exceed 100 characters' });
+            return;
+        }
+
+        if (company && typeof company === 'string') {
+            const trimmedCompany = company.trim();
+            if (trimmedCompany && trimmedCompany.length < 2) {
+                res.status(400).json({ msg: 'Company name must be at least 2 characters' });
+                return;
+            }
+            if (trimmedCompany.length > 100) {
+                res.status(400).json({ msg: 'Company name cannot exceed 100 characters' });
+                return;
+            }
+        }
+
+        if (email && typeof email === 'string') {
+            const trimmedEmail = email.trim();
+            if (trimmedEmail && trimmedEmail.length < 5) {
+                res.status(400).json({ msg: 'Email address must be at least 5 characters' });
+                return;
+            }
+            if (trimmedEmail.length > 254) {
+                res.status(400).json({ msg: 'Email address cannot exceed 254 characters' });
+                return;
+            }
+            if (trimmedEmail && !EMAIL_REGEX.test(trimmedEmail)) {
+                res.status(400).json({ msg: 'Enter a valid email address' });
+                return;
+            }
+        }
+
+        if (phone && typeof phone === 'string') {
+            const trimmedPhone = phone.trim();
+            if (trimmedPhone && trimmedPhone.length < 7) {
+                res.status(400).json({ msg: 'Phone number must be at least 7 characters' });
+                return;
+            }
+            if (trimmedPhone.length > 20) {
+                res.status(400).json({ msg: 'Phone number cannot exceed 20 characters' });
+                return;
+            }
+            if (trimmedPhone && !PHONE_REGEX.test(trimmedPhone)) {
+                res.status(400).json({ msg: 'Enter a valid phone number (7-20 digits)' });
+                return;
+            }
+        }
+
+        if (location && typeof location === 'string') {
+            const trimmedLocation = location.trim();
+            if (trimmedLocation && trimmedLocation.length < 2) {
+                res.status(400).json({ msg: 'Location must be at least 2 characters' });
+                return;
+            }
+            if (trimmedLocation.length > 150) {
+                res.status(400).json({ msg: 'Location cannot exceed 150 characters' });
+                return;
+            }
+        }
+
+        if (followUpDate) {
+            const followUp = new Date(followUpDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (followUp <= today) {
+                res.status(400).json({ msg: 'Follow-up date must be a future date' });
+                return;
+            }
+        }
+
+        if (note && typeof note === 'string' && note.length > 2000) {
+            res.status(400).json({ msg: 'Notes cannot exceed 2000 characters' });
+            return;
+        }
+
         let stageId = req.body.stage;
         if (!stageId) {
             let firstStage = await LeadStage.findOne({}).sort({ order: 1 });
@@ -108,6 +198,102 @@ export const createLead = async (req: any, res: Response): Promise<void> => {
 // @route   PUT /api/leads/:id
 export const updateLead = async (req: Request, res: Response): Promise<void> => {
     try {
+        const { name, company, email, phone, location, followUpDate, note } = req.body;
+
+        if (name !== undefined) {
+            const trimmedName = typeof name === 'string' ? name.trim() : '';
+            if (!trimmedName) {
+                res.status(400).json({ msg: 'Contact name is required' });
+                return;
+            }
+            if (trimmedName.length < 2) {
+                res.status(400).json({ msg: 'Contact name must be at least 2 characters' });
+                return;
+            }
+            if (trimmedName.length > 100) {
+                res.status(400).json({ msg: 'Contact name cannot exceed 100 characters' });
+                return;
+            }
+        }
+
+        if (company && typeof company === 'string') {
+            const trimmedCompany = company.trim();
+            if (trimmedCompany && trimmedCompany.length < 2) {
+                res.status(400).json({ msg: 'Company name must be at least 2 characters' });
+                return;
+            }
+            if (trimmedCompany.length > 100) {
+                res.status(400).json({ msg: 'Company name cannot exceed 100 characters' });
+                return;
+            }
+        }
+
+        if (email && typeof email === 'string') {
+            const trimmedEmail = email.trim();
+            if (trimmedEmail && trimmedEmail.length < 5) {
+                res.status(400).json({ msg: 'Email address must be at least 5 characters' });
+                return;
+            }
+            if (trimmedEmail.length > 254) {
+                res.status(400).json({ msg: 'Email address cannot exceed 254 characters' });
+                return;
+            }
+            if (trimmedEmail && !EMAIL_REGEX.test(trimmedEmail)) {
+                res.status(400).json({ msg: 'Enter a valid email address' });
+                return;
+            }
+        }
+
+        if (phone && typeof phone === 'string') {
+            const trimmedPhone = phone.trim();
+            if (trimmedPhone && trimmedPhone.length < 7) {
+                res.status(400).json({ msg: 'Phone number must be at least 7 characters' });
+                return;
+            }
+            if (trimmedPhone.length > 20) {
+                res.status(400).json({ msg: 'Phone number cannot exceed 20 characters' });
+                return;
+            }
+            if (trimmedPhone && !PHONE_REGEX.test(trimmedPhone)) {
+                res.status(400).json({ msg: 'Enter a valid phone number (7-20 digits)' });
+                return;
+            }
+        }
+
+        if (location && typeof location === 'string') {
+            const trimmedLocation = location.trim();
+            if (trimmedLocation && trimmedLocation.length < 2) {
+                res.status(400).json({ msg: 'Location must be at least 2 characters' });
+                return;
+            }
+            if (trimmedLocation.length > 150) {
+                res.status(400).json({ msg: 'Location cannot exceed 150 characters' });
+                return;
+            }
+        }
+
+        if (followUpDate) {
+            const followUp = new Date(followUpDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const existing = await Lead.findById(req.params.id);
+            if (!existing) {
+                res.status(404).json({ msg: 'Lead not found' });
+                return;
+            }
+            const existingDate = existing.followUpDate ? new Date(existing.followUpDate).getTime() : null;
+            if (followUp.getTime() !== existingDate && followUp <= today) {
+                res.status(400).json({ msg: 'Follow-up date must be a future date' });
+                return;
+            }
+        }
+
+        if (note && typeof note === 'string' && note.length > 2000) {
+            res.status(400).json({ msg: 'Notes cannot exceed 2000 characters' });
+            return;
+        }
+
         const lead = await Lead.findByIdAndUpdate(req.params.id, sanitizeLeadBody(req.body), { new: true, runValidators: true });
         if (!lead) {
             res.status(404).json({ msg: 'Lead not found' });
@@ -140,6 +326,38 @@ export const convertLeadToClient = async (req: any, res: Response): Promise<void
             return;
         }
 
+        const { email, phone } = req.body || {};
+        if (typeof email === 'string' && email.trim()) {
+            lead.email = email.trim();
+        }
+        if (typeof phone === 'string' && phone.trim()) {
+            lead.phone = phone.trim();
+        }
+
+        const finalEmail = (lead.email || '').trim();
+        const finalPhone = (lead.phone || '').trim();
+
+        if (!finalEmail) {
+            res.status(400).json({ msg: 'Email is required to convert a lead into a contact' });
+            return;
+        }
+        if (!EMAIL_REGEX.test(finalEmail)) {
+            res.status(400).json({ msg: 'Please provide a valid email address' });
+            return;
+        }
+
+        if (!finalPhone) {
+            res.status(400).json({ msg: 'Phone number is required to convert a lead into a contact' });
+            return;
+        }
+        if (!PHONE_REGEX.test(finalPhone)) {
+            res.status(400).json({ msg: 'Please provide a valid phone number (7-20 digits)' });
+            return;
+        }
+
+        lead.email = finalEmail;
+        lead.phone = finalPhone;
+
         if (!client) {
             client = new Client({
                 name: lead.name,
@@ -150,6 +368,11 @@ export const convertLeadToClient = async (req: any, res: Response): Promise<void
                 createdBy: req.user?._id
             });
             await client.save();
+        } else {
+            let clientUpdated = false;
+            if (!client.email && lead.email) { client.email = lead.email; clientUpdated = true; }
+            if (!client.phone && lead.phone) { client.phone = lead.phone; clientUpdated = true; }
+            if (clientUpdated) await client.save();
         }
 
         if (!contact) {
@@ -157,14 +380,25 @@ export const convertLeadToClient = async (req: any, res: Response): Promise<void
             contact = new CrmContact({
                 firstName: nameParts[0],
                 lastName: nameParts.slice(1).join(' ') || '-',
-                emails: lead.email ? [{ label: 'work', value: lead.email }] : [],
-                phones: lead.phone ? [{ label: 'mobile', value: lead.phone }] : [],
+                emails: [{ label: 'work', value: lead.email }],
+                phones: [{ label: 'mobile', value: lead.phone }],
                 company: lead.company,
                 note: lead.note,
                 source: 'manual',
                 createdBy: req.user?._id
             });
             await contact.save();
+        } else {
+            let contactUpdated = false;
+            if ((!contact.emails || contact.emails.length === 0) && lead.email) {
+                contact.emails = [{ label: 'work', value: lead.email }];
+                contactUpdated = true;
+            }
+            if ((!contact.phones || contact.phones.length === 0) && lead.phone) {
+                contact.phones = [{ label: 'mobile', value: lead.phone }];
+                contactUpdated = true;
+            }
+            if (contactUpdated) await contact.save();
         }
 
         lead.convertedClient = client._id as any;
