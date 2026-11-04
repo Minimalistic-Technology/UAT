@@ -87,7 +87,6 @@ export default function CartPage() {
 
     const [couponCode, setCouponCode] = useState("");
     const [couponLoading, setCouponLoading] = useState(false);
-    const [couponMessage, setCouponMessage] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' });
     const [availableCoupons, setAvailableCoupons] = useState<ActiveCoupon[]>([]);
     const [showCouponsDrawer, setShowCouponsDrawer] = useState(false);
     const [isClearing, setIsClearing] = useState(false);
@@ -171,14 +170,9 @@ export default function CartPage() {
         if (!targetCode) return;
 
         setCouponLoading(true);
-        setCouponMessage({ type: '', text: '' });
 
         try {
             const result = await applyCoupon(targetCode);
-            setCouponMessage({
-                type: result.success ? 'success' : 'error',
-                text: result.message
-            });
 
             if (result.success) {
                 setCouponCode("");
@@ -187,7 +181,7 @@ export default function CartPage() {
                 showToast?.(result.message || "Failed to apply coupon", "error");
             }
         } catch {
-            setCouponMessage({ type: 'error', text: "Error applying coupon. Please try again." });
+            showToast?.("Error applying coupon. Please try again.", "error");
         } finally {
             setCouponLoading(false);
         }
@@ -677,12 +671,6 @@ export default function CartPage() {
                                                 {couponLoading ? "..." : "Apply"}
                                             </button>
                                         </div>
-
-                                        {couponMessage.text && (
-                                            <p className={`text-xs font-medium ${couponMessage.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
-                                                {couponMessage.text}
-                                            </p>
-                                        )}
 
                                         {/* Available Coupons Drawer Toggle */}
                                         {availableCoupons.length > 0 && (

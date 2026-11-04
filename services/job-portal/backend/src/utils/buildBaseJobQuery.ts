@@ -1,3 +1,5 @@
+const VALID_EMPLOYMENT_TYPES = ["FULL_TIME", "PART_TIME", "CONTRACT", "FREELANCE"];
+
 export const buildBaseJobQuery = (
   queryParams: Record<string, any>,
   isJob: boolean = true
@@ -13,7 +15,12 @@ export const buildBaseJobQuery = (
   const typeParam = employmentType || jobType;
   if (typeParam && typeParam !== "all") {
     const typeArray = Array.isArray(typeParam) ? typeParam : typeParam.split(",");
-    query.employmentType = { in: typeArray.map((t: string) => t.toUpperCase().replace(/-/g, "_")) };
+    const normalized = typeArray
+      .map((t: string) => t.toUpperCase().replace(/-/g, "_"))
+      .filter((t: string) => VALID_EMPLOYMENT_TYPES.includes(t));
+    if (normalized.length > 0) {
+      query.employmentType = { in: normalized };
+    }
   }
 
   if (workMode && workMode !== "all") {

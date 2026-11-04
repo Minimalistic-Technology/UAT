@@ -464,7 +464,12 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-    res.clearCookie('token');
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: true,
+        path: '/',
+        sameSite: 'none'
+    });
     res.status(200).json({ msg: 'Logged out successfully' });
 };
 
@@ -608,6 +613,26 @@ export const createUser = async (req: Request, res: Response) => {
     try {
         let { firstName, lastName, email, phone, password, role, customPages, editPages, addPages, deletePages } = req.body;
 
+        const trimmedFirst = typeof firstName === 'string' ? firstName.trim() : '';
+        const trimmedLast = typeof lastName === 'string' ? lastName.trim() : '';
+
+        if (!trimmedFirst) {
+            return res.status(400).json({ msg: 'First name is required and cannot be empty' });
+        }
+        if (!trimmedLast) {
+            return res.status(400).json({ msg: 'Last name is required and cannot be empty' });
+        }
+        if (!email || typeof email !== 'string' || !email.trim()) {
+            return res.status(400).json({ msg: 'Email is required and cannot be empty' });
+        }
+        if (!password || typeof password !== 'string' || password.length < 6) {
+            return res.status(400).json({ msg: 'Password must be at least 6 characters long' });
+        }
+
+        firstName = trimmedFirst;
+        lastName = trimmedLast;
+        email = email.trim().toLowerCase();
+
         // Validate Contact Info
         if (email) {
             const emailValidation = ValidationService.isRealEmail(email);
@@ -684,31 +709,32 @@ export const toggleUserStatus = async (req: Request, res: Response) => {
     }
 };
 
-// Admin: Update User/Company Details
+// Admin: Update User Details (Only name changes allowed; email & password cannot be changed)
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
+        const { firstName, lastName } = req.body;
 
-        if (updates.password) {
-            const salt = await bcrypt.genSalt(10);
-            updates.password = await bcrypt.hash(updates.password, salt);
+        if (firstName === undefined && lastName === undefined) {
+            return res.status(400).json({ msg: 'Only name changes are allowed' });
         }
 
-        // Remove immutable fields if present in updates
-        delete updates._id;
+        const trimmedFirst = typeof firstName === 'string' ? firstName.trim() : '';
+        const trimmedLast = typeof lastName === 'string' ? lastName.trim() : '';
 
-        // Use findByIdAndUpdate to merge updates
-        // We use $set to update fields. 
-        // Note: For nested companyDetails, if we want to update specific fields without overwriting the whole object,
-        // we should flatten the object or use dot notation. 
-        // For simplicity, we assume the frontend sends the structure we want to save, 
-        // or we use $set with the whole object if that's the intent. 
-        // If frontend sends { companyDetails: { ... } }, it will overwrite companyDetails.
-        // If we want partial, we'd need to flatten. 
-        // Let's assume for now the Edit Modal sends the full CompanyDetails object if it edits it.
+        if (firstName !== undefined && !trimmedFirst) {
+            return res.status(400).json({ msg: 'First name cannot be empty' });
+        }
+        if (lastName !== undefined && !trimmedLast) {
+            return res.status(400).json({ msg: 'Last name cannot be empty' });
+        }
 
-        const user = await User.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: false });
+        const updateData: any = {};
+        if (firstName !== undefined) updateData.firstName = trimmedFirst;
+        if (lastName !== undefined) updateData.lastName = trimmedLast;
+        updateData.name = `${trimmedFirst} ${trimmedLast}`.trim();
+
+        const user = await User.findByIdAndUpdate(id, { $set: updateData }, { new: true, runValidators: false });
 
         if (!user) {
             return res.status(404).json({ msg: 'User not found' });

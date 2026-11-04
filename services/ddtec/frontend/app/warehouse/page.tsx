@@ -134,7 +134,7 @@ export default function WarehouseDashboard() {
         try {
             const [ordersRes, productsRes] = await Promise.all([
                 api.get("/orders"),
-                api.get("/products")
+                api.get("/products?includeInactive=true")
             ]);
             setOrders(ordersRes.data);
             setProducts(productsRes.data.products || productsRes.data || []);
@@ -152,7 +152,7 @@ export default function WarehouseDashboard() {
         try {
             const [ordersRes, productsRes] = await Promise.all([
                 api.get("/orders"),
-                api.get("/products")
+                api.get("/products?includeInactive=true")
             ]);
 
             // Compare orders array to detect brand-new orders

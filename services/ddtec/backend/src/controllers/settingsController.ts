@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Settings from '../models/Settings';
 import RouteConfig from '../models/RouteConfig';
 import { getCache, setCache, delCache, CACHE_KEYS, CACHE_TTL } from '../utils/cache';
+import { deleteCloudinaryImages } from '../utils/cloudinaryCleanup';
 
 export const getSettings = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -25,11 +26,11 @@ export const getSettings = async (req: Request, res: Response): Promise<void> =>
 
 export const updateSettings = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { components, onboarding, delivery } = req.body;
+        const { components, onboarding, delivery, quotationLogoUrl } = req.body;
         let settings = await Settings.findOne();
 
         if (!settings) {
-            settings = await Settings.create({ components, onboarding, delivery });
+            settings = await Settings.create({ components, onboarding, delivery, quotationLogoUrl });
         } else {
             if (components) {
                 const currentComponents = (settings.components as any)?.toObject ? (settings.components as any).toObject() : (settings.components || {});
@@ -45,6 +46,9 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
                 const currentDelivery = (settings.delivery as any)?.toObject ? (settings.delivery as any).toObject() : (settings.delivery || {});
                 settings.delivery = { ...currentDelivery, ...delivery };
                 settings.markModified('delivery');
+            }
+            if (quotationLogoUrl !== undefined) {
+                settings.quotationLogoUrl = quotationLogoUrl;
             }
             await settings.save();
         }
@@ -65,3 +69,68 @@ export const updateSettings = async (req: Request, res: Response): Promise<void>
         res.status(500).json({ msg: "Internal Server Error" });
     }
 };
+
+export const uploadQuotationLogo = async (req: Request, res: Response): Promise<void> => {
+    try {
+        if (!req.file) {
+            res.status(400).json({ msg: "No logo file uploaded" });
+            return;
+        }
+
+        const uploadedUrl = (req.file as any).path || (req.file as any).secure_url;
+        if (!uploadedUrl) {
+            res.status(400).json({ msg: "Failed to upload logo image to Cloudinary" });
+            return;
+        }
+
+        let settings = await Settings.findOne();
+        let oldLogoUrl = '';
+
+        if (!settings) {
+            settings = await Settings.create({ quotationLogoUrl: uploadedUrl });
+        } else {
+            oldLogoUrl = settings.quotationLogoUrl || '';
+            settings.quotationLogoUrl = uploadedUrl;
+            await settings.save();
+        }
+
+        // Clean up previous logo from Cloudinary if it was hosted there
+        if (oldLogoUrl && oldLogoUrl !== uploadedUrl) {
+            await deleteCloudinaryImages([oldLogoUrl]);
+        }
+
+        await delCache(CACHE_KEYS.SETTINGS);
+
+        res.status(200).json({
+            success: true,
+            msg: "Quotation logo uploaded to Cloudinary successfully!",
+            quotationLogoUrl: uploadedUrl,
+            settings
+        });
+    } catch (error: any) {
+        console.error("Error uploading quotation logo:", error);
+        res.status(500).json({ msg: error.message || "Internal Server Error" });
+    }
+};
+
+export const removeQuotationLogo = async (req: Request, res: Response): Promise<void> => {
+    try {
+        let settings = await Settings.findOne();
+        if (settings && settings.quotationLogoUrl) {
+            const oldLogoUrl = settings.quotationLogoUrl;
+            settings.quotationLogoUrl = '';
+            await settings.save();
+            await deleteCloudinaryImages([oldLogoUrl]);
+            await delCache(CACHE_KEYS.SETTINGS);
+        }
+        res.status(200).json({
+            success: true,
+            msg: "Quotation logo removed successfully!",
+            quotationLogoUrl: ''
+        });
+    } catch (error: any) {
+        console.error("Error removing quotation logo:", error);
+        res.status(500).json({ msg: error.message || "Internal Server Error" });
+    }
+};
+

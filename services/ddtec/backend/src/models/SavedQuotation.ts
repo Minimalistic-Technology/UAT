@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface ISavedQuotationItem {
     itemId?: string;
     name: string;
+    description?: string;
     price: number;
     unit: string;
     quantity: number;
@@ -45,6 +46,7 @@ const SavedQuotationSchema: Schema = new Schema({
         {
             itemId: { type: String },
             name: { type: String, required: true },
+            description: { type: String, default: '' },
             price: { type: Number, required: true, min: 0 },
             unit: { type: String, default: 'Nos' },
             quantity: { type: Number, required: true, min: 1 },

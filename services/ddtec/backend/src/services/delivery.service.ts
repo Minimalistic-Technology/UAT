@@ -65,6 +65,7 @@ export interface BulkRateCalculationResponse {
     serviceable: boolean;
     location: PincodeLocationInfo;
     totalWeightKg: number;
+    volumetricWeightKg: number;
     billableWeightKg: number;
     quotes: CarrierFreightQuote[];
     defaultQuote: CarrierFreightQuote | null;
@@ -782,14 +783,19 @@ export class DeliveryService {
      */
     public static async calculateCarrierRates(
         pincode: string,
-        weightKg: number = 1.0
+        weightKg: number = 1.0,
+        volumetricWeightKg: number = 0
     ): Promise<BulkRateCalculationResponse> {
         const cleanPin = pincode ? pincode.toString().trim() : '400001';
         const location = this.resolveLocation(cleanPin);
 
-        // Normalize weight (minimum 0.5 kg, round up to 0.5kg increments as standard courier billing)
+        // Courier freight is billed on the greater of actual weight and volumetric weight
+        // (volumetric weight = L x W x H (cm) / 5000, the industry-standard divisor used by
+        // both Blue Dart and DTDC for surface/air cargo), then rounded up to 0.5kg increments.
         const safeWeight = Math.max(0.5, Number(weightKg) || 1.0);
-        const billableWeight = Math.ceil(safeWeight * 2) / 2; // e.g. 1.2kg -> 1.5kg
+        const safeVolumetricWeight = Math.max(0, Number(volumetricWeightKg) || 0);
+        const chargeableWeight = Math.max(safeWeight, safeVolumetricWeight);
+        const billableWeight = Math.ceil(chargeableWeight * 2) / 2; // e.g. 1.2kg -> 1.5kg
 
         // Check serviceability for Blue Dart and DTDC in parallel
         const [blueDartPartner, dtdcPartner] = await Promise.all([
@@ -981,6 +987,7 @@ export class DeliveryService {
             serviceable: serviceableQuotes.length > 0,
             location,
             totalWeightKg: safeWeight,
+            volumetricWeightKg: safeVolumetricWeight,
             billableWeightKg: billableWeight,
             quotes,
             defaultQuote,

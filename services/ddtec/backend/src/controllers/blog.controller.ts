@@ -1,5 +1,19 @@
 import { Request, Response } from 'express';
 import Blog from '../models/Blog';
+import { deleteCloudinaryImages } from '../utils/cloudinaryCleanup';
+
+// Normalizes a form field that may arrive as undefined, a single string, or an array of
+// strings (multipart forms collapse a single repeated field to a plain string).
+const normalizeToStringArray = (value: unknown): string[] => {
+    if (value === undefined || value === null) return [];
+    const arr = Array.isArray(value) ? value : [value];
+    return arr.map(v => String(v).trim()).filter(Boolean);
+};
+
+const extractUploadedImageUrl = (req: Request): string | undefined => {
+    const file = req.file as (Express.Multer.File & { path?: string; secure_url?: string }) | undefined;
+    return file?.path || file?.secure_url;
+};
 
 // Get all blogs
 export const getBlogs = async (req: Request, res: Response) => {
@@ -42,7 +56,9 @@ export const getBlogById = async (req: Request, res: Response) => {
 // Create blog
 export const createBlog = async (req: Request, res: Response) => {
     try {
-        const { title, content, author, image, slug, tags } = req.body;
+        const { title, content, author, slug } = req.body;
+        const tags = normalizeToStringArray(req.body.tags);
+        const image = extractUploadedImageUrl(req) || req.body.image || '';
 
         // Check if slug already exists
         const existingBlog = await Blog.findOne({ slug });
@@ -56,7 +72,7 @@ export const createBlog = async (req: Request, res: Response) => {
             author,
             image,
             slug,
-            tags: tags || []
+            tags
         });
 
         const blog = await newBlog.save();
@@ -70,7 +86,9 @@ export const createBlog = async (req: Request, res: Response) => {
 // Update blog
 export const updateBlog = async (req: Request, res: Response) => {
     try {
-        const { title, content, author, image, slug, tags } = req.body;
+        const { title, content, author, slug } = req.body;
+        const tags = normalizeToStringArray(req.body.tags);
+        const image = extractUploadedImageUrl(req) || req.body.image || '';
 
         let blog = await Blog.findById(req.params.id);
         if (!blog) return res.status(404).json({ msg: 'Blog not found' });
@@ -83,11 +101,18 @@ export const updateBlog = async (req: Request, res: Response) => {
             }
         }
 
+        const previousImage = blog.image;
+
         blog = await Blog.findByIdAndUpdate(
             req.params.id,
             { title, content, author, image, slug, tags },
             { new: true }
         );
+
+        // Clean up the replaced/removed image from Cloudinary now that nothing points at it.
+        if (previousImage && previousImage !== image) {
+            await deleteCloudinaryImages([previousImage]);
+        }
 
         res.json(blog);
     } catch (err: any) {
@@ -106,6 +131,11 @@ export const deleteBlog = async (req: Request, res: Response) => {
         if (!blog) return res.status(404).json({ msg: 'Blog not found' });
 
         await Blog.findByIdAndDelete(req.params.id);
+
+        if (blog.image) {
+            await deleteCloudinaryImages([blog.image]);
+        }
+
         res.json({ msg: 'Blog deleted' });
     } catch (err: any) {
         console.error(err);

@@ -12,6 +12,7 @@ import {
     AlertTriangle
 } from "lucide-react";
 import api from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 
 interface Product {
     _id: string;
@@ -169,7 +170,7 @@ export default function InventoryView({
                                                 )}
                                                 {item.lastInventoryUpdate && (
                                                     <span className="ml-2 font-normal text-slate-400">
-                                                        • Updated: {new Date(item.lastInventoryUpdate).toLocaleDateString()}
+                                                        • Updated: {formatDate(item.lastInventoryUpdate)}
                                                     </span>
                                                 )}
                                             </span>

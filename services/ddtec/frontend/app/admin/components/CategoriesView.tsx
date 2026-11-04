@@ -1,7 +1,11 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Folder, ChevronRight, X, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronRight, X, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
 
 interface Category {
     _id: string;
@@ -12,7 +16,17 @@ interface Category {
     image?: string;
 }
 
+const DESCRIPTION_WORD_LIMIT = 100;
+const DESCRIPTION_CHAR_LIMIT = 750;
+
+const countWords = (text: string) => {
+    const trimmed = text.trim();
+    return trimmed ? trimmed.split(/\s+/).length : 0;
+};
+
 const CategoriesView = () => {
+    const { showToast } = useToast();
+    const confirm = useConfirm();
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,31 +60,34 @@ const CategoriesView = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
+            const payload = { ...formData, parent: formData.parent || null };
             if (editingCategory) {
-                await api.put(`/categories/${editingCategory._id}`, formData);
-                alert("Category updated successfully");
+                await api.put(`/categories/${editingCategory._id}`, payload);
+                showToast("Category updated successfully", "success");
             } else {
-                await api.post('/categories', formData);
-                alert("Category created successfully");
+                await api.post('/categories', payload);
+                showToast("Category created successfully", "success");
             }
             fetchCategories();
             handleCloseModal();
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.msg || "Failed to save category");
+            showToast(error.response?.data?.msg || "Failed to save category", "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this category?")) return;
+        const ok = await confirm({ message: "Are you sure you want to delete this category?", variant: "danger" });
+        if (!ok) return;
         try {
             await api.delete(`/categories/${id}`);
             setCategories(prev => prev.filter(c => c._id !== id));
-        } catch (error) {
+            showToast("Category deleted successfully", "success");
+        } catch (error: any) {
             console.error(error);
-            alert("Failed to delete category");
+            showToast(error.response?.data?.msg || "Failed to delete category", "error");
         }
     };
 
@@ -93,11 +110,7 @@ const CategoriesView = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Folder className="size-6 text-teal-600" />
-                    Categories
-                </h2>
+            <div className="flex justify-end items-center mb-6">
                 <button
                     onClick={() => setIsModalOpen(true)}
                     className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg"
@@ -127,10 +140,10 @@ const CategoriesView = () => {
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => handleEditClick(category)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                                    <button onClick={() => handleEditClick(category)} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors cursor-pointer">
                                         <Edit className="size-4" />
                                     </button>
-                                    <button onClick={() => handleDelete(category._id)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                                    <button onClick={() => handleDelete(category._id)} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer">
                                         <Trash2 className="size-4" />
                                     </button>
                                 </div>
@@ -142,11 +155,15 @@ const CategoriesView = () => {
 
             <AnimatePresence>
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+                        onClick={handleCloseModal}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
@@ -160,7 +177,7 @@ const CategoriesView = () => {
 
                             <form onSubmit={handleSubmit} className="p-6 space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name <span className="text-red-500">*</span></label>
                                     <input
                                         type="text"
                                         required
@@ -192,11 +209,25 @@ const CategoriesView = () => {
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
                                     <textarea
                                         value={formData.description}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value.length > DESCRIPTION_CHAR_LIMIT) {
+                                                return;
+                                            }
+                                            const words = value.trim() ? value.trim().split(/\s+/) : [];
+                                            if (words.length > DESCRIPTION_WORD_LIMIT) {
+                                                return;
+                                            }
+                                            setFormData({ ...formData, description: value });
+                                        }}
+                                        maxLength={DESCRIPTION_CHAR_LIMIT}
                                         className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
                                         rows={3}
                                         placeholder="Category description..."
                                     />
+                                    <p className={`mt-1 text-xs text-right ${countWords(formData.description) >= DESCRIPTION_WORD_LIMIT ? 'text-red-500' : 'text-slate-400'}`}>
+                                        {countWords(formData.description)}/{DESCRIPTION_WORD_LIMIT} words
+                                    </p>
                                 </div>
 
                                 <div className="pt-4 flex justify-end gap-3">
