@@ -58,7 +58,7 @@ function isAuthorized(req: Request): boolean {
 
 // In-memory window for duplicate submission prevention (4 seconds threshold)
 const recentInvoiceSubmissions = new Map<string, number>();
-setInterval(() => {
+const submissionInterval = setInterval(() => {
     const cutoff = Date.now() - 10000;
     for (const [key, timestamp] of recentInvoiceSubmissions.entries()) {
         if (timestamp < cutoff) {
@@ -66,6 +66,9 @@ setInterval(() => {
         }
     }
 }, 60000);
+if (submissionInterval && typeof submissionInterval.unref === 'function') {
+    submissionInterval.unref();
+}
 
 const ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
     'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
@@ -216,7 +219,7 @@ export const createInvoice = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: `Invalid invoice status. Must be one of: ${ALLOWED_INVOICE_STATUSES.join(', ')}` });
         }
         const userRole = (req as any).user?.role;
-        if (status === 'paid' && !['super_admin', 'finance'].includes(userRole)) {
+        if (status === 'paid' && !['super_admin', 'admin', 'finance'].includes(userRole)) {
             return res.status(400).json({ msg: "New invoices cannot be directly created as 'paid'. Use the payment recording workflow." });
         }
 
@@ -503,7 +506,7 @@ export const updateInvoice = async (req: Request, res: Response) => {
         }
 
         const userRole = (req as any).user?.role;
-        const isSuperAdmin = userRole === 'super_admin';
+        const isSuperAdmin = userRole === 'super_admin' || userRole === 'admin';
 
         const {
             status,
@@ -531,8 +534,8 @@ export const updateInvoice = async (req: Request, res: Response) => {
             if (!ALLOWED_INVOICE_STATUSES.includes(status)) {
                 return res.status(400).json({ msg: `Invalid status. Must be one of: ${ALLOWED_INVOICE_STATUSES.join(', ')}` });
             }
-            if (status === 'paid' && invoice.status !== 'paid' && !['super_admin', 'finance'].includes(userRole)) {
-                return res.status(403).json({ msg: 'Only super_admin or finance roles can mark an invoice as paid.' });
+            if (status === 'paid' && invoice.status !== 'paid' && !['super_admin', 'admin', 'finance'].includes(userRole)) {
+                return res.status(403).json({ msg: 'Only super admin, admin, or finance roles can mark an invoice as paid.' });
             }
             invoice.status = status;
         }
@@ -638,8 +641,8 @@ export const deleteInvoice = async (req: Request, res: Response) => {
         }
 
         const userRole = (req as any).user?.role;
-        if (invoice.status === 'paid' && userRole !== 'super_admin') {
-            return res.status(400).json({ msg: 'Cannot delete a paid invoice. Only super_admin may delete paid invoices.' });
+        if (invoice.status === 'paid' && !['super_admin', 'admin'].includes(userRole)) {
+            return res.status(400).json({ msg: 'Cannot delete a paid invoice. Only super admin or admin may delete paid invoices.' });
         }
 
         await invoice.deleteOne();

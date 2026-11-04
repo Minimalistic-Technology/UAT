@@ -379,9 +379,10 @@ function AdminInvoicesContent() {
             setInvoices(res.data?.invoices || []);
             setInvoiceTotal(res.data?.total || 0);
             setInvoiceTotalPages(res.data?.totalPages || 1);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Failed to fetch invoices:", err);
-            showToast("Failed to load invoices", "error");
+            const errorMsg = err.response?.data?.msg || "Failed to load invoices";
+            showToast(errorMsg, "error");
         } finally {
             setLoadingInvoices(false);
         }
@@ -931,8 +932,9 @@ function AdminInvoicesContent() {
                 prev.map((i) => (i._id === invoiceId ? { ...i, status: nextStatus } : i))
             );
             showToast(`Status updated to ${nextStatus}`, "success");
-        } catch (err) {
-            showToast("Failed to update status", "error");
+        } catch (err: any) {
+            const errorMsg = err.response?.data?.msg || err.message || "Failed to update status";
+            showToast(errorMsg, "error");
         }
     };
 
@@ -2082,9 +2084,6 @@ function AdminInvoicesContent() {
                                                     <td className="py-3 px-4">
                                                         <span className="font-bold text-slate-900 dark:text-white">
                                                             {inv.invoiceNumber}
-                                                        </span>
-                                                        <span className="block text-[10px] text-slate-400 font-mono">
-                                                            {inv.publicId}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 px-4">
