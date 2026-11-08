@@ -306,6 +306,33 @@ runTest('Never trusts client calculations: independently recalculates line amoun
     assert.strictEqual(totals.items[0].amount, 500);
     assert.strictEqual(totals.subtotal, 500);
 });
+runTest('Rounds off fractional values correctly (11.25 -> 11, 11.53 -> 12)', () => {
+    const items1 = [{ itemDescription: 'Item A', qty: 1, price: 11.25 }];
+    const totals1 = calculateInvoiceTotals(items1, 0, 'fixed', 0);
+    assert.strictEqual(totals1.items[0].price, 11);
+    assert.strictEqual(totals1.items[0].amount, 11);
+    assert.strictEqual(totals1.totalAmount, 11);
+
+    const items2 = [{ itemDescription: 'Item B', qty: 1, price: 11.53 }];
+    const totals2 = calculateInvoiceTotals(items2, 0, 'fixed', 0);
+    assert.strictEqual(totals2.items[0].price, 12);
+    assert.strictEqual(totals2.items[0].amount, 12);
+    assert.strictEqual(totals2.totalAmount, 12);
+
+    // GST calculation rounding (18% on 63 = 11.34 -> 11)
+    const items3 = [{ itemDescription: 'Item C', qty: 1, price: 63 }];
+    const totals3 = calculateInvoiceTotals(items3, 0, 'fixed', 18);
+    assert.strictEqual(totals3.subtotal, 63);
+    assert.strictEqual(totals3.taxAmount, 11); // 63 * 0.18 = 11.34 -> 11
+    assert.strictEqual(totals3.totalAmount, 74); // 63 + 11 = 74
+
+    // GST calculation rounding (18% on 64 = 11.52 -> 12)
+    const items4 = [{ itemDescription: 'Item D', qty: 1, price: 64 }];
+    const totals4 = calculateInvoiceTotals(items4, 0, 'fixed', 18);
+    assert.strictEqual(totals4.subtotal, 64);
+    assert.strictEqual(totals4.taxAmount, 12); // 64 * 0.18 = 11.52 -> 12
+    assert.strictEqual(totals4.totalAmount, 76); // 64 + 12 = 76
+});
 
 console.log('\n==========================================');
 console.log(`TOTAL TESTS: ${passedTests + failedTests}`);

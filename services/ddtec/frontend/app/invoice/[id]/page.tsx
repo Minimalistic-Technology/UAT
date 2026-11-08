@@ -218,8 +218,8 @@ export default function PublicInvoicePage() {
     // Dynamic UPI Payment Parameters & standard NPCI UPI link
     const upiId = invoice.paymentDetails?.upiId?.trim() || "ddtec@hdfcbank";
     const payeeName = (invoice.paymentDetails?.accountName || invoice.sellerDetails?.name || "DDTEC Solutions").trim();
-    const amountVal = Number(invoice.totalAmount || 0);
-    const amountStr = amountVal.toFixed(2);
+    const amountVal = Math.round(Number(invoice.totalAmount || 0));
+    const amountStr = amountVal.toString();
     const sanitizedUpi = upiId.replace(/\s+/g, "");
     const note = `Invoice ${invoice.invoiceNumber || ""}`.trim();
     const upiUrl = `upi://pay?pa=${sanitizedUpi}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR&tn=${encodeURIComponent(note)}`;
@@ -359,42 +359,51 @@ export default function PublicInvoicePage() {
                 </div>
 
                 {/* 3. Items Table */}
-                <div className="border-b border-dashed border-slate-300 dark:border-slate-700">
-                    {/* Header */}
-                    <div className="grid grid-cols-12 items-center py-3.5 px-6 sm:px-10 text-[11px] text-neutral-400 dark:text-slate-400 font-semibold uppercase tracking-wider bg-slate-50/50 dark:bg-slate-800/20">
-                        <div className="col-span-6 sm:col-span-7">Description</div>
-                        <div className="col-span-2 text-center">QTY</div>
-                        <div className="col-span-2 text-right">Price</div>
-                        <div className="col-span-2 sm:col-span-1 text-right">Amount</div>
-                    </div>
-
-                    {/* Rows */}
-                    <div className="divide-y divide-dashed divide-slate-200 dark:divide-slate-800">
-                        {invoice.items.map((item, idx) => (
-                            <div key={idx} className="grid grid-cols-12 items-center py-3.5 px-6 sm:px-10 text-xs">
-                                <div className="col-span-6 sm:col-span-7 pr-2">
-                                    <p className="font-medium text-slate-800 dark:text-slate-100">{item.itemDescription}</p>
-                                    {item.hsnCode && (
-                                        <p className="text-[10px] font-mono text-slate-400 mt-0.5">HSN: {item.hsnCode}</p>
-                                    )}
-                                </div>
-                                <div className="col-span-2 text-center text-slate-600 dark:text-slate-300">
-                                    <span className="font-semibold">{item.qty}</span>
-                                    {item.unit && (
-                                        <span className="block text-[10px] text-slate-400 font-medium">
-                                            {item.unit}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="col-span-2 text-right font-mono text-slate-600 dark:text-slate-300">
-                                    ₹{item.price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                </div>
-                                <div className="col-span-2 sm:col-span-1 text-right font-mono font-medium text-slate-900 dark:text-white">
-                                    ₹{item.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                <div className="border-b border-dashed border-slate-300 dark:border-slate-700 overflow-x-auto">
+                    <table className="w-full text-xs min-w-[340px] sm:min-w-full">
+                        <thead>
+                            <tr className="border-b border-dashed border-slate-200 dark:border-slate-800 text-[11px] text-neutral-400 dark:text-slate-400 font-semibold uppercase tracking-wider bg-slate-50/50 dark:bg-slate-800/20">
+                                <th className="text-left py-3.5 pl-4 sm:pl-10 pr-3 font-semibold">Description</th>
+                                <th className="text-center py-3.5 px-2.5 font-semibold whitespace-nowrap">Qty</th>
+                                <th className="text-right py-3.5 px-3 font-semibold whitespace-nowrap">Price</th>
+                                <th className="text-right py-3.5 pl-3 pr-4 sm:pr-10 font-semibold whitespace-nowrap">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-dashed divide-slate-200 dark:divide-slate-800">
+                            {invoice.items.map((item, idx) => (
+                                <tr key={idx} className="transition-colors hover:bg-slate-50/40 dark:hover:bg-slate-800/20">
+                                    <td className="py-3.5 pl-4 sm:pl-10 pr-3 align-middle">
+                                        <p className="font-medium text-slate-800 dark:text-slate-100 break-words">{item.itemDescription}</p>
+                                        <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
+                                            {item.hsnCode && (
+                                                <span className="font-mono">HSN: {item.hsnCode}</span>
+                                            )}
+                                            {item.hsnCode && (item.unit || "Piece") && <span>•</span>}
+                                            {(item.unit || "Piece") && (
+                                                <span className="font-medium text-teal-600 dark:text-teal-400">
+                                                    {item.unit || "Piece"}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="py-3.5 px-2.5 text-center align-middle whitespace-nowrap text-slate-600 dark:text-slate-300">
+                                        <span className="font-semibold text-slate-900 dark:text-white text-xs">{item.qty}</span>
+                                        {(item.unit || "Piece") && (
+                                            <span className="block text-[10px] text-slate-400 font-medium">
+                                                {item.unit || "Piece"}
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="py-3.5 px-3 text-right align-middle font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                                        ₹{Math.round(Number(item.price || 0)).toLocaleString("en-IN")}
+                                    </td>
+                                    <td className="py-3.5 pl-3 pr-4 sm:pr-10 text-right align-middle font-mono font-medium text-slate-900 dark:text-white whitespace-nowrap">
+                                        ₹{Math.round(Number(item.amount || 0)).toLocaleString("en-IN")}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
 
                 {/* 4. Notes & Financial Summary Grid */}
@@ -417,7 +426,7 @@ export default function PublicInvoicePage() {
                         <div className="flex justify-between items-center py-2.5 px-6 sm:px-10">
                             <span className="text-slate-500 dark:text-slate-400 font-medium">Subtotal</span>
                             <span className="font-mono text-slate-800 dark:text-slate-200 font-medium">
-                                ₹{invoice.subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                ₹{Math.round(Number(invoice.subtotal || 0)).toLocaleString("en-IN")}
                             </span>
                         </div>
 
@@ -425,7 +434,7 @@ export default function PublicInvoicePage() {
                             <div className="flex justify-between items-center py-2.5 px-6 sm:px-10 text-red-600 dark:text-red-400">
                                 <span>Discount</span>
                                 <span className="font-mono font-medium">
-                                    -₹{invoice.discount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                    -₹{Math.round(Number(invoice.discount || 0)).toLocaleString("en-IN")}
                                 </span>
                             </div>
                         )}
@@ -434,7 +443,7 @@ export default function PublicInvoicePage() {
                             <div className="flex justify-between items-center py-2.5 px-6 sm:px-10">
                                 <span className="text-slate-500 dark:text-slate-400 font-medium">Tax / GST ({invoice.taxRate}%)</span>
                                 <span className="font-mono text-slate-800 dark:text-slate-200 font-medium">
-                                    ₹{invoice.taxAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                    ₹{Math.round(Number(invoice.taxAmount || 0)).toLocaleString("en-IN")}
                                 </span>
                             </div>
                         )}
@@ -445,7 +454,7 @@ export default function PublicInvoicePage() {
                                 <span className="block text-[10px] text-slate-400 font-mono">INR</span>
                             </div>
                             <span className="text-lg font-bold font-mono text-teal-600 dark:text-teal-400">
-                                ₹{invoice.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                ₹{Math.round(Number(invoice.totalAmount || 0)).toLocaleString("en-IN")}
                             </span>
                         </div>
                     </div>
@@ -525,7 +534,7 @@ export default function PublicInvoicePage() {
                                     </div>
                                     <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-200">Invoice Paid in Full</h4>
                                     <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                                        Payment of ₹{invoice.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })} has been received.
+                                        Payment of ₹{Math.round(Number(invoice.totalAmount || 0)).toLocaleString("en-IN")} has been received.
                                     </p>
                                 </div>
                             ) : (
@@ -555,7 +564,7 @@ export default function PublicInvoicePage() {
                                                 Amount to Pay
                                             </span>
                                             <p className="text-base font-bold font-mono text-teal-600 dark:text-teal-400">
-                                                ₹{invoice.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                                ₹{Math.round(Number(invoice.totalAmount || 0)).toLocaleString("en-IN")}
                                             </p>
                                         </div>
 
@@ -618,7 +627,7 @@ export default function PublicInvoicePage() {
                         className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold text-sm shadow-md transition"
                     >
                         <Smartphone className="size-4" />
-                        Pay ₹{invoice.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })} via UPI App
+                        Pay ₹{Math.round(Number(invoice.totalAmount || 0)).toLocaleString("en-IN")} via UPI App
                     </a>
                 )}
                 <button

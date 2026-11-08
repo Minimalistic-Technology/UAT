@@ -130,7 +130,7 @@ export function calculateInvoiceTotals(
     }
 
     const sanitizedItems: IInvoiceItem[] = lineValidation.sanitized!;
-    const subtotal = Number(sanitizedItems.reduce((sum, item) => sum + item.amount, 0).toFixed(2));
+    const subtotal = Math.round(sanitizedItems.reduce((sum, item) => sum + item.amount, 0));
 
     const discountCheck = validateDiscount(discountRaw, discountTypeRaw, subtotal);
     if (!discountCheck.valid) {
@@ -140,18 +140,18 @@ export function calculateInvoiceTotals(
     const discountType = discountCheck.discountType || 'fixed';
 
     const computedDiscount = discountType === 'percentage'
-        ? Number(((subtotal * discountVal) / 100).toFixed(2))
-        : Math.min(subtotal, discountVal);
+        ? Math.round((subtotal * discountVal) / 100)
+        : Math.round(Math.min(subtotal, discountVal));
 
-    const taxableAmount = Math.max(0, Number((subtotal - computedDiscount).toFixed(2)));
+    const taxableAmount = Math.max(0, subtotal - computedDiscount);
 
     const taxCheck = validateTaxRate(taxRateRaw);
     if (!taxCheck.valid) {
         throw new Error(taxCheck.error);
     }
     const taxRate = taxCheck.taxRate ?? 18;
-    const taxAmount = Number(((taxableAmount * taxRate) / 100).toFixed(2));
-    const totalAmount = Number((taxableAmount + taxAmount).toFixed(2));
+    const taxAmount = Math.round((taxableAmount * taxRate) / 100);
+    const totalAmount = Math.round(taxableAmount + taxAmount);
 
     const isInterState = Boolean(
         sellerState &&
@@ -159,8 +159,8 @@ export function calculateInvoiceTotals(
         sellerState.trim().toLowerCase() !== clientState.trim().toLowerCase()
     );
 
-    const cgstAmount = !isInterState ? Number((taxAmount / 2).toFixed(2)) : 0;
-    const sgstAmount = !isInterState ? Number((taxAmount - cgstAmount).toFixed(2)) : 0;
+    const cgstAmount = !isInterState ? Math.round(taxAmount / 2) : 0;
+    const sgstAmount = !isInterState ? taxAmount - cgstAmount : 0;
     const igstAmount = isInterState ? taxAmount : 0;
     const taxType = isInterState ? 'inter_state' : 'intra_state';
 
@@ -763,8 +763,8 @@ export function buildInvoicePdfDocument(invoice: IInvoice): jsPDF {
             idx + 1,
             desc,
             qtyDisplay,
-            `Rs. ${item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
-            `Rs. ${item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+            `Rs. ${Math.round(item.price).toLocaleString('en-IN')}`,
+            `Rs. ${Math.round(item.amount).toLocaleString('en-IN')}`
         ];
     });
 
@@ -822,12 +822,12 @@ export function buildInvoicePdfDocument(invoice: IInvoice): jsPDF {
     doc.setFontSize(8.5);
     doc.setTextColor(100, 100, 100);
     doc.text('Subtotal', totalsX, curY);
-    doc.text(`Rs. ${invoice.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, totalsValX, curY, { align: 'right' });
+    doc.text(`Rs. ${Math.round(invoice.subtotal).toLocaleString('en-IN')}`, totalsValX, curY, { align: 'right' });
     curY += 6;
 
     if (invoice.discount > 0) {
         doc.text('Discount', totalsX, curY);
-        doc.text(`-Rs. ${invoice.discount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, totalsValX, curY, { align: 'right' });
+        doc.text(`-Rs. ${Math.round(invoice.discount).toLocaleString('en-IN')}`, totalsValX, curY, { align: 'right' });
         curY += 6;
     }
 
@@ -840,16 +840,16 @@ export function buildInvoicePdfDocument(invoice: IInvoice): jsPDF {
 
         if (isInterState) {
             doc.text(`IGST (${invoice.taxRate}%)`, totalsX, curY);
-            doc.text(`Rs. ${invoice.taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, totalsValX, curY, { align: 'right' });
+            doc.text(`Rs. ${Math.round(invoice.taxAmount).toLocaleString('en-IN')}`, totalsValX, curY, { align: 'right' });
             curY += 6;
         } else {
             const halfRate = invoice.taxRate / 2;
-            const halfAmount = Number((invoice.taxAmount / 2).toFixed(2));
+            const halfAmount = Math.round(invoice.taxAmount / 2);
             doc.text(`CGST (${halfRate}%)`, totalsX, curY);
-            doc.text(`Rs. ${halfAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, totalsValX, curY, { align: 'right' });
+            doc.text(`Rs. ${halfAmount.toLocaleString('en-IN')}`, totalsValX, curY, { align: 'right' });
             curY += 6;
             doc.text(`SGST (${halfRate}%)`, totalsX, curY);
-            doc.text(`Rs. ${(invoice.taxAmount - halfAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, totalsValX, curY, { align: 'right' });
+            doc.text(`Rs. ${(Math.round(invoice.taxAmount) - halfAmount).toLocaleString('en-IN')}`, totalsValX, curY, { align: 'right' });
             curY += 6;
         }
     }
@@ -860,14 +860,14 @@ export function buildInvoicePdfDocument(invoice: IInvoice): jsPDF {
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(20, 20, 20);
     doc.text('Amount Due', totalsX, curY);
-    doc.text(`Rs. ${invoice.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, totalsValX, curY, { align: 'right' });
+    doc.text(`Rs. ${Math.round(invoice.totalAmount).toLocaleString('en-IN')}`, totalsValX, curY, { align: 'right' });
 
     // In words below totals
     curY += 10;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text(`Total in words: ${amountInWords(invoice.totalAmount)}`, margin + 6, curY, { maxWidth: pageWidth - margin * 2 - 12 });
+    doc.text(`Total in words: ${amountInWords(Math.round(invoice.totalAmount))}`, margin + 6, curY, { maxWidth: pageWidth - margin * 2 - 12 });
 
     // Bank Details & Footer Box
     curY += 12;

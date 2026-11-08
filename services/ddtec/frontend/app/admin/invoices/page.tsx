@@ -302,7 +302,7 @@ function AdminInvoicesContent() {
     });
 
     const [items, setItems] = useState<InvoiceItem[]>([
-        { itemDescription: "", hsnCode: "", qty: 1, price: 0, amount: 0 }
+        { itemDescription: "", hsnCode: "", qty: 1, unit: "Piece", price: 0, amount: 0 }
     ]);
 
     const [discount, setDiscount] = useState<number>(0);
@@ -508,7 +508,7 @@ function AdminInvoicesContent() {
                 const price = Number(updated.price);
                 const validQty = !isNaN(qty) && isFinite(qty) ? qty : 0;
                 const validPrice = !isNaN(price) && isFinite(price) ? price : 0;
-                updated.amount = Number((validQty * validPrice).toFixed(2));
+                updated.amount = Math.round(validQty * validPrice);
                 return updated;
             })
         );
@@ -521,7 +521,7 @@ function AdminInvoicesContent() {
         }
         setItems((prev) => [
             ...prev,
-            { itemDescription: "", hsnCode: "", qty: 1, price: 0, amount: 0 }
+            { itemDescription: "", hsnCode: "", qty: 1, unit: "Piece", price: 0, amount: 0 }
         ]);
     };
 
@@ -535,28 +535,29 @@ function AdminInvoicesContent() {
 
     // Calculate totals on the fly for the preview & summary
     const calculatedTotals = useMemo(() => {
-        const subtotal = items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0);
+        const subtotal = Math.round(items.reduce((acc, it) => acc + (Number(it.amount) || 0), 0));
         const discountVal = Math.max(0, Number(discount) || 0);
-        const computedDiscount =
+        const computedDiscount = Math.round(
             discountType === "percentage"
-                ? Number(((subtotal * discountVal) / 100).toFixed(2))
-                : Math.min(subtotal, discountVal);
+                ? (subtotal * discountVal) / 100
+                : Math.min(subtotal, discountVal)
+        );
 
         const taxableAmount = Math.max(0, subtotal - computedDiscount);
         const rate = Math.max(0, Number(taxRate) || 0);
-        const taxAmount = Number(((taxableAmount * rate) / 100).toFixed(2));
-        const grandTotal = Number((taxableAmount + taxAmount).toFixed(2));
+        const taxAmount = Math.round((taxableAmount * rate) / 100);
+        const grandTotal = Math.round(taxableAmount + taxAmount);
 
         const sellerStateClean = (sellerDetails.state || "").trim().toLowerCase();
         const clientStateClean = (clientDetails.state || "").trim().toLowerCase();
         const isIntraState = Boolean(sellerStateClean && clientStateClean && sellerStateClean === clientStateClean);
 
-        const cgstAmount = isIntraState ? Number((taxAmount / 2).toFixed(2)) : 0;
-        const sgstAmount = isIntraState ? Number((taxAmount - cgstAmount).toFixed(2)) : 0;
+        const cgstAmount = isIntraState ? Math.round(taxAmount / 2) : 0;
+        const sgstAmount = isIntraState ? taxAmount - cgstAmount : 0;
         const igstAmount = !isIntraState ? taxAmount : 0;
 
         return {
-            subtotal: Number(subtotal.toFixed(2)),
+            subtotal,
             discount: computedDiscount,
             taxAmount,
             grandTotal,
@@ -801,7 +802,7 @@ function AdminInvoicesContent() {
             return;
         }
         if (discountType === "fixed" && discNum > calculatedTotals.subtotal) {
-            showToast(`Fixed discount (${discNum}) cannot exceed subtotal (${calculatedTotals.subtotal.toFixed(2)})`, "warning");
+            showToast(`Fixed discount (${discNum}) cannot exceed subtotal (${Math.round(calculatedTotals.subtotal)})`, "warning");
             return;
         }
 
@@ -1097,12 +1098,12 @@ function AdminInvoicesContent() {
                                     <span>Bill To (Client / Customer)</span>
                                 </h2>
                                 {clientsList.length > 0 && (
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-slate-400">Quick fill:</span>
+                                    <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
+                                        <span className="text-xs text-slate-400 shrink-0">Quick fill:</span>
                                         <select
                                             onChange={(e) => handleSelectClient(e.target.value)}
                                             defaultValue=""
-                                            className="px-2.5 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                                            className="flex-1 sm:w-64 min-w-0 max-w-full px-2.5 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 truncate focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 cursor-pointer"
                                         >
                                             <option value="" disabled>
                                                 Select Client...
@@ -1377,10 +1378,10 @@ function AdminInvoicesContent() {
 
                                 {/* Searchable Catalog Product Picker */}
                                 {productsList.length > 0 && (
-                                    <div className="relative" ref={productPickerRef}>
-                                        <div className="flex items-center gap-2">
+                                    <div className="relative w-full sm:w-auto" ref={productPickerRef}>
+                                        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
                                             <span className="text-xs text-slate-400 shrink-0">Add from catalog:</span>
-                                            <div className="relative min-w-[220px] sm:w-64">
+                                            <div className="relative flex-1 sm:w-64 min-w-0">
                                                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
                                                 <input
                                                     type="text"
@@ -1435,7 +1436,7 @@ function AdminInvoicesContent() {
 
                                         {/* Dropdown Menu Popup */}
                                         {isProductPickerOpen && availableProducts.length > 0 && (
-                                            <div className="absolute right-0 top-full mt-1.5 w-72 sm:w-80 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl z-50 py-1 divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in zoom-in-95 duration-100">
+                                            <div className="absolute left-0 sm:left-auto right-0 top-full mt-1.5 w-full sm:w-80 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl z-50 py-1 divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in zoom-in-95 duration-100">
                                                 <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-[11px] font-medium text-slate-400">
                                                     <span>Products ({filteredCatalogProducts.length})</span>
                                                     <span>Click to add</span>
@@ -1474,7 +1475,7 @@ function AdminInvoicesContent() {
                                                                 </div>
                                                             </div>
                                                             <span className="text-xs font-bold font-mono text-slate-900 dark:text-white shrink-0">
-                                                                {currSym}{Number(p.price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                                                {currSym}{Math.round(Number(p.price || 0)).toLocaleString("en-IN")}
                                                             </span>
                                                         </button>
                                                     ))
@@ -1570,10 +1571,7 @@ function AdminInvoicesContent() {
                                         <div className="col-span-5 sm:col-span-2 flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-4">
                                             <span className="text-xs font-bold text-slate-800 dark:text-slate-100 font-mono">
                                                 {currSym}
-                                                {item.amount.toLocaleString("en-IN", {
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 2
-                                                })}
+                                                {Math.round(Number(item.amount || 0)).toLocaleString("en-IN")}
                                             </span>
                                             <button
                                                 type="button"
@@ -1832,10 +1830,7 @@ function AdminInvoicesContent() {
                                     </p>
                                     <p className="font-bold text-sm text-teal-600 dark:text-teal-400 font-mono">
                                         {currSym}
-                                        {calculatedTotals.grandTotal.toLocaleString("en-IN", {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2
-                                        })}
+                                        {Math.round(calculatedTotals.grandTotal).toLocaleString("en-IN")}
                                     </p>
                                 </div>
                             </div>
@@ -1888,10 +1883,10 @@ function AdminInvoicesContent() {
                                 <table className="w-full text-[11px]">
                                     <thead>
                                         <tr className="text-slate-400 text-[10px] uppercase border-b border-slate-100 dark:border-slate-800">
-                                            <th className="text-left pb-2">Description</th>
-                                            <th className="text-center pb-2">Qty</th>
-                                            <th className="text-right pb-2">Price</th>
-                                            <th className="text-right pb-2">Amount</th>
+                                            <th className="text-left pb-2 pr-2">Description</th>
+                                            <th className="text-center pb-2 px-2 whitespace-nowrap">Qty</th>
+                                            <th className="text-right pb-2 px-2 whitespace-nowrap">Price</th>
+                                            <th className="text-right pb-2 pl-2 whitespace-nowrap">Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -1905,31 +1900,29 @@ function AdminInvoicesContent() {
                                                         {it.hsnCode && (
                                                             <span>HSN: {it.hsnCode}</span>
                                                         )}
-                                                        {it.hsnCode && it.unit && <span>•</span>}
-                                                        {it.unit && (
+                                                        {it.hsnCode && (it.unit || "Piece") && <span>•</span>}
+                                                        {(it.unit || "Piece") && (
                                                             <span className="font-medium text-teal-600 dark:text-teal-400">
-                                                                {it.unit}
+                                                                {it.unit || "Piece"}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="py-2 text-center text-slate-600 dark:text-slate-400">
+                                                <td className="py-2 px-2 text-center text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                                     <span className="font-semibold">{it.qty}</span>
-                                                    {it.unit && (
-                                                        <span className="block text-[9px] text-slate-400">
-                                                            {it.unit}
+                                                    {(it.unit || "Piece") && (
+                                                        <span className="block text-[9px] text-slate-400 font-medium">
+                                                            {it.unit || "Piece"}
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="py-2 text-right font-mono text-slate-600 dark:text-slate-400">
+                                                <td className="py-2 px-2 text-right font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                                     {currSym}
-                                                    {it.price.toLocaleString("en-IN")}
+                                                    {Math.round(Number(it.price || 0)).toLocaleString("en-IN")}
                                                 </td>
-                                                <td className="py-2 text-right font-mono font-medium text-slate-800 dark:text-slate-200">
+                                                <td className="py-2 pl-2 text-right font-mono font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
                                                     {currSym}
-                                                    {it.amount.toLocaleString("en-IN", {
-                                                        minimumFractionDigits: 2
-                                                    })}
+                                                    {Math.round(Number(it.amount || 0)).toLocaleString("en-IN")}
                                                 </td>
                                             </tr>
                                         ))}
@@ -1943,9 +1936,7 @@ function AdminInvoicesContent() {
                                     <span>Subtotal</span>
                                     <span className="font-mono">
                                         {currSym}
-                                        {calculatedTotals.subtotal.toLocaleString("en-IN", {
-                                            minimumFractionDigits: 2
-                                        })}
+                                        {Math.round(calculatedTotals.subtotal).toLocaleString("en-IN")}
                                     </span>
                                 </div>
                                 {calculatedTotals.discount > 0 && (
@@ -1953,9 +1944,7 @@ function AdminInvoicesContent() {
                                         <span>Discount</span>
                                         <span className="font-mono">
                                             -{currSym}
-                                            {calculatedTotals.discount.toLocaleString("en-IN", {
-                                                minimumFractionDigits: 2
-                                            })}
+                                            {Math.round(calculatedTotals.discount).toLocaleString("en-IN")}
                                         </span>
                                     </div>
                                 )}
@@ -1966,18 +1955,14 @@ function AdminInvoicesContent() {
                                                 <span>CGST ({(taxRate / 2).toFixed(1)}%)</span>
                                                 <span className="font-mono">
                                                     +{currSym}
-                                                    {calculatedTotals.cgstAmount.toLocaleString("en-IN", {
-                                                        minimumFractionDigits: 2
-                                                    })}
+                                                    {Math.round(calculatedTotals.cgstAmount).toLocaleString("en-IN")}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between text-slate-500">
                                                 <span>SGST ({(taxRate / 2).toFixed(1)}%)</span>
                                                 <span className="font-mono">
                                                     +{currSym}
-                                                    {calculatedTotals.sgstAmount.toLocaleString("en-IN", {
-                                                        minimumFractionDigits: 2
-                                                    })}
+                                                    {Math.round(calculatedTotals.sgstAmount).toLocaleString("en-IN")}
                                                 </span>
                                             </div>
                                         </>
@@ -1986,26 +1971,21 @@ function AdminInvoicesContent() {
                                             <span>IGST ({taxRate}%)</span>
                                             <span className="font-mono">
                                                 +{currSym}
-                                                {calculatedTotals.igstAmount.toLocaleString("en-IN", {
-                                                    minimumFractionDigits: 2
-                                                })}
+                                                {Math.round(calculatedTotals.igstAmount).toLocaleString("en-IN")}
                                             </span>
                                         </div>
                                     )
                                 ) : (
                                     <div className="flex justify-between text-slate-500">
                                         <span>GST (0% - Exempt/Zero-Rated)</span>
-                                        <span className="font-mono">{currSym}0.00</span>
+                                        <span className="font-mono">{currSym}0</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between font-bold text-sm text-slate-900 dark:text-white pt-2 border-t border-slate-100 dark:border-slate-800">
                                     <span>Grand Total</span>
                                     <span className="font-mono text-teal-600 dark:text-teal-400">
                                         {currSym}
-                                        {calculatedTotals.grandTotal.toLocaleString("en-IN", {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2
-                                        })}
+                                        {Math.round(calculatedTotals.grandTotal).toLocaleString("en-IN")}
                                     </span>
                                 </div>
                             </div>
@@ -2258,9 +2238,7 @@ function AdminInvoicesContent() {
                                                     </td>
                                                     <td className="py-3 px-4 font-bold font-mono text-slate-900 dark:text-white">
                                                         {sym}
-                                                        {Number(inv.totalAmount || 0).toLocaleString("en-IN", {
-                                                            minimumFractionDigits: 2
-                                                        })}
+                                                        {Math.round(Number(inv.totalAmount || 0)).toLocaleString("en-IN")}
                                                     </td>
                                                     <td className="py-3 px-4">
                                                         <InvoiceStatusDropdown

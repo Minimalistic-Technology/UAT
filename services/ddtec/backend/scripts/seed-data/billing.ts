@@ -273,6 +273,7 @@ export interface InvoiceSeed {
         itemDescription: string;
         hsnCode: string;
         qty: number;
+        unit?: string;
         price: number;
         amount: number;
     }>;
@@ -327,6 +328,7 @@ export const invoicesData: InvoiceSeed[] = [
                 itemDescription: 'Apple iPhone 16 (128GB, Ultramarine) Enterprise Units',
                 hsnCode: '85171300',
                 qty: 3,
+                unit: 'Piece',
                 price: 79900,
                 amount: 239700
             },
@@ -334,6 +336,7 @@ export const invoicesData: InvoiceSeed[] = [
                 itemDescription: 'Apple iPad Air 11-inch M2 (Wi-Fi, 128GB)',
                 hsnCode: '84713090',
                 qty: 1,
+                unit: 'Piece',
                 price: 59900,
                 amount: 59900
             }
@@ -387,6 +390,7 @@ export const invoicesData: InvoiceSeed[] = [
                 itemDescription: 'Apple MacBook Air 13-inch M3 Chip (16GB RAM, 512GB SSD)',
                 hsnCode: '84713010',
                 qty: 2,
+                unit: 'Piece',
                 price: 114900,
                 amount: 229800
             },
@@ -394,6 +398,7 @@ export const invoicesData: InvoiceSeed[] = [
                 itemDescription: 'LG 27-inch 4K UHD IPS Workstation Monitor',
                 hsnCode: '85285200',
                 qty: 2,
+                unit: 'Piece',
                 price: 29999,
                 amount: 59998
             }
@@ -402,8 +407,8 @@ export const invoicesData: InvoiceSeed[] = [
         discount: 5000,
         discountType: 'fixed',
         taxRate: 18,
-        taxAmount: 51263.64,
-        totalAmount: 336061.64,
+        taxAmount: 51264,
+        totalAmount: 336062,
         paymentDetails: {
             bankName: 'HDFC Bank Ltd',
             accountNumber: '50200088991122',
@@ -447,6 +452,7 @@ export const invoicesData: InvoiceSeed[] = [
                 itemDescription: 'Apex Pro Ergonomic High-Back Executive Mesh Office Chair',
                 hsnCode: '94013000',
                 qty: 4,
+                unit: 'Piece',
                 price: 16999,
                 amount: 67996
             }
@@ -455,8 +461,8 @@ export const invoicesData: InvoiceSeed[] = [
         discount: 0,
         discountType: 'fixed',
         taxRate: 18,
-        taxAmount: 12239.28,
-        totalAmount: 80235.28,
+        taxAmount: 12239,
+        totalAmount: 80235,
         paymentDetails: {
             bankName: 'HDFC Bank Ltd',
             accountNumber: '50200088991122',
@@ -499,6 +505,7 @@ export const invoicesData: InvoiceSeed[] = [
                 itemDescription: 'SanDisk 1TB Extreme Portable External SSD',
                 hsnCode: '84717020',
                 qty: 5,
+                unit: 'Piece',
                 price: 10499,
                 amount: 52495
             }
@@ -507,8 +514,8 @@ export const invoicesData: InvoiceSeed[] = [
         discount: 0,
         discountType: 'fixed',
         taxRate: 18,
-        taxAmount: 9449.10,
-        totalAmount: 61944.10,
+        taxAmount: 9449,
+        totalAmount: 61944,
         paymentDetails: {
             bankName: 'HDFC Bank Ltd',
             accountNumber: '50200088991122',

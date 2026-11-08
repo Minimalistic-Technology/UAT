@@ -318,7 +318,8 @@ export function validateLineItems(
             return { valid: false, error: `Item #${rowNum} has an invalid HSN code "${hsnCode}". HSN code must be 2 to 8 digits.` };
         }
 
-        const amount = Number((qtyNum * priceNum).toFixed(2));
+        const roundedPrice = Math.round(priceNum);
+        const amount = Math.round(qtyNum * roundedPrice);
         const unit = item.unit ? String(item.unit).trim().slice(0, 50) : undefined;
 
         sanitizedItems.push({
@@ -327,7 +328,7 @@ export function validateLineItems(
             hsnCode,
             qty: qtyNum,
             unit,
-            price: priceNum,
+            price: roundedPrice,
             amount
         });
     }
