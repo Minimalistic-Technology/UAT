@@ -23,6 +23,7 @@ interface InvoiceItem {
     itemDescription: string;
     hsnCode?: string;
     qty: number;
+    unit?: string;
     price: number;
     amount: number;
 }
@@ -341,7 +342,14 @@ export default function PublicInvoicePage() {
                                         <p className="text-[10px] font-mono text-slate-400 mt-0.5">HSN: {item.hsnCode}</p>
                                     )}
                                 </div>
-                                <div className="col-span-2 text-center text-slate-600 dark:text-slate-300">{item.qty}</div>
+                                <div className="col-span-2 text-center text-slate-600 dark:text-slate-300">
+                                    <span className="font-semibold">{item.qty}</span>
+                                    {item.unit && (
+                                        <span className="block text-[10px] text-slate-400 font-medium">
+                                            {item.unit}
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="col-span-2 text-right font-mono text-slate-600 dark:text-slate-300">
                                     ₹{item.price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                                 </div>

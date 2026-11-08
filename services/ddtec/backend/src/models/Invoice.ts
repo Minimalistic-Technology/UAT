@@ -6,6 +6,7 @@ export interface IInvoiceItem {
     itemDescription: string;
     hsnCode?: string;
     qty: number;
+    unit?: string;
     price: number;
     amount: number;
 }
@@ -74,6 +75,7 @@ const InvoiceItemSchema = new Schema({
     itemDescription: { type: String, required: true, trim: true },
     hsnCode: { type: String, trim: true },
     qty: { type: Number, required: true, default: 1, min: 1 },
+    unit: { type: String, trim: true, default: '' },
     price: { type: Number, required: true, default: 0, min: 0 },
     amount: { type: Number, required: true, default: 0, min: 0 }
 }, { _id: false });

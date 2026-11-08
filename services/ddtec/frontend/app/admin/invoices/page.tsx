@@ -33,6 +33,7 @@ import {
     X
 } from "lucide-react";
 import api from "@/lib/api";
+import { formatProductPackaging } from "@/lib/utils";
 import { useToast } from "@/app/_context/ToastContext";
 import { useConfirm } from "@/app/_context/ConfirmContext";
 import Pagination from "@/app/_components/Pagination";
@@ -42,6 +43,7 @@ interface InvoiceItem {
     itemDescription: string;
     hsnCode: string;
     qty: number;
+    unit?: string;
     price: number;
     amount: number;
 }
@@ -61,6 +63,10 @@ interface ProductOption {
     name: string;
     price: number;
     hsnCode?: string;
+    packQuantity?: number;
+    packUnit?: string;
+    unitSize?: number;
+    unitMeasure?: string;
 }
 
 const INDIAN_STATES = [
@@ -255,6 +261,9 @@ function AdminInvoicesContent() {
     const [clientsList, setClientsList] = useState<ClientOption[]>([]);
     const [productsList, setProductsList] = useState<ProductOption[]>([]);
     const [selectedCatalogProduct, setSelectedCatalogProduct] = useState<string>("");
+    const [productSearch, setProductSearch] = useState("");
+    const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
+    const productPickerRef = useRef<HTMLDivElement>(null);
 
     // Invoices list state
     const [invoices, setInvoices] = useState<any[]>([]);
@@ -322,6 +331,21 @@ function AdminInvoicesContent() {
         fetchProducts();
         fetchCompanySettings();
     }, []);
+
+    // Close product picker dropdown on click outside
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (productPickerRef.current && !productPickerRef.current.contains(e.target as Node)) {
+                setIsProductPickerOpen(false);
+            }
+        }
+        if (isProductPickerOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isProductPickerOpen]);
 
     const fetchCompanySettings = async () => {
         try {
@@ -413,11 +437,13 @@ function AdminInvoicesContent() {
         const prod = productsList.find((p) => p._id === productId);
         if (!prod) return;
 
+        const packaging = formatProductPackaging(prod) || prod.packUnit || "Piece";
         const newItem: InvoiceItem = {
             productId: prod._id,
             itemDescription: prod.name,
             hsnCode: prod.hsnCode || "",
             qty: 1,
+            unit: packaging,
             price: prod.price || 0,
             amount: prod.price || 0
         };
@@ -453,6 +479,17 @@ function AdminInvoicesContent() {
             return !isAlreadyAdded;
         });
     }, [productsList, items]);
+
+    // Filter available products by search query (name or HSN code)
+    const filteredCatalogProducts = useMemo(() => {
+        const query = productSearch.trim().toLowerCase();
+        if (!query) return availableProducts;
+        return availableProducts.filter((p) => {
+            const nameMatch = p.name.toLowerCase().includes(query);
+            const hsnMatch = p.hsnCode ? p.hsnCode.toLowerCase().includes(query) : false;
+            return nameMatch || hsnMatch;
+        });
+    }, [availableProducts, productSearch]);
 
     // Line item editing handlers
     const updateItem = (index: number, patch: Partial<InvoiceItem>) => {
@@ -1338,27 +1375,112 @@ function AdminInvoicesContent() {
                                     <span>Line Items</span>
                                 </h2>
 
-                                {/* Quick Catalog Picker */}
+                                {/* Searchable Catalog Product Picker */}
                                 {productsList.length > 0 && (
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-slate-400">Add from catalog:</span>
-                                        <select
-                                            value={selectedCatalogProduct}
-                                            onChange={(e) => handleAddCatalogProduct(e.target.value)}
-                                            disabled={availableProducts.length === 0}
-                                            className={`px-2.5 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 max-w-[200px] ${
-                                                availableProducts.length === 0 ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
-                                            }`}
-                                        >
-                                            <option value="">
-                                                {availableProducts.length > 0 ? "Select a product..." : "All products added"}
-                                            </option>
-                                            {availableProducts.map((p) => (
-                                                <option key={p._id} value={p._id}>
-                                                    {p.name} ({currSym}{p.price})
-                                                </option>
-                                            ))}
-                                        </select>
+                                    <div className="relative" ref={productPickerRef}>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-400 shrink-0">Add from catalog:</span>
+                                            <div className="relative min-w-[220px] sm:w-64">
+                                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                                                <input
+                                                    type="text"
+                                                    placeholder={
+                                                        availableProducts.length === 0
+                                                            ? "All products added"
+                                                            : "Search & add product..."
+                                                    }
+                                                    value={productSearch}
+                                                    onChange={(e) => {
+                                                        setProductSearch(e.target.value);
+                                                        if (!isProductPickerOpen) setIsProductPickerOpen(true);
+                                                    }}
+                                                    onFocus={() => {
+                                                        if (availableProducts.length > 0) setIsProductPickerOpen(true);
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Escape") {
+                                                            setIsProductPickerOpen(false);
+                                                        }
+                                                    }}
+                                                    disabled={availableProducts.length === 0}
+                                                    className={`w-full pl-8 pr-7 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all ${
+                                                        availableProducts.length === 0 ? "opacity-60 cursor-not-allowed" : ""
+                                                    }`}
+                                                />
+                                                {productSearch ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setProductSearch("")}
+                                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                                        title="Clear search"
+                                                    >
+                                                        <X className="size-3.5" />
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (availableProducts.length > 0) {
+                                                                setIsProductPickerOpen(!isProductPickerOpen);
+                                                            }
+                                                        }}
+                                                        disabled={availableProducts.length === 0}
+                                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                                    >
+                                                        <ChevronDown className={`size-3.5 transition-transform duration-200 ${isProductPickerOpen ? "rotate-180" : ""}`} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Dropdown Menu Popup */}
+                                        {isProductPickerOpen && availableProducts.length > 0 && (
+                                            <div className="absolute right-0 top-full mt-1.5 w-72 sm:w-80 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl z-50 py-1 divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in zoom-in-95 duration-100">
+                                                <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-[11px] font-medium text-slate-400">
+                                                    <span>Products ({filteredCatalogProducts.length})</span>
+                                                    <span>Click to add</span>
+                                                </div>
+                                                {filteredCatalogProducts.length === 0 ? (
+                                                    <div className="px-4 py-4 text-xs text-slate-400 text-center">
+                                                        No products found matching &ldquo;{productSearch}&rdquo;
+                                                    </div>
+                                                ) : (
+                                                    filteredCatalogProducts.map((p) => (
+                                                        <button
+                                                            key={p._id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                handleAddCatalogProduct(p._id);
+                                                                setProductSearch("");
+                                                                setIsProductPickerOpen(false);
+                                                            }}
+                                                            className="w-full text-left px-3 py-2 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-between gap-2 group cursor-pointer"
+                                                        >
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-xs font-medium text-slate-800 dark:text-slate-200 group-hover:text-teal-600 dark:group-hover:text-teal-400 truncate">
+                                                                    {p.name}
+                                                                </p>
+                                                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                                                    {p.hsnCode && (
+                                                                        <span className="text-[10px] text-slate-400 font-mono">
+                                                                            HSN: {p.hsnCode}
+                                                                        </span>
+                                                                    )}
+                                                                    {(formatProductPackaging(p) || p.packUnit) && (
+                                                                        <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-teal-700 dark:text-teal-300 font-medium px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                                                            {formatProductPackaging(p) || p.packUnit}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-xs font-bold font-mono text-slate-900 dark:text-white shrink-0">
+                                                                {currSym}{Number(p.price || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                                            </span>
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -1370,7 +1492,7 @@ function AdminInvoicesContent() {
                                         key={idx}
                                         className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 grid grid-cols-12 gap-2 items-center"
                                     >
-                                        <div className="col-span-12 sm:col-span-5">
+                                        <div className="col-span-12 sm:col-span-4">
                                             <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">
                                                 Item Description <span className="text-red-500 font-bold ml-0.5">*</span>
                                             </label>
@@ -1399,6 +1521,20 @@ function AdminInvoicesContent() {
                                                 className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20"
                                             />
                                         </div>
+                                        <div className="col-span-6 sm:col-span-2">
+                                            <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">
+                                                Unit / Packaging
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Box, Piece, Loose"
+                                                value={item.unit || ""}
+                                                onChange={(e) =>
+                                                    updateItem(idx, { unit: e.target.value })
+                                                }
+                                                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                                            />
+                                        </div>
                                         <div className="col-span-3 sm:col-span-1">
                                             <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">
                                                 Qty <span className="text-red-500 font-bold ml-0.5">*</span>
@@ -1415,7 +1551,7 @@ function AdminInvoicesContent() {
                                                 className="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-center"
                                             />
                                         </div>
-                                        <div className="col-span-3 sm:col-span-2">
+                                        <div className="col-span-4 sm:col-span-1">
                                             <label className="block text-[10px] uppercase font-semibold text-slate-400 mb-1">
                                                 Price ({currSym}) <span className="text-red-500 font-bold ml-0.5">*</span>
                                             </label>
@@ -1428,10 +1564,10 @@ function AdminInvoicesContent() {
                                                 onChange={(e) =>
                                                     updateItem(idx, { price: Number(e.target.value) })
                                                 }
-                                                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-right font-mono"
+                                                className="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-right font-mono"
                                             />
                                         </div>
-                                        <div className="col-span-12 sm:col-span-2 flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-4">
+                                        <div className="col-span-5 sm:col-span-2 flex items-center justify-between sm:justify-end gap-2 pt-1 sm:pt-4">
                                             <span className="text-xs font-bold text-slate-800 dark:text-slate-100 font-mono">
                                                 {currSym}
                                                 {item.amount.toLocaleString("en-IN", {
@@ -1765,14 +1901,25 @@ function AdminInvoicesContent() {
                                                     <p className="font-medium text-slate-800 dark:text-slate-200">
                                                         {it.itemDescription || "Item name"}
                                                     </p>
-                                                    {it.hsnCode && (
-                                                        <span className="text-[9px] text-slate-400">
-                                                            HSN: {it.hsnCode}
-                                                        </span>
-                                                    )}
+                                                    <div className="flex items-center gap-1.5 text-[9px] text-slate-400 mt-0.5">
+                                                        {it.hsnCode && (
+                                                            <span>HSN: {it.hsnCode}</span>
+                                                        )}
+                                                        {it.hsnCode && it.unit && <span>•</span>}
+                                                        {it.unit && (
+                                                            <span className="font-medium text-teal-600 dark:text-teal-400">
+                                                                {it.unit}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="py-2 text-center text-slate-600 dark:text-slate-400">
-                                                    {it.qty}
+                                                    <span className="font-semibold">{it.qty}</span>
+                                                    {it.unit && (
+                                                        <span className="block text-[9px] text-slate-400">
+                                                            {it.unit}
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="py-2 text-right font-mono text-slate-600 dark:text-slate-400">
                                                     {currSym}

@@ -758,10 +758,11 @@ export function buildInvoicePdfDocument(invoice: IInvoice): jsPDF {
     // Table of Items
     const tableBody = invoice.items.map((item, idx) => {
         const desc = item.hsnCode ? `${item.itemDescription}\n(HSN/SAC: ${item.hsnCode})` : item.itemDescription;
+        const qtyDisplay = item.unit ? `${item.qty} ${item.unit}` : `${item.qty}`;
         return [
             idx + 1,
             desc,
-            item.qty,
+            qtyDisplay,
             `Rs. ${item.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
             `Rs. ${item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
         ];

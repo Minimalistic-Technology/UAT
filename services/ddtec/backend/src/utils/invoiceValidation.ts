@@ -319,12 +319,14 @@ export function validateLineItems(
         }
 
         const amount = Number((qtyNum * priceNum).toFixed(2));
+        const unit = item.unit ? String(item.unit).trim().slice(0, 50) : undefined;
 
         sanitizedItems.push({
             productId: item.productId ? String(item.productId).trim() : undefined,
             itemDescription: desc,
             hsnCode,
             qty: qtyNum,
+            unit,
             price: priceNum,
             amount
         });
