@@ -1,11 +1,34 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Loader2, Truck, Image as ImageIcon, Shield, CheckCircle2, Upload, Trash2 } from "lucide-react";
+import { Loader2, Truck, Image as ImageIcon, Shield, CheckCircle2, Upload, Trash2, Building2, RotateCcw, Save, FileText } from "lucide-react";
 import api from "@/lib/api";
 import ToggleSwitch from "../components/ToggleSwitch";
 import { useToast } from "../../_context/ToastContext";
 import { useSettings } from "../../_context/SettingsContext";
+
+const INDIAN_STATES = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+    "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+    "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+    "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+    "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+    "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+];
+
+const DEFAULT_SELLER_PROFILE = {
+    name: "DDTEC Solutions",
+    email: "contact@ddtec.in",
+    phone: "+91 98765 43210",
+    address: "123 Tech Lane, Indiranagar",
+    city: "Bengaluru",
+    state: "Karnataka",
+    zip: "560038",
+    country: "India",
+    taxId: "29AABBD1234F1Z5",
+    logo: ""
+};
 
 export default function SettingsPage() {
     const { showToast } = useToast();
@@ -18,6 +41,11 @@ export default function SettingsPage() {
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
     const [isRemovingLogo, setIsRemovingLogo] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    // Seller Details State
+    const [sellerDetails, setSellerDetails] = useState(DEFAULT_SELLER_PROFILE);
+    const [isSavingSeller, setIsSavingSeller] = useState(false);
+    const [isResettingSeller, setIsResettingSeller] = useState(false);
 
     const fetchSettings = async () => {
         setLoadingSettings(true);
@@ -177,6 +205,73 @@ export default function SettingsPage() {
         setLogoFile(null);
         setLogoPreview(siteSettings?.quotationLogoUrl || "");
         if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    useEffect(() => {
+        if (siteSettings?.sellerDetails) {
+            setSellerDetails(prev => ({
+                ...prev,
+                ...siteSettings.sellerDetails
+            }));
+        }
+    }, [siteSettings?.sellerDetails]);
+
+    const handleSaveSellerDetails = async () => {
+        if (!sellerDetails.name.trim()) {
+            showToast?.("Seller / Company name is required", "warning");
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (sellerDetails.email && !emailRegex.test(sellerDetails.email.trim())) {
+            showToast?.("Please enter a valid email address", "warning");
+            return;
+        }
+
+        const phoneRegex = /^[+]?[\d\s()-]{7,20}$/;
+        if (sellerDetails.phone && !phoneRegex.test(sellerDetails.phone.trim())) {
+            showToast?.("Please enter a valid phone number (7-20 digits)", "warning");
+            return;
+        }
+
+        const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+        if (sellerDetails.taxId && sellerDetails.country.toLowerCase() === "india" && !gstinRegex.test(sellerDetails.taxId.trim())) {
+            showToast?.("Invalid Indian GSTIN format (e.g. 29AABBD1234F1Z5)", "warning");
+            return;
+        }
+
+        setIsSavingSeller(true);
+        try {
+            const res = await api.put('/settings/seller-details', sellerDetails);
+            if (res.data?.sellerDetails) {
+                setSellerDetails(res.data.sellerDetails);
+            }
+            showToast?.(res.data?.msg || "Seller details updated successfully!", "success");
+            refreshSettings();
+        } catch (error: any) {
+            console.error("Failed to update seller details:", error);
+            showToast?.(error.response?.data?.msg || "Failed to update seller details", "error");
+        } finally {
+            setIsSavingSeller(false);
+        }
+    };
+
+    const handleResetSellerDetails = async () => {
+        if (!confirm("Are you sure you want to reset seller details back to default values?")) return;
+        setIsResettingSeller(true);
+        try {
+            const res = await api.delete('/settings/seller-details');
+            if (res.data?.sellerDetails) {
+                setSellerDetails(res.data.sellerDetails);
+            }
+            showToast?.(res.data?.msg || "Seller details reset to default", "success");
+            refreshSettings();
+        } catch (error: any) {
+            console.error("Failed to reset seller details:", error);
+            showToast?.(error.response?.data?.msg || "Failed to reset seller details", "error");
+        } finally {
+            setIsResettingSeller(false);
+        }
     };
 
     return (
@@ -393,6 +488,182 @@ export default function SettingsPage() {
                                             Selected: <span className="font-mono">{logoFile.name}</span> ({(logoFile.size / 1024).toFixed(1)} KB) — click <strong>Save Quotation Logo</strong> to upload.
                                         </p>
                                     )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Seller / Company Profile Configuration Card */}
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-6 col-span-1 md:col-span-2">
+                            <div className="border-b border-slate-100 dark:border-slate-700 pb-4 flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <Building2 className="size-5 text-teal-600" /> Seller & Company Profile (Invoice & Quotation Issuer)
+                                    </h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Configure official seller details. These values are automatically fetched and used across all generated invoices and quotation PDFs.
+                                    </p>
+                                </div>
+                                <span className="px-3 py-1 bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-semibold rounded-lg flex items-center gap-1.5">
+                                    <FileText className="size-3.5" /> Official Billing Issuer
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {/* Company Name */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                        Company / Seller Legal Name <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={sellerDetails.name}
+                                        onChange={(e) => setSellerDetails({ ...sellerDetails, name: e.target.value })}
+                                        placeholder="e.g. DDTEC Solutions Pvt Ltd"
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500 transition"
+                                    />
+                                </div>
+
+                                {/* Official Email */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                        Official Billing Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={sellerDetails.email}
+                                        onChange={(e) => setSellerDetails({ ...sellerDetails, email: e.target.value })}
+                                        placeholder="billing@ddtec.in"
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500 transition"
+                                    />
+                                </div>
+
+                                {/* Phone */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                        Contact Phone Number
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={sellerDetails.phone}
+                                        onChange={(e) => setSellerDetails({ ...sellerDetails, phone: e.target.value })}
+                                        placeholder="+91 98765 43210"
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500 transition"
+                                    />
+                                </div>
+
+                                {/* GSTIN / Tax ID */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                        GSTIN / Tax ID
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={sellerDetails.taxId}
+                                        onChange={(e) => setSellerDetails({ ...sellerDetails, taxId: e.target.value.toUpperCase() })}
+                                        placeholder="29AABBD1234F1Z5"
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono font-bold uppercase text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500 transition"
+                                    />
+                                </div>
+
+                                {/* Street Address */}
+                                <div className="space-y-1.5 sm:col-span-2">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                        Registered Street Address
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={sellerDetails.address}
+                                        onChange={(e) => setSellerDetails({ ...sellerDetails, address: e.target.value })}
+                                        placeholder="123 Tech Lane, Indiranagar"
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500 transition"
+                                    />
+                                </div>
+
+                                {/* City */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                        City
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={sellerDetails.city}
+                                        onChange={(e) => setSellerDetails({ ...sellerDetails, city: e.target.value })}
+                                        placeholder="Bengaluru"
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500 transition"
+                                    />
+                                </div>
+
+                                {/* State */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                        State (GST Tax Jurisdiction)
+                                    </label>
+                                    <select
+                                        value={sellerDetails.state}
+                                        onChange={(e) => setSellerDetails({ ...sellerDetails, state: e.target.value })}
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500 transition cursor-pointer"
+                                    >
+                                        <option value="">Select Indian State</option>
+                                        {INDIAN_STATES.map((st) => (
+                                            <option key={st} value={st}>{st}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Postal Code (ZIP) */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                        PIN / Postal Code
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={sellerDetails.zip}
+                                        onChange={(e) => setSellerDetails({ ...sellerDetails, zip: e.target.value })}
+                                        placeholder="560038"
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500 transition"
+                                    />
+                                </div>
+
+                                {/* Country */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                                        Country
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={sellerDetails.country}
+                                        onChange={(e) => setSellerDetails({ ...sellerDetails, country: e.target.value })}
+                                        placeholder="India"
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500 transition"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Buttons & Help Notice */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    State determines CGST/SGST (intra-state) vs IGST (inter-state) calculation when issuing invoices to clients.
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleResetSellerDetails}
+                                        disabled={isResettingSeller || isSavingSeller}
+                                        className="px-4 py-2 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                    >
+                                        {isResettingSeller ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCcw className="size-3.5" />}
+                                        Reset Default
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveSellerDetails}
+                                        disabled={isSavingSeller || isResettingSeller}
+                                        className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                    >
+                                        {isSavingSeller ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
+                                        Save Seller Details
+                                    </button>
                                 </div>
                             </div>
                         </div>

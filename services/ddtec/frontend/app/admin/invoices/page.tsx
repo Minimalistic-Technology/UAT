@@ -329,7 +329,7 @@ function AdminInvoicesContent() {
     useEffect(() => {
         fetchClients();
         fetchProducts();
-        fetchCompanySettings();
+        fetchSellerDetails();
     }, []);
 
     // Close product picker dropdown on click outside
@@ -347,7 +347,20 @@ function AdminInvoicesContent() {
         };
     }, [isProductPickerOpen]);
 
-    const fetchCompanySettings = async () => {
+    const fetchSellerDetails = async () => {
+        try {
+            const res = await api.get("/settings/seller-details");
+            const seller = res.data?.sellerDetails || res.data;
+            if (seller && seller.name) {
+                setSellerDetails(prev => ({
+                    ...prev,
+                    ...seller
+                }));
+                return;
+            }
+        } catch (err) {
+            console.warn("Failed to fetch seller details from settings API, trying fallback:", err);
+        }
         try {
             const res = await api.get("/companies");
             const companies = Array.isArray(res.data) ? res.data : (res.data?.companies || []);

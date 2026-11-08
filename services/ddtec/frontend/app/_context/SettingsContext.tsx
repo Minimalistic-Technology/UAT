@@ -27,10 +27,25 @@ export interface DeliverySettings {
     isFreeDeliveryEnabled: boolean;
 }
 
+export interface SellerDetailsSettings {
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    taxId?: string;
+    logo?: string;
+}
+
 export interface SiteSettings {
     components: ComponentSettings;
     onboarding?: OnboardingSettings;
     delivery?: DeliverySettings;
+    sellerDetails?: SellerDetailsSettings;
+    quotationLogoUrl?: string;
 }
 
 interface SettingsContextType {

@@ -27,6 +27,13 @@ import clientRoutes from './client.routes';
 import companyRoutes from './company.routes';
 import reviewRoutes from './review.routes';
 import invoiceRoutes from './invoice.routes';
+import {
+    getSellerDetails,
+    updateSellerDetails,
+    resetSellerDetails
+} from '../controllers/settingsController';
+import { requireAdminOrSystemAdmin } from './settings';
+import { auth } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -62,5 +69,12 @@ router.use('/reviews', reviewRoutes);
 router.use('/delivery', deliveryRoutes);
 router.use('/pincode', deliveryRoutes);
 router.use('/invoices', invoiceRoutes);
+
+const sellerRouter = Router();
+sellerRouter.get('/', getSellerDetails);
+sellerRouter.put('/', auth as any, requireAdminOrSystemAdmin, updateSellerDetails);
+sellerRouter.post('/', auth as any, requireAdminOrSystemAdmin, updateSellerDetails);
+sellerRouter.delete('/', auth as any, requireAdminOrSystemAdmin, resetSellerDetails);
+router.use('/seller-details', sellerRouter);
 
 export default router;

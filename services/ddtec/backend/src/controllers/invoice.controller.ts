@@ -240,12 +240,16 @@ export const createInvoice = async (req: Request, res: Response) => {
             }
         }
 
-        // 3. Seller Details validation (Merge with default seller / Company settings)
+        // 3. Seller Details validation (Merge with DB seller details / default seller)
         const settings = await Settings.findOne();
+        const dbSeller = settings?.sellerDetails
+            ? ((settings.sellerDetails as any).toObject ? (settings.sellerDetails as any).toObject() : settings.sellerDetails)
+            : DEFAULT_SELLER;
         const effectiveSeller = {
             ...DEFAULT_SELLER,
+            ...dbSeller,
             ...(sellerDetails || {}),
-            logo: sellerDetails?.logo || settings?.quotationLogoUrl || ''
+            logo: sellerDetails?.logo || dbSeller?.logo || settings?.quotationLogoUrl || ''
         };
         const sellerCheck = validateSellerDetails(effectiveSeller);
         if (!sellerCheck.valid) {
