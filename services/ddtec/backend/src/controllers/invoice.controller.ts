@@ -352,8 +352,8 @@ export const createInvoice = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: 'Notes and instructions cannot exceed 2000 characters' });
         }
 
-        // Generate unique URL-safe public ID
-        const publicId = `inv_${crypto.randomBytes(6).toString('hex')}`;
+        // Generate unique URL-safe public ID using UUID v4 to prevent guessable IDs
+        const publicId = crypto.randomUUID();
 
         const newInvoice = new Invoice({
             invoiceNumber: finalInvoiceNumber,
@@ -404,7 +404,20 @@ export const getPublicInvoice = async (req: Request, res: Response) => {
             query = { $or: [{ publicId }, { _id: publicId }] };
         }
 
-        const invoice = await Invoice.findOne(query);
+        let invoice = await Invoice.findOne(query);
+
+        // Fallback for legacy slug patterns (e.g. inv-ddtec-2026-003-draft, INV-2026-003)
+        if (!invoice && publicId) {
+            const trimmed = String(publicId).trim();
+            invoice = await Invoice.findOne({ invoiceNumber: trimmed });
+            if (!invoice) {
+                const legacyMatch = trimmed.match(/(\d{4}-\d{3,4})/);
+                if (legacyMatch) {
+                    invoice = await Invoice.findOne({ invoiceNumber: `INV-${legacyMatch[1]}` });
+                }
+            }
+        }
+
         if (!invoice) {
             return res.status(404).json({ msg: 'Invoice not found or invalid link' });
         }
@@ -444,6 +457,7 @@ export const listInvoices = async (req: Request, res: Response) => {
             const regex = new RegExp(term, 'i');
             filter.$or = [
                 { invoiceNumber: regex },
+                { publicId: regex },
                 { 'clientDetails.name': regex },
                 { 'clientDetails.email': regex },
                 { 'clientDetails.taxId': regex }
@@ -902,7 +916,20 @@ export const generateInvoicePdf = async (req: Request, res: Response) => {
             query = { $or: [{ publicId: identifier }, { _id: identifier }] };
         }
 
-        const invoice = await Invoice.findOne(query);
+        let invoice = await Invoice.findOne(query);
+
+        // Fallback for legacy slug patterns (e.g. inv-ddtec-2026-003-draft, INV-2026-003)
+        if (!invoice && identifier) {
+            const trimmed = String(identifier).trim();
+            invoice = await Invoice.findOne({ invoiceNumber: trimmed });
+            if (!invoice) {
+                const legacyMatch = trimmed.match(/(\d{4}-\d{3,4})/);
+                if (legacyMatch) {
+                    invoice = await Invoice.findOne({ invoiceNumber: `INV-${legacyMatch[1]}` });
+                }
+            }
+        }
+
         if (!invoice) {
             return res.status(404).json({ msg: 'Invoice not found' });
         }

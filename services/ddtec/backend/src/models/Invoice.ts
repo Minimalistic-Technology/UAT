@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import crypto from 'crypto';
 
 export interface IInvoiceItem {
     productId?: string;
@@ -100,7 +101,8 @@ const InvoiceSchema: Schema = new Schema({
         required: true,
         unique: true,
         trim: true,
-        index: true
+        index: true,
+        default: () => crypto.randomUUID()
     },
     issueDate: {
         type: Date,

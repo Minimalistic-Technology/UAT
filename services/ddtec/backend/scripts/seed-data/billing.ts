@@ -295,7 +295,7 @@ export interface InvoiceSeed {
 export const invoicesData: InvoiceSeed[] = [
     {
         invoiceNumber: 'INV-2026-001',
-        publicId: 'inv-ddtec-2026-001-paid',
+        publicId: '4f7b2a1e-8c3d-4e9a-b51f-6d2c8a0e3f19',
         issueDate: new Date('2026-10-01'),
         dueDate: new Date('2026-10-15'),
         status: 'paid',
@@ -355,7 +355,7 @@ export const invoicesData: InvoiceSeed[] = [
     },
     {
         invoiceNumber: 'INV-2026-002',
-        publicId: 'inv-ddtec-2026-002-unpaid',
+        publicId: '9a3c7e5b-2d1f-4a8e-bc60-1e5f8b9a2c34',
         issueDate: new Date('2026-10-10'),
         dueDate: new Date('2026-10-25'),
         status: 'unpaid',
@@ -415,7 +415,7 @@ export const invoicesData: InvoiceSeed[] = [
     },
     {
         invoiceNumber: 'INV-2026-003',
-        publicId: 'inv-ddtec-2026-003-draft',
+        publicId: 'e2d8b4c0-7a91-4f3e-8c65-3b9a1e7d5f02',
         issueDate: new Date('2026-10-15'),
         dueDate: new Date('2026-10-30'),
         status: 'draft',
@@ -468,7 +468,7 @@ export const invoicesData: InvoiceSeed[] = [
     },
     {
         invoiceNumber: 'INV-2026-004',
-        publicId: 'inv-ddtec-2026-004-cancelled',
+        publicId: 'b8e1f5a3-4c92-4d7e-9f0a-6e2c8b1a4d75',
         issueDate: new Date('2026-09-20'),
         dueDate: new Date('2026-10-05'),
         status: 'cancelled',

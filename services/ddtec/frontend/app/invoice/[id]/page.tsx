@@ -96,6 +96,10 @@ export default function PublicInvoicePage() {
             const res = await api.get(`/invoices/public/${id}`);
             if (res.data?.invoice) {
                 setInvoice(res.data.invoice);
+                // If accessed via a legacy or non-UUID slug, clean up browser address bar to pure UUID
+                if (res.data.invoice.publicId && id !== res.data.invoice.publicId && typeof window !== "undefined") {
+                    window.history.replaceState(null, "", `/invoice/${res.data.invoice.publicId}`);
+                }
             } else {
                 setError("Invoice details not found.");
             }
@@ -109,7 +113,9 @@ export default function PublicInvoicePage() {
 
     const handleCopyLink = async () => {
         try {
-            const url = window.location.href;
+            const url = invoice?.publicId
+                ? `${window.location.origin}/invoice/${invoice.publicId}`
+                : window.location.href;
             await navigator.clipboard.writeText(url);
             setCopied(true);
             showToast("Invoice link copied to clipboard!", "success");

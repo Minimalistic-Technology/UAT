@@ -2082,8 +2082,14 @@ function AdminInvoicesContent() {
                                                     className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition"
                                                 >
                                                     <td className="py-3 px-4">
-                                                        <span className="font-bold text-slate-900 dark:text-white">
+                                                        <span className="font-bold text-slate-900 dark:text-white block">
                                                             {inv.invoiceNumber}
+                                                        </span>
+                                                        <span
+                                                            className="block text-[11px] text-slate-400 dark:text-slate-500 font-mono tracking-tight select-all"
+                                                            title={inv.publicId || inv._id}
+                                                        >
+                                                            {inv.publicId || inv._id}
                                                         </span>
                                                     </td>
                                                     <td className="py-3 px-4">
