@@ -1020,11 +1020,11 @@ function AdminInvoicesContent() {
 
             {/* TAB 1: CREATE INVOICE */}
             {activeTab === "create" && (
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-                    {/* Left Column: Input Form (7 cols on xl) */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
+                    {/* Left Column: Input Form (7 cols on lg/xl) */}
                     <form
                         onSubmit={handleSaveInvoice}
-                        className="xl:col-span-7 space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm"
+                        className="lg:col-span-7 space-y-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm"
                     >
                         {/* Section: Invoice Terms / Meta */}
                         <div>
@@ -1802,8 +1802,8 @@ function AdminInvoicesContent() {
                         </div>
                     </form>
 
-                    {/* Right Column: Live A4 Preview Card (5 cols on xl) */}
-                    <div className="xl:col-span-5 space-y-4">
+                    {/* Right Column: Live A4 Preview Card (5 cols on lg/xl) */}
+                    <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto pr-1 self-start">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <Eye className="size-3.5 text-teal-600 dark:text-teal-400" />
@@ -1849,7 +1849,7 @@ function AdminInvoicesContent() {
                                     <p className="font-bold text-slate-900 dark:text-white">
                                         {sellerDetails.name}
                                     </p>
-                                    <p className="text-slate-500 text-[11px]">{sellerDetails.email}</p>
+                                    <p className="text-slate-500 text-[11px] break-all">{sellerDetails.email}</p>
                                     <p className="text-slate-500 text-[11px]">{sellerDetails.phone}</p>
                                     {sellerDetails.taxId && (
                                         <p className="text-slate-400 text-[10px] mt-1 font-mono">
@@ -1865,7 +1865,7 @@ function AdminInvoicesContent() {
                                         {clientDetails.name || "(Client Name)"}
                                     </p>
                                     {clientDetails.email && (
-                                        <p className="text-slate-500 text-[11px]">{clientDetails.email}</p>
+                                        <p className="text-slate-500 text-[11px] break-all">{clientDetails.email}</p>
                                     )}
                                     {clientDetails.phone && (
                                         <p className="text-slate-500 text-[11px]">{clientDetails.phone}</p>
@@ -1884,7 +1884,7 @@ function AdminInvoicesContent() {
                             </div>
 
                             {/* Items List Preview */}
-                            <div className="py-4 border-b border-dashed border-slate-200 dark:border-slate-700/80">
+                            <div className="py-4 border-b border-dashed border-slate-200 dark:border-slate-700/80 overflow-x-auto">
                                 <table className="w-full text-[11px]">
                                     <thead>
                                         <tr className="text-slate-400 text-[10px] uppercase border-b border-slate-100 dark:border-slate-800">
@@ -1898,7 +1898,7 @@ function AdminInvoicesContent() {
                                         {items.map((it, idx) => (
                                             <tr key={idx}>
                                                 <td className="py-2 pr-2">
-                                                    <p className="font-medium text-slate-800 dark:text-slate-200">
+                                                    <p className="font-medium text-slate-800 dark:text-slate-200 break-words">
                                                         {it.itemDescription || "Item name"}
                                                     </p>
                                                     <div className="flex items-center gap-1.5 text-[9px] text-slate-400 mt-0.5">

@@ -14,8 +14,12 @@ import {
     Building2,
     FileText,
     Copy,
-    Check
+    Check,
+    QrCode,
+    Smartphone,
+    ExternalLink
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import api from "@/lib/api";
 import { useToast } from "@/app/_context/ToastContext";
 
@@ -84,6 +88,7 @@ export default function PublicInvoicePage() {
     const [error, setError] = useState<string | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [copiedUpi, setCopiedUpi] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -123,6 +128,18 @@ export default function PublicInvoicePage() {
             setTimeout(() => setCopied(false), 2500);
         } catch (err) {
             showToast("Failed to copy link", "error");
+        }
+    };
+
+    const handleCopyUpi = async (upiToCopy?: string) => {
+        const text = upiToCopy || invoice?.paymentDetails?.upiId || "ddtec@hdfcbank";
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedUpi(true);
+            showToast("UPI ID copied to clipboard!", "success");
+            setTimeout(() => setCopiedUpi(false), 2500);
+        } catch (err) {
+            showToast("Failed to copy UPI ID", "error");
         }
     };
 
@@ -198,6 +215,15 @@ export default function PublicInvoicePage() {
         })
         : "Upon Receipt";
 
+    // Dynamic UPI Payment Parameters & standard NPCI UPI link
+    const upiId = invoice.paymentDetails?.upiId?.trim() || "ddtec@hdfcbank";
+    const payeeName = (invoice.paymentDetails?.accountName || invoice.sellerDetails?.name || "DDTEC Solutions").trim();
+    const amountVal = Number(invoice.totalAmount || 0);
+    const amountStr = amountVal.toFixed(2);
+    const sanitizedUpi = upiId.replace(/\s+/g, "");
+    const note = `Invoice ${invoice.invoiceNumber || ""}`.trim();
+    const upiUrl = `upi://pay?pa=${sanitizedUpi}&pn=${encodeURIComponent(payeeName)}&am=${amountStr}&cu=INR&tn=${encodeURIComponent(note)}`;
+
     return (
         <div className="min-h-screen bg-[#f7f7f7] dark:bg-slate-950 pt-24 sm:pt-28 pb-16 px-4 sm:px-6 text-slate-800 dark:text-slate-100 antialiased print:bg-white print:p-0">
             {/* Top Navigation & Action Controls (Hidden when printing) */}
@@ -223,6 +249,16 @@ export default function PublicInvoicePage() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {!isPaid && (
+                        <a
+                            href={upiUrl}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-sm transition"
+                            title="Pay via UPI App"
+                        >
+                            <QrCode className="size-3.5" />
+                            Pay via UPI
+                        </a>
+                    )}
                     <button
                         onClick={handleCopyLink}
                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 shadow-sm transition cursor-pointer"
@@ -415,54 +451,158 @@ export default function PublicInvoicePage() {
                     </div>
                 </div>
 
-                {/* 5. Bank Details & Payable Currency Footer */}
+                {/* 5. Bank Details & UPI Payment QR Footer */}
                 <div className="grid grid-cols-1 sm:grid-cols-2">
                     {/* Bank Details */}
-                    <div className="py-5 px-6 sm:px-10 border-b sm:border-b-0 sm:border-r border-dashed border-slate-300 dark:border-slate-700">
-                        <p className="text-[11px] text-neutral-400 dark:text-slate-400 font-semibold uppercase tracking-wider mb-2.5">Bank Details</p>
-                        <div className="space-y-1 text-xs">
-                            <div className="grid grid-cols-3">
-                                <span className="text-slate-400">Bank Name</span>
-                                <span className="col-span-2 font-medium text-slate-700 dark:text-slate-300">{invoice.paymentDetails?.bankName || "HDFC Bank"}</span>
-                            </div>
-                            <div className="grid grid-cols-3">
-                                <span className="text-slate-400">Account No</span>
-                                <span className="col-span-2 font-mono font-medium text-slate-700 dark:text-slate-300">{invoice.paymentDetails?.accountNumber || "50200012345678"}</span>
-                            </div>
-                            <div className="grid grid-cols-3">
-                                <span className="text-slate-400">Account Name</span>
-                                <span className="col-span-2 font-medium text-slate-700 dark:text-slate-300">{invoice.paymentDetails?.accountName || "DDTEC SOLUTIONS PVT LTD"}</span>
-                            </div>
-                            <div className="grid grid-cols-3">
-                                <span className="text-slate-400">IFSC Code</span>
-                                <span className="col-span-2 font-mono font-medium text-slate-700 dark:text-slate-300">{invoice.paymentDetails?.ifscCode || "HDFC0001234"}</span>
-                            </div>
-                            {invoice.paymentDetails?.upiId && (
+                    <div className="py-5 px-6 sm:px-10 border-b sm:border-b-0 sm:border-r border-dashed border-slate-300 dark:border-slate-700 flex flex-col justify-between">
+                        <div>
+                            <p className="text-[11px] text-neutral-400 dark:text-slate-400 font-semibold uppercase tracking-wider mb-2.5">Bank Details</p>
+                            <div className="space-y-1.5 text-xs">
                                 <div className="grid grid-cols-3">
-                                    <span className="text-slate-400">UPI ID</span>
-                                    <span className="col-span-2 font-mono font-medium text-slate-700 dark:text-slate-300">{invoice.paymentDetails.upiId}</span>
+                                    <span className="text-slate-400">Bank Name</span>
+                                    <span className="col-span-2 font-medium text-slate-700 dark:text-slate-300">{invoice.paymentDetails?.bankName || "HDFC Bank"}</span>
                                 </div>
-                            )}
+                                <div className="grid grid-cols-3">
+                                    <span className="text-slate-400">Account No</span>
+                                    <span className="col-span-2 font-mono font-medium text-slate-700 dark:text-slate-300">{invoice.paymentDetails?.accountNumber || "50200012345678"}</span>
+                                </div>
+                                <div className="grid grid-cols-3">
+                                    <span className="text-slate-400">Account Name</span>
+                                    <span className="col-span-2 font-medium text-slate-700 dark:text-slate-300">{invoice.paymentDetails?.accountName || "DDTEC SOLUTIONS PVT LTD"}</span>
+                                </div>
+                                <div className="grid grid-cols-3">
+                                    <span className="text-slate-400">IFSC Code</span>
+                                    <span className="col-span-2 font-mono font-medium text-slate-700 dark:text-slate-300">{invoice.paymentDetails?.ifscCode || "HDFC0001234"}</span>
+                                </div>
+                                {invoice.paymentDetails?.swiftCode && (
+                                    <div className="grid grid-cols-3">
+                                        <span className="text-slate-400">SWIFT</span>
+                                        <span className="col-span-2 font-mono font-medium text-slate-700 dark:text-slate-300">{invoice.paymentDetails.swiftCode}</span>
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-3 items-center">
+                                    <span className="text-slate-400">UPI ID</span>
+                                    <div className="col-span-2 flex items-center gap-1.5">
+                                        <span className="font-mono font-medium text-slate-700 dark:text-slate-300">{upiId}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleCopyUpi(upiId)}
+                                            className="text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition cursor-pointer print:hidden"
+                                            title="Copy UPI ID"
+                                        >
+                                            {copiedUpi ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-dashed border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 flex items-center gap-2">
+                            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>Direct NEFT / RTGS / IMPS / UPI accepted</span>
                         </div>
                     </div>
 
-                    {/* Payable Currency */}
-                    <div className="py-5 px-6 sm:px-10 flex flex-col justify-between">
+                    {/* UPI QR Code Section */}
+                    <div className="py-5 px-6 sm:px-10 flex flex-col justify-between bg-slate-50/40 dark:bg-slate-800/30">
                         <div>
-                            <p className="text-[11px] text-neutral-400 dark:text-slate-400 font-semibold uppercase tracking-wider mb-2.5">Payable in</p>
-                            <div className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                                    ₹
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-1.5">
+                                    <QrCode className="size-3.5 text-teal-600 dark:text-teal-400" />
+                                    <p className="text-[11px] text-neutral-400 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                                        Scan & Pay via UPI
+                                    </p>
                                 </div>
-                                <div>
-                                    <p className="font-bold text-sm text-slate-900 dark:text-white">Indian Rupee</p>
-                                    <p className="text-xs text-slate-400 font-mono">INR (₹)</p>
-                                </div>
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${isPaid ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" : "bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800"}`}>
+                                    {isPaid ? "Paid" : "Instant Pay"}
+                                </span>
                             </div>
+
+                            {isPaid ? (
+                                <div className="p-4 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-700 bg-emerald-50/80 dark:bg-emerald-950/40 text-center space-y-1.5">
+                                    <div className="w-10 h-10 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                        <CheckCircle2 className="size-5" />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-emerald-900 dark:text-emerald-200">Invoice Paid in Full</h4>
+                                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                                        Payment of ₹{invoice.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })} has been received.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                                    {/* QR Code Graphic with White Plate */}
+                                    <div className="flex flex-col items-center shrink-0">
+                                        <div className="p-2.5 bg-white rounded-xl border border-slate-200 shadow-xs print:border-slate-300">
+                                            <QRCodeSVG
+                                                value={upiUrl}
+                                                size={120}
+                                                level="M"
+                                                marginSize={1}
+                                                bgColor="#ffffff"
+                                                fgColor="#0f172a"
+                                            />
+                                        </div>
+                                        <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-medium flex items-center gap-1">
+                                            <Smartphone className="size-3 text-teal-600 dark:text-teal-400" />
+                                            Scan with any UPI app
+                                        </span>
+                                    </div>
+
+                                    {/* Payment Info & Quick Actions */}
+                                    <div className="flex-1 min-w-0 space-y-2 text-xs text-center sm:text-left w-full">
+                                        <div>
+                                            <span className="text-[10px] text-neutral-400 dark:text-slate-400 font-semibold uppercase tracking-wider block">
+                                                Amount to Pay
+                                            </span>
+                                            <p className="text-base font-bold font-mono text-teal-600 dark:text-teal-400">
+                                                ₹{invoice.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <span className="text-[10px] text-neutral-400 dark:text-slate-400 font-semibold uppercase tracking-wider block mb-1">
+                                                UPI VPA
+                                            </span>
+                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono text-xs text-slate-700 dark:text-slate-200 shadow-xs">
+                                                <span>{upiId}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopyUpi(upiId)}
+                                                    className="p-0.5 hover:text-teal-600 dark:hover:text-teal-400 transition cursor-pointer print:hidden"
+                                                    title="Copy UPI ID"
+                                                >
+                                                    {copiedUpi ? (
+                                                        <Check className="size-3 text-emerald-600 dark:text-emerald-400" />
+                                                    ) : (
+                                                        <Copy className="size-3 text-slate-400" />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Mobile Tap-to-Pay Button (direct URI link) */}
+                                        <div className="pt-0.5 print:hidden">
+                                            <a
+                                                href={upiUrl}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-semibold shadow-xs transition"
+                                            >
+                                                <Smartphone className="size-3.5" />
+                                                Pay via UPI App
+                                                <ExternalLink className="size-3 opacity-80" />
+                                            </a>
+                                        </div>
+
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 pt-0.5">
+                                            Supports GPay, PhonePe, Paytm, BHIM, Cred & bank apps
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="mt-4 flex items-center justify-end">
-                            <span className="text-[11px] text-slate-400">
+                        <div className="mt-4 pt-3 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                            <span>Payable in <strong>INR (₹)</strong></span>
+                            <span>
                                 Powered by <strong className="text-slate-600 dark:text-slate-300">DDTEC</strong>
                             </span>
                         </div>
@@ -471,11 +611,20 @@ export default function PublicInvoicePage() {
             </div>
 
             {/* Mobile Action Buttons Bar (Shown only on small mobile screens where top bar wraps) */}
-            <div className="max-w-4xl mx-auto mt-6 text-center print:hidden sm:hidden">
+            <div className="max-w-4xl mx-auto mt-6 text-center print:hidden sm:hidden space-y-2">
+                {!isPaid && (
+                    <a
+                        href={upiUrl}
+                        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold text-sm shadow-md transition"
+                    >
+                        <Smartphone className="size-4" />
+                        Pay ₹{invoice.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })} via UPI App
+                    </a>
+                )}
                 <button
                     onClick={handleDownloadPdf}
                     disabled={isDownloading}
-                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold text-sm shadow-md transition cursor-pointer"
+                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm shadow-sm transition cursor-pointer"
                 >
                     <Download className="size-4" />
                     {isDownloading ? "Generating PDF..." : "Download Invoice PDF"}
