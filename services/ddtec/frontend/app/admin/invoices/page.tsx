@@ -1897,9 +1897,9 @@ function AdminInvoicesContent() {
                                     <thead>
                                         <tr className="text-slate-400 text-[10px] uppercase border-b border-slate-100 dark:border-slate-800">
                                             <th className="text-left pb-2 pr-2">Description</th>
-                                            <th className="text-center pb-2 px-2 whitespace-nowrap">Qty</th>
-                                            <th className="text-right pb-2 px-2 whitespace-nowrap">Price</th>
-                                            <th className="text-right pb-2 pl-2 whitespace-nowrap">Amount</th>
+                                            <th className="text-left pb-2 px-2 whitespace-nowrap">Qty</th>
+                                            <th className="text-left pb-2 px-2 whitespace-nowrap">Price</th>
+                                            <th className="text-left pb-2 pl-2 whitespace-nowrap">Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -1921,7 +1921,7 @@ function AdminInvoicesContent() {
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="py-2 px-2 text-center text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                                <td className="py-2 px-2 text-left text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                                     <span className="font-semibold">{it.qty}</span>
                                                     {(it.unit || "Piece") && (
                                                         <span className="block text-[9px] text-slate-400 font-medium">
@@ -1929,11 +1929,11 @@ function AdminInvoicesContent() {
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="py-2 px-2 text-right font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                                <td className="py-2 px-2 text-left font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                                     {currSym}
                                                     {Math.round(Number(it.price || 0)).toLocaleString("en-IN")}
                                                 </td>
-                                                <td className="py-2 pl-2 text-right font-mono font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                                                <td className="py-2 pl-2 text-left font-mono font-medium text-slate-800 dark:text-slate-200 whitespace-nowrap">
                                                     {currSym}
                                                     {Math.round(Number(it.amount || 0)).toLocaleString("en-IN")}
                                                 </td>

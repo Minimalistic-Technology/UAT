@@ -794,11 +794,11 @@ export function buildInvoicePdfDocument(invoice: IInvoice): jsPDF {
             lineWidth: { bottom: 0.5 }
         },
         columnStyles: {
-            0: { halign: 'center', cellWidth: 10 },
+            0: { halign: 'left', cellWidth: 10 },
             1: { halign: 'left', cellWidth: 85 },
-            2: { halign: 'center', cellWidth: 20 },
-            3: { halign: 'right', cellWidth: 32 },
-            4: { halign: 'right', cellWidth: 35 }
+            2: { halign: 'left', cellWidth: 20 },
+            3: { halign: 'left', cellWidth: 32 },
+            4: { halign: 'left', cellWidth: 35 }
         }
     });
 

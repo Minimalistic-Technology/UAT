@@ -364,9 +364,9 @@ export default function PublicInvoicePage() {
                         <thead>
                             <tr className="border-b border-dashed border-slate-200 dark:border-slate-800 text-[11px] text-neutral-400 dark:text-slate-400 font-semibold uppercase tracking-wider bg-slate-50/50 dark:bg-slate-800/20">
                                 <th className="text-left py-3.5 pl-4 sm:pl-10 pr-3 font-semibold">Description</th>
-                                <th className="text-center py-3.5 px-2.5 font-semibold whitespace-nowrap">Qty</th>
-                                <th className="text-right py-3.5 px-3 font-semibold whitespace-nowrap">Price</th>
-                                <th className="text-right py-3.5 pl-3 pr-4 sm:pr-10 font-semibold whitespace-nowrap">Amount</th>
+                                <th className="text-left py-3.5 px-2.5 font-semibold whitespace-nowrap">Qty</th>
+                                <th className="text-left py-3.5 px-3 font-semibold whitespace-nowrap">Price</th>
+                                <th className="text-left py-3.5 pl-3 pr-4 sm:pr-10 font-semibold whitespace-nowrap">Amount</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-dashed divide-slate-200 dark:divide-slate-800">
@@ -386,7 +386,7 @@ export default function PublicInvoicePage() {
                                             )}
                                         </div>
                                     </td>
-                                    <td className="py-3.5 px-2.5 text-center align-middle whitespace-nowrap text-slate-600 dark:text-slate-300">
+                                    <td className="py-3.5 px-2.5 text-left align-middle whitespace-nowrap text-slate-600 dark:text-slate-300">
                                         <span className="font-semibold text-slate-900 dark:text-white text-xs">{item.qty}</span>
                                         {(item.unit || "Piece") && (
                                             <span className="block text-[10px] text-slate-400 font-medium">
@@ -394,10 +394,10 @@ export default function PublicInvoicePage() {
                                             </span>
                                         )}
                                     </td>
-                                    <td className="py-3.5 px-3 text-right align-middle font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                                    <td className="py-3.5 px-3 text-left align-middle font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
                                         ₹{Math.round(Number(item.price || 0)).toLocaleString("en-IN")}
                                     </td>
-                                    <td className="py-3.5 pl-3 pr-4 sm:pr-10 text-right align-middle font-mono font-medium text-slate-900 dark:text-white whitespace-nowrap">
+                                    <td className="py-3.5 pl-3 pr-4 sm:pr-10 text-left align-middle font-mono font-medium text-slate-900 dark:text-white whitespace-nowrap">
                                         ₹{Math.round(Number(item.amount || 0)).toLocaleString("en-IN")}
                                     </td>
                                 </tr>
