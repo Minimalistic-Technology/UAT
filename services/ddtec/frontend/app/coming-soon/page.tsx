@@ -1,6 +1,7 @@
 "use client";
 
 import { Hammer, Wrench, Drill, Mail, Phone } from "lucide-react";
+import { SITE_CONFIG, CONTACT_INFO } from "@/lib/constants";
 
 export default function ComingSoonPage() {
   return (
@@ -24,10 +25,10 @@ export default function ComingSoonPage() {
         {/* Logo mark */}
         <div className="flex items-center gap-2 mb-8">
           <div className="size-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-teal-500/30">
-            D
+            {SITE_CONFIG.logoLetter}
           </div>
           <span className="font-bold text-2xl tracking-tight text-slate-900 dark:text-white">
-            DDTEC
+            {SITE_CONFIG.name}
           </span>
         </div>
 
@@ -43,7 +44,7 @@ export default function ComingSoonPage() {
 
         <p className="text-slate-600 dark:text-slate-400 text-base md:text-lg max-w-md mb-10">
           We&apos;re building precision-crafted tools and a brand new experience.
-          DDTEC will be back online shortly &mdash; stay tuned.
+          {SITE_CONFIG.name} will be back online shortly &mdash; stay tuned.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
@@ -51,10 +52,10 @@ export default function ComingSoonPage() {
             <Mail className="size-4 text-teal-600 dark:text-teal-400 shrink-0" />
             <span>
               <a
-                href="mailto:support@ddtec.com"
+                href={`mailto:${CONTACT_INFO.supportEmail}`}
                 className="font-semibold text-teal-600 dark:text-teal-400 hover:underline"
               >
-                support@ddtec.com
+                {CONTACT_INFO.supportEmail}
               </a>
             </span>
           </div>
@@ -63,10 +64,10 @@ export default function ComingSoonPage() {
             <Phone className="size-4 text-teal-600 dark:text-teal-400 shrink-0" />
             <span>
               <a
-                href="tel:7777099930"
+                href={`tel:+${CONTACT_INFO.phone}`}
                 className="font-semibold text-teal-600 dark:text-teal-400 hover:underline"
               >
-                +91 77770 99930
+                {CONTACT_INFO.phoneDisplay}
               </a>
             </span>
           </div>
@@ -74,7 +75,7 @@ export default function ComingSoonPage() {
       </div>
 
       <p className="relative z-10 mt-16 text-xs text-slate-400 dark:text-slate-600">
-        &copy; {new Date().getFullYear()} DDTEC. All rights reserved.
+        &copy; {new Date().getFullYear()} {SITE_CONFIG.name}. All rights reserved.
       </p>
     </div>
   );

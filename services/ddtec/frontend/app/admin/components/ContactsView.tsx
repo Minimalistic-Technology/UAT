@@ -17,10 +17,16 @@ import {
     Loader2,
     AlertCircle,
     UserPlus,
-    Sparkles
+    Sparkles,
+    Download,
+    Trash,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
+import CompanySelect from './CompanySelect';
 
 interface ContactEmail {
     label: 'work' | 'personal' | 'other';
@@ -62,6 +68,29 @@ interface Contact {
 const emptyEmail = (): ContactEmail => ({ label: 'work', value: '' });
 const emptyPhone = (): ContactPhone => ({ label: 'mobile', value: '' });
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[+]?[\d\s()-]{7,20}$/;
+
+interface FormErrors {
+    firstName?: string;
+    lastName?: string;
+    company?: string;
+    jobTitle?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    birthday?: string;
+    note?: string;
+    emails: (string | null)[];
+    phones: (string | null)[];
+    emailsGeneral?: string;
+    phonesGeneral?: string;
+}
+
+const emptyErrors = (): FormErrors => ({ emails: [], phones: [] });
+
 const emptyFormData = () => ({
     firstName: '',
     lastName: '',
@@ -74,8 +103,8 @@ const emptyFormData = () => ({
     state: '',
     postalCode: '',
     country: '',
-    productInterest: '',
-    tags: '',
+    productInterest: [] as string[],
+    tags: [] as string[],
     birthday: '',
     photo: '',
     note: ''
@@ -97,8 +126,32 @@ const timeAgo = (dateStr: string): string => {
 const initials = (c: Contact) =>
     `${c.firstName?.[0] || ''}${c.lastName?.[0] || ''}`.toUpperCase() || '?';
 
+const ACRONYMS = new Set(['VIP', 'CRM', 'USB', 'B2B', 'IT', 'VCF', 'CSV', 'API', 'UI', 'UX', 'AI', 'PC', 'MNC']);
+
+const normalizeTag = (raw: string): string => {
+    if (!raw) return '';
+    const str = raw.trim();
+    if (!str) return '';
+    return str
+        .split(/\s+/)
+        .map(word => {
+            const upper = word.toUpperCase();
+            if (ACRONYMS.has(upper)) return upper;
+            return word
+                .split('-')
+                .map(part => {
+                    const partUpper = part.toUpperCase();
+                    if (ACRONYMS.has(partUpper)) return partUpper;
+                    return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+                })
+                .join('-');
+        })
+        .join(' ');
+};
+
 export default function ContactsView() {
     const { showToast } = useToast();
+    const confirm = useConfirm();
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -120,6 +173,20 @@ export default function ContactsView() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState(emptyFormData());
+    const [formErrors, setFormErrors] = useState<FormErrors>(emptyErrors());
+    const [productInterestInput, setProductInterestInput] = useState('');
+    const [tagsInput, setTagsInput] = useState('');
+    const [isInterestFocused, setIsInterestFocused] = useState(false);
+    const [isTagFocused, setIsTagFocused] = useState(false);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+    const [photoError, setPhotoError] = useState<string | null>(null);
+    const photoInputRef = useRef<HTMLInputElement>(null);
+
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize] = useState(25);
 
     const fetchContacts = async () => {
         setLoading(true);
@@ -145,10 +212,44 @@ export default function ContactsView() {
     }, [contacts]);
 
     const uniqueProductInterests = useMemo(() => {
-        const set = new Set<string>();
-        contacts.forEach(c => c.productInterest.forEach(p => set.add(p)));
-        return Array.from(set).sort();
+        const map = new Map<string, string>();
+        contacts.forEach(c => {
+            (c.productInterest || []).forEach(p => {
+                const norm = normalizeTag(p);
+                if (norm && !map.has(norm.toLowerCase())) {
+                    map.set(norm.toLowerCase(), norm);
+                }
+            });
+        });
+        return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
     }, [contacts]);
+
+    const allExistingTags = useMemo(() => {
+        const map = new Map<string, string>();
+        contacts.forEach(c => {
+            (c.tags || []).forEach(t => {
+                const norm = normalizeTag(t);
+                if (norm && !map.has(norm.toLowerCase())) {
+                    map.set(norm.toLowerCase(), norm);
+                }
+            });
+        });
+        return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+    }, [contacts]);
+
+    const interestSuggestions = useMemo(() => {
+        const q = productInterestInput.trim().toLowerCase();
+        if (!q) return [];
+        const selected = new Set(formData.productInterest.map(p => p.toLowerCase()));
+        return uniqueProductInterests.filter(p => p.toLowerCase().includes(q) && !selected.has(p.toLowerCase()));
+    }, [productInterestInput, uniqueProductInterests, formData.productInterest]);
+
+    const tagSuggestions = useMemo(() => {
+        const q = tagsInput.trim().toLowerCase();
+        if (!q) return [];
+        const selected = new Set(formData.tags.map(t => t.toLowerCase()));
+        return allExistingTags.filter(t => t.toLowerCase().includes(q) && !selected.has(t.toLowerCase()));
+    }, [tagsInput, allExistingTags, formData.tags]);
 
     const newThisWeekCount = useMemo(() => {
         const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -166,78 +267,397 @@ export default function ContactsView() {
                 c.emails.some(e => e.value.toLowerCase().includes(searchQuery.toLowerCase()));
 
             const matchesCompany = companyFilter === 'All' || c.company === companyFilter;
-            const matchesProduct = productInterestFilter === 'All' || c.productInterest.includes(productInterestFilter);
+            const matchesProduct =
+                productInterestFilter === 'All' ||
+                (c.productInterest || []).some(p => p.trim().toLowerCase() === productInterestFilter.toLowerCase());
             const matchesWeek = !newThisWeekOnly || new Date(c.createdAt).getTime() >= weekAgo;
 
             return matchesSearch && matchesCompany && matchesProduct && matchesWeek;
         });
     }, [contacts, searchQuery, companyFilter, productInterestFilter, newThisWeekOnly]);
 
+    // Reset to page 1 whenever the filtered result set changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, companyFilter, productInterestFilter, newThisWeekOnly, pageSize]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredContacts.length / pageSize));
+    const safeCurrentPage = Math.min(currentPage, totalPages);
+    const paginatedContacts = useMemo(() => {
+        const start = (safeCurrentPage - 1) * pageSize;
+        return filteredContacts.slice(start, start + pageSize);
+    }, [filteredContacts, safeCurrentPage, pageSize]);
+
+    const validateForm = (data: typeof formData): FormErrors => {
+        const errors: FormErrors = emptyErrors();
+
+        const fName = data.firstName.trim();
+        if (!fName) {
+            errors.firstName = 'First name is required';
+        } else if (fName.length < 2) {
+            errors.firstName = 'First name must be at least 2 characters';
+        } else if (fName.length > 60) {
+            errors.firstName = 'First name cannot exceed 60 characters';
+        }
+
+        const lName = data.lastName.trim();
+        if (!lName) {
+            errors.lastName = 'Last name is required';
+        } else if (lName.length < 2) {
+            errors.lastName = 'Last name must be at least 2 characters';
+        } else if (lName.length > 60) {
+            errors.lastName = 'Last name cannot exceed 60 characters';
+        }
+
+        const comp = data.company?.trim() || '';
+        if (comp && comp.length < 2) {
+            errors.company = 'Company name must be at least 2 characters';
+        } else if (comp.length > 100) {
+            errors.company = 'Company name cannot exceed 100 characters';
+        }
+
+        const jt = data.jobTitle?.trim() || '';
+        if (jt && jt.length < 2) {
+            errors.jobTitle = 'Job title must be at least 2 characters';
+        } else if (jt.length > 80) {
+            errors.jobTitle = 'Job title cannot exceed 80 characters';
+        }
+
+        if (data.street && data.street.trim().length > 150) {
+            errors.street = 'Street cannot exceed 150 characters';
+        }
+
+        if (data.city && data.city.trim().length > 80) {
+            errors.city = 'City cannot exceed 80 characters';
+        }
+
+        if (data.state && data.state.trim().length > 80) {
+            errors.state = 'State cannot exceed 80 characters';
+        }
+
+        if (data.postalCode && data.postalCode.trim().length > 20) {
+            errors.postalCode = 'Postal code cannot exceed 20 characters';
+        }
+
+        if (data.country && data.country.trim().length > 80) {
+            errors.country = 'Country cannot exceed 80 characters';
+        }
+
+        const seenEmails = new Set<string>();
+        let hasValidEmail = false;
+        errors.emails = data.emails.map(e => {
+            const val = e.value.trim().toLowerCase();
+            if (!val) return null;
+            if (!EMAIL_REGEX.test(val)) return 'Enter a valid email address';
+            if (val.length < 5 || val.length > 100) return 'Email must be between 5 and 100 characters';
+            if (seenEmails.has(val)) return 'Duplicate email address';
+            seenEmails.add(val);
+            hasValidEmail = true;
+            return null;
+        });
+        if (!hasValidEmail) {
+            errors.emailsGeneral = 'At least one valid email address is required';
+        }
+
+        const seenPhones = new Set<string>();
+        let hasValidPhone = false;
+        errors.phones = data.phones.map(p => {
+            const val = p.value.trim();
+            if (!val) return null;
+            if (!PHONE_REGEX.test(val)) return 'Enter a valid phone number (7-20 characters)';
+            const digitsOnly = val.replace(/\D/g, '');
+            if (digitsOnly.length < 7 || digitsOnly.length > 15) return 'Phone must contain 7 to 15 digits';
+            if (seenPhones.has(val)) return 'Duplicate phone number';
+            seenPhones.add(val);
+            hasValidPhone = true;
+            return null;
+        });
+        if (!hasValidPhone) {
+            errors.phonesGeneral = 'At least one valid phone number is required';
+        }
+
+        if (data.birthday) {
+            const bday = new Date(data.birthday);
+            if (isNaN(bday.getTime())) {
+                errors.birthday = 'Invalid date';
+            } else {
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+                if (bday > today) {
+                    errors.birthday = 'Birthday cannot be in the future';
+                }
+            }
+        }
+
+        if (data.note && data.note.trim().length > 2000) {
+            errors.note = 'Note cannot exceed 2000 characters';
+        }
+
+        return errors;
+    };
+
+    const hasErrors = (errors: FormErrors): boolean =>
+        Boolean(
+            errors.firstName ||
+            errors.lastName ||
+            errors.company ||
+            errors.jobTitle ||
+            errors.street ||
+            errors.city ||
+            errors.state ||
+            errors.postalCode ||
+            errors.country ||
+            errors.birthday ||
+            errors.note ||
+            errors.emailsGeneral ||
+            errors.phonesGeneral
+        ) ||
+        errors.emails.some(Boolean) ||
+        errors.phones.some(Boolean);
+
+    const addProductInterestTag = (rawVal: string) => {
+        const items = rawVal.split(',').map(s => s.trim()).filter(Boolean);
+        if (items.length === 0) return;
+
+        setFormData(prev => {
+            const current = new Set(prev.productInterest.map(p => p.toLowerCase()));
+            const next = [...prev.productInterest];
+            for (const item of items) {
+                const normalized = normalizeTag(item);
+                if (normalized.length > 50) continue;
+                if (normalized && !current.has(normalized.toLowerCase()) && next.length < 30) {
+                    current.add(normalized.toLowerCase());
+                    next.push(normalized);
+                }
+            }
+            return { ...prev, productInterest: next };
+        });
+        setProductInterestInput('');
+    };
+
+    const removeProductInterestTag = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            productInterest: prev.productInterest.filter((_, i) => i !== index)
+        }));
+    };
+
+    const addTag = (rawVal: string) => {
+        const items = rawVal.split(',').map(s => s.trim()).filter(Boolean);
+        if (items.length === 0) return;
+
+        setFormData(prev => {
+            const current = new Set(prev.tags.map(t => t.toLowerCase()));
+            const next = [...prev.tags];
+            for (const item of items) {
+                const normalized = normalizeTag(item);
+                if (normalized.length > 50) continue;
+                if (normalized && !current.has(normalized.toLowerCase()) && next.length < 30) {
+                    current.add(normalized.toLowerCase());
+                    next.push(normalized);
+                }
+            }
+            return { ...prev, tags: next };
+        });
+        setTagsInput('');
+    };
+
+    const removeTag = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            tags: prev.tags.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            setPhotoError('Please select a valid image file (JPG, PNG, WebP)');
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            setPhotoError('Image size must be less than 5MB');
+            return;
+        }
+
+        setPhotoError(null);
+        setIsUploadingPhoto(true);
+
+        try {
+            const uploadData = new FormData();
+            uploadData.append('photo', file);
+
+            const { data } = await api.post('/contacts/upload-photo', uploadData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            // Clean up uncommitted previous photo uploaded in this session
+            if (formData.photo && formData.photo !== editingContact?.photo) {
+                try {
+                    await api.post('/contacts/delete-photo', { photoUrl: formData.photo });
+                } catch (err) {
+                    console.warn('Failed to clean up uncommitted previous photo', err);
+                }
+            }
+
+            setFormData(prev => ({ ...prev, photo: data.url }));
+            showToast('Photo uploaded successfully', 'success');
+        } catch (err: any) {
+            console.error('Photo upload failed:', err);
+            const msg = err.response?.data?.msg || 'Failed to upload photo';
+            setPhotoError(msg);
+            showToast(msg, 'error');
+        } finally {
+            setIsUploadingPhoto(false);
+            if (photoInputRef.current) photoInputRef.current.value = '';
+        }
+    };
+
+    const handleRemovePhoto = async () => {
+        const photoToDelete = formData.photo;
+        if (!photoToDelete) return;
+
+        // If the photo was uploaded during this form session and not committed yet, delete from Cloudinary
+        if (photoToDelete !== editingContact?.photo) {
+            try {
+                await api.post('/contacts/delete-photo', { photoUrl: photoToDelete });
+            } catch (err) {
+                console.warn('Failed to delete temp photo from Cloudinary', err);
+            }
+        }
+
+        setFormData(prev => ({ ...prev, photo: '' }));
+        setPhotoError(null);
+        if (photoInputRef.current) photoInputRef.current.value = '';
+    };
+
+    const handleCloseFormModal = async () => {
+        if (formData.photo && formData.photo !== editingContact?.photo) {
+            try {
+                await api.post('/contacts/delete-photo', { photoUrl: formData.photo });
+            } catch (err) {
+                console.warn('Failed to clean up uncommitted photo', err);
+            }
+        }
+        setIsFormModalOpen(false);
+        setFormData(emptyFormData());
+        setProductInterestInput('');
+        setTagsInput('');
+        setPhotoError(null);
+    };
+
     const handleOpenCreateModal = () => {
         setEditingContact(null);
         setFormData(emptyFormData());
+        setFormErrors(emptyErrors());
+        setProductInterestInput('');
+        setTagsInput('');
+        setPhotoError(null);
         setIsFormModalOpen(true);
     };
 
     const handleOpenEditModal = (contact: Contact) => {
         setEditingContact(contact);
         setFormData({
-            firstName: contact.firstName,
+            firstName: contact.firstName || '',
             lastName: contact.lastName || '',
             company: contact.company || '',
             jobTitle: contact.jobTitle || '',
-            emails: contact.emails.length > 0 ? contact.emails : [emptyEmail()],
-            phones: contact.phones.length > 0 ? contact.phones : [emptyPhone()],
+            emails: contact.emails && contact.emails.length > 0 ? contact.emails.map(e => ({ ...e })) : [emptyEmail()],
+            phones: contact.phones && contact.phones.length > 0 ? contact.phones.map(p => ({ ...p })) : [emptyPhone()],
             street: contact.address?.street || '',
             city: contact.address?.city || '',
             state: contact.address?.state || '',
             postalCode: contact.address?.postalCode || '',
             country: contact.address?.country || '',
-            productInterest: contact.productInterest.join(', '),
-            tags: contact.tags.join(', '),
+            productInterest: Array.isArray(contact.productInterest) ? [...contact.productInterest] : [],
+            tags: Array.isArray(contact.tags) ? [...contact.tags] : [],
             birthday: contact.birthday ? contact.birthday.slice(0, 10) : '',
             photo: contact.photo || '',
             note: contact.note || ''
         });
+        setProductInterestInput('');
+        setTagsInput('');
+        setPhotoError(null);
+        setFormErrors(emptyErrors());
         setIsFormModalOpen(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.firstName.trim()) {
-            showToast('First name is required', 'error');
+
+        // Process any uncommitted text in productInterestInput or tagsInput
+        let currentInterests = [...formData.productInterest];
+        if (productInterestInput.trim()) {
+            const raw = productInterestInput.split(',').map(s => s.trim()).filter(Boolean);
+            const set = new Set(currentInterests.map(p => p.toLowerCase()));
+            for (const item of raw) {
+                const normalized = normalizeTag(item);
+                if (normalized && normalized.length <= 50 && !set.has(normalized.toLowerCase()) && currentInterests.length < 30) {
+                    set.add(normalized.toLowerCase());
+                    currentInterests.push(normalized);
+                }
+            }
+        }
+
+        let currentTags = [...formData.tags];
+        if (tagsInput.trim()) {
+            const raw = tagsInput.split(',').map(s => s.trim()).filter(Boolean);
+            const set = new Set(currentTags.map(t => t.toLowerCase()));
+            for (const item of raw) {
+                const normalized = normalizeTag(item);
+                if (normalized && normalized.length <= 50 && !set.has(normalized.toLowerCase()) && currentTags.length < 30) {
+                    set.add(normalized.toLowerCase());
+                    currentTags.push(normalized);
+                }
+            }
+        }
+
+        const dataToValidate = {
+            ...formData,
+            productInterest: currentInterests,
+            tags: currentTags
+        };
+
+        const errors = validateForm(dataToValidate);
+        setFormErrors(errors);
+        if (hasErrors(errors)) {
+            showToast('Please fix the highlighted fields', 'error');
             return;
         }
 
         setIsSubmitting(true);
         try {
             const payload = {
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                company: formData.company,
-                jobTitle: formData.jobTitle,
-                emails: formData.emails.filter(e => e.value.trim()),
-                phones: formData.phones.filter(p => p.value.trim()),
+                firstName: dataToValidate.firstName.trim(),
+                lastName: dataToValidate.lastName.trim(),
+                company: dataToValidate.company.trim(),
+                jobTitle: dataToValidate.jobTitle.trim(),
+                emails: dataToValidate.emails.filter(e => e.value.trim()).map(e => ({ label: e.label, value: e.value.trim() })),
+                phones: dataToValidate.phones.filter(p => p.value.trim()).map(p => ({ label: p.label, value: p.value.trim() })),
                 address: {
-                    street: formData.street,
-                    city: formData.city,
-                    state: formData.state,
-                    postalCode: formData.postalCode,
-                    country: formData.country
+                    street: dataToValidate.street.trim(),
+                    city: dataToValidate.city.trim(),
+                    state: dataToValidate.state.trim(),
+                    postalCode: dataToValidate.postalCode.trim(),
+                    country: dataToValidate.country.trim()
                 },
-                productInterest: formData.productInterest.split(',').map(s => s.trim()).filter(Boolean),
-                tags: formData.tags.split(',').map(s => s.trim()).filter(Boolean),
-                birthday: formData.birthday || undefined,
-                photo: formData.photo,
-                note: formData.note
+                productInterest: dataToValidate.productInterest,
+                tags: dataToValidate.tags,
+                birthday: dataToValidate.birthday || undefined,
+                photo: dataToValidate.photo || undefined,
+                note: dataToValidate.note.trim()
             };
 
             if (editingContact) {
                 await api.put(`/contacts/${editingContact._id}`, payload);
-                showToast('Contact updated', 'success');
+                showToast('Contact updated successfully', 'success');
             } else {
                 await api.post('/contacts', payload);
-                showToast('Contact added', 'success');
+                showToast('Contact added successfully', 'success');
             }
 
             setIsFormModalOpen(false);
@@ -251,7 +671,8 @@ export default function ContactsView() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Delete contact "${name}"? This cannot be undone.`)) return;
+        const ok = await confirm({ message: `Delete contact "${name}"? This cannot be undone.`, variant: "danger" });
+        if (!ok) return;
         try {
             await api.delete(`/contacts/${id}`);
             showToast('Contact deleted', 'success');
@@ -259,6 +680,81 @@ export default function ContactsView() {
         } catch (error: any) {
             console.error('Failed to delete contact', error);
             showToast(error.response?.data?.msg || 'Failed to delete contact', 'error');
+        }
+    };
+
+    const toggleSelectOne = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        setSelectedIds(prev => {
+            const allSelected = paginatedContacts.length > 0 && paginatedContacts.every(c => prev.has(c._id));
+            const next = new Set(prev);
+            if (allSelected) {
+                paginatedContacts.forEach(c => next.delete(c._id));
+            } else {
+                paginatedContacts.forEach(c => next.add(c._id));
+            }
+            return next;
+        });
+    };
+
+    const csvField = (value: string): string => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+    const handleExportSelected = () => {
+        const selected = contacts.filter(c => selectedIds.has(c._id));
+        if (selected.length === 0) return;
+
+        const headers = ['First Name', 'Last Name', 'Emails', 'Phones', 'Company', 'Job Title', 'Product Interest', 'Tags', 'Birthday', 'Note'];
+        const rows = selected.map(c => [
+            c.firstName,
+            c.lastName || '',
+            c.emails.map(e => e.value).join('; '),
+            c.phones.map(p => p.value).join('; '),
+            c.company || '',
+            c.jobTitle || '',
+            c.productInterest.join('; '),
+            c.tags.join('; '),
+            c.birthday ? c.birthday.slice(0, 10) : '',
+            c.note || ''
+        ]);
+
+        const csv = [headers, ...rows].map(row => row.map(csvField).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `contacts-export-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast(`Exported ${selected.length} contact(s)`, 'success');
+    };
+
+    const handleBulkDelete = async () => {
+        const ids = Array.from(selectedIds);
+        if (ids.length === 0) return;
+        const ok = await confirm({ message: `Delete ${ids.length} selected contact(s)? This cannot be undone.`, variant: "danger" });
+        if (!ok) return;
+
+        setIsBulkDeleting(true);
+        try {
+            await api.post('/contacts/bulk-delete', { ids });
+            showToast(`Deleted ${ids.length} contact(s)`, 'success');
+            setSelectedIds(new Set());
+            fetchContacts();
+        } catch (error: any) {
+            console.error('Failed to bulk delete contacts', error);
+            showToast(error.response?.data?.msg || 'Failed to delete contacts', 'error');
+        } finally {
+            setIsBulkDeleting(false);
         }
     };
 
@@ -272,6 +768,13 @@ export default function ContactsView() {
             if (typeof reader.result === 'string') setImportContent(reader.result);
         };
         reader.readAsText(file);
+    };
+
+    const handleCloseImportModal = () => {
+        setIsImportModalOpen(false);
+        setImportContent('');
+        setImportFileName('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleImportSubmit = async () => {
@@ -408,6 +911,37 @@ export default function ContactsView() {
                 </button>
             </div>
 
+            {/* Bulk Actions Bar */}
+            {selectedIds.size > 0 && (
+                <div className="flex items-center gap-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl px-4 py-2.5">
+                    <span className="text-xs font-bold text-teal-800 dark:text-teal-300">
+                        {selectedIds.size} selected
+                    </span>
+                    <button
+                        onClick={() => setSelectedIds(new Set())}
+                        className="text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    >
+                        Clear
+                    </button>
+                    <div className="ml-auto flex items-center gap-2">
+                        <button
+                            onClick={handleExportSelected}
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3.5 py-2 rounded-xl font-bold text-xs shadow-xs hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-all flex items-center gap-2"
+                        >
+                            <Download className="size-3.5" /> Export
+                        </button>
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={isBulkDeleting}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-xl font-bold text-xs shadow-md disabled:opacity-60 transition-all flex items-center gap-2"
+                        >
+                            {isBulkDeleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash className="size-3.5" />}
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Contacts List */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-xs overflow-hidden">
                 {loading ? (
@@ -423,12 +957,27 @@ export default function ContactsView() {
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                        {filteredContacts.map((c) => {
+                        <div className="px-4 py-2.5 flex items-center gap-3 bg-slate-50/60 dark:bg-slate-900/30 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                            <input
+                                type="checkbox"
+                                checked={paginatedContacts.length > 0 && paginatedContacts.every(c => selectedIds.has(c._id))}
+                                onChange={toggleSelectAll}
+                                className="size-3.5 rounded accent-teal-600"
+                            />
+                            Select All On This Page
+                        </div>
+                        {paginatedContacts.map((c) => {
                             const primaryEmail = c.emails[0]?.value;
                             const primaryPhone = c.phones[0]?.value;
                             return (
                                 <div key={c._id} className="p-4 hover:bg-slate-50/60 dark:hover:bg-slate-700/20 transition-all">
                                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-medium">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.has(c._id)}
+                                            onChange={() => toggleSelectOne(c._id)}
+                                            className="size-3.5 rounded accent-teal-600 shrink-0"
+                                        />
                                         <div className="flex items-center gap-2.5 min-w-[170px]">
                                             {c.photo ? (
                                                 <img src={c.photo} alt={c.firstName} className="size-9 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
@@ -508,6 +1057,40 @@ export default function ContactsView() {
                         })}
                     </div>
                 )}
+
+                {/* Pagination Footer */}
+                {!loading && filteredContacts.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                            <span>
+                                Showing {(safeCurrentPage - 1) * pageSize + 1}
+                                –{Math.min(safeCurrentPage * pageSize, filteredContacts.length)} of {filteredContacts.length}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={safeCurrentPage <= 1}
+                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Previous page"
+                            >
+                                <ChevronLeft className="size-4" />
+                            </button>
+                            <span className="px-3 text-xs font-bold text-slate-600 dark:text-slate-300">
+                                Page {safeCurrentPage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={safeCurrentPage >= totalPages}
+                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Next page"
+                            >
+                                <ChevronRight className="size-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* View/Detail Modal */}
@@ -518,21 +1101,34 @@ export default function ContactsView() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                            <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                                {viewingContact.firstName} {viewingContact.lastName}
-                            </h3>
+                            <div className="flex items-center gap-3">
+                                {viewingContact.photo ? (
+                                    <img
+                                        src={viewingContact.photo}
+                                        alt={`${viewingContact.firstName} ${viewingContact.lastName || ''}`}
+                                        className="size-11 rounded-full object-cover border-2 border-teal-500 shadow-xs shrink-0"
+                                    />
+                                ) : (
+                                    <div className="size-11 rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center font-bold text-sm shrink-0">
+                                        {initials(viewingContact)}
+                                    </div>
+                                )}
+                                <div>
+                                    <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
+                                        {viewingContact.firstName} {viewingContact.lastName}
+                                    </h3>
+                                    {(viewingContact.company || viewingContact.jobTitle) && (
+                                        <p className="text-xs text-slate-400 mt-0.5">
+                                            {[viewingContact.jobTitle, viewingContact.company].filter(Boolean).join(' @ ')}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
                             <button onClick={() => setViewingContact(null)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                                 <X className="size-4" />
                             </button>
                         </div>
                         <div className="p-5 space-y-4 text-sm">
-                            {(viewingContact.company || viewingContact.jobTitle) && (
-                                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-semibold">
-                                    <Building2 className="size-4 text-slate-400" />
-                                    {[viewingContact.jobTitle, viewingContact.company].filter(Boolean).join(' @ ')}
-                                </div>
-                            )}
-
                             {viewingContact.emails.length > 0 && (
                                 <div className="space-y-1">
                                     <span className="text-[10px] font-black uppercase text-slate-400">Emails</span>
@@ -614,7 +1210,7 @@ export default function ContactsView() {
 
             {/* Add / Edit Modal */}
             {isFormModalOpen && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsFormModalOpen(false)}>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleCloseFormModal}>
                     <form
                         onSubmit={handleSubmit}
                         className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
@@ -624,135 +1220,252 @@ export default function ContactsView() {
                             <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
                                 {editingContact ? 'Edit Contact' : 'Add Contact'}
                             </h3>
-                            <button type="button" onClick={() => setIsFormModalOpen(false)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                            <button type="button" onClick={handleCloseFormModal} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                                 <X className="size-4" />
                             </button>
                         </div>
 
                         <div className="p-5 space-y-4">
+                            {/* First Name & Last Name */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">First Name *</label>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                        First Name <span className="text-red-500">*</span>
+                                    </label>
                                     <input
-                                        required
                                         type="text"
+                                        maxLength={60}
+                                        placeholder="John"
                                         value={formData.firstName}
-                                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, firstName: e.target.value });
+                                            if (formErrors.firstName) setFormErrors(prev => ({ ...prev, firstName: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                            formErrors.firstName
+                                                ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                     />
+                                    {formErrors.firstName && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.firstName}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Last Name</label>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                        Last Name <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
+                                        maxLength={60}
+                                        placeholder="Doe"
                                         value={formData.lastName}
-                                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, lastName: e.target.value });
+                                            if (formErrors.lastName) setFormErrors(prev => ({ ...prev, lastName: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                            formErrors.lastName
+                                                ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                     />
+                                    {formErrors.lastName && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.lastName}</p>
+                                    )}
                                 </div>
                             </div>
 
+                            {/* Company & Job Title */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Company</label>
-                                    <input
-                                        type="text"
+                                    <CompanySelect
                                         value={formData.company}
-                                        onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(companyName) => {
+                                            setFormData(prev => ({ ...prev, company: companyName }));
+                                            if (formErrors.company) setFormErrors(prev => ({ ...prev, company: undefined }));
+                                        }}
+                                        placeholder="Company"
+                                        size="sm"
                                     />
+                                    {formErrors.company && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.company}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Job Title</label>
                                     <input
                                         type="text"
+                                        maxLength={80}
+                                        placeholder="e.g. Procurement Manager"
                                         value={formData.jobTitle}
-                                        onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, jobTitle: e.target.value });
+                                            if (formErrors.jobTitle) setFormErrors(prev => ({ ...prev, jobTitle: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                            formErrors.jobTitle
+                                                ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                        }`}
                                     />
+                                    {formErrors.jobTitle && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.jobTitle}</p>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Emails */}
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Emails</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        Emails <span className="text-red-500">*</span>
+                                    </label>
+                                    <span className="text-[10px] text-slate-400">At least 1 valid email required</span>
+                                </div>
+                                {formErrors.emailsGeneral && (
+                                    <p className="text-[11px] text-red-600 dark:text-red-400 mb-1.5">{formErrors.emailsGeneral}</p>
+                                )}
                                 <div className="space-y-2">
                                     {formData.emails.map((email, idx) => (
-                                        <div key={idx} className="flex gap-2">
-                                            <select
-                                                value={email.label}
-                                                onChange={(e) => updateEmailRow(idx, 'label', e.target.value)}
-                                                className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                            >
-                                                <option value="work">Work</option>
-                                                <option value="personal">Personal</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                            <input
-                                                type="email"
-                                                placeholder="name@example.com"
-                                                value={email.value}
-                                                onChange={(e) => updateEmailRow(idx, 'value', e.target.value)}
-                                                className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData(p => ({ ...p, emails: p.emails.filter((_, i) => i !== idx) }))}
-                                                className="p-2 text-slate-400 hover:text-red-500 rounded-lg"
-                                            >
-                                                <X className="size-4" />
-                                            </button>
+                                        <div key={idx}>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={email.label}
+                                                    onChange={(e) => updateEmailRow(idx, 'label', e.target.value)}
+                                                    className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none shrink-0"
+                                                >
+                                                    <option value="work">Work</option>
+                                                    <option value="personal">Personal</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                                <input
+                                                    type="email"
+                                                    maxLength={100}
+                                                    placeholder="name@example.com"
+                                                    value={email.value}
+                                                    onChange={(e) => {
+                                                        updateEmailRow(idx, 'value', e.target.value);
+                                                        if (formErrors.emails[idx] || formErrors.emailsGeneral) {
+                                                            setFormErrors(prev => ({
+                                                                ...prev,
+                                                                emails: prev.emails.map((err, i) => (i === idx ? null : err)),
+                                                                emailsGeneral: e.target.value.trim() ? undefined : prev.emailsGeneral
+                                                            }));
+                                                        }
+                                                    }}
+                                                    className={`flex-1 px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                                        formErrors.emails[idx]
+                                                            ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                            : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                                    }`}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    disabled={formData.emails.length <= 1}
+                                                    onClick={() => {
+                                                        if (formData.emails.length <= 1) return;
+                                                        setFormData(p => ({ ...p, emails: p.emails.filter((_, i) => i !== idx) }));
+                                                        setFormErrors(prev => ({ ...prev, emails: prev.emails.filter((_, i) => i !== idx) }));
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-red-500 disabled:opacity-30 disabled:hover:text-slate-400 rounded-lg transition-colors"
+                                                    title={formData.emails.length <= 1 ? "At least one email is required" : "Remove email"}
+                                                >
+                                                    <X className="size-4" />
+                                                </button>
+                                            </div>
+                                            {formErrors.emails[idx] && (
+                                                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.emails[idx]}</p>
+                                            )}
                                         </div>
                                     ))}
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData(p => ({ ...p, emails: [...p.emails, emptyEmail()] }))}
-                                        className="text-[11px] font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
-                                    >
-                                        <Plus className="size-3.5" /> Add email
-                                    </button>
+                                    {formData.emails.length < 5 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(p => ({ ...p, emails: [...p.emails, emptyEmail()] }))}
+                                            className="text-[11px] font-bold text-teal-600 hover:text-teal-700 dark:text-teal-400 flex items-center gap-1"
+                                        >
+                                            <Plus className="size-3.5" /> Add email
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Phones */}
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Phones</label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                                        Phones <span className="text-red-500">*</span>
+                                    </label>
+                                    <span className="text-[10px] text-slate-400">At least 1 valid phone required (7-15 digits)</span>
+                                </div>
+                                {formErrors.phonesGeneral && (
+                                    <p className="text-[11px] text-red-600 dark:text-red-400 mb-1.5">{formErrors.phonesGeneral}</p>
+                                )}
                                 <div className="space-y-2">
                                     {formData.phones.map((phone, idx) => (
-                                        <div key={idx} className="flex gap-2">
-                                            <select
-                                                value={phone.label}
-                                                onChange={(e) => updatePhoneRow(idx, 'label', e.target.value)}
-                                                className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                            >
-                                                <option value="mobile">Mobile</option>
-                                                <option value="work">Work</option>
-                                                <option value="home">Home</option>
-                                                <option value="other">Other</option>
-                                            </select>
-                                            <input
-                                                type="text"
-                                                placeholder="+91 9876543210"
-                                                value={phone.value}
-                                                onChange={(e) => updatePhoneRow(idx, 'value', e.target.value)}
-                                                className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData(p => ({ ...p, phones: p.phones.filter((_, i) => i !== idx) }))}
-                                                className="p-2 text-slate-400 hover:text-red-500 rounded-lg"
-                                            >
-                                                <X className="size-4" />
-                                            </button>
+                                        <div key={idx}>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={phone.label}
+                                                    onChange={(e) => updatePhoneRow(idx, 'label', e.target.value)}
+                                                    className="px-2 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none shrink-0"
+                                                >
+                                                    <option value="mobile">Mobile</option>
+                                                    <option value="work">Work</option>
+                                                    <option value="home">Home</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                                <input
+                                                    type="tel"
+                                                    maxLength={20}
+                                                    placeholder="+91 9876543210"
+                                                    value={phone.value}
+                                                    onChange={(e) => {
+                                                        updatePhoneRow(idx, 'value', e.target.value);
+                                                        if (formErrors.phones[idx] || formErrors.phonesGeneral) {
+                                                            setFormErrors(prev => ({
+                                                                ...prev,
+                                                                phones: prev.phones.map((err, i) => (i === idx ? null : err)),
+                                                                phonesGeneral: e.target.value.trim() ? undefined : prev.phonesGeneral
+                                                            }));
+                                                        }
+                                                    }}
+                                                    className={`flex-1 px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 outline-none ${
+                                                        formErrors.phones[idx]
+                                                            ? 'border-red-400 dark:border-red-600 focus:ring-red-500'
+                                                            : 'border-slate-200 dark:border-slate-700 focus:ring-teal-500'
+                                                    }`}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    disabled={formData.phones.length <= 1}
+                                                    onClick={() => {
+                                                        if (formData.phones.length <= 1) return;
+                                                        setFormData(p => ({ ...p, phones: p.phones.filter((_, i) => i !== idx) }));
+                                                        setFormErrors(prev => ({ ...prev, phones: prev.phones.filter((_, i) => i !== idx) }));
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-red-500 disabled:opacity-30 disabled:hover:text-slate-400 rounded-lg transition-colors"
+                                                    title={formData.phones.length <= 1 ? "At least one phone is required" : "Remove phone"}
+                                                >
+                                                    <X className="size-4" />
+                                                </button>
+                                            </div>
+                                            {formErrors.phones[idx] && (
+                                                <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.phones[idx]}</p>
+                                            )}
                                         </div>
                                     ))}
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData(p => ({ ...p, phones: [...p.phones, emptyPhone()] }))}
-                                        className="text-[11px] font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1"
-                                    >
-                                        <Plus className="size-3.5" /> Add phone
-                                    </button>
+                                    {formData.phones.length < 5 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(p => ({ ...p, phones: [...p.phones, emptyPhone()] }))}
+                                            className="text-[11px] font-bold text-teal-600 hover:text-teal-700 dark:text-teal-400 flex items-center gap-1"
+                                        >
+                                            <Plus className="size-3.5" /> Add phone
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -760,82 +1473,386 @@ export default function ContactsView() {
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Address</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <input type="text" placeholder="Street" value={formData.street} onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                                        className="col-span-2 px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none" />
-                                    <input type="text" placeholder="City" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                        className="px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none" />
-                                    <input type="text" placeholder="State" value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                                        className="px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none" />
-                                    <input type="text" placeholder="Postal Code" value={formData.postalCode} onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                                        className="px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none" />
-                                    <input type="text" placeholder="Country" value={formData.country} onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                                        className="px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none" />
+                                    <input
+                                        type="text"
+                                        maxLength={150}
+                                        placeholder="Street address (max 150 chars)"
+                                        value={formData.street}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, street: e.target.value });
+                                            if (formErrors.street) setFormErrors(prev => ({ ...prev, street: undefined }));
+                                        }}
+                                        className="col-span-2 px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500"
+                                    />
+                                    {formErrors.street && <p className="col-span-2 text-[11px] text-red-600 dark:text-red-400">{formErrors.street}</p>}
+
+                                    <div>
+                                        <input
+                                            type="text"
+                                            maxLength={80}
+                                            placeholder="City (max 80)"
+                                            value={formData.city}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, city: e.target.value });
+                                                if (formErrors.city) setFormErrors(prev => ({ ...prev, city: undefined }));
+                                            }}
+                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500"
+                                        />
+                                        {formErrors.city && <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.city}</p>}
+                                    </div>
+
+                                    <div>
+                                        <input
+                                            type="text"
+                                            maxLength={80}
+                                            placeholder="State / Region (max 80)"
+                                            value={formData.state}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, state: e.target.value });
+                                                if (formErrors.state) setFormErrors(prev => ({ ...prev, state: undefined }));
+                                            }}
+                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500"
+                                        />
+                                        {formErrors.state && <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.state}</p>}
+                                    </div>
+
+                                    <div>
+                                        <input
+                                            type="text"
+                                            maxLength={20}
+                                            placeholder="Postal Code (max 20)"
+                                            value={formData.postalCode}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, postalCode: e.target.value });
+                                                if (formErrors.postalCode) setFormErrors(prev => ({ ...prev, postalCode: undefined }));
+                                            }}
+                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500"
+                                        />
+                                        {formErrors.postalCode && <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.postalCode}</p>}
+                                    </div>
+
+                                    <div>
+                                        <input
+                                            type="text"
+                                            maxLength={80}
+                                            placeholder="Country (max 80)"
+                                            value={formData.country}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, country: e.target.value });
+                                                if (formErrors.country) setFormErrors(prev => ({ ...prev, country: undefined }));
+                                            }}
+                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-teal-500"
+                                        />
+                                        {formErrors.country && <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.country}</p>}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            {/* Product Interest & Tags */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Product Interest (comma-separated)</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Angle Grinders, Drill Machines"
-                                        value={formData.productInterest}
-                                        onChange={(e) => setFormData({ ...formData, productInterest: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                    />
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                        Product Interest
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            maxLength={50}
+                                            placeholder="Type and press Enter or comma (,)"
+                                            value={productInterestInput}
+                                            onFocus={() => setIsInterestFocused(true)}
+                                            onBlur={() => {
+                                                setIsInterestFocused(false);
+                                                if (productInterestInput.trim()) {
+                                                    addProductInterestTag(productInterestInput);
+                                                }
+                                            }}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val.includes(',')) {
+                                                    addProductInterestTag(val);
+                                                } else {
+                                                    setProductInterestInput(val);
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    addProductInterestTag(productInterestInput);
+                                                } else if (e.key === ',') {
+                                                    e.preventDefault();
+                                                    addProductInterestTag(productInterestInput);
+                                                } else if (e.key === 'Backspace' && !productInterestInput && formData.productInterest.length > 0) {
+                                                    removeProductInterestTag(formData.productInterest.length - 1);
+                                                }
+                                            }}
+                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        />
+
+                                        {isInterestFocused && interestSuggestions.length > 0 && (
+                                            <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-44 overflow-y-auto py-1 divide-y divide-slate-100 dark:divide-slate-700/60">
+                                                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-slate-50 dark:bg-slate-900/40">
+                                                    Suggestions
+                                                </div>
+                                                {interestSuggestions.slice(0, 6).map((suggestion, sIdx) => (
+                                                    <button
+                                                        key={sIdx}
+                                                        type="button"
+                                                        onMouseDown={(e) => {
+                                                            e.preventDefault();
+                                                            addProductInterestTag(suggestion);
+                                                        }}
+                                                        className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-teal-50 dark:hover:bg-teal-950/40 hover:text-teal-700 dark:hover:text-teal-300 flex items-center justify-between transition-colors cursor-pointer"
+                                                    >
+                                                        <span>{suggestion}</span>
+                                                        <span className="text-[10px] font-bold text-teal-600 dark:text-teal-400 bg-teal-100/60 dark:bg-teal-900/50 px-1.5 py-0.5 rounded">
+                                                            + Add
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
+                                        Press <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[9px]">Enter</kbd> or <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[9px]">,</kbd> to add
+                                    </span>
+                                    {formData.productInterest.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mt-2 max-h-24 overflow-y-auto p-1.5 bg-slate-100/60 dark:bg-slate-900/40 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                                            {formData.productInterest.map((item, idx) => (
+                                                <span
+                                                    key={idx}
+                                                    className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-0.5 rounded-lg text-[11px] font-semibold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 shadow-xs"
+                                                >
+                                                    <span>{item}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeProductInterestTag(idx)}
+                                                        className="p-0.5 hover:bg-teal-200/50 dark:hover:bg-teal-800/60 rounded text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-200"
+                                                    >
+                                                        <X className="size-3" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
+
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tags (comma-separated)</label>
-                                    <input
-                                        type="text"
-                                        placeholder="VIP, Reseller"
-                                        value={formData.tags}
-                                        onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
-                                    />
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                        Tags
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            maxLength={50}
+                                            placeholder="Type and press Enter or comma (,)"
+                                            value={tagsInput}
+                                            onFocus={() => setIsTagFocused(true)}
+                                            onBlur={() => {
+                                                setIsTagFocused(false);
+                                                if (tagsInput.trim()) {
+                                                    addTag(tagsInput);
+                                                }
+                                            }}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val.includes(',')) {
+                                                    addTag(val);
+                                                } else {
+                                                    setTagsInput(val);
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    addTag(tagsInput);
+                                                } else if (e.key === ',') {
+                                                    e.preventDefault();
+                                                    addTag(tagsInput);
+                                                } else if (e.key === 'Backspace' && !tagsInput && formData.tags.length > 0) {
+                                                    removeTag(formData.tags.length - 1);
+                                                }
+                                            }}
+                                            className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                                        />
+
+                                        {isTagFocused && tagSuggestions.length > 0 && (
+                                            <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-44 overflow-y-auto py-1 divide-y divide-slate-100 dark:divide-slate-700/60">
+                                                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-slate-50 dark:bg-slate-900/40">
+                                                    Suggestions
+                                                </div>
+                                                {tagSuggestions.slice(0, 6).map((suggestion, sIdx) => (
+                                                    <button
+                                                        key={sIdx}
+                                                        type="button"
+                                                        onMouseDown={(e) => {
+                                                            e.preventDefault();
+                                                            addTag(suggestion);
+                                                        }}
+                                                        className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center justify-between transition-colors cursor-pointer"
+                                                    >
+                                                        <span>{suggestion}</span>
+                                                        <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-100/60 dark:bg-indigo-900/50 px-1.5 py-0.5 rounded">
+                                                            + Add
+                                                        </span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">
+                                        Press <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[9px]">Enter</kbd> or <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[9px]">,</kbd> to add
+                                    </span>
+                                    {formData.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mt-2 max-h-24 overflow-y-auto p-1.5 bg-slate-100/60 dark:bg-slate-900/40 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                                            {formData.tags.map((item, idx) => (
+                                                <span
+                                                    key={idx}
+                                                    className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-0.5 rounded-lg text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-xs"
+                                                >
+                                                    <span>{item}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeTag(idx)}
+                                                        className="p-0.5 hover:bg-indigo-200/50 dark:hover:bg-indigo-800/60 rounded text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200"
+                                                    >
+                                                        <X className="size-3" />
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            {/* Birthday & Photo Upload */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Birthday</label>
                                     <input
                                         type="date"
+                                        max={new Date().toISOString().slice(0, 10)}
                                         value={formData.birthday}
-                                        onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none font-mono"
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, birthday: e.target.value });
+                                            if (formErrors.birthday) setFormErrors(prev => ({ ...prev, birthday: undefined }));
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none font-mono focus:ring-2 focus:ring-teal-500 ${
+                                            formErrors.birthday
+                                                ? 'border-red-400 dark:border-red-600'
+                                                : 'border-slate-200 dark:border-slate-700'
+                                        }`}
                                     />
+                                    {formErrors.birthday && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.birthday}</p>
+                                    )}
                                 </div>
+
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Photo URL</label>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                        Contact Photo
+                                    </label>
                                     <input
-                                        type="text"
-                                        placeholder="https://example.com/photo.jpg"
-                                        value={formData.photo}
-                                        onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
-                                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none"
+                                        ref={photoInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        onChange={handlePhotoUpload}
+                                        className="hidden"
                                     />
+                                    {formData.photo ? (
+                                        <div className="flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60">
+                                            <div className="relative size-12 rounded-full overflow-hidden border-2 border-teal-500 shrink-0 bg-slate-200 dark:bg-slate-700 shadow-xs">
+                                                <img
+                                                    src={formData.photo}
+                                                    alt="Contact preview"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">Photo uploaded</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => photoInputRef.current?.click()}
+                                                        disabled={isUploadingPhoto}
+                                                        className="px-2.5 py-1 text-[11px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 hover:bg-teal-100 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
+                                                    >
+                                                        {isUploadingPhoto ? <Loader2 className="size-3 animate-spin" /> : <Upload className="size-3" />}
+                                                        Change
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRemovePhoto}
+                                                        disabled={isUploadingPhoto}
+                                                        className="px-2.5 py-1 text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 hover:bg-red-100 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
+                                                    >
+                                                        <Trash2 className="size-3" />
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            onClick={() => !isUploadingPhoto && photoInputRef.current?.click()}
+                                            className={`border-2 border-dashed rounded-xl p-2.5 flex items-center justify-center gap-3 cursor-pointer transition-colors ${
+                                                photoError
+                                                    ? 'border-red-400 bg-red-50/50 dark:bg-red-950/20'
+                                                    : 'border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 bg-slate-50 dark:bg-slate-900/40 hover:bg-slate-100/50'
+                                            }`}
+                                        >
+                                            <div className="size-9 rounded-full bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0">
+                                                {isUploadingPhoto ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+                                            </div>
+                                            <div className="text-left">
+                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                                                    {isUploadingPhoto ? 'Uploading to Cloudinary...' : 'Upload Contact Photo'}
+                                                </span>
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                    JPG, PNG, or WebP (max 5MB)
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {photoError && (
+                                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{photoError}</p>
+                                    )}
                                 </div>
                             </div>
 
+                            {/* Admin Note */}
                             <div>
-                                <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 mb-1 flex items-center gap-1.5">
-                                    <AlertCircle className="size-3.5" /> Admin Note (private — never shown to non-admins)
-                                </label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                                        <AlertCircle className="size-3.5" /> Admin Note (private — never shown to non-admins)
+                                    </label>
+                                    <span className={`text-[10px] font-mono ${formData.note.length > 2000 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
+                                        {formData.note.length} / 2000
+                                    </span>
+                                </div>
                                 <textarea
                                     rows={3}
+                                    maxLength={2000}
                                     value={formData.note}
-                                    onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, note: e.target.value });
+                                        if (formErrors.note) setFormErrors(prev => ({ ...prev, note: undefined }));
+                                    }}
                                     placeholder="Internal notes about this contact..."
-                                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                                    className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-amber-50/50 dark:bg-amber-950/20 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none ${
+                                        formErrors.note ? 'border-red-400 dark:border-red-600' : 'border-amber-200 dark:border-amber-800/60'
+                                    }`}
                                 />
+                                {formErrors.note && (
+                                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1">{formErrors.note}</p>
+                                )}
                             </div>
                         </div>
 
                         <div className="p-5 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-2 sticky bottom-0 bg-white dark:bg-slate-800">
                             <button
                                 type="button"
-                                onClick={() => setIsFormModalOpen(false)}
+                                onClick={handleCloseFormModal}
                                 className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                             >
                                 Cancel
@@ -855,11 +1872,11 @@ export default function ContactsView() {
 
             {/* Import Modal */}
             {isImportModalOpen && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsImportModalOpen(false)}>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleCloseImportModal}>
                     <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
                         <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                             <h3 className="font-extrabold text-base text-slate-900 dark:text-white">Import Contacts</h3>
-                            <button onClick={() => setIsImportModalOpen(false)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                            <button onClick={handleCloseImportModal} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
                                 <X className="size-4" />
                             </button>
                         </div>
@@ -901,7 +1918,7 @@ export default function ContactsView() {
                         </div>
                         <div className="p-5 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-2">
                             <button
-                                onClick={() => setIsImportModalOpen(false)}
+                                onClick={handleCloseImportModal}
                                 className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
                             >
                                 Cancel

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, TrendingUp, DollarSign, PackageCheck, Truck, ShoppingBag, Calendar, Clock, ChevronLeft, ChevronRight, Filter } from 'lucide-react';

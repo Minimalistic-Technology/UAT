@@ -71,12 +71,21 @@ interface DeliveryPincodeCheckerProps {
     onServiceabilityChange?: (result: DeliveryCheckResult | null) => void;
     compact?: boolean;
     className?: string;
+    /** Product-level COD setting. false overrides any courier-level COD availability. */
+    codAvailable?: boolean;
+    /** Restrict displayed/usable courier partners to this list (e.g. ['BLUEDART']). Empty/undefined = no restriction. */
+    allowedPartners?: string[];
+    /** Custom lead-time message (e.g. pre-order / made-to-order) that replaces the live courier ETA. */
+    customEstimateMessage?: string;
 }
 
 export default function DeliveryPincodeChecker({
     onServiceabilityChange,
     compact = false,
-    className = ""
+    className = "",
+    codAvailable = true,
+    allowedPartners,
+    customEstimateMessage
 }: DeliveryPincodeCheckerProps) {
     const [pincode, setPincode] = useState("");
     const [loading, setLoading] = useState(false);
@@ -197,6 +206,18 @@ export default function DeliveryPincodeChecker({
         }
     };
 
+    const hasPartnerRestriction = Array.isArray(allowedPartners) && allowedPartners.length > 0 && allowedPartners.length < 2;
+    const partnerBadgeLabel = hasPartnerRestriction
+        ? (allowedPartners!.includes('BLUEDART') ? 'Blue Dart Only' : allowedPartners!.includes('DTDC') ? 'DTDC Only' : 'Blue Dart & DTDC')
+        : 'Blue Dart & DTDC';
+    const displayPartners = result
+        ? (hasPartnerRestriction ? result.partners.filter(p => allowedPartners!.includes(p.code)) : result.partners)
+        : [];
+    const displayPrimaryPartner = result
+        ? (displayPartners.find(p => p.code === result.primaryPartner.code) || displayPartners[0] || result.primaryPartner)
+        : null;
+    const deliverableDisplayPartners = displayPartners.filter(p => p.serviceable);
+
     return (
         <div className={`rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-xs transition-all ${className}`}>
             {/* Title / Header */}
@@ -209,7 +230,7 @@ export default function DeliveryPincodeChecker({
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                             Delivery & Courier Partner Service
                             <span className="text-[10px] px-2 py-0.5 font-bold uppercase rounded-md bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800">
-                                Blue Dart &amp; DTDC
+                                {partnerBadgeLabel}
                             </span>
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -325,14 +346,20 @@ export default function DeliveryPincodeChecker({
                                     </div>
                                     <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1 flex items-center gap-1.5">
                                         <Clock className="size-3.5" />
-                                        Estimated Delivery by <strong className="font-bold">{result.primaryPartner.formattedDeliveryDate}</strong> ({result.primaryPartner.estimatedDays})
+                                        {customEstimateMessage ? (
+                                            <span>{customEstimateMessage}</span>
+                                        ) : displayPrimaryPartner ? (
+                                            <span>
+                                                Estimated Delivery by <strong className="font-bold">{displayPrimaryPartner.formattedDeliveryDate}</strong> ({displayPrimaryPartner.estimatedDays})
+                                            </span>
+                                        ) : null}
                                     </p>
                                 </div>
                             </div>
 
-                            {/* Courier Partners Comparison Cards (Blue Dart vs DTDC) */}
+                            {/* Courier Partners Comparison Cards (Blue Dart vs DTDC, filtered to allowed partners for this product) */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {result.partners.map((partner) => {
+                                {displayPartners.map((partner) => {
                                     const isDeliverable = partner.serviceable;
                                     const isCheapest = partner.isCheapest;
                                     const isBlueDart = partner.code === 'BLUEDART';
@@ -415,7 +442,7 @@ export default function DeliveryPincodeChecker({
 
                                             {isDeliverable && (
                                                 <div className="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
-                                                    <span>COD: {partner.codAvailable ? '✓ Yes' : '✗ Prepaid only'}</span>
+                                                    <span>COD: {codAvailable === false ? '✗ Not offered for this item' : (partner.codAvailable ? '✓ Yes' : '✗ Prepaid only')}</span>
                                                     <span className="text-emerald-600 dark:text-emerald-400 font-bold">Doorstep Delivery</span>
                                                 </div>
                                             )}
@@ -424,12 +451,22 @@ export default function DeliveryPincodeChecker({
                                 })}
                             </div>
 
-                            {/* Informative message if only one partner is deliverable */}
-                            {result.partners.filter(p => p.serviceable).length === 1 && (
+                            {/* Informative message if only one (allowed) partner is deliverable */}
+                            {deliverableDisplayPartners.length === 1 && (
                                 <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-xl flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
                                     <Sparkles className="size-4 shrink-0 text-amber-600 mt-0.5" />
                                     <span>
-                                        <strong>Courier Notice:</strong> Only {result.primaryPartner.name} provides active courier service to PIN {result.pincode}. It has been automatically designated for your delivery.
+                                        <strong>Courier Notice:</strong> Only {deliverableDisplayPartners[0].name} provides active courier service to PIN {result.pincode}. It has been automatically designated for your delivery.
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* This product is restricted to a specific courier and that courier doesn't serve this PIN */}
+                            {hasPartnerRestriction && deliverableDisplayPartners.length === 0 && (
+                                <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 rounded-xl flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300">
+                                    <XCircle className="size-4 shrink-0 mt-0.5" />
+                                    <span>
+                                        <strong>Not Deliverable:</strong> This product ships only via {partnerBadgeLabel.replace(' Only', '')}, which does not currently serve PIN {result.pincode}.
                                     </span>
                                 </div>
                             )}

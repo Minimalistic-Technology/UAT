@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from 'react';
+"use client";
+
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit, Trash2, FileText, X, Loader2, ImagePlus, ImageOff } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useScrollLock } from '@/lib/useScrollLock';
 import { useToast } from '@/app/_context/ToastContext';
+import { useConfirm } from '@/app/_context/ConfirmContext';
+import Pagination from '@/app/_components/Pagination';
 
 interface QuotationItem {
     _id: string;
@@ -23,13 +28,18 @@ interface CatalogProduct {
     _id: string;
     name: string;
     price: number;
+    description?: string;
+    hsnCode?: string;
+    packUnit?: string;
     image?: string;
     cgst?: number;
     sgst?: number;
 }
 
+import { STANDARD_UNITS } from './CreateQuotationView';
+
 const MAX_IMAGE_DIMENSION = 800;
-const UNIT_OPTIONS = ['Nos', 'Kg', 'Pcs', 'Set', 'Meter', 'Ltr', 'Box', 'Gram', 'Tone', 'Dozen', 'Packet', 'Pair', 'Roll'];
+const UNIT_OPTIONS = STANDARD_UNITS;
 
 function fileToCompressedFile(file: File): Promise<File> {
     return new Promise((resolve, reject) => {
@@ -66,10 +76,14 @@ function fileToCompressedFile(file: File): Promise<File> {
 
 const QuotationProductsView = () => {
     const { showToast } = useToast();
+    const confirm = useConfirm();
     const [items, setItems] = useState<QuotationItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Prevent background scrolling when modal is open
+    useScrollLock(isModalOpen);
     const [editingItem, setEditingItem] = useState<QuotationItem | null>(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -90,6 +104,18 @@ const QuotationProductsView = () => {
     });
     const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([]);
 
+    const [page, setPage] = useState(1);
+    const [pageSize] = useState(25);
+
+    useEffect(() => {
+        setPage(1);
+    }, [items.length]);
+
+    const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+    const pagedItems = useMemo(() => {
+        return items.slice((page - 1) * pageSize, page * pageSize);
+    }, [items, page, pageSize]);
+
     useEffect(() => {
         fetchItems();
         fetchCatalogProducts();
@@ -109,7 +135,7 @@ const QuotationProductsView = () => {
 
     const fetchCatalogProducts = async () => {
         try {
-            const { data } = await api.get('/products');
+            const { data } = await api.get('/products?includeInactive=true');
             setCatalogProducts(data);
         } catch (error) {
             console.error('Failed to fetch products', error);
@@ -127,6 +153,9 @@ const QuotationProductsView = () => {
             product: product._id,
             name: product.name,
             price: String(product.price),
+            hsnCode: product.hsnCode || formData.hsnCode || '',
+            description: product.description || formData.description || '',
+            unit: product.packUnit || formData.unit || 'Nos',
             cgst: String(product.cgst ?? 0),
             sgst: String(product.sgst ?? 0),
             image: product.image || ''
@@ -140,10 +169,58 @@ const QuotationProductsView = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            if (Number(formData.price) < 0 || Number(formData.quantity) < 1 || Number(formData.cgst) < 0 || Number(formData.sgst) < 0) {
-                showToast('Price, CGST and SGST cannot be negative, and quantity must be at least 1', 'error');
+            if (!formData.name.trim()) {
+                showToast('Product name is required', 'error');
                 setIsSubmitting(false);
                 return;
+            }
+
+            const price = Number(formData.price);
+            if (formData.price === '' || isNaN(price) || price <= 0) {
+                showToast('Price / Rate must be greater than 0', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const qty = Number(formData.quantity);
+            if (formData.quantity === '' || isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
+                showToast('Quantity must be a positive whole number greater than 0', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (!formData.unit || !formData.unit.trim()) {
+                showToast('Quantity unit is required', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const cgst = Number(formData.cgst);
+            if (formData.cgst !== '' && (isNaN(cgst) || cgst < 0 || cgst > 100)) {
+                showToast('CGST must be between 0 and 100', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            const sgst = Number(formData.sgst);
+            if (formData.sgst !== '' && (isNaN(sgst) || sgst < 0 || sgst > 100)) {
+                showToast('SGST must be between 0 and 100', 'error');
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (formData.hsnCode && formData.hsnCode.trim()) {
+                const hsn = formData.hsnCode.trim();
+                if (!/^\d+$/.test(hsn)) {
+                    showToast('HSN / SAC code must contain digits only', 'error');
+                    setIsSubmitting(false);
+                    return;
+                }
+                if (hsn.length < 2 || hsn.length > 8) {
+                    showToast('HSN / SAC code must be between 2 and 8 digits', 'error');
+                    setIsSubmitting(false);
+                    return;
+                }
             }
 
             const payload = new FormData();
@@ -182,7 +259,8 @@ const QuotationProductsView = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this product?')) return;
+        const ok = await confirm({ message: 'Are you sure you want to delete this product?', variant: 'danger' });
+        if (!ok) return;
         try {
             await api.delete(`/quotation-items/${id}`);
             setItems(prev => prev.filter(i => i._id !== id));
@@ -258,14 +336,10 @@ const QuotationProductsView = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    <FileText className="size-6 text-teal-600" />
-                    Quotation Products
-                </h2>
+            <div className="flex justify-end items-center mb-6">
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg"
+                    className="cursor-pointer flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-lg"
                 >
                     <Plus className="size-4" /> Add Product
                 </button>
@@ -297,7 +371,7 @@ const QuotationProductsView = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                {items.map(item => (
+                                {pagedItems.map(item => (
                                     <tr key={item._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
                                         <td className="p-4">
                                             {item.image ? (
@@ -321,14 +395,14 @@ const QuotationProductsView = () => {
                                         <td className="p-4 text-right flex justify-end items-center gap-2">
                                             <button
                                                 onClick={() => handleEditClick(item)}
-                                                className="text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
+                                                className="cursor-pointer text-blue-500 hover:text-blue-700 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
                                                 title="Edit"
                                             >
                                                 <Edit className="size-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(item._id)}
-                                                className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                                                className="cursor-pointer text-red-500 hover:text-red-700 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                                                 title="Delete"
                                             >
                                                 <Trash2 className="size-4" />
@@ -340,22 +414,38 @@ const QuotationProductsView = () => {
                         </table>
                     </div>
                 )}
+                {items.length > 0 && (
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            totalItems={items.length}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                            variant="admin"
+                        />
+                    </div>
+                )}
             </div>
 
             <AnimatePresence>
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto overscroll-contain"
+                        onClick={handleCloseModal}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto border border-slate-200 dark:border-slate-700"
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto overscroll-contain my-auto border border-slate-200 dark:border-slate-700"
                         >
                             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                                 <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                                     {editingItem ? 'Edit Quotation Product' : 'Add Quotation Product'}
                                 </h3>
-                                <button onClick={handleCloseModal} className="text-slate-400 hover:text-red-500 transition-colors">
+                                <button onClick={handleCloseModal} className="cursor-pointer text-slate-400 hover:text-red-500 transition-colors">
                                     <X className="size-6" />
                                 </button>
                             </div>
@@ -366,7 +456,7 @@ const QuotationProductsView = () => {
                                     <select
                                         value={formData.product}
                                         onChange={(e) => handleSelectProduct(e.target.value)}
-                                        className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                        className="cursor-pointer w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
                                     >
                                         <option value="">— Select a product to copy details —</option>
                                         {availableCatalogProducts.map(p => (
@@ -403,7 +493,7 @@ const QuotationProductsView = () => {
                                                 <button
                                                     type="button"
                                                     onClick={handleRemoveImage}
-                                                    className="ml-2 text-sm text-red-500 hover:text-red-700"
+                                                    className="cursor-pointer ml-2 text-sm text-red-500 hover:text-red-700"
                                                 >
                                                     Remove
                                                 </button>
@@ -413,7 +503,9 @@ const QuotationProductsView = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Name</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Name <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         required
@@ -426,11 +518,13 @@ const QuotationProductsView = () => {
 
                                 <div className="col-span-2 grid grid-cols-3 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Price (₹)</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Price / Rate (₹) <span className="text-red-500">*</span>
+                                        </label>
                                         <input
                                             type="number"
                                             required
-                                            min="0"
+                                            min="0.01"
                                             step="0.01"
                                             value={formData.price}
                                             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -439,7 +533,9 @@ const QuotationProductsView = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Quantity <span className="text-red-500">*</span>
+                                        </label>
                                         <input
                                             type="number"
                                             required
@@ -452,13 +548,18 @@ const QuotationProductsView = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantity Unit</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Quantity Unit <span className="text-red-500">*</span>
+                                        </label>
                                         <select
                                             value={formData.unit}
                                             onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                                            className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
+                                            className="cursor-pointer w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
                                         >
-                                            {UNIT_OPTIONS.map(u => (
+                                            {formData.unit && !STANDARD_UNITS.includes(formData.unit) && (
+                                                <option value={formData.unit}>{formData.unit}</option>
+                                            )}
+                                            {STANDARD_UNITS.map(u => (
                                                 <option key={u} value={u}>{u}</option>
                                             ))}
                                         </select>
@@ -470,6 +571,7 @@ const QuotationProductsView = () => {
                                     <input
                                         type="number"
                                         min="0"
+                                        max="100"
                                         step="0.01"
                                         value={formData.cgst}
                                         onChange={(e) => setFormData({ ...formData, cgst: e.target.value })}
@@ -482,6 +584,7 @@ const QuotationProductsView = () => {
                                     <input
                                         type="number"
                                         min="0"
+                                        max="100"
                                         step="0.01"
                                         value={formData.sgst}
                                         onChange={(e) => setFormData({ ...formData, sgst: e.target.value })}
@@ -494,6 +597,7 @@ const QuotationProductsView = () => {
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">HSN/SAC Code (Optional)</label>
                                     <input
                                         type="text"
+                                        maxLength={8}
                                         value={formData.hsnCode}
                                         onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
                                         className="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-teal-500 focus:border-teal-500 p-2.5 border"
@@ -516,14 +620,14 @@ const QuotationProductsView = () => {
                                     <button
                                         type="button"
                                         onClick={handleCloseModal}
-                                        className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-600"
+                                        className="cursor-pointer px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-600"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting || isUploadingImage}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 disabled:opacity-50 flex items-center gap-2"
+                                        className="cursor-pointer px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 focus:ring-4 focus:ring-teal-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
                                         {isSubmitting ? <Loader2 className="animate-spin size-4" /> : null}
                                         {editingItem ? 'Update Product' : 'Create Product'}

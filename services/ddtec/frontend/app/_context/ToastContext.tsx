@@ -22,15 +22,16 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [toasts, setToasts] = useState<Toast[]>([]);
 
     const showToast = useCallback((message: string, type: ToastType = "info") => {
+        const cleanedMessage = typeof message === "string" ? message.replace(/_/g, " ") : message;
         setToasts((prev) => {
-            if (prev.some((t) => t.message === message && t.type === type)) {
+            if (prev.some((t) => t.message === cleanedMessage && t.type === type)) {
                 return prev;
             }
             const id = Math.random().toString(36).substring(2, 9);
             setTimeout(() => {
                 setToasts((current) => current.filter((t) => t.id !== id));
             }, 3500);
-            return [...prev, { id, message, type }];
+            return [...prev, { id, message: cleanedMessage, type }];
         });
     }, []);
 
@@ -56,7 +57,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     iconContainer: "bg-rose-50 dark:bg-rose-955/40 text-rose-600 dark:text-rose-400",
                     titleColor: "text-rose-600 dark:text-rose-400",
                     barBg: "bg-rose-500",
-                    header: "System Alert"
+                    header: "Action Failed"
                 };
             case "warning":
                 return {

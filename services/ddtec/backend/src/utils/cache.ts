@@ -5,6 +5,10 @@
  */
 
 import redisClient from '../config/redis';
+import { compress as zstdCompress, decompress as zstdDecompress } from '@mongodb-js/zstd';
+
+const ZSTD_PREFIX = '__zstd__:';
+const ZSTD_THRESHOLD = 512; // Compress payloads >= 512 bytes
 
 export const CACHE_TTL = {
     SETTINGS: 300,      // 5 min
@@ -17,21 +21,42 @@ export const CACHE_KEYS = {
     ROUTES: 'routes:all',
 };
 
-/** Read + JSON.parse a cached value. Returns null on miss or error. */
+/** Read + JSON.parse a cached value (transparently decompressing Zstandard if compressed). Returns null on miss or error. */
 export async function getCache<T = any>(key: string): Promise<T | null> {
     try {
         const raw = await redisClient.get(key);
-        return raw ? (JSON.parse(raw) as T) : null;
+        if (!raw) return null;
+
+        if (raw.startsWith(ZSTD_PREFIX)) {
+            const compressedBuffer = Buffer.from(raw.slice(ZSTD_PREFIX.length), 'base64');
+            const decompressedBuffer = await zstdDecompress(compressedBuffer);
+            return JSON.parse(decompressedBuffer.toString('utf-8')) as T;
+        }
+
+        return JSON.parse(raw) as T;
     } catch (err) {
         console.error(`[CACHE] get failed for "${key}":`, (err as Error).message);
         return null;
     }
 }
 
-/** JSON.stringify + write a value with a TTL (seconds). */
+/** JSON.stringify + write a value with a TTL (seconds), with transparent Zstandard compression for large payloads. */
 export async function setCache(key: string, value: unknown, ttlSeconds: number): Promise<void> {
     try {
-        await redisClient.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+        const jsonStr = JSON.stringify(value);
+        let payloadToStore = jsonStr;
+
+        if (jsonStr.length >= ZSTD_THRESHOLD) {
+            try {
+                const compressed = await zstdCompress(Buffer.from(jsonStr, 'utf-8'), 3);
+                payloadToStore = `${ZSTD_PREFIX}${compressed.toString('base64')}`;
+            } catch (compErr) {
+                // Fall back to uncompressed if compression fails
+                payloadToStore = jsonStr;
+            }
+        }
+
+        await redisClient.set(key, payloadToStore, 'EX', ttlSeconds);
     } catch (err) {
         console.error(`[CACHE] set failed for "${key}":`, (err as Error).message);
     }

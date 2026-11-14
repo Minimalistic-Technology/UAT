@@ -262,7 +262,7 @@ const SignupForm = () => {
             </div>
 
             {/* Right Side: Signup Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-hidden order-1 lg:order-2">
+            <div className="w-full lg:w-1/2 flex items-center justify-center px-4 py-8 sm:px-8 sm:py-12 relative overflow-hidden order-1 lg:order-2">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/5 rounded-full blur-[100px]" />
 
                 <motion.div

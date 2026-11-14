@@ -80,7 +80,7 @@ const LoginForm = () => {
     return (
         <section className="min-h-screen flex bg-white dark:bg-slate-900">
             {/* Left Side: Login Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-hidden">
+            <div className="w-full lg:w-1/2 flex items-center justify-center px-4 py-8 sm:px-8 sm:py-12 relative overflow-hidden">
                 {/* Subtle Background Glows */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/10 rounded-full blur-[100px]" />
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px]" />

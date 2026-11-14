@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { submitContactForm, getMessages } from '../controllers/contact.controller';
+import { contactLimiter } from '../middleware/rateLimit.middleware';
 
 const router = Router();
 
 // POST /api/contact
-router.post('/', submitContactForm);
+router.post('/', contactLimiter, submitContactForm);
 
 // GET /api/contact (Admin only)
 // Note: Middleware should be added in the main app or here if auth middleware is available in this file scope.

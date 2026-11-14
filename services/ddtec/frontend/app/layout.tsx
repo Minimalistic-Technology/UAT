@@ -1,11 +1,15 @@
 import "./globals.css";
+import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Poppins } from "next/font/google";
 import { ThemeProvider } from "./provider/theme-provider";
 import Navbar from "./_components/Navbar";
 import Footer from "./_components/Footer";
+import CookieConsent from "./_components/CookieConsent";
 import { AuthProvider } from "./_context/AuthContext";
 import { CartProvider } from "./_context/CartContext";
 import { ToastProvider } from "./_context/ToastContext";
+import { ConfirmProvider } from "./_context/ConfirmContext";
 import { RouteProvider } from "./_context/RouteContext";
 import { SettingsProvider } from "./_context/SettingsContext";
 import { GoogleAnalytics } from "@next/third-parties/google";
@@ -15,6 +19,12 @@ const poppins = Poppins({
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-poppins",
 });
+
+export const metadata: Metadata = {
+  icons: {
+    icon: "/favicon.ico",
+  },
+};
 
 export default function RootLayout({
   children,
@@ -28,11 +38,14 @@ export default function RootLayout({
       <body className={`${poppins.variable} min-h-screen flex flex-col font-poppins`} suppressHydrationWarning>
         <ThemeProvider>
           <ToastProvider>
+          <ConfirmProvider>
             <AuthProvider>
               <SettingsProvider>
                 <RouteProvider>
                   <CartProvider>
-                    <Navbar />
+                    <Suspense fallback={null}>
+                      <Navbar />
+                    </Suspense>
 
                     {/* Main content grows to push footer down */}
                     <main className="min-h-screen flex-1">
@@ -40,10 +53,12 @@ export default function RootLayout({
                     </main>
 
                     <Footer />
+                    <CookieConsent />
                   </CartProvider>
                 </RouteProvider>
               </SettingsProvider>
             </AuthProvider>
+          </ConfirmProvider>
           </ToastProvider>
         </ThemeProvider>
         {gaId && <GoogleAnalytics gaId={gaId} />}

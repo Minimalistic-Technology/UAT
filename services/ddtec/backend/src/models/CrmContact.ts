@@ -48,27 +48,27 @@ const CrmContactPhoneSchema = new Schema<ICrmContactPhone>({
 }, { _id: false });
 
 const CrmContactAddressSchema = new Schema<ICrmContactAddress>({
-    street: { type: String },
-    city: { type: String },
-    state: { type: String },
-    postalCode: { type: String },
-    country: { type: String }
+    street: { type: String, trim: true, maxlength: 150 },
+    city: { type: String, trim: true, maxlength: 80 },
+    state: { type: String, trim: true, maxlength: 80 },
+    postalCode: { type: String, trim: true, maxlength: 20 },
+    country: { type: String, trim: true, maxlength: 80 }
 }, { _id: false });
 
 const CrmContactSchema: Schema = new Schema({
-    firstName: { type: String, required: true, trim: true },
-    lastName: { type: String, trim: true },
+    firstName: { type: String, required: true, trim: true, minlength: 2, maxlength: 60 },
+    lastName: { type: String, required: true, trim: true, minlength: 2, maxlength: 60 },
     emails: { type: [CrmContactEmailSchema], default: [] },
     phones: { type: [CrmContactPhoneSchema], default: [] },
-    company: { type: String, trim: true, index: true },
-    jobTitle: { type: String, trim: true },
+    company: { type: String, trim: true, maxlength: 100, index: true },
+    jobTitle: { type: String, trim: true, maxlength: 80 },
     address: { type: CrmContactAddressSchema, default: {} },
     productInterest: { type: [String], default: [], index: true },
     tags: { type: [String], default: [] },
     birthday: { type: Date },
-    photo: { type: String },
+    photo: { type: String, trim: true },
     source: { type: String, enum: ['manual', 'vcf_import', 'csv_import'], default: 'manual' },
-    note: { type: String },
+    note: { type: String, maxlength: 2000 },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
